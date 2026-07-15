@@ -1,0 +1,12 @@
+# Railway deploy config for LeadFlow USA / Contractor Leads
+# Dashboard: https://railway.app → New Project → Deploy from GitHub
+
+[build]
+builder = "NIXPACKS"
+buildCommand = "npm ci && npx prisma generate && npm run build"
+
+[deploy]
+startCommand = "npx prisma db push && node scripts/start-railway.mjs"
+restartPolicyType = "ON_FAILURE"
+healthcheckPath = "/login"
+healthcheckTimeout = 300

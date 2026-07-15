@@ -1,0 +1,19 @@
+# Local Postgres for development (optional)
+# Run: docker compose up -d
+# Then set DATABASE_URL in .env to the url below
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: leadflow
+      POSTGRES_PASSWORD: leadflow
+      POSTGRES_DB: leadflow
+    volumes:
+      - leadflow_pg:/var/lib/postgresql/data
+
+volumes:
+  leadflow_pg:

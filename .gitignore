@@ -19,7 +19,11 @@
 
 # production
 /build
-
+/cpanel-public_html
+/cpanel-upload
+/contractor-leads-cpanel.tar
+/contractor-leads-cpanel.tar.gz
+/contractor-leads-cpanel.zip
 # misc
 .DS_Store
 *.pem
@@ -32,6 +36,13 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# local databases
+*.db
+*.db-journal
+/prisma/*.db
+/dev.db
 
 # vercel
 .vercel
@@ -39,3 +50,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/src/generated/prisma
+
+# packaging artifacts
+*.tar
+*.tar.gz
+*.zip
+/cpanel-public_html
+/cpanel-upload

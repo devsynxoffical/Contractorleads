@@ -1,0 +1,332 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { usePathname, useRouter } from "next/navigation";
+import type { IconType } from "react-icons";
+import {
+  HiOutlineArrowRightOnRectangle,
+  HiOutlineArrowTrendingDown,
+  HiOutlineArrowUpTray,
+  HiOutlineBookOpen,
+  HiOutlineChartBar,
+  HiOutlineChatBubbleLeftRight,
+  HiOutlineChevronDoubleLeft,
+  HiOutlineCog6Tooth,
+  HiOutlineCreditCard,
+  HiOutlineCpuChip,
+  HiOutlineFire,
+  HiOutlineHome,
+  HiOutlineHomeModern,
+  HiOutlineLink,
+  HiOutlineMagnifyingGlass,
+  HiOutlineMap,
+  HiOutlineMegaphone,
+  HiOutlineSquares2X2,
+  HiOutlineStar,
+  HiOutlineUsers,
+  HiOutlineViewColumns,
+  HiOutlineXMark,
+} from "react-icons/hi2";
+import { cn, formatCredits } from "@/lib/utils";
+import type { SessionUser } from "@/lib/auth";
+import { TopHeader } from "@/components/layout/top-header";
+import { AskExpertWidget } from "@/components/ai/ask-expert-widget";
+import { QuickLeadSearch } from "@/components/leads/quick-lead-search";
+
+type NavItem = {
+  href: string;
+  label: string;
+  icon: IconType;
+  badge?: boolean;
+};
+
+type NavSection = {
+  title: string;
+  items: NavItem[];
+};
+
+const sections: NavSection[] = [
+  {
+    title: "Main",
+    items: [
+      { href: "/home", label: "Home", icon: HiOutlineHome },
+      { href: "/dashboard", label: "Business Insights", icon: HiOutlineChartBar },
+      { href: "/leads/search", label: "Lead Finder", icon: HiOutlineMagnifyingGlass },
+      { href: "/leads", label: "All Leads", icon: HiOutlineSquares2X2 },
+      { href: "/leads/saved", label: "Saved Leads", icon: HiOutlineStar },
+      { href: "/leads/hot", label: "Hot Leads", icon: HiOutlineFire, badge: true },
+      { href: "/leads/pipeline", label: "Pipeline CRM", icon: HiOutlineViewColumns },
+      { href: "/leads/map", label: "Lead Map", icon: HiOutlineMap },
+    ],
+  },
+  {
+    title: "AI Assistant",
+    items: [
+      {
+        href: "/ask-expert",
+        label: "Ask Contractor Leads",
+        icon: HiOutlineChatBubbleLeftRight,
+      },
+      { href: "/scripts", label: "My Scripts", icon: HiOutlineBookOpen },
+    ],
+  },
+  {
+    title: "Platform",
+    items: [
+      { href: "/industries", label: "Industries", icon: HiOutlineHomeModern },
+      { href: "/analytics", label: "Analytics", icon: HiOutlineArrowTrendingDown },
+      { href: "/ai-tools", label: "AI Tools", icon: HiOutlineCpuChip },
+      { href: "/workspaces", label: "Workspaces", icon: HiOutlineUsers },
+      { href: "/reports", label: "Client Reports", icon: HiOutlineArrowUpTray },
+      { href: "/facebook-ads", label: "Facebook Ads", icon: HiOutlineMegaphone },
+      { href: "/crm-webhooks", label: "CRM Webhooks", icon: HiOutlineLink },
+    ],
+  },
+  {
+    title: "Account",
+    items: [
+      { href: "/billing", label: "Plans & Billing", icon: HiOutlineCreditCard },
+      { href: "/settings", label: "Settings", icon: HiOutlineCog6Tooth },
+    ],
+  },
+];
+
+function isActive(pathname: string, href: string) {
+  if (href === "/leads") return pathname === "/leads";
+  if (href === "/home") return pathname === "/home";
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function SidebarNav({
+  user,
+  onNavigate,
+  showClose,
+  onClose,
+  onCollapse,
+}: {
+  user: SessionUser;
+  onNavigate?: () => void;
+  showClose?: boolean;
+  onClose?: () => void;
+  onCollapse?: () => void;
+}) {
+  const pathname = usePathname();
+  const router = useRouter();
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+    router.refresh();
+  }
+
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex h-16 shrink-0 items-center gap-2.5 border-b border-border/80 px-5">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-50 to-white shadow-[var(--shadow-soft)] ring-1 ring-border/80">
+          <Image
+            src="/logo.png"
+            alt=""
+            width={26}
+            height={26}
+            className="object-contain"
+            priority
+          />
+        </div>
+        <div className="min-w-0 flex-1">
+          <span className="block truncate font-[family-name:var(--font-display)] text-[15px] font-semibold tracking-tight text-ink">
+            Contractor Leads
+          </span>
+          <span className="block truncate text-[10px] font-medium text-ink-faint">
+            LeadFlow USA
+          </span>
+        </div>
+        {onCollapse && (
+          <button
+            type="button"
+            onClick={onCollapse}
+            className="hidden shrink-0 rounded-lg p-1.5 text-ink-faint transition hover:bg-brand-50 hover:text-ink lg:inline-flex"
+            aria-label="Hide side menu"
+            title="Hide side menu"
+          >
+            <HiOutlineChevronDoubleLeft className="h-4 w-4" />
+          </button>
+        )}
+        {showClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="shrink-0 rounded-lg p-1.5 text-ink-faint hover:bg-brand-50 hover:text-ink"
+            aria-label="Close menu"
+          >
+            <HiOutlineXMark className="h-5 w-5" />
+          </button>
+        )}
+      </div>
+
+      <nav className="scrollbar-thin flex-1 space-y-5 overflow-y-auto px-3 py-5">
+        {sections.map((section) => (
+          <div key={section.title}>
+            <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+              {section.title}
+            </p>
+            <div className="space-y-0.5">
+              {section.items.map((item) => {
+                const active = isActive(pathname, item.href);
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onNavigate}
+                    className={cn(
+                      "group flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13.5px] font-medium transition-all duration-200",
+                      active
+                        ? "saas-nav-active"
+                        : "text-ink-muted hover:bg-[#f7f4fa] hover:text-ink"
+                    )}
+                  >
+                    <Icon
+                      className={cn(
+                        "h-[18px] w-[18px] shrink-0",
+                        active
+                          ? "text-brand-600"
+                          : "text-ink-faint group-hover:text-ink-muted"
+                      )}
+                    />
+                    <span className="flex-1 truncate">{item.label}</span>
+                    {item.badge && (
+                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#e6007e]" />
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </nav>
+
+      <div className="shrink-0 border-t border-border/80 p-4">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#fcf2f8] via-white to-[#f3eef8] p-3.5 ring-1 ring-brand-100/80">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-faint">
+            Credits
+          </p>
+          <p className="mt-1 font-[family-name:var(--font-display)] text-2xl font-semibold tabular-nums tracking-tight text-brand-700">
+            {formatCredits(user.creditsRemaining)}
+          </p>
+          <Link
+            href="/billing"
+            className="mt-2 inline-block text-[11px] font-semibold text-brand-600 hover:underline"
+          >
+            Upgrade plan →
+          </Link>
+        </div>
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="mt-3 flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-[13px] font-medium text-ink-muted transition hover:bg-[#faf8fb] hover:text-ink"
+        >
+          <HiOutlineArrowRightOnRectangle className="h-4 w-4" />
+          Sign out
+        </button>
+      </div>
+    </div>
+  );
+}
+
+const SIDEBAR_KEY = "leadflow-sidebar-collapsed";
+
+export function AppShell({
+  user,
+  children,
+}: {
+  user: SessionUser;
+  children: React.ReactNode;
+}) {
+  const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem(SIDEBAR_KEY);
+    if (stored === "1") setSidebarCollapsed(true);
+  }, []);
+
+  function toggleSidebar() {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem(SIDEBAR_KEY, next ? "1" : "0");
+      return next;
+    });
+  }
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [mobileOpen]);
+
+  return (
+    <div className="flex h-[100dvh] overflow-hidden bg-transparent">
+      <aside
+        className={cn(
+          "hidden h-full shrink-0 flex-col border-r border-border/70 bg-white/90 shadow-[4px_0_24px_rgba(20,17,26,0.03)] backdrop-blur-xl transition-[width,opacity,transform] duration-300 ease-out lg:flex",
+          sidebarCollapsed
+            ? "w-0 overflow-hidden border-r-0 opacity-0 shadow-none"
+            : "w-[268px] opacity-100"
+        )}
+        aria-hidden={sidebarCollapsed}
+      >
+        <div className="flex h-full w-[268px] flex-col">
+          <SidebarNav user={user} onCollapse={toggleSidebar} />
+        </div>
+      </aside>
+
+      {mobileOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div
+            className="absolute inset-0 animate-fade-in bg-[#0f0c14]/40 backdrop-blur-[2px]"
+            onClick={() => setMobileOpen(false)}
+          />
+          <aside className="animate-slide-left relative flex h-full w-[min(288px,86vw)] flex-col border-r border-border bg-white shadow-2xl">
+            <SidebarNav
+              user={user}
+              showClose
+              onClose={() => setMobileOpen(false)}
+              onNavigate={() => setMobileOpen(false)}
+            />
+          </aside>
+        </div>
+      )}
+
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <TopHeader
+          user={user}
+          onMenuClick={() => setMobileOpen((v) => !v)}
+          sidebarCollapsed={sidebarCollapsed}
+          onToggleSidebar={toggleSidebar}
+        />
+        <main className="scrollbar-thin min-w-0 flex-1 overflow-x-hidden overflow-y-auto">
+          <div key={pathname} className="page-enter min-h-full">
+            {children}
+          </div>
+        </main>
+        <footer className="shrink-0 border-t border-border/70 bg-white/70 px-4 py-3 text-center text-[11px] text-ink-faint backdrop-blur-md sm:px-6 sm:text-[12px]">
+          Copyright © 2026 Contractor Leads. All rights reserved.
+        </footer>
+      </div>
+
+      <QuickLeadSearch embedded={false} />
+      <AskExpertWidget user={user} />
+    </div>
+  );
+}

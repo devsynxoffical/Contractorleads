@@ -1,0 +1,164 @@
+generator client {
+  provider      = "prisma-client-js"
+  // Include Linux engines so Prisma works on cPanel after generate
+  binaryTargets = ["native", "debian-openssl-3.0.x", "debian-openssl-1.1.x", "rhel-openssl-3.0.x", "rhel-openssl-1.1.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String   @id @default(cuid())
+  email               String   @unique
+  passwordHash        String
+  name                String?
+  role                String   @default("USER")
+  plan                String   @default("trial")
+  creditsRemaining    Float    @default(20)
+  onboardingComplete  Boolean  @default(false)
+  darkMode            Boolean  @default(false)
+  companyName         String?
+  businessDescription String?
+  services            String?
+  idealCustomer       String?
+  serviceAreas        String?
+  mainGoal            String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  searches     Search[]
+  savedLeads   SavedLead[]
+  scripts      Script[]
+  creditLedger CreditLedger[]
+  activities   ActivityLog[]
+  exports      Export[]
+}
+
+model Lead {
+  id                        String   @id @default(cuid())
+  businessName              String
+  ownerName                 String?
+  phone                     String?
+  email                     String?
+  website                   String?
+  googleRating              Float?
+  reviewCount               Int?
+  address                   String?
+  googleMapsLink            String?
+  yearsInBusiness           Int?
+  leadScore                 Int      @default(0)
+  serviceCategory           String?
+  revenueRangeEstimate      String?
+  websiteQualityScore       Int?
+  marketingOpportunityScore Int?
+  ppcOpportunityScore       Int?
+  seoOpportunityScore       Int?
+  outreachAngle             String?
+  facebook                  String?
+  instagram                 String?
+  yelpUrl                   String?
+  yelpRating                Float?
+  yelpReviews               Int?
+  tiktok                    String?
+  nextdoor                  String?
+  houzzUrl                  String?
+  houzzRating               Float?
+  houzzReviews              Int?
+  linkedinUrl               String?
+  linkedinConfidenceScore   Float?
+  linkedinType              String   @default("none")
+  youtube                   String?
+  verificationStatus        String   @default("verified")
+  industry                  String?
+  state                     String?
+  city                      String?
+  zip                       String?
+  latitude                  Float?
+  longitude                 Float?
+  qualityTier               String?
+  searchId                  String?
+  search                    Search?  @relation(fields: [searchId], references: [id], onDelete: SetNull)
+  createdAt                 DateTime @default(now())
+
+  savedBy SavedLead[]
+}
+
+model Search {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  industry    String
+  state       String
+  city        String?
+  zip         String?
+  radius      Int
+  resultCount Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  leads Lead[]
+}
+
+model SavedLead {
+  id        String     @id @default(cuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leadId    String
+  lead      Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  status    String     @default("new")
+  favorite  Boolean    @default(false)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  notes     LeadNote[]
+
+  @@unique([userId, leadId])
+}
+
+model LeadNote {
+  id          String    @id @default(cuid())
+  savedLeadId String
+  savedLead   SavedLead @relation(fields: [savedLeadId], references: [id], onDelete: Cascade)
+  content     String
+  createdAt   DateTime  @default(now())
+}
+
+model Script {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type          String
+  title         String?
+  content       String
+  relatedLeadId String?
+  createdAt     DateTime @default(now())
+}
+
+model CreditLedger {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount    Float
+  action    String
+  reference String?
+  createdAt DateTime @default(now())
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  message   String
+  metadata  String?
+  createdAt DateTime @default(now())
+}
+
+model Export {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  format    String
+  leadIds   String
+  createdAt DateTime @default(now())
+}
