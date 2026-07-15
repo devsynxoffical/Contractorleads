@@ -1,37 +1,45 @@
-import { spawnSync } from "child_process";
-import { cpSync, existsSync, mkdirSync } from "fs";
-import path from "path";
+/**
+ * Production start for Railway (and similar hosts).
+ * Uses `next start` (full node_modules) — more reliable than standalone alone on Nixpacks.
+ */
+import { spawn, spawnSync } from "child_process";
 
-const root = process.cwd();
-const standalone = path.join(root, ".next", "standalone");
-const serverJs = path.join(standalone, "server.js");
-
-if (!existsSync(serverJs)) {
-  console.error("Missing .next/standalone/server.js — run npm run build first.");
+if (!process.env.DATABASE_URL) {
+  console.error("DATABASE_URL is not set. Link Postgres and set DATABASE_URL=${{Postgres.DATABASE_URL}}.");
   process.exit(1);
 }
 
-const staticSrc = path.join(root, ".next", "static");
-const staticDest = path.join(standalone, ".next", "static");
-const publicSrc = path.join(root, "public");
-const publicDest = path.join(standalone, "public");
+console.log("Running prisma db push...");
+const push = spawnSync(
+  "npx",
+  ["prisma", "db", "push", "--skip-generate"],
+  { stdio: "inherit", env: process.env },
+);
 
-if (existsSync(staticSrc)) {
-  mkdirSync(path.dirname(staticDest), { recursive: true });
-  cpSync(staticSrc, staticDest, { recursive: true });
+if (push.status !== 0) {
+  console.error("prisma db push failed — check DATABASE_URL and that Postgres is running.");
+  process.exit(push.status ?? 1);
 }
 
-if (existsSync(publicSrc)) {
-  cpSync(publicSrc, publicDest, { recursive: true });
-}
-
+const port = process.env.PORT || "3000";
 process.env.HOSTNAME = "0.0.0.0";
-process.env.PORT = process.env.PORT || "3000";
+console.log(`Starting Next.js on 0.0.0.0:${port}`);
 
-const result = spawnSync(process.execPath, ["server.js"], {
-  cwd: standalone,
-  stdio: "inherit",
-  env: process.env,
+const child = spawn(
+  "npx",
+  ["next", "start", "-H", "0.0.0.0", "-p", port],
+  { stdio: "inherit", env: process.env },
+);
+
+child.on("exit", (code, signal) => {
+  if (signal) {
+    process.kill(process.pid, signal);
+  }
+  process.exit(code ?? 1);
 });
 
-process.exit(result.status ?? 1);
+for (const sig of ["SIGTERM", "SIGINT"]) {
+  process.on(sig, () => {
+    child.kill(sig);
+  });
+}

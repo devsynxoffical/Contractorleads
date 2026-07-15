@@ -7,7 +7,9 @@ builder = "NIXPACKS"
 buildCommand = "npm run build"
 
 [deploy]
-startCommand = "npx prisma db push && node scripts/start-railway.mjs"
+# next start (via start-railway.mjs) — binds 0.0.0.0:$PORT; fails fast if DATABASE_URL missing
+startCommand = "node scripts/start-railway.mjs"
 restartPolicyType = "ON_FAILURE"
-healthcheckPath = "/login"
+healthcheckPath = "/api/health"
 healthcheckTimeout = 300
+restartPolicyMaxRetries = 10
