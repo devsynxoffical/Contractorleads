@@ -21,6 +21,16 @@ if (push.status !== 0) {
   process.exit(push.status ?? 1);
 }
 
+console.log("Seeding demo user (upsert)...");
+const seed = spawnSync("node", ["prisma/seed.mjs"], {
+  stdio: "inherit",
+  env: process.env,
+});
+if (seed.status !== 0) {
+  console.error("Seed failed — login may not work until seed succeeds.");
+  process.exit(seed.status ?? 1);
+}
+
 const port = process.env.PORT || "3000";
 process.env.HOSTNAME = "0.0.0.0";
 console.log(`Starting Next.js on 0.0.0.0:${port}`);

@@ -12,7 +12,7 @@
     "start:cpanel": "node app.js",
     "lint": "eslint",
     "db:push": "prisma db push",
-    "db:seed": "npx tsx prisma/seed.ts",
+    "db:seed": "node prisma/seed.mjs",
     "postinstall": "prisma generate",
     "package:cpanel": "node scripts/package-cpanel.mjs"
   },
