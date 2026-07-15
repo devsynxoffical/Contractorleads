@@ -3,7 +3,8 @@
 
 [build]
 builder = "NIXPACKS"
-buildCommand = "npm ci && npx prisma generate && npm run build"
+# Nixpacks already runs `npm ci` in install — do not run it again (EBUSY on node_modules/.cache)
+buildCommand = "npm run build"
 
 [deploy]
 startCommand = "npx prisma db push && node scripts/start-railway.mjs"
