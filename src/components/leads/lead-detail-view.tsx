@@ -130,11 +130,13 @@ function SocialButton({
   icon: React.ReactNode;
   verified?: boolean;
 }) {
+  // Avoid noreferrer on LinkedIn — it often breaks the first tab load
+  const isLinkedIn = /linkedin\.com/i.test(href);
   return (
     <a
       href={href}
       target="_blank"
-      rel="noopener noreferrer"
+      rel={isLinkedIn ? "noopener" : "noopener noreferrer"}
       className={`inline-flex flex-1 min-w-[120px] items-center justify-center gap-2 rounded-xl border px-4 py-3 text-[13px] font-semibold shadow-[var(--shadow-soft)] transition hover:border-brand-200 hover:bg-brand-50 ${
         verified
           ? "border-emerald-200 bg-emerald-50 text-emerald-800"
@@ -276,21 +278,40 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
     setFindingLinkedin(true);
     setSocialMessage(null);
     try {
-      const res = await fetch(`/api/leads/${leadId}/linkedin`, { method: "POST" });
+      const res = await fetch(`/api/leads/${leadId}/linkedin`, {
+        method: "POST",
+        signal: AbortSignal.timeout(45000),
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "LinkedIn lookup failed");
       setLead(data.lead);
-      if (data.linkedin?.verified && data.linkedin.url) {
+
+      const foundUrl =
+        data.linkedin?.verified && data.linkedin?.url
+          ? String(data.linkedin.url)
+          : null;
+
+      if (foundUrl) {
         setSocialMessage(
-          `LinkedIn company found (${data.linkedin.sourceLabel ?? "verified"}).`
+          `LinkedIn company found (${data.linkedin.sourceLabel ?? "verified"}). Opening…`
         );
+        // Open after paint so the lead page stays stable; no noreferrer (LinkedIn first-load bug)
+        window.setTimeout(() => {
+          window.open(foundUrl, "_blank", "noopener");
+        }, 150);
       } else {
         setSocialMessage(
-          "No verified LinkedIn company page found automatically. Use the manual search link below."
+          "No verified LinkedIn company page found automatically. Use Search on LinkedIn below."
         );
       }
     } catch (e) {
-      setSocialMessage(e instanceof Error ? e.message : "LinkedIn lookup failed");
+      const msg =
+        e instanceof Error && e.name === "TimeoutError"
+          ? "LinkedIn lookup timed out. Try again — or use Search on LinkedIn."
+          : e instanceof Error
+            ? e.message
+            : "LinkedIn lookup failed";
+      setSocialMessage(msg);
     } finally {
       setFindingLinkedin(false);
     }
@@ -582,7 +603,7 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
                     <a
                       href={lead.linkedinCompanyUrl!}
                       target="_blank"
-                      rel="noopener noreferrer"
+                      rel="noopener"
                       className="flex items-center gap-2 text-[13px] font-medium text-emerald-800 hover:underline"
                     >
                       <HiOutlineCheckBadge className="h-4 w-4" />
@@ -594,7 +615,7 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
                     <a
                       href={lead.linkedinOwnerUrl!}
                       target="_blank"
-                      rel="noopener noreferrer"
+                      rel="noopener"
                       className="flex items-center gap-2 text-[13px] font-medium text-emerald-800 hover:underline"
                     >
                       <HiOutlineCheckBadge className="h-4 w-4" />
@@ -623,7 +644,7 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
                     <a
                       href={linkedinSearchUrl}
                       target="_blank"
-                      rel="noopener noreferrer"
+                      rel="noopener"
                       className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-white px-3 text-[12px] font-semibold text-brand-700 transition hover:bg-brand-50"
                     >
                       Search on LinkedIn

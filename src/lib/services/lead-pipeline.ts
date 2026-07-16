@@ -64,21 +64,31 @@ export async function runLeadPipeline(params: SearchParams) {
   const leads = [];
 
   for (const place of places) {
-    let website = place.website;
-    if (website) {
-      const valid = await verifyWebsite(website);
-      if (!valid) website = undefined;
-    }
+    // Trust Google Business Profile website — never wipe it because our
+    // reachability check failed (many sites block bots / HEAD).
+    const website = place.website;
+    const websiteReachable = website
+      ? await withTimeout(verifyWebsite(website), 9000, false)
+      : false;
 
+    const placeForQualify = { ...place, website };
     const [yelp, houzz, nextdoor, linkedin, qualification] = await Promise.all([
       matchYelpBusiness(place.name, location),
       withTimeout(matchHouzzBusiness(place.name, location), 8000, null),
       withTimeout(matchNextdoorBusiness(place.name, location), 5000, null),
       resolveLinkedIn(place.name, location, params.industry, undefined, website),
-      qualifyLead(place, params.industry, Boolean(website)),
+      qualifyLead(placeForQualify, params.industry, Boolean(website)),
     ]);
 
     if (qualification.leadScore < 30) continue;
+
+    // Soft-bump website quality when the URL actually responds
+    const websiteQualityScore = website
+      ? Math.max(
+          qualification.websiteQualityScore ?? 0,
+          websiteReachable ? 70 : 50
+        )
+      : qualification.websiteQualityScore;
 
     const lead = await prisma.lead.create({
       data: {
@@ -92,7 +102,7 @@ export async function runLeadPipeline(params: SearchParams) {
         leadScore: qualification.leadScore,
         serviceCategory: qualification.serviceCategory,
         revenueRangeEstimate: qualification.revenueRangeEstimate,
-        websiteQualityScore: qualification.websiteQualityScore,
+        websiteQualityScore,
         marketingOpportunityScore: qualification.marketingOpportunityScore,
         ppcOpportunityScore: qualification.ppcOpportunityScore,
         seoOpportunityScore: qualification.seoOpportunityScore,

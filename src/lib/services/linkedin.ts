@@ -1,4 +1,7 @@
-const LINKEDIN_HOST = "www.linkedin.com";
+function isLinkedInHostname(hostname: string): boolean {
+  const host = hostname.toLowerCase();
+  return host === "linkedin.com" || host.endsWith(".linkedin.com");
+}
 
 export type LinkedInCandidate = {
   url: string;
@@ -17,7 +20,7 @@ export function isValidLinkedInUrl(url: string): boolean {
     const parsed = new URL(url);
     return (
       parsed.protocol === "https:" &&
-      parsed.hostname === LINKEDIN_HOST &&
+      isLinkedInHostname(parsed.hostname) &&
       (parsed.pathname.startsWith("/company/") ||
         parsed.pathname.startsWith("/in/"))
     );
@@ -31,7 +34,7 @@ export function isValidLinkedInCompanyUrl(url: string): boolean {
     const parsed = new URL(url);
     return (
       parsed.protocol === "https:" &&
-      parsed.hostname === LINKEDIN_HOST &&
+      isLinkedInHostname(parsed.hostname) &&
       parsed.pathname.startsWith("/company/")
     );
   } catch {
@@ -39,18 +42,34 @@ export function isValidLinkedInCompanyUrl(url: string): boolean {
   }
 }
 
+/** Canonicalize any LinkedIn company URL (incl. pk.linkedin.com) to www.linkedin.com */
 export function normalizeLinkedInCompanyUrl(raw: string): string | null {
   try {
     const withProtocol = raw.startsWith("http") ? raw : `https://${raw}`;
     const parsed = new URL(withProtocol.split("?")[0].split("#")[0]);
-    if (parsed.hostname !== LINKEDIN_HOST && parsed.hostname !== "linkedin.com") {
+    if (!isLinkedInHostname(parsed.hostname)) {
       return null;
     }
-    const slug = parsed.pathname
-      .replace(/^\/company\//, "")
-      .replace(/\/$/, "");
-    if (!slug || slug.includes("/")) return null;
-    return `https://www.linkedin.com/company/${decodeURIComponent(slug)}/`;
+    const match = parsed.pathname.match(/^\/company\/([^/]+)\/?/i);
+    if (!match?.[1]) return null;
+    const slug = decodeURIComponent(match[1]).replace(/\/+$/, "");
+    if (!slug || !/^[a-zA-Z0-9._%-]+$/.test(slug)) return null;
+    return `https://www.linkedin.com/company/${slug}/`;
+  } catch {
+    return null;
+  }
+}
+
+export function normalizeLinkedInProfileUrl(raw: string): string | null {
+  try {
+    const withProtocol = raw.startsWith("http") ? raw : `https://${raw}`;
+    const parsed = new URL(withProtocol.split("?")[0].split("#")[0]);
+    if (!isLinkedInHostname(parsed.hostname)) return null;
+    const match = parsed.pathname.match(/^\/in\/([^/]+)\/?/i);
+    if (!match?.[1]) return null;
+    const slug = decodeURIComponent(match[1]).replace(/\/+$/, "");
+    if (!slug || !/^[a-zA-Z0-9._%-]+$/.test(slug)) return null;
+    return `https://www.linkedin.com/in/${slug}/`;
   } catch {
     return null;
   }
@@ -169,8 +188,8 @@ export async function discoverLinkedInFromWebsite(
   if (!html) return null;
 
   const patterns = [
-    /https?:\/\/(?:www\.)?linkedin\.com\/company\/[a-zA-Z0-9._%+-]+/gi,
-    /(?:www\.)?linkedin\.com\/company\/[a-zA-Z0-9._%+-]+/gi,
+    /https?:\/\/(?:[a-z]{2}\.)?(?:www\.)?linkedin\.com\/company\/[a-zA-Z0-9._%-]+/gi,
+    /(?:[a-z]{2}\.)?(?:www\.)?linkedin\.com\/company\/[a-zA-Z0-9._%-]+/gi,
   ];
 
   const seen = new Set<string>();
@@ -197,21 +216,16 @@ async function resolveViaProxycurlDomain(
       `https://nubela.co/proxycurl/api/linkedin/company/resolve?company_domain=${encodeURIComponent(domain)}`,
       {
         headers: { Authorization: `Bearer ${apiKey}` },
-        signal: AbortSignal.timeout(10000),
+        signal: AbortSignal.timeout(12000),
       }
     );
     if (!response.ok) return null;
     const data = (await response.json()) as { url?: string };
-    if (data.url && isValidLinkedInCompanyUrl(data.url)) {
-      const normalized = normalizeLinkedInCompanyUrl(data.url);
-      if (!normalized) return null;
-      const check = await verifyLinkedInUrl(normalized);
-      return check.valid ? normalized : null;
-    }
+    // Trust Proxycurl — LinkedIn blocks most server-side HTML checks
+    return data.url ? normalizeLinkedInCompanyUrl(data.url) : null;
   } catch {
-    // Fall through
+    return null;
   }
-  return null;
 }
 
 async function resolveViaProxycurlName(
@@ -226,28 +240,23 @@ async function resolveViaProxycurlName(
       `https://nubela.co/proxycurl/api/v2/linkedin/company/resolve?company_domain=&company_name=${query}`,
       {
         headers: { Authorization: `Bearer ${apiKey}` },
-        signal: AbortSignal.timeout(10000),
+        signal: AbortSignal.timeout(12000),
       }
     );
     if (!response.ok) return null;
     const data = (await response.json()) as { url?: string };
-    if (data.url && isValidLinkedInCompanyUrl(data.url)) {
-      const normalized = normalizeLinkedInCompanyUrl(data.url);
-      if (!normalized) return null;
-      const check = await verifyLinkedInUrl(normalized);
-      return check.valid ? normalized : null;
-    }
+    return data.url ? normalizeLinkedInCompanyUrl(data.url) : null;
   } catch {
-    // Fall through
+    return null;
   }
-  return null;
 }
 
-/** Free: try common URL slugs derived from business name, verify page exists + name match */
+/** Free: try common URL slugs — keep short so Find LinkedIn doesn't hang */
 async function resolveViaSlugGuess(
   businessName: string
 ): Promise<string | null> {
-  for (const slug of slugifyBusinessName(businessName)) {
+  const slugs = slugifyBusinessName(businessName).slice(0, 3);
+  for (const slug of slugs) {
     const url = `https://www.linkedin.com/company/${slug}/`;
     const check = await verifyLinkedInUrl(url);
     if (check.valid && check.html && businessNameInHtml(businessName, check.html)) {
@@ -385,12 +394,12 @@ export async function resolveLinkedInProfiles(
 
       if (response.ok) {
         const data = (await response.json()) as { url?: string };
-        if (data.url && isValidLinkedInUrl(data.url)) {
-          const check = await verifyLinkedInUrl(data.url);
-          if (check.valid) {
-            ownerUrl = data.url;
-            ownerConfidence = 95;
-          }
+        const normalized = data.url
+          ? normalizeLinkedInProfileUrl(data.url)
+          : null;
+        if (normalized) {
+          ownerUrl = normalized;
+          ownerConfidence = 95;
         }
       }
     } catch {

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import {
   buildLinkedInCompanySearchUrl,
   findLinkedInCompanyUrl,
+  normalizeLinkedInCompanyUrl,
 } from "@/lib/services/linkedin";
 
 export async function POST(
@@ -29,8 +30,11 @@ export async function POST(
     lead.website
   );
 
-  const companyUrl =
-    result.confidence >= 95 ? result.url : lead.linkedinCompanyUrl;
+  const normalized =
+    result.url && result.confidence >= 95
+      ? normalizeLinkedInCompanyUrl(result.url) ?? result.url
+      : null;
+  const companyUrl = normalized ?? lead.linkedinCompanyUrl;
 
   const updated = await prisma.lead.update({
     where: { id },
@@ -53,11 +57,11 @@ export async function POST(
   return NextResponse.json({
     lead: updated,
     linkedin: {
-      url: result.url,
+      url: companyUrl ?? result.url,
       confidence: result.confidence,
       source: result.source,
       sourceLabel: result.source ? sourceLabel[result.source] : null,
-      verified: result.confidence >= 95,
+      verified: Boolean(normalized),
       searchUrl: buildLinkedInCompanySearchUrl(lead.businessName),
     },
   });
