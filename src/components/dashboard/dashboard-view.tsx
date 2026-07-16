@@ -4,20 +4,21 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   HiOutlineArrowDownTray,
+  HiOutlineArrowPath,
   HiOutlineArrowTrendingDown,
   HiOutlineArrowTrendingUp,
   HiOutlineChartBar,
   HiOutlineCheckBadge,
   HiOutlineChatBubbleLeftRight,
-  HiOutlineDocumentText,
   HiOutlineFire,
   HiOutlineMagnifyingGlass,
   HiOutlineMap,
-  HiOutlinePhoto,
   HiOutlineSparkles,
+  HiOutlineStar,
   HiOutlineTrophy,
   HiOutlineUserGroup,
   HiOutlineWallet,
+  HiOutlineViewColumns,
 } from "react-icons/hi2";
 import { formatCredits, formatNumber } from "@/lib/utils";
 import type { SessionUser } from "@/lib/auth";
@@ -92,6 +93,7 @@ function StatCard({
   icon: Icon,
   color,
   delay = 0,
+  href,
 }: {
   label: string;
   value: string;
@@ -99,27 +101,44 @@ function StatCard({
   icon: React.ComponentType<{ className?: string }>;
   color: string;
   delay?: number;
+  href?: string;
 }) {
-  return (
-    <div
-      className="hover-lift animate-fade-up rounded-xl border border-border bg-white p-4 shadow-[var(--shadow-card)]"
-      style={{ animationDelay: `${delay}s` }}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[12px] font-semibold text-ink-muted">{label}</p>
-          <p className="mt-1 text-[22px] font-bold tracking-tight text-ink tabular-nums">
-            {value}
-          </p>
-          <p className="mt-1 text-[12px] text-ink-faint">{hint}</p>
-        </div>
-        <span
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition group-hover:scale-105"
-          style={{ backgroundColor: `${color}14`, color }}
-        >
-          <Icon className="h-5 w-5" />
-        </span>
+  const inner = (
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <p className="text-[12px] font-semibold text-ink-muted">{label}</p>
+        <p className="mt-1 text-[22px] font-bold tracking-tight text-ink tabular-nums">
+          {value}
+        </p>
+        <p className="mt-1 text-[12px] text-ink-faint">{hint}</p>
       </div>
+      <span
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition group-hover:scale-105"
+        style={{ backgroundColor: `${color}14`, color }}
+      >
+        <Icon className="h-5 w-5" />
+      </span>
+    </div>
+  );
+
+  const className =
+    "hover-lift animate-fade-up group block rounded-xl border border-border bg-white p-4 shadow-[var(--shadow-card)]";
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className={className}
+        style={{ animationDelay: `${delay}s` }}
+      >
+        {inner}
+      </Link>
+    );
+  }
+
+  return (
+    <div className={className} style={{ animationDelay: `${delay}s` }}>
+      {inner}
     </div>
   );
 }
@@ -127,15 +146,34 @@ function StatCard({
 export function DashboardView({ user }: { user: SessionUser }) {
   const [data, setData] = useState<DashboardData | null>(null);
   const [ready, setReady] = useState(false);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
-    fetch("/api/dashboard/stats")
-      .then((r) => r.json())
-      .then((d) => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const res = await fetch("/api/dashboard/stats");
+        const d = await res.json();
+        if (cancelled) return;
+        if (!res.ok) {
+          setLoadError(d.error || "Could not load dashboard stats");
+          setReady(true);
+          return;
+        }
         setData(d);
+        setLoadError("");
         setReady(true);
-      })
-      .catch(() => setReady(true));
+      } catch {
+        if (!cancelled) {
+          setLoadError("Could not load dashboard stats");
+          setReady(true);
+        }
+      }
+    }
+    void load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const maxDaily = Math.max(
@@ -202,15 +240,28 @@ export function DashboardView({ user }: { user: SessionUser }) {
               Ask AI Bot
             </Link>
             <Link
-              href="/reports"
+              href="/leads/saved"
               className="inline-flex h-10 items-center gap-2 rounded-xl border border-border bg-white px-3 text-[13px] font-medium text-ink-muted shadow-sm transition hover:bg-brand-50 hover:text-brand-700"
             >
-              <HiOutlinePhoto className="h-4 w-4" />
-              Client Report
+              <HiOutlineStar className="h-4 w-4" />
+              Saved Leads
             </Link>
           </div>
         </div>
       </div>
+
+      {!ready && (
+        <div className="mb-5 flex items-center gap-2 rounded-xl border border-border bg-white px-4 py-6 text-[13px] text-ink-muted shadow-[var(--shadow-card)]">
+          <HiOutlineArrowPath className="h-4 w-4 animate-spin text-brand-500" />
+          Loading Business Insights…
+        </div>
+      )}
+
+      {loadError && (
+        <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700">
+          {loadError}
+        </div>
+      )}
 
       <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         <StatCard
@@ -220,14 +271,16 @@ export function DashboardView({ user }: { user: SessionUser }) {
           icon={HiOutlineChartBar}
           color="#8e24aa"
           delay={0.02}
+          href="/leads"
         />
         <StatCard
           label="Credits Remaining"
           value={formatCredits(creditsAnim)}
-          hint="Live balance"
+          hint="View plan & balance"
           icon={HiOutlineWallet}
           color="#e6007e"
           delay={0.07}
+          href="/billing"
         />
         <StatCard
           label="Saved Leads"
@@ -236,6 +289,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
           icon={HiOutlineUserGroup}
           color="#c2187a"
           delay={0.12}
+          href="/leads/saved"
         />
         <StatCard
           label="Deals Won / Closed"
@@ -244,6 +298,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
           icon={HiOutlineTrophy}
           color="#7b1fa2"
           delay={0.17}
+          href="/leads/pipeline"
         />
         <StatCard
           label="Search History"
@@ -252,6 +307,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
           icon={HiOutlineMagnifyingGlass}
           color="#6b5a8e"
           delay={0.22}
+          href="/leads/search"
         />
         <StatCard
           label="Export History"
@@ -260,6 +316,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
           icon={HiOutlineArrowDownTray}
           color="#9b8fb5"
           delay={0.27}
+          href="/leads/search"
         />
       </div>
 
@@ -268,7 +325,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
           {
             href: "/leads/search",
             label: "Generate New Leads",
-            desc: "Industry · State · City · ZIP · Radius",
+            desc: "Preset or custom service & area",
             icon: HiOutlineSparkles,
           },
           {
@@ -280,14 +337,14 @@ export function DashboardView({ user }: { user: SessionUser }) {
           {
             href: "/leads/map",
             label: "Open Lead Map",
-            desc: "Geographic view of results",
+            desc: "Plot leads with Places coordinates",
             icon: HiOutlineMap,
           },
           {
-            href: "/reports",
-            label: "Share Client Report",
-            desc: "Branded report with custom logo",
-            icon: HiOutlineDocumentText,
+            href: "/leads/pipeline",
+            label: "Pipeline CRM",
+            desc: "Move deals New → Closed",
+            icon: HiOutlineViewColumns,
           },
         ].map((a) => {
           const Icon = a.icon;
@@ -435,6 +492,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
                     count: qs?.hotCount ?? 0,
                     color: "#e6007e",
                     icon: HiOutlineFire,
+                    href: "/leads/hot",
                   },
                   {
                     label: "Warm Leads",
@@ -442,6 +500,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
                     count: qs?.warmCount ?? 0,
                     color: "#8e24aa",
                     icon: HiOutlineArrowTrendingUp,
+                    href: "/leads",
                   },
                   {
                     label: "Nurture",
@@ -449,11 +508,12 @@ export function DashboardView({ user }: { user: SessionUser }) {
                     count: qs?.nurtureCount ?? 0,
                     color: "#9b95a5",
                     icon: HiOutlineArrowTrendingDown,
+                    href: "/leads",
                   },
                 ].map((q) => {
                   const Icon = q.icon;
                   return (
-                    <div key={q.label}>
+                    <Link key={q.label} href={q.href} className="block">
                       <div className="mb-1.5 flex items-center justify-between text-[13px]">
                         <span className="flex items-center gap-2 font-medium text-ink">
                           <Icon className="h-4 w-4" style={{ color: q.color }} />
@@ -475,7 +535,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
                           }}
                         />
                       </div>
-                    </div>
+                    </Link>
                   );
                 })}
               </div>
@@ -525,21 +585,23 @@ export function DashboardView({ user }: { user: SessionUser }) {
                     className="animate-fade-up px-5 py-3.5 transition hover:bg-brand-50/40"
                     style={{ animationDelay: `${i * 0.04}s` }}
                   >
-                    <p className="text-[13px] font-semibold text-ink">
-                      {s.industry}
-                      <span className="font-normal text-ink-muted">
-                        {" "}
-                        · {s.city ? `${s.city}, ` : ""}
-                        {s.state}
-                      </span>
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-ink-faint">
-                      {s.resultCount} leads · {s.radius} mi ·{" "}
-                      {new Date(s.createdAt).toLocaleDateString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </p>
+                    <Link href="/leads/search" className="block">
+                      <p className="text-[13px] font-semibold text-ink">
+                        {s.industry}
+                        <span className="font-normal text-ink-muted">
+                          {" "}
+                          · {s.city ? `${s.city}, ` : ""}
+                          {s.state}
+                        </span>
+                      </p>
+                      <p className="mt-0.5 text-[11px] text-ink-faint">
+                        {s.resultCount} leads · {s.radius} mi ·{" "}
+                        {new Date(s.createdAt).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </p>
+                    </Link>
                   </li>
                 ))}
                 {!data?.recentSearches?.length && (
@@ -619,7 +681,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
               className="mt-4 inline-flex h-9 items-center rounded-lg px-4 text-[13px] font-semibold text-white transition hover:opacity-95"
               style={{ background: LOGO_GRADIENT }}
             >
-              Plans & top-up
+              View plan & balance
             </Link>
           </div>
 

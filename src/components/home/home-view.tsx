@@ -14,31 +14,23 @@ import {
 } from "react-icons/hi2";
 import { INDUSTRIES, US_STATES } from "@/lib/constants";
 import {
+  CUSTOM_INDUSTRY_VALUE,
+  formatSearchLabel,
+  isPresetIndustry,
+  parseLeadQuery,
+  resolveSearchCriteria,
+} from "@/lib/search-criteria";
+import {
   LeadResultsHeader,
   LeadResultsList,
 } from "@/components/leads/lead-result-card";
+import {
+  loadHomeSearchCache,
+  saveHomeSearchCache,
+  type SearchSessionLead,
+} from "@/lib/client/search-session";
 
-type Lead = {
-  id: string;
-  businessName: string;
-  address: string | null;
-  phone?: string | null;
-  email?: string | null;
-  website?: string | null;
-  googleRating: number | null;
-  reviewCount: number | null;
-  leadScore: number;
-  qualityTier: string | null;
-  industry?: string | null;
-  serviceCategory?: string | null;
-  city: string | null;
-  state: string | null;
-  zip?: string | null;
-  outreachAngle?: string | null;
-  revenueRangeEstimate?: string | null;
-  yelpRating?: number | null;
-  googleMapsLink?: string | null;
-};
+type Lead = SearchSessionLead;
 
 type ChatMsg = {
   id: string;
@@ -54,53 +46,17 @@ const QUICK_PROMPTS = [
   "HVAC in Miami FL",
   "Plumbing in Phoenix AZ",
   "Solar in Dallas TX",
+  "Window tinting in Brooklyn NY",
   "Landscaping in Denver CO",
-  "Electrical in Atlanta GA",
 ];
-
-function parseLeadQuery(input: string): {
-  industry: string;
-  state: string;
-  city: string;
-} | null {
-  const text = input.trim();
-  if (!text) return null;
-  const lower = text.toLowerCase();
-
-  const industry =
-    INDUSTRIES.find((i) => lower.includes(i.toLowerCase())) ??
-    INDUSTRIES.find((i) =>
-      lower.split(/\s+/).some((w) => i.toLowerCase().startsWith(w))
-    );
-
-  let state = "";
-  for (const s of US_STATES) {
-    if (
-      new RegExp(`\\b${s.code}\\b`, "i").test(text) ||
-      lower.includes(s.name.toLowerCase())
-    ) {
-      state = s.code;
-      break;
-    }
-  }
-
-  let city = "";
-  const inMatch = text.match(/\bin\s+([A-Za-z.\s]+?)(?:,|\s+[A-Z]{2}\b|$)/i);
-  if (inMatch?.[1]) {
-    city = inMatch[1]
-      .replace(new RegExp(US_STATES.map((s) => s.name).join("|"), "ig"), "")
-      .replace(/\b[A-Z]{2}\b/g, "")
-      .trim()
-      .replace(/\s+/g, " ");
-  }
-
-  if (!industry || !state) return null;
-  return { industry, state, city };
-}
 
 export function HomeView({ userName }: { userName?: string | null }) {
   const [input, setInput] = useState("");
-  const [industry, setIndustry] = useState("");
+  const [selectedIndustry, setSelectedIndustry] = useState("");
+  const [industryMode, setIndustryMode] = useState<"preset" | "custom">("preset");
+  const [customIndustry, setCustomIndustry] = useState("");
+  const [locationMode, setLocationMode] = useState<"standard" | "custom">("standard");
+  const [customLocation, setCustomLocation] = useState("");
   const [state, setState] = useState("");
   const [city, setCity] = useState("");
   const [zip, setZip] = useState("");
@@ -108,6 +64,7 @@ export function HomeView({ userName }: { userName?: string | null }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [restoring, setRestoring] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [messages, setMessages] = useState<ChatMsg[]>([
     {
@@ -119,13 +76,158 @@ export function HomeView({ userName }: { userName?: string | null }) {
 
   useEffect(() => setMounted(true), []);
 
-  async function runSearch(params: {
-    industry: string;
-    state: string;
+  useEffect(() => {
+    let cancelled = false;
+
+    async function restoreSession() {
+      const cached = loadHomeSearchCache();
+      if (cached?.leads.length) {
+        if (cancelled) return;
+        setLeads(cached.leads);
+        if (isPresetIndustry(cached.industry)) {
+          setSelectedIndustry(cached.industry);
+          setIndustryMode("preset");
+        } else {
+          setCustomIndustry(cached.industry);
+          setIndustryMode("custom");
+        }
+        if (cached.customLocation) {
+          setLocationMode("custom");
+          setCustomLocation(cached.customLocation);
+        } else {
+          setLocationMode("standard");
+          setState(cached.state);
+          setCity(cached.city);
+        }
+        setZip(cached.zip);
+        setRadius(cached.radius);
+        if (cached.messages?.length) setMessages(cached.messages);
+        setRestoring(false);
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/leads/search/latest");
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        const found = (data.leads ?? []) as Lead[];
+        if (!found.length || cancelled) return;
+
+        const s = data.search;
+        const industryVal = s?.industry ?? "";
+        const customLoc =
+          s?.city && s?.state === "US" && !s?.zip ? s.city : "";
+        setLeads(found);
+        if (isPresetIndustry(industryVal)) {
+          setSelectedIndustry(industryVal);
+          setIndustryMode("preset");
+        } else {
+          setCustomIndustry(industryVal);
+          setIndustryMode("custom");
+        }
+        if (customLoc) {
+          setLocationMode("custom");
+          setCustomLocation(customLoc);
+        } else {
+          setLocationMode("standard");
+          if (s?.state) setState(s.state);
+          if (s?.city) setCity(s.city);
+        }
+        if (s?.zip) setZip(s.zip);
+        if (s?.radius) setRadius(String(s.radius));
+
+        const label = formatSearchLabel({
+          industry: industryVal,
+          state: s?.state ?? "",
+          city: customLoc ? undefined : s?.city,
+          customLocation: customLoc || undefined,
+        });
+        setMessages((m) => [
+          ...m,
+          {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            text: `Restored your last search — ${found.length} leads for ${label}.`,
+          },
+        ]);
+
+        saveHomeSearchCache({
+          searchId: s.id,
+          leads: found,
+          industry: industryVal,
+          state: s.state ?? "",
+          city: customLoc ? "" : (s.city ?? ""),
+          customLocation: customLoc,
+          zip: s.zip ?? "",
+          radius: String(s.radius ?? 25),
+        });
+      } finally {
+        if (!cancelled) setRestoring(false);
+      }
+    }
+
+    void restoreSession();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function persistSearch(
+    found: Lead[],
+    params: {
+      industry: string;
+      state: string;
+      city?: string;
+      zip?: string;
+      customLocation?: string;
+      radius?: number | string;
+    },
+    searchId?: string,
+    nextMessages?: ChatMsg[]
+  ) {
+    saveHomeSearchCache({
+      searchId,
+      leads: found,
+      industry: params.industry,
+      state: params.state,
+      city: params.city ?? "",
+      customLocation: params.customLocation ?? "",
+      zip: params.zip ?? "",
+      radius: String(params.radius ?? 25),
+      messages: nextMessages,
+    });
+  }
+
+  async function runSearch(raw: {
+    industry?: string;
+    customIndustry?: string;
+    state?: string;
     city?: string;
     zip?: string;
-    radius?: string;
+    customLocation?: string;
+    radius?: number | string;
   }) {
+    const resolved = resolveSearchCriteria({
+      industry:
+        raw.industry ??
+        (industryMode === "custom" ? CUSTOM_INDUSTRY_VALUE : selectedIndustry),
+      customIndustry: raw.customIndustry ?? customIndustry,
+      state: raw.state ?? (locationMode === "standard" ? state : undefined),
+      city: raw.city ?? city,
+      zip: raw.zip ?? zip,
+      customLocation: raw.customLocation ?? (locationMode === "custom" ? customLocation : undefined),
+      radius: raw.radius ?? radius,
+    });
+    if (!resolved.ok) {
+      setError(resolved.error);
+      setMessages((m) => [
+        ...m,
+        { id: crypto.randomUUID(), role: "assistant", text: resolved.error },
+      ]);
+      return;
+    }
+
+    const params = resolved.criteria;
     setLoading(true);
     setError("");
     setLeads([]);
@@ -133,13 +235,7 @@ export function HomeView({ userName }: { userName?: string | null }) {
     const res = await fetch("/api/leads/search", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        industry: params.industry,
-        state: params.state,
-        city: params.city || undefined,
-        zip: params.zip || undefined,
-        radius: Number(params.radius || 25),
-      }),
+      body: JSON.stringify(params),
     });
 
     const data = await res.json();
@@ -157,16 +253,18 @@ export function HomeView({ userName }: { userName?: string | null }) {
 
     const found = (data.leads ?? []) as Lead[];
     setLeads(found);
-    setMessages((m) => [
-      ...m,
-      {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        text: found.length
-          ? `Found ${found.length} verified leads for ${params.industry} in ${params.state}${params.city ? ` · ${params.city}` : ""}.`
-          : `No leads found for ${params.industry} in ${params.state}. Try another city or industry.`,
-      },
-    ]);
+    const assistantMsg = {
+      id: crypto.randomUUID(),
+      role: "assistant" as const,
+      text: found.length
+        ? `Found ${found.length} verified leads for ${formatSearchLabel(params)}.`
+        : `No leads found for ${formatSearchLabel(params)}. Try another city, service, or area.`,
+    };
+    setMessages((m) => {
+      const next = [...m, assistantMsg];
+      persistSearch(found, params, data.search?.id, next);
+      return next;
+    });
   }
 
   async function handleChatSubmit(e: React.FormEvent) {
@@ -187,30 +285,44 @@ export function HomeView({ userName }: { userName?: string | null }) {
         {
           id: crypto.randomUUID(),
           role: "assistant",
-          text: "I need an industry and state — try “Roofing in Austin TX” or fill the filters below.",
+          text: 'I need a service and location — try “Window tinting in Brooklyn NY” or use the filters below.',
         },
       ]);
       return;
     }
 
-    setIndustry(parsed.industry);
-    setState(parsed.state);
-    setCity(parsed.city);
-    await runSearch({ ...parsed, radius });
+    if (isPresetIndustry(parsed.industry)) {
+      setSelectedIndustry(parsed.industry);
+      setIndustryMode("preset");
+    } else {
+      setCustomIndustry(parsed.industry);
+      setIndustryMode("custom");
+    }
+    if (parsed.customLocation) {
+      setLocationMode("custom");
+      setCustomLocation(parsed.customLocation);
+    } else {
+      setLocationMode("standard");
+      setState(parsed.state);
+      setCity(parsed.city ?? "");
+    }
+    await runSearch(parsed);
   }
 
   async function handleFilterSearch(e: React.FormEvent) {
     e.preventDefault();
-    if (!industry || !state) {
-      setError("Select industry and state to search.");
-      return;
-    }
-    const label = `${industry} in ${city ? `${city}, ` : ""}${state}${zip ? ` · ${zip}` : ""} · ${radius} mi`;
+    const label = formatSearchLabel({
+      industry:
+        industryMode === "custom" ? customIndustry : selectedIndustry,
+      state,
+      city,
+      customLocation: locationMode === "custom" ? customLocation : undefined,
+    });
     setMessages((m) => [
       ...m,
-      { id: crypto.randomUUID(), role: "user", text: label },
+      { id: crypto.randomUUID(), role: "user", text: `${label} · ${radius} mi` },
     ]);
-    await runSearch({ industry, state, city, zip, radius });
+    await runSearch({});
   }
 
   return (
@@ -305,10 +417,22 @@ export function HomeView({ userName }: { userName?: string | null }) {
                         ]);
                         const parsed = parseLeadQuery(p);
                         if (parsed) {
-                          setIndustry(parsed.industry);
-                          setState(parsed.state);
-                          setCity(parsed.city);
-                          void runSearch({ ...parsed, radius });
+                          if (isPresetIndustry(parsed.industry)) {
+                            setSelectedIndustry(parsed.industry);
+                            setIndustryMode("preset");
+                          } else {
+                            setCustomIndustry(parsed.industry);
+                            setIndustryMode("custom");
+                          }
+                          if (parsed.customLocation) {
+                            setLocationMode("custom");
+                            setCustomLocation(parsed.customLocation);
+                          } else {
+                            setLocationMode("standard");
+                            setState(parsed.state);
+                            setCity(parsed.city ?? "");
+                          }
+                          void runSearch(parsed);
                         }
                       }}
                       className="rounded-full border border-border bg-white px-3.5 py-1.5 text-[12px] font-medium text-ink-muted shadow-[var(--shadow-soft)] transition hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700"
@@ -366,7 +490,7 @@ export function HomeView({ userName }: { userName?: string | null }) {
                   Filters & location
                 </h2>
                 <p className="text-[12px] text-ink-faint">
-                  Industry · State · City · ZIP · Radius
+                  Preset or custom service · state or custom area
                 </p>
               </div>
             </div>
@@ -382,68 +506,123 @@ export function HomeView({ userName }: { userName?: string | null }) {
             onSubmit={handleFilterSearch}
             className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
           >
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 sm:col-span-2 lg:col-span-3">
               <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">
-                Industry
+                Service / industry
+              </label>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <select
+                  value={
+                    industryMode === "custom"
+                      ? CUSTOM_INDUSTRY_VALUE
+                      : selectedIndustry
+                  }
+                  onChange={(e) => {
+                    if (e.target.value === CUSTOM_INDUSTRY_VALUE) {
+                      setIndustryMode("custom");
+                      return;
+                    }
+                    setIndustryMode("preset");
+                    setSelectedIndustry(e.target.value);
+                  }}
+                  required={industryMode === "preset"}
+                  className="saas-input"
+                >
+                  <option value="" disabled>
+                    Select industry
+                  </option>
+                  {INDUSTRIES.map((i) => (
+                    <option key={i} value={i}>
+                      {i}
+                    </option>
+                  ))}
+                  <option value={CUSTOM_INDUSTRY_VALUE}>Custom service…</option>
+                </select>
+                {industryMode === "custom" && (
+                  <input
+                    value={customIndustry}
+                    onChange={(e) => setCustomIndustry(e.target.value)}
+                    placeholder="e.g. Window tinting"
+                    required
+                    className="saas-input"
+                  />
+                )}
+              </div>
+            </div>
+            <div className="space-y-1.5 sm:col-span-2 lg:col-span-3">
+              <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">
+                Location mode
               </label>
               <select
-                value={industry}
-                onChange={(e) => setIndustry(e.target.value)}
-                required
+                value={locationMode}
+                onChange={(e) =>
+                  setLocationMode(e.target.value as "standard" | "custom")
+                }
                 className="saas-input"
               >
-                <option value="" disabled>
-                  Select industry
-                </option>
-                {INDUSTRIES.map((i) => (
-                  <option key={i} value={i}>
-                    {i}
-                  </option>
-                ))}
+                <option value="standard">State + city / ZIP</option>
+                <option value="custom">Custom area…</option>
               </select>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">
-                State
-              </label>
-              <select
-                value={state}
-                onChange={(e) => setState(e.target.value)}
-                required
-                className="saas-input"
-              >
-                <option value="" disabled>
-                  Select state
-                </option>
-                {US_STATES.map((s) => (
-                  <option key={s.code} value={s.code}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">
-                City
-              </label>
-              <input
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                placeholder="Austin"
-                className="saas-input"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">
-                ZIP code
-              </label>
-              <input
-                value={zip}
-                onChange={(e) => setZip(e.target.value)}
-                placeholder="78701"
-                className="saas-input"
-              />
-            </div>
+            {locationMode === "standard" ? (
+              <>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">
+                    State
+                  </label>
+                  <select
+                    value={state}
+                    onChange={(e) => setState(e.target.value)}
+                    required
+                    className="saas-input"
+                  >
+                    <option value="" disabled>
+                      Select state
+                    </option>
+                    {US_STATES.map((s) => (
+                      <option key={s.code} value={s.code}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">
+                    City
+                  </label>
+                  <input
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    placeholder="Austin"
+                    className="saas-input"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">
+                    ZIP code
+                  </label>
+                  <input
+                    value={zip}
+                    onChange={(e) => setZip(e.target.value)}
+                    placeholder="78701"
+                    className="saas-input"
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="space-y-1.5 sm:col-span-2 lg:col-span-3">
+                <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">
+                  Custom area
+                </label>
+                <input
+                  value={customLocation}
+                  onChange={(e) => setCustomLocation(e.target.value)}
+                  placeholder="e.g. Miami Beach FL, Greater Austin"
+                  required
+                  className="saas-input"
+                />
+              </div>
+            )}
             <div className="space-y-1.5">
               <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">
                 Radius
@@ -479,6 +658,13 @@ export function HomeView({ userName }: { userName?: string | null }) {
             </p>
           )}
         </div>
+
+        {restoring && leads.length === 0 && (
+          <div className="mt-6 animate-fade-up rounded-2xl border border-border/80 bg-white/90 p-5 text-center text-[13px] text-ink-muted">
+            <HiOutlineArrowPath className="mx-auto mb-2 h-5 w-5 animate-spin text-brand-500" />
+            Restoring your last search results…
+          </div>
+        )}
 
         {leads.length > 0 && (
           <div className="mt-6 animate-fade-up">

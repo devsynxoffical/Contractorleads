@@ -97,23 +97,37 @@ export async function GET() {
     qualitySplit.find((q) => q.qualityTier === "nurture")?._count ?? 0;
   const qualityTotal = hot + warm + nurture || 1;
 
-  const dailyLeads = await Promise.all(
-    Array.from({ length: 7 }).map(async (_, i) => {
-      const dayStart = addDays(weekStart, i);
-      const dayEnd = new Date(dayStart);
-      dayEnd.setHours(23, 59, 59, 999);
-      const count = await prisma.lead.count({
-        where: {
-          search: { userId: user.id },
-          createdAt: { gte: dayStart, lte: dayEnd },
-        },
-      });
-      return {
-        day: format(dayStart, "EEE"),
-        count,
-      };
-    })
-  );
+  const weekEnd = addDays(weekStart, 7);
+  const weekLeadDates = await prisma.lead.findMany({
+    where: {
+      search: { userId: user.id },
+      createdAt: { gte: weekStart, lt: weekEnd },
+    },
+    select: { createdAt: true },
+  });
+
+  const dailyLeads = Array.from({ length: 7 }).map((_, i) => {
+    const dayStart = addDays(weekStart, i);
+    const dayKey = format(dayStart, "yyyy-MM-dd");
+    const count = weekLeadDates.filter(
+      (l) => format(l.createdAt, "yyyy-MM-dd") === dayKey
+    ).length;
+    return {
+      day: format(dayStart, "EEE"),
+      count,
+    };
+  });
+
+  function exportLeadCount(raw: string | null): number {
+    if (!raw) return 0;
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed.filter(Boolean).length;
+    } catch {
+      // Legacy comma-separated storage
+    }
+    return raw.split(",").map((s) => s.trim()).filter(Boolean).length;
+  }
 
   return NextResponse.json({
     stats: {
@@ -131,7 +145,7 @@ export async function GET() {
     recentExports: recentExports.map((e) => ({
       id: e.id,
       format: e.format,
-      leadCount: e.leadIds ? e.leadIds.split(",").filter(Boolean).length : 0,
+      leadCount: exportLeadCount(e.leadIds),
       createdAt: e.createdAt,
     })),
     topIndustries: industryBreakdown.map((i) => ({

@@ -41,7 +41,7 @@ export default async function BillingPage() {
     <div className="page-pad">
       <PageHeader
         title="Plans & Billing"
-        description="Manage your subscription and credit balance."
+        description="View your current plan and credit balance. Stripe checkout for upgrades is coming soon."
       />
 
       <Card className="max-w-lg border-border shadow-[var(--shadow-card)]">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   HiOutlineArrowDownTray,
@@ -17,6 +17,11 @@ import { Input, Label, Select } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { INDUSTRIES, US_STATES } from "@/lib/constants";
 import {
+  CUSTOM_INDUSTRY_VALUE,
+  isPresetIndustry,
+  resolveSearchCriteria,
+} from "@/lib/search-criteria";
+import {
   PageHeader,
   SecondaryActionLink,
   LOGO_GRADIENT,
@@ -31,28 +36,13 @@ import {
   LeadResultsHeader,
   LeadResultsList,
 } from "@/components/leads/lead-result-card";
+import {
+  loadFinderSearchCache,
+  saveFinderSearchCache,
+  type SearchSessionLead,
+} from "@/lib/client/search-session";
 
-type Lead = {
-  id: string;
-  businessName: string;
-  address: string | null;
-  phone: string | null;
-  email?: string | null;
-  website?: string | null;
-  googleRating: number | null;
-  reviewCount: number | null;
-  leadScore: number;
-  qualityTier: string | null;
-  industry: string | null;
-  serviceCategory?: string | null;
-  state: string | null;
-  city: string | null;
-  zip?: string | null;
-  outreachAngle?: string | null;
-  revenueRangeEstimate?: string | null;
-  yelpRating?: number | null;
-  googleMapsLink?: string | null;
-};
+type Lead = SearchSessionLead & { phone: string | null; industry: string | null };
 
 const PIPELINE_STEPS = [
   {
@@ -116,19 +106,122 @@ export function LeadSearchForm() {
   const [formKey, setFormKey] = useState(0);
   const [preset, setPreset] = useState<{
     industry: string;
+    customIndustry?: string;
+    industryMode: "preset" | "custom";
+    locationMode: "standard" | "custom";
+    customLocation?: string;
     state: string;
     city: string;
     radius: string;
   } | null>(null);
+  const [selectedIndustry, setSelectedIndustry] = useState("");
+  const [industryMode, setIndustryMode] = useState<"preset" | "custom">("preset");
+  const [locationMode, setLocationMode] = useState<"standard" | "custom">("standard");
+  const [customIndustry, setCustomIndustry] = useState("");
+  const [customLocation, setCustomLocation] = useState("");
   const [stage, setStage] = useState(0);
+  const [restoring, setRestoring] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function restoreSession() {
+      const cached = loadFinderSearchCache();
+      if (cached?.leads.length) {
+        if (cancelled) return;
+        setLeads(cached.leads as Lead[]);
+        setSelected(new Set(cached.selectedLeadIds));
+        setPreset({
+          industry: cached.industry,
+          customIndustry: isPresetIndustry(cached.industry) ? "" : cached.industry,
+          industryMode: isPresetIndustry(cached.industry) ? "preset" : "custom",
+          locationMode: cached.customLocation ? "custom" : "standard",
+          customLocation: cached.customLocation ?? "",
+          state: cached.state,
+          city: cached.city,
+          radius: cached.radius,
+        });
+        setIndustryMode(isPresetIndustry(cached.industry) ? "preset" : "custom");
+        setSelectedIndustry(
+          isPresetIndustry(cached.industry) ? cached.industry : ""
+        );
+        setLocationMode(cached.customLocation ? "custom" : "standard");
+        setCustomIndustry(isPresetIndustry(cached.industry) ? "" : cached.industry);
+        setCustomLocation(cached.customLocation ?? "");
+        setFormKey((k) => k + 1);
+        setStage(4);
+        setRestoring(false);
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/leads/search/latest");
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        const found = (data.leads ?? []) as Lead[];
+        if (!found.length || cancelled) return;
+
+        const s = data.search;
+        const industry = s.industry ?? "";
+        const customLoc =
+          s.city && s.state === "US" && !s.zip ? s.city : "";
+        setLeads(found);
+        setSelected(new Set(found.map((l) => l.id)));
+        setPreset({
+          industry: isPresetIndustry(industry) ? industry : CUSTOM_INDUSTRY_VALUE,
+          customIndustry: isPresetIndustry(industry) ? "" : industry,
+          industryMode: isPresetIndustry(industry) ? "preset" : "custom",
+          locationMode: customLoc ? "custom" : "standard",
+          customLocation: customLoc,
+          state: s.state ?? "",
+          city: customLoc ? "" : (s.city ?? ""),
+          radius: String(s.radius ?? 25),
+        });
+        setIndustryMode(isPresetIndustry(industry) ? "preset" : "custom");
+        setSelectedIndustry(isPresetIndustry(industry) ? industry : "");
+        setLocationMode(customLoc ? "custom" : "standard");
+        setCustomIndustry(isPresetIndustry(industry) ? "" : industry);
+        setCustomLocation(customLoc);
+        setFormKey((k) => k + 1);
+        setStage(4);
+        saveFinderSearchCache({
+          searchId: s.id,
+          leads: found,
+          industry,
+          state: s.state ?? "",
+          city: customLoc ? "" : (s.city ?? ""),
+          customLocation: customLoc,
+          zip: s.zip ?? "",
+          radius: String(s.radius ?? 25),
+          selectedLeadIds: found.map((l) => l.id),
+        });
+      } finally {
+        if (!cancelled) setRestoring(false);
+      }
+    }
+
+    void restoreSession();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function runSearch(payload: {
     industry: string;
-    state: string;
+    customIndustry?: string;
+    state?: string;
     city?: string;
     zip?: string;
+    customLocation?: string;
     radius: string | number;
   }) {
+    const resolved = resolveSearchCriteria(payload);
+    if (!resolved.ok) {
+      setError(resolved.error);
+      return;
+    }
+
+    const criteria = resolved.criteria;
     setLoading(true);
     setError("");
     setLeads([]);
@@ -144,7 +237,7 @@ export function LeadSearchForm() {
       const res = await fetch("/api/leads/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(criteria),
       });
 
       const data = await res.json();
@@ -158,6 +251,17 @@ export function LeadSearchForm() {
       setLeads(data.leads);
       setSelected(new Set(data.leads.map((l: Lead) => l.id)));
       setStage(4);
+      saveFinderSearchCache({
+        searchId: data.search?.id,
+        leads: data.leads,
+        industry: criteria.industry,
+        state: criteria.state,
+        city: criteria.city ?? "",
+        customLocation: criteria.customLocation ?? "",
+        zip: criteria.zip ?? "",
+        radius: String(criteria.radius),
+        selectedLeadIds: data.leads.map((l: Lead) => l.id),
+      });
     } finally {
       timers.forEach(clearTimeout);
       setLoading(false);
@@ -168,17 +272,27 @@ export function LeadSearchForm() {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
     await runSearch({
-      industry: String(form.get("industry")),
-      state: String(form.get("state")),
-      city: String(form.get("city") || ""),
-      zip: String(form.get("zip") || ""),
+      industry:
+        industryMode === "custom" ? CUSTOM_INDUSTRY_VALUE : selectedIndustry,
+      customIndustry: customIndustry,
+      state: locationMode === "standard" ? String(form.get("state")) : undefined,
+      city: locationMode === "standard" ? String(form.get("city") || "") : undefined,
+      zip: locationMode === "standard" ? String(form.get("zip") || "") : undefined,
+      customLocation: locationMode === "custom" ? customLocation : undefined,
       radius: String(form.get("radius") || "25"),
     });
   }
 
   function applyQuick(q: (typeof QUICK_SEARCHES)[number]) {
+    setIndustryMode("preset");
+    setLocationMode("standard");
+    setCustomIndustry("");
+    setCustomLocation("");
+    setSelectedIndustry(q.industry);
     setPreset({
       industry: q.industry,
+      industryMode: "preset",
+      locationMode: "standard",
       state: q.state,
       city: q.city,
       radius: q.radius,
@@ -245,7 +359,7 @@ export function LeadSearchForm() {
               <SectionLabel>Search studio</SectionLabel>
               <CardTitle className="mt-1 text-base">Search criteria</CardTitle>
               <p className="mt-1 text-[13px] text-ink-muted">
-                Industry and state are required. City / ZIP sharpen the radius.
+                Pick a preset or enter a custom service and location.
               </p>
             </div>
             <span className="hidden rounded-lg bg-brand-50 px-2.5 py-1 text-[11px] font-semibold text-brand-600 sm:inline">
@@ -258,52 +372,103 @@ export function LeadSearchForm() {
               onSubmit={handleSearch}
               className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
             >
-              <div className="space-y-2">
-                <Label>Industry</Label>
-                <Select
-                  name="industry"
-                  required
-                  defaultValue={preset?.industry ?? ""}
-                >
-                  <option value="" disabled>
-                    Select industry
-                  </option>
-                  {INDUSTRIES.map((i) => (
-                    <option key={i} value={i}>
-                      {i}
+              <div className="space-y-2 sm:col-span-2 lg:col-span-3">
+                <Label>Service / industry</Label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Select
+                    value={
+                      industryMode === "custom"
+                        ? CUSTOM_INDUSTRY_VALUE
+                        : selectedIndustry
+                    }
+                    onChange={(e) => {
+                      if (e.target.value === CUSTOM_INDUSTRY_VALUE) {
+                        setIndustryMode("custom");
+                        return;
+                      }
+                      setIndustryMode("preset");
+                      setSelectedIndustry(e.target.value);
+                    }}
+                    required={industryMode === "preset"}
+                  >
+                    <option value="" disabled>
+                      Select industry
                     </option>
-                  ))}
+                    {INDUSTRIES.map((i) => (
+                      <option key={i} value={i}>
+                        {i}
+                      </option>
+                    ))}
+                    <option value={CUSTOM_INDUSTRY_VALUE}>Custom service…</option>
+                  </Select>
+                  {industryMode === "custom" && (
+                    <Input
+                      value={customIndustry}
+                      onChange={(e) => setCustomIndustry(e.target.value)}
+                      placeholder="e.g. Window tinting, Dog grooming"
+                      required
+                    />
+                  )}
+                </div>
+              </div>
+              <div className="space-y-2 sm:col-span-2 lg:col-span-3">
+                <Label>Location</Label>
+                <Select
+                  value={locationMode}
+                  onChange={(e) =>
+                    setLocationMode(e.target.value as "standard" | "custom")
+                  }
+                >
+                  <option value="standard">State + city / ZIP</option>
+                  <option value="custom">Custom area…</option>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>State</Label>
-                <Select
-                  name="state"
-                  required
-                  defaultValue={preset?.state ?? ""}
-                >
-                  <option value="" disabled>
-                    Select state
-                  </option>
-                  {US_STATES.map((s) => (
-                    <option key={s.code} value={s.code}>
-                      {s.name}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>City</Label>
-                <Input
-                  name="city"
-                  placeholder="Austin"
-                  defaultValue={preset?.city ?? ""}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>ZIP Code</Label>
-                <Input name="zip" placeholder="78701" />
-              </div>
+              {locationMode === "standard" ? (
+                <>
+                  <div className="space-y-2">
+                    <Label>State</Label>
+                    <Select
+                      name="state"
+                      required
+                      defaultValue={preset?.state ?? ""}
+                    >
+                      <option value="" disabled>
+                        Select state
+                      </option>
+                      {US_STATES.map((s) => (
+                        <option key={s.code} value={s.code}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>City</Label>
+                    <Input
+                      name="city"
+                      placeholder="Austin"
+                      defaultValue={preset?.city ?? ""}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>ZIP Code</Label>
+                    <Input name="zip" placeholder="78701" />
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-2 sm:col-span-2 lg:col-span-3">
+                  <Label>Custom area</Label>
+                  <Input
+                    value={customLocation}
+                    onChange={(e) => setCustomLocation(e.target.value)}
+                    placeholder="e.g. Miami Beach FL, Greater Austin, Brooklyn NY"
+                    required
+                  />
+                  <p className="text-[12px] text-ink-muted">
+                    Free-form place name — neighborhood, metro, or city + state.
+                  </p>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>Radius (miles)</Label>
                 <Select name="radius" defaultValue={preset?.radius ?? "25"}>
@@ -412,7 +577,7 @@ export function LeadSearchForm() {
         </div>
       </div>
 
-      {leads.length === 0 && !loading && (
+      {leads.length === 0 && !loading && !restoring && (
         <div className="mt-8">
           <SectionHeading
             title="Quick-start searches"
@@ -461,6 +626,13 @@ export function LeadSearchForm() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {restoring && leads.length === 0 && (
+        <div className="mt-8 rounded-2xl border border-border/80 bg-white/90 p-6 text-center text-[13px] text-ink-muted">
+          <HiOutlineArrowPath className="mx-auto mb-2 h-5 w-5 animate-spin text-brand-500" />
+          Restoring your last search results…
         </div>
       )}
 

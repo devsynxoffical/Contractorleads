@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { deductCredits, logActivity } from "@/lib/credits";
 import { CREDIT_COSTS } from "@/lib/constants";
 import { runLeadPipeline } from "@/lib/services/lead-pipeline";
+import { resolveSearchCriteria } from "@/lib/search-criteria";
 
 export async function POST(request: Request) {
   const user = await getSessionUser();
@@ -13,14 +14,13 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    const { industry, state, city, zip, radius } = body;
-
-    if (!industry || !state || !radius) {
-      return NextResponse.json(
-        { error: "Industry, state, and radius are required" },
-        { status: 400 }
-      );
+    const resolved = resolveSearchCriteria(body);
+    if (!resolved.ok) {
+      return NextResponse.json({ error: resolved.error }, { status: 400 });
     }
+
+    const { industry, state, city, zip, customLocation, radius } =
+      resolved.criteria;
 
     if (!process.env.GOOGLE_PLACES_API_KEY) {
       return NextResponse.json(
@@ -38,7 +38,8 @@ export async function POST(request: Request) {
       state,
       city,
       zip,
-      radius: Number(radius),
+      customLocation,
+      radius,
     });
 
     // Only charge when Places returned something usable or an empty-but-valid result

@@ -58,6 +58,7 @@ export async function searchGooglePlaces(params: {
   state: string;
   city?: string;
   zip?: string;
+  customLocation?: string;
   radius: number;
   limit?: number;
 }): Promise<PlaceResult[]> {
@@ -68,7 +69,7 @@ export async function searchGooglePlaces(params: {
     );
   }
 
-  const loc = locationQuery(params);
+  const loc = params.customLocation?.trim() || locationQuery(params);
   const query = `${industryQuery(params.industry)} in ${loc || params.state}`;
 
   const searchUrl = new URL(

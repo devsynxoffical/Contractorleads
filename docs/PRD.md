@@ -27,7 +27,7 @@ Policy: **verified or blank** — never fabricate.
 |------|--------|
 | User auth (email/password), JWT | Done |
 | Onboarding + dashboard banner | Done |
-| Dashboard Business Insights | Done (Quick Lead Search added) |
+| Dashboard Business Insights | Done (stats, Quick Search, pipeline, map) |
 | Lead Finder + Places/Yelp/LinkedIn | Partial (needs live API keys) |
 | Houzz / Nextdoor enrichment hooks | Done (optional endpoints) |
 | Lead detail socials (incl. Houzz) | Done |

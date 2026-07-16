@@ -67,9 +67,15 @@ model Lead {
   houzzRating               Float?
   houzzReviews              Int?
   linkedinUrl               String?
+  linkedinCompanyUrl        String?
+  linkedinOwnerUrl          String?
   linkedinConfidenceScore   Float?
+  linkedinOwnerConfidenceScore Float?
   linkedinType              String   @default("none")
   youtube                   String?
+  facebookAdsData           String?
+  facebookAdsCheckedAt      DateTime?
+  socialEnrichedAt          DateTime?
   verificationStatus        String   @default("verified")
   industry                  String?
   state                     String?

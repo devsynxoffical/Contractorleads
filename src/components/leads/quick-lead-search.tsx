@@ -14,6 +14,13 @@ import {
 } from "react-icons/hi2";
 import { Badge } from "@/components/ui/badge";
 import { INDUSTRIES, US_STATES } from "@/lib/constants";
+import {
+  CUSTOM_INDUSTRY_VALUE,
+  formatSearchLabel,
+  isPresetIndustry,
+  parseLeadQuery,
+  resolveSearchCriteria,
+} from "@/lib/search-criteria";
 
 type Lead = {
   id: string;
@@ -39,55 +46,18 @@ const LOGO_GRADIENT =
 const QUICK_PROMPTS = [
   "Roofing in Austin TX",
   "HVAC contractors in Miami FL",
+  "Window tinting in Brooklyn NY",
   "Plumbing in Phoenix AZ",
-  "Solar companies in Dallas TX",
 ];
-
-function parseLeadQuery(input: string): {
-  industry: string;
-  state: string;
-  city: string;
-} | null {
-  const text = input.trim();
-  if (!text) return null;
-
-  const lower = text.toLowerCase();
-
-  const industry =
-    INDUSTRIES.find((i) => lower.includes(i.toLowerCase())) ??
-    INDUSTRIES.find((i) =>
-      lower.split(/\s+/).some((w) => i.toLowerCase().startsWith(w))
-    );
-
-  let state = "";
-  for (const s of US_STATES) {
-    if (
-      new RegExp(`\\b${s.code}\\b`, "i").test(text) ||
-      lower.includes(s.name.toLowerCase())
-    ) {
-      state = s.code;
-      break;
-    }
-  }
-
-  let city = "";
-  const inMatch = text.match(/\bin\s+([A-Za-z.\s]+?)(?:,|\s+[A-Z]{2}\b|$)/i);
-  if (inMatch?.[1]) {
-    city = inMatch[1]
-      .replace(new RegExp(US_STATES.map((s) => s.name).join("|"), "ig"), "")
-      .replace(/\b[A-Z]{2}\b/g, "")
-      .trim()
-      .replace(/\s+/g, " ");
-  }
-
-  if (!industry || !state) return null;
-  return { industry, state, city };
-}
 
 export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
   const [open, setOpen] = useState(embedded);
   const [input, setInput] = useState("");
-  const [industry, setIndustry] = useState<string>(INDUSTRIES[0]);
+  const [selectedIndustry, setSelectedIndustry] = useState<string>(INDUSTRIES[0]);
+  const [industryMode, setIndustryMode] = useState<"preset" | "custom">("preset");
+  const [customIndustry, setCustomIndustry] = useState("");
+  const [locationMode, setLocationMode] = useState<"standard" | "custom">("standard");
+  const [customLocation, setCustomLocation] = useState("");
   const [state, setState] = useState("TX");
   const [city, setCity] = useState("");
   const [loading, setLoading] = useState(false);
@@ -97,15 +67,40 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
     {
       id: "welcome",
       role: "assistant",
-      text: "Tell me what leads you need — e.g. “Roofing in Austin TX” — or use the filters below.",
+      text: "Tell me what leads you need — e.g. “Window tinting in Brooklyn NY” — or use the filters below.",
     },
   ]);
 
-  async function runSearch(params: {
-    industry: string;
-    state: string;
+  async function runSearch(raw: {
+    industry?: string;
+    customIndustry?: string;
+    state?: string;
     city?: string;
+    customLocation?: string;
   }) {
+    const resolved = resolveSearchCriteria({
+      industry:
+        raw.industry ??
+        (industryMode === "custom" ? CUSTOM_INDUSTRY_VALUE : selectedIndustry),
+      customIndustry: raw.customIndustry ?? customIndustry,
+      state: raw.state ?? (locationMode === "standard" ? state : undefined),
+      city: raw.city ?? city,
+      customLocation:
+        raw.customLocation ??
+        (locationMode === "custom" ? customLocation : undefined),
+      radius: 25,
+    });
+
+    if (!resolved.ok) {
+      setError(resolved.error);
+      setMessages((m) => [
+        ...m,
+        { id: crypto.randomUUID(), role: "assistant", text: resolved.error },
+      ]);
+      return;
+    }
+
+    const params = resolved.criteria;
     setLoading(true);
     setError("");
     setLeads([]);
@@ -113,12 +108,7 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
     const res = await fetch("/api/leads/search", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        industry: params.industry,
-        state: params.state,
-        city: params.city || undefined,
-        radius: 25,
-      }),
+      body: JSON.stringify(params),
     });
 
     const data = await res.json();
@@ -142,10 +132,28 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
         id: crypto.randomUUID(),
         role: "assistant",
         text: found.length
-          ? `Found ${found.length} verified leads for ${params.industry} in ${params.state}${params.city ? ` · ${params.city}` : ""}.`
-          : `No leads found for ${params.industry} in ${params.state}. Try another city or industry.`,
+          ? `Found ${found.length} verified leads for ${formatSearchLabel(params)}.`
+          : `No leads found for ${formatSearchLabel(params)}. Try another service or area.`,
       },
     ]);
+  }
+
+  function applyParsed(parsed: NonNullable<ReturnType<typeof parseLeadQuery>>) {
+    if (isPresetIndustry(parsed.industry)) {
+      setSelectedIndustry(parsed.industry);
+      setIndustryMode("preset");
+    } else {
+      setCustomIndustry(parsed.industry);
+      setIndustryMode("custom");
+    }
+    if (parsed.customLocation) {
+      setLocationMode("custom");
+      setCustomLocation(parsed.customLocation);
+    } else {
+      setLocationMode("standard");
+      setState(parsed.state);
+      setCity(parsed.city ?? "");
+    }
   }
 
   async function handleChatSubmit(e: React.FormEvent) {
@@ -166,26 +174,30 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
         {
           id: crypto.randomUUID(),
           role: "assistant",
-          text: "I need an industry and state — try “Roofing in Austin TX” or fill the filters and hit Search.",
+          text: 'I need a service and location — try “Window tinting in Brooklyn NY” or use the filters.',
         },
       ]);
       return;
     }
 
-    setIndustry(parsed.industry);
-    setState(parsed.state);
-    setCity(parsed.city);
+    applyParsed(parsed);
     await runSearch(parsed);
   }
 
   async function handleFilterSearch(e: React.FormEvent) {
     e.preventDefault();
-    const label = `${industry} in ${city ? `${city}, ` : ""}${state}`;
+    const label = formatSearchLabel({
+      industry:
+        industryMode === "custom" ? customIndustry : selectedIndustry,
+      state,
+      city,
+      customLocation: locationMode === "custom" ? customLocation : undefined,
+    });
     setMessages((m) => [
       ...m,
       { id: crypto.randomUUID(), role: "user", text: label },
     ]);
-    await runSearch({ industry, state, city });
+    await runSearch({});
   }
 
   const panel = (
@@ -207,7 +219,7 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
           <div>
             <p className="text-sm font-semibold text-ink">Search Leads</p>
             <p className="text-[11px] text-ink-faint">
-              Chat or filters — search without leaving the dashboard
+              Chat or filters — preset or custom service & area
             </p>
           </div>
         </div>
@@ -256,16 +268,13 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
                 type="button"
                 disabled={loading}
                 onClick={() => {
-                  setInput(p);
                   setMessages((m) => [
                     ...m,
                     { id: crypto.randomUUID(), role: "user", text: p },
                   ]);
                   const parsed = parseLeadQuery(p);
                   if (parsed) {
-                    setIndustry(parsed.industry);
-                    setState(parsed.state);
-                    setCity(parsed.city);
+                    applyParsed(parsed);
                     void runSearch(parsed);
                   }
                 }}
@@ -340,47 +349,104 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
       </div>
 
       <div className="border-t border-border bg-[#faf8fb] px-4 py-3 sm:px-5">
-        <form
-          onSubmit={handleFilterSearch}
-          className="mb-3 grid gap-2 sm:grid-cols-4"
-        >
-          <select
-            value={industry}
-            onChange={(e) => setIndustry(e.target.value)}
-            className="h-9 rounded-lg border border-border bg-white px-2 text-[12px] text-ink outline-none focus:border-brand-400"
-          >
-            {INDUSTRIES.map((i) => (
-              <option key={i} value={i}>
-                {i}
-              </option>
-            ))}
-          </select>
-          <select
-            value={state}
-            onChange={(e) => setState(e.target.value)}
-            className="h-9 rounded-lg border border-border bg-white px-2 text-[12px] text-ink outline-none focus:border-brand-400"
-          >
-            {US_STATES.map((s) => (
-              <option key={s.code} value={s.code}>
-                {s.code} — {s.name}
-              </option>
-            ))}
-          </select>
-          <input
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-            placeholder="City (optional)"
-            className="h-9 rounded-lg border border-border bg-white px-2 text-[12px] text-ink outline-none placeholder:text-ink-faint focus:border-brand-400"
-          />
-          <button
-            type="submit"
-            disabled={loading}
-            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg text-[12px] font-semibold text-white transition hover:opacity-95 disabled:opacity-60"
-            style={{ background: LOGO_GRADIENT }}
-          >
-            <HiOutlineMagnifyingGlass className="h-3.5 w-3.5" />
-            Search
-          </button>
+        <form onSubmit={handleFilterSearch} className="mb-3 space-y-2">
+          <div className="grid gap-2 sm:grid-cols-2">
+            <select
+              value={
+                industryMode === "custom"
+                  ? CUSTOM_INDUSTRY_VALUE
+                  : selectedIndustry
+              }
+              onChange={(e) => {
+                if (e.target.value === CUSTOM_INDUSTRY_VALUE) {
+                  setIndustryMode("custom");
+                  return;
+                }
+                setIndustryMode("preset");
+                setSelectedIndustry(e.target.value);
+              }}
+              className="h-9 rounded-lg border border-border bg-white px-2 text-[12px] text-ink outline-none focus:border-brand-400"
+            >
+              {INDUSTRIES.map((i) => (
+                <option key={i} value={i}>
+                  {i}
+                </option>
+              ))}
+              <option value={CUSTOM_INDUSTRY_VALUE}>Custom service…</option>
+            </select>
+            {industryMode === "custom" ? (
+              <input
+                value={customIndustry}
+                onChange={(e) => setCustomIndustry(e.target.value)}
+                placeholder="Custom service"
+                required
+                className="h-9 rounded-lg border border-border bg-white px-2 text-[12px] text-ink outline-none focus:border-brand-400"
+              />
+            ) : (
+              <select
+                value={locationMode}
+                onChange={(e) =>
+                  setLocationMode(e.target.value as "standard" | "custom")
+                }
+                className="h-9 rounded-lg border border-border bg-white px-2 text-[12px] text-ink outline-none focus:border-brand-400"
+              >
+                <option value="standard">State + city</option>
+                <option value="custom">Custom area…</option>
+              </select>
+            )}
+          </div>
+          <div className="grid gap-2 sm:grid-cols-4">
+            {industryMode === "custom" && (
+              <select
+                value={locationMode}
+                onChange={(e) =>
+                  setLocationMode(e.target.value as "standard" | "custom")
+                }
+                className="h-9 rounded-lg border border-border bg-white px-2 text-[12px] text-ink outline-none focus:border-brand-400 sm:col-span-4"
+              >
+                <option value="standard">State + city</option>
+                <option value="custom">Custom area…</option>
+              </select>
+            )}
+            {locationMode === "standard" ? (
+              <>
+                <select
+                  value={state}
+                  onChange={(e) => setState(e.target.value)}
+                  className="h-9 rounded-lg border border-border bg-white px-2 text-[12px] text-ink outline-none focus:border-brand-400 sm:col-span-2"
+                >
+                  {US_STATES.map((s) => (
+                    <option key={s.code} value={s.code}>
+                      {s.code} — {s.name}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder="City (optional)"
+                  className="h-9 rounded-lg border border-border bg-white px-2 text-[12px] text-ink outline-none focus:border-brand-400 sm:col-span-2"
+                />
+              </>
+            ) : (
+              <input
+                value={customLocation}
+                onChange={(e) => setCustomLocation(e.target.value)}
+                placeholder="Custom area e.g. Miami Beach FL"
+                required
+                className="h-9 rounded-lg border border-border bg-white px-2 text-[12px] text-ink outline-none focus:border-brand-400 sm:col-span-3"
+              />
+            )}
+            <button
+              type="submit"
+              disabled={loading}
+              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg text-[12px] font-semibold text-white transition hover:opacity-95 disabled:opacity-60 sm:col-span-1"
+              style={{ background: LOGO_GRADIENT }}
+            >
+              <HiOutlineMagnifyingGlass className="h-3.5 w-3.5" />
+              Search
+            </button>
+          </div>
         </form>
 
         <form onSubmit={handleChatSubmit} className="flex gap-2">
@@ -389,7 +455,7 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder='Chat: "HVAC in Miami FL"'
+              placeholder='Chat: "Window tinting in Brooklyn NY"'
               disabled={loading}
               className="h-10 w-full rounded-xl border border-border bg-white pl-9 pr-3 text-[13px] text-ink outline-none placeholder:text-ink-faint focus:border-brand-400"
             />

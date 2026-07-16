@@ -12,6 +12,7 @@ export type SearchParams = {
   state: string;
   city?: string;
   zip?: string;
+  customLocation?: string;
   radius: number;
 };
 
@@ -35,9 +36,9 @@ async function withTimeout<T>(
 }
 
 export async function runLeadPipeline(params: SearchParams) {
-  const location = [params.city, params.state, params.zip]
-    .filter(Boolean)
-    .join(", ");
+  const location =
+    params.customLocation?.trim() ||
+    [params.city, params.state, params.zip].filter(Boolean).join(", ");
 
   const search = await prisma.search.create({
     data: {
@@ -55,6 +56,7 @@ export async function runLeadPipeline(params: SearchParams) {
     state: params.state,
     city: params.city,
     zip: params.zip,
+    customLocation: params.customLocation,
     radius: params.radius,
     limit: 8,
   });
@@ -72,7 +74,7 @@ export async function runLeadPipeline(params: SearchParams) {
       matchYelpBusiness(place.name, location),
       withTimeout(matchHouzzBusiness(place.name, location), 8000, null),
       withTimeout(matchNextdoorBusiness(place.name, location), 5000, null),
-      resolveLinkedIn(place.name, location, params.industry),
+      resolveLinkedIn(place.name, location, params.industry, undefined, website),
       qualifyLead(place, params.industry, Boolean(website)),
     ]);
 
@@ -103,7 +105,10 @@ export async function runLeadPipeline(params: SearchParams) {
         houzzReviews: houzz?.reviewCount ?? null,
         nextdoor: nextdoor?.url ?? null,
         linkedinUrl: linkedin.url,
+        linkedinCompanyUrl: linkedin.companyUrl,
+        linkedinOwnerUrl: linkedin.ownerUrl,
         linkedinConfidenceScore: linkedin.confidence || null,
+        linkedinOwnerConfidenceScore: linkedin.ownerConfidence || null,
         linkedinType: linkedin.type,
         industry: params.industry,
         state: params.state,
