@@ -7,6 +7,7 @@ import {
   HiOutlineGlobeAlt,
   HiOutlineMapPin,
   HiOutlinePhone,
+  HiOutlineUser,
   HiStar,
 } from "react-icons/hi2";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,10 @@ import { cn } from "@/lib/utils";
 export type LeadResult = {
   id: string;
   businessName: string;
+  ownerName?: string | null;
+  ownerTitle?: string | null;
+  teamMembersJson?: string | null;
+  peopleEnrichedAt?: string | Date | null;
   address?: string | null;
   phone?: string | null;
   email?: string | null;
@@ -51,7 +56,10 @@ function ScoreRing({ score, id }: { score: number; id: string }) {
   const gradId = `scoreGrad-${id}`;
   return (
     <div className="relative flex h-14 w-14 shrink-0 items-center justify-center">
-      <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 36 36">
+      <svg
+        className="absolute inset-0 h-full w-full -rotate-90"
+        viewBox="0 0 36 36"
+      >
         <circle
           cx="18"
           cy="18"
@@ -97,6 +105,16 @@ export function LeadResultCard({
     "Location pending";
 
   const initial = lead.businessName.charAt(0).toUpperCase();
+  const teamCount = (() => {
+    if (!lead.teamMembersJson) return 0;
+    try {
+      const team = JSON.parse(lead.teamMembersJson);
+      return Array.isArray(team) ? team.length : 0;
+    } catch {
+      return 0;
+    }
+  })();
+  const hasPublicPeople = Boolean(lead.ownerName || teamCount);
 
   return (
     <article
@@ -122,6 +140,14 @@ export function LeadResultCard({
                   {lead.qualityTier ?? "nurture"}
                 </Badge>
                 <Badge variant="verified">AI verified</Badge>
+                {hasPublicPeople && (
+                  <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-100">
+                    <HiOutlineUser className="h-3 w-3" />
+                    {lead.ownerName
+                      ? "Decision maker found"
+                      : `${teamCount} team member${teamCount === 1 ? "" : "s"}`}
+                  </span>
+                )}
               </div>
               <p className="mt-1.5 flex items-start gap-1.5 text-[13px] text-ink-muted">
                 <HiOutlineMapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-500" />
@@ -155,7 +181,19 @@ export function LeadResultCard({
             )}
           </div>
 
-          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <div className="flex items-center gap-2 rounded-xl bg-[#faf8fc] px-3 py-2 text-[12px] text-ink-muted">
+              <HiOutlineUser className="h-3.5 w-3.5 shrink-0 text-brand-500" />
+              <span className="truncate">
+                {lead.ownerName
+                  ? `${lead.ownerName}${lead.ownerTitle ? ` · ${lead.ownerTitle}` : ""}`
+                  : teamCount
+                    ? `${teamCount} public team member${teamCount === 1 ? "" : "s"}`
+                    : lead.peopleEnrichedAt
+                      ? "No public owner found"
+                      : "Owner not checked"}
+              </span>
+            </div>
             <div className="flex items-center gap-2 rounded-xl bg-[#faf8fc] px-3 py-2 text-[12px] text-ink-muted">
               <HiOutlinePhone className="h-3.5 w-3.5 shrink-0 text-brand-500" />
               <span className="truncate">{lead.phone || "Phone N/A"}</span>
@@ -239,7 +277,7 @@ export function LeadResultsHeader({
     <div
       className={cn(
         "mb-4 flex flex-col gap-3 rounded-2xl border border-border/80 bg-white/90 p-4 shadow-[var(--shadow-card)] sm:flex-row sm:items-center sm:justify-between sm:p-5",
-        className
+        className,
       )}
     >
       <div>
@@ -270,11 +308,7 @@ export function LeadResultsHeader({
   );
 }
 
-export function LeadResultsList({
-  leads,
-}: {
-  leads: LeadResult[];
-}) {
+export function LeadResultsList({ leads }: { leads: LeadResult[] }) {
   if (!leads.length) return null;
   return (
     <div className="space-y-3">

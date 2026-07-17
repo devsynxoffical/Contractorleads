@@ -14,6 +14,7 @@ import {
   HiOutlineMegaphone,
   HiOutlinePhone,
   HiOutlineUser,
+  HiOutlineUserGroup,
   HiStar,
 } from "react-icons/hi2";
 import { FaFacebook, FaInstagram, FaLinkedin } from "react-icons/fa";
@@ -173,13 +174,7 @@ function SocialButton({
   );
 }
 
-function PlatformTag({
-  href,
-  label,
-}: {
-  href?: string | null;
-  label: string;
-}) {
+function PlatformTag({ href, label }: { href?: string | null; label: string }) {
   if (!href) {
     return (
       <span className="rounded-lg border border-dashed border-border px-2.5 py-1 text-[11px] text-ink-faint">
@@ -207,7 +202,9 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
   const [findingLinkedin, setFindingLinkedin] = useState(false);
   const [checkingAds, setCheckingAds] = useState(false);
   const [verifying, setVerifying] = useState(false);
-  const [verificationScore, setVerificationScore] = useState<number | null>(null);
+  const [verificationScore, setVerificationScore] = useState<number | null>(
+    null,
+  );
   const [adsResult, setAdsResult] = useState<FacebookAdsResult | null>(null);
   const [socialMessage, setSocialMessage] = useState<string | null>(null);
 
@@ -288,7 +285,7 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
       setSocialMessage(
         found.length
           ? `Found: ${found.join(", ")}`
-          : "No new profiles found. Add API keys in .env for LinkedIn & Meta."
+          : "No new profiles found. Add API keys in .env for LinkedIn & Meta.",
       );
     } catch (e) {
       setSocialMessage(e instanceof Error ? e.message : "Fetch failed");
@@ -316,7 +313,7 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
 
       if (foundUrl) {
         setSocialMessage(
-          `LinkedIn company found (${data.linkedin.sourceLabel ?? "verified"}). Opening…`
+          `LinkedIn company found (${data.linkedin.sourceLabel ?? "verified"}). Opening…`,
         );
         // Open after paint so the lead page stays stable; no noreferrer (LinkedIn first-load bug)
         window.setTimeout(() => {
@@ -324,7 +321,7 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
         }, 150);
       } else {
         setSocialMessage(
-          "No verified LinkedIn company page found automatically. Use Search on LinkedIn below."
+          "No verified LinkedIn company page found automatically. Use Search on LinkedIn below.",
         );
       }
     } catch (e) {
@@ -360,7 +357,9 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
   async function reVerify() {
     setVerifying(true);
     try {
-      const res = await fetch(`/api/leads/${leadId}/verify`, { method: "POST" });
+      const res = await fetch(`/api/leads/${leadId}/verify`, {
+        method: "POST",
+      });
       const data = await res.json();
       setVerificationScore(data.verificationScore ?? null);
     } finally {
@@ -384,6 +383,12 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
   const linkedinOwner =
     lead.linkedinOwnerUrl && (lead.linkedinOwnerConfidenceScore ?? 0) >= 95;
   const teamMembers = parseTeamMembers(lead.teamMembersJson);
+  const additionalTeamMembers = teamMembers.filter(
+    (member) =>
+      member.name.trim().toLowerCase() !== lead.ownerName?.trim().toLowerCase(),
+  );
+  const publicPeopleCount =
+    additionalTeamMembers.length + (lead.ownerName ? 1 : 0);
   const tier =
     lead.qualityTier === "hot"
       ? "hot"
@@ -531,6 +536,16 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
                   <p className="truncate font-medium text-ink">
                     {lead.email ?? "Not available"}
                   </p>
+                  {lead.emailSourceUrl && (
+                    <a
+                      href={lead.emailSourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] font-medium text-brand-600 hover:underline"
+                    >
+                      View public source
+                    </a>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-3 rounded-xl border border-border bg-[#faf8fc] px-3.5 py-3 text-sm">
@@ -542,8 +557,8 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
                     Star rating
                   </p>
                   <p className="truncate font-medium text-ink">
-                    {lead.googleRating?.toFixed(1) ?? "—"} ({lead.reviewCount ?? 0}{" "}
-                    reviews)
+                    {lead.googleRating?.toFixed(1) ?? "—"} (
+                    {lead.reviewCount ?? 0} reviews)
                   </p>
                 </div>
               </div>
@@ -581,50 +596,16 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Public owner & team</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {teamMembers.length > 0 ? (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {teamMembers.map((member) => (
-                    <a
-                      key={`${member.name}-${member.role}`}
-                      href={member.sourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-start gap-3 rounded-xl border border-border bg-[#faf8fc] px-3.5 py-3 transition hover:border-brand-200"
-                    >
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-brand-600 shadow-sm">
-                        <HiOutlineUser className="h-4 w-4" />
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-semibold text-ink">
-                          {member.name}
-                        </span>
-                        <span className="block truncate text-[12px] text-ink-muted">
-                          {member.role} · {member.confidence}% confidence
-                        </span>
-                        <span className="text-[11px] font-medium text-brand-600">
-                          Public website source ↗
-                        </span>
-                      </span>
-                    </a>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm leading-relaxed text-ink-muted">
-                  No verified team members found yet. Use <strong>Enrich details</strong>{" "}
-                  below to scan the business website, LinkedIn, Yelp, Houzz, and
-                  Nextdoor. Results stay blank when no public source confirms them.
+            <CardHeader className="flex flex-row items-start justify-between gap-3">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <HiOutlineUserGroup className="h-5 w-5 text-brand-600" />
+                  Public decision makers
+                </CardTitle>
+                <p className="mt-1 text-[12px] text-ink-muted">
+                  Verified from pages published by this business.
                 </p>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between gap-3">
-              <CardTitle>Social, people & review enrichment</CardTitle>
+              </div>
               <Button
                 size="sm"
                 variant="secondary"
@@ -634,8 +615,109 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
                 <HiOutlineArrowPath
                   className={`h-4 w-4 ${fetchingSocial ? "animate-spin" : ""}`}
                 />
-                {fetchingSocial ? "Enriching…" : "Enrich details"}
+                {fetchingSocial ? "Refreshing…" : "Refresh public data"}
               </Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                <span
+                  className={`rounded-full px-2.5 py-1 font-semibold ${
+                    publicPeopleCount
+                      ? "bg-emerald-50 text-emerald-700"
+                      : "bg-amber-50 text-amber-800"
+                  }`}
+                >
+                  {publicPeopleCount
+                    ? `${publicPeopleCount} public contact${publicPeopleCount === 1 ? "" : "s"} found`
+                    : "No public people confirmed"}
+                </span>
+                {lead.peopleEnrichedAt && (
+                  <span className="text-ink-faint">
+                    Checked {new Date(lead.peopleEnrichedAt).toLocaleString()}
+                  </span>
+                )}
+              </div>
+
+              {lead.ownerName && (
+                <a
+                  href={lead.ownerSourceUrl ?? undefined}
+                  target={lead.ownerSourceUrl ? "_blank" : undefined}
+                  rel={lead.ownerSourceUrl ? "noopener noreferrer" : undefined}
+                  className="flex items-start gap-4 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/90 to-white p-4 transition hover:border-brand-200"
+                >
+                  <span
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-base font-bold text-white shadow-sm"
+                    style={{ background: LOGO_GRADIENT }}
+                  >
+                    {lead.ownerName.charAt(0).toUpperCase()}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-600">
+                      Primary decision maker
+                    </span>
+                    <span className="mt-0.5 block truncate text-base font-semibold text-ink">
+                      {lead.ownerName}
+                    </span>
+                    <span className="block text-[12px] text-ink-muted">
+                      {lead.ownerTitle || "Owner / leadership"}
+                      {lead.ownerConfidence
+                        ? ` · ${lead.ownerConfidence}% confidence`
+                        : ""}
+                    </span>
+                    {lead.ownerSourceUrl && (
+                      <span className="mt-1 block text-[11px] font-medium text-brand-600">
+                        Open public source ↗
+                      </span>
+                    )}
+                  </span>
+                </a>
+              )}
+
+              {additionalTeamMembers.length > 0 ? (
+                <div>
+                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+                    Team members
+                  </p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {additionalTeamMembers.map((member) => (
+                      <a
+                        key={`${member.name}-${member.role}`}
+                        href={member.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-start gap-3 rounded-xl border border-border bg-[#faf8fc] px-3.5 py-3 transition hover:border-brand-200"
+                      >
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-brand-600 shadow-sm">
+                          <HiOutlineUser className="h-4 w-4" />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-semibold text-ink">
+                            {member.name}
+                          </span>
+                          <span className="block truncate text-[12px] text-ink-muted">
+                            {member.role} · {member.confidence}% confidence
+                          </span>
+                          <span className="text-[11px] font-medium text-brand-600">
+                            Public website source ↗
+                          </span>
+                        </span>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ) : !lead.ownerName ? (
+                <p className="text-sm leading-relaxed text-ink-muted">
+                  No owner or team member was confirmed from a public source.
+                  Refresh to scan the business website and connected public
+                  directories again.
+                </p>
+              ) : null}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Online presence & public directories</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {socialMessage && (
@@ -645,7 +727,8 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
               )}
               {lead.socialEnrichedAt && (
                 <p className="text-[11px] text-ink-faint">
-                  Last fetched {new Date(lead.socialEnrichedAt).toLocaleString()}
+                  Last fetched{" "}
+                  {new Date(lead.socialEnrichedAt).toLocaleString()}
                 </p>
               )}
 
@@ -676,7 +759,9 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
                   <SocialButton
                     href={lead.googleMapsLink}
                     label="Google Maps"
-                    icon={<HiOutlineMapPin className="h-4 w-4 text-brand-600" />}
+                    icon={
+                      <HiOutlineMapPin className="h-4 w-4 text-brand-600" />
+                    }
                   />
                 )}
               </div>
@@ -713,8 +798,9 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
               {!linkedinCompany && !linkedinOwner && (
                 <div className="space-y-3 rounded-xl border border-dashed border-border bg-[#faf8fc] p-3">
                   <p className="text-[12px] text-ink-muted">
-                    LinkedIn company not found yet. We try: website link → domain
-                    lookup → name match → URL pattern (free methods first).
+                    LinkedIn company not found yet. We try: website link →
+                    domain lookup → name match → URL pattern (free methods
+                    first).
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <Button
@@ -760,11 +846,7 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
                   marketing opportunity lies.
                 </p>
               </div>
-              <Button
-                size="sm"
-                onClick={checkAds}
-                disabled={checkingAds}
-              >
+              <Button size="sm" onClick={checkAds} disabled={checkingAds}>
                 {checkingAds ? "Checking…" : "Check ads"}
               </Button>
             </CardHeader>
@@ -886,13 +968,22 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
                 </div>
               )}
               <div className="grid gap-4 sm:grid-cols-2">
-                <ScoreBar label="Website quality" value={lead.websiteQualityScore} />
+                <ScoreBar
+                  label="Website quality"
+                  value={lead.websiteQualityScore}
+                />
                 <ScoreBar
                   label="Marketing opportunity"
                   value={lead.marketingOpportunityScore}
                 />
-                <ScoreBar label="PPC opportunity" value={lead.ppcOpportunityScore} />
-                <ScoreBar label="SEO opportunity" value={lead.seoOpportunityScore} />
+                <ScoreBar
+                  label="PPC opportunity"
+                  value={lead.ppcOpportunityScore}
+                />
+                <ScoreBar
+                  label="SEO opportunity"
+                  value={lead.seoOpportunityScore}
+                />
               </div>
             </CardContent>
           </Card>
@@ -944,7 +1035,11 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
                 placeholder="Call notes, follow-up, objections…"
                 className="min-h-[100px]"
               />
-              <Button size="sm" onClick={addNote} disabled={!saved || !note.trim()}>
+              <Button
+                size="sm"
+                onClick={addNote}
+                disabled={!saved || !note.trim()}
+              >
                 Add note
               </Button>
               <ul className="space-y-2">

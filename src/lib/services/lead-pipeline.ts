@@ -5,6 +5,26 @@ import { matchHouzzBusiness } from "./houzz";
 import { matchNextdoorBusiness } from "./nextdoor";
 import { resolveLinkedIn } from "./linkedin";
 import { qualifyLead } from "./qualification";
+import {
+  extractWebsitePeople,
+  type WebsitePeopleResult,
+} from "./website-people";
+import { discoverSocialFromWebsite, searchFacebookPage } from "./facebook";
+
+const EMPTY_PEOPLE: WebsitePeopleResult = {
+  owner: null,
+  team: [],
+  email: null,
+  emailSourceUrl: null,
+  pagesChecked: [],
+};
+
+const EMPTY_SOCIAL = {
+  facebook: null as string | null,
+  instagram: null as string | null,
+  youtube: null as string | null,
+  tiktok: null as string | null,
+};
 
 export type SearchParams = {
   userId: string;
@@ -22,7 +42,7 @@ export type SearchParams = {
 async function withTimeout<T>(
   promise: Promise<T>,
   ms: number,
-  fallback: T
+  fallback: T,
 ): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
@@ -79,14 +99,33 @@ export async function runLeadPipeline(params: SearchParams) {
       ? await withTimeout(verifyWebsite(website), 9000, false)
       : false;
 
+    // Owner/team first so the discovered owner name can drive LinkedIn lookup
+    const websitePeople = website
+      ? await withTimeout(extractWebsitePeople(website), 12000, EMPTY_PEOPLE)
+      : EMPTY_PEOPLE;
+
     const placeForQualify = { ...place, website };
-    const [yelp, houzz, nextdoor, linkedin, qualification] = await Promise.all([
-      matchYelpBusiness(place.name, location),
-      withTimeout(matchHouzzBusiness(place.name, location), 8000, null),
-      withTimeout(matchNextdoorBusiness(place.name, location), 5000, null),
-      resolveLinkedIn(place.name, location, params.industry, undefined, website),
-      qualifyLead(placeForQualify, params.industry, Boolean(website)),
-    ]);
+    const [yelp, houzz, nextdoor, linkedin, qualification, websiteSocial] =
+      await Promise.all([
+        matchYelpBusiness(place.name, location),
+        withTimeout(matchHouzzBusiness(place.name, location), 8000, null),
+        withTimeout(matchNextdoorBusiness(place.name, location), 5000, null),
+        resolveLinkedIn(
+          place.name,
+          location,
+          params.industry,
+          websitePeople.owner?.name,
+          website,
+        ),
+        qualifyLead(placeForQualify, params.industry, Boolean(website)),
+        website
+          ? withTimeout(discoverSocialFromWebsite(website), 8000, EMPTY_SOCIAL)
+          : Promise.resolve(EMPTY_SOCIAL),
+      ]);
+
+    const facebook =
+      websiteSocial.facebook ??
+      (await withTimeout(searchFacebookPage(place.name), 8000, null));
 
     if (qualification.leadScore < 30) continue;
 
@@ -94,13 +133,27 @@ export async function runLeadPipeline(params: SearchParams) {
     const websiteQualityScore = website
       ? Math.max(
           qualification.websiteQualityScore ?? 0,
-          websiteReachable ? 70 : 50
+          websiteReachable ? 70 : 50,
         )
       : qualification.websiteQualityScore;
 
     const lead = await prisma.lead.create({
       data: {
         businessName: place.name,
+        ownerName: websitePeople.owner?.name ?? null,
+        ownerTitle: websitePeople.owner?.role ?? null,
+        ownerSourceUrl: websitePeople.owner?.sourceUrl ?? null,
+        ownerConfidence: websitePeople.owner?.confidence ?? null,
+        teamMembersJson: websitePeople.team.length
+          ? JSON.stringify(websitePeople.team)
+          : null,
+        peopleEnrichedAt: website ? new Date() : null,
+        email: websitePeople.email,
+        emailSourceUrl: websitePeople.emailSourceUrl,
+        facebook,
+        instagram: websiteSocial.instagram,
+        youtube: websiteSocial.youtube,
+        tiktok: websiteSocial.tiktok,
         phone: place.phone,
         website: website ?? null,
         googleRating: place.rating,

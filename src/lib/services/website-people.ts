@@ -11,13 +11,16 @@ export type WebsitePeopleResult = {
   owner: PublicTeamMember | null;
   team: PublicTeamMember[];
   email: string | null;
+  emailSourceUrl: string | null;
   pagesChecked: string[];
 };
 
 const USER_AGENT =
   "Mozilla/5.0 (compatible; ContractorLeads/1.0; +https://contractorleads.app)";
-const PEOPLE_PATH = /\b(about|team|our-team|staff|leadership|company|who-we-are|meet-the-team)\b/i;
-const OWNER_ROLE = /\b(owner|founder|co-founder|president|principal|managing director|ceo)\b/i;
+const PEOPLE_PATH =
+  /\b(about|team|our-team|staff|leadership|company|who-we-are|meet-the-team|owner|founder|ceo|bio)\b/i;
+const OWNER_ROLE =
+  /\b(owner|founder|co-founder|president|principal|managing director|ceo)\b/i;
 const TEAM_ROLE =
   /\b(owner|founder|co-founder|president|principal|ceo|manager|director|partner|supervisor|estimator|sales|operations|technician|specialist)\b/i;
 
@@ -37,10 +40,7 @@ function plausibleName(value: string): boolean {
   );
 }
 
-function addMember(
-  members: PublicTeamMember[],
-  candidate: PublicTeamMember
-) {
+function addMember(members: PublicTeamMember[], candidate: PublicTeamMember) {
   if (!plausibleName(candidate.name) || !TEAM_ROLE.test(candidate.role)) return;
   const key = candidate.name.toLowerCase();
   const existing = members.find((member) => member.name.toLowerCase() === key);
@@ -53,7 +53,7 @@ function addMember(
 function walkJsonLd(
   node: unknown,
   sourceUrl: string,
-  members: PublicTeamMember[]
+  members: PublicTeamMember[],
 ) {
   if (Array.isArray(node)) {
     node.forEach((item) => walkJsonLd(item, sourceUrl, members));
@@ -66,7 +66,7 @@ function walkJsonLd(
   if (type.toLowerCase() === "person") {
     const name = clean(String(record.name ?? ""));
     const role = clean(
-      String(record.jobTitle ?? record.roleName ?? record.description ?? "")
+      String(record.jobTitle ?? record.roleName ?? record.description ?? ""),
     );
     addMember(members, { name, role, sourceUrl, confidence: 95 });
   }
@@ -82,7 +82,10 @@ function extractFromHtml(html: string, sourceUrl: string) {
   const emails = new Set<string>();
 
   $('a[href^="mailto:"]').each((_, element) => {
-    const raw = $(element).attr("href")?.replace(/^mailto:/i, "").split("?")[0];
+    const raw = $(element)
+      .attr("href")
+      ?.replace(/^mailto:/i, "")
+      .split("?")[0];
     if (raw && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw)) {
       emails.add(raw.toLowerCase());
     }
@@ -97,14 +100,14 @@ function extractFromHtml(html: string, sourceUrl: string) {
   });
 
   $(
-    '[class*="team"], [class*="staff"], [class*="founder"], [class*="owner"], [class*="leadership"], [class*="profile"], [id*="team"], [id*="staff"], [id*="leadership"]'
+    '[class*="team"], [class*="staff"], [class*="founder"], [class*="owner"], [class*="leadership"], [class*="profile"], [id*="team"], [id*="staff"], [id*="leadership"]',
   ).each((_, element) => {
     const container = $(element);
     const text = clean(container.text());
     const role = text.match(TEAM_ROLE)?.[0] ?? "";
     if (!role) return;
     const name = clean(
-      container.find("h1,h2,h3,h4,strong,[itemprop='name']").first().text()
+      container.find("h1,h2,h3,h4,strong,[itemprop='name']").first().text(),
     );
     addMember(members, {
       name,
@@ -115,24 +118,29 @@ function extractFromHtml(html: string, sourceUrl: string) {
   });
 
   const bodyText = clean($("body").text());
-  const explicitPeople = [
-    ...bodyText.matchAll(
-      /\b(owner|founder|co-founder|president|principal|ceo)\s*(?:is|:|-|—)\s*([A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’-]+(?:\s+[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’-]+){1,3})/g
-    ),
-    ...bodyText.matchAll(
-      /\b(?:founded|owned|led)\s+by\s+([A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’-]+(?:\s+[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’-]+){1,3})/g
-    ),
-  ];
-
-  explicitPeople.forEach((match) => {
-    const hasLeadingRole = Boolean(match[2]);
+  const roleFirstMatches = bodyText.matchAll(
+    /(owner|founder|co-founder|president|principal|ceo)\s*(?:is|:|-|—)\s*([A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’-]+(?:\s+[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’-]+){1,3})/gi,
+  );
+  for (const match of roleFirstMatches) {
     addMember(members, {
-      name: clean(String(hasLeadingRole ? match[2] : match[1])),
-      role: clean(String(hasLeadingRole ? match[1] : "Founder / Owner")),
+      name: clean(match[2]),
+      role: clean(match[1]),
       sourceUrl,
       confidence: 88,
     });
-  });
+  }
+
+  const foundedByMatches = bodyText.matchAll(
+    /(?:founded|owned|led)(?:\s+in\s+\d{4})?\s+by\s+(?:(owner|founder|co-founder|president|principal|ceo)\s+)?([A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’-]+(?:\s+[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’-]+){1,3})/gi,
+  );
+  for (const match of foundedByMatches) {
+    addMember(members, {
+      name: clean(match[2]),
+      role: clean(match[1] || "Founder / Owner"),
+      sourceUrl,
+      confidence: 92,
+    });
+  }
 
   const links: string[] = [];
   $("a[href]").each((_, element) => {
@@ -161,7 +169,10 @@ async function fetchHtml(url: string): Promise<string | null> {
       headers: { "User-Agent": USER_AGENT, Accept: "text/html" },
       signal: AbortSignal.timeout(10_000),
     });
-    if (!response.ok || !response.headers.get("content-type")?.includes("text/html")) {
+    if (
+      !response.ok ||
+      !response.headers.get("content-type")?.includes("text/html")
+    ) {
       return null;
     }
     return await response.text();
@@ -171,30 +182,40 @@ async function fetchHtml(url: string): Promise<string | null> {
 }
 
 export async function extractWebsitePeople(
-  website: string
+  website: string,
 ): Promise<WebsitePeopleResult> {
   const homepage = website.startsWith("http") ? website : `https://${website}`;
   const homeHtml = await fetchHtml(homepage);
   if (!homeHtml) {
-    return { owner: null, team: [], email: null, pagesChecked: [] };
+    return {
+      owner: null,
+      team: [],
+      email: null,
+      emailSourceUrl: null,
+      pagesChecked: [],
+    };
   }
 
   const home = extractFromHtml(homeHtml, homepage);
   const pages = [homepage, ...home.links.slice(0, 3)];
   const members = [...home.members];
   let email = home.email;
+  let emailSourceUrl = home.email ? homepage : null;
 
   const extraPages = await Promise.all(
     pages.slice(1).map(async (url) => {
       const html = await fetchHtml(url);
       return html ? extractFromHtml(html, url) : null;
-    })
+    }),
   );
 
-  extraPages.forEach((page) => {
+  extraPages.forEach((page, index) => {
     if (!page) return;
     page.members.forEach((member) => addMember(members, member));
-    email ??= page.email;
+    if (!email && page.email) {
+      email = page.email;
+      emailSourceUrl = pages[index + 1];
+    }
   });
 
   members.sort((a, b) => b.confidence - a.confidence);
@@ -204,6 +225,7 @@ export async function extractWebsitePeople(
     owner,
     team: members.slice(0, 10),
     email,
+    emailSourceUrl,
     pagesChecked: pages,
   };
 }

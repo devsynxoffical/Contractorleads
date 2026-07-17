@@ -1,8 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import {
-  discoverSocialFromWebsite,
-  searchFacebookPage,
-} from "./facebook";
+import { discoverSocialFromWebsite, searchFacebookPage } from "./facebook";
 import { resolveLinkedInProfiles } from "./linkedin";
 import { matchHouzzBusiness } from "./houzz";
 import { matchNextdoorBusiness } from "./nextdoor";
@@ -39,38 +36,38 @@ export async function enrichLeadSocial(lead: LeadRecord) {
     yelp,
     houzz,
     nextdoor,
-  ] =
-    await Promise.all([
-      resolveLinkedInProfiles(
-        lead.businessName,
-        location,
-        lead.industry ?? "Home services",
-        lead.ownerName,
-        lead.website
-      ),
-      lead.website
-        ? discoverSocialFromWebsite(lead.website)
-        : Promise.resolve({
-            facebook: null,
-            instagram: null,
-            youtube: null,
-            tiktok: null,
-          }),
-      lead.website
-        ? extractWebsitePeople(lead.website)
-        : Promise.resolve({
-            owner: null,
-            team: [],
-            email: null,
-            pagesChecked: [],
-          }),
-      !lead.facebook
-        ? searchFacebookPage(lead.businessName)
-        : Promise.resolve(null),
-      matchYelpBusiness(lead.businessName, location),
-      matchHouzzBusiness(lead.businessName, location),
-      matchNextdoorBusiness(lead.businessName, location),
-    ]);
+  ] = await Promise.all([
+    resolveLinkedInProfiles(
+      lead.businessName,
+      location,
+      lead.industry ?? "Home services",
+      lead.ownerName,
+      lead.website,
+    ),
+    lead.website
+      ? discoverSocialFromWebsite(lead.website)
+      : Promise.resolve({
+          facebook: null,
+          instagram: null,
+          youtube: null,
+          tiktok: null,
+        }),
+    lead.website
+      ? extractWebsitePeople(lead.website)
+      : Promise.resolve({
+          owner: null,
+          team: [],
+          email: null,
+          emailSourceUrl: null,
+          pagesChecked: [],
+        }),
+    !lead.facebook
+      ? searchFacebookPage(lead.businessName)
+      : Promise.resolve(null),
+    matchYelpBusiness(lead.businessName, location),
+    matchHouzzBusiness(lead.businessName, location),
+    matchNextdoorBusiness(lead.businessName, location),
+  ]);
 
   const companyLinkedIn =
     linkedin.company.confidence >= 95 ? linkedin.company.url : null;
@@ -100,9 +97,7 @@ export async function enrichLeadSocial(lead: LeadRecord) {
         : undefined,
       peopleEnrichedAt: lead.website ? new Date() : undefined,
       email: lead.email ?? websitePeople.email ?? undefined,
-      emailSourceUrl: websitePeople.email
-        ? websitePeople.pagesChecked[0]
-        : undefined,
+      emailSourceUrl: websitePeople.emailSourceUrl ?? undefined,
       facebook: lead.facebook ?? websiteSocial.facebook ?? facebookPage,
       instagram: lead.instagram ?? websiteSocial.instagram,
       youtube: lead.youtube ?? websiteSocial.youtube,
