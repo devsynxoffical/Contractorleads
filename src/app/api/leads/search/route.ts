@@ -19,8 +19,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: resolved.error }, { status: 400 });
     }
 
-    const { industry, state, city, zip, customLocation, radius } =
-      resolved.criteria;
+    const {
+      industry,
+      country,
+      locationScope,
+      state,
+      city,
+      zip,
+      customLocation,
+      radius,
+    } = resolved.criteria;
 
     if (!process.env.GOOGLE_PLACES_API_KEY) {
       return NextResponse.json(
@@ -35,6 +43,8 @@ export async function POST(request: Request) {
     const result = await runLeadPipeline({
       userId: user.id,
       industry,
+      country,
+      locationScope,
       state,
       city,
       zip,
@@ -48,7 +58,9 @@ export async function POST(request: Request) {
     await logActivity(
       user.id,
       "search",
-      `Generated ${result.leads.length} leads for ${industry} in ${state}`,
+      `Generated ${result.leads.length} leads for ${industry} in ${
+        locationScope === "country" ? country : state || city || country
+      }`,
       { searchId: result.search.id }
     );
 

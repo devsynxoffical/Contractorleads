@@ -4,15 +4,18 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   HiOutlineArrowPath,
-  HiOutlineCheckBadge,
-  HiOutlineChatBubbleLeftEllipsis,
   HiOutlineFire,
   HiOutlineMagnifyingGlass,
   HiOutlineMapPin,
   HiOutlinePaperAirplane,
   HiOutlineSparkles,
 } from "react-icons/hi2";
-import { INDUSTRIES, US_STATES } from "@/lib/constants";
+import {
+  getTierOneCountry,
+  INDUSTRIES,
+  TIER_ONE_COUNTRIES,
+  US_STATES,
+} from "@/lib/constants";
 import {
   CUSTOM_INDUSTRY_VALUE,
   formatSearchLabel,
@@ -55,6 +58,9 @@ export function HomeView({ userName }: { userName?: string | null }) {
   const [selectedIndustry, setSelectedIndustry] = useState("");
   const [industryMode, setIndustryMode] = useState<"preset" | "custom">("preset");
   const [customIndustry, setCustomIndustry] = useState("");
+  const [country, setCountry] = useState("US");
+  const [locationScope, setLocationScope] =
+    useState<"local" | "country">("local");
   const [locationMode, setLocationMode] = useState<"standard" | "custom">("standard");
   const [customLocation, setCustomLocation] = useState("");
   const [state, setState] = useState("");
@@ -65,7 +71,6 @@ export function HomeView({ userName }: { userName?: string | null }) {
   const [error, setError] = useState("");
   const [leads, setLeads] = useState<Lead[]>([]);
   const [restoring, setRestoring] = useState(true);
-  const [mounted, setMounted] = useState(false);
   const [messages, setMessages] = useState<ChatMsg[]>([
     {
       id: "welcome",
@@ -73,8 +78,6 @@ export function HomeView({ userName }: { userName?: string | null }) {
       text: `Hi${userName ? ` ${userName.split(" ")[0]}` : ""} — describe the leads you need, or set filters below and search.`,
     },
   ]);
-
-  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -91,16 +94,18 @@ export function HomeView({ userName }: { userName?: string | null }) {
           setCustomIndustry(cached.industry);
           setIndustryMode("custom");
         }
+        setCountry(cached.country ?? "US");
+        setLocationScope(cached.locationScope ?? "local");
         if (cached.customLocation) {
           setLocationMode("custom");
           setCustomLocation(cached.customLocation);
         } else {
           setLocationMode("standard");
-          setState(cached.state);
+          setState(cached.state ?? "");
           setCity(cached.city);
         }
         setZip(cached.zip);
-        setRadius(cached.radius);
+        setRadius(cached.radius ?? "25");
         if (cached.messages?.length) setMessages(cached.messages);
         setRestoring(false);
         return;
@@ -116,7 +121,12 @@ export function HomeView({ userName }: { userName?: string | null }) {
         const s = data.search;
         const industryVal = s?.industry ?? "";
         const customLoc =
-          s?.city && s?.state === "US" && !s?.zip ? s.city : "";
+          s?.locationScope !== "country" &&
+          s?.city &&
+          !s?.state &&
+          !s?.zip
+            ? s.city
+            : "";
         setLeads(found);
         if (isPresetIndustry(industryVal)) {
           setSelectedIndustry(industryVal);
@@ -125,6 +135,8 @@ export function HomeView({ userName }: { userName?: string | null }) {
           setCustomIndustry(industryVal);
           setIndustryMode("custom");
         }
+        setCountry(s?.country ?? "US");
+        setLocationScope(s?.locationScope ?? "local");
         if (customLoc) {
           setLocationMode("custom");
           setCustomLocation(customLoc);
@@ -138,6 +150,8 @@ export function HomeView({ userName }: { userName?: string | null }) {
 
         const label = formatSearchLabel({
           industry: industryVal,
+          country: s?.country ?? "US",
+          locationScope: s?.locationScope ?? "local",
           state: s?.state ?? "",
           city: customLoc ? undefined : s?.city,
           customLocation: customLoc || undefined,
@@ -155,11 +169,13 @@ export function HomeView({ userName }: { userName?: string | null }) {
           searchId: s.id,
           leads: found,
           industry: industryVal,
-          state: s.state ?? "",
+          country: s.country ?? "US",
+          locationScope: s.locationScope ?? "local",
+          state: s.state ?? undefined,
           city: customLoc ? "" : (s.city ?? ""),
           customLocation: customLoc,
           zip: s.zip ?? "",
-          radius: String(s.radius ?? 25),
+          radius: s.radius ? String(s.radius) : undefined,
         });
       } finally {
         if (!cancelled) setRestoring(false);
@@ -176,7 +192,9 @@ export function HomeView({ userName }: { userName?: string | null }) {
     found: Lead[],
     params: {
       industry: string;
-      state: string;
+      country: string;
+      locationScope: "local" | "country";
+      state?: string;
       city?: string;
       zip?: string;
       customLocation?: string;
@@ -189,11 +207,13 @@ export function HomeView({ userName }: { userName?: string | null }) {
       searchId,
       leads: found,
       industry: params.industry,
+      country: params.country,
+      locationScope: params.locationScope,
       state: params.state,
       city: params.city ?? "",
       customLocation: params.customLocation ?? "",
       zip: params.zip ?? "",
-      radius: String(params.radius ?? 25),
+      radius: params.radius ? String(params.radius) : undefined,
       messages: nextMessages,
     });
   }
@@ -201,6 +221,8 @@ export function HomeView({ userName }: { userName?: string | null }) {
   async function runSearch(raw: {
     industry?: string;
     customIndustry?: string;
+    country?: string;
+    locationScope?: "local" | "country";
     state?: string;
     city?: string;
     zip?: string;
@@ -212,11 +234,30 @@ export function HomeView({ userName }: { userName?: string | null }) {
         raw.industry ??
         (industryMode === "custom" ? CUSTOM_INDUSTRY_VALUE : selectedIndustry),
       customIndustry: raw.customIndustry ?? customIndustry,
-      state: raw.state ?? (locationMode === "standard" ? state : undefined),
-      city: raw.city ?? city,
-      zip: raw.zip ?? zip,
-      customLocation: raw.customLocation ?? (locationMode === "custom" ? customLocation : undefined),
-      radius: raw.radius ?? radius,
+      country: raw.country ?? country,
+      locationScope: raw.locationScope ?? locationScope,
+      state:
+        raw.state ??
+        (locationScope === "local" && locationMode === "standard"
+          ? state
+          : undefined),
+      city:
+        raw.city ??
+        (locationScope === "local" && locationMode === "standard"
+          ? city
+          : undefined),
+      zip:
+        raw.zip ??
+        (locationScope === "local" && locationMode === "standard"
+          ? zip
+          : undefined),
+      customLocation:
+        raw.customLocation ??
+        (locationScope === "local" && locationMode === "custom"
+          ? customLocation
+          : undefined),
+      radius:
+        raw.radius ?? (locationScope === "local" ? radius : undefined),
     });
     if (!resolved.ok) {
       setError(resolved.error);
@@ -303,9 +344,11 @@ export function HomeView({ userName }: { userName?: string | null }) {
       setCustomLocation(parsed.customLocation);
     } else {
       setLocationMode("standard");
-      setState(parsed.state);
+      setState(parsed.state ?? "");
       setCity(parsed.city ?? "");
     }
+    setCountry(parsed.country);
+    setLocationScope(parsed.locationScope);
     await runSearch(parsed);
   }
 
@@ -314,73 +357,32 @@ export function HomeView({ userName }: { userName?: string | null }) {
     const label = formatSearchLabel({
       industry:
         industryMode === "custom" ? customIndustry : selectedIndustry,
+      country,
+      locationScope,
       state,
       city,
       customLocation: locationMode === "custom" ? customLocation : undefined,
     });
     setMessages((m) => [
       ...m,
-      { id: crypto.randomUUID(), role: "user", text: `${label} · ${radius} mi` },
+      {
+        id: crypto.randomUUID(),
+        role: "user",
+        text:
+          locationScope === "country"
+            ? label
+            : `${label} · ${radius} ${getTierOneCountry(country).distanceUnit}`,
+      },
     ]);
     await runSearch({});
   }
 
   return (
     <div className="page-pad page-enter">
-      <div className="mx-auto max-w-4xl">
-        {/* Hero */}
-        <div className="animate-fade-up relative overflow-hidden rounded-[1.5rem] border border-white/60 bg-white/70 p-6 shadow-[var(--shadow-elevated)] backdrop-blur-xl sm:p-8 lg:p-10">
-          <div
-            className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full opacity-60 blur-3xl"
-            style={{ background: "rgba(230,0,126,0.18)" }}
-          />
-          <div
-            className="pointer-events-none absolute -bottom-20 -left-10 h-48 w-48 rounded-full opacity-50 blur-3xl"
-            style={{ background: "rgba(142,36,170,0.16)" }}
-          />
-
-          <div className="relative text-center">
-            <div className="saas-chip mx-auto mb-4">
-              <span className="h-1.5 w-1.5 animate-soft-pulse rounded-full bg-emerald-500" />
-              AI-verified · All 50 states
-            </div>
-            <div
-              className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-[0_12px_28px_rgba(123,31,162,0.35)]"
-              style={{ background: LOGO_GRADIENT }}
-            >
-              <HiOutlineChatBubbleLeftEllipsis className="h-7 w-7" />
-            </div>
-            <h1 className="font-[family-name:var(--font-display)] text-[1.75rem] font-semibold tracking-tight text-ink sm:text-4xl">
-              Find high-quality{" "}
-              <span className="gradient-text">contractor leads</span>
-            </h1>
-            <p className="mx-auto mt-3 max-w-xl text-[14px] leading-relaxed text-ink-muted sm:text-[15px]">
-              Chat in plain English or use precise filters — scored Hot / Warm /
-              Nurture, never fabricated data.
-            </p>
-            <div className="mt-5 flex flex-wrap items-center justify-center gap-3 text-[12px] text-ink-faint">
-              <span className="inline-flex items-center gap-1.5">
-                <HiOutlineCheckBadge className="h-4 w-4 text-brand-500" />
-                Google Places + Yelp
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <HiOutlineSparkles className="h-4 w-4 text-brand-500" />
-                AI qualification
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <HiOutlineMapPin className="h-4 w-4 text-brand-500" />
-                ZIP + radius
-              </span>
-            </div>
-          </div>
-
-          {/* Chat */}
-          <div
-            className={`relative mt-8 overflow-hidden rounded-2xl border border-border/80 bg-white shadow-[var(--shadow-card)] transition duration-500 ${
-              mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
-            }`}
-          >
-            <div className="max-h-[280px] space-y-3 overflow-y-auto px-4 py-4 sm:max-h-[320px] sm:px-5 sm:py-5">
+      <div className="mx-auto w-full max-w-[900px]">
+        {/* Chat */}
+        <div className="animate-fade-up mx-auto flex h-[300px] w-full max-w-[900px] flex-col overflow-hidden rounded-2xl border border-border/80 bg-white shadow-[var(--shadow-card)]">
+            <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4 sm:px-5">
               {messages.map((msg) => (
                 <div
                   key={msg.id}
@@ -429,9 +431,11 @@ export function HomeView({ userName }: { userName?: string | null }) {
                             setCustomLocation(parsed.customLocation);
                           } else {
                             setLocationMode("standard");
-                            setState(parsed.state);
+                            setState(parsed.state ?? "");
                             setCity(parsed.city ?? "");
                           }
+                          setCountry(parsed.country);
+                          setLocationScope(parsed.locationScope);
                           void runSearch(parsed);
                         }
                       }}
@@ -453,7 +457,7 @@ export function HomeView({ userName }: { userName?: string | null }) {
 
             <form
               onSubmit={handleChatSubmit}
-              className="flex gap-2 border-t border-border/80 bg-gradient-to-b from-[#faf8fc] to-white px-4 py-3.5 sm:px-5"
+              className="flex shrink-0 gap-2 border-t border-border/80 bg-gradient-to-b from-[#faf8fc] to-white px-4 py-2.5 sm:px-5"
             >
               <div className="relative flex-1">
                 <HiOutlineSparkles className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-400" />
@@ -462,20 +466,19 @@ export function HomeView({ userName }: { userName?: string | null }) {
                   onChange={(e) => setInput(e.target.value)}
                   placeholder='Try “HVAC in Miami FL”'
                   disabled={loading}
-                  className="h-12 w-full rounded-xl border border-border bg-white pl-10 pr-3 text-[14px] text-ink outline-none transition placeholder:text-ink-faint focus:border-brand-400 focus:ring-4 focus:ring-[var(--ring)]"
+                  className="h-10 w-full rounded-xl border border-border bg-white pl-10 pr-3 text-[14px] text-ink outline-none transition placeholder:text-ink-faint focus:border-brand-400 focus:ring-4 focus:ring-[var(--ring)]"
                 />
               </div>
               <button
                 type="submit"
                 disabled={loading || !input.trim()}
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-white shadow-[0_8px_20px_rgba(123,31,162,0.3)] transition hover:opacity-95 disabled:opacity-45"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-[0_8px_20px_rgba(123,31,162,0.3)] transition hover:opacity-95 disabled:opacity-45"
                 style={{ background: LOGO_GRADIENT }}
                 aria-label="Send"
               >
-                <HiOutlinePaperAirplane className="h-5 w-5" />
+                <HiOutlinePaperAirplane className="h-4 w-4" />
               </button>
             </form>
-          </div>
         </div>
 
         {/* Filters */}
@@ -549,7 +552,45 @@ export function HomeView({ userName }: { userName?: string | null }) {
                 )}
               </div>
             </div>
-            <div className="space-y-1.5 sm:col-span-2 lg:col-span-3">
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">
+                Country
+              </label>
+              <select
+                value={country}
+                onChange={(e) => {
+                  setCountry(e.target.value);
+                  setState("");
+                  setCity("");
+                  setZip("");
+                  setCustomLocation("");
+                }}
+                className="saas-input"
+              >
+                {TIER_ONE_COUNTRIES.map((item) => (
+                  <option key={item.code} value={item.code}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">
+                Search scope
+              </label>
+              <select
+                value={locationScope}
+                onChange={(e) =>
+                  setLocationScope(e.target.value as "local" | "country")
+                }
+                className="saas-input"
+              >
+                <option value="local">Specific area</option>
+                <option value="country">Entire country</option>
+              </select>
+            </div>
+            {locationScope === "local" && (
+            <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
               <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">
                 Location mode
               </label>
@@ -560,31 +601,46 @@ export function HomeView({ userName }: { userName?: string | null }) {
                 }
                 className="saas-input"
               >
-                <option value="standard">State + city / ZIP</option>
+                <option value="standard">Region + city / postal code</option>
                 <option value="custom">Custom area…</option>
               </select>
             </div>
-            {locationMode === "standard" ? (
+            )}
+            {locationScope === "country" ? (
+              <div className="rounded-xl border border-brand-100 bg-brand-50/60 px-4 py-3 text-[13px] text-ink-muted sm:col-span-2 lg:col-span-3">
+                Search top matching businesses across{" "}
+                <strong className="text-ink">
+                  {getTierOneCountry(country).name}
+                </strong>
+                . No region, city, postal code, or radius needed.
+              </div>
+            ) : locationMode === "standard" ? (
               <>
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">
-                    State
+                    {getTierOneCountry(country).regionLabel}
                   </label>
-                  <select
-                    value={state}
-                    onChange={(e) => setState(e.target.value)}
-                    required
-                    className="saas-input"
-                  >
-                    <option value="" disabled>
-                      Select state
-                    </option>
-                    {US_STATES.map((s) => (
-                      <option key={s.code} value={s.code}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
+                  {country === "US" ? (
+                    <select
+                      value={state}
+                      onChange={(e) => setState(e.target.value)}
+                      className="saas-input"
+                    >
+                      <option value="">Any state</option>
+                      {US_STATES.map((s) => (
+                        <option key={s.code} value={s.code}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      value={state}
+                      onChange={(e) => setState(e.target.value)}
+                      placeholder={getTierOneCountry(country).regionLabel}
+                      className="saas-input"
+                    />
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">
@@ -599,7 +655,7 @@ export function HomeView({ userName }: { userName?: string | null }) {
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">
-                    ZIP code
+                    {getTierOneCountry(country).postalLabel}
                   </label>
                   <input
                     value={zip}
@@ -617,15 +673,16 @@ export function HomeView({ userName }: { userName?: string | null }) {
                 <input
                   value={customLocation}
                   onChange={(e) => setCustomLocation(e.target.value)}
-                  placeholder="e.g. Miami Beach FL, Greater Austin"
+                  placeholder={`e.g. a city, metro, or region in ${getTierOneCountry(country).name}`}
                   required
                   className="saas-input"
                 />
               </div>
             )}
+            {locationScope === "local" && (
             <div className="space-y-1.5">
               <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">
-                Radius
+                Radius ({getTierOneCountry(country).distanceUnit})
               </label>
               <select
                 value={radius}
@@ -634,11 +691,12 @@ export function HomeView({ userName }: { userName?: string | null }) {
               >
                 {[10, 15, 25, 50, 75, 100].map((r) => (
                   <option key={r} value={r}>
-                    {r} miles
+                    {r} {getTierOneCountry(country).distanceUnit}
                   </option>
                 ))}
               </select>
             </div>
+            )}
             <div className="flex items-end">
               <button
                 type="submit"

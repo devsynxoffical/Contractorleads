@@ -23,6 +23,7 @@ import {
 import { formatCredits, formatNumber } from "@/lib/utils";
 import type { SessionUser } from "@/lib/auth";
 import { QuickLeadSearch } from "@/components/leads/quick-lead-search";
+import { getTierOneCountry } from "@/lib/constants";
 
 type DashboardData = {
   stats: {
@@ -39,9 +40,11 @@ type DashboardData = {
   recentSearches: {
     id: string;
     industry: string;
-    state: string;
+    country: string;
+    locationScope: string;
+    state: string | null;
     city: string | null;
-    radius: number;
+    radius: number | null;
     resultCount: number;
     createdAt: string;
   }[];
@@ -416,7 +419,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
                 className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-white/30 bg-white/10 px-4 text-[13px] font-semibold text-white backdrop-blur transition hover:bg-white/20"
               >
                 <HiOutlineChatBubbleLeftRight className="h-4 w-4" />
-                Open live bot
+                Help & Support
               </button>
             </div>
           </div>
@@ -590,12 +593,22 @@ export function DashboardView({ user }: { user: SessionUser }) {
                         {s.industry}
                         <span className="font-normal text-ink-muted">
                           {" "}
-                          · {s.city ? `${s.city}, ` : ""}
-                          {s.state}
+                          ·{" "}
+                          {s.locationScope === "country"
+                            ? getTierOneCountry(s.country).name
+                            : [s.city, s.state, getTierOneCountry(s.country).name]
+                                .filter(Boolean)
+                                .join(", ")}
                         </span>
                       </p>
                       <p className="mt-0.5 text-[11px] text-ink-faint">
-                        {s.resultCount} leads · {s.radius} mi ·{" "}
+                        {s.resultCount} leads
+                        {s.locationScope === "country"
+                          ? " · entire country"
+                          : s.radius
+                            ? ` · ${s.radius} ${getTierOneCountry(s.country).distanceUnit}`
+                            : ""}{" "}
+                        ·{" "}
                         {new Date(s.createdAt).toLocaleDateString(undefined, {
                           month: "short",
                           day: "numeric",

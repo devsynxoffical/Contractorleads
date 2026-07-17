@@ -40,8 +40,14 @@ model Lead {
   id                        String   @id @default(cuid())
   businessName              String
   ownerName                 String?
+  ownerTitle                String?
+  ownerSourceUrl            String?
+  ownerConfidence           Int?
+  teamMembersJson           String?
+  peopleEnrichedAt          DateTime?
   phone                     String?
   email                     String?
+  emailSourceUrl            String?
   website                   String?
   googleRating              Float?
   reviewCount               Int?
@@ -78,6 +84,7 @@ model Lead {
   socialEnrichedAt          DateTime?
   verificationStatus        String   @default("verified")
   industry                  String?
+  country                   String   @default("US")
   state                     String?
   city                      String?
   zip                       String?
@@ -96,10 +103,12 @@ model Search {
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   industry    String
-  state       String
+  country     String   @default("US")
+  locationScope String @default("local")
+  state       String?
   city        String?
   zip         String?
-  radius      Int
+  radius      Int?
   resultCount Int      @default(0)
   createdAt   DateTime @default(now())
 

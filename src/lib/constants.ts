@@ -13,6 +13,58 @@ export const INDUSTRIES = [
   "General Contractors",
 ] as const;
 
+export const TIER_ONE_COUNTRIES = [
+  {
+    code: "US",
+    name: "United States",
+    googleRegion: "us",
+    regionLabel: "State",
+    postalLabel: "ZIP code",
+    distanceUnit: "miles",
+  },
+  {
+    code: "CA",
+    name: "Canada",
+    googleRegion: "ca",
+    regionLabel: "Province / territory",
+    postalLabel: "Postal code",
+    distanceUnit: "km",
+  },
+  {
+    code: "GB",
+    name: "United Kingdom",
+    googleRegion: "uk",
+    regionLabel: "Country / county",
+    postalLabel: "Postcode",
+    distanceUnit: "miles",
+  },
+  {
+    code: "AU",
+    name: "Australia",
+    googleRegion: "au",
+    regionLabel: "State / territory",
+    postalLabel: "Postcode",
+    distanceUnit: "km",
+  },
+  {
+    code: "NZ",
+    name: "New Zealand",
+    googleRegion: "nz",
+    regionLabel: "Region",
+    postalLabel: "Postcode",
+    distanceUnit: "km",
+  },
+] as const;
+
+export type TierOneCountryCode = (typeof TIER_ONE_COUNTRIES)[number]["code"];
+
+export function getTierOneCountry(code?: string) {
+  return (
+    TIER_ONE_COUNTRIES.find((country) => country.code === code) ??
+    TIER_ONE_COUNTRIES[0]
+  );
+}
+
 export const US_STATES = [
   { code: "AL", name: "Alabama" },
   { code: "AK", name: "Alaska" },
@@ -78,6 +130,28 @@ export const CREDIT_COSTS = {
   assistant: 1.59,
   outreach: 0.5,
 } as const;
+
+export const SUPPORT_BOT_SYSTEM_PROMPT = `You are the friendly in-app support assistant for Contractor Leads (LeadFlow).
+
+You ONLY help users with using the app and resolving issues. Be concise, warm, and practical.
+
+What you know about the app:
+- Lead Finder (/leads/search): pick a service/industry, a Tier 1 country (US, Canada, UK, Australia, New Zealand), then either "Entire country" scope or a specific area (region/state, city, postal code, radius). Each search costs 1 credit and returns scored leads (Hot / Warm / Nurture).
+- Home (/home): chat box for plain-English searches like "Roofing in Austin TX", plus the same filters.
+- Leads are sourced live from Google Places, verified with Yelp, and optionally enriched with LinkedIn, Houzz, Nextdoor, and Facebook/Meta.
+- Saved Leads, Hot Leads, Pipeline CRM (New → Contacted → Qualified → Closed), Lead Map, CSV/Excel exports.
+- Ask Expert (/ask-expert): AI marketing assistant (costs credits). My Scripts stores saved answers.
+- Credits: each lead search costs 1 credit; AI assistant costs ~1.59. Upgrade under Plans & Billing (/billing).
+- Settings (/settings): company profile, dark mode. Onboarding data personalizes AI answers.
+
+Troubleshooting tips you can give:
+- "No leads found": try a bigger city or Entire country scope, check spelling, try another industry.
+- Search errors mentioning Google Places: the site admin must configure GOOGLE_PLACES_API_KEY with billing enabled.
+- Out of credits (402): upgrade plan on /billing.
+- Login issues: check email/password; register at /register.
+- Blank social fields are normal — the app never fabricates data.
+
+If a question is clearly about marketing strategy rather than app help, suggest the Ask Expert page. If you cannot resolve an issue, suggest contacting the team with a screenshot.`;
 
 export const ASK_EXPERT_SYSTEM_PROMPT = `You are the in-app growth expert for LeadFlow USA — a senior direct-response
 

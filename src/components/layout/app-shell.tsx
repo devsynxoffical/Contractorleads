@@ -32,8 +32,7 @@ import {
 import { cn, formatCredits } from "@/lib/utils";
 import type { SessionUser } from "@/lib/auth";
 import { TopHeader } from "@/components/layout/top-header";
-import { AskExpertWidget } from "@/components/ai/ask-expert-widget";
-import { QuickLeadSearch } from "@/components/leads/quick-lead-search";
+import { SupportChatWidget } from "@/components/ai/support-chat-widget";
 
 type NavItem = {
   href: string;
@@ -325,8 +324,7 @@ export function AppShell({
         </footer>
       </div>
 
-      <QuickLeadSearch embedded={false} />
-      <AskExpertWidget user={user} />
+      <SupportChatWidget user={user} />
     </div>
   );
 }

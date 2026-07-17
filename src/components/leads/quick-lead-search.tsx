@@ -13,7 +13,12 @@ import {
   HiOutlineXMark,
 } from "react-icons/hi2";
 import { Badge } from "@/components/ui/badge";
-import { INDUSTRIES, US_STATES } from "@/lib/constants";
+import {
+  getTierOneCountry,
+  INDUSTRIES,
+  TIER_ONE_COUNTRIES,
+  US_STATES,
+} from "@/lib/constants";
 import {
   CUSTOM_INDUSTRY_VALUE,
   formatSearchLabel,
@@ -56,6 +61,9 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
   const [selectedIndustry, setSelectedIndustry] = useState<string>(INDUSTRIES[0]);
   const [industryMode, setIndustryMode] = useState<"preset" | "custom">("preset");
   const [customIndustry, setCustomIndustry] = useState("");
+  const [country, setCountry] = useState("US");
+  const [locationScope, setLocationScope] =
+    useState<"local" | "country">("local");
   const [locationMode, setLocationMode] = useState<"standard" | "custom">("standard");
   const [customLocation, setCustomLocation] = useState("");
   const [state, setState] = useState("TX");
@@ -74,6 +82,8 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
   async function runSearch(raw: {
     industry?: string;
     customIndustry?: string;
+    country?: string;
+    locationScope?: "local" | "country";
     state?: string;
     city?: string;
     customLocation?: string;
@@ -83,12 +93,24 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
         raw.industry ??
         (industryMode === "custom" ? CUSTOM_INDUSTRY_VALUE : selectedIndustry),
       customIndustry: raw.customIndustry ?? customIndustry,
-      state: raw.state ?? (locationMode === "standard" ? state : undefined),
-      city: raw.city ?? city,
+      country: raw.country ?? country,
+      locationScope: raw.locationScope ?? locationScope,
+      state:
+        raw.state ??
+        (locationScope === "local" && locationMode === "standard"
+          ? state
+          : undefined),
+      city:
+        raw.city ??
+        (locationScope === "local" && locationMode === "standard"
+          ? city
+          : undefined),
       customLocation:
         raw.customLocation ??
-        (locationMode === "custom" ? customLocation : undefined),
-      radius: 25,
+        (locationScope === "local" && locationMode === "custom"
+          ? customLocation
+          : undefined),
+      radius: locationScope === "local" ? 25 : undefined,
     });
 
     if (!resolved.ok) {
@@ -151,9 +173,11 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
       setCustomLocation(parsed.customLocation);
     } else {
       setLocationMode("standard");
-      setState(parsed.state);
+      setState(parsed.state ?? "");
       setCity(parsed.city ?? "");
     }
+    setCountry(parsed.country);
+    setLocationScope(parsed.locationScope);
   }
 
   async function handleChatSubmit(e: React.FormEvent) {
@@ -189,6 +213,8 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
     const label = formatSearchLabel({
       industry:
         industryMode === "custom" ? customIndustry : selectedIndustry,
+      country,
+      locationScope,
       state,
       city,
       customLocation: locationMode === "custom" ? customLocation : undefined,
@@ -350,7 +376,7 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
 
       <div className="border-t border-border bg-[#faf8fb] px-4 py-3 sm:px-5">
         <form onSubmit={handleFilterSearch} className="mb-3 space-y-2">
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-2 sm:grid-cols-4">
             <select
               value={
                 industryMode === "custom"
@@ -374,7 +400,7 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
               ))}
               <option value={CUSTOM_INDUSTRY_VALUE}>Custom service…</option>
             </select>
-            {industryMode === "custom" ? (
+            {industryMode === "custom" && (
               <input
                 value={customIndustry}
                 onChange={(e) => setCustomIndustry(e.target.value)}
@@ -382,45 +408,74 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
                 required
                 className="h-9 rounded-lg border border-border bg-white px-2 text-[12px] text-ink outline-none focus:border-brand-400"
               />
-            ) : (
-              <select
-                value={locationMode}
-                onChange={(e) =>
-                  setLocationMode(e.target.value as "standard" | "custom")
-                }
-                className="h-9 rounded-lg border border-border bg-white px-2 text-[12px] text-ink outline-none focus:border-brand-400"
-              >
-                <option value="standard">State + city</option>
-                <option value="custom">Custom area…</option>
-              </select>
             )}
+            <select
+              value={country}
+              onChange={(e) => {
+                setCountry(e.target.value);
+                setState("");
+                setCity("");
+                setCustomLocation("");
+              }}
+              className="h-9 rounded-lg border border-border bg-white px-2 text-[12px] text-ink outline-none focus:border-brand-400"
+            >
+              {TIER_ONE_COUNTRIES.map((item) => (
+                <option key={item.code} value={item.code}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+            <select
+              value={locationScope}
+              onChange={(e) =>
+                setLocationScope(e.target.value as "local" | "country")
+              }
+              className="h-9 rounded-lg border border-border bg-white px-2 text-[12px] text-ink outline-none focus:border-brand-400"
+            >
+              <option value="local">Specific area</option>
+              <option value="country">Entire country</option>
+            </select>
           </div>
+          {locationScope === "local" && (
+            <select
+              value={locationMode}
+              onChange={(e) =>
+                setLocationMode(e.target.value as "standard" | "custom")
+              }
+              className="h-9 w-full rounded-lg border border-border bg-white px-2 text-[12px] text-ink outline-none focus:border-brand-400"
+            >
+              <option value="standard">Region + city</option>
+              <option value="custom">Custom area…</option>
+            </select>
+          )}
           <div className="grid gap-2 sm:grid-cols-4">
-            {industryMode === "custom" && (
-              <select
-                value={locationMode}
-                onChange={(e) =>
-                  setLocationMode(e.target.value as "standard" | "custom")
-                }
-                className="h-9 rounded-lg border border-border bg-white px-2 text-[12px] text-ink outline-none focus:border-brand-400 sm:col-span-4"
-              >
-                <option value="standard">State + city</option>
-                <option value="custom">Custom area…</option>
-              </select>
-            )}
-            {locationMode === "standard" ? (
+            {locationScope === "country" ? (
+              <p className="flex min-h-9 items-center rounded-lg border border-brand-100 bg-brand-50/60 px-3 text-[12px] text-ink-muted sm:col-span-3">
+                Searching across {getTierOneCountry(country).name}
+              </p>
+            ) : locationMode === "standard" ? (
               <>
-                <select
-                  value={state}
-                  onChange={(e) => setState(e.target.value)}
-                  className="h-9 rounded-lg border border-border bg-white px-2 text-[12px] text-ink outline-none focus:border-brand-400 sm:col-span-2"
-                >
-                  {US_STATES.map((s) => (
-                    <option key={s.code} value={s.code}>
-                      {s.code} — {s.name}
-                    </option>
-                  ))}
-                </select>
+                {country === "US" ? (
+                  <select
+                    value={state}
+                    onChange={(e) => setState(e.target.value)}
+                    className="h-9 rounded-lg border border-border bg-white px-2 text-[12px] text-ink outline-none focus:border-brand-400 sm:col-span-2"
+                  >
+                    <option value="">Any state</option>
+                    {US_STATES.map((s) => (
+                      <option key={s.code} value={s.code}>
+                        {s.code} — {s.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    value={state}
+                    onChange={(e) => setState(e.target.value)}
+                    placeholder={getTierOneCountry(country).regionLabel}
+                    className="h-9 rounded-lg border border-border bg-white px-2 text-[12px] text-ink outline-none focus:border-brand-400 sm:col-span-2"
+                  />
+                )}
                 <input
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
@@ -432,7 +487,7 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
               <input
                 value={customLocation}
                 onChange={(e) => setCustomLocation(e.target.value)}
-                placeholder="Custom area e.g. Miami Beach FL"
+                placeholder={`Custom area in ${getTierOneCountry(country).name}`}
                 required
                 className="h-9 rounded-lg border border-border bg-white px-2 text-[12px] text-ink outline-none focus:border-brand-400 sm:col-span-3"
               />

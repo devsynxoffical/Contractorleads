@@ -44,8 +44,14 @@ type Lead = {
   id: string;
   businessName: string;
   ownerName: string | null;
+  ownerTitle: string | null;
+  ownerSourceUrl: string | null;
+  ownerConfidence: number | null;
+  teamMembersJson: string | null;
+  peopleEnrichedAt: string | null;
   phone: string | null;
   email: string | null;
+  emailSourceUrl: string | null;
   website: string | null;
   googleRating: number | null;
   reviewCount: number | null;
@@ -91,6 +97,23 @@ type Lead = {
     notes: Array<{ id: string; content: string; createdAt: string }>;
   }>;
 };
+
+type TeamMember = {
+  name: string;
+  role: string;
+  sourceUrl: string;
+  confidence: number;
+};
+
+function parseTeamMembers(raw: string | null): TeamMember[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
 
 function ScoreBar({
   label,
@@ -360,6 +383,7 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
     lead.linkedinCompanyUrl && (lead.linkedinConfidenceScore ?? 0) >= 95;
   const linkedinOwner =
     lead.linkedinOwnerUrl && (lead.linkedinOwnerConfidenceScore ?? 0) >= 95;
+  const teamMembers = parseTeamMembers(lead.teamMembersJson);
   const tier =
     lead.qualityTier === "hot"
       ? "hot"
@@ -460,6 +484,24 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
                   <p className="truncate font-medium text-ink">
                     {lead.ownerName ?? "Not available"}
                   </p>
+                  {lead.ownerTitle && (
+                    <p className="truncate text-[11px] text-ink-muted">
+                      {lead.ownerTitle}
+                      {lead.ownerConfidence
+                        ? ` · ${lead.ownerConfidence}% confidence`
+                        : ""}
+                    </p>
+                  )}
+                  {lead.ownerSourceUrl && (
+                    <a
+                      href={lead.ownerSourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] font-medium text-brand-600 hover:underline"
+                    >
+                      View public source
+                    </a>
+                  )}
                 </div>
               </div>
               <a
@@ -539,8 +581,50 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
           </Card>
 
           <Card>
+            <CardHeader>
+              <CardTitle>Public owner & team</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {teamMembers.length > 0 ? (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {teamMembers.map((member) => (
+                    <a
+                      key={`${member.name}-${member.role}`}
+                      href={member.sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-start gap-3 rounded-xl border border-border bg-[#faf8fc] px-3.5 py-3 transition hover:border-brand-200"
+                    >
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-brand-600 shadow-sm">
+                        <HiOutlineUser className="h-4 w-4" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-semibold text-ink">
+                          {member.name}
+                        </span>
+                        <span className="block truncate text-[12px] text-ink-muted">
+                          {member.role} · {member.confidence}% confidence
+                        </span>
+                        <span className="text-[11px] font-medium text-brand-600">
+                          Public website source ↗
+                        </span>
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm leading-relaxed text-ink-muted">
+                  No verified team members found yet. Use <strong>Enrich details</strong>{" "}
+                  below to scan the business website, LinkedIn, Yelp, Houzz, and
+                  Nextdoor. Results stay blank when no public source confirms them.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-3">
-              <CardTitle>Social & review profiles</CardTitle>
+              <CardTitle>Social, people & review enrichment</CardTitle>
               <Button
                 size="sm"
                 variant="secondary"
@@ -550,7 +634,7 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
                 <HiOutlineArrowPath
                   className={`h-4 w-4 ${fetchingSocial ? "animate-spin" : ""}`}
                 />
-                {fetchingSocial ? "Fetching…" : "Fetch"}
+                {fetchingSocial ? "Enriching…" : "Enrich details"}
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">

@@ -1,10 +1,18 @@
-import { INDUSTRIES, US_STATES } from "@/lib/constants";
+import {
+  getTierOneCountry,
+  INDUSTRIES,
+  TIER_ONE_COUNTRIES,
+  US_STATES,
+} from "@/lib/constants";
 
 export const CUSTOM_INDUSTRY_VALUE = "__custom__";
+export type LocationScope = "local" | "country";
 
 export type SearchCriteriaInput = {
   industry?: string;
   customIndustry?: string;
+  country?: string;
+  locationScope?: LocationScope;
   state?: string;
   city?: string;
   zip?: string;
@@ -14,11 +22,13 @@ export type SearchCriteriaInput = {
 
 export type ResolvedSearchCriteria = {
   industry: string;
-  state: string;
+  country: string;
+  locationScope: LocationScope;
+  state?: string;
   city?: string;
   zip?: string;
   customLocation?: string;
-  radius: number;
+  radius?: number;
 };
 
 function extractStateFromText(text: string): string | null {
@@ -32,11 +42,6 @@ function extractStateFromText(text: string): string | null {
 export function resolveSearchCriteria(
   input: SearchCriteriaInput
 ): { ok: true; criteria: ResolvedSearchCriteria } | { ok: false; error: string } {
-  const radius = Number(input.radius ?? 25);
-  if (!Number.isFinite(radius) || radius <= 0) {
-    return { ok: false, error: "Radius must be a positive number." };
-  }
-
   let industry = "";
   if (input.industry === CUSTOM_INDUSTRY_VALUE) {
     industry = input.customIndustry?.trim() ?? "";
@@ -50,13 +55,37 @@ export function resolveSearchCriteria(
     }
   }
 
+  const country = input.country?.trim().toUpperCase() || "US";
+  if (!TIER_ONE_COUNTRIES.some((item) => item.code === country)) {
+    return { ok: false, error: "Select a supported Tier 1 country." };
+  }
+
+  const locationScope: LocationScope =
+    input.locationScope === "country" ? "country" : "local";
+  if (locationScope === "country") {
+    return {
+      ok: true,
+      criteria: { industry, country, locationScope },
+    };
+  }
+
+  const radius = Number(input.radius ?? 25);
+  if (!Number.isFinite(radius) || radius <= 0) {
+    return { ok: false, error: "Radius must be a positive number." };
+  }
+
   const customLocation = input.customLocation?.trim();
   if (customLocation) {
-    const state = extractStateFromText(customLocation) ?? "US";
+    const state =
+      country === "US"
+        ? extractStateFromText(customLocation) ?? undefined
+        : input.state?.trim() || undefined;
     return {
       ok: true,
       criteria: {
         industry,
+        country,
+        locationScope,
         state,
         city: customLocation,
         zip: input.zip?.trim() || undefined,
@@ -67,10 +96,12 @@ export function resolveSearchCriteria(
   }
 
   const state = input.state?.trim() ?? "";
-  if (!state) {
+  const city = input.city?.trim() ?? "";
+  const zip = input.zip?.trim() ?? "";
+  if (!state && !city && !zip) {
     return {
       ok: false,
-      error: "State is required, or enter a custom location.",
+      error: `Enter a ${getTierOneCountry(country).regionLabel.toLowerCase()}, city, or postal code — or choose Entire country.`,
     };
   }
 
@@ -78,9 +109,11 @@ export function resolveSearchCriteria(
     ok: true,
     criteria: {
       industry,
-      state,
-      city: input.city?.trim() || undefined,
-      zip: input.zip?.trim() || undefined,
+      country,
+      locationScope,
+      state: state || undefined,
+      city: city || undefined,
+      zip: zip || undefined,
       radius,
     },
   };
@@ -92,13 +125,19 @@ export function isPresetIndustry(value: string): boolean {
 
 export function formatSearchLabel(criteria: {
   industry: string;
-  state: string;
+  country?: string;
+  locationScope?: LocationScope;
+  state?: string;
   city?: string;
   customLocation?: string;
 }): string {
+  const country = getTierOneCountry(criteria.country);
+  if (criteria.locationScope === "country") {
+    return `${criteria.industry} across ${country.name}`;
+  }
   const place =
     criteria.customLocation ||
-    [criteria.city, criteria.state].filter(Boolean).join(", ");
+    [criteria.city, criteria.state, country.name].filter(Boolean).join(", ");
   return `${criteria.industry} in ${place}`;
 }
 
@@ -126,10 +165,33 @@ export function parseLeadQuery(input: string): ResolvedSearchCriteria | null {
   let state = "";
   let city = "";
   let customLocation: string | undefined;
+  let country = "US";
+  let locationScope: LocationScope = "local";
 
   if (locationPart) {
-    state = extractStateFromText(locationPart) ?? "";
-    if (state) {
+    const aliases: Array<[string, string[]]> = [
+      ["US", ["united states", "usa", "u.s.", "america"]],
+      ["CA", ["canada"]],
+      ["GB", ["united kingdom", "uk", "u.k.", "great britain", "britain"]],
+      ["AU", ["australia"]],
+      ["NZ", ["new zealand"]],
+    ];
+    const normalizedLocation = locationPart.toLowerCase().trim();
+    const matchedCountry = aliases.find(([, names]) =>
+      names.some((name) => normalizedLocation.includes(name))
+    );
+    if (matchedCountry) country = matchedCountry[0];
+
+    const countryNames = matchedCountry?.[1] ?? [];
+    if (countryNames.some((name) => normalizedLocation === name)) {
+      locationScope = "country";
+    } else if (country === "US") {
+      state = extractStateFromText(locationPart) ?? "";
+    }
+
+    if (locationScope === "country") {
+      city = "";
+    } else if (state) {
       const inCityMatch = locationPart.match(/\bin\s+([A-Za-z.\s]+?)(?:,|\s+[A-Z]{2}\b|$)/i);
       if (inCityMatch?.[1]) {
         city = inCityMatch[1]
@@ -146,18 +208,19 @@ export function parseLeadQuery(input: string): ResolvedSearchCriteria | null {
       }
     } else {
       customLocation = locationPart;
-      state = "US";
       city = locationPart;
     }
   }
 
-  if (!state && !customLocation) return null;
+  if (!state && !customLocation && locationScope !== "country") return null;
 
   return {
     industry,
-    state: state || "US",
+    country,
+    locationScope,
+    state: state || undefined,
     city: city || customLocation,
     customLocation,
-    radius: 25,
+    radius: locationScope === "local" ? 25 : undefined,
   };
 }

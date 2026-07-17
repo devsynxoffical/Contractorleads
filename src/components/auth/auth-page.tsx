@@ -12,7 +12,7 @@ const panelCopy: Record<AuthMode, { title: string; subtitle: string }> = {
   login: {
     title: "Welcome Back",
     subtitle:
-      "Sign in to access verified home-service leads and grow your agency across all 50 states.",
+      "Sign in to access verified home-service leads and grow your agency across Tier 1 countries.",
   },
   register: {
     title: "Unleash Your Pipeline",

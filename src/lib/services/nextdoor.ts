@@ -2,6 +2,7 @@
  * Nextdoor enrichment — best-effort, non-blocking (PRD §1.5).
  * No public API; never fabricate. Timeout/fail → blank.
  */
+import { searchPublicWeb } from "./web-search";
 
 export type NextdoorMatch = {
   url: string;
@@ -22,7 +23,26 @@ export async function matchNextdoorBusiness(
   const endpoint = process.env.NEXTDOOR_SEARCH_ENDPOINT;
   const apiKey = process.env.NEXTDOOR_API_KEY;
 
-  if (!endpoint) return null;
+  if (!endpoint) {
+    const results = await searchPublicWeb(
+      `site:nextdoor.com/pages "${name}" "${location}"`,
+      5
+    );
+    const needle = normalize(name);
+    const match = results.find((result) => {
+      try {
+        const host = new URL(result.url).hostname.toLowerCase();
+        if (host !== "nextdoor.com" && !host.endsWith(".nextdoor.com")) {
+          return false;
+        }
+      } catch {
+        return false;
+      }
+      const candidate = normalize(`${result.title} ${result.snippet}`);
+      return candidate.includes(needle);
+    });
+    return match ? { url: match.url } : null;
+  }
 
   try {
     const url = new URL(endpoint);

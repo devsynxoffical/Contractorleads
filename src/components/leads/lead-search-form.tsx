@@ -15,7 +15,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { INDUSTRIES, US_STATES } from "@/lib/constants";
+import {
+  getTierOneCountry,
+  INDUSTRIES,
+  TIER_ONE_COUNTRIES,
+  US_STATES,
+} from "@/lib/constants";
 import {
   CUSTOM_INDUSTRY_VALUE,
   isPresetIndustry,
@@ -108,14 +113,19 @@ export function LeadSearchForm() {
     industry: string;
     customIndustry?: string;
     industryMode: "preset" | "custom";
+    country: string;
+    locationScope: "local" | "country";
     locationMode: "standard" | "custom";
     customLocation?: string;
-    state: string;
+    state?: string;
     city: string;
-    radius: string;
+    radius?: string;
   } | null>(null);
   const [selectedIndustry, setSelectedIndustry] = useState("");
   const [industryMode, setIndustryMode] = useState<"preset" | "custom">("preset");
+  const [selectedCountry, setSelectedCountry] = useState("US");
+  const [locationScope, setLocationScope] =
+    useState<"local" | "country">("local");
   const [locationMode, setLocationMode] = useState<"standard" | "custom">("standard");
   const [customIndustry, setCustomIndustry] = useState("");
   const [customLocation, setCustomLocation] = useState("");
@@ -135,6 +145,8 @@ export function LeadSearchForm() {
           industry: cached.industry,
           customIndustry: isPresetIndustry(cached.industry) ? "" : cached.industry,
           industryMode: isPresetIndustry(cached.industry) ? "preset" : "custom",
+          country: cached.country ?? "US",
+          locationScope: cached.locationScope ?? "local",
           locationMode: cached.customLocation ? "custom" : "standard",
           customLocation: cached.customLocation ?? "",
           state: cached.state,
@@ -142,6 +154,8 @@ export function LeadSearchForm() {
           radius: cached.radius,
         });
         setIndustryMode(isPresetIndustry(cached.industry) ? "preset" : "custom");
+        setSelectedCountry(cached.country ?? "US");
+        setLocationScope(cached.locationScope ?? "local");
         setSelectedIndustry(
           isPresetIndustry(cached.industry) ? cached.industry : ""
         );
@@ -164,13 +178,20 @@ export function LeadSearchForm() {
         const s = data.search;
         const industry = s.industry ?? "";
         const customLoc =
-          s.city && s.state === "US" && !s.zip ? s.city : "";
+          s.locationScope !== "country" &&
+          s.city &&
+          !s.state &&
+          !s.zip
+            ? s.city
+            : "";
         setLeads(found);
         setSelected(new Set(found.map((l) => l.id)));
         setPreset({
           industry: isPresetIndustry(industry) ? industry : CUSTOM_INDUSTRY_VALUE,
           customIndustry: isPresetIndustry(industry) ? "" : industry,
           industryMode: isPresetIndustry(industry) ? "preset" : "custom",
+          country: s.country ?? "US",
+          locationScope: s.locationScope ?? "local",
           locationMode: customLoc ? "custom" : "standard",
           customLocation: customLoc,
           state: s.state ?? "",
@@ -178,6 +199,8 @@ export function LeadSearchForm() {
           radius: String(s.radius ?? 25),
         });
         setIndustryMode(isPresetIndustry(industry) ? "preset" : "custom");
+        setSelectedCountry(s.country ?? "US");
+        setLocationScope(s.locationScope ?? "local");
         setSelectedIndustry(isPresetIndustry(industry) ? industry : "");
         setLocationMode(customLoc ? "custom" : "standard");
         setCustomIndustry(isPresetIndustry(industry) ? "" : industry);
@@ -188,11 +211,13 @@ export function LeadSearchForm() {
           searchId: s.id,
           leads: found,
           industry,
-          state: s.state ?? "",
+          country: s.country ?? "US",
+          locationScope: s.locationScope ?? "local",
+          state: s.state ?? undefined,
           city: customLoc ? "" : (s.city ?? ""),
           customLocation: customLoc,
           zip: s.zip ?? "",
-          radius: String(s.radius ?? 25),
+          radius: s.radius ? String(s.radius) : undefined,
           selectedLeadIds: found.map((l) => l.id),
         });
       } finally {
@@ -209,11 +234,13 @@ export function LeadSearchForm() {
   async function runSearch(payload: {
     industry: string;
     customIndustry?: string;
+    country?: string;
+    locationScope?: "local" | "country";
     state?: string;
     city?: string;
     zip?: string;
     customLocation?: string;
-    radius: string | number;
+    radius?: string | number;
   }) {
     const resolved = resolveSearchCriteria(payload);
     if (!resolved.ok) {
@@ -255,11 +282,13 @@ export function LeadSearchForm() {
         searchId: data.search?.id,
         leads: data.leads,
         industry: criteria.industry,
+        country: criteria.country,
+        locationScope: criteria.locationScope,
         state: criteria.state,
         city: criteria.city ?? "",
         customLocation: criteria.customLocation ?? "",
         zip: criteria.zip ?? "",
-        radius: String(criteria.radius),
+        radius: criteria.radius ? String(criteria.radius) : undefined,
         selectedLeadIds: data.leads.map((l: Lead) => l.id),
       });
     } finally {
@@ -275,16 +304,35 @@ export function LeadSearchForm() {
       industry:
         industryMode === "custom" ? CUSTOM_INDUSTRY_VALUE : selectedIndustry,
       customIndustry: customIndustry,
-      state: locationMode === "standard" ? String(form.get("state")) : undefined,
-      city: locationMode === "standard" ? String(form.get("city") || "") : undefined,
-      zip: locationMode === "standard" ? String(form.get("zip") || "") : undefined,
-      customLocation: locationMode === "custom" ? customLocation : undefined,
-      radius: String(form.get("radius") || "25"),
+      country: selectedCountry,
+      locationScope,
+      state:
+        locationScope === "local" && locationMode === "standard"
+          ? String(form.get("state") || "")
+          : undefined,
+      city:
+        locationScope === "local" && locationMode === "standard"
+          ? String(form.get("city") || "")
+          : undefined,
+      zip:
+        locationScope === "local" && locationMode === "standard"
+          ? String(form.get("zip") || "")
+          : undefined,
+      customLocation:
+        locationScope === "local" && locationMode === "custom"
+          ? customLocation
+          : undefined,
+      radius:
+        locationScope === "local"
+          ? String(form.get("radius") || "25")
+          : undefined,
     });
   }
 
   function applyQuick(q: (typeof QUICK_SEARCHES)[number]) {
     setIndustryMode("preset");
+    setSelectedCountry("US");
+    setLocationScope("local");
     setLocationMode("standard");
     setCustomIndustry("");
     setCustomLocation("");
@@ -292,6 +340,8 @@ export function LeadSearchForm() {
     setPreset({
       industry: q.industry,
       industryMode: "preset",
+      country: "US",
+      locationScope: "local",
       locationMode: "standard",
       state: q.state,
       city: q.city,
@@ -325,7 +375,7 @@ export function LeadSearchForm() {
       <div className="mesh-bg -mx-4 -mt-4 mb-6 rounded-b-2xl px-4 pb-6 pt-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 lg:pt-6">
         <PageHeader
           title="Lead Finder"
-          description="AI-verified home-service businesses across all 50 states — industry, geo, radius, then scored for outreach fit."
+          description="AI-verified home-service businesses across Tier 1 countries — choose a country, entire-country or local area, then score for outreach fit."
           actions={
             <>
               <SecondaryActionLink href="/ask-expert">
@@ -341,7 +391,7 @@ export function LeadSearchForm() {
         />
 
         <div className="stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <StatChip label="Coverage" value="50 states" hint="US home services" />
+          <StatChip label="Coverage" value="Tier 1" hint="US · CA · UK · AU · NZ" />
           <StatChip label="Industries" value="12" hint="Roofing → GCs" />
           <StatChip label="Cost" value="1 credit" hint="Per search run" />
           <StatChip label="Pipeline" value="4 layers" hint="Places → AI score" />
@@ -411,36 +461,78 @@ export function LeadSearchForm() {
                   )}
                 </div>
               </div>
-              <div className="space-y-2 sm:col-span-2 lg:col-span-3">
-                <Label>Location</Label>
+              <div className="space-y-2">
+                <Label>Country</Label>
+                <Select
+                  value={selectedCountry}
+                  onChange={(e) => {
+                    setSelectedCountry(e.target.value);
+                    setCustomLocation("");
+                  }}
+                >
+                  {TIER_ONE_COUNTRIES.map((country) => (
+                    <option key={country.code} value={country.code}>
+                      {country.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Search scope</Label>
+                <Select
+                  value={locationScope}
+                  onChange={(e) =>
+                    setLocationScope(e.target.value as "local" | "country")
+                  }
+                >
+                  <option value="local">Specific area</option>
+                  <option value="country">Entire country</option>
+                </Select>
+              </div>
+              {locationScope === "local" && (
+              <div className="space-y-2 sm:col-span-2 lg:col-span-1">
+                <Label>Area type</Label>
                 <Select
                   value={locationMode}
                   onChange={(e) =>
                     setLocationMode(e.target.value as "standard" | "custom")
                   }
                 >
-                  <option value="standard">State + city / ZIP</option>
+                  <option value="standard">Region + city / postal code</option>
                   <option value="custom">Custom area…</option>
                 </Select>
               </div>
-              {locationMode === "standard" ? (
+              )}
+              {locationScope === "country" ? (
+                <div className="rounded-xl border border-brand-100 bg-brand-50/60 px-4 py-3 text-sm text-ink-muted sm:col-span-2 lg:col-span-3">
+                  Searching top matching businesses across{" "}
+                  <strong className="text-ink">
+                    {getTierOneCountry(selectedCountry).name}
+                  </strong>
+                  . Region, city, postal code, and radius are not required.
+                </div>
+              ) : locationMode === "standard" ? (
                 <>
                   <div className="space-y-2">
-                    <Label>State</Label>
-                    <Select
-                      name="state"
-                      required
-                      defaultValue={preset?.state ?? ""}
-                    >
-                      <option value="" disabled>
-                        Select state
-                      </option>
-                      {US_STATES.map((s) => (
-                        <option key={s.code} value={s.code}>
-                          {s.name}
-                        </option>
-                      ))}
-                    </Select>
+                    <Label>
+                      {getTierOneCountry(selectedCountry).regionLabel}
+                    </Label>
+                    {selectedCountry === "US" ? (
+                      <Select name="state" defaultValue={preset?.state ?? ""}>
+                        <option value="">Any state</option>
+                        {US_STATES.map((s) => (
+                          <option key={s.code} value={s.code}>
+                            {s.name}
+                          </option>
+                        ))}
+                      </Select>
+                    ) : (
+                      <Input
+                        name="state"
+                        placeholder={getTierOneCountry(selectedCountry).regionLabel}
+                        defaultValue={preset?.state ?? ""}
+                      />
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label>City</Label>
@@ -451,8 +543,11 @@ export function LeadSearchForm() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>ZIP Code</Label>
-                    <Input name="zip" placeholder="78701" />
+                    <Label>{getTierOneCountry(selectedCountry).postalLabel}</Label>
+                    <Input
+                      name="zip"
+                      placeholder={selectedCountry === "US" ? "78701" : "Optional"}
+                    />
                   </div>
                 </>
               ) : (
@@ -461,7 +556,7 @@ export function LeadSearchForm() {
                   <Input
                     value={customLocation}
                     onChange={(e) => setCustomLocation(e.target.value)}
-                    placeholder="e.g. Miami Beach FL, Greater Austin, Brooklyn NY"
+                    placeholder={`e.g. a city, metro, or region in ${getTierOneCountry(selectedCountry).name}`}
                     required
                   />
                   <p className="text-[12px] text-ink-muted">
@@ -469,16 +564,20 @@ export function LeadSearchForm() {
                   </p>
                 </div>
               )}
+              {locationScope === "local" && (
               <div className="space-y-2">
-                <Label>Radius (miles)</Label>
+                <Label>
+                  Radius ({getTierOneCountry(selectedCountry).distanceUnit})
+                </Label>
                 <Select name="radius" defaultValue={preset?.radius ?? "25"}>
                   {[10, 15, 25, 50, 75, 100].map((r) => (
                     <option key={r} value={r}>
-                      {r} miles
+                      {r} {getTierOneCountry(selectedCountry).distanceUnit}
                     </option>
                   ))}
                 </Select>
               </div>
+              )}
               <div className="flex items-end sm:col-span-2 lg:col-span-1">
                 <Button
                   type="submit"

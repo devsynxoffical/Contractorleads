@@ -65,6 +65,8 @@ export async function GET() {
       select: {
         id: true,
         industry: true,
+        country: true,
+        locationScope: true,
         state: true,
         city: true,
         radius: true,

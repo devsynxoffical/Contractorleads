@@ -26,6 +26,8 @@ export async function GET() {
     search: {
       id: search.id,
       industry: search.industry,
+      country: search.country,
+      locationScope: search.locationScope,
       state: search.state,
       city: search.city,
       zip: search.zip,

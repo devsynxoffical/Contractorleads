@@ -9,11 +9,13 @@ import { qualifyLead } from "./qualification";
 export type SearchParams = {
   userId: string;
   industry: string;
-  state: string;
+  country: string;
+  locationScope: "local" | "country";
+  state?: string;
   city?: string;
   zip?: string;
   customLocation?: string;
-  radius: number;
+  radius?: number;
 };
 
 /** Race a promise against a timeout; on timeout return fallback (never block pipeline). */
@@ -38,12 +40,16 @@ async function withTimeout<T>(
 export async function runLeadPipeline(params: SearchParams) {
   const location =
     params.customLocation?.trim() ||
-    [params.city, params.state, params.zip].filter(Boolean).join(", ");
+    [params.city, params.state, params.zip, params.country]
+      .filter(Boolean)
+      .join(", ");
 
   const search = await prisma.search.create({
     data: {
       userId: params.userId,
       industry: params.industry,
+      country: params.country,
+      locationScope: params.locationScope,
       state: params.state,
       city: params.city,
       zip: params.zip,
@@ -53,12 +59,14 @@ export async function runLeadPipeline(params: SearchParams) {
 
   const places = await searchGooglePlaces({
     industry: params.industry,
+    country: params.country,
+    locationScope: params.locationScope,
     state: params.state,
     city: params.city,
     zip: params.zip,
     customLocation: params.customLocation,
     radius: params.radius,
-    limit: 8,
+    limit: params.locationScope === "country" ? 10 : 8,
   });
 
   const leads = [];
@@ -121,6 +129,7 @@ export async function runLeadPipeline(params: SearchParams) {
         linkedinOwnerConfidenceScore: linkedin.ownerConfidence || null,
         linkedinType: linkedin.type,
         industry: params.industry,
+        country: params.country,
         state: params.state,
         city: params.city ?? null,
         zip: params.zip ?? null,

@@ -1,3 +1,5 @@
+import { getTierOneCountry } from "@/lib/constants";
+
 export type PlaceResult = {
   placeId: string;
   name: string;
@@ -42,18 +44,26 @@ function industryQuery(industry: string) {
 }
 
 function locationQuery(params: {
-  state: string;
+  country: string;
+  state?: string;
   city?: string;
   zip?: string;
 }) {
   const city =
     params.city &&
-    params.city.trim().toLowerCase() !== params.state.trim().toLowerCase() &&
+    params.city.trim().toLowerCase() !== params.state?.trim().toLowerCase() &&
     !/^(florida|texas|california|new york)$/i.test(params.city.trim())
       ? params.city.trim()
       : undefined;
 
-  return [city, params.state, params.zip].filter(Boolean).join(", ");
+  return [
+    city,
+    params.state,
+    params.zip,
+    getTierOneCountry(params.country).name,
+  ]
+    .filter(Boolean)
+    .join(", ");
 }
 
 /** Clean + canonicalize a Google Business Profile website URL */
@@ -232,11 +242,13 @@ async function enrichOnePlace(
 
 export async function searchGooglePlaces(params: {
   industry: string;
-  state: string;
+  country: string;
+  locationScope: "local" | "country";
+  state?: string;
   city?: string;
   zip?: string;
   customLocation?: string;
-  radius: number;
+  radius?: number;
   limit?: number;
 }): Promise<PlaceResult[]> {
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;
@@ -246,13 +258,18 @@ export async function searchGooglePlaces(params: {
     );
   }
 
-  const loc = params.customLocation?.trim() || locationQuery(params);
-  const query = `${industryQuery(params.industry)} in ${loc || params.state}`;
+  const country = getTierOneCountry(params.country);
+  const loc =
+    params.locationScope === "country"
+      ? country.name
+      : params.customLocation?.trim() || locationQuery(params);
+  const query = `${industryQuery(params.industry)} in ${loc}`;
 
   const searchUrl = new URL(
     "https://maps.googleapis.com/maps/api/place/textsearch/json"
   );
   searchUrl.searchParams.set("query", query);
+  searchUrl.searchParams.set("region", country.googleRegion);
   searchUrl.searchParams.set("key", apiKey);
 
   const searchRes = await fetch(searchUrl.toString(), {

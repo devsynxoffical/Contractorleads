@@ -1,7 +1,11 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { streamText } from "ai";
 import { getSessionUser, buildBusinessContext } from "@/lib/auth";
-import { ASK_EXPERT_SYSTEM_PROMPT, CREDIT_COSTS } from "@/lib/constants";
+import {
+  ASK_EXPERT_SYSTEM_PROMPT,
+  SUPPORT_BOT_SYSTEM_PROMPT,
+  CREDIT_COSTS,
+} from "@/lib/constants";
 import { deductCredits, logActivity } from "@/lib/credits";
 import { prisma } from "@/lib/prisma";
 
@@ -11,9 +15,29 @@ export async function POST(request: Request) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const { message, save } = await request.json();
+  const { message, save, support } = await request.json();
   if (!message?.trim()) {
     return new Response("Message required", { status: 400 });
+  }
+
+  const isSupport = support === true;
+  const apiKey = process.env.OPENAI_API_KEY;
+
+  // Support/help chat is free and never saved as a script
+  if (isSupport) {
+    if (!apiKey) {
+      return Response.json({
+        content:
+          "Here are quick fixes for common issues:\n\n• No leads found — try a bigger city, another industry, or Entire country scope.\n• Out of credits — upgrade under Plans & Billing.\n• Search errors — the Google Places API key may not be configured yet.\n\nStill stuck? Contact the team with a screenshot of the error.",
+      });
+    }
+    const openaiSupport = createOpenAI({ apiKey });
+    const supportResult = streamText({
+      model: openaiSupport("gpt-4o-mini"),
+      system: SUPPORT_BOT_SYSTEM_PROMPT,
+      prompt: message,
+    });
+    return supportResult.toTextStreamResponse();
   }
 
   try {
@@ -27,7 +51,6 @@ export async function POST(request: Request) {
   }
 
   const businessContext = buildBusinessContext(user);
-  const apiKey = process.env.OPENAI_API_KEY;
 
   if (!apiKey) {
     const fallback = `Here's a direct take for ${user.companyName || "your agency"}:

@@ -7,13 +7,16 @@ import { resolveLinkedInProfiles } from "./linkedin";
 import { matchHouzzBusiness } from "./houzz";
 import { matchNextdoorBusiness } from "./nextdoor";
 import { matchYelpBusiness } from "./yelp";
+import { extractWebsitePeople } from "./website-people";
 
 type LeadRecord = {
   id: string;
   businessName: string;
   ownerName: string | null;
+  email: string | null;
   website: string | null;
   industry: string | null;
+  country: string;
   state: string | null;
   city: string | null;
   zip: string | null;
@@ -24,9 +27,19 @@ type LeadRecord = {
 };
 
 export async function enrichLeadSocial(lead: LeadRecord) {
-  const location = [lead.city, lead.state, lead.zip].filter(Boolean).join(", ");
+  const location = [lead.city, lead.state, lead.zip, lead.country]
+    .filter(Boolean)
+    .join(", ");
 
-  const [linkedin, websiteSocial, facebookPage, yelp, houzz, nextdoor] =
+  const [
+    linkedin,
+    websiteSocial,
+    websitePeople,
+    facebookPage,
+    yelp,
+    houzz,
+    nextdoor,
+  ] =
     await Promise.all([
       resolveLinkedInProfiles(
         lead.businessName,
@@ -42,6 +55,14 @@ export async function enrichLeadSocial(lead: LeadRecord) {
             instagram: null,
             youtube: null,
             tiktok: null,
+          }),
+      lead.website
+        ? extractWebsitePeople(lead.website)
+        : Promise.resolve({
+            owner: null,
+            team: [],
+            email: null,
+            pagesChecked: [],
           }),
       !lead.facebook
         ? searchFacebookPage(lead.businessName)
@@ -70,6 +91,18 @@ export async function enrichLeadSocial(lead: LeadRecord) {
         : ownerLinkedIn
           ? "owner"
           : "none",
+      ownerName: lead.ownerName ?? websitePeople.owner?.name,
+      ownerTitle: websitePeople.owner?.role,
+      ownerSourceUrl: websitePeople.owner?.sourceUrl,
+      ownerConfidence: websitePeople.owner?.confidence,
+      teamMembersJson: websitePeople.team.length
+        ? JSON.stringify(websitePeople.team)
+        : undefined,
+      peopleEnrichedAt: lead.website ? new Date() : undefined,
+      email: lead.email ?? websitePeople.email ?? undefined,
+      emailSourceUrl: websitePeople.email
+        ? websitePeople.pagesChecked[0]
+        : undefined,
       facebook: lead.facebook ?? websiteSocial.facebook ?? facebookPage,
       instagram: lead.instagram ?? websiteSocial.instagram,
       youtube: lead.youtube ?? websiteSocial.youtube,
@@ -90,10 +123,15 @@ export async function enrichLeadSocial(lead: LeadRecord) {
     found: {
       linkedinCompany: Boolean(companyLinkedIn),
       linkedinOwner: Boolean(ownerLinkedIn),
+      owner: Boolean(updated.ownerName),
+      team: websitePeople.team.length > 0,
+      email: Boolean(updated.email),
       facebook: Boolean(updated.facebook),
       instagram: Boolean(updated.instagram),
       youtube: Boolean(updated.youtube),
       tiktok: Boolean(updated.tiktok),
+      houzz: Boolean(updated.houzzUrl),
+      nextdoor: Boolean(updated.nextdoor),
     },
   };
 }

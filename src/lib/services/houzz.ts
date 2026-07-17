@@ -3,6 +3,7 @@
  * Houzz has no public Fusion-style API; do not invent URLs from business names.
  * When HOUZZ lookup is unavailable, return null (never fabricate).
  */
+import { searchPublicWeb } from "./web-search";
 
 export type HouzzMatch = {
   url: string;
@@ -36,7 +37,23 @@ export async function matchHouzzBusiness(
   const endpoint = process.env.HOUZZ_SEARCH_ENDPOINT;
   const apiKey = process.env.HOUZZ_API_KEY;
 
-  if (!endpoint) return null;
+  if (!endpoint) {
+    const results = await searchPublicWeb(
+      `site:houzz.com/professionals "${name}" "${location}"`,
+      5
+    );
+    const needle = normalize(name);
+    const match = results.find((result) => {
+      try {
+        const host = new URL(result.url).hostname.toLowerCase();
+        if (host !== "houzz.com" && !host.endsWith(".houzz.com")) return false;
+      } catch {
+        return false;
+      }
+      return normalize(`${result.title} ${result.snippet}`).includes(needle);
+    });
+    return match ? { url: match.url } : null;
+  }
 
   try {
     const url = new URL(endpoint);
