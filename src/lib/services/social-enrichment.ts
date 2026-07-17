@@ -88,7 +88,8 @@ export async function enrichLeadSocial(lead: LeadRecord) {
         : ownerLinkedIn
           ? "owner"
           : "none",
-      ownerName: lead.ownerName ?? websitePeople.owner?.name,
+      // Prefer freshly extracted owner so refreshes correct stale/bad values
+      ownerName: websitePeople.owner?.name ?? lead.ownerName ?? undefined,
       ownerTitle: websitePeople.owner?.role,
       ownerSourceUrl: websitePeople.owner?.sourceUrl,
       ownerConfidence: websitePeople.owner?.confidence,

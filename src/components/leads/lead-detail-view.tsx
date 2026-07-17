@@ -9,6 +9,8 @@ import {
   HiOutlineBookmark,
   HiOutlineCheckBadge,
   HiOutlineEnvelope,
+  HiOutlineExclamationTriangle,
+  HiOutlineInformationCircle,
   HiOutlineGlobeAlt,
   HiOutlineMapPin,
   HiOutlineMegaphone,
@@ -174,6 +176,83 @@ function SocialButton({
   );
 }
 
+type PopupState = {
+  kind: "success" | "error" | "info";
+  title: string;
+  message: string;
+  actionUrl?: string;
+  actionLabel?: string;
+};
+
+function ResultPopup({
+  popup,
+  onClose,
+}: {
+  popup: PopupState;
+  onClose: () => void;
+}) {
+  const iconStyles =
+    popup.kind === "success"
+      ? "bg-emerald-50 text-emerald-600"
+      : popup.kind === "error"
+        ? "bg-red-50 text-red-600"
+        : "bg-brand-50 text-brand-600";
+
+  return (
+    <div
+      className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+    >
+      <button
+        aria-label="Close"
+        className="absolute inset-0 bg-ink/40 backdrop-blur-[2px]"
+        onClick={onClose}
+      />
+      <div className="relative w-full max-w-sm rounded-2xl border border-border bg-white p-6 text-center shadow-[var(--shadow-elevated)]">
+        <span
+          className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full ${iconStyles}`}
+        >
+          {popup.kind === "success" ? (
+            <HiOutlineCheckBadge className="h-6 w-6" />
+          ) : popup.kind === "error" ? (
+            <HiOutlineExclamationTriangle className="h-6 w-6" />
+          ) : (
+            <HiOutlineInformationCircle className="h-6 w-6" />
+          )}
+        </span>
+        <h3 className="mt-3 font-[family-name:var(--font-display)] text-lg font-semibold tracking-tight text-ink">
+          {popup.title}
+        </h3>
+        <p className="mt-1.5 text-sm leading-relaxed text-ink-muted">
+          {popup.message}
+        </p>
+        <div className="mt-5 flex flex-col gap-2">
+          {popup.actionUrl && (
+            <a
+              href={popup.actionUrl}
+              target="_blank"
+              rel="noopener"
+              className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl px-4 text-[13px] font-semibold text-white shadow-sm transition hover:opacity-95"
+              style={{ background: LOGO_GRADIENT }}
+              onClick={onClose}
+            >
+              {popup.actionLabel ?? "Open"}
+              <HiOutlineArrowTopRightOnSquare className="h-3.5 w-3.5" />
+            </a>
+          )}
+          <button
+            onClick={onClose}
+            className="inline-flex h-10 items-center justify-center rounded-xl border border-border bg-white px-4 text-[13px] font-semibold text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PlatformTag({ href, label }: { href?: string | null; label: string }) {
   if (!href) {
     return (
@@ -206,7 +285,7 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
     null,
   );
   const [adsResult, setAdsResult] = useState<FacebookAdsResult | null>(null);
-  const [socialMessage, setSocialMessage] = useState<string | null>(null);
+  const [popup, setPopup] = useState<PopupState | null>(null);
 
   async function load() {
     const res = await fetch(`/api/leads/${leadId}`);
@@ -270,25 +349,43 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
 
   async function fetchSocial() {
     setFetchingSocial(true);
-    setSocialMessage(null);
     try {
       const res = await fetch(`/api/leads/${leadId}/enrich-social`, {
         method: "POST",
+        signal: AbortSignal.timeout(60000),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Fetch failed");
+      if (!res.ok) throw new Error(data.error ?? "Enrichment failed");
       setLead(data.lead);
       setVerificationScore(data.verificationScore ?? null);
       const found = Object.entries(data.found ?? {})
         .filter(([, v]) => v)
         .map(([k]) => k.replace(/([A-Z])/g, " $1").toLowerCase());
-      setSocialMessage(
-        found.length
-          ? `Found: ${found.join(", ")}`
-          : "No new profiles found. Add API keys in .env for LinkedIn & Meta.",
-      );
+      if (found.length) {
+        setPopup({
+          kind: "success",
+          title: "Public data updated",
+          message: `New details found: ${found.join(", ")}.`,
+        });
+      } else {
+        setPopup({
+          kind: "info",
+          title: "Nothing new found",
+          message:
+            "We rechecked the website and public directories but found no new public details for this business.",
+        });
+      }
     } catch (e) {
-      setSocialMessage(e instanceof Error ? e.message : "Fetch failed");
+      setPopup({
+        kind: "error",
+        title: "Enrichment failed",
+        message:
+          e instanceof Error && e.name === "TimeoutError"
+            ? "The scan took too long. Please try again in a moment."
+            : e instanceof Error
+              ? e.message
+              : "Something went wrong. Please try again.",
+      });
     } finally {
       setFetchingSocial(false);
     }
@@ -296,7 +393,6 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
 
   async function findLinkedIn() {
     setFindingLinkedin(true);
-    setSocialMessage(null);
     try {
       const res = await fetch(`/api/leads/${leadId}/linkedin`, {
         method: "POST",
@@ -312,26 +408,36 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
           : null;
 
       if (foundUrl) {
-        setSocialMessage(
-          `LinkedIn company found (${data.linkedin.sourceLabel ?? "verified"}). Opening…`,
-        );
-        // Open after paint so the lead page stays stable; no noreferrer (LinkedIn first-load bug)
-        window.setTimeout(() => {
-          window.open(foundUrl, "_blank", "noopener");
-        }, 150);
+        setPopup({
+          kind: "success",
+          title: "LinkedIn profile found",
+          message: `Verified company page found (${data.linkedin.sourceLabel ?? "verified"}).`,
+          actionUrl: foundUrl,
+          actionLabel: "Open LinkedIn",
+        });
       } else {
-        setSocialMessage(
-          "No verified LinkedIn company page found automatically. Use Search on LinkedIn below.",
-        );
+        setPopup({
+          kind: "info",
+          title: "No verified page found",
+          message:
+            "We couldn't confirm a LinkedIn company page automatically. You can search LinkedIn manually instead.",
+          actionUrl: linkedinSearchUrl,
+          actionLabel: "Search on LinkedIn",
+        });
       }
     } catch (e) {
-      const msg =
-        e instanceof Error && e.name === "TimeoutError"
-          ? "LinkedIn lookup timed out. Try again — or use Search on LinkedIn."
-          : e instanceof Error
-            ? e.message
-            : "LinkedIn lookup failed";
-      setSocialMessage(msg);
+      setPopup({
+        kind: "error",
+        title: "LinkedIn lookup failed",
+        message:
+          e instanceof Error && e.name === "TimeoutError"
+            ? "The lookup timed out. Try again — or search LinkedIn manually."
+            : e instanceof Error
+              ? e.message
+              : "Something went wrong. Please try again.",
+        actionUrl: linkedinSearchUrl,
+        actionLabel: "Search on LinkedIn",
+      });
     } finally {
       setFindingLinkedin(false);
     }
@@ -347,8 +453,16 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
       if (!res.ok) throw new Error(data.error ?? "Check failed");
       setAdsResult(data.ads);
       await load();
-    } catch {
+    } catch (e) {
       setAdsResult(null);
+      setPopup({
+        kind: "error",
+        title: "Ads check failed",
+        message:
+          e instanceof Error
+            ? e.message
+            : "Could not reach the Meta Ads Library. Please try again.",
+      });
     } finally {
       setCheckingAds(false);
     }
@@ -720,11 +834,6 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
               <CardTitle>Online presence & public directories</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {socialMessage && (
-                <p className="rounded-lg bg-brand-50 px-3 py-2 text-[12px] text-brand-800">
-                  {socialMessage}
-                </p>
-              )}
               {lead.socialEnrichedAt && (
                 <p className="text-[11px] text-ink-faint">
                   Last fetched{" "}
@@ -1059,6 +1168,8 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
           </Card>
         </div>
       </div>
+
+      {popup && <ResultPopup popup={popup} onClose={() => setPopup(null)} />}
     </div>
   );
 }

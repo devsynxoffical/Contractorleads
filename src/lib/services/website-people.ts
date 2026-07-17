@@ -24,6 +24,11 @@ const OWNER_ROLE =
 const TEAM_ROLE =
   /\b(owner|founder|co-founder|president|principal|ceo|manager|director|partner|supervisor|estimator|sales|operations|technician|specialist)\b/i;
 
+// Marketing/filler words that regex matches sometimes capture instead of a
+// person ("led by trained technicians committed to…").
+const NOT_A_NAME =
+  /\b(trained|licensed|insured|certified|professional|professionals|technician|technicians|expert|experts|team|teams|staff|crew|committed|dedicated|experienced|skilled|qualified|local|trusted|friendly|service|services|company|business|contractor|contractors|specialists|installers|plumbers|electricians|roofers|our|your|the|and|with|quality|customer|customers)\b/i;
+
 function clean(value: string): string {
   return value.replace(/\s+/g, " ").trim();
 }
@@ -35,18 +40,34 @@ function plausibleName(value: string): boolean {
     name.length >= 4 &&
     name.length <= 60 &&
     words.length >= 2 &&
-    words.length <= 5 &&
-    words.every((word) => /^[A-Za-zÀ-ÖØ-öø-ÿ'’-]+$/.test(word))
+    words.length <= 4 &&
+    !NOT_A_NAME.test(name) &&
+    // Real names are capitalized ("Tommy Mello"), never all-lowercase phrases.
+    words.every((word) => /^[A-ZÀ-ÖØ][A-Za-zÀ-ÖØ-öø-ÿ'’.-]*$/.test(word))
   );
+}
+
+function formatRole(role: string): string {
+  const cleaned = clean(role);
+  if (/^ceo$/i.test(cleaned)) return "CEO";
+  return cleaned
+    .split(" ")
+    .map((word) =>
+      /^ceo$/i.test(word)
+        ? "CEO"
+        : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+    )
+    .join(" ");
 }
 
 function addMember(members: PublicTeamMember[], candidate: PublicTeamMember) {
   if (!plausibleName(candidate.name) || !TEAM_ROLE.test(candidate.role)) return;
-  const key = candidate.name.toLowerCase();
+  const normalized = { ...candidate, role: formatRole(candidate.role) };
+  const key = normalized.name.toLowerCase();
   const existing = members.find((member) => member.name.toLowerCase() === key);
-  if (!existing) members.push(candidate);
-  else if (candidate.confidence > existing.confidence) {
-    Object.assign(existing, candidate);
+  if (!existing) members.push(normalized);
+  else if (normalized.confidence > existing.confidence) {
+    Object.assign(existing, normalized);
   }
 }
 
