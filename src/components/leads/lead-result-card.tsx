@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   HiOutlineCheckBadge,
   HiOutlineEnvelope,
@@ -8,10 +9,12 @@ import {
   HiOutlineMapPin,
   HiOutlinePhone,
   HiOutlineUser,
+  HiOutlineXMark,
   HiStar,
 } from "react-icons/hi2";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { LeadDetailView } from "@/components/leads/lead-detail-view";
 
 export type LeadResult = {
   id: string;
@@ -44,6 +47,61 @@ export type LeadResult = {
 
 const LOGO_GRADIENT =
   "linear-gradient(135deg, #e6007e 0%, #8e24aa 55%, #7b1fa2 100%)";
+
+/**
+ * Full lead profile rendered as an in-page overlay. Avoids a document
+ * navigation entirely, so a flaky browser/network can never produce the
+ * "This page couldn't load" error screen — failures surface as an in-app
+ * message with a retry button instead.
+ */
+function LeadProfileModal({
+  leadId,
+  onClose,
+}: {
+  leadId: string;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [onClose]);
+
+  return createPortal(
+    <div className="fixed inset-0 z-[80] overflow-y-auto" role="dialog" aria-modal="true">
+      <button
+        aria-label="Close profile"
+        className="fixed inset-0 cursor-default bg-ink/50 backdrop-blur-[2px]"
+        onClick={onClose}
+      />
+      <div className="relative mx-auto my-4 w-full max-w-5xl px-3 sm:my-8">
+        <div className="overflow-hidden rounded-[1.5rem] bg-[#f7f5fa] shadow-2xl">
+          <div className="flex items-center justify-between border-b border-border/70 bg-white px-5 py-3">
+            <p className="text-[13px] font-semibold text-ink-muted">
+              Lead profile
+            </p>
+            <button
+              onClick={onClose}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-ink-muted transition hover:bg-brand-50 hover:text-brand-700"
+              aria-label="Close"
+            >
+              <HiOutlineXMark className="h-5 w-5" />
+            </button>
+          </div>
+          <LeadDetailView leadId={leadId} embedded onClose={onClose} />
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
 
 function tierVariant(tier?: string | null) {
   if (tier === "hot") return "hot" as const;
@@ -104,6 +162,7 @@ export function LeadResultCard({
     lead.address ||
     "Location pending";
 
+  const [showProfile, setShowProfile] = useState(false);
   const initial = lead.businessName.charAt(0).toUpperCase();
   const teamCount = (() => {
     if (!lead.teamMembersJson) return 0;
@@ -218,13 +277,13 @@ export function LeadResultCard({
           )}
 
           <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border/70 pt-3">
-            <Link
-              href={`/leads/${lead.id}`}
+            <button
+              onClick={() => setShowProfile(true)}
               className="inline-flex h-9 items-center rounded-xl px-4 text-[12px] font-semibold text-white shadow-sm transition hover:opacity-95"
               style={{ background: LOGO_GRADIENT }}
             >
               View full profile
-            </Link>
+            </button>
             {lead.phone && (
               <a
                 href={`tel:${lead.phone}`}
@@ -256,6 +315,13 @@ export function LeadResultCard({
           </div>
         </div>
       </div>
+
+      {showProfile && (
+        <LeadProfileModal
+          leadId={lead.id}
+          onClose={() => setShowProfile(false)}
+        />
+      )}
     </article>
   );
 }

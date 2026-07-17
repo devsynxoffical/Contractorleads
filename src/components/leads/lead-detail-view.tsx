@@ -17,6 +17,7 @@ import {
   HiOutlinePhone,
   HiOutlineUser,
   HiOutlineUserGroup,
+  HiOutlineXMark,
   HiStar,
 } from "react-icons/hi2";
 import { FaFacebook, FaInstagram, FaLinkedin } from "react-icons/fa";
@@ -273,8 +274,17 @@ function PlatformTag({ href, label }: { href?: string | null; label: string }) {
   );
 }
 
-export function LeadDetailView({ leadId }: { leadId: string }) {
+export function LeadDetailView({
+  leadId,
+  embedded = false,
+  onClose,
+}: {
+  leadId: string;
+  embedded?: boolean;
+  onClose?: () => void;
+}) {
   const [lead, setLead] = useState<Lead | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [fetchingSocial, setFetchingSocial] = useState(false);
@@ -288,15 +298,30 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
   const [popup, setPopup] = useState<PopupState | null>(null);
 
   async function load() {
-    const res = await fetch(`/api/leads/${leadId}`);
-    const data = await res.json();
-    setLead(data.lead);
-    if (data.lead?.facebookAdsData) {
-      try {
-        setAdsResult(JSON.parse(data.lead.facebookAdsData));
-      } catch {
-        setAdsResult(null);
+    try {
+      const res = await fetch(`/api/leads/${leadId}`, {
+        signal: AbortSignal.timeout(30000),
+      });
+      if (!res.ok) throw new Error(`Could not load this lead (${res.status})`);
+      const data = await res.json();
+      if (!data.lead) throw new Error("This lead was not found.");
+      setLead(data.lead);
+      setLoadError(null);
+      if (data.lead?.facebookAdsData) {
+        try {
+          setAdsResult(JSON.parse(data.lead.facebookAdsData));
+        } catch {
+          setAdsResult(null);
+        }
       }
+    } catch (e) {
+      setLoadError(
+        e instanceof Error && e.name === "TimeoutError"
+          ? "Loading took too long. The server may be busy — try again."
+          : e instanceof Error
+            ? e.message
+            : "Could not load this lead.",
+      );
     }
   }
 
@@ -484,9 +509,37 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
   if (!lead) {
     return (
       <div className="page-pad">
-        <div className="saas-card animate-pulse p-8 text-sm text-ink-muted">
-          Loading lead profile…
-        </div>
+        {loadError ? (
+          <div className="saas-card p-8 text-center">
+            <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600">
+              <HiOutlineExclamationTriangle className="h-6 w-6" />
+            </span>
+            <h3 className="mt-3 font-[family-name:var(--font-display)] text-lg font-semibold text-ink">
+              Couldn&apos;t load this lead
+            </h3>
+            <p className="mt-1.5 text-sm text-ink-muted">{loadError}</p>
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+              <Button
+                onClick={() => {
+                  setLoadError(null);
+                  load();
+                }}
+              >
+                <HiOutlineArrowPath className="h-4 w-4" />
+                Try again
+              </Button>
+              {embedded && onClose && (
+                <Button variant="secondary" onClick={onClose}>
+                  Close
+                </Button>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="saas-card animate-pulse p-8 text-sm text-ink-muted">
+            Loading lead profile…
+          </div>
+        )}
       </div>
     );
   }
@@ -513,13 +566,23 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
 
   return (
     <div className="page-pad page-enter">
-      <Link
-        href="/home"
-        className="mb-4 inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-muted transition hover:text-brand-700"
-      >
-        <HiOutlineArrowLeft className="h-4 w-4" />
-        Back to results
-      </Link>
+      {embedded ? (
+        <button
+          onClick={onClose}
+          className="mb-4 inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-muted transition hover:text-brand-700"
+        >
+          <HiOutlineXMark className="h-4 w-4" />
+          Close profile
+        </button>
+      ) : (
+        <Link
+          href="/home"
+          className="mb-4 inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-muted transition hover:text-brand-700"
+        >
+          <HiOutlineArrowLeft className="h-4 w-4" />
+          Back to results
+        </Link>
+      )}
 
       <div className="relative overflow-hidden rounded-[1.5rem] border border-border/80 bg-white shadow-[var(--shadow-elevated)]">
         <div className="h-1.5 w-full" style={{ background: LOGO_GRADIENT }} />
