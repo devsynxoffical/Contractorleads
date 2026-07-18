@@ -30,6 +30,15 @@ export async function POST(request: Request) {
       radius,
     } = resolved.criteria;
 
+    if (user.creditsRemaining < CREDIT_COSTS.search) {
+      return NextResponse.json(
+        {
+          error: `Insufficient credits. Each search costs ${CREDIT_COSTS.search} credits.`,
+        },
+        { status: 402 }
+      );
+    }
+
     if (!process.env.GOOGLE_PLACES_API_KEY) {
       return NextResponse.json(
         {
@@ -52,8 +61,8 @@ export async function POST(request: Request) {
       radius,
     });
 
-    // Only charge when Places returned something usable or an empty-but-valid result
-    await deductCredits(user.id, CREDIT_COSTS.lead, "lead_generation");
+    // Flat charge per search (not per lead returned)
+    await deductCredits(user.id, CREDIT_COSTS.search, "lead_generation");
 
     await logActivity(
       user.id,

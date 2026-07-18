@@ -45,6 +45,7 @@ import {
   LeadResultsList,
 } from "@/components/leads/lead-result-card";
 import { ExportLeadsButtons } from "@/components/leads/export-leads-buttons";
+import { LocationAutocomplete } from "@/components/leads/location-autocomplete";
 import {
   loadFinderSearchCache,
   saveFinderSearchCache,
@@ -385,7 +386,7 @@ export function LeadSearchForm() {
         <div className="stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatChip label="Coverage" value="Tier 1" hint="US · CA · UK · AU · NZ" />
           <StatChip label="Industries" value="12" hint="Roofing → GCs" />
-          <StatChip label="Cost" value="1 credit" hint="Per search run" />
+          <StatChip label="Cost" value="1.65 credits" hint="Per search run" />
           <StatChip label="Pipeline" value="4 layers" hint="Places → AI score" />
         </div>
       </div>
@@ -545,14 +546,14 @@ export function LeadSearchForm() {
               ) : (
                 <div className="space-y-2 sm:col-span-2 lg:col-span-3">
                   <Label>Custom area</Label>
-                  <Input
+                  <LocationAutocomplete
                     value={customLocation}
-                    onChange={(e) => setCustomLocation(e.target.value)}
-                    placeholder={`e.g. a city, metro, or region in ${getTierOneCountry(selectedCountry).name}`}
-                    required
+                    onChange={(v) => setCustomLocation(v)}
+                    country={selectedCountry}
+                    placeholder={`Start typing a city, county, or region in ${getTierOneCountry(selectedCountry).name}`}
                   />
                   <p className="text-[12px] text-ink-muted">
-                    Free-form place name — neighborhood, metro, or city + state.
+                    Pick a suggestion so we search the correct place.
                   </p>
                 </div>
               )}
@@ -562,9 +563,11 @@ export function LeadSearchForm() {
                   Radius ({getTierOneCountry(selectedCountry).distanceUnit})
                 </Label>
                 <Select name="radius" defaultValue={preset?.radius ?? "25"}>
-                  {[10, 15, 25, 50, 75, 100].map((r) => (
+                  {[0, 10, 15, 25, 50, 75, 100].map((r) => (
                     <option key={r} value={r}>
-                      {r} {getTierOneCountry(selectedCountry).distanceUnit}
+                      {r === 0
+                        ? `0 ${getTierOneCountry(selectedCountry).distanceUnit} (exact area)`
+                        : `${r} ${getTierOneCountry(selectedCountry).distanceUnit}`}
                     </option>
                   ))}
                 </Select>

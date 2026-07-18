@@ -9,11 +9,15 @@ async function main() {
 
   await prisma.user.upsert({
     where: { email: "demo@leadflow.us" },
-    update: {},
+    update: {
+      emailVerifiedAt: new Date(),
+      passwordHash: demoHash,
+    },
     create: {
       email: "demo@leadflow.us",
       name: "Vaishali",
       passwordHash: demoHash,
+      emailVerifiedAt: new Date(),
       role: "USER",
       plan: "trial",
       subscriptionStatus: "trialing",
@@ -34,6 +38,7 @@ async function main() {
     update: {
       role: "SUPER_ADMIN",
       passwordHash: adminHash,
+      emailVerifiedAt: new Date(),
       creditsRemaining: 9999,
       onboardingComplete: true,
     },
@@ -41,6 +46,7 @@ async function main() {
       email: "admin@leadflow.us",
       name: "Super Admin",
       passwordHash: adminHash,
+      emailVerifiedAt: new Date(),
       role: "SUPER_ADMIN",
       plan: "agency",
       subscriptionStatus: "active",

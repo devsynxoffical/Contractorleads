@@ -15,6 +15,7 @@ model User {
   passwordHash        String
   name                String?
   phone               String?
+  emailVerifiedAt     DateTime?
   role                String   @default("USER")
   plan                String   @default("trial")
   subscriptionStatus  String   @default("trialing")
@@ -195,4 +196,17 @@ model AdminRoleTemplate {
   permissions String // JSON string array of permission keys
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+/// Pending agency signups awaiting business-email verification.
+model EmailVerification {
+  id        String   @id @default(cuid())
+  email     String
+  phone     String
+  name      String?
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
 }

@@ -1,13 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   HiOutlineEnvelope,
-  HiOutlineEye,
-  HiOutlineEyeSlash,
-  HiOutlineLockClosed,
   HiOutlinePhone,
   HiOutlineUser,
 } from "react-icons/hi2";
@@ -18,29 +14,23 @@ type RegisterFormProps = {
   onSwitchToLogin?: () => void;
 };
 
-export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
-  const router = useRouter();
+function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState<string | null>(null);
+  const [devLink, setDevLink] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setSuccess(null);
+    setDevLink(null);
 
     const form = new FormData(e.currentTarget);
-    const password = String(form.get("password") || "");
-
     const phone = String(form.get("phone") || "").trim();
     if (!phone || phone.replace(/\D/g, "").length < 7) {
       setError("Please enter a valid phone number");
-      setLoading(false);
-      return;
-    }
-
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters");
       setLoading(false);
       return;
     }
@@ -58,41 +48,45 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
         name: form.get("name"),
         email: form.get("email"),
         phone,
-        password,
       }),
     });
 
+    const data = await res.json();
     if (!res.ok) {
-      const data = await res.json();
       setError(data.error || "Registration failed");
       setLoading(false);
       return;
     }
 
-    router.push("/onboarding");
-    router.refresh();
+    setSuccess(
+      data.message ||
+        "Check your business email for a verification link."
+    );
+    if (data.verifyUrl) setDevLink(data.verifyUrl);
+    setLoading(false);
   }
 
   return (
     <>
       <div className="mb-8">
-        <h1 className="text-[28px] font-bold tracking-tight text-[#111827] sm:text-[32px]">
+        <h1 className="text-[28px] font-bold tracking-tight text-white sm:text-[32px]">
           Create Account
         </h1>
-        <p className="mt-2 text-[15px] text-[#6b7280]">
-          Already have an account?{" "}
+        <p className="mt-2 text-[15px] text-[#8b9aab]">
+          Use your official business email. We will send a verification link
+          before you set a password.{" "}
           {onSwitchToLogin ? (
             <button
               type="button"
               onClick={onSwitchToLogin}
-              className="font-semibold text-[#7c3aed] hover:underline"
+              className="font-semibold text-[#00e5ff] hover:underline"
             >
               Log in
             </button>
           ) : (
             <Link
               href="/login"
-              className="font-semibold text-[#7c3aed] hover:underline"
+              className="font-semibold text-[#00e5ff] hover:underline"
             >
               Log in
             </Link>
@@ -103,14 +97,14 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
       <div className="grid grid-cols-2 gap-3">
         <button
           type="button"
-          className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[#f3f4f6] text-sm font-medium text-[#111827] transition hover:bg-[#e5e7eb]"
+          className="flex h-11 items-center justify-center gap-2 border border-[#00e5ff]/25 bg-[#00e5ff]/08 text-sm font-medium text-white transition hover:bg-[#00e5ff]/15"
         >
           <FcGoogle className="h-5 w-5" />
           Google
         </button>
         <button
           type="button"
-          className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[#f3f4f6] text-sm font-medium text-[#111827] transition hover:bg-[#e5e7eb]"
+          className="flex h-11 items-center justify-center gap-2 border border-[#00e5ff]/25 bg-[#00e5ff]/08 text-sm font-medium text-white transition hover:bg-[#00e5ff]/15"
         >
           <FaApple className="h-5 w-5" />
           Apple
@@ -118,144 +112,139 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
       </div>
 
       <div className="my-7 flex items-center gap-3">
-        <div className="h-px flex-1 bg-[#e5e7eb]" />
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-[#9ca3af]">
-          Or with email
+        <div className="h-px flex-1 bg-[#00e5ff]/20" />
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-[#5c6b7c]">
+          Or with business email
         </span>
-        <div className="h-px flex-1 bg-[#e5e7eb]" />
+        <div className="h-px flex-1 bg-[#00e5ff]/20" />
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-1.5">
-          <label
-            htmlFor="reg-name"
-            className="text-[13px] font-semibold text-[#374151]"
+      {success ? (
+        <div className="space-y-3 border border-[#00e5ff]/25 bg-[#00e5ff]/08 p-4 text-sm text-[#c5d0dc]">
+          <p className="font-semibold text-[#00e5ff]">Check your inbox</p>
+          <p>{success}</p>
+          {devLink && (
+            <p className="text-[12px] text-[#8b9aab]">
+              Dev mode (no email provider configured):{" "}
+              <a
+                href={devLink}
+                className="font-semibold text-[#00e5ff] break-all hover:underline"
+              >
+                Open verification link
+              </a>
+            </p>
+          )}
+          <Link
+            href="/login"
+            className="inline-block font-semibold text-[#00e5ff] hover:underline"
           >
-            Full Name
-          </label>
-          <div className="relative">
-            <HiOutlineUser className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[#9ca3af]" />
-            <input
-              id="reg-name"
-              name="name"
-              type="text"
-              required
-              placeholder="Your full name"
-              className="auth-field h-12 w-full rounded-xl bg-[#f3f4f6] pl-11 pr-4 text-sm text-[#111827] outline-none transition placeholder:text-[#9ca3af] focus:bg-white focus:ring-2 focus:ring-[#7c3aed]/25"
-            />
-          </div>
+            Back to login
+          </Link>
         </div>
-
-        <div className="space-y-1.5">
-          <label
-            htmlFor="reg-email"
-            className="text-[13px] font-semibold text-[#374151]"
-          >
-            Email Address
-          </label>
-          <div className="relative">
-            <HiOutlineEnvelope className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[#9ca3af]" />
-            <input
-              id="reg-email"
-              name="email"
-              type="email"
-              required
-              placeholder="name@company.com"
-              className="auth-field h-12 w-full rounded-xl bg-[#f3f4f6] pl-11 pr-4 text-sm text-[#111827] outline-none transition placeholder:text-[#9ca3af] focus:bg-white focus:ring-2 focus:ring-[#7c3aed]/25"
-            />
-          </div>
-        </div>
-
-        <div className="space-y-1.5">
-          <label
-            htmlFor="reg-phone"
-            className="text-[13px] font-semibold text-[#374151]"
-          >
-            Phone Number <span className="text-[#db2777]">*</span>
-          </label>
-          <div className="relative">
-            <HiOutlinePhone className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[#9ca3af]" />
-            <input
-              id="reg-phone"
-              name="phone"
-              type="tel"
-              required
-              autoComplete="tel"
-              placeholder="+1 (555) 000-0000"
-              className="auth-field h-12 w-full rounded-xl bg-[#f3f4f6] pl-11 pr-4 text-sm text-[#111827] outline-none transition placeholder:text-[#9ca3af] focus:bg-white focus:ring-2 focus:ring-[#7c3aed]/25"
-            />
-          </div>
-        </div>
-
-        <div className="space-y-1.5">
-          <label
-            htmlFor="reg-password"
-            className="text-[13px] font-semibold text-[#374151]"
-          >
-            Password
-          </label>
-          <div className="relative">
-            <HiOutlineLockClosed className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[#9ca3af]" />
-            <input
-              id="reg-password"
-              name="password"
-              type={showPassword ? "text" : "password"}
-              required
-              minLength={8}
-              placeholder="Create a password"
-              className="auth-field h-12 w-full rounded-xl bg-[#f3f4f6] pl-11 pr-11 text-sm text-[#111827] outline-none transition placeholder:text-[#9ca3af] focus:bg-white focus:ring-2 focus:ring-[#7c3aed]/25"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#9ca3af] hover:text-[#374151]"
-              aria-label={showPassword ? "Hide password" : "Show password"}
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <label
+              htmlFor="reg-name"
+              className="text-[13px] font-semibold text-[#8b9aab]"
             >
-              {showPassword ? (
-                <HiOutlineEyeSlash className="h-[18px] w-[18px]" />
-              ) : (
-                <HiOutlineEye className="h-[18px] w-[18px]" />
-              )}
-            </button>
+              Full Name
+            </label>
+            <div className="relative">
+              <HiOutlineUser className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[#5c6b7c]" />
+              <input
+                id="reg-name"
+                name="name"
+                type="text"
+                required
+                placeholder="Your full name"
+                className="auth-field h-12 w-full rounded-xl pl-11 pr-4 text-sm outline-none transition focus:ring-2 focus:ring-[#00e5ff]/25"
+              />
+            </div>
           </div>
-          <p className="text-[12px] text-[#9ca3af]">
-            Must be at least 8 characters long.
-          </p>
-        </div>
 
-        <label className="flex items-start gap-2.5 pt-1 text-[13px] text-[#6b7280]">
-          <input
-            type="checkbox"
-            name="terms"
-            className="mt-0.5 h-4 w-4 rounded border-[#d1d5db] text-[#7c3aed] focus:ring-[#7c3aed]"
-          />
-          <span>
-            I agree to the{" "}
-            <Link href="#" className="font-medium text-[#7c3aed] hover:underline">
-              Terms of Service
-            </Link>{" "}
-            and{" "}
-            <Link href="#" className="font-medium text-[#7c3aed] hover:underline">
-              Privacy Policy
-            </Link>
-            .
-          </span>
-        </label>
+          <div className="space-y-1.5">
+            <label
+              htmlFor="reg-email"
+              className="text-[13px] font-semibold text-[#8b9aab]"
+            >
+              Business Email
+            </label>
+            <div className="relative">
+              <HiOutlineEnvelope className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[#5c6b7c]" />
+              <input
+                id="reg-email"
+                name="email"
+                type="email"
+                required
+                placeholder="you@yourcompany.com"
+                className="auth-field h-12 w-full rounded-xl pl-11 pr-4 text-sm outline-none transition focus:ring-2 focus:ring-[#00e5ff]/25"
+              />
+            </div>
+            <p className="text-[12px] text-[#5c6b7c]">
+              Free inboxes (Gmail, Yahoo, Outlook, etc.) are not allowed.
+            </p>
+          </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+          <div className="space-y-1.5">
+            <label
+              htmlFor="reg-phone"
+              className="text-[13px] font-semibold text-[#8b9aab]"
+            >
+              Phone Number <span className="text-[#00e5ff]">*</span>
+            </label>
+            <div className="relative">
+              <HiOutlinePhone className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[#5c6b7c]" />
+              <input
+                id="reg-phone"
+                name="phone"
+                type="tel"
+                required
+                autoComplete="tel"
+                placeholder="+1 (555) 000-0000"
+                className="auth-field h-12 w-full rounded-xl pl-11 pr-4 text-sm outline-none transition focus:ring-2 focus:ring-[#00e5ff]/25"
+              />
+            </div>
+          </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="mt-2 flex h-12 w-full items-center justify-center rounded-xl text-sm font-semibold text-white shadow-md transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-70"
-          style={{
-            background:
-              "linear-gradient(90deg, #7c3aed 0%, #c026d3 50%, #db2777 100%)",
-          }}
-        >
-          {loading ? "Creating account…" : "Create Account"}
-        </button>
-      </form>
+          <label className="flex items-start gap-2.5 pt-1 text-[13px] text-[#8b9aab]">
+            <input
+              type="checkbox"
+              name="terms"
+              className="mt-0.5 h-4 w-4 rounded border-[#00e5ff]/40 bg-transparent text-[#00e5ff] focus:ring-[#00e5ff]"
+            />
+            <span>
+              I agree to the{" "}
+              <Link href="#" className="font-medium text-[#00e5ff] hover:underline">
+                Terms of Service
+              </Link>{" "}
+              and{" "}
+              <Link href="#" className="font-medium text-[#00e5ff] hover:underline">
+                Privacy Policy
+              </Link>
+              .
+            </span>
+          </label>
+
+          {error && <p className="text-sm text-red-400">{error}</p>}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="hud-btn-primary mt-2 h-12 w-full justify-center rounded-xl text-sm disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {loading ? "Sending verification…" : "Send verification email"}
+          </button>
+        </form>
+      )}
     </>
+  );
+}
+
+export function RegisterForm(props: RegisterFormProps) {
+  return (
+    <Suspense fallback={null}>
+      <RegisterFormInner {...props} />
+    </Suspense>
   );
 }

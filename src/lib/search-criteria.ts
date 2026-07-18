@@ -70,8 +70,9 @@ export function resolveSearchCriteria(
   }
 
   const radius = Number(input.radius ?? 25);
-  if (!Number.isFinite(radius) || radius <= 0) {
-    return { ok: false, error: "Radius must be a positive number." };
+  // 0 = exact area only (city/ZIP/region); positive = wider local bias
+  if (!Number.isFinite(radius) || radius < 0) {
+    return { ok: false, error: "Radius must be 0 or greater." };
   }
 
   const customLocation = input.customLocation?.trim();

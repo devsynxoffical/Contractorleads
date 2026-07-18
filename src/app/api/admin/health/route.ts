@@ -76,6 +76,26 @@ export async function GET() {
         : "Optional — LinkedIn enrichment limited",
     },
     {
+      name: "Transactional email",
+      status:
+        byKey.RESEND_API_KEY?.configured || byKey.SENDGRID_API_KEY?.configured
+          ? "ok"
+          : "warn",
+      detail:
+        byKey.RESEND_API_KEY?.configured
+          ? "Resend configured (signup verification)"
+          : byKey.SENDGRID_API_KEY?.configured
+            ? "SendGrid configured (signup verification)"
+            : "RESEND_API_KEY or SENDGRID_API_KEY missing — verification emails are mocked in logs",
+    },
+    {
+      name: "Places Autocomplete",
+      status: byKey.GOOGLE_PLACES_API_KEY?.configured ? "ok" : "missing",
+      detail: byKey.GOOGLE_PLACES_API_KEY?.configured
+        ? "Uses GOOGLE_PLACES_API_KEY — enable Places API (Autocomplete / Places API New) in Google Cloud"
+        : "GOOGLE_PLACES_API_KEY missing — location typeahead disabled",
+    },
+    {
       name: "JWT secret",
       status: byKey.JWT_SECRET?.configured ? "ok" : "warn",
       detail: byKey.JWT_SECRET?.configured
@@ -86,8 +106,8 @@ export async function GET() {
       name: "App URL",
       status: byKey.NEXT_PUBLIC_APP_URL?.configured ? "ok" : "warn",
       detail: byKey.NEXT_PUBLIC_APP_URL?.configured
-        ? "Configured"
-        : "NEXT_PUBLIC_APP_URL not set",
+        ? "Configured (needed for verification email links)"
+        : "NEXT_PUBLIC_APP_URL not set — verification links may point to localhost",
     },
   ];
 

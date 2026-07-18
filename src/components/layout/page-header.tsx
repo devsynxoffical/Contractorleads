@@ -2,7 +2,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 const LOGO_GRADIENT =
-  "linear-gradient(135deg, #e6007e 0%, #8e24aa 55%, #7b1fa2 100%)";
+  "linear-gradient(135deg, #00e5ff 0%, #00b8d4 55%, #0097a7 100%)";
 
 export function PageHeader({
   eyebrow = "LeadFlow USA",

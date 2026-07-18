@@ -30,8 +30,9 @@ export async function POST(
     lead.website
   );
 
+  const MIN_CONFIDENCE = 85;
   const normalized =
-    result.url && result.confidence >= 95
+    result.url && result.confidence >= MIN_CONFIDENCE
       ? normalizeLinkedInCompanyUrl(result.url) ?? result.url
       : null;
   const companyUrl = normalized ?? lead.linkedinCompanyUrl;
@@ -54,6 +55,11 @@ export async function POST(
     slug_match: "Matched via LinkedIn URL pattern",
   };
 
+  const missingKey =
+    !process.env.LINKEDIN_DATA_API_KEY && !result.url
+      ? "Add LINKEDIN_DATA_API_KEY (e.g. Proxycurl) for higher LinkedIn match rates. Free website + slug matching did not find a page."
+      : null;
+
   return NextResponse.json({
     lead: updated,
     linkedin: {
@@ -63,6 +69,7 @@ export async function POST(
       sourceLabel: result.source ? sourceLabel[result.source] : null,
       verified: Boolean(normalized),
       searchUrl: buildLinkedInCompanySearchUrl(lead.businessName),
+      message: missingKey,
     },
   });
 }

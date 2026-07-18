@@ -263,7 +263,16 @@ export async function searchGooglePlaces(params: {
     params.locationScope === "country"
       ? country.name
       : params.customLocation?.trim() || locationQuery(params);
-  const query = `${industryQuery(params.industry)} in ${loc}`;
+
+  // radius 0 = exact area phrasing; larger radii bias toward the named place
+  const query =
+    params.locationScope === "local" && params.radius === 0
+      ? `${industryQuery(params.industry)} in ${loc}`
+      : params.locationScope === "local" &&
+          typeof params.radius === "number" &&
+          params.radius > 0
+        ? `${industryQuery(params.industry)} near ${loc}`
+        : `${industryQuery(params.industry)} in ${loc}`;
 
   const searchUrl = new URL(
     "https://maps.googleapis.com/maps/api/place/textsearch/json"

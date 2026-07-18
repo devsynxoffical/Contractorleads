@@ -30,6 +30,7 @@ import {
   startNavigationProgress,
   stopNavigationProgress,
 } from "@/components/layout/navigation-progress";
+import { LocationAutocomplete } from "@/components/leads/location-autocomplete";
 
 type Lead = {
   id: string;
@@ -493,13 +494,15 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
                 />
               </>
             ) : (
-              <input
-                value={customLocation}
-                onChange={(e) => setCustomLocation(e.target.value)}
-                placeholder={`Custom area in ${getTierOneCountry(country).name}`}
-                required
-                className="h-9 rounded-lg border border-border bg-white px-2 text-[12px] text-ink outline-none focus:border-brand-400 sm:col-span-3"
-              />
+              <div className="sm:col-span-3">
+                <LocationAutocomplete
+                  value={customLocation}
+                  onChange={(v) => setCustomLocation(v)}
+                  country={country}
+                  placeholder={`Custom area in ${getTierOneCountry(country).name}`}
+                  inputClassName="h-9 rounded-lg border border-border bg-white px-2 pl-9 text-[12px]"
+                />
+              </div>
             )}
             <button
               type="submit"

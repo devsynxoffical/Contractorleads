@@ -36,6 +36,7 @@ import {
   startNavigationProgress,
   stopNavigationProgress,
 } from "@/components/layout/navigation-progress";
+import { LocationAutocomplete } from "@/components/leads/location-autocomplete";
 
 type Lead = SearchSessionLead;
 
@@ -679,12 +680,11 @@ export function HomeView({ userName }: { userName?: string | null }) {
                 <label className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">
                   Custom area
                 </label>
-                <input
+                <LocationAutocomplete
                   value={customLocation}
-                  onChange={(e) => setCustomLocation(e.target.value)}
-                  placeholder={`e.g. a city, metro, or region in ${getTierOneCountry(country).name}`}
-                  required
-                  className="saas-input"
+                  onChange={(v) => setCustomLocation(v)}
+                  country={country}
+                  placeholder={`Start typing a city or region in ${getTierOneCountry(country).name}`}
                 />
               </div>
             )}
@@ -698,9 +698,11 @@ export function HomeView({ userName }: { userName?: string | null }) {
                 onChange={(e) => setRadius(e.target.value)}
                 className="saas-input"
               >
-                {[10, 15, 25, 50, 75, 100].map((r) => (
+                {[0, 10, 15, 25, 50, 75, 100].map((r) => (
                   <option key={r} value={r}>
-                    {r} {getTierOneCountry(country).distanceUnit}
+                    {r === 0
+                      ? `0 ${getTierOneCountry(country).distanceUnit} (exact area)`
+                      : `${r} ${getTierOneCountry(country).distanceUnit}`}
                   </option>
                 ))}
               </select>

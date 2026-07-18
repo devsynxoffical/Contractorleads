@@ -106,7 +106,7 @@ export default function AdminCustomerDetailPage() {
       setMessage(data.error ?? "Could not start test session");
       return;
     }
-    router.push(data.redirectTo || "/home");
+    router.push(data.redirectTo || "/auth/splash");
     router.refresh();
   }
 

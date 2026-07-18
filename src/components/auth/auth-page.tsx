@@ -38,60 +38,78 @@ export function AuthPage({ initialMode = "login" }: { initialMode?: AuthMode }) 
   const copy = panelCopy[mode];
 
   return (
-    <div className="flex min-h-screen">
-      {/* Left branding */}
+    <div className="auth-page relative flex min-h-screen overflow-hidden">
       <div
-        className="relative hidden min-h-screen w-1/2 flex-col overflow-hidden lg:flex"
+        className="pointer-events-none absolute inset-0"
         style={{
-          background:
-            "linear-gradient(145deg, #5b21b6 0%, #7c3aed 35%, #c026d3 70%, #db2777 100%)",
+          backgroundImage:
+            "linear-gradient(rgba(0,229,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,229,255,0.05) 1px, transparent 1px), radial-gradient(ellipse 70% 50% at 65% 35%, rgba(0,180,220,0.22), transparent 55%), linear-gradient(180deg, rgba(7,13,24,0.55) 0%, rgba(7,13,24,0.88) 100%), url(/hud-cover.png)",
+          backgroundSize: "48px 48px, 48px 48px, auto, auto, cover",
+          backgroundPosition: "center, center, center, center, center top",
         }}
-      >
+        aria-hidden
+      />
+
+      {/* Left branding */}
+      <div className="relative z-10 hidden min-h-screen w-1/2 flex-col border-r border-[#00e5ff]/15 lg:flex">
         <div className="relative z-10 flex items-center gap-3 px-10 pt-10">
-          <Image
-            src="/logo.png"
-            alt=""
-            width={36}
-            height={36}
-            className="object-contain"
-            priority
-          />
+          <div className="flex h-10 w-10 items-center justify-center border border-[#00e5ff]/35 bg-[#00e5ff]/10">
+            <Image
+              src="/logo.png"
+              alt=""
+              width={28}
+              height={28}
+              className="object-contain"
+              priority
+            />
+          </div>
           <span className="text-[18px] font-semibold tracking-tight text-white">
             Contractor Leads
           </span>
         </div>
 
         <div className="relative z-10 flex flex-1 flex-col justify-center px-12 lg:px-20">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#00e5ff]">
+            LeadFlow HUD
+          </p>
           <h2
-            className="text-[40px] font-semibold leading-[1.15] tracking-[-0.02em] text-white lg:text-[48px]"
-            style={{ fontFamily: "var(--font-outfit), var(--font-jakarta), system-ui, sans-serif" }}
+            className="mt-3 text-[40px] font-semibold leading-[1.15] tracking-[-0.02em] text-white lg:text-[48px]"
+            style={{
+              fontFamily:
+                "var(--font-outfit), var(--font-jakarta), system-ui, sans-serif",
+            }}
           >
             {copy.title}
           </h2>
           <p
-            className="mt-5 max-w-[380px] text-[16px] font-normal leading-[1.65] tracking-[0.01em] text-white/80 lg:text-[17px]"
-            style={{ fontFamily: "var(--font-outfit), var(--font-jakarta), system-ui, sans-serif" }}
+            className="mt-5 max-w-[380px] text-[16px] font-normal leading-[1.65] tracking-[0.01em] text-[#8b9aab] lg:text-[17px]"
+            style={{
+              fontFamily:
+                "var(--font-outfit), var(--font-jakarta), system-ui, sans-serif",
+            }}
           >
             {copy.subtitle}
           </p>
+          <div className="mt-8 flex gap-3">
+            <span className="hud-pill">Verified leads</span>
+            <span className="hud-pill hud-pill-muted">AI scored</span>
+          </div>
         </div>
 
-        <p className="relative z-10 px-10 pb-8 text-xs text-white/45">
+        <p className="relative z-10 px-10 pb-8 text-xs text-[#5c6b7c]">
           © 2026 Contractor Leads
         </p>
       </div>
 
       {/* Right form */}
-      <div
-        className="relative flex min-h-screen w-full flex-col lg:w-1/2"
-        style={{
-          backgroundColor: "#ffffff",
-          backgroundImage: "radial-gradient(#e5e7eb 1px, transparent 1px)",
-          backgroundSize: "22px 22px",
-        }}
-      >
+      <div className="relative z-10 flex min-h-screen w-full flex-col lg:w-1/2">
         <div className="relative z-10 flex flex-1 flex-col justify-center px-6 py-12 sm:px-12 lg:px-16 xl:px-24">
-          <div className="mx-auto w-full max-w-[420px]">
+          <div className="hud-panel mx-auto w-full max-w-[420px] !p-6 sm:!p-8">
+            <span className="hud-bracket hud-bracket-tl" aria-hidden />
+            <span className="hud-bracket hud-bracket-tr" aria-hidden />
+            <span className="hud-bracket hud-bracket-bl" aria-hidden />
+            <span className="hud-bracket hud-bracket-br" aria-hidden />
+
             <div className="mb-8 flex items-center gap-2.5 lg:hidden">
               <Image
                 src="/logo.png"
@@ -101,7 +119,7 @@ export function AuthPage({ initialMode = "login" }: { initialMode?: AuthMode }) 
                 className="object-contain"
                 priority
               />
-              <span className="text-base font-semibold text-[#111827]">
+              <span className="text-base font-semibold text-white">
                 Contractor Leads
               </span>
             </div>
@@ -112,11 +130,11 @@ export function AuthPage({ initialMode = "login" }: { initialMode?: AuthMode }) 
               <RegisterForm onSwitchToLogin={() => switchMode("login")} />
             )}
 
-            <p className="mt-10 text-center text-sm text-[#9ca3af]">
+            <p className="mt-10 text-center text-sm text-[#5c6b7c]">
               Need help?{" "}
               <Link
                 href="#"
-                className="font-medium text-[#7c3aed] hover:underline"
+                className="font-medium text-[#00e5ff] hover:underline"
               >
                 Contact Support
               </Link>

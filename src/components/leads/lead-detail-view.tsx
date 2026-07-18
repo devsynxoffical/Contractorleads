@@ -517,9 +517,9 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
 
   const saved = lead.savedBy[0];
   const linkedinCompany =
-    lead.linkedinCompanyUrl && (lead.linkedinConfidenceScore ?? 0) >= 95;
+    lead.linkedinCompanyUrl && (lead.linkedinConfidenceScore ?? 0) >= 85;
   const linkedinOwner =
-    lead.linkedinOwnerUrl && (lead.linkedinOwnerConfidenceScore ?? 0) >= 95;
+    lead.linkedinOwnerUrl && (lead.linkedinOwnerConfidenceScore ?? 0) >= 85;
   const teamMembers = parseTeamMembers(lead.teamMembersJson);
   const additionalTeamMembers = teamMembers.filter(
     (member) =>

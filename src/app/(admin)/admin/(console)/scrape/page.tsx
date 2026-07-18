@@ -157,10 +157,14 @@ export default function AdminScrapePage() {
               </span>
               <input
                 type="number"
+                min={0}
                 className="saas-input mt-1"
                 value={radius}
-                onChange={(e) => setRadius(Number(e.target.value) || 25)}
+                onChange={(e) => setRadius(Number(e.target.value) || 0)}
               />
+              <p className="mt-1 text-[11px] text-ink-faint">
+                Use 0 for exact area only.
+              </p>
             </label>
           </>
         )}

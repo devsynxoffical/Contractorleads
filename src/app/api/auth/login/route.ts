@@ -41,10 +41,18 @@ export async function POST(request: Request) {
       );
     }
 
+    // Legacy accounts (created before verify-first signup) may lack emailVerifiedAt.
+    if (!user.emailVerifiedAt) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { emailVerifiedAt: user.createdAt },
+      });
+    }
+
     const token = await createSessionToken(user.id);
     await setSessionCookie(token);
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, redirectTo: "/auth/splash" });
   } catch {
     return NextResponse.json({ error: "Login failed" }, { status: 500 });
   }

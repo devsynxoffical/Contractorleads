@@ -235,14 +235,18 @@ async function resolveViaProxycurlName(
   apiKey: string
 ): Promise<string | null> {
   try {
-    const query = encodeURIComponent(`${businessName} ${location} ${industry}`);
-    const response = await fetch(
-      `https://nubela.co/proxycurl/api/v2/linkedin/company/resolve?company_domain=&company_name=${query}`,
-      {
-        headers: { Authorization: `Bearer ${apiKey}` },
-        signal: AbortSignal.timeout(12000),
-      }
+    const url = new URL(
+      "https://nubela.co/proxycurl/api/linkedin/company/resolve"
     );
+    url.searchParams.set("company_name", businessName);
+    if (location) url.searchParams.set("enrich_profile", "enrich");
+    void industry;
+    void location;
+
+    const response = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      signal: AbortSignal.timeout(15000),
+    });
     if (!response.ok) return null;
     const data = (await response.json()) as { url?: string };
     return data.url ? normalizeLinkedInCompanyUrl(data.url) : null;
@@ -310,7 +314,12 @@ export async function findLinkedInCompanyUrl(
   // 4) Slug guess + name match in page HTML (free, best effort)
   const fromSlug = await resolveViaSlugGuess(businessName);
   if (fromSlug) {
-    return { url: fromSlug, confidence: 95, source: "slug_match" };
+    return { url: fromSlug, confidence: 90, source: "slug_match" };
+  }
+
+  // No paid key and free methods failed — still return a low-confidence hint
+  if (!apiKey) {
+    return { url: null, confidence: 0, source: null };
   }
 
   return { url: null, confidence: 0, source: null };

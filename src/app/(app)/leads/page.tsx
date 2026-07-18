@@ -11,12 +11,35 @@ import {
 import { ExportLeadsButtons } from "@/components/leads/export-leads-buttons";
 import { HiOutlineFire, HiOutlineMagnifyingGlass } from "react-icons/hi2";
 
-export default async function AllLeadsPage() {
+export default async function AllLeadsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
+  const { q } = await searchParams;
+  const query = q?.trim() ?? "";
+
   const leads = await prisma.lead.findMany({
-    where: { search: { userId: user.id } },
+    where: {
+      search: { userId: user.id },
+      ...(query
+        ? {
+            OR: [
+              { businessName: { contains: query, mode: "insensitive" } },
+              { ownerName: { contains: query, mode: "insensitive" } },
+              { email: { contains: query, mode: "insensitive" } },
+              { phone: { contains: query, mode: "insensitive" } },
+              { city: { contains: query, mode: "insensitive" } },
+              { state: { contains: query, mode: "insensitive" } },
+              { industry: { contains: query, mode: "insensitive" } },
+              { address: { contains: query, mode: "insensitive" } },
+            ],
+          }
+        : {}),
+    },
     orderBy: { createdAt: "desc" },
     take: 100,
   });
@@ -25,7 +48,11 @@ export default async function AllLeadsPage() {
     <div className="page-pad">
       <PageHeader
         title="All Leads"
-        description={`${leads.length} AI-verified leads from your searches.`}
+        description={
+          query
+            ? `${leads.length} result${leads.length === 1 ? "" : "s"} for “${query}”.`
+            : `${leads.length} AI-verified leads from your searches.`
+        }
         actions={
           <>
             <ExportLeadsButtons scope="all" disabled={!leads.length} />
@@ -40,6 +67,15 @@ export default async function AllLeadsPage() {
           </>
         }
       />
+
+      {query && (
+        <p className="mb-4 text-[13px] text-ink-muted">
+          Showing filtered results.{" "}
+          <Link href="/leads" className="font-semibold text-brand-600 hover:underline">
+            Clear search
+          </Link>
+        </p>
+      )}
 
       <div className="overflow-x-auto rounded-xl border border-border bg-white shadow-[var(--shadow-card)]">
         <table className="w-full min-w-[560px] text-left text-sm">
@@ -92,10 +128,16 @@ export default async function AllLeadsPage() {
         </table>
         {!leads.length && (
           <p className="px-4 py-10 text-center text-sm text-ink-muted">
-            No leads yet.{" "}
-            <Link href="/leads/search" className="font-semibold text-brand-600">
-              Run Lead Finder
-            </Link>
+            {query ? (
+              <>No leads match “{query}”.</>
+            ) : (
+              <>
+                No leads yet.{" "}
+                <Link href="/leads/search" className="font-semibold text-brand-600">
+                  Run Lead Finder
+                </Link>
+              </>
+            )}
           </p>
         )}
       </div>

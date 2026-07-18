@@ -125,12 +125,14 @@ function SidebarNav({
   showClose,
   onClose,
   onCollapse,
+  hud = false,
 }: {
   user: SessionUser;
   onNavigate?: () => void;
   showClose?: boolean;
   onClose?: () => void;
   onCollapse?: () => void;
+  hud?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -145,7 +147,14 @@ function SidebarNav({
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex h-16 shrink-0 items-center gap-2.5 border-b border-border/80 px-5">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-50 to-white shadow-[var(--shadow-soft)] ring-1 ring-border/80">
+        <div
+          className={cn(
+            "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-[var(--shadow-soft)] ring-1",
+            hud
+              ? "bg-[#00e5ff]/10 ring-[#00e5ff]/30"
+              : "bg-gradient-to-br from-brand-50 to-white ring-border/80",
+          )}
+        >
           <Image
             src="/logo.png"
             alt=""
@@ -229,16 +238,31 @@ function SidebarNav({
       </nav>
 
       <div className="shrink-0 border-t border-border/80 p-4">
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#fcf2f8] via-white to-[#f3eef8] p-3.5 ring-1 ring-brand-100/80">
+        <div
+          className={cn(
+            "hud-credits-card relative overflow-hidden rounded-2xl p-3.5 ring-1",
+            hud
+              ? "bg-[#00e5ff]/10 ring-[#00e5ff]/25"
+              : "bg-gradient-to-br from-[#fcf2f8] via-white to-[#f3eef8] ring-brand-100/80",
+          )}
+        >
           <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-faint">
             Credits
           </p>
-          <p className="mt-1 font-[family-name:var(--font-display)] text-2xl font-semibold tabular-nums tracking-tight text-brand-700">
+          <p
+            className={cn(
+              "mt-1 font-[family-name:var(--font-display)] text-2xl font-semibold tabular-nums tracking-tight",
+              hud ? "text-[#00e5ff]" : "text-brand-700",
+            )}
+          >
             {formatCredits(user.creditsRemaining)}
           </p>
           <Link
             href="/billing"
-            className="mt-2 inline-block text-[11px] font-semibold text-brand-600 hover:underline"
+            className={cn(
+              "mt-2 inline-block text-[11px] font-semibold hover:underline",
+              hud ? "text-[#5eead4]" : "text-brand-600",
+            )}
           >
             Upgrade plan →
           </Link>
@@ -296,8 +320,15 @@ export function AppShell({
     };
   }, [mobileOpen]);
 
+  const hudMode = true;
+
   return (
-    <div className="flex h-[100dvh] overflow-hidden bg-transparent">
+    <div
+      className={cn(
+        "flex h-[100dvh] overflow-hidden bg-transparent",
+        hudMode && "app-shell--hud",
+      )}
+    >
       <Suspense fallback={null}>
         <NavigationProgress />
       </Suspense>
@@ -321,7 +352,7 @@ export function AppShell({
       )}
       <aside
         className={cn(
-          "hidden h-full shrink-0 flex-col border-r border-border/70 bg-white/90 shadow-[4px_0_24px_rgba(20,17,26,0.03)] backdrop-blur-xl transition-[width,opacity,transform] duration-300 ease-out lg:flex",
+          "hud-shell-aside hidden h-full shrink-0 flex-col border-r border-border/70 bg-white/90 shadow-[4px_0_24px_rgba(20,17,26,0.03)] backdrop-blur-xl transition-[width,opacity,transform] duration-300 ease-out lg:flex",
           sidebarCollapsed
             ? "w-0 overflow-hidden border-r-0 opacity-0 shadow-none"
             : "w-[268px] opacity-100",
@@ -330,22 +361,33 @@ export function AppShell({
         aria-hidden={sidebarCollapsed}
       >
         <div className="flex h-full w-[268px] flex-col">
-          <SidebarNav user={user} onCollapse={toggleSidebar} />
+          <SidebarNav user={user} onCollapse={toggleSidebar} hud={hudMode} />
         </div>
       </aside>
 
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
-            className="absolute inset-0 animate-fade-in bg-[#0f0c14]/40 backdrop-blur-[2px]"
+            className={cn(
+              "absolute inset-0 animate-fade-in backdrop-blur-[2px]",
+              hudMode ? "bg-[#070d18]/70" : "bg-[#0f0c14]/40",
+            )}
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="animate-slide-left relative flex h-full w-[min(288px,86vw)] flex-col border-r border-border bg-white shadow-2xl">
+          <aside
+            className={cn(
+              "hud-shell-aside animate-slide-left relative flex h-full w-[min(288px,86vw)] flex-col border-r shadow-2xl",
+              hudMode
+                ? "border-[#00e5ff]/15 bg-[#0b1220]"
+                : "border-border bg-white",
+            )}
+          >
             <SidebarNav
               user={user}
               showClose
               onClose={() => setMobileOpen(false)}
               onNavigate={() => setMobileOpen(false)}
+              hud={hudMode}
             />
           </aside>
         </div>
@@ -362,13 +404,18 @@ export function AppShell({
           onMenuClick={() => setMobileOpen((v) => !v)}
           sidebarCollapsed={sidebarCollapsed}
           onToggleSidebar={toggleSidebar}
+          hud={hudMode}
         />
-        <main className="scrollbar-thin min-w-0 flex-1 overflow-x-hidden overflow-y-auto">
+        <main className="hud-shell-main scrollbar-thin min-w-0 flex-1 overflow-x-hidden overflow-y-auto">
           <div key={pathname} className="page-enter min-h-full">
             {children}
           </div>
         </main>
-        <footer className="shrink-0 border-t border-border/70 bg-white/70 px-4 py-3 text-center text-[11px] text-ink-faint backdrop-blur-md sm:px-6 sm:text-[12px]">
+        <footer
+          className={cn(
+            "hud-shell-footer shrink-0 border-t border-border/70 bg-white/70 px-4 py-3 text-center text-[11px] text-ink-faint backdrop-blur-md sm:px-6 sm:text-[12px]",
+          )}
+        >
           Copyright © 2026 Contractor Leads. All rights reserved.
         </footer>
       </div>

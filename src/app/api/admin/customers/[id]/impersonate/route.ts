@@ -17,7 +17,7 @@ export async function POST(_request: Request, { params }: Params) {
     await logActivity(admin.id, "admin_impersonate", `Started test as customer ${id}`, {
       targetUserId: id,
     });
-    return NextResponse.json({ ok: true, redirectTo: "/home" });
+    return NextResponse.json({ ok: true, redirectTo: "/auth/splash" });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Impersonation failed";
     const status =

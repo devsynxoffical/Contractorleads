@@ -8,7 +8,6 @@ import {
   HiOutlineArrowTrendingDown,
   HiOutlineArrowTrendingUp,
   HiOutlineChartBar,
-  HiOutlineCheckBadge,
   HiOutlineChatBubbleLeftRight,
   HiOutlineFire,
   HiOutlineMagnifyingGlass,
@@ -24,6 +23,7 @@ import { formatCredits, formatNumber } from "@/lib/utils";
 import type { SessionUser } from "@/lib/auth";
 import { QuickLeadSearch } from "@/components/leads/quick-lead-search";
 import { getTierOneCountry } from "@/lib/constants";
+import { HudPanel } from "@/components/dashboard/hud-panel";
 
 type DashboardData = {
   stats: {
@@ -65,9 +65,6 @@ type DashboardData = {
   };
 };
 
-const LOGO_GRADIENT =
-  "linear-gradient(135deg, #e6007e 0%, #8e24aa 55%, #7b1fa2 100%)";
-
 function useCountUp(target: number, ready: boolean, duration = 900) {
   const [value, setValue] = useState(0);
   useEffect(() => {
@@ -89,59 +86,70 @@ function useCountUp(target: number, ready: boolean, duration = 900) {
   return value;
 }
 
-function StatCard({
+function HudStat({
   label,
   value,
   hint,
   icon: Icon,
-  color,
-  delay = 0,
   href,
+  spark,
 }: {
   label: string;
   value: string;
   hint: string;
   icon: React.ComponentType<{ className?: string }>;
-  color: string;
-  delay?: number;
   href?: string;
+  spark?: number[];
 }) {
+  const bars = spark ?? [4, 7, 5, 9, 6, 8, 10];
+  const max = Math.max(...bars, 1);
   const inner = (
-    <div className="flex items-start justify-between gap-3">
-      <div className="min-w-0">
-        <p className="text-[12px] font-semibold text-ink-muted">{label}</p>
-        <p className="mt-1 text-[22px] font-bold tracking-tight text-ink tabular-nums">
-          {value}
-        </p>
-        <p className="mt-1 text-[12px] text-ink-faint">{hint}</p>
+    <>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-[#8b9aab]">
+            {label}
+          </p>
+          <p className="hud-stat-value mt-1.5">{value}</p>
+          <p className="mt-1 text-[11px] text-[#5eead4]/90">{hint}</p>
+        </div>
+        <Icon className="mt-0.5 h-5 w-5 shrink-0 text-[#00e5ff]" />
       </div>
-      <span
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition group-hover:scale-105"
-        style={{ backgroundColor: `${color}14`, color }}
-      >
-        <Icon className="h-5 w-5" />
-      </span>
-    </div>
+      <div className="mt-3 flex h-8 items-end gap-0.5">
+        {bars.map((h, i) => (
+          <span
+            key={i}
+            className="flex-1 rounded-sm bg-[#00e5ff]/80"
+            style={{
+              height: `${Math.max(18, (h / max) * 100)}%`,
+              opacity: 0.35 + (i / bars.length) * 0.65,
+            }}
+          />
+        ))}
+      </div>
+    </>
   );
-
-  const className =
-    "hover-lift animate-fade-up group block rounded-xl border border-border bg-white p-4 shadow-[var(--shadow-card)]";
 
   if (href) {
     return (
-      <Link
-        href={href}
-        className={className}
-        style={{ animationDelay: `${delay}s` }}
-      >
-        {inner}
+      <Link href={href} className="block transition hover:brightness-110">
+        <HudPanel className="h-full">{inner}</HudPanel>
       </Link>
     );
   }
+  return <HudPanel className="h-full">{inner}</HudPanel>;
+}
 
+function RingStat({ label, pct }: { label: string; pct: number }) {
+  const clamped = Math.max(0, Math.min(100, pct));
   return (
-    <div className={className} style={{ animationDelay: `${delay}s` }}>
-      {inner}
+    <div className="flex flex-col items-center gap-2">
+      <div className="hud-ring" style={{ ["--p" as string]: clamped }}>
+        <span>{clamped}%</span>
+      </div>
+      <p className="text-[11px] uppercase tracking-[0.1em] text-[#8b9aab]">
+        {label}
+      </p>
     </div>
   );
 }
@@ -194,322 +202,279 @@ export function DashboardView({ user }: { user: SessionUser }) {
   const searchAnim = useCountUp(data?.stats.searchCount ?? 0, ready);
   const exportAnim = useCountUp(data?.stats.exportCount ?? 0, ready);
 
-  return (
-    <div className="page-pad page-enter">
-      {!user.onboardingComplete && (
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#f3d4e8] bg-[#fcf2f8] px-4 py-3 animate-fade-up">
-          <p className="text-sm text-[#6a1b9a]/80">
-            Finish setting up your profile to unlock better AI personalization.
-          </p>
-          <Link
-            href="/onboarding"
-            className="rounded-lg px-3 py-1.5 text-xs font-semibold text-white shadow-sm"
-            style={{ background: LOGO_GRADIENT }}
-          >
-            Complete setup
-          </Link>
-        </div>
-      )}
+  const weekLeads = data?.stats.weekLeads ?? 0;
+  const hotPct = qs?.hot ?? 0;
+  const warmPct = qs?.warm ?? 0;
+  const nurturePct = qs?.nurture ?? 0;
+  const creditPct = Math.min(100, Math.round((credits / 100) * 100));
 
-      <div className="mesh-bg -mx-4 -mt-4 mb-6 rounded-b-2xl px-4 pb-6 pt-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="animate-slide-left">
-            <div className="inline-flex items-center gap-2 rounded-full border border-brand-100 bg-white/80 px-3 py-1 text-[11px] font-semibold text-brand-600 shadow-sm backdrop-blur">
-              <span className="h-1.5 w-1.5 animate-soft-pulse rounded-full bg-emerald-500" />
+  return (
+    <div className="hud-dashboard">
+      <div className="hud-dashboard-bg" aria-hidden />
+      <div className="hud-dashboard-inner page-pad page-enter">
+        {!user.onboardingComplete && (
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border border-[#00e5ff]/30 bg-[#00e5ff]/10 px-4 py-3">
+            <p className="text-sm text-[#c8f7ff]">
+              Finish setting up your profile to unlock better AI personalization.
+            </p>
+            <Link href="/onboarding" className="hud-btn-primary">
+              Complete setup
+            </Link>
+          </div>
+        )}
+
+        <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#00e5ff]">
+              <span className="h-1.5 w-1.5 animate-soft-pulse rounded-full bg-[#00e5ff] shadow-[0_0_8px_#00e5ff]" />
               Live workspace · {firstName}
             </div>
-            <h1 className="mt-3 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
+            <h1 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-white sm:text-3xl">
               Business Insights
             </h1>
-            <p className="mt-1.5 max-w-xl text-[13px] text-ink-muted sm:text-sm">
-              Watch your pipeline flow — verified leads, AI scores, and outreach
-              ready across America.
+            <p className="mt-1.5 max-w-xl text-[13px] text-[#8b9aab] sm:text-sm">
+              HUD command view — verified leads, AI scores, and pipeline signal
+              across your markets.
             </p>
           </div>
-          <div className="animate-slide-right flex flex-wrap gap-2">
-            <Link
-              href="/leads/search"
-              className="inline-flex h-10 items-center gap-2 rounded-xl px-4 text-[13px] font-semibold text-white shadow-md transition hover:opacity-95 hover:shadow-lg"
-              style={{ background: LOGO_GRADIENT }}
-            >
+          <div className="flex flex-wrap gap-2">
+            <Link href="/leads/search" className="hud-btn-primary">
               <HiOutlineMagnifyingGlass className="h-4 w-4" />
-              Generate New Leads
+              Generate leads
             </Link>
-            <Link
-              href="/ask-expert"
-              className="inline-flex h-10 items-center gap-2 rounded-xl border border-border bg-white px-3 text-[13px] font-medium text-ink-muted shadow-sm transition hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700"
-            >
+            <Link href="/ask-expert" className="hud-btn-ghost">
               <HiOutlineChatBubbleLeftRight className="h-4 w-4" />
-              Ask AI Bot
+              Ask AI
             </Link>
-            <Link
-              href="/leads/saved"
-              className="inline-flex h-10 items-center gap-2 rounded-xl border border-border bg-white px-3 text-[13px] font-medium text-ink-muted shadow-sm transition hover:bg-brand-50 hover:text-brand-700"
-            >
+            <Link href="/leads/saved" className="hud-btn-ghost">
               <HiOutlineStar className="h-4 w-4" />
-              Saved Leads
+              Saved
             </Link>
           </div>
         </div>
-      </div>
 
-      {!ready && (
-        <div className="mb-5 flex items-center gap-2 rounded-xl border border-border bg-white px-4 py-6 text-[13px] text-ink-muted shadow-[var(--shadow-card)]">
-          <HiOutlineArrowPath className="h-4 w-4 animate-spin text-brand-500" />
-          Loading Business Insights…
+        {!ready && (
+          <div className="mb-5 flex items-center gap-2 border border-[#00e5ff]/2 bg-black/30 px-4 py-6 text-[13px] text-[#8b9aab]">
+            <HiOutlineArrowPath className="h-4 w-4 animate-spin text-[#00e5ff]" />
+            Syncing HUD metrics…
+          </div>
+        )}
+
+        {loadError && (
+          <div className="mb-5 border border-red-400/40 bg-red-500/10 px-4 py-3 text-[13px] text-red-200">
+            {loadError}
+          </div>
+        )}
+
+        {/* Top KPI row — HUD Admin style */}
+        <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <HudStat
+            label="Site leads"
+            value={formatNumber(totalLeads)}
+            hint={`+${weekLeads} this week`}
+            icon={HiOutlineChartBar}
+            href="/leads"
+            spark={data?.dailyLeads.map((d) => d.count + 1)}
+          />
+          <HudStat
+            label="Credits"
+            value={formatCredits(creditsAnim)}
+            hint="Live balance"
+            icon={HiOutlineWallet}
+            href="/billing"
+            spark={[3, 5, 4, 7, 6, 8, 9]}
+          />
+          <HudStat
+            label="Saved / closed"
+            value={`${formatNumber(savedAnim)} / ${formatNumber(closedAnim)}`}
+            hint="Workspace · pipeline"
+            icon={HiOutlineUserGroup}
+            href="/leads/saved"
+            spark={[2, 4, 3, 6, 5, 7, 8]}
+          />
+          <HudStat
+            label="Searches / exports"
+            value={`${formatNumber(searchAnim)} / ${formatNumber(exportAnim)}`}
+            hint="Lifetime ops"
+            icon={HiOutlineArrowDownTray}
+            href="/leads/search"
+            spark={[5, 4, 6, 5, 8, 7, 9]}
+          />
         </div>
-      )}
 
-      {loadError && (
-        <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700">
-          {loadError}
+        {/* Quick actions */}
+        <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            {
+              href: "/leads/search",
+              label: "Generate leads",
+              desc: "Preset or custom area",
+              icon: HiOutlineSparkles,
+            },
+            {
+              href: "/leads/hot",
+              label: "Hot leads",
+              desc: "Highest AI scores",
+              icon: HiOutlineFire,
+            },
+            {
+              href: "/leads/map",
+              label: "Lead map",
+              desc: "Geo plot coverage",
+              icon: HiOutlineMap,
+            },
+            {
+              href: "/leads/pipeline",
+              label: "Pipeline CRM",
+              desc: "New → closed",
+              icon: HiOutlineViewColumns,
+            },
+          ].map((a) => {
+            const Icon = a.icon;
+            return (
+              <Link key={a.href} href={a.href} className="block">
+                <HudPanel className="flex items-center gap-3 transition hover:brightness-110">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center border border-[#00e5ff]/35 bg-[#00e5ff]/10 text-[#00e5ff]">
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-semibold text-white">
+                      {a.label}
+                    </p>
+                    <p className="text-[11px] text-[#8b9aab]">{a.desc}</p>
+                  </div>
+                </HudPanel>
+              </Link>
+            );
+          })}
         </div>
-      )}
 
-      <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-        <StatCard
-          label="Total Leads Generated"
-          value={formatNumber(totalLeads)}
-          hint={`+${data?.stats.weekLeads ?? 0} this week`}
-          icon={HiOutlineChartBar}
-          color="#8e24aa"
-          delay={0.02}
-          href="/leads"
-        />
-        <StatCard
-          label="Credits Remaining"
-          value={formatCredits(creditsAnim)}
-          hint="View plan & balance"
-          icon={HiOutlineWallet}
-          color="#e6007e"
-          delay={0.07}
-          href="/billing"
-        />
-        <StatCard
-          label="Saved Leads"
-          value={formatNumber(savedAnim)}
-          hint="In your workspace"
-          icon={HiOutlineUserGroup}
-          color="#c2187a"
-          delay={0.12}
-          href="/leads/saved"
-        />
-        <StatCard
-          label="Deals Won / Closed"
-          value={formatNumber(closedAnim)}
-          hint="Pipeline closed"
-          icon={HiOutlineTrophy}
-          color="#7b1fa2"
-          delay={0.17}
-          href="/leads/pipeline"
-        />
-        <StatCard
-          label="Search History"
-          value={formatNumber(searchAnim)}
-          hint="Lifetime searches"
-          icon={HiOutlineMagnifyingGlass}
-          color="#6b5a8e"
-          delay={0.22}
-          href="/leads/search"
-        />
-        <StatCard
-          label="Export History"
-          value={formatNumber(exportAnim)}
-          hint="CSV / Excel exports"
-          icon={HiOutlineArrowDownTray}
-          color="#9b8fb5"
-          delay={0.27}
-          href="/leads/search"
-        />
-      </div>
+        <div className="mb-5">
+          <HudPanel title="Quick lead search" subtitle="Run a scoped find without leaving HUD">
+            <div className="hud-quick-search [&_.saas-input]:border-[#00e5ff]/25 [&_.saas-input]:bg-[#0a1422] [&_.saas-input]:text-white [&_label]:text-[#8b9aab]">
+              <QuickLeadSearch embedded />
+            </div>
+          </HudPanel>
+        </div>
 
-      <div className="mb-5 stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          {
-            href: "/leads/search",
-            label: "Generate New Leads",
-            desc: "Preset or custom service & area",
-            icon: HiOutlineSparkles,
-          },
-          {
-            href: "/leads/hot",
-            label: "View Hot Leads",
-            desc: "Highest quality-scored records",
-            icon: HiOutlineFire,
-          },
-          {
-            href: "/leads/map",
-            label: "Open Lead Map",
-            desc: "Plot leads with Places coordinates",
-            icon: HiOutlineMap,
-          },
-          {
-            href: "/leads/pipeline",
-            label: "Pipeline CRM",
-            desc: "Move deals New → Closed",
-            icon: HiOutlineViewColumns,
-          },
-        ].map((a) => {
-          const Icon = a.icon;
-          return (
-            <Link
-              key={a.href}
-              href={a.href}
-              className="hover-lift group flex items-start gap-3 rounded-xl border border-border bg-white p-4 shadow-[var(--shadow-card)]"
-            >
-              <span
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white transition group-hover:scale-105"
-                style={{ background: LOGO_GRADIENT }}
-              >
-                <Icon className="h-5 w-5" />
+        <div className="grid gap-5 xl:grid-cols-[1.4fr_1fr]">
+          {/* Server-style stats: trend + rings */}
+          <HudPanel
+            title="Lead generation trend"
+            subtitle="Daily volume · this week (Sun–Sat)"
+            actions={
+              <span className="hud-pill">
+                {weekLeads} new
               </span>
-              <div className="min-w-0">
-                <p className="text-[13px] font-semibold text-ink group-hover:text-brand-700">
-                  {a.label}
-                </p>
-                <p className="mt-0.5 text-[12px] text-ink-faint">{a.desc}</p>
-              </div>
-            </Link>
-          );
-        })}
-      </div>
-
-      <div className="mb-5 animate-fade-up" style={{ animationDelay: "0.1s" }}>
-        <QuickLeadSearch embedded />
-      </div>
-
-      <div className="grid gap-5 xl:grid-cols-[1fr_320px]">
-        <div className="min-w-0 space-y-5">
-          <div
-            className="relative animate-fade-up overflow-hidden rounded-2xl p-6 text-white shadow-[0_12px_36px_rgba(142,36,170,0.28)]"
-            style={{ background: LOGO_GRADIENT }}
+            }
           >
-            <div className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
-            <div className="pointer-events-none absolute -bottom-10 left-20 h-32 w-32 rounded-full bg-white/10 blur-2xl" />
-            <p className="relative text-[13px] font-medium text-white/75">
-              Welcome back, {user.name || firstName}
-            </p>
-            <h2 className="relative mt-1 font-[family-name:var(--font-display)] text-[22px] font-bold tracking-tight sm:text-[26px]">
-              Your pipeline this week
-            </h2>
-            <p className="relative mt-3 max-w-lg text-[14px] leading-relaxed text-white/90">
-              You generated{" "}
-              <strong>{data?.stats.weekLeads ?? 0} new leads</strong> this week
-              (Sun–Sat). LeadFlow USA only surfaces AI-verified, quality-scored
-              records — verified or blank, never fabricated.
-            </p>
-            <div className="relative mt-5 flex flex-wrap gap-2">
-              <Link
-                href="/leads/search"
-                className="inline-flex h-9 items-center rounded-lg bg-white px-4 text-[13px] font-semibold text-[#7b1fa2] shadow-sm transition hover:bg-white/95"
-              >
-                Generate Leads
-              </Link>
-              <Link
-                href="/leads/hot"
-                className="inline-flex h-9 items-center rounded-lg border border-white/30 bg-white/10 px-4 text-[13px] font-semibold text-white backdrop-blur transition hover:bg-white/20"
-              >
-                Hot Leads
-              </Link>
-              <button
-                type="button"
-                onClick={() =>
-                  window.dispatchEvent(new CustomEvent("leadflow:open-bot"))
-                }
-                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-white/30 bg-white/10 px-4 text-[13px] font-semibold text-white backdrop-blur transition hover:bg-white/20"
-              >
-                <HiOutlineChatBubbleLeftRight className="h-4 w-4" />
-                Help & Support
-              </button>
-            </div>
-          </div>
-
-          <div className="animate-fade-up rounded-2xl border border-border bg-white shadow-[var(--shadow-card)]" style={{ animationDelay: "0.12s" }}>
-            <div className="border-b border-border px-5 py-4">
-              <h3 className="text-[15px] font-bold text-ink">
-                Lead Generation Trend
-              </h3>
-              <p className="mt-0.5 text-[12px] text-ink-faint">
-                Total leads by day — this week (Sun–Sat)
-              </p>
-            </div>
-            <div className="p-5">
-              <div className="relative flex h-[220px] items-end gap-2 sm:gap-3">
-                <div className="pointer-events-none absolute inset-0 flex flex-col justify-between">
-                  {[...Array(5)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="w-full border-t border-dashed border-border"
-                    />
-                  ))}
-                </div>
-                {(
-                  data?.dailyLeads ??
-                  ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
-                    (day) => ({ day, count: 0 })
-                  )
-                ).map((d, idx) => {
-                  const h = Math.max((d.count / maxDaily) * 100, 6);
-                  return (
-                    <div
-                      key={d.day}
-                      className="group relative z-10 flex h-full flex-1 flex-col items-center justify-end gap-2"
-                    >
-                      <div
-                        className="animate-bar-grow w-full max-w-[40px] rounded-t-lg transition group-hover:brightness-110"
-                        style={{
-                          height: `${h}%`,
-                          animationDelay: `${idx * 0.06}s`,
-                          background:
-                            d.count > 0
-                              ? "linear-gradient(180deg, #e6007e 0%, #8e24aa 100%)"
-                              : "#f3eef6",
-                        }}
-                      />
-                      <span className="text-[11px] font-medium text-ink-faint">
-                        {d.day}
-                      </span>
-                      <div className="pointer-events-none absolute bottom-[calc(100%+8px)] rounded-md bg-ink px-2 py-1 text-[11px] text-white opacity-0 shadow transition group-hover:opacity-100">
-                        {d.count} leads
-                      </div>
-                    </div>
-                  );
-                })}
+            <div className="relative flex h-[200px] items-end gap-2 sm:gap-3">
+              <div className="pointer-events-none absolute inset-0 flex flex-col justify-between opacity-40">
+                {[...Array(5)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="w-full border-t border-dashed border-[#00e5ff]/20"
+                  />
+                ))}
               </div>
+              {(
+                data?.dailyLeads ??
+                ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
+                  (day) => ({ day, count: 0 })
+                )
+              ).map((d, idx) => {
+                const h = Math.max((d.count / maxDaily) * 100, 8);
+                return (
+                  <div
+                    key={d.day}
+                    className="group relative z-10 flex h-full flex-1 flex-col items-center justify-end gap-2"
+                  >
+                    <div
+                      className="animate-bar-grow w-full max-w-[36px]"
+                      style={{
+                        height: `${h}%`,
+                        animationDelay: `${idx * 0.06}s`,
+                        background:
+                          d.count > 0
+                            ? "linear-gradient(180deg, #00e5ff 0%, #007a8a 100%)"
+                            : "rgba(0,229,255,0.12)",
+                        boxShadow:
+                          d.count > 0
+                            ? "0 0 12px rgba(0,229,255,0.35)"
+                            : "none",
+                      }}
+                    />
+                    <span className="text-[10px] font-medium uppercase tracking-wider text-[#8b9aab]">
+                      {d.day}
+                    </span>
+                    <div className="pointer-events-none absolute bottom-[calc(100%+6px)] border border-[#00e5ff]/40 bg-[#0a1422] px-2 py-1 text-[11px] text-white opacity-0 transition group-hover:opacity-100">
+                      {d.count} leads
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          </div>
 
-          <div className="grid gap-5 lg:grid-cols-2">
-            <div className="animate-slide-left rounded-2xl border border-border bg-white p-5 shadow-[var(--shadow-card)]">
-              <h3 className="text-[15px] font-bold text-ink">
-                Lead Quality Split
-              </h3>
-              <p className="mt-0.5 text-[12px] text-ink-faint">
-                Hot / Warm / Nurture breakdown (%)
+            <div className="mt-5 flex flex-wrap justify-around gap-4 border-t border-[#00e5ff]/15 pt-5">
+              <RingStat label="Hot" pct={hotPct} />
+              <RingStat label="Warm" pct={warmPct} />
+              <RingStat label="Nurture" pct={nurturePct} />
+              <RingStat label="Credits" pct={creditPct} />
+            </div>
+          </HudPanel>
+
+          {/* Quality + welcome */}
+          <div className="space-y-5">
+            <HudPanel title="Signal" subtitle={`Welcome back, ${user.name || firstName}`}>
+              <p className="text-[13px] leading-relaxed text-[#c5d0dc]">
+                You generated{" "}
+                <strong className="text-white">{weekLeads} new leads</strong> this
+                week. Only AI-verified, quality-scored records surface here —
+                verified or blank, never fabricated.
               </p>
-              <div className="mt-5 space-y-4">
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Link href="/leads/search" className="hud-btn-primary">
+                  Generate
+                </Link>
+                <Link href="/leads/hot" className="hud-btn-ghost">
+                  Hot leads
+                </Link>
+                <button
+                  type="button"
+                  onClick={() =>
+                    window.dispatchEvent(new CustomEvent("leadflow:open-bot"))
+                  }
+                  className="hud-btn-ghost"
+                >
+                  Support
+                </button>
+              </div>
+            </HudPanel>
+
+            <HudPanel title="Quality split" subtitle="Hot / Warm / Nurture">
+              <div className="space-y-3">
                 {[
                   {
-                    label: "Hot Leads",
-                    pct: qs?.hot ?? 0,
+                    label: "Hot",
+                    pct: hotPct,
                     count: qs?.hotCount ?? 0,
-                    color: "#e6007e",
+                    color: "#00e5ff",
                     icon: HiOutlineFire,
                     href: "/leads/hot",
                   },
                   {
-                    label: "Warm Leads",
-                    pct: qs?.warm ?? 0,
+                    label: "Warm",
+                    pct: warmPct,
                     count: qs?.warmCount ?? 0,
-                    color: "#8e24aa",
+                    color: "#7dffb3",
                     icon: HiOutlineArrowTrendingUp,
                     href: "/leads",
                   },
                   {
                     label: "Nurture",
-                    pct: qs?.nurture ?? 0,
+                    pct: nurturePct,
                     count: qs?.nurtureCount ?? 0,
-                    color: "#9b95a5",
+                    color: "#8b9aab",
                     icon: HiOutlineArrowTrendingDown,
                     href: "/leads",
                   },
@@ -517,24 +482,23 @@ export function DashboardView({ user }: { user: SessionUser }) {
                   const Icon = q.icon;
                   return (
                     <Link key={q.label} href={q.href} className="block">
-                      <div className="mb-1.5 flex items-center justify-between text-[13px]">
-                        <span className="flex items-center gap-2 font-medium text-ink">
+                      <div className="mb-1 flex items-center justify-between text-[12px]">
+                        <span className="flex items-center gap-2 text-[#c5d0dc]">
                           <Icon className="h-4 w-4" style={{ color: q.color }} />
                           {q.label}
-                          <span className="text-[11px] font-normal text-ink-faint">
-                            ({q.count})
-                          </span>
+                          <span className="text-[#5c6b7c]">({q.count})</span>
                         </span>
                         <span className="font-bold" style={{ color: q.color }}>
                           {q.pct}%
                         </span>
                       </div>
-                      <div className="h-2.5 overflow-hidden rounded-full bg-[#f3eef6]">
+                      <div className="h-1.5 overflow-hidden bg-[#122033]">
                         <div
-                          className="animate-progress-fill h-full rounded-full"
+                          className="animate-progress-fill h-full"
                           style={{
                             width: `${q.pct}%`,
                             backgroundColor: q.color,
+                            boxShadow: `0 0 8px ${q.color}`,
                           }}
                         />
                       </div>
@@ -542,188 +506,85 @@ export function DashboardView({ user }: { user: SessionUser }) {
                   );
                 })}
               </div>
-            </div>
-
-            <div className="animate-slide-right rounded-2xl border border-border bg-white p-5 shadow-[var(--shadow-card)]">
-              <div className="flex items-center gap-2">
-                <HiOutlineCheckBadge className="h-5 w-5 text-brand-600" />
-                <h3 className="text-[15px] font-bold text-ink">
-                  Verification Engine
-                </h3>
-              </div>
-              <p className="mt-2 text-[13px] leading-relaxed text-ink-muted">
-                Every lead is AI-verified and quality-scored before it reaches
-                your dashboard. Fake, duplicate, closed, or low-quality records
-                are withheld — fields are verified or blank, never fabricated.
-              </p>
-              <ul className="mt-4 space-y-2 text-[12px] text-ink-muted">
-                <li className="flex gap-2">
-                  <span className="text-brand-600">•</span>
-                  Google Places + Yelp confirmation
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-brand-600">•</span>
-                  Houzz & Nextdoor best-effort enrichment
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-brand-600">•</span>
-                  LinkedIn only at ≥95% confidence
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="grid gap-5 lg:grid-cols-2">
-            <div className="overflow-hidden rounded-2xl border border-border bg-white shadow-[var(--shadow-card)]">
-              <div className="border-b border-border px-5 py-4">
-                <h3 className="text-[14px] font-bold text-ink">Search History</h3>
-                <p className="mt-0.5 text-[12px] text-ink-faint">
-                  Recent lead generation runs
-                </p>
-              </div>
-              <ul className="divide-y divide-border">
-                {(data?.recentSearches ?? []).map((s, i) => (
-                  <li
-                    key={s.id}
-                    className="animate-fade-up px-5 py-3.5 transition hover:bg-brand-50/40"
-                    style={{ animationDelay: `${i * 0.04}s` }}
-                  >
-                    <Link href="/leads/search" className="block">
-                      <p className="text-[13px] font-semibold text-ink">
-                        {s.industry}
-                        <span className="font-normal text-ink-muted">
-                          {" "}
-                          ·{" "}
-                          {s.locationScope === "country"
-                            ? getTierOneCountry(s.country).name
-                            : [s.city, s.state, getTierOneCountry(s.country).name]
-                                .filter(Boolean)
-                                .join(", ")}
-                        </span>
-                      </p>
-                      <p className="mt-0.5 text-[11px] text-ink-faint">
-                        {s.resultCount} leads
-                        {s.locationScope === "country"
-                          ? " · entire country"
-                          : s.radius
-                            ? ` · ${s.radius} ${getTierOneCountry(s.country).distanceUnit}`
-                            : ""}{" "}
-                        ·{" "}
-                        {new Date(s.createdAt).toLocaleDateString(undefined, {
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </p>
-                    </Link>
-                  </li>
-                ))}
-                {!data?.recentSearches?.length && (
-                  <li className="px-5 py-6 text-center text-[13px] text-ink-faint">
-                    No searches yet — generate your first leads.
-                  </li>
-                )}
-              </ul>
-            </div>
-
-            <div className="overflow-hidden rounded-2xl border border-border bg-white shadow-[var(--shadow-card)]">
-              <div className="border-b border-border px-5 py-4">
-                <h3 className="text-[14px] font-bold text-ink">Export History</h3>
-                <p className="mt-0.5 text-[12px] text-ink-faint">
-                  CSV / Excel downloads
-                </p>
-              </div>
-              <ul className="divide-y divide-border">
-                {(data?.recentExports ?? []).map((e) => (
-                  <li
-                    key={e.id}
-                    className="flex items-center justify-between px-5 py-3.5 transition hover:bg-brand-50/40"
-                  >
-                    <div>
-                      <p className="text-[13px] font-semibold uppercase text-ink">
-                        {e.format}
-                      </p>
-                      <p className="mt-0.5 text-[11px] text-ink-faint">
-                        {e.leadCount} leads ·{" "}
-                        {new Date(e.createdAt).toLocaleDateString(undefined, {
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </p>
-                    </div>
-                    <HiOutlineArrowDownTray className="h-4 w-4 text-ink-faint" />
-                  </li>
-                ))}
-                {!data?.recentExports?.length && (
-                  <li className="px-5 py-6 text-center text-[13px] text-ink-faint">
-                    No exports yet.
-                  </li>
-                )}
-              </ul>
-            </div>
+            </HudPanel>
           </div>
         </div>
 
-        <div className="space-y-5">
-          <div className="animate-slide-right overflow-hidden rounded-2xl border border-border bg-white p-5 shadow-[var(--shadow-card)]">
-            <h3 className="text-[14px] font-bold text-ink">Credits</h3>
-            <p
-              className="mt-3 text-[36px] font-bold tracking-tight tabular-nums"
-              style={{
-                background: LOGO_GRADIENT,
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
-              {formatCredits(creditsAnim)}
-            </p>
-            <p className="text-[12px] uppercase tracking-wide text-ink-faint">
-              Live balance
-            </p>
-            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-brand-50">
-              <div
-                className="h-full rounded-full"
-                style={{
-                  width: `${Math.min(100, (credits / 100) * 100)}%`,
-                  background: LOGO_GRADIENT,
-                }}
-              />
-            </div>
-            <Link
-              href="/billing"
-              className="mt-4 inline-flex h-9 items-center rounded-lg px-4 text-[13px] font-semibold text-white transition hover:opacity-95"
-              style={{ background: LOGO_GRADIENT }}
-            >
-              View plan & balance
-            </Link>
-          </div>
-
-          <div className="animate-slide-right rounded-2xl border border-border bg-white shadow-[var(--shadow-card)]" style={{ animationDelay: "0.08s" }}>
-            <div className="border-b border-border px-5 py-4">
-              <h3 className="text-[14px] font-bold text-ink">Live Activity</h3>
-              <p className="mt-0.5 text-[12px] text-ink-faint">
-                Searches, saves, status changes
-              </p>
-            </div>
-            <ul className="divide-y divide-border">
-              {(data?.activities ?? []).slice(0, 8).map((a, i) => (
+        <div className="mt-5 grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
+          <HudPanel title="Top industries" subtitle="Most searched categories">
+            <ul className="divide-y divide-[#00e5ff]/10">
+              {(data?.topIndustries ?? []).map((i, idx) => (
                 <li
-                  key={a.id}
-                  className="animate-fade-up flex items-start gap-3 px-5 py-3.5"
-                  style={{ animationDelay: `${i * 0.05}s` }}
+                  key={i.industry || idx}
+                  className="flex items-center justify-between py-2.5"
                 >
-                  <div
-                    className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold text-white"
-                    style={{ background: LOGO_GRADIENT }}
+                  <p className="text-[13px] font-medium text-white">
+                    {i.industry || "Unknown"}
+                  </p>
+                  <span className="hud-pill">{i.count}</span>
+                </li>
+              ))}
+              {!data?.topIndustries?.length && (
+                <li className="py-6 text-center text-[13px] text-[#5c6b7c]">
+                  Industries appear after your first search.
+                </li>
+              )}
+            </ul>
+          </HudPanel>
+
+          <HudPanel title="Search history" subtitle="Recent generation runs">
+            <ul className="divide-y divide-[#00e5ff]/10">
+              {(data?.recentSearches ?? []).slice(0, 5).map((s) => (
+                <li key={s.id} className="py-2.5">
+                  <Link href="/leads/search" className="block">
+                    <p className="text-[13px] font-medium text-white">
+                      {s.industry}
+                      <span className="font-normal text-[#8b9aab]">
+                        {" "}
+                        ·{" "}
+                        {s.locationScope === "country"
+                          ? getTierOneCountry(s.country).name
+                          : [s.city, s.state, getTierOneCountry(s.country).name]
+                              .filter(Boolean)
+                              .join(", ")}
+                      </span>
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-[#5c6b7c]">
+                      {s.resultCount} leads ·{" "}
+                      {new Date(s.createdAt).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </p>
+                  </Link>
+                </li>
+              ))}
+              {!data?.recentSearches?.length && (
+                <li className="py-6 text-center text-[13px] text-[#5c6b7c]">
+                  No searches yet.
+                </li>
+              )}
+            </ul>
+          </HudPanel>
+
+          <HudPanel title="Activity log" subtitle="Searches, saves, status">
+            <ul className="divide-y divide-[#00e5ff]/10">
+              {(data?.activities ?? []).slice(0, 6).map((a) => (
+                <li key={a.id} className="flex items-start gap-3 py-2.5">
+                  <span
+                    className={
+                      a.type === "search" || a.type === "lead"
+                        ? "hud-pill"
+                        : "hud-pill hud-pill-muted"
+                    }
                   >
-                    {a.type.charAt(0).toUpperCase()}
-                  </div>
+                    {a.type.slice(0, 8)}
+                  </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[13px] font-medium leading-snug text-ink">
+                    <p className="text-[12px] leading-snug text-[#c5d0dc]">
                       {a.message}
                     </p>
-                    <p className="mt-0.5 text-[11px] capitalize text-ink-faint">
-                      {a.type} ·{" "}
+                    <p className="mt-0.5 text-[10px] text-[#5c6b7c]">
                       {new Date(a.createdAt).toLocaleString(undefined, {
                         month: "short",
                         day: "numeric",
@@ -735,41 +596,65 @@ export function DashboardView({ user }: { user: SessionUser }) {
                 </li>
               ))}
               {!data?.activities?.length && (
-                <li className="px-5 py-6 text-center text-[13px] text-ink-faint">
+                <li className="py-6 text-center text-[13px] text-[#5c6b7c]">
                   Activity appears after your first search.
                 </li>
               )}
             </ul>
-          </div>
+          </HudPanel>
+        </div>
 
-          <div className="animate-slide-right rounded-2xl border border-border bg-white shadow-[var(--shadow-card)]" style={{ animationDelay: "0.12s" }}>
-            <div className="border-b border-border px-5 py-4">
-              <h3 className="text-[14px] font-bold text-ink">Top Industries</h3>
-              <p className="mt-0.5 text-[12px] text-ink-faint">
-                Most searched categories
-              </p>
-            </div>
-            <ul className="divide-y divide-border">
-              {(data?.topIndustries ?? []).map((i, idx) => (
+        <div className="mt-5 grid gap-5 lg:grid-cols-2">
+          <HudPanel title="Export history" subtitle="CSV / Excel downloads">
+            <ul className="divide-y divide-[#00e5ff]/10">
+              {(data?.recentExports ?? []).map((e) => (
                 <li
-                  key={i.industry || idx}
-                  className="flex items-center justify-between px-5 py-3.5 transition hover:bg-brand-50/30"
+                  key={e.id}
+                  className="flex items-center justify-between py-2.5"
                 >
-                  <p className="text-[13px] font-semibold text-ink">
-                    {i.industry || "Unknown"}
-                  </p>
-                  <span className="rounded-md bg-brand-50 px-2 py-0.5 text-[13px] font-bold text-brand-600">
-                    {i.count}
-                  </span>
+                  <div>
+                    <p className="text-[13px] font-semibold uppercase text-white">
+                      {e.format}
+                    </p>
+                    <p className="text-[11px] text-[#5c6b7c]">
+                      {e.leadCount} leads ·{" "}
+                      {new Date(e.createdAt).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </p>
+                  </div>
+                  <HiOutlineArrowDownTray className="h-4 w-4 text-[#00e5ff]" />
                 </li>
               ))}
-              {!data?.topIndustries?.length && (
-                <li className="px-5 py-6 text-center text-[13px] text-ink-faint">
-                  Industries appear after your first search.
+              {!data?.recentExports?.length && (
+                <li className="py-6 text-center text-[13px] text-[#5c6b7c]">
+                  No exports yet.
                 </li>
               )}
             </ul>
-          </div>
+          </HudPanel>
+
+          <HudPanel title="Credits" subtitle="Plan balance">
+            <p className="text-[40px] font-bold tabular-nums tracking-tight text-white">
+              {formatCredits(creditsAnim)}
+            </p>
+            <div className="mt-3 h-1.5 overflow-hidden bg-[#122033]">
+              <div
+                className="h-full bg-[#00e5ff] shadow-[0_0_10px_#00e5ff]"
+                style={{ width: `${creditPct}%` }}
+              />
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link href="/billing" className="hud-btn-primary">
+                <HiOutlineTrophy className="h-4 w-4" />
+                View plan
+              </Link>
+              <Link href="/leads/pipeline" className="hud-btn-ghost">
+                Pipeline
+              </Link>
+            </div>
+          </HudPanel>
         </div>
       </div>
     </div>

@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
+import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
-import {
-  createSessionToken,
-  hashPassword,
-  setSessionCookie,
-} from "@/lib/auth";
+import { businessEmailError } from "@/lib/business-email";
+import { sendEmail, verificationEmailHtml } from "@/lib/email";
 
 function normalizePhone(raw: unknown): string {
   return String(raw ?? "")
@@ -17,16 +15,22 @@ function isValidPhone(phone: string): boolean {
   return digits.length >= 7 && digits.length <= 15;
 }
 
+/**
+ * Step 1: start signup — business email + phone, send verification link.
+ * Password is set after the email is verified.
+ */
 export async function POST(request: Request) {
   try {
-    const { name, email, phone, password } = await request.json();
+    const { name, email, phone } = await request.json();
+    const normalizedEmail = String(email ?? "")
+      .trim()
+      .toLowerCase();
     const normalizedPhone = normalizePhone(phone);
+    const displayName = name ? String(name).trim() : null;
 
-    if (!email || !password || password.length < 8) {
-      return NextResponse.json(
-        { error: "Valid email and password (8+ chars) required" },
-        { status: 400 }
-      );
+    const emailErr = businessEmailError(normalizedEmail);
+    if (emailErr) {
+      return NextResponse.json({ error: emailErr }, { status: 400 });
     }
 
     if (!normalizedPhone || !isValidPhone(normalizedPhone)) {
@@ -37,29 +41,58 @@ export async function POST(request: Request) {
     }
 
     const existing = await prisma.user.findUnique({
-      where: { email: String(email).trim().toLowerCase() },
+      where: { email: normalizedEmail },
     });
     if (existing) {
       return NextResponse.json(
-        { error: "Email already registered" },
+        { error: "Email already registered. Please log in." },
         { status: 409 }
       );
     }
 
-    const user = await prisma.user.create({
+    const token = randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    await prisma.emailVerification.deleteMany({
+      where: { email: normalizedEmail },
+    });
+    await prisma.emailVerification.create({
       data: {
-        name: name ? String(name).trim() : null,
-        email: String(email).trim().toLowerCase(),
+        email: normalizedEmail,
         phone: normalizedPhone,
-        passwordHash: await hashPassword(password),
-        creditsRemaining: 20,
+        name: displayName,
+        token,
+        expiresAt,
       },
     });
 
-    const token = await createSessionToken(user.id);
-    await setSessionCookie(token);
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(
+      /\/$/,
+      ""
+    );
+    const verifyUrl = `${appUrl}/verify-email?token=${token}`;
 
-    return NextResponse.json({ ok: true });
+    const sent = await sendEmail({
+      to: normalizedEmail,
+      subject: "Verify your Contractor Leads business email",
+      html: verificationEmailHtml(verifyUrl, displayName),
+      text: `Verify your email: ${verifyUrl}`,
+    });
+
+    if (!sent.ok) {
+      return NextResponse.json(
+        { error: sent.error || "Could not send verification email" },
+        { status: 502 }
+      );
+    }
+
+    return NextResponse.json({
+      ok: true,
+      message:
+        "Check your business email for a verification link. After verifying, you will set your password.",
+      mocked: sent.mocked ?? false,
+      ...(sent.mocked ? { verifyUrl } : {}),
+    });
   } catch {
     return NextResponse.json({ error: "Registration failed" }, { status: 500 });
   }

@@ -76,6 +76,21 @@ export function getSystemKeyStatuses(): EnvKeyStatus[] {
       group: "Meta",
       env: process.env.META_ACCESS_TOKEN,
     },
+    {
+      key: "RESEND_API_KEY",
+      group: "Email",
+      env: process.env.RESEND_API_KEY,
+    },
+    {
+      key: "SENDGRID_API_KEY",
+      group: "Email",
+      env: process.env.SENDGRID_API_KEY,
+    },
+    {
+      key: "EMAIL_FROM",
+      group: "Email",
+      env: process.env.EMAIL_FROM || process.env.RESEND_FROM,
+    },
   ];
 
   return rows.map((row) => ({

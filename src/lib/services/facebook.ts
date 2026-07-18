@@ -140,31 +140,37 @@ export async function searchFacebookAdsLibrary(
   try {
     const url = new URL("https://graph.facebook.com/v21.0/ads_archive");
     url.searchParams.set("search_terms", businessName);
-    url.searchParams.set("ad_reached_countries", JSON.stringify([country]));
+    // Meta expects a JSON array string, e.g. ["US"]
+    url.searchParams.set("ad_reached_countries", `["${country}"]`);
     url.searchParams.set(
       "fields",
       "id,page_name,page_id,ad_snapshot_url,ad_creative_bodies,ad_delivery_start_time,ad_delivery_stop_time,publisher_platforms,spend"
     );
     url.searchParams.set("ad_active_status", "ACTIVE");
-    url.searchParams.set("limit", "10");
+    url.searchParams.set("ad_type", "ALL");
+    url.searchParams.set("limit", "25");
     url.searchParams.set("access_token", token);
 
     const response = await fetch(url.toString(), {
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(20000),
     });
 
     if (!response.ok) {
       const err = await response.text();
       const expired =
         /session has expired|expired|invalid.*token|oauth/i.test(err);
+      const permission =
+        /permission|ads_read|ads_archive|#10|#200/i.test(err);
       return {
         ads: [],
         totalCount: 0,
         searchUrl,
         source: "link",
         message: expired
-          ? "Meta access token expired. Generate a new token in Graph API Explorer, exchange it for a long-lived token, then update META_ACCESS_TOKEN in .env and Railway. Meanwhile, open the Ads Library link below."
-          : `Ads API unavailable (${response.status}). Open Ads Library manually.`,
+          ? "Meta access token expired. Generate a new long-lived META_ACCESS_TOKEN in Graph API Explorer, update .env / Railway, then try again. You can still open the Ads Library link below."
+          : permission
+            ? "This Meta token cannot access Ads Library (needs ads_read / Ads Archive access). Open the public Ads Library link below, or update META_ACCESS_TOKEN."
+            : `Ads API unavailable (${response.status}). Open Ads Library manually.`,
       };
     }
 
@@ -180,9 +186,21 @@ export async function searchFacebookAdsLibrary(
         publisher_platforms?: string[];
         spend?: { lower_bound?: string; upper_bound?: string };
       }>;
+      error?: { message?: string };
     };
 
-    const ads: FacebookAd[] = (data.data ?? []).map((ad) => ({
+    if (data.error?.message) {
+      return {
+        ads: [],
+        totalCount: 0,
+        searchUrl,
+        source: "link",
+        message: `${data.error.message} — open the Ads Library link below.`,
+      };
+    }
+
+    const needle = businessName.trim().toLowerCase();
+    const mapped = (data.data ?? []).map((ad) => ({
       id: ad.id,
       pageName: ad.page_name ?? "Unknown",
       pageId: ad.page_id ?? "",
@@ -200,6 +218,13 @@ export async function searchFacebookAdsLibrary(
           : undefined,
     }));
 
+    // Prefer ads whose page name matches the business; keep others as fallback
+    const ads: FacebookAd[] = mapped.sort((a, b) => {
+      const aMatch = a.pageName.toLowerCase().includes(needle) ? 0 : 1;
+      const bMatch = b.pageName.toLowerCase().includes(needle) ? 0 : 1;
+      return aMatch - bMatch;
+    });
+
     return {
       ads,
       totalCount: ads.length,
@@ -207,7 +232,7 @@ export async function searchFacebookAdsLibrary(
       source: "api",
       message:
         ads.length === 0
-          ? "No active ads found in the Meta Ads Library for this business."
+          ? "No active ads found via the Meta API for this name. Try the public Ads Library link — some advertisers only appear there."
           : undefined,
     };
   } catch {
