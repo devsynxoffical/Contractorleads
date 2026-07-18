@@ -2,7 +2,7 @@ import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
 const fieldClass =
-  "flex h-11 w-full rounded-xl border border-[#00e5ff]/25 bg-[#070d18]/90 px-3.5 text-sm text-ink placeholder:text-ink-faint outline-none transition hover:border-[#00e5ff]/40 focus:border-[#00e5ff]/55 focus:bg-[#0a1422] focus:ring-4 focus:ring-[var(--ring)]";
+  "flex h-11 w-full rounded-xl border border-brand-500/25 bg-[#070d18]/90 px-3.5 text-sm text-ink placeholder:text-ink-faint outline-none transition hover:border-brand-500/40 focus:border-brand-500/55 focus:bg-[#0a1422] focus:ring-4 focus:ring-[var(--ring)]";
 
 export function Input({
   className,
@@ -46,7 +46,7 @@ export const Textarea = forwardRef<
     <textarea
       ref={ref}
       className={cn(
-        "flex min-h-[120px] w-full rounded-xl border border-[#00e5ff]/25 bg-[#070d18]/90 px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-faint outline-none transition hover:border-[#00e5ff]/40 focus:border-[#00e5ff]/55 focus:bg-[#0a1422] focus:ring-4 focus:ring-[var(--ring)]",
+        "flex min-h-[120px] w-full rounded-xl border border-brand-500/25 bg-[#070d18]/90 px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-faint outline-none transition hover:border-brand-500/40 focus:border-brand-500/55 focus:bg-[#0a1422] focus:ring-4 focus:ring-[var(--ring)]",
         className
       )}
       {...props}

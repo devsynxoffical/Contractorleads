@@ -63,7 +63,7 @@ function ScoreRing({ score, id }: { score: number; id: string }) {
           cy="18"
           r="15.5"
           fill="none"
-          stroke="rgba(0,229,255,0.15)"
+          stroke="rgba(168,85,247,0.15)"
           strokeWidth="3"
         />
         <circle
@@ -78,12 +78,12 @@ function ScoreRing({ score, id }: { score: number; id: string }) {
         />
         <defs>
           <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#00e5ff" />
-            <stop offset="100%" stopColor="#0097a7" />
+            <stop offset="0%" stopColor="#a855f7" />
+            <stop offset="100%" stopColor="#7c3aed" />
           </linearGradient>
         </defs>
       </svg>
-      <span className="text-[13px] font-bold tabular-nums text-[#00e5ff]">
+      <span className="text-[13px] font-bold tabular-nums text-brand-500">
         {score}
       </span>
     </div>
@@ -116,12 +116,12 @@ export function LeadResultCard({
 
   return (
     <article
-      className="hover-lift animate-fade-up group overflow-hidden rounded-2xl border border-[#00e5ff]/15 bg-[rgba(12,22,38,0.92)] shadow-[var(--shadow-card)]"
+      className="hover-lift animate-fade-up group overflow-hidden rounded-2xl border border-brand-500/15 bg-[rgba(12,22,38,0.92)] shadow-[var(--shadow-card)]"
       style={{ animationDelay: `${Math.min(index, 12) * 0.04}s` }}
     >
       <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start sm:p-5">
         <div
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-lg font-bold text-[#041018] shadow-sm"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-lg font-bold text-white shadow-sm"
           style={{ background: LOGO_GRADIENT }}
         >
           {initial}
@@ -148,7 +148,7 @@ export function LeadResultCard({
                 )}
               </div>
               <p className="mt-1.5 flex items-start gap-1.5 text-[13px] text-ink-muted">
-                <HiOutlineMapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#00e5ff]" />
+                <HiOutlineMapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-500" />
                 <span className="line-clamp-2">{lead.address || location}</span>
               </p>
             </div>

@@ -111,15 +111,15 @@ function HudStat({
             {label}
           </p>
           <p className="hud-stat-value mt-1.5">{value}</p>
-          <p className="mt-1 text-[11px] text-[#5eead4]/90">{hint}</p>
+          <p className="mt-1 text-[11px] text-brand-400/90">{hint}</p>
         </div>
-        <Icon className="mt-0.5 h-5 w-5 shrink-0 text-[#00e5ff]" />
+        <Icon className="mt-0.5 h-5 w-5 shrink-0 text-brand-500" />
       </div>
       <div className="mt-3 flex h-8 items-end gap-0.5">
         {bars.map((h, i) => (
           <span
             key={i}
-            className="flex-1 rounded-sm bg-[#00e5ff]/80"
+            className="flex-1 rounded-sm bg-brand-500/80"
             style={{
               height: `${Math.max(18, (h / max) * 100)}%`,
               opacity: 0.35 + (i / bars.length) * 0.65,
@@ -213,7 +213,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
       <div className="hud-dashboard-bg" aria-hidden />
       <div className="hud-dashboard-inner page-pad page-enter">
         {!user.onboardingComplete && (
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border border-[#00e5ff]/30 bg-[#00e5ff]/10 px-4 py-3">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border border-brand-500/30 bg-brand-500/10 px-4 py-3">
             <p className="text-sm text-[#c8f7ff]">
               Finish setting up your profile to unlock better AI personalization.
             </p>
@@ -225,8 +225,8 @@ export function DashboardView({ user }: { user: SessionUser }) {
 
         <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#00e5ff]">
-              <span className="h-1.5 w-1.5 animate-soft-pulse rounded-full bg-[#00e5ff] shadow-[0_0_8px_#00e5ff]" />
+            <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-500">
+              <span className="h-1.5 w-1.5 animate-soft-pulse rounded-full bg-[#a855f7] shadow-[0_0_8px_var(--brand-500)]" />
               Live workspace · {firstName}
             </div>
             <h1 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-white sm:text-3xl">
@@ -254,8 +254,8 @@ export function DashboardView({ user }: { user: SessionUser }) {
         </div>
 
         {!ready && (
-          <div className="mb-5 flex items-center gap-2 border border-[#00e5ff]/2 bg-black/30 px-4 py-6 text-[13px] text-[#8b9aab]">
-            <HiOutlineArrowPath className="h-4 w-4 animate-spin text-[#00e5ff]" />
+          <div className="mb-5 flex items-center gap-2 border border-brand-500/2 bg-black/30 px-4 py-6 text-[13px] text-[#8b9aab]">
+            <HiOutlineArrowPath className="h-4 w-4 animate-spin text-brand-500" />
             Syncing HUD metrics…
           </div>
         )}
@@ -334,7 +334,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
             return (
               <Link key={a.href} href={a.href} className="block">
                 <HudPanel className="flex items-center gap-3 transition hover:brightness-110">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center border border-[#00e5ff]/35 bg-[#00e5ff]/10 text-[#00e5ff]">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center border border-brand-500/35 bg-brand-500/10 text-brand-500">
                     <Icon className="h-5 w-5" />
                   </span>
                   <div className="min-w-0">
@@ -351,7 +351,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
 
         <div className="mb-5">
           <HudPanel title="Quick lead search" subtitle="Run a scoped find without leaving HUD">
-            <div className="hud-quick-search [&_.saas-input]:border-[#00e5ff]/25 [&_.saas-input]:bg-[#0a1422] [&_.saas-input]:text-white [&_label]:text-[#8b9aab]">
+            <div className="hud-quick-search [&_.saas-input]:border-brand-500/25 [&_.saas-input]:bg-[#0a1422] [&_.saas-input]:text-white [&_label]:text-[#8b9aab]">
               <QuickLeadSearch embedded />
             </div>
           </HudPanel>
@@ -373,7 +373,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
                 {[...Array(5)].map((_, i) => (
                   <div
                     key={i}
-                    className="w-full border-t border-dashed border-[#00e5ff]/20"
+                    className="w-full border-t border-dashed border-brand-500/20"
                   />
                 ))}
               </div>
@@ -396,18 +396,18 @@ export function DashboardView({ user }: { user: SessionUser }) {
                         animationDelay: `${idx * 0.06}s`,
                         background:
                           d.count > 0
-                            ? "linear-gradient(180deg, #00e5ff 0%, #007a8a 100%)"
-                            : "rgba(0,229,255,0.12)",
+                            ? "linear-gradient(180deg, #ec4899 0%, #7c3aed 100%)"
+                            : "rgba(168,85,247,0.12)",
                         boxShadow:
                           d.count > 0
-                            ? "0 0 12px rgba(0,229,255,0.35)"
+                            ? "0 0 12px rgba(168,85,247,0.35)"
                             : "none",
                       }}
                     />
                     <span className="text-[10px] font-medium uppercase tracking-wider text-[#8b9aab]">
                       {d.day}
                     </span>
-                    <div className="pointer-events-none absolute bottom-[calc(100%+6px)] border border-[#00e5ff]/40 bg-[#0a1422] px-2 py-1 text-[11px] text-white opacity-0 transition group-hover:opacity-100">
+                    <div className="pointer-events-none absolute bottom-[calc(100%+6px)] border border-brand-500/40 bg-[#0a1422] px-2 py-1 text-[11px] text-white opacity-0 transition group-hover:opacity-100">
                       {d.count} leads
                     </div>
                   </div>
@@ -415,7 +415,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
               })}
             </div>
 
-            <div className="mt-5 flex flex-wrap justify-around gap-4 border-t border-[#00e5ff]/15 pt-5">
+            <div className="mt-5 flex flex-wrap justify-around gap-4 border-t border-brand-500/15 pt-5">
               <RingStat label="Hot" pct={hotPct} />
               <RingStat label="Warm" pct={warmPct} />
               <RingStat label="Nurture" pct={nurturePct} />
@@ -458,7 +458,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
                     label: "Hot",
                     pct: hotPct,
                     count: qs?.hotCount ?? 0,
-                    color: "#00e5ff",
+                    color: "#a855f7",
                     icon: HiOutlineFire,
                     href: "/leads/hot",
                   },
@@ -512,7 +512,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
 
         <div className="mt-5 grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
           <HudPanel title="Top industries" subtitle="Most searched categories">
-            <ul className="divide-y divide-[#00e5ff]/10">
+            <ul className="divide-y divide-brand-500/10">
               {(data?.topIndustries ?? []).map((i, idx) => (
                 <li
                   key={i.industry || idx}
@@ -533,7 +533,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
           </HudPanel>
 
           <HudPanel title="Search history" subtitle="Recent generation runs">
-            <ul className="divide-y divide-[#00e5ff]/10">
+            <ul className="divide-y divide-brand-500/10">
               {(data?.recentSearches ?? []).slice(0, 5).map((s) => (
                 <li key={s.id} className="py-2.5">
                   <Link href="/leads/search" className="block">
@@ -568,7 +568,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
           </HudPanel>
 
           <HudPanel title="Activity log" subtitle="Searches, saves, status">
-            <ul className="divide-y divide-[#00e5ff]/10">
+            <ul className="divide-y divide-brand-500/10">
               {(data?.activities ?? []).slice(0, 6).map((a) => (
                 <li key={a.id} className="flex items-start gap-3 py-2.5">
                   <span
@@ -606,7 +606,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
 
         <div className="mt-5 grid gap-5 lg:grid-cols-2">
           <HudPanel title="Export history" subtitle="CSV / Excel downloads">
-            <ul className="divide-y divide-[#00e5ff]/10">
+            <ul className="divide-y divide-brand-500/10">
               {(data?.recentExports ?? []).map((e) => (
                 <li
                   key={e.id}
@@ -624,7 +624,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
                       })}
                     </p>
                   </div>
-                  <HiOutlineArrowDownTray className="h-4 w-4 text-[#00e5ff]" />
+                  <HiOutlineArrowDownTray className="h-4 w-4 text-brand-500" />
                 </li>
               ))}
               {!data?.recentExports?.length && (
@@ -641,7 +641,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
             </p>
             <div className="mt-3 h-1.5 overflow-hidden bg-[#122033]">
               <div
-                className="h-full bg-[#00e5ff] shadow-[0_0_10px_#00e5ff]"
+                className="h-full bg-[#a855f7] shadow-[0_0_10px_var(--brand-500)]"
                 style={{ width: `${creditPct}%` }}
               />
             </div>

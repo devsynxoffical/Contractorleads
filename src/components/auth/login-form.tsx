@@ -51,7 +51,7 @@ export function LoginForm({ onSwitchToRegister }: LoginFormProps) {
   return (
     <>
       <div className="mb-8">
-        <h1 className="text-[28px] font-bold tracking-tight text-[#00e5ff] sm:text-[32px] [text-shadow:0_0_28px_rgba(0,229,255,0.35)]">
+        <h1 className="text-[28px] font-bold tracking-tight text-brand-500 sm:text-[32px] [text-shadow:0_0_28px_var(--brand-glow)]">
           Sign In
         </h1>
         <p className="mt-2 text-[15px] text-[#8b9aab]">
@@ -60,14 +60,14 @@ export function LoginForm({ onSwitchToRegister }: LoginFormProps) {
             <button
               type="button"
               onClick={onSwitchToRegister}
-              className="font-semibold text-[#00e5ff] hover:underline"
+              className="font-semibold text-brand-500 hover:underline"
             >
               Sign up
             </button>
           ) : (
             <Link
               href="/register"
-              className="font-semibold text-[#00e5ff] hover:underline"
+              className="font-semibold text-brand-500 hover:underline"
             >
               Sign up
             </Link>
@@ -78,14 +78,14 @@ export function LoginForm({ onSwitchToRegister }: LoginFormProps) {
       <div className="grid grid-cols-2 gap-3">
         <button
           type="button"
-          className="flex h-11 items-center justify-center gap-2 border border-[#00e5ff]/25 bg-[#00e5ff]/08 text-sm font-medium text-white transition hover:bg-[#00e5ff]/15"
+          className="flex h-11 items-center justify-center gap-2 border border-brand-500/25 bg-brand-500/08 text-sm font-medium text-white transition hover:bg-brand-500/15"
         >
           <FcGoogle className="h-5 w-5" />
           Google
         </button>
         <button
           type="button"
-          className="flex h-11 items-center justify-center gap-2 border border-[#00e5ff]/25 bg-[#00e5ff]/08 text-sm font-medium text-white transition hover:bg-[#00e5ff]/15"
+          className="flex h-11 items-center justify-center gap-2 border border-brand-500/25 bg-brand-500/08 text-sm font-medium text-white transition hover:bg-brand-500/15"
         >
           <FaApple className="h-5 w-5" />
           Apple
@@ -93,11 +93,11 @@ export function LoginForm({ onSwitchToRegister }: LoginFormProps) {
       </div>
 
       <div className="my-7 flex items-center gap-3">
-        <div className="h-px flex-1 bg-[#00e5ff]/20" />
+        <div className="h-px flex-1 bg-brand-500/20" />
         <span className="text-[11px] font-semibold uppercase tracking-wider text-[#5c6b7c]">
           Or with email
         </span>
-        <div className="h-px flex-1 bg-[#00e5ff]/20" />
+        <div className="h-px flex-1 bg-brand-500/20" />
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -116,7 +116,7 @@ export function LoginForm({ onSwitchToRegister }: LoginFormProps) {
               type="email"
               required
               placeholder="name@company.com"
-              className="auth-field h-12 w-full rounded-xl pl-11 pr-4 text-sm outline-none transition focus:ring-2 focus:ring-[#00e5ff]/25"
+              className="auth-field h-12 w-full rounded-xl pl-11 pr-4 text-sm outline-none transition focus:ring-2 focus:ring-brand-500/25"
             />
           </div>
         </div>
@@ -131,7 +131,7 @@ export function LoginForm({ onSwitchToRegister }: LoginFormProps) {
             </label>
             <button
               type="button"
-              className="text-xs font-medium text-[#00e5ff] hover:underline"
+              className="text-xs font-medium text-brand-500 hover:underline"
             >
               Forgot password?
             </button>
@@ -144,12 +144,12 @@ export function LoginForm({ onSwitchToRegister }: LoginFormProps) {
               type={showPassword ? "text" : "password"}
               required
               placeholder="••••••••"
-              className="auth-field h-12 w-full rounded-xl pl-11 pr-11 text-sm outline-none transition focus:ring-2 focus:ring-[#00e5ff]/25"
+              className="auth-field h-12 w-full rounded-xl pl-11 pr-11 text-sm outline-none transition focus:ring-2 focus:ring-brand-500/25"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#5c6b7c] hover:text-[#00e5ff]"
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#5c6b7c] hover:text-brand-500"
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? (

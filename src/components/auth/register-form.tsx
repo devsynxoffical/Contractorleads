@@ -69,7 +69,7 @@ function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
   return (
     <>
       <div className="mb-8">
-        <h1 className="text-[28px] font-bold tracking-tight text-[#00e5ff] sm:text-[32px] [text-shadow:0_0_28px_rgba(0,229,255,0.35)]">
+        <h1 className="text-[28px] font-bold tracking-tight text-brand-500 sm:text-[32px] [text-shadow:0_0_28px_var(--brand-glow)]">
           Create Account
         </h1>
         <p className="mt-2 text-[15px] text-[#8b9aab]">
@@ -79,14 +79,14 @@ function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
             <button
               type="button"
               onClick={onSwitchToLogin}
-              className="font-semibold text-[#00e5ff] hover:underline"
+              className="font-semibold text-brand-500 hover:underline"
             >
               Log in
             </button>
           ) : (
             <Link
               href="/login"
-              className="font-semibold text-[#00e5ff] hover:underline"
+              className="font-semibold text-brand-500 hover:underline"
             >
               Log in
             </Link>
@@ -97,14 +97,14 @@ function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
       <div className="grid grid-cols-2 gap-3">
         <button
           type="button"
-          className="flex h-11 items-center justify-center gap-2 border border-[#00e5ff]/25 bg-[#00e5ff]/08 text-sm font-medium text-white transition hover:bg-[#00e5ff]/15"
+          className="flex h-11 items-center justify-center gap-2 border border-brand-500/25 bg-brand-500/08 text-sm font-medium text-white transition hover:bg-brand-500/15"
         >
           <FcGoogle className="h-5 w-5" />
           Google
         </button>
         <button
           type="button"
-          className="flex h-11 items-center justify-center gap-2 border border-[#00e5ff]/25 bg-[#00e5ff]/08 text-sm font-medium text-white transition hover:bg-[#00e5ff]/15"
+          className="flex h-11 items-center justify-center gap-2 border border-brand-500/25 bg-brand-500/08 text-sm font-medium text-white transition hover:bg-brand-500/15"
         >
           <FaApple className="h-5 w-5" />
           Apple
@@ -112,23 +112,23 @@ function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
       </div>
 
       <div className="my-7 flex items-center gap-3">
-        <div className="h-px flex-1 bg-[#00e5ff]/20" />
+        <div className="h-px flex-1 bg-brand-500/20" />
         <span className="text-[11px] font-semibold uppercase tracking-wider text-[#5c6b7c]">
           Or with business email
         </span>
-        <div className="h-px flex-1 bg-[#00e5ff]/20" />
+        <div className="h-px flex-1 bg-brand-500/20" />
       </div>
 
       {success ? (
-        <div className="space-y-3 border border-[#00e5ff]/25 bg-[#00e5ff]/08 p-4 text-sm text-[#c5d0dc]">
-          <p className="font-semibold text-[#00e5ff]">Check your inbox</p>
+        <div className="space-y-3 border border-brand-500/25 bg-brand-500/08 p-4 text-sm text-[#c5d0dc]">
+          <p className="font-semibold text-brand-500">Check your inbox</p>
           <p>{success}</p>
           {devLink && (
             <p className="text-[12px] text-[#8b9aab]">
               Dev mode (no email provider configured):{" "}
               <a
                 href={devLink}
-                className="font-semibold text-[#00e5ff] break-all hover:underline"
+                className="font-semibold text-brand-500 break-all hover:underline"
               >
                 Open verification link
               </a>
@@ -136,7 +136,7 @@ function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
           )}
           <Link
             href="/login"
-            className="inline-block font-semibold text-[#00e5ff] hover:underline"
+            className="inline-block font-semibold text-brand-500 hover:underline"
           >
             Back to login
           </Link>
@@ -158,7 +158,7 @@ function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
                 type="text"
                 required
                 placeholder="Your full name"
-                className="auth-field h-12 w-full rounded-xl pl-11 pr-4 text-sm outline-none transition focus:ring-2 focus:ring-[#00e5ff]/25"
+                className="auth-field h-12 w-full rounded-xl pl-11 pr-4 text-sm outline-none transition focus:ring-2 focus:ring-brand-500/25"
               />
             </div>
           </div>
@@ -178,7 +178,7 @@ function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
                 type="email"
                 required
                 placeholder="you@yourcompany.com"
-                className="auth-field h-12 w-full rounded-xl pl-11 pr-4 text-sm outline-none transition focus:ring-2 focus:ring-[#00e5ff]/25"
+                className="auth-field h-12 w-full rounded-xl pl-11 pr-4 text-sm outline-none transition focus:ring-2 focus:ring-brand-500/25"
               />
             </div>
             <p className="text-[12px] text-[#5c6b7c]">
@@ -191,7 +191,7 @@ function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
               htmlFor="reg-phone"
               className="text-[13px] font-semibold text-[#8b9aab]"
             >
-              Phone Number <span className="text-[#00e5ff]">*</span>
+              Phone Number <span className="text-brand-500">*</span>
             </label>
             <div className="relative">
               <HiOutlinePhone className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[#5c6b7c]" />
@@ -202,7 +202,7 @@ function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
                 required
                 autoComplete="tel"
                 placeholder="+1 (555) 000-0000"
-                className="auth-field h-12 w-full rounded-xl pl-11 pr-4 text-sm outline-none transition focus:ring-2 focus:ring-[#00e5ff]/25"
+                className="auth-field h-12 w-full rounded-xl pl-11 pr-4 text-sm outline-none transition focus:ring-2 focus:ring-brand-500/25"
               />
             </div>
           </div>
@@ -211,15 +211,15 @@ function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
             <input
               type="checkbox"
               name="terms"
-              className="mt-0.5 h-4 w-4 rounded border-[#00e5ff]/40 bg-transparent text-[#00e5ff] focus:ring-[#00e5ff]"
+              className="mt-0.5 h-4 w-4 rounded border-brand-500/40 bg-transparent text-brand-500 focus:ring-brand-500"
             />
             <span>
               I agree to the{" "}
-              <Link href="#" className="font-medium text-[#00e5ff] hover:underline">
+              <Link href="#" className="font-medium text-brand-500 hover:underline">
                 Terms of Service
               </Link>{" "}
               and{" "}
-              <Link href="#" className="font-medium text-[#00e5ff] hover:underline">
+              <Link href="#" className="font-medium text-brand-500 hover:underline">
                 Privacy Policy
               </Link>
               .

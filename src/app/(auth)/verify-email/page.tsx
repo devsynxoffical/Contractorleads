@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
-const HUD_GRADIENT = "linear-gradient(135deg, #00e5ff 0%, #00b8d4 100%)";
+const HUD_GRADIENT = "var(--logo-gradient)";
 
 function VerifyEmailInner() {
   const router = useRouter();
@@ -70,7 +70,7 @@ function VerifyEmailInner() {
         className="pointer-events-none absolute inset-0"
         style={{
           backgroundImage:
-            "linear-gradient(rgba(0,229,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,229,255,0.05) 1px, transparent 1px), radial-gradient(ellipse 70% 50% at 50% 40%, rgba(0,180,220,0.2), transparent 55%), linear-gradient(180deg, rgba(7,13,24,0.55) 0%, rgba(7,13,24,0.9) 100%), url(/hud-cover.png)",
+            "linear-gradient(rgba(168,85,247,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(168,85,247,0.05) 1px, transparent 1px), radial-gradient(ellipse 70% 50% at 50% 40%, rgba(147,51,234,0.2), transparent 55%), linear-gradient(180deg, rgba(7,13,24,0.55) 0%, rgba(7,13,24,0.9) 100%), url(/hud-cover.png)",
           backgroundSize: "48px 48px, 48px 48px, auto, auto, cover",
           backgroundPosition: "center",
         }}
@@ -83,7 +83,7 @@ function VerifyEmailInner() {
         <span className="hud-bracket hud-bracket-br" aria-hidden />
         <div className="h-1.5 w-full" style={{ background: HUD_GRADIENT }} />
         <div className="p-7 sm:p-8">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#00e5ff]">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-500">
             Contractor Leads
           </p>
           <h1 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold text-white">
@@ -105,7 +105,7 @@ function VerifyEmailInner() {
               </p>
               <Link
                 href="/register"
-                className="inline-block text-[13px] font-semibold text-[#00e5ff] hover:underline"
+                className="inline-block text-[13px] font-semibold text-brand-500 hover:underline"
               >
                 Sign up again
               </Link>

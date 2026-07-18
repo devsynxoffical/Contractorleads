@@ -7,9 +7,9 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "text-[#041018] shadow-[0_4px_14px_rgba(0,229,255,0.28)] hover:opacity-95 hover:shadow-[0_6px_20px_rgba(0,229,255,0.34)] [background:linear-gradient(135deg,#00e5ff_0%,#00b8d4_55%,#0097a7_100%)]",
+          "text-white shadow-[0_4px_14px_var(--brand-glow)] hover:opacity-95 hover:shadow-[0_6px_20px_var(--brand-glow-strong)] [background:var(--logo-gradient)]",
         secondary:
-          "border border-border bg-white text-ink shadow-[var(--shadow-soft)] hover:border-brand-200 hover:bg-brand-50/60 hover:text-brand-500",
+          "border border-border bg-surface text-ink shadow-[var(--shadow-soft)] hover:border-brand-200 hover:bg-brand-50/60 hover:text-brand-500",
         ghost:
           "text-ink-muted hover:bg-brand-50/80 hover:text-brand-500",
         danger: "bg-red-600 text-white shadow-sm hover:bg-red-700",

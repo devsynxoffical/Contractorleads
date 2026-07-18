@@ -24,7 +24,7 @@ export function HudPanel({
         <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
           <div className="min-w-0">
             {title && (
-              <h3 className="text-[13px] font-semibold uppercase tracking-[0.12em] text-[#5eead4]">
+              <h3 className="text-[13px] font-semibold uppercase tracking-[0.12em] text-brand-400">
                 {title}
               </h3>
             )}

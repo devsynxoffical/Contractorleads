@@ -49,9 +49,9 @@ function countryLabel(code?: string | null) {
 }
 
 function tierColor(tier?: string | null) {
-  if (tier === "hot") return "#ff4d6d";
-  if (tier === "warm") return "#7dffb3";
-  return "#00e5ff";
+  if (tier === "hot") return "#ec4899";
+  if (tier === "warm") return "#a855f7";
+  return "#d946ef";
 }
 
 export function LeadGeoMapInner({
@@ -147,14 +147,14 @@ export function LeadGeoMapInner({
           cursor: "pointer",
         },
         selected: {
-          fill: "#00e5ff",
+          fill: "#a855f7",
           fillOpacity: 0.35,
         },
       },
       markerStyle: {
         initial: {
-          fill: "#00e5ff",
-          stroke: "#00e5ff",
+          fill: "#a855f7",
+          stroke: "#a855f7",
           strokeWidth: 5,
           strokeOpacity: 0.28,
           fillOpacity: 1,
@@ -162,7 +162,7 @@ export function LeadGeoMapInner({
         },
         hover: {
           fill: "#ffffff",
-          stroke: "#00e5ff",
+          stroke: "#a855f7",
           strokeWidth: 7,
           strokeOpacity: 0.45,
           r: 5,
@@ -212,7 +212,7 @@ export function LeadGeoMapInner({
         <span className="hud-bracket hud-bracket-bl" aria-hidden />
         <span className="hud-bracket hud-bracket-br" aria-hidden />
 
-        <div className="relative z-[1] border-b border-[#00e5ff]/10 px-5 py-3">
+        <div className="relative z-[1] border-b border-brand-500/10 px-5 py-3">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8b9aab]">
             {title}
           </p>
@@ -230,7 +230,7 @@ export function LeadGeoMapInner({
 
           {!leads.length && (
             <div className="pointer-events-none absolute inset-0 z-[5] flex flex-col items-center justify-center gap-2 bg-[#0a101a]/70 px-6 text-center">
-              <HiOutlineMapPin className="h-8 w-8 text-[#00e5ff]" />
+              <HiOutlineMapPin className="h-8 w-8 text-brand-500" />
               <p className="text-sm font-medium text-white">No mapped leads yet</p>
               <p className="max-w-sm text-[13px] text-[#8b9aab]">
                 Generate leads in Lead Finder — Places coordinates show as cyan
@@ -240,11 +240,11 @@ export function LeadGeoMapInner({
           )}
         </div>
 
-        <div className="relative z-[1] grid gap-0 border-t border-[#00e5ff]/10 lg:grid-cols-[1fr_220px]">
+        <div className="relative z-[1] grid gap-0 border-t border-brand-500/10 lg:grid-cols-[1fr_220px]">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[320px] text-left text-[12px]">
               <thead>
-                <tr className="border-b border-[#00e5ff]/10 text-[10px] uppercase tracking-[0.16em] text-[#5c6b7c]">
+                <tr className="border-b border-brand-500/10 text-[10px] uppercase tracking-[0.16em] text-[#5c6b7c]">
                   <th className="px-5 py-3 font-semibold">Country</th>
                   <th className="px-3 py-3 font-semibold">Leads</th>
                   <th className="px-5 py-3 font-semibold">Pct%</th>
@@ -272,7 +272,7 @@ export function LeadGeoMapInner({
                         }}
                         className={`cursor-pointer border-b border-white/[0.04] transition ${
                           active
-                            ? "bg-[#00e5ff]/10 text-[#00e5ff]"
+                            ? "bg-brand-500/10 text-brand-500"
                             : "text-[#c5d0dc] hover:bg-white/[0.03]"
                         }`}
                       >
@@ -289,14 +289,14 @@ export function LeadGeoMapInner({
             </table>
           </div>
 
-          <div className="flex flex-col items-center justify-center gap-3 border-t border-[#00e5ff]/10 px-5 py-6 lg:border-l lg:border-t-0">
+          <div className="flex flex-col items-center justify-center gap-3 border-t border-brand-500/10 px-5 py-6 lg:border-l lg:border-t-0">
             <div
               className="relative flex h-[88px] w-[88px] items-center justify-center rounded-full"
               style={{
-                background: `conic-gradient(#00e5ff ${Math.min(
+                background: `conic-gradient(#a855f7 ${Math.min(
                   (leads.length ? countryRows[0]?.pct ?? 0 : 0) * 3.6,
                   360
-                )}deg, rgba(0,229,255,0.12) 0)`,
+                )}deg, rgba(168,85,247,0.12) 0)`,
               }}
             >
               <div className="flex h-[64px] w-[64px] flex-col items-center justify-center rounded-full bg-[#0b1220]">
@@ -326,7 +326,7 @@ export function LeadGeoMapInner({
               </p>
               <Link
                 href={`/leads/${activeLead.id}`}
-                className="mt-1 block text-base font-semibold text-white hover:text-[#00e5ff]"
+                className="mt-1 block text-base font-semibold text-white hover:text-brand-500"
               >
                 {activeLead.businessName}
               </Link>
@@ -368,7 +368,7 @@ export function LeadGeoMapInner({
                   setActiveCountry((lead.country || "US").toUpperCase());
                 }}
                 className={`hud-panel w-full text-left transition hover:brightness-110 ${
-                  activeLeadId === lead.id ? "ring-1 ring-[#00e5ff]/40" : ""
+                  activeLeadId === lead.id ? "ring-1 ring-brand-500/40" : ""
                 }`}
               >
                 <p className="font-semibold text-white">{lead.businessName}</p>
@@ -377,7 +377,7 @@ export function LeadGeoMapInner({
                     ? [lead.city, lead.state].filter(Boolean).join(", ")
                     : lead.address || countryLabel(lead.country)}
                 </p>
-                <p className="mt-2 text-[10px] uppercase tracking-wide text-[#5eead4]">
+                <p className="mt-2 text-[10px] uppercase tracking-wide text-brand-400">
                   {lead.qualityTier ?? "nurture"}
                 </p>
               </button>

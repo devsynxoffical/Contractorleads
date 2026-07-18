@@ -77,7 +77,7 @@ function DualBarChart({
           <div key={d.date} className="flex flex-1 flex-col items-center gap-1.5">
             <div className="flex h-[140px] w-full items-end justify-center gap-0.5">
               <div
-                className="w-[28%] rounded-t-sm bg-[#00e5ff]/85"
+                className="w-[28%] rounded-t-sm bg-brand-500/85"
                 style={{ height: `${Math.max(4, (d.searches / max) * 100)}%` }}
                 title={`${d.searches} searches`}
               />
@@ -100,7 +100,7 @@ function DualBarChart({
       </div>
       <div className="flex flex-wrap gap-4 text-[11px] text-[#8b9aab]">
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-sm bg-[#00e5ff]" /> Searches
+          <span className="h-2 w-2 rounded-sm bg-[#a855f7]" /> Searches
         </span>
         <span className="inline-flex items-center gap-1.5">
           <span className="h-2 w-2 rounded-sm bg-[#7dffb3]" /> Leads
@@ -115,7 +115,7 @@ function DualBarChart({
 
 function HorizontalBars({
   rows,
-  color = "#00e5ff",
+  color = "#a855f7",
 }: {
   rows: Array<{ label: string; count: number }>;
   color?: string;
@@ -164,7 +164,7 @@ function QualityDonut({
       <div
         className="relative h-[100px] w-[100px] shrink-0 rounded-full"
         style={{
-          background: `conic-gradient(#ff4d6d 0deg ${hotDeg}deg, #7dffb3 ${hotDeg}deg ${hotDeg + warmDeg}deg, #00e5ff ${hotDeg + warmDeg}deg 360deg)`,
+          background: `conic-gradient(#ff4d6d 0deg ${hotDeg}deg, #7dffb3 ${hotDeg}deg ${hotDeg + warmDeg}deg, #a855f7 ${hotDeg + warmDeg}deg 360deg)`,
         }}
       >
         <div className="absolute inset-[14px] flex flex-col items-center justify-center rounded-full bg-[#0b1220]">
@@ -183,8 +183,8 @@ function QualityDonut({
         <li className="flex items-center gap-2 text-[#7dffb3]">
           <span className="h-2 w-2 rounded-full bg-[#7dffb3]" /> Warm {mix.warm}
         </li>
-        <li className="flex items-center gap-2 text-[#00e5ff]">
-          <span className="h-2 w-2 rounded-full bg-[#00e5ff]" /> Nurture{" "}
+        <li className="flex items-center gap-2 text-brand-500">
+          <span className="h-2 w-2 rounded-full bg-[#a855f7]" /> Nurture{" "}
           {mix.nurture}
         </li>
       </ul>
@@ -331,7 +331,7 @@ export default function AdminOverviewPage() {
 
       <div className="grid gap-5 lg:grid-cols-3">
         <HudPanel title="Top industries" subtitle="Lead volume by vertical">
-          <HorizontalBars rows={industryRows} color="#00e5ff" />
+          <HorizontalBars rows={industryRows} color="#a855f7" />
         </HudPanel>
 
         <HudPanel title="Countries" subtitle="Where leads are concentrated">
@@ -346,17 +346,17 @@ export default function AdminOverviewPage() {
             {stats.planMix.map((p) => (
               <li
                 key={p.plan}
-                className="flex items-center justify-between rounded-lg border border-[#00e5ff]/10 bg-white/[0.03] px-3 py-2 text-sm"
+                className="flex items-center justify-between rounded-lg border border-brand-500/10 bg-white/[0.03] px-3 py-2 text-sm"
               >
                 <span className="capitalize text-[#c5d0dc]">{p.plan}</span>
-                <span className="font-semibold tabular-nums text-[#00e5ff]">
+                <span className="font-semibold tabular-nums text-brand-500">
                   {p.count}
                 </span>
               </li>
             ))}
           </ul>
           {stats.statusMix.length > 0 && (
-            <div className="mt-4 border-t border-[#00e5ff]/10 pt-3">
+            <div className="mt-4 border-t border-brand-500/10 pt-3">
               <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#5c6b7c]">
                 Status
               </p>
@@ -382,7 +382,7 @@ export default function AdminOverviewPage() {
         actions={
           <Link
             href="/admin/activity"
-            className="text-[11px] font-semibold text-[#00e5ff] hover:underline"
+            className="text-[11px] font-semibold text-brand-500 hover:underline"
           >
             View all
           </Link>
@@ -395,7 +395,7 @@ export default function AdminOverviewPage() {
           {data.recentActivity.map((a) => (
             <li
               key={a.id}
-              className="rounded-lg border border-[#00e5ff]/10 bg-white/[0.03] px-3 py-2.5 text-[12px]"
+              className="rounded-lg border border-brand-500/10 bg-white/[0.03] px-3 py-2.5 text-[12px]"
             >
               <p className="font-medium text-[#e8eef6]">{a.message}</p>
               <p className="mt-0.5 text-[#5c6b7c]">

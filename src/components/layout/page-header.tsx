@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-const LOGO_GRADIENT =
-  "linear-gradient(135deg, #00e5ff 0%, #00b8d4 55%, #0097a7 100%)";
+/** Logo pink → magenta → purple. Prefer CSS var so light/dark stay in sync. */
+const LOGO_GRADIENT = "var(--logo-gradient)";
 
 export function PageHeader({
   eyebrow = "LeadFlow USA",
@@ -54,7 +54,7 @@ export function PrimaryActionLink({
   return (
     <Link
       href={href}
-      className="inline-flex h-10 items-center gap-2 rounded-xl px-4 text-[13px] font-semibold text-[#041018] shadow-[0_6px_18px_rgba(0,229,255,0.28)] transition hover:opacity-95"
+      className="inline-flex h-10 items-center gap-2 rounded-xl px-4 text-[13px] font-semibold text-white shadow-[0_6px_18px_var(--brand-glow)] transition hover:opacity-95"
       style={{ background: LOGO_GRADIENT }}
     >
       {children}
@@ -72,7 +72,7 @@ export function SecondaryActionLink({
   return (
     <Link
       href={href}
-      className="inline-flex h-10 items-center gap-2 rounded-xl border border-border bg-white/90 px-3.5 text-[13px] font-medium text-ink-muted shadow-[var(--shadow-soft)] backdrop-blur transition hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700"
+      className="inline-flex h-10 items-center gap-2 rounded-xl border border-border bg-surface px-3.5 text-[13px] font-medium text-ink-muted shadow-[var(--shadow-soft)] backdrop-blur transition hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700"
     >
       {children}
     </Link>

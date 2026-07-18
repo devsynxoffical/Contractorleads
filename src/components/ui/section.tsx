@@ -91,7 +91,7 @@ export function StatChip({
   hint?: string;
 }) {
   return (
-    <div className="rounded-xl border border-[#00e5ff]/15 bg-[rgba(12,22,38,0.85)] px-4 py-3 shadow-sm backdrop-blur">
+    <div className="rounded-xl border border-brand-500/15 bg-[rgba(12,22,38,0.85)] px-4 py-3 shadow-sm backdrop-blur">
       <p className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">
         {label}
       </p>

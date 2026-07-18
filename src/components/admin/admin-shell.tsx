@@ -30,6 +30,7 @@ import {
   permissionForPath,
   type AdminPermissionKey,
 } from "@/lib/admin-permissions";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 type NavItem = {
   href: string;
@@ -122,16 +123,21 @@ export function AdminShell({
       </Suspense>
 
       <aside className="hud-shell-aside hidden w-[260px] shrink-0 flex-col lg:flex">
-        <div className="border-b border-[#00e5ff]/15 px-5 py-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#00e5ff]">
-            {roleLabel}
-          </p>
-          <p className="mt-1 font-[family-name:var(--font-display)] text-lg font-semibold text-white">
-            Control Panel
-          </p>
-          <p className="mt-0.5 truncate text-[12px] text-[#8b9aab]">
-            {user.email}
-          </p>
+        <div className="border-b border-brand-500/15 px-5 py-4">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-500">
+                {roleLabel}
+              </p>
+              <p className="mt-1 font-[family-name:var(--font-display)] text-lg font-semibold text-ink">
+                Control Panel
+              </p>
+              <p className="mt-0.5 truncate text-[12px] text-ink-muted">
+                {user.email}
+              </p>
+            </div>
+            <ThemeToggle compact />
+          </div>
         </div>
         <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
           {visibleNav.map((item) => {
@@ -144,8 +150,8 @@ export function AdminShell({
                 className={cn(
                   "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium transition",
                   active
-                    ? "saas-nav-active bg-[#00e5ff]/12 text-[#00e5ff] shadow-[0_0_20px_rgba(0,229,255,0.12)]"
-                    : "text-[#8b9aab] hover:bg-white/[0.04] hover:text-[#e8eef6]"
+                    ? "saas-nav-active bg-brand-500/12 text-brand-500 shadow-[0_0_20px_var(--brand-glow)]"
+                    : "text-ink-muted hover:bg-brand-50 hover:text-ink"
                 )}
               >
                 <Icon className="h-4 w-4 shrink-0" />
@@ -154,11 +160,11 @@ export function AdminShell({
             );
           })}
         </nav>
-        <div className="space-y-1 border-t border-[#00e5ff]/15 p-3">
+        <div className="space-y-1 border-t border-brand-500/15 p-3">
           {user.role === SUPER_ADMIN_ROLE && (
             <Link
               href="/home"
-              className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-[13px] font-medium text-[#8b9aab] transition hover:bg-white/[0.04] hover:text-[#e8eef6]"
+              className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-[13px] font-medium text-ink-muted transition hover:bg-brand-50 hover:text-ink"
             >
               <HiOutlineArrowLeft className="h-4 w-4" />
               Back to app
@@ -172,7 +178,7 @@ export function AdminShell({
               router.push("/admin/login");
               router.refresh();
             }}
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-[13px] font-medium text-[#8b9aab] transition hover:bg-white/[0.04] hover:text-[#e8eef6]"
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-[13px] font-medium text-ink-muted transition hover:bg-brand-50 hover:text-ink"
           >
             Sign out of admin
           </button>
@@ -183,14 +189,15 @@ export function AdminShell({
         <div className="hud-viewport-bg pointer-events-none absolute inset-0" />
 
         <header className="hud-shell-header relative z-[1] flex items-center gap-3 px-4 py-3 lg:hidden">
-          <HiOutlineClipboardDocumentList className="h-5 w-5 text-[#00e5ff]" />
+          <HiOutlineClipboardDocumentList className="h-5 w-5 text-brand-500" />
           <div className="min-w-0 flex-1">
-            <p className="text-[13px] font-semibold text-white">{roleLabel}</p>
-            <p className="truncate text-[11px] text-[#8b9aab]">{user.email}</p>
+            <p className="text-[13px] font-semibold text-ink">{roleLabel}</p>
+            <p className="truncate text-[11px] text-ink-muted">{user.email}</p>
           </div>
+          <ThemeToggle compact />
         </header>
 
-        <div className="scrollbar-thin relative z-[1] flex gap-2 overflow-x-auto border-b border-[#00e5ff]/10 bg-[#0b1220]/80 px-3 py-2 lg:hidden">
+        <div className="scrollbar-thin relative z-[1] flex gap-2 overflow-x-auto border-b border-brand-500/10 bg-[#0b1220]/80 px-3 py-2 lg:hidden">
           {visibleNav.map((item) => (
             <Link
               key={item.href}
@@ -198,7 +205,7 @@ export function AdminShell({
               className={cn(
                 "shrink-0 rounded-full px-3 py-1.5 text-[11px] font-semibold",
                 isActive(pathname, item.href)
-                  ? "bg-[#00e5ff]/15 text-[#00e5ff]"
+                  ? "bg-brand-500/15 text-brand-500"
                   : "bg-white/[0.04] text-[#8b9aab]"
               )}
             >
@@ -230,13 +237,13 @@ export function AdminStatCard({
       <span className="hud-bracket hud-bracket-tr" aria-hidden />
       <span className="hud-bracket hud-bracket-bl" aria-hidden />
       <span className="hud-bracket hud-bracket-br" aria-hidden />
-      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#5c6b7c]">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
         {label}
       </p>
-      <p className="hud-stat-value mt-1 text-2xl font-semibold tabular-nums text-white">
+      <p className="hud-stat-value mt-1 text-2xl font-semibold tabular-nums text-ink">
         {value}
       </p>
-      {hint && <p className="mt-1 text-[12px] text-[#8b9aab]">{hint}</p>}
+      {hint && <p className="mt-1 text-[12px] text-ink-muted">{hint}</p>}
     </div>
   );
 }
@@ -253,11 +260,11 @@ export function AdminPageHeader({
   return (
     <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h1 className="font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-[#00e5ff] [text-shadow:0_0_24px_rgba(0,229,255,0.35)]">
+        <h1 className="font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-brand-500 [text-shadow:0_0_24px_var(--brand-glow)]">
           {title}
         </h1>
         {description && (
-          <p className="mt-1 text-sm text-[#8b9aab]">{description}</p>
+          <p className="mt-1 text-sm text-ink-muted">{description}</p>
         )}
       </div>
       {actions}

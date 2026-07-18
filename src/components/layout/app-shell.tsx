@@ -151,7 +151,7 @@ function SidebarNav({
           className={cn(
             "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-[var(--shadow-soft)] ring-1",
             hud
-              ? "bg-[#00e5ff]/10 ring-[#00e5ff]/30"
+              ? "bg-brand-500/10 ring-brand-500/30"
               : "bg-gradient-to-br from-brand-50 to-white ring-border/80",
           )}
         >
@@ -227,7 +227,7 @@ function SidebarNav({
                     />
                     <span className="flex-1 truncate">{item.label}</span>
                     {item.badge && (
-                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#00e5ff] shadow-[0_0_6px_#00e5ff]" />
+                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#a855f7] shadow-[0_0_6px_#a855f7]" />
                     )}
                   </Link>
                 );
@@ -242,7 +242,7 @@ function SidebarNav({
           className={cn(
             "hud-credits-card relative overflow-hidden rounded-2xl p-3.5 ring-1",
             hud
-              ? "bg-[#00e5ff]/10 ring-[#00e5ff]/25"
+              ? "bg-brand-500/10 ring-brand-500/25"
               : "bg-gradient-to-br from-[#fcf2f8] via-white to-[#f3eef8] ring-brand-100/80",
           )}
         >
@@ -252,7 +252,7 @@ function SidebarNav({
           <p
             className={cn(
               "mt-1 font-[family-name:var(--font-display)] text-2xl font-semibold tabular-nums tracking-tight",
-              hud ? "text-[#00e5ff]" : "text-brand-700",
+              hud ? "text-brand-500" : "text-brand-700",
             )}
           >
             {formatCredits(user.creditsRemaining)}
@@ -261,7 +261,7 @@ function SidebarNav({
             href="/billing"
             className={cn(
               "mt-2 inline-block text-[11px] font-semibold hover:underline",
-              hud ? "text-[#5eead4]" : "text-brand-600",
+              hud ? "text-brand-400" : "text-brand-600",
             )}
           >
             Upgrade plan →
@@ -378,7 +378,7 @@ export function AppShell({
             className={cn(
               "hud-shell-aside animate-slide-left relative flex h-full w-[min(288px,86vw)] flex-col border-r shadow-2xl",
               hudMode
-                ? "border-[#00e5ff]/15 bg-[#0b1220]"
+                ? "border-brand-500/15 bg-[#0b1220]"
                 : "border-border bg-white",
             )}
           >

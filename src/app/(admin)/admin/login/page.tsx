@@ -45,8 +45,8 @@ export default function AdminLoginPage() {
         <span className="hud-bracket hud-bracket-bl" aria-hidden />
         <span className="hud-bracket hud-bracket-br" aria-hidden />
 
-        <div className="border-b border-[#00e5ff]/15 px-7 py-5 sm:px-8">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#00e5ff]">
+        <div className="border-b border-brand-500/15 px-7 py-5 sm:px-8">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-500">
             Admin portal
           </p>
           <h1 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-white">
@@ -104,11 +104,11 @@ export default function AdminLoginPage() {
           </button>
         </form>
 
-        <p className="border-t border-[#00e5ff]/10 px-7 py-4 text-center text-[12px] text-[#5c6b7c] sm:px-8">
+        <p className="border-t border-brand-500/10 px-7 py-4 text-center text-[12px] text-[#5c6b7c] sm:px-8">
           Agency account?{" "}
           <Link
             href="/login"
-            className="font-semibold text-[#00e5ff] hover:underline"
+            className="font-semibold text-brand-500 hover:underline"
           >
             Use agency login
           </Link>

@@ -408,14 +408,14 @@ export function HomeView({ userName }: { userName?: string | null }) {
     <div className="page-pad page-enter">
       <div className="mx-auto w-full max-w-[900px]">
         {/* AI chatbot */}
-        <div className="animate-fade-up mx-auto flex h-[360px] w-full max-w-[900px] flex-col overflow-hidden rounded-2xl border border-[#00e5ff]/15 bg-[rgba(12,22,38,0.92)] shadow-[var(--shadow-card)]">
-          <div className="flex items-center justify-between border-b border-[#00e5ff]/15 px-4 py-2.5 sm:px-5">
+        <div className="animate-fade-up mx-auto flex h-[360px] w-full max-w-[900px] flex-col overflow-hidden rounded-2xl border border-brand-500/15 bg-[rgba(12,22,38,0.92)] shadow-[var(--shadow-card)]">
+          <div className="flex items-center justify-between border-b border-brand-500/15 px-4 py-2.5 sm:px-5">
             <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#00e5ff]/15 text-[#00e5ff]">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-500/15 text-brand-500">
                 <HiOutlineSparkles className="h-4 w-4" />
               </span>
               <div>
-                <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[#00e5ff]">
+                <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-brand-500">
                   AI assistant
                 </p>
                 <p className="text-[11px] text-ink-faint">
@@ -425,7 +425,7 @@ export function HomeView({ userName }: { userName?: string | null }) {
             </div>
             <Link
               href="/ask-expert"
-              className="text-[11px] font-semibold text-[#5eead4] hover:underline"
+              className="text-[11px] font-semibold text-brand-400 hover:underline"
             >
               Full Ask Expert →
             </Link>
@@ -443,8 +443,8 @@ export function HomeView({ userName }: { userName?: string | null }) {
                 <div
                   className={`max-w-[92%] whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed sm:text-[14px] ${
                     msg.role === "user"
-                      ? "rounded-br-md text-[#041018] shadow-sm"
-                      : "rounded-bl-md border border-[#00e5ff]/20 bg-[#070d18]/90 text-ink"
+                      ? "rounded-br-md text-white shadow-sm"
+                      : "rounded-bl-md border border-brand-500/20 bg-[#070d18]/90 text-ink"
                   }`}
                   style={
                     msg.role === "user"
@@ -465,7 +465,7 @@ export function HomeView({ userName }: { userName?: string | null }) {
                     type="button"
                     disabled={chatLoading}
                     onClick={() => void askChat(p)}
-                    className="rounded-full border border-[#00e5ff]/25 bg-[#00e5ff]/08 px-3.5 py-1.5 text-[12px] font-medium text-[#c5d0dc] transition hover:border-[#00e5ff]/45 hover:bg-[#00e5ff]/15 hover:text-white disabled:opacity-50"
+                    className="rounded-full border border-brand-500/25 bg-brand-500/08 px-3.5 py-1.5 text-[12px] font-medium text-[#c5d0dc] transition hover:border-brand-500/45 hover:bg-brand-500/15 hover:text-white disabled:opacity-50"
                   >
                     {p}
                   </button>
@@ -475,7 +475,7 @@ export function HomeView({ userName }: { userName?: string | null }) {
 
             {chatLoading && (
               <p className="flex items-center justify-center gap-2 text-[13px] text-ink-muted">
-                <HiOutlineArrowPath className="h-4 w-4 animate-spin text-[#00e5ff]" />
+                <HiOutlineArrowPath className="h-4 w-4 animate-spin text-brand-500" />
                 Thinking…
               </p>
             )}
@@ -483,22 +483,22 @@ export function HomeView({ userName }: { userName?: string | null }) {
 
           <form
             onSubmit={handleChatSubmit}
-            className="flex shrink-0 gap-2 border-t border-[#00e5ff]/15 bg-[#0a1422]/95 px-4 py-2.5 sm:px-5"
+            className="flex shrink-0 gap-2 border-t border-brand-500/15 bg-[#0a1422]/95 px-4 py-2.5 sm:px-5"
           >
             <div className="relative flex-1">
-              <HiOutlineSparkles className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#00e5ff]" />
+              <HiOutlineSparkles className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-500" />
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask about ads, outreach, offers, or the app…"
                 disabled={chatLoading}
-                className="h-10 w-full rounded-xl border border-[#00e5ff]/25 bg-[#070d18]/90 pl-10 pr-3 text-[14px] text-ink outline-none transition placeholder:text-ink-faint focus:border-[#00e5ff]/55 focus:ring-4 focus:ring-[var(--ring)]"
+                className="h-10 w-full rounded-xl border border-brand-500/25 bg-[#070d18]/90 pl-10 pr-3 text-[14px] text-ink outline-none transition placeholder:text-ink-faint focus:border-brand-500/55 focus:ring-4 focus:ring-[var(--ring)]"
               />
             </div>
             <button
               type="submit"
               disabled={chatLoading || !input.trim()}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[#041018] shadow-[0_8px_20px_rgba(0,229,255,0.3)] transition hover:opacity-95 disabled:opacity-45"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-[0_8px_20px_rgba(168,85,247,0.3)] transition hover:opacity-95 disabled:opacity-45"
               style={{ background: LOGO_GRADIENT }}
               aria-label="Send"
             >
@@ -728,7 +728,7 @@ export function HomeView({ userName }: { userName?: string | null }) {
               <button
                 type="submit"
                 disabled={searchLoading}
-                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl text-[13px] font-semibold text-[#041018] shadow-[0_8px_22px_rgba(0,229,255,0.28)] transition hover:opacity-95 disabled:opacity-55"
+                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl text-[13px] font-semibold text-white shadow-[0_8px_22px_rgba(168,85,247,0.28)] transition hover:opacity-95 disabled:opacity-55"
                 style={{ background: LOGO_GRADIENT }}
               >
                 {searchLoading ? (

@@ -591,15 +591,15 @@ export function LeadSearchForm() {
               </div>
               )}
 
-              <label className="flex items-start gap-3 rounded-xl border border-[#00e5ff]/20 bg-[#00e5ff]/05 px-4 py-3 sm:col-span-2 lg:col-span-3">
+              <label className="flex items-start gap-3 rounded-xl border border-brand-500/20 bg-brand-500/05 px-4 py-3 sm:col-span-2 lg:col-span-3">
                 <input
                   type="checkbox"
                   checked={requireSocialPresence}
                   onChange={(e) => setRequireSocialPresence(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-[#00e5ff]/40 bg-transparent text-[#00e5ff] focus:ring-[#00e5ff]"
+                  className="mt-0.5 h-4 w-4 rounded border-brand-500/40 bg-transparent text-brand-500 focus:ring-brand-500"
                 />
                 <span className="text-[13px] leading-snug text-[#c5d0dc]">
-                  <span className="font-semibold text-[#00e5ff]">
+                  <span className="font-semibold text-brand-500">
                     Require LinkedIn, social &amp; owner name
                   </span>
                   <span className="mt-0.5 block text-[#8b9aab]">
@@ -634,7 +634,7 @@ export function LeadSearchForm() {
               </div>
             )}
             {filterNote && !error && (
-              <div className="mt-4 rounded-lg border border-[#00e5ff]/25 bg-[#00e5ff]/08 px-3 py-2 text-sm text-[#c5d0dc]">
+              <div className="mt-4 rounded-lg border border-brand-500/25 bg-brand-500/08 px-3 py-2 text-sm text-[#c5d0dc]">
                 {filterNote}
               </div>
             )}
@@ -689,7 +689,7 @@ export function LeadSearchForm() {
             </CardContent>
           </Card>
 
-          <Card className="border border-[#00e5ff]/15 bg-[rgba(12,22,38,0.92)] shadow-[var(--shadow-card)]">
+          <Card className="border border-brand-500/15 bg-[rgba(12,22,38,0.92)] shadow-[var(--shadow-card)]">
             <CardContent className="flex gap-3 py-4">
               <HiOutlineCpuChip className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" />
               <div>

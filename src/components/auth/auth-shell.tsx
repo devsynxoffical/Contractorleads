@@ -27,7 +27,7 @@ export function AuthShell({
         className="pointer-events-none absolute inset-0"
         style={{
           backgroundImage:
-            "linear-gradient(rgba(0,229,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,229,255,0.05) 1px, transparent 1px), radial-gradient(ellipse 70% 50% at 65% 35%, rgba(0,180,220,0.22), transparent 55%), linear-gradient(180deg, rgba(7,13,24,0.55) 0%, rgba(7,13,24,0.88) 100%), url(/hud-cover.png)",
+            "linear-gradient(rgba(168,85,247,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(168,85,247,0.05) 1px, transparent 1px), radial-gradient(ellipse 70% 50% at 65% 35%, rgba(147,51,234,0.22), transparent 55%), linear-gradient(180deg, rgba(7,13,24,0.55) 0%, rgba(7,13,24,0.88) 100%), url(/hud-cover.png)",
           backgroundSize: "48px 48px, 48px 48px, auto, auto, cover",
           backgroundPosition: "center, center, center, center, center top",
         }}
@@ -38,7 +38,7 @@ export function AuthShell({
         <div className="flex flex-1 flex-col justify-center px-8 py-12 lg:px-16 xl:px-24">
           <div className="mx-auto w-full max-w-lg lg:mx-0">
             <div className="mb-8 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center border border-[#00e5ff]/35 bg-[#00e5ff]/10">
+              <div className="flex h-10 w-10 items-center justify-center border border-brand-500/35 bg-brand-500/10">
                 <Image
                   src="/logo.png"
                   alt=""
@@ -52,7 +52,7 @@ export function AuthShell({
               </span>
             </div>
 
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#00e5ff]">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500">
               LeadFlow HUD
             </p>
             <h1 className="mt-3 text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl lg:text-[2.75rem]">
@@ -67,7 +67,7 @@ export function AuthShell({
                 const Icon = feature.icon;
                 return (
                   <li key={feature.label} className="flex items-center gap-3.5">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center border border-[#00e5ff]/30 bg-[#00e5ff]/10 text-[#00e5ff]">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center border border-brand-500/30 bg-brand-500/10 text-brand-500">
                       <Icon className="h-5 w-5" />
                     </span>
                     <span className="text-sm font-medium text-[#c5d0dc]">
@@ -91,17 +91,17 @@ export function AuthShell({
         </div>
       </div>
 
-      <footer className="relative z-10 border-t border-[#00e5ff]/10 bg-[#0b1220]/70 px-6 py-4 backdrop-blur-sm">
+      <footer className="relative z-10 border-t border-brand-500/10 bg-[#0b1220]/70 px-6 py-4 backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 text-xs text-[#5c6b7c] sm:flex-row">
           <p>© 2026 Contractor Leads. All rights reserved.</p>
           <div className="flex gap-5">
-            <Link href="#" className="hover:text-[#00e5ff]">
+            <Link href="#" className="hover:text-brand-500">
               Privacy Policy
             </Link>
-            <Link href="#" className="hover:text-[#00e5ff]">
+            <Link href="#" className="hover:text-brand-500">
               Terms of Service
             </Link>
-            <Link href="#" className="hover:text-[#00e5ff]">
+            <Link href="#" className="hover:text-brand-500">
               Security
             </Link>
           </div>

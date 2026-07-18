@@ -1,4 +1,6 @@
 import { Outfit, Plus_Jakarta_Sans } from "next/font/google";
+import { ThemeProvider } from "@/components/theme/theme-provider";
+import { ThemeScript } from "@/components/theme/theme-script";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -32,8 +34,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${jakarta.variable} ${outfit.variable} h-full`}>
-      <body className="min-h-full font-sans antialiased">{children}</body>
+    <html
+      lang="en"
+      className={`${jakarta.variable} ${outfit.variable} h-full`}
+      data-theme="dark"
+      suppressHydrationWarning
+    >
+      <head>
+        <ThemeScript />
+      </head>
+      <body className="min-h-full font-sans antialiased">
+        <ThemeProvider initialTheme="dark">{children}</ThemeProvider>
+      </body>
     </html>
   );
 }

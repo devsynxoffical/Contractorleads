@@ -98,10 +98,10 @@ export function GlobalSearch({ className }: { className?: string }) {
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => (leads.length > 0 || saved.length > 0) && setOpen(true)}
           placeholder="Search leads, industries, cities…"
-          className="h-10 w-full rounded-xl border border-[#00e5ff]/25 bg-[#070d18]/90 pl-10 pr-3 text-[13px] text-ink outline-none transition placeholder:text-ink-faint hover:border-[#00e5ff]/40 focus:border-[#00e5ff]/55 focus:bg-[#0a1422] focus:ring-4 focus:ring-[var(--ring)]"
+          className="h-10 w-full rounded-xl border border-brand-500/25 bg-[#070d18]/90 pl-10 pr-3 text-[13px] text-ink outline-none transition placeholder:text-ink-faint hover:border-brand-500/40 focus:border-brand-500/55 focus:bg-[#0a1422] focus:ring-4 focus:ring-[var(--ring)]"
         />
         {open && query.trim().length >= 2 && (
-          <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 max-h-80 overflow-auto rounded-xl border border-[#00e5ff]/2 bg-[#0b1220] py-2 shadow-[var(--shadow-elevated)]">
+          <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 max-h-80 overflow-auto rounded-xl border border-brand-500/2 bg-[#0b1220] py-2 shadow-[var(--shadow-elevated)]">
             {loading && (
               <p className="px-3 py-2 text-[12px] text-ink-muted">Searching…</p>
             )}
@@ -120,7 +120,7 @@ export function GlobalSearch({ className }: { className?: string }) {
                     key={l.id}
                     href={`/leads/${l.id}`}
                     onClick={() => setOpen(false)}
-                    className="block rounded-lg px-2 py-2 hover:bg-[#00e5ff]/10"
+                    className="block rounded-lg px-2 py-2 hover:bg-brand-500/10"
                   >
                     <p className="text-[13px] font-semibold text-white">
                       {l.businessName}
@@ -134,7 +134,7 @@ export function GlobalSearch({ className }: { className?: string }) {
               </div>
             )}
             {saved.length > 0 && (
-              <div className="border-t border-[#00e5ff]/15 px-2 pt-1">
+              <div className="border-t border-brand-500/15 px-2 pt-1">
                 <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-ink-faint">
                   Saved
                 </p>
@@ -143,7 +143,7 @@ export function GlobalSearch({ className }: { className?: string }) {
                     key={s.id}
                     href={`/leads/${s.lead.id}`}
                     onClick={() => setOpen(false)}
-                    className="block rounded-lg px-2 py-2 hover:bg-[#00e5ff]/10"
+                    className="block rounded-lg px-2 py-2 hover:bg-brand-500/10"
                   >
                     <p className="text-[13px] font-semibold text-white">
                       {s.lead.businessName}
@@ -160,7 +160,7 @@ export function GlobalSearch({ className }: { className?: string }) {
             )}
             <button
               type="submit"
-              className="mt-1 w-full border-t border-[#00e5ff]/15 px-3 py-2 text-left text-[12px] font-semibold text-[#00e5ff] hover:bg-[#00e5ff]/10"
+              className="mt-1 w-full border-t border-brand-500/15 px-3 py-2 text-left text-[12px] font-semibold text-brand-500 hover:bg-brand-500/10"
             >
               View all results for “{query.trim()}”
             </button>

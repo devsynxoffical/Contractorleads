@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-const HUD_GRADIENT = "linear-gradient(135deg, #00e5ff 0%, #00b8d4 100%)";
+const HUD_GRADIENT = "var(--logo-gradient)";
 
 /**
  * Brief branded splash after login / signup completion, then dashboard.
@@ -25,7 +25,7 @@ export default function AuthSplashClient() {
         className="pointer-events-none absolute inset-0"
         style={{
           backgroundImage:
-            "linear-gradient(rgba(0,229,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,229,255,0.05) 1px, transparent 1px), radial-gradient(ellipse 70% 50% at 50% 40%, rgba(0,180,220,0.25), transparent 55%), linear-gradient(180deg, rgba(7,13,24,0.6) 0%, rgba(7,13,24,0.92) 100%), url(/hud-cover.png)",
+            "linear-gradient(rgba(168,85,247,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(168,85,247,0.05) 1px, transparent 1px), radial-gradient(ellipse 70% 50% at 50% 40%, rgba(147,51,234,0.25), transparent 55%), linear-gradient(180deg, rgba(7,13,24,0.6) 0%, rgba(7,13,24,0.92) 100%), url(/hud-cover.png)",
           backgroundSize: "48px 48px, 48px 48px, auto, auto, cover",
           backgroundPosition: "center",
         }}
@@ -33,7 +33,7 @@ export default function AuthSplashClient() {
       />
       <div className="auth-splash-in relative z-10 flex flex-col items-center">
         <div
-          className="flex h-20 w-20 items-center justify-center overflow-hidden border border-[#00e5ff]/40 shadow-[0_0_32px_rgba(0,229,255,0.35)] sm:h-24 sm:w-24"
+          className="flex h-20 w-20 items-center justify-center overflow-hidden border border-brand-500/40 shadow-[0_0_32px_var(--brand-glow)] sm:h-24 sm:w-24"
           style={{ background: HUD_GRADIENT }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}

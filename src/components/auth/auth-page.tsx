@@ -65,7 +65,7 @@ export function AuthPage({ initialMode = "login" }: { initialMode?: AuthMode }) 
         className="pointer-events-none absolute inset-0"
         style={{
           backgroundImage:
-            "linear-gradient(rgba(0,229,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,229,255,0.05) 1px, transparent 1px), radial-gradient(ellipse 70% 50% at 65% 35%, rgba(0,180,220,0.22), transparent 55%), linear-gradient(180deg, rgba(7,13,24,0.55) 0%, rgba(7,13,24,0.88) 100%), url(/hud-cover.png)",
+            "linear-gradient(var(--hud-grid) 1px, transparent 1px), linear-gradient(90deg, var(--hud-grid) 1px, transparent 1px), radial-gradient(ellipse 70% 50% at 65% 35%, var(--cover-glow), transparent 55%), var(--cover-veil), url(/hud-cover.png)",
           backgroundSize: "48px 48px, 48px 48px, auto, auto, cover",
           backgroundPosition: "center, center, center, center, center top",
         }}
@@ -73,9 +73,9 @@ export function AuthPage({ initialMode = "login" }: { initialMode?: AuthMode }) 
       />
 
       {/* Left branding */}
-      <div className="relative z-10 hidden min-h-screen w-1/2 flex-col border-r border-[#00e5ff]/15 lg:flex">
+      <div className="relative z-10 hidden min-h-screen w-1/2 flex-col border-r border-brand-500/15 lg:flex">
         <div className="relative z-10 flex items-center gap-3 px-10 pt-10">
-          <div className="flex h-10 w-10 items-center justify-center border border-[#00e5ff]/35 bg-[#00e5ff]/10">
+          <div className="flex h-10 w-10 items-center justify-center border border-brand-500/35 bg-brand-500/10">
             <Image
               src="/logo.png"
               alt=""
@@ -85,21 +85,21 @@ export function AuthPage({ initialMode = "login" }: { initialMode?: AuthMode }) 
               priority
             />
           </div>
-          <span className="text-[18px] font-semibold tracking-tight text-white">
+          <span className="text-[18px] font-semibold tracking-tight text-ink">
             Contractor Leads
           </span>
         </div>
 
         <div className="relative z-10 flex flex-1 flex-col justify-center px-12 lg:px-20">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#00e5ff]">
-            LeadFlow HUD
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500">
+            LeadFlow
           </p>
           <h2
-            className="mt-3 text-[40px] font-semibold leading-[1.15] tracking-[-0.02em] text-white lg:text-[48px]"
+            className="mt-3 bg-clip-text text-[40px] font-semibold leading-[1.15] tracking-[-0.02em] text-transparent lg:text-[48px]"
             style={{
               fontFamily:
                 "var(--font-outfit), var(--font-jakarta), system-ui, sans-serif",
-              textShadow: "0 0 40px rgba(0,229,255,0.25)",
+              backgroundImage: "var(--logo-gradient)",
             }}
           >
             {copy.title}
@@ -119,7 +119,7 @@ export function AuthPage({ initialMode = "login" }: { initialMode?: AuthMode }) 
               const Icon = f.icon;
               return (
                 <li key={f.label} className="flex items-center gap-3">
-                  <span className="flex h-9 w-9 items-center justify-center border border-[#00e5ff]/30 bg-[#00e5ff]/10 text-[#00e5ff]">
+                  <span className="flex h-9 w-9 items-center justify-center border border-brand-500/30 bg-brand-500/10 text-brand-500">
                     <Icon className="h-4 w-4" />
                   </span>
                   <span className="text-sm font-medium text-[#c5d0dc]">
@@ -175,7 +175,7 @@ export function AuthPage({ initialMode = "login" }: { initialMode?: AuthMode }) 
               Need help?{" "}
               <Link
                 href="#"
-                className="font-medium text-[#00e5ff] hover:underline"
+                className="font-medium text-brand-500 hover:underline"
               >
                 Contact Support
               </Link>
