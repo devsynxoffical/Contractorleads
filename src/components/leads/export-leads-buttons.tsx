@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { HiOutlineArrowDownTray } from "react-icons/hi2";
 import { Button } from "@/components/ui/button";
+import {
+  startNavigationProgress,
+  stopNavigationProgress,
+} from "@/components/layout/navigation-progress";
 import { cn } from "@/lib/utils";
 
 type Scope = "all" | "saved" | "hot";
@@ -26,6 +30,7 @@ export function ExportLeadsButtons({
   async function download(format: "csv" | "xlsx") {
     if (!canExport || busy) return;
     setBusy(format);
+    startNavigationProgress();
     try {
       let res: Response;
       if (leadIds && leadIds.length > 0) {
@@ -55,6 +60,7 @@ export function ExportLeadsButtons({
       URL.revokeObjectURL(url);
     } finally {
       setBusy(null);
+      stopNavigationProgress();
     }
   }
 
@@ -63,19 +69,21 @@ export function ExportLeadsButtons({
       <Button
         variant="secondary"
         size={size}
+        loading={busy === "csv"}
         disabled={!canExport || busy !== null}
         onClick={() => download("csv")}
       >
-        <HiOutlineArrowDownTray className="h-4 w-4" />
+        {busy !== "csv" && <HiOutlineArrowDownTray className="h-4 w-4" />}
         {busy === "csv" ? "Exporting…" : "Export CSV"}
       </Button>
       <Button
         variant="secondary"
         size={size}
+        loading={busy === "xlsx"}
         disabled={!canExport || busy !== null}
         onClick={() => download("xlsx")}
       >
-        <HiOutlineArrowDownTray className="h-4 w-4" />
+        {busy !== "xlsx" && <HiOutlineArrowDownTray className="h-4 w-4" />}
         {busy === "xlsx" ? "Exporting…" : "Export Excel"}
       </Button>
     </div>

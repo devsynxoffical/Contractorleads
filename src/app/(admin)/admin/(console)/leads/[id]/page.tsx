@@ -105,6 +105,8 @@ export default function AdminLeadEditPage() {
   const [lead, setLead] = useState<Lead | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [enriching, setEnriching] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   async function load() {
     const res = await fetch(`/api/admin/leads/${id}`);
@@ -135,12 +137,40 @@ export default function AdminLeadEditPage() {
     setMessage("Lead saved");
   }
 
+  async function enrich() {
+    setEnriching(true);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/admin/leads/${id}/enrich`, {
+        method: "POST",
+        signal: AbortSignal.timeout(90000),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Enrich failed");
+      setLead(data.lead);
+      const found = Object.entries(data.found ?? {})
+        .filter(([, v]) => v)
+        .map(([k]) => k);
+      setMessage(
+        found.length
+          ? `Enriched: ${found.join(", ")}`
+          : "Enrichment finished — nothing new found",
+      );
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "Enrich failed");
+    } finally {
+      setEnriching(false);
+    }
+  }
+
   async function remove() {
     if (!confirm("Delete this lead permanently?")) return;
+    setDeleting(true);
     const res = await fetch(`/api/admin/leads/${id}`, { method: "DELETE" });
     if (!res.ok) {
       const data = await res.json();
       setMessage(data.error ?? "Delete failed");
+      setDeleting(false);
       return;
     }
     router.push("/admin/leads");
@@ -159,42 +189,24 @@ export default function AdminLeadEditPage() {
         }`}
         actions={
           <div className="flex flex-wrap gap-2">
-            <Button onClick={save} disabled={saving}>
+            <Button onClick={save} loading={saving} disabled={enriching || deleting}>
               {saving ? "Saving…" : "Save changes"}
             </Button>
             <Button
               variant="secondary"
-              disabled={saving}
-              onClick={async () => {
-                setSaving(true);
-                setMessage(null);
-                try {
-                  const res = await fetch(`/api/admin/leads/${id}/enrich`, {
-                    method: "POST",
-                    signal: AbortSignal.timeout(90000),
-                  });
-                  const data = await res.json();
-                  if (!res.ok) throw new Error(data.error ?? "Enrich failed");
-                  setLead(data.lead);
-                  const found = Object.entries(data.found ?? {})
-                    .filter(([, v]) => v)
-                    .map(([k]) => k);
-                  setMessage(
-                    found.length
-                      ? `Enriched: ${found.join(", ")}`
-                      : "Enrichment finished — nothing new found",
-                  );
-                } catch (e) {
-                  setMessage(e instanceof Error ? e.message : "Enrich failed");
-                } finally {
-                  setSaving(false);
-                }
-              }}
+              loading={enriching}
+              disabled={saving || deleting}
+              onClick={enrich}
             >
-              Enrich public data
+              {enriching ? "Enriching…" : "Enrich public data"}
             </Button>
-            <Button variant="danger" onClick={remove}>
-              Delete lead
+            <Button
+              variant="danger"
+              loading={deleting}
+              disabled={saving || enriching}
+              onClick={remove}
+            >
+              {deleting ? "Deleting…" : "Delete lead"}
             </Button>
             <Link
               href={`/leads/${id}`}

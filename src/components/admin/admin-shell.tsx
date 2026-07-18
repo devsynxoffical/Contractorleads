@@ -1,8 +1,13 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { IconType } from "react-icons";
+import {
+  NavigationProgress,
+  startNavigationProgress,
+} from "@/components/layout/navigation-progress";
 import {
   HiOutlineArrowLeft,
   HiOutlineBanknotes,
@@ -68,6 +73,9 @@ export function AdminShell({
 
   return (
     <div className="flex min-h-[100dvh] bg-[#f4f1f7]">
+      <Suspense fallback={null}>
+        <NavigationProgress />
+      </Suspense>
       <aside className="hidden w-[260px] shrink-0 flex-col border-r border-border/80 bg-white lg:flex">
         <div className="border-b border-border/80 px-5 py-4">
           <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-brand-600">
@@ -112,6 +120,7 @@ export function AdminShell({
           <button
             type="button"
             onClick={async () => {
+              startNavigationProgress();
               await fetch("/api/admin/auth/logout", { method: "POST" });
               router.push("/admin/login");
               router.refresh();

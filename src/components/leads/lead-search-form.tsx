@@ -31,6 +31,10 @@ import {
   LOGO_GRADIENT,
 } from "@/components/layout/page-header";
 import {
+  startNavigationProgress,
+  stopNavigationProgress,
+} from "@/components/layout/navigation-progress";
+import {
   PromptCard,
   SectionHeading,
   SectionLabel,
@@ -250,6 +254,7 @@ export function LeadSearchForm() {
 
     const criteria = resolved.criteria;
     setLoading(true);
+    startNavigationProgress();
     setError("");
     setLeads([]);
     setStage(1);
@@ -294,6 +299,7 @@ export function LeadSearchForm() {
     } finally {
       timers.forEach(clearTimeout);
       setLoading(false);
+      stopNavigationProgress();
     }
   }
 
@@ -568,14 +574,11 @@ export function LeadSearchForm() {
                 <Button
                   type="submit"
                   className="w-full text-white"
-                  disabled={loading}
+                  loading={loading}
                   style={{ background: LOGO_GRADIENT }}
                 >
                   {loading ? (
-                    <>
-                      <HiOutlineArrowPath className="h-4 w-4 animate-spin" />
-                      Verifying pipeline…
-                    </>
+                    "Verifying pipeline…"
                   ) : (
                     <>
                       <HiOutlineSparkles className="h-4 w-4" />

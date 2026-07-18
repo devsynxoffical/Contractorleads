@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
+import {
+  NavigationProgress,
+  startNavigationProgress,
+} from "@/components/layout/navigation-progress";
 import type { IconType } from "react-icons";
 import {
   HiOutlineArrowRightOnRectangle,
@@ -132,6 +136,7 @@ function SidebarNav({
   const router = useRouter();
 
   async function handleLogout() {
+    startNavigationProgress();
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
     router.refresh();
@@ -293,6 +298,9 @@ export function AppShell({
 
   return (
     <div className="flex h-[100dvh] overflow-hidden bg-transparent">
+      <Suspense fallback={null}>
+        <NavigationProgress />
+      </Suspense>
       {user.impersonating && (
         <div className="fixed inset-x-0 top-0 z-[60] flex items-center justify-center gap-3 bg-[#1a1224] px-4 py-2 text-[12px] text-white">
           <span>

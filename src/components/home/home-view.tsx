@@ -32,6 +32,10 @@ import {
   saveHomeSearchCache,
   type SearchSessionLead,
 } from "@/lib/client/search-session";
+import {
+  startNavigationProgress,
+  stopNavigationProgress,
+} from "@/components/layout/navigation-progress";
 
 type Lead = SearchSessionLead;
 
@@ -270,42 +274,47 @@ export function HomeView({ userName }: { userName?: string | null }) {
 
     const params = resolved.criteria;
     setLoading(true);
+    startNavigationProgress();
     setError("");
     setLeads([]);
 
-    const res = await fetch("/api/leads/search", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(params),
-    });
+    try {
+      const res = await fetch("/api/leads/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(params),
+      });
 
-    const data = await res.json();
-    setLoading(false);
+      const data = await res.json();
 
-    if (!res.ok) {
-      const msg = data.error || "Search failed";
-      setError(msg);
-      setMessages((m) => [
-        ...m,
-        { id: crypto.randomUUID(), role: "assistant", text: msg },
-      ]);
-      return;
+      if (!res.ok) {
+        const msg = data.error || "Search failed";
+        setError(msg);
+        setMessages((m) => [
+          ...m,
+          { id: crypto.randomUUID(), role: "assistant", text: msg },
+        ]);
+        return;
+      }
+
+      const found = (data.leads ?? []) as Lead[];
+      setLeads(found);
+      const assistantMsg = {
+        id: crypto.randomUUID(),
+        role: "assistant" as const,
+        text: found.length
+          ? `Found ${found.length} verified leads for ${formatSearchLabel(params)}.`
+          : `No leads found for ${formatSearchLabel(params)}. Try another city, service, or area.`,
+      };
+      setMessages((m) => {
+        const next = [...m, assistantMsg];
+        persistSearch(found, params, data.search?.id, next);
+        return next;
+      });
+    } finally {
+      setLoading(false);
+      stopNavigationProgress();
     }
-
-    const found = (data.leads ?? []) as Lead[];
-    setLeads(found);
-    const assistantMsg = {
-      id: crypto.randomUUID(),
-      role: "assistant" as const,
-      text: found.length
-        ? `Found ${found.length} verified leads for ${formatSearchLabel(params)}.`
-        : `No leads found for ${formatSearchLabel(params)}. Try another city, service, or area.`,
-    };
-    setMessages((m) => {
-      const next = [...m, assistantMsg];
-      persistSearch(found, params, data.search?.id, next);
-      return next;
-    });
   }
 
   async function handleChatSubmit(e: React.FormEvent) {

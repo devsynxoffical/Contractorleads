@@ -4,6 +4,10 @@ import { useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-shell";
 import { INDUSTRIES, TIER_ONE_COUNTRIES, getTierOneCountry } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
+import {
+  startNavigationProgress,
+  stopNavigationProgress,
+} from "@/components/layout/navigation-progress";
 
 export default function AdminScrapePage() {
   const [industry, setIndustry] = useState<string>(INDUSTRIES[0]);
@@ -23,6 +27,7 @@ export default function AdminScrapePage() {
 
   async function runScrape() {
     setLoading(true);
+    startNavigationProgress();
     setError(null);
     setResult(null);
     try {
@@ -49,6 +54,7 @@ export default function AdminScrapePage() {
       setError(e instanceof Error ? e.message : "Scrape failed");
     } finally {
       setLoading(false);
+      stopNavigationProgress();
     }
   }
 
@@ -159,9 +165,20 @@ export default function AdminScrapePage() {
           </>
         )}
 
-        <Button onClick={runScrape} disabled={loading}>
+        <Button onClick={runScrape} loading={loading}>
           {loading ? "Scraping…" : "Run scrape"}
         </Button>
+
+        {loading && (
+          <div className="space-y-2">
+            <div className="h-1.5 overflow-hidden rounded-full bg-brand-50">
+              <div className="shimmer-bar h-full w-2/3 rounded-full" />
+            </div>
+            <p className="text-[12px] text-ink-muted">
+              Running Places → enrich → score. This can take up to a couple minutes…
+            </p>
+          </div>
+        )}
 
         {result && (
           <p className="rounded-xl bg-emerald-50 px-3 py-2 text-[13px] text-emerald-800">

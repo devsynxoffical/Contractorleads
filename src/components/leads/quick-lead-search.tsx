@@ -26,6 +26,10 @@ import {
   parseLeadQuery,
   resolveSearchCriteria,
 } from "@/lib/search-criteria";
+import {
+  startNavigationProgress,
+  stopNavigationProgress,
+} from "@/components/layout/navigation-progress";
 
 type Lead = {
   id: string;
@@ -124,40 +128,45 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
 
     const params = resolved.criteria;
     setLoading(true);
+    startNavigationProgress();
     setError("");
     setLeads([]);
 
-    const res = await fetch("/api/leads/search", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(params),
-    });
+    try {
+      const res = await fetch("/api/leads/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(params),
+      });
 
-    const data = await res.json();
-    setLoading(false);
+      const data = await res.json();
 
-    if (!res.ok) {
-      const msg = data.error || "Search failed";
-      setError(msg);
+      if (!res.ok) {
+        const msg = data.error || "Search failed";
+        setError(msg);
+        setMessages((m) => [
+          ...m,
+          { id: crypto.randomUUID(), role: "assistant", text: msg },
+        ]);
+        return;
+      }
+
+      const found = (data.leads ?? []) as Lead[];
+      setLeads(found);
       setMessages((m) => [
         ...m,
-        { id: crypto.randomUUID(), role: "assistant", text: msg },
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          text: found.length
+            ? `Found ${found.length} verified leads for ${formatSearchLabel(params)}.`
+            : `No leads found for ${formatSearchLabel(params)}. Try another service or area.`,
+        },
       ]);
-      return;
+    } finally {
+      setLoading(false);
+      stopNavigationProgress();
     }
-
-    const found = (data.leads ?? []) as Lead[];
-    setLeads(found);
-    setMessages((m) => [
-      ...m,
-      {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        text: found.length
-          ? `Found ${found.length} verified leads for ${formatSearchLabel(params)}.`
-          : `No leads found for ${formatSearchLabel(params)}. Try another service or area.`,
-      },
-    ]);
   }
 
   function applyParsed(parsed: NonNullable<ReturnType<typeof parseLeadQuery>>) {

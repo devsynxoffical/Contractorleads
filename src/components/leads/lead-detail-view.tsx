@@ -287,6 +287,9 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
   const [adsResult, setAdsResult] = useState<FacebookAdsResult | null>(null);
   const [popup, setPopup] = useState<PopupState | null>(null);
 
+  const [crmBusy, setCrmBusy] = useState(false);
+  const [noteBusy, setNoteBusy] = useState(false);
+
   async function load() {
     const res = await fetch(`/api/leads/${leadId}`);
     const data = await res.json();
@@ -321,30 +324,51 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
   }
 
   async function updateSaved(field: string, value: string | boolean) {
-    const savedId = lead?.savedBy[0]?.id;
-    if (!savedId) {
-      await saveLead();
+    setCrmBusy(true);
+    try {
+      const savedId = lead?.savedBy[0]?.id;
+      if (!savedId) {
+        await saveLead();
+        await load();
+        const refreshed = await fetch(`/api/leads/${leadId}`).then((r) =>
+          r.json()
+        );
+        const id = refreshed.lead?.savedBy?.[0]?.id;
+        if (!id) return;
+        await fetch(`/api/leads/saved/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ [field]: value }),
+        });
+        await load();
+        return;
+      }
+      await fetch(`/api/leads/saved/${savedId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [field]: value }),
+      });
       await load();
-      return updateSaved(field, value);
+    } finally {
+      setCrmBusy(false);
     }
-    await fetch(`/api/leads/saved/${savedId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ [field]: value }),
-    });
-    await load();
   }
 
   async function addNote() {
     const savedId = lead?.savedBy[0]?.id;
     if (!savedId || !note.trim()) return;
-    await fetch(`/api/leads/saved/${savedId}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: note }),
-    });
-    setNote("");
-    await load();
+    setNoteBusy(true);
+    try {
+      await fetch(`/api/leads/saved/${savedId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: note }),
+      });
+      setNote("");
+      await load();
+    } finally {
+      setNoteBusy(false);
+    }
   }
 
   async function fetchSocial() {
@@ -577,9 +601,13 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
                 {lead.leadScore}
               </p>
             </div>
-            <Button onClick={saveLead} disabled={saving}>
-              <HiOutlineBookmark className="h-4 w-4" />
-              {saved ? "Saved to workspace" : "Save lead"}
+            <Button onClick={saveLead} loading={saving}>
+              {!saving && <HiOutlineBookmark className="h-4 w-4" />}
+              {saving
+                ? "Saving…"
+                : saved
+                  ? "Saved to workspace"
+                  : "Save lead"}
             </Button>
           </div>
         </div>
@@ -915,9 +943,10 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
                     <Button
                       size="sm"
                       onClick={findLinkedIn}
-                      disabled={findingLinkedin || fetchingSocial}
+                      loading={findingLinkedin}
+                      disabled={fetchingSocial}
                     >
-                      <FaLinkedin className="h-4 w-4" />
+                      {!findingLinkedin && <FaLinkedin className="h-4 w-4" />}
                       {findingLinkedin ? "Finding…" : "Find LinkedIn company"}
                     </Button>
                     <a
@@ -955,7 +984,7 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
                   marketing opportunity lies.
                 </p>
               </div>
-              <Button size="sm" onClick={checkAds} disabled={checkingAds}>
+              <Button size="sm" onClick={checkAds} loading={checkingAds}>
                 {checkingAds ? "Checking…" : "Check ads"}
               </Button>
             </CardHeader>
@@ -1038,12 +1067,9 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
                 size="sm"
                 variant="secondary"
                 onClick={reVerify}
-                disabled={verifying}
+                loading={verifying}
               >
-                <HiOutlineArrowPath
-                  className={`h-4 w-4 ${verifying ? "animate-spin" : ""}`}
-                />
-                Re-verify
+                {verifying ? "Re-verifying…" : "Re-verify"}
               </Button>
             </CardHeader>
             <CardContent>
@@ -1109,6 +1135,7 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
               <select
                 className="saas-input"
                 value={saved?.status ?? "new"}
+                disabled={crmBusy || saving}
                 onChange={(e) => updateSaved("status", e.target.value)}
               >
                 {LEAD_STATUSES.map((s) => (
@@ -1121,9 +1148,10 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
                 <input
                   type="checkbox"
                   checked={saved?.favorite ?? false}
+                  disabled={crmBusy || saving}
                   onChange={(e) => updateSaved("favorite", e.target.checked)}
                 />
-                Mark as favorite
+                {crmBusy ? "Updating…" : "Mark as favorite"}
               </label>
             </CardContent>
           </Card>
@@ -1147,9 +1175,10 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
               <Button
                 size="sm"
                 onClick={addNote}
+                loading={noteBusy}
                 disabled={!saved || !note.trim()}
               >
-                Add note
+                {noteBusy ? "Adding…" : "Add note"}
               </Button>
               <ul className="space-y-2">
                 {saved?.notes.map((n) => (

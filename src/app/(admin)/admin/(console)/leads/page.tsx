@@ -6,6 +6,20 @@ import { useRouter } from "next/navigation";
 import { AdminPageHeader } from "@/components/admin/admin-shell";
 import { INDUSTRIES, TIER_ONE_COUNTRIES } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
+import {
+  startNavigationProgress,
+  stopNavigationProgress,
+} from "@/components/layout/navigation-progress";
+
+type Busy =
+  | "load"
+  | "create"
+  | "delete"
+  | "export-csv"
+  | "export-xlsx"
+  | "export-sel-csv"
+  | "export-sel-xlsx"
+  | null;
 
 type LeadRow = {
   id: string;
@@ -35,7 +49,7 @@ export default function AdminLeadsPage() {
   const [industry, setIndustry] = useState("");
   const [country, setCountry] = useState("");
   const [q, setQ] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState<Busy>("load");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showCreate, setShowCreate] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -51,18 +65,25 @@ export default function AdminLeadsPage() {
     state: "",
   });
 
+  const loading = busy === "load";
+
   async function load() {
-    setLoading(true);
-    const params = new URLSearchParams();
-    if (industry) params.set("industry", industry);
-    if (country) params.set("country", country);
-    if (q) params.set("q", q);
-    const res = await fetch(`/api/admin/leads?${params}`);
-    const data = await res.json();
-    setLeads(data.leads ?? []);
-    setTotal(data.total ?? 0);
-    setSelected(new Set());
-    setLoading(false);
+    setBusy("load");
+    startNavigationProgress();
+    try {
+      const params = new URLSearchParams();
+      if (industry) params.set("industry", industry);
+      if (country) params.set("country", country);
+      if (q) params.set("q", q);
+      const res = await fetch(`/api/admin/leads?${params}`);
+      const data = await res.json();
+      setLeads(data.leads ?? []);
+      setTotal(data.total ?? 0);
+      setSelected(new Set());
+    } finally {
+      setBusy(null);
+      stopNavigationProgress();
+    }
   }
 
   useEffect(() => {
@@ -79,37 +100,76 @@ export default function AdminLeadsPage() {
     });
   }
 
-  async function bulkDelete() {
-    if (!selected.size) return;
-    if (!confirm(`Delete ${selected.size} lead(s) permanently?`)) return;
-    const res = await fetch("/api/admin/leads/bulk", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ leadIds: [...selected] }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setMessage(data.error ?? "Bulk delete failed");
-      return;
+  async function downloadExport(key: Busy, url: string, filename: string) {
+    if (busy) return;
+    setBusy(key);
+    startNavigationProgress();
+    try {
+      const res = await fetch(url);
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setMessage(data?.error ?? "Export failed");
+        return;
+      }
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(objectUrl);
+    } finally {
+      setBusy(null);
+      stopNavigationProgress();
     }
-    setMessage(`Deleted ${data.deleted} lead(s)`);
-    load();
+  }
+
+  async function bulkDelete() {
+    if (!selected.size || busy) return;
+    if (!confirm(`Delete ${selected.size} lead(s) permanently?`)) return;
+    setBusy("delete");
+    startNavigationProgress();
+    try {
+      const res = await fetch("/api/admin/leads/bulk", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leadIds: [...selected] }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage(data.error ?? "Bulk delete failed");
+        return;
+      }
+      setMessage(`Deleted ${data.deleted} lead(s)`);
+      await load();
+    } finally {
+      setBusy(null);
+      stopNavigationProgress();
+    }
   }
 
   async function createLead(e: React.FormEvent) {
     e.preventDefault();
-    const res = await fetch("/api/admin/leads", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(createForm),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setMessage(data.error ?? "Create failed");
-      return;
+    if (busy) return;
+    setBusy("create");
+    startNavigationProgress();
+    try {
+      const res = await fetch("/api/admin/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(createForm),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage(data.error ?? "Create failed");
+        stopNavigationProgress();
+        return;
+      }
+      setShowCreate(false);
+      router.push(`/admin/leads/${data.lead.id}`);
+    } finally {
+      setBusy(null);
     }
-    setShowCreate(false);
-    router.push(`/admin/leads/${data.lead.id}`);
   }
 
   const exportParams = new URLSearchParams({
@@ -125,50 +185,86 @@ export default function AdminLeadsPage() {
         description="Create, edit, bulk-delete, enrich, and export the global lead pool."
         actions={
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => setShowCreate((v) => !v)}>
+            <Button onClick={() => setShowCreate((v) => !v)} disabled={!!busy}>
               {showCreate ? "Close" : "Create lead"}
             </Button>
             <Button
               variant="danger"
-              disabled={!selected.size}
+              loading={busy === "delete"}
+              disabled={!selected.size || !!busy}
               onClick={bulkDelete}
             >
-              Delete selected ({selected.size})
+              {busy === "delete"
+                ? "Deleting…"
+                : `Delete selected (${selected.size})`}
             </Button>
-            <a
-              href={`/api/admin/leads/export?${exportParams}&format=csv`}
-              className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-border bg-white px-4 text-sm font-semibold text-ink-muted hover:border-brand-200 hover:text-brand-700"
+            <Button
+              variant="secondary"
+              loading={busy === "export-csv"}
+              disabled={!!busy}
+              onClick={() =>
+                downloadExport(
+                  "export-csv",
+                  `/api/admin/leads/export?${exportParams}&format=csv`,
+                  "leads-export.csv"
+                )
+              }
             >
-              Export CSV
-            </a>
-            <a
-              href={`/api/admin/leads/export?${exportParams}&format=xlsx`}
-              className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-border bg-white px-4 text-sm font-semibold text-ink-muted hover:border-brand-200 hover:text-brand-700"
+              {busy === "export-csv" ? "Exporting…" : "Export CSV"}
+            </Button>
+            <Button
+              variant="secondary"
+              loading={busy === "export-xlsx"}
+              disabled={!!busy}
+              onClick={() =>
+                downloadExport(
+                  "export-xlsx",
+                  `/api/admin/leads/export?${exportParams}&format=xlsx`,
+                  "leads-export.xlsx"
+                )
+              }
             >
-              Export Excel
-            </a>
+              {busy === "export-xlsx" ? "Exporting…" : "Export Excel"}
+            </Button>
             {selected.size > 0 && (
               <>
                 <Button
                   variant="secondary"
+                  loading={busy === "export-sel-csv"}
+                  disabled={!!busy}
                   onClick={() => {
                     const ids = [...selected].join(",");
-                    window.location.href = `/api/admin/leads/export?ids=${encodeURIComponent(ids)}&format=csv`;
+                    downloadExport(
+                      "export-sel-csv",
+                      `/api/admin/leads/export?ids=${encodeURIComponent(ids)}&format=csv`,
+                      "leads-selected.csv"
+                    );
                   }}
                 >
-                  CSV selected ({selected.size})
+                  {busy === "export-sel-csv"
+                    ? "Exporting…"
+                    : `CSV selected (${selected.size})`}
                 </Button>
                 <Button
                   variant="secondary"
+                  loading={busy === "export-sel-xlsx"}
+                  disabled={!!busy}
                   onClick={() => {
                     const ids = [...selected].join(",");
-                    window.location.href = `/api/admin/leads/export?ids=${encodeURIComponent(ids)}&format=xlsx`;
+                    downloadExport(
+                      "export-sel-xlsx",
+                      `/api/admin/leads/export?ids=${encodeURIComponent(ids)}&format=xlsx`,
+                      "leads-selected.xlsx"
+                    );
                   }}
                 >
-                  Excel selected ({selected.size})
+                  {busy === "export-sel-xlsx"
+                    ? "Exporting…"
+                    : `Excel selected (${selected.size})`}
                 </Button>
               </>
-            )}          </div>
+            )}
+          </div>
         }
       />
 
@@ -242,7 +338,9 @@ export default function AdminLeadsPage() {
             </select>
           </label>
           <div className="sm:col-span-2">
-            <Button type="submit">Create & edit</Button>
+            <Button type="submit" loading={busy === "create"}>
+              {busy === "create" ? "Creating…" : "Create & edit"}
+            </Button>
           </div>
         </form>
       )}
@@ -252,6 +350,7 @@ export default function AdminLeadsPage() {
           className="saas-input max-w-[180px]"
           value={industry}
           onChange={(e) => setIndustry(e.target.value)}
+          disabled={!!busy}
         >
           <option value="">All services</option>
           {INDUSTRIES.map((i) => (
@@ -264,6 +363,7 @@ export default function AdminLeadsPage() {
           className="saas-input max-w-[160px]"
           value={country}
           onChange={(e) => setCountry(e.target.value)}
+          disabled={!!busy}
         >
           <option value="">All countries</option>
           {TIER_ONE_COUNTRIES.map((c) => (
@@ -278,14 +378,17 @@ export default function AdminLeadsPage() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && load()}
+          disabled={!!busy}
         />
-        <button
+        <Button
           type="button"
+          size="sm"
+          loading={busy === "load"}
+          disabled={!!busy && busy !== "load"}
           onClick={load}
-          className="rounded-xl bg-brand-600 px-4 py-2 text-[12px] font-semibold text-white"
         >
-          Filter
-        </button>
+          {busy === "load" ? "Loading…" : "Filter"}
+        </Button>
       </div>
 
       <div className="overflow-x-auto rounded-2xl border border-border/80 bg-white shadow-[var(--shadow-card)]">
