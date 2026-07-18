@@ -197,7 +197,7 @@ export function AdminShell({
           <ThemeToggle compact />
         </header>
 
-        <div className="scrollbar-thin relative z-[1] flex gap-2 overflow-x-auto border-b border-brand-500/10 bg-[#0b1220]/80 px-3 py-2 lg:hidden">
+        <div className="scrollbar-thin relative z-[1] flex gap-2 overflow-x-auto border-b border-brand-500/10 bg-[var(--surface)] px-3 py-2 lg:hidden">
           {visibleNav.map((item) => (
             <Link
               key={item.href}

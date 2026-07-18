@@ -370,7 +370,7 @@ export function AppShell({
           <div
             className={cn(
               "absolute inset-0 animate-fade-in backdrop-blur-[2px]",
-              hudMode ? "bg-[#070d18]/70" : "bg-[#0f0c14]/40",
+              hudMode ? "bg-[var(--canvas)]/70" : "bg-[#0f0c14]/40",
             )}
             onClick={() => setMobileOpen(false)}
           />

@@ -408,10 +408,10 @@ export function HomeView({ userName }: { userName?: string | null }) {
     <div className="page-pad page-enter">
       <div className="mx-auto w-full max-w-[900px]">
         {/* AI chatbot */}
-        <div className="animate-fade-up mx-auto flex h-[360px] w-full max-w-[900px] flex-col overflow-hidden rounded-2xl border border-brand-500/15 bg-[rgba(12,22,38,0.92)] shadow-[var(--shadow-card)]">
-          <div className="flex items-center justify-between border-b border-brand-500/15 px-4 py-2.5 sm:px-5">
+        <div className="animate-fade-up mx-auto flex h-[360px] w-full max-w-[900px] flex-col overflow-hidden rounded-2xl border border-border bg-[var(--panel-solid)] shadow-[var(--shadow-card)]">
+          <div className="flex items-center justify-between border-b border-border px-4 py-2.5 sm:px-5">
             <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-500/15 text-brand-500">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-50 text-brand-500">
                 <HiOutlineSparkles className="h-4 w-4" />
               </span>
               <div>
@@ -425,7 +425,7 @@ export function HomeView({ userName }: { userName?: string | null }) {
             </div>
             <Link
               href="/ask-expert"
-              className="text-[11px] font-semibold text-brand-400 hover:underline"
+              className="text-[11px] font-semibold text-brand-500 hover:underline"
             >
               Full Ask Expert →
             </Link>
@@ -444,7 +444,7 @@ export function HomeView({ userName }: { userName?: string | null }) {
                   className={`max-w-[92%] whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed sm:text-[14px] ${
                     msg.role === "user"
                       ? "rounded-br-md text-white shadow-sm"
-                      : "rounded-bl-md border border-brand-500/20 bg-[#070d18]/90 text-ink"
+                      : "rounded-bl-md border border-border bg-[var(--input-bg)] text-ink"
                   }`}
                   style={
                     msg.role === "user"
@@ -465,7 +465,7 @@ export function HomeView({ userName }: { userName?: string | null }) {
                     type="button"
                     disabled={chatLoading}
                     onClick={() => void askChat(p)}
-                    className="rounded-full border border-brand-500/25 bg-brand-500/08 px-3.5 py-1.5 text-[12px] font-medium text-[#c5d0dc] transition hover:border-brand-500/45 hover:bg-brand-500/15 hover:text-white disabled:opacity-50"
+                    className="rounded-full border border-border bg-brand-50 px-3.5 py-1.5 text-[12px] font-medium text-ink-muted transition hover:border-brand-500/45 hover:bg-brand-100 hover:text-ink disabled:opacity-50"
                   >
                     {p}
                   </button>
@@ -483,7 +483,7 @@ export function HomeView({ userName }: { userName?: string | null }) {
 
           <form
             onSubmit={handleChatSubmit}
-            className="flex shrink-0 gap-2 border-t border-brand-500/15 bg-[#0a1422]/95 px-4 py-2.5 sm:px-5"
+            className="flex shrink-0 gap-2 border-t border-border bg-[var(--input-bg)] px-4 py-2.5 sm:px-5"
           >
             <div className="relative flex-1">
               <HiOutlineSparkles className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-500" />
@@ -492,7 +492,7 @@ export function HomeView({ userName }: { userName?: string | null }) {
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask about ads, outreach, offers, or the app…"
                 disabled={chatLoading}
-                className="h-10 w-full rounded-xl border border-brand-500/25 bg-[#070d18]/90 pl-10 pr-3 text-[14px] text-ink outline-none transition placeholder:text-ink-faint focus:border-brand-500/55 focus:ring-4 focus:ring-[var(--ring)]"
+                className="h-10 w-full rounded-xl border border-border bg-[var(--panel-solid)] pl-10 pr-3 text-[14px] text-ink outline-none transition placeholder:text-ink-faint focus:border-brand-500/55 focus:ring-4 focus:ring-[var(--ring)]"
               />
             </div>
             <button

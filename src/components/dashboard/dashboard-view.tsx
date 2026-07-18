@@ -351,7 +351,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
 
         <div className="mb-5">
           <HudPanel title="Quick lead search" subtitle="Run a scoped find without leaving HUD">
-            <div className="hud-quick-search [&_.saas-input]:border-brand-500/25 [&_.saas-input]:bg-[#0a1422] [&_.saas-input]:text-white [&_label]:text-[#8b9aab]">
+            <div className="hud-quick-search [&_.saas-input]:border-brand-500/25 [&_.saas-input]:bg-[var(--panel-solid)] [&_.saas-input]:text-white [&_label]:text-[#8b9aab]">
               <QuickLeadSearch embedded />
             </div>
           </HudPanel>
@@ -407,7 +407,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
                     <span className="text-[10px] font-medium uppercase tracking-wider text-[#8b9aab]">
                       {d.day}
                     </span>
-                    <div className="pointer-events-none absolute bottom-[calc(100%+6px)] border border-brand-500/40 bg-[#0a1422] px-2 py-1 text-[11px] text-white opacity-0 transition group-hover:opacity-100">
+                    <div className="pointer-events-none absolute bottom-[calc(100%+6px)] border border-brand-500/40 bg-[var(--panel-solid)] px-2 py-1 text-[11px] text-white opacity-0 transition group-hover:opacity-100">
                       {d.count} leads
                     </div>
                   </div>

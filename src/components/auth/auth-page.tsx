@@ -60,7 +60,7 @@ export function AuthPage({ initialMode = "login" }: { initialMode?: AuthMode }) 
   const copy = panelCopy[mode];
 
   return (
-    <div className="auth-page relative flex min-h-screen overflow-hidden bg-[#070d18]">
+    <div className="auth-page relative flex min-h-screen overflow-hidden bg-[var(--canvas)]">
       <div
         className="pointer-events-none absolute inset-0"
         style={{

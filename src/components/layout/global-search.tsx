@@ -98,7 +98,7 @@ export function GlobalSearch({ className }: { className?: string }) {
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => (leads.length > 0 || saved.length > 0) && setOpen(true)}
           placeholder="Search leads, industries, cities…"
-          className="h-10 w-full rounded-xl border border-brand-500/25 bg-[#070d18]/90 pl-10 pr-3 text-[13px] text-ink outline-none transition placeholder:text-ink-faint hover:border-brand-500/40 focus:border-brand-500/55 focus:bg-[#0a1422] focus:ring-4 focus:ring-[var(--ring)]"
+          className="h-10 w-full rounded-xl border border-brand-500/25 bg-[var(--input-bg)] pl-10 pr-3 text-[13px] text-ink outline-none transition placeholder:text-ink-faint hover:border-brand-500/40 focus:border-brand-500/55 focus:bg-[var(--panel-solid)] focus:ring-4 focus:ring-[var(--ring)]"
         />
         {open && query.trim().length >= 2 && (
           <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 max-h-80 overflow-auto rounded-xl border border-brand-500/2 bg-[#0b1220] py-2 shadow-[var(--shadow-elevated)]">

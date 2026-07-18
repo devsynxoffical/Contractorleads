@@ -689,7 +689,7 @@ export function LeadSearchForm() {
             </CardContent>
           </Card>
 
-          <Card className="border border-brand-500/15 bg-[rgba(12,22,38,0.92)] shadow-[var(--shadow-card)]">
+          <Card className="border border-brand-500/15 bg-[var(--panel-solid)] shadow-[var(--shadow-card)]">
             <CardContent className="flex gap-3 py-4">
               <HiOutlineCpuChip className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" />
               <div>

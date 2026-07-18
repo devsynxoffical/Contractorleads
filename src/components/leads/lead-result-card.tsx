@@ -116,7 +116,7 @@ export function LeadResultCard({
 
   return (
     <article
-      className="hover-lift animate-fade-up group overflow-hidden rounded-2xl border border-brand-500/15 bg-[rgba(12,22,38,0.92)] shadow-[var(--shadow-card)]"
+      className="hover-lift animate-fade-up group overflow-hidden rounded-2xl border border-brand-500/15 bg-[var(--panel-solid)] shadow-[var(--shadow-card)]"
       style={{ animationDelay: `${Math.min(index, 12) * 0.04}s` }}
     >
       <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start sm:p-5">

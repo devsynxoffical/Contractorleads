@@ -64,6 +64,9 @@
     rgba(9, 6, 15, 0.9) 100%
   );
   --cover-glow: rgba(217, 70, 239, 0.22);
+  --input-bg: rgba(14, 10, 22, 0.92);
+  --input-bg-focus: rgba(22, 14, 36, 0.98);
+  --panel-solid: rgba(22, 14, 36, 0.94);
 }
 
 [data-theme="light"] {
@@ -83,15 +86,15 @@
     rgba(219, 39, 119, 0.92) 0%,
     rgba(147, 51, 234, 0.95) 100%
   );
-  --brand-glow: rgba(192, 38, 211, 0.22);
-  --brand-glow-strong: rgba(219, 39, 119, 0.28);
+  --brand-glow: rgba(192, 38, 211, 0.18);
+  --brand-glow-strong: rgba(219, 39, 119, 0.24);
 
-  --canvas: #f7f3fb;
-  --canvas-deep: #efe8f7;
-  --surface: rgba(255, 255, 255, 0.94);
+  --canvas: #f4eef9;
+  --canvas-deep: #ebe3f5;
+  --surface: #ffffff;
   --surface-elevated: #ffffff;
-  --border: rgba(147, 51, 234, 0.14);
-  --border-strong: rgba(192, 38, 211, 0.28);
+  --border: rgba(147, 51, 234, 0.16);
+  --border-strong: rgba(192, 38, 211, 0.3);
   --ink: #1c1228;
   --ink-muted: #5c4d6e;
   --ink-faint: #8a7a9c;
@@ -102,13 +105,13 @@
   --brand-500: #a21caf;
   --brand-600: #86198f;
   --brand-700: #701a75;
-  --sidebar: rgba(255, 255, 255, 0.96);
+  --sidebar: #ffffff;
   --sidebar-border: rgba(147, 51, 234, 0.12);
-  --ring: rgba(192, 38, 211, 0.22);
+  --ring: rgba(192, 38, 211, 0.2);
   --btn-on-brand: #ffffff;
 
-  --hud-bg: #f3eef9;
-  --hud-surface: rgba(255, 255, 255, 0.88);
+  --hud-bg: #f4eef9;
+  --hud-surface: #ffffff;
   --hud-cyan: #c026d3;
   --hud-cyan-dim: rgba(192, 38, 211, 0.4);
   --hud-accent: #c026d3;
@@ -116,13 +119,16 @@
   --hud-text: #1c1228;
   --hud-muted: #5c4d6e;
   --hud-faint: #8a7a9c;
-  --hud-grid: rgba(147, 51, 234, 0.06);
+  --hud-grid: rgba(147, 51, 234, 0.07);
   --cover-veil: linear-gradient(
     180deg,
-    rgba(247, 243, 251, 0.72) 0%,
-    rgba(247, 243, 251, 0.92) 100%
+    rgba(244, 238, 249, 0.88) 0%,
+    rgba(244, 238, 249, 0.96) 100%
   );
-  --cover-glow: rgba(192, 38, 211, 0.14);
+  --cover-glow: rgba(192, 38, 211, 0.1);
+  --input-bg: #f8f4fc;
+  --input-bg-focus: #ffffff;
+  --panel-solid: #ffffff;
   --shadow-card: 0 0 0 1px rgba(147, 51, 234, 0.08),
     0 8px 28px rgba(80, 40, 120, 0.08);
   --shadow-elevated: 0 0 0 1px rgba(147, 51, 234, 0.1),
@@ -206,8 +212,12 @@ body {
 }
 
 [data-theme="light"] .hud-viewport-bg::before {
-  opacity: 0.55;
-  mix-blend-mode: multiply;
+  opacity: 0.28;
+  mix-blend-mode: normal;
+}
+
+[data-theme="light"] .hud-panel {
+  box-shadow: var(--shadow-card);
 }
 
 .hud-viewport-bg > * {
@@ -349,8 +359,8 @@ body {
 }
 
 .saas-card-elevated {
-  border: 1px solid rgba(168, 85, 247, 0.15);
-  background: rgba(12, 22, 38, 0.92);
+  border: 1px solid var(--border);
+  background: var(--panel-solid);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-radius: var(--radius-xl);
@@ -377,7 +387,7 @@ body {
   width: 100%;
   border-radius: 0.875rem;
   border: 1px solid var(--border);
-  background: rgba(7, 13, 24, 0.85);
+  background: var(--input-bg);
   padding: 0 0.875rem;
   font-size: 0.875rem;
   color: var(--ink);
@@ -393,13 +403,13 @@ body {
 }
 
 .saas-input:focus {
-  border-color: rgba(168, 85, 247, 0.45);
-  background: rgba(10, 20, 34, 0.95);
+  border-color: var(--border-strong);
+  background: var(--input-bg-focus);
   box-shadow: 0 0 0 4px var(--ring);
 }
 
 .saas-shell {
-  background: rgba(12, 22, 38, 0.78);
+  background: var(--surface);
   backdrop-filter: blur(16px) saturate(1.2);
   -webkit-backdrop-filter: blur(16px) saturate(1.2);
 }
@@ -450,19 +460,19 @@ body {
 }
 
 .auth-field {
-  background: rgba(7, 13, 24, 0.85) !important;
-  color: #e8eef6 !important;
-  border: 1px solid rgba(168, 85, 247, 0.2);
+  background: var(--input-bg) !important;
+  color: var(--ink) !important;
+  border: 1px solid var(--border);
 }
 
 .auth-field::placeholder {
-  color: #5c6b7c !important;
+  color: var(--ink-faint) !important;
 }
 
 .auth-field:focus {
-  background: rgba(10, 20, 34, 0.95) !important;
-  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.18);
-  border-color: rgba(168, 85, 247, 0.45);
+  background: var(--input-bg-focus) !important;
+  box-shadow: 0 0 0 3px var(--ring);
+  border-color: var(--border-strong);
 }
 
 .auth-page input:focus {
@@ -783,72 +793,81 @@ body {
   }
 }
 
-/* ─── HUD Admin theme (app-wide shell) ─── */
+/* ─── HUD shell — follows data-theme tokens ─── */
 .app-shell--hud {
   background: transparent;
   color: var(--hud-text);
 }
 
 .app-shell--hud .hud-shell-aside {
-  border-color: rgba(168, 85, 247, 0.12) !important;
-  background: rgba(8, 14, 26, 0.92) !important;
-  box-shadow: 4px 0 32px rgba(0, 0, 0, 0.35) !important;
+  border-color: var(--sidebar-border) !important;
+  background: var(--sidebar) !important;
+  box-shadow: 4px 0 32px rgba(80, 40, 120, 0.12) !important;
   backdrop-filter: blur(16px);
 }
 
 .app-shell--hud .hud-shell-aside .border-b,
 .app-shell--hud .hud-shell-aside .border-t {
-  border-color: rgba(168, 85, 247, 0.12) !important;
+  border-color: var(--sidebar-border) !important;
 }
 
 .app-shell--hud .hud-shell-aside .text-ink {
-  color: var(--hud-text) !important;
+  color: var(--ink) !important;
 }
 
 .app-shell--hud .hud-shell-aside .text-ink-muted {
-  color: var(--hud-muted) !important;
+  color: var(--ink-muted) !important;
 }
 
 .app-shell--hud .hud-shell-aside .text-ink-faint {
-  color: var(--hud-faint) !important;
+  color: var(--ink-faint) !important;
 }
 
 .app-shell--hud .hud-shell-aside a:hover {
-  background: rgba(168, 85, 247, 0.08) !important;
-  color: var(--hud-cyan) !important;
+  background: var(--brand-50) !important;
+  color: var(--brand-500) !important;
 }
 
 .app-shell--hud .hud-shell-aside .saas-nav-active {
-  background: rgba(168, 85, 247, 0.12) !important;
-  color: var(--hud-cyan) !important;
-  box-shadow: inset 2px 0 0 var(--hud-cyan);
+  background: var(--brand-100) !important;
+  color: var(--brand-500) !important;
+  box-shadow: inset 2px 0 0 var(--logo-pink);
 }
 
 .app-shell--hud .hud-shell-aside .saas-nav-active svg {
-  color: var(--hud-cyan) !important;
+  color: var(--brand-500) !important;
 }
 
 .app-shell--hud .hud-shell-header {
-  border-color: rgba(168, 85, 247, 0.12) !important;
-  background: rgba(8, 14, 26, 0.85) !important;
+  border-color: var(--border) !important;
+  background: color-mix(in srgb, var(--surface) 92%, transparent) !important;
   box-shadow: none !important;
-  color: var(--hud-text);
+  color: var(--ink);
 }
 
 .app-shell--hud .hud-shell-header .text-ink,
 .app-shell--hud .hud-shell-header .text-ink-muted,
 .app-shell--hud .hud-shell-header button {
-  color: var(--hud-muted) !important;
+  color: var(--ink-muted) !important;
 }
 
 .app-shell--hud .hud-shell-footer {
-  border-color: rgba(168, 85, 247, 0.1) !important;
-  background: rgba(8, 14, 26, 0.9) !important;
-  color: var(--hud-faint) !important;
+  border-color: var(--sidebar-border) !important;
+  background: var(--sidebar) !important;
+  color: var(--ink-faint) !important;
 }
 
 .app-shell--hud .hud-shell-main {
   background: transparent;
+}
+
+[data-theme="dark"] .app-shell--hud .hud-shell-aside,
+[data-theme="dark"] .app-shell--hud .hud-shell-footer {
+  box-shadow: 4px 0 32px rgba(0, 0, 0, 0.35) !important;
+}
+
+[data-theme="light"] .app-shell--hud .hud-shell-aside {
+  box-shadow: 4px 0 24px rgba(80, 40, 120, 0.06) !important;
 }
 
 .hud-dashboard {
@@ -1059,79 +1078,79 @@ body {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
 }
 
-/* ─── Super Admin HUD cascade (restyle list/table pages) ─── */
+/* ─── Super Admin shell — theme-aware cascade ─── */
 .admin-shell--hud {
-  background: #070d18;
+  background: var(--canvas);
   color: var(--hud-text);
 }
 
 .admin-shell--hud .hud-shell-main .text-ink {
-  color: #e8eef6 !important;
+  color: var(--ink) !important;
 }
 
 .admin-shell--hud .hud-shell-main .text-ink-muted {
-  color: #8b9aab !important;
+  color: var(--ink-muted) !important;
 }
 
 .admin-shell--hud .hud-shell-main .text-ink-faint {
-  color: #5c6b7c !important;
+  color: var(--ink-faint) !important;
 }
 
 .admin-shell--hud .hud-shell-main .bg-white {
-  background: rgba(11, 18, 32, 0.88) !important;
-  color: #e8eef6;
+  background: var(--surface) !important;
+  color: var(--ink);
 }
 
 .admin-shell--hud .hud-shell-main .border-border,
 .admin-shell--hud .hud-shell-main [class*="border-border"] {
-  border-color: rgba(168, 85, 247, 0.14) !important;
+  border-color: var(--border) !important;
 }
 
 .admin-shell--hud .hud-shell-main [class*="shadow-[var(--shadow"] {
-  box-shadow: inset 0 0 40px rgba(168, 85, 247, 0.03) !important;
+  box-shadow: var(--shadow-card) !important;
 }
 
 .admin-shell--hud .hud-shell-main .bg-brand-50,
 .admin-shell--hud .hud-shell-main .bg-brand-100 {
-  background: rgba(168, 85, 247, 0.12) !important;
-  color: #a855f7 !important;
+  background: var(--brand-50) !important;
+  color: var(--brand-600) !important;
 }
 
 .admin-shell--hud .hud-shell-main .text-brand-600,
 .admin-shell--hud .hud-shell-main .text-brand-700 {
-  color: #a855f7 !important;
+  color: var(--brand-600) !important;
 }
 
 .admin-shell--hud .hud-shell-main .bg-brand-600 {
-  background: #a855f7 !important;
-  color: #041018 !important;
+  background: var(--logo-gradient) !important;
+  color: var(--btn-on-brand) !important;
 }
 
 .admin-shell--hud .hud-shell-main .saas-input,
 .admin-shell--hud .hud-shell-main input:not([type="checkbox"]):not([type="radio"]),
 .admin-shell--hud .hud-shell-main select,
 .admin-shell--hud .hud-shell-main textarea {
-  background: rgba(7, 13, 24, 0.9) !important;
-  border-color: rgba(168, 85, 247, 0.2) !important;
-  color: #e8eef6 !important;
+  background: var(--input-bg) !important;
+  border-color: var(--border) !important;
+  color: var(--ink) !important;
 }
 
 .admin-shell--hud .hud-shell-main input::placeholder,
 .admin-shell--hud .hud-shell-main textarea::placeholder {
-  color: #5c6b7c !important;
+  color: var(--ink-faint) !important;
 }
 
 .admin-shell--hud .hud-shell-main table thead {
-  background: rgba(168, 85, 247, 0.06) !important;
-  color: #8b9aab !important;
+  background: var(--brand-50) !important;
+  color: var(--ink-muted) !important;
 }
 
 .admin-shell--hud .hud-shell-main table tbody tr {
-  border-color: rgba(255, 255, 255, 0.05) !important;
+  border-color: var(--border) !important;
 }
 
 .admin-shell--hud .hud-shell-main table tbody tr:hover {
-  background: rgba(168, 85, 247, 0.04) !important;
+  background: var(--brand-50) !important;
 }
 
 .admin-shell--hud .hud-shell-main .bg-red-50 {
