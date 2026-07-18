@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 
 const START_EVENT = "leadflow:nav-start";
 const DONE_EVENT = "leadflow:nav-done";
+/** Failsafe so a soft-nav never leaves the UI in a perpetual loading state. */
+const MAX_PROGRESS_MS = 6000;
 
 /** Call before slow programmatic navigations / async actions for instant feedback. */
 export function startNavigationProgress() {
@@ -33,14 +35,27 @@ export function NavigationProgress() {
   const [active, setActive] = useState(false);
   const [visible, setVisible] = useState(false);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const maxTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function clearTimers() {
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    if (maxTimer.current) clearTimeout(maxTimer.current);
+    hideTimer.current = null;
+    maxTimer.current = null;
+  }
 
   function begin() {
-    if (hideTimer.current) clearTimeout(hideTimer.current);
+    clearTimers();
     setActive(true);
     setVisible(true);
+    maxTimer.current = setTimeout(() => end(), MAX_PROGRESS_MS);
   }
 
   function end() {
+    if (maxTimer.current) {
+      clearTimeout(maxTimer.current);
+      maxTimer.current = null;
+    }
     setActive(false);
     hideTimer.current = setTimeout(() => setVisible(false), 280);
   }
@@ -61,11 +76,19 @@ export function NavigationProgress() {
       const a = target?.closest?.("a[href]") as HTMLAnchorElement | null;
       if (!a) return;
       const href = a.getAttribute("href");
-      if (!href || href.startsWith("#") || href.startsWith("mailto:") || href.startsWith("tel:")) {
+      if (
+        !href ||
+        href.startsWith("#") ||
+        href.startsWith("mailto:") ||
+        href.startsWith("tel:")
+      ) {
         return;
       }
       if (a.target === "_blank" || a.hasAttribute("download")) return;
-      if (/^https?:\/\//i.test(href) && !href.startsWith(window.location.origin)) {
+      if (
+        /^https?:\/\//i.test(href) &&
+        !href.startsWith(window.location.origin)
+      ) {
         return;
       }
       if (sameDestination(href, pathname)) return;
@@ -80,7 +103,7 @@ export function NavigationProgress() {
       window.removeEventListener(START_EVENT, onStart);
       window.removeEventListener(DONE_EVENT, onDone);
       document.removeEventListener("click", onClick, true);
-      if (hideTimer.current) clearTimeout(hideTimer.current);
+      clearTimers();
     };
   }, [pathname]);
 

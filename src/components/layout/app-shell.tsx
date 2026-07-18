@@ -407,9 +407,7 @@ export function AppShell({
           hud={hudMode}
         />
         <main className="hud-shell-main scrollbar-thin min-w-0 flex-1 overflow-x-hidden overflow-y-auto">
-          <div key={pathname} className="page-enter min-h-full">
-            {children}
-          </div>
+          <div className="page-enter min-h-full">{children}</div>
         </main>
         <footer
           className={cn(
