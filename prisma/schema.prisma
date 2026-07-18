@@ -16,6 +16,7 @@ model User {
   name                String?
   role                String   @default("USER")
   plan                String   @default("trial")
+  subscriptionStatus  String   @default("trialing")
   creditsRemaining    Float    @default(20)
   onboardingComplete  Boolean  @default(false)
   darkMode            Boolean  @default(false)
@@ -96,6 +97,11 @@ model Lead {
   createdAt                 DateTime @default(now())
 
   savedBy SavedLead[]
+
+  @@index([industry])
+  @@index([country])
+  @@index([googleMapsLink])
+  @@index([createdAt])
 }
 
 model Search {

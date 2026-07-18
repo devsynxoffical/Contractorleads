@@ -137,6 +137,67 @@ export async function runLeadPipeline(params: SearchParams) {
         )
       : qualification.websiteQualityScore;
 
+    // Reuse an existing lead when the same business is already in the pool
+    const existingLead =
+      (place.mapsUrl
+        ? await prisma.lead.findFirst({
+            where: { googleMapsLink: place.mapsUrl },
+          })
+        : null) ??
+      (await prisma.lead.findFirst({
+        where: {
+          businessName: { equals: place.name, mode: "insensitive" },
+          ...(place.address
+            ? { address: { equals: place.address, mode: "insensitive" } }
+            : {}),
+        },
+      }));
+
+    if (existingLead) {
+      const reused = await prisma.lead.update({
+        where: { id: existingLead.id },
+        data: {
+          searchId: search.id,
+          industry: params.industry,
+          country: params.country,
+          state: params.state ?? existingLead.state,
+          city: params.city ?? existingLead.city,
+          zip: params.zip ?? existingLead.zip,
+          phone: place.phone ?? existingLead.phone,
+          website: website ?? existingLead.website,
+          googleRating: place.rating ?? existingLead.googleRating,
+          reviewCount: place.reviewCount ?? existingLead.reviewCount,
+          ownerName: websitePeople.owner?.name ?? existingLead.ownerName,
+          ownerTitle: websitePeople.owner?.role ?? existingLead.ownerTitle,
+          ownerSourceUrl:
+            websitePeople.owner?.sourceUrl ?? existingLead.ownerSourceUrl,
+          ownerConfidence:
+            websitePeople.owner?.confidence ?? existingLead.ownerConfidence,
+          teamMembersJson: websitePeople.team.length
+            ? JSON.stringify(websitePeople.team)
+            : existingLead.teamMembersJson,
+          email: websitePeople.email ?? existingLead.email,
+          emailSourceUrl:
+            websitePeople.emailSourceUrl ?? existingLead.emailSourceUrl,
+          facebook: facebook ?? existingLead.facebook,
+          instagram: websiteSocial.instagram ?? existingLead.instagram,
+          youtube: websiteSocial.youtube ?? existingLead.youtube,
+          tiktok: websiteSocial.tiktok ?? existingLead.tiktok,
+          yelpUrl: yelp?.url ?? existingLead.yelpUrl,
+          houzzUrl: houzz?.url ?? existingLead.houzzUrl,
+          nextdoor: nextdoor?.url ?? existingLead.nextdoor,
+          linkedinUrl: linkedin.url ?? existingLead.linkedinUrl,
+          linkedinCompanyUrl:
+            linkedin.companyUrl ?? existingLead.linkedinCompanyUrl,
+          linkedinOwnerUrl: linkedin.ownerUrl ?? existingLead.linkedinOwnerUrl,
+          leadScore: Math.max(existingLead.leadScore, qualification.leadScore),
+          qualityTier: qualification.qualityTier ?? existingLead.qualityTier,
+        },
+      });
+      leads.push(reused);
+      continue;
+    }
+
     const lead = await prisma.lead.create({
       data: {
         businessName: place.name,

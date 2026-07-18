@@ -4,7 +4,8 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  const passwordHash = await bcrypt.hash("demo12345", 12);
+  const demoHash = await bcrypt.hash("demo12345", 12);
+  const adminHash = await bcrypt.hash("admin12345", 12);
 
   await prisma.user.upsert({
     where: { email: "demo@leadflow.us" },
@@ -12,7 +13,10 @@ async function main() {
     create: {
       email: "demo@leadflow.us",
       name: "Vaishali",
-      passwordHash,
+      passwordHash: demoHash,
+      role: "USER",
+      plan: "trial",
+      subscriptionStatus: "trialing",
       creditsRemaining: 20,
       onboardingComplete: true,
       companyName: "Million Dollar Media",
@@ -25,7 +29,35 @@ async function main() {
     },
   });
 
-  console.log("Seed complete: demo@leadflow.us / demo12345");
+  await prisma.user.upsert({
+    where: { email: "admin@leadflow.us" },
+    update: {
+      role: "SUPER_ADMIN",
+      passwordHash: adminHash,
+      creditsRemaining: 9999,
+      onboardingComplete: true,
+    },
+    create: {
+      email: "admin@leadflow.us",
+      name: "Super Admin",
+      passwordHash: adminHash,
+      role: "SUPER_ADMIN",
+      plan: "agency",
+      subscriptionStatus: "active",
+      creditsRemaining: 9999,
+      onboardingComplete: true,
+      companyName: "Contractor Leads Ops",
+      businessDescription: "Platform super administrator",
+      services: "Platform operations",
+      idealCustomer: "Internal",
+      serviceAreas: "Global",
+      mainGoal: "Operate the lead platform",
+    },
+  });
+
+  console.log("Seed complete:");
+  console.log("  demo@leadflow.us / demo12345");
+  console.log("  admin@leadflow.us / admin12345 (SUPER_ADMIN)");
 }
 
 main()

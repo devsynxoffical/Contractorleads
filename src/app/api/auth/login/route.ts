@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import {
+  SUPER_ADMIN_ROLE,
   createSessionToken,
   setSessionCookie,
   verifyPassword,
@@ -10,9 +11,24 @@ export async function POST(request: Request) {
   try {
     const { email, password } = await request.json();
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({
+      where: { email: String(email ?? "").trim().toLowerCase() },
+    });
     if (!user || !(await verifyPassword(password, user.passwordHash))) {
-      return NextResponse.json({ error: "Invalid email or password" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Invalid email or password" },
+        { status: 401 },
+      );
+    }
+
+    if (user.role === SUPER_ADMIN_ROLE) {
+      return NextResponse.json(
+        {
+          error:
+            "Super admins must sign in at /admin/login — this portal is for agencies only.",
+        },
+        { status: 403 },
+      );
     }
 
     const token = await createSessionToken(user.id);

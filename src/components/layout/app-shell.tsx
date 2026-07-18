@@ -92,6 +92,23 @@ const sections: NavSection[] = [
   },
 ];
 
+function buildSections(user: SessionUser): NavSection[] {
+  if (user.role !== "SUPER_ADMIN" && !user.realAdminId) return sections;
+  return [
+    {
+      title: "Admin",
+      items: [
+        {
+          href: "/admin",
+          label: "Super Admin",
+          icon: HiOutlineCog6Tooth,
+        },
+      ],
+    },
+    ...sections,
+  ];
+}
+
 function isActive(pathname: string, href: string) {
   if (href === "/leads") return pathname === "/leads";
   if (href === "/home") return pathname === "/home";
@@ -165,7 +182,7 @@ function SidebarNav({
       </div>
 
       <nav className="scrollbar-thin flex-1 space-y-5 overflow-y-auto px-3 py-5">
-        {sections.map((section) => (
+        {buildSections(user).map((section) => (
           <div key={section.title}>
             <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
               {section.title}
@@ -276,12 +293,31 @@ export function AppShell({
 
   return (
     <div className="flex h-[100dvh] overflow-hidden bg-transparent">
+      {user.impersonating && (
+        <div className="fixed inset-x-0 top-0 z-[60] flex items-center justify-center gap-3 bg-[#1a1224] px-4 py-2 text-[12px] text-white">
+          <span>
+            Testing as{" "}
+            <strong>{user.companyName || user.name || user.email}</strong>
+          </span>
+          <button
+            type="button"
+            className="rounded-lg bg-white px-2.5 py-1 font-semibold text-ink"
+            onClick={async () => {
+              await fetch("/api/admin/impersonate/exit", { method: "POST" });
+              window.location.href = "/admin/customers";
+            }}
+          >
+            Exit
+          </button>
+        </div>
+      )}
       <aside
         className={cn(
           "hidden h-full shrink-0 flex-col border-r border-border/70 bg-white/90 shadow-[4px_0_24px_rgba(20,17,26,0.03)] backdrop-blur-xl transition-[width,opacity,transform] duration-300 ease-out lg:flex",
           sidebarCollapsed
             ? "w-0 overflow-hidden border-r-0 opacity-0 shadow-none"
-            : "w-[268px] opacity-100"
+            : "w-[268px] opacity-100",
+          user.impersonating ? "pt-10" : "",
         )}
         aria-hidden={sidebarCollapsed}
       >
@@ -307,7 +343,12 @@ export function AppShell({
         </div>
       )}
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <div
+        className={cn(
+          "flex min-h-0 min-w-0 flex-1 flex-col",
+          user.impersonating ? "pt-10" : "",
+        )}
+      >
         <TopHeader
           user={user}
           onMenuClick={() => setMobileOpen((v) => !v)}

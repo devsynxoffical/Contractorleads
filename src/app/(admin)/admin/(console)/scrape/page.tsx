@@ -1,0 +1,179 @@
+"use client";
+
+import { useState } from "react";
+import { AdminPageHeader } from "@/components/admin/admin-shell";
+import { INDUSTRIES, TIER_ONE_COUNTRIES, getTierOneCountry } from "@/lib/constants";
+import { Button } from "@/components/ui/button";
+
+export default function AdminScrapePage() {
+  const [industry, setIndustry] = useState<string>(INDUSTRIES[0]);
+  const [country, setCountry] = useState("US");
+  const [locationScope, setLocationScope] = useState<"local" | "country">(
+    "local",
+  );
+  const [state, setState] = useState("");
+  const [city, setCity] = useState("");
+  const [zip, setZip] = useState("");
+  const [radius, setRadius] = useState(25);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const countryMeta = getTierOneCountry(country);
+
+  async function runScrape() {
+    setLoading(true);
+    setError(null);
+    setResult(null);
+    try {
+      const res = await fetch("/api/admin/scrape", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          industry,
+          country,
+          locationScope,
+          state: locationScope === "local" ? state : undefined,
+          city: locationScope === "local" ? city : undefined,
+          zip: locationScope === "local" ? zip : undefined,
+          radius: locationScope === "local" ? radius : undefined,
+        }),
+        signal: AbortSignal.timeout(180000),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Scrape failed");
+      setResult(
+        `Created/reused ${data.leads?.length ?? 0} leads for ${industry}.`,
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Scrape failed");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div>
+      <AdminPageHeader
+        title="Scrape Leads"
+        description="Run a fresh niche scrape into the global pool. No credits are charged for super admins. Existing businesses are reused when already in the pool."
+      />
+
+      <div className="max-w-xl space-y-3 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">
+        <label className="block text-[12px]">
+          <span className="font-medium text-ink-muted">Service / niche</span>
+          <select
+            className="saas-input mt-1"
+            value={industry}
+            onChange={(e) => setIndustry(e.target.value)}
+          >
+            {INDUSTRIES.map((i) => (
+              <option key={i} value={i}>
+                {i}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="block text-[12px]">
+          <span className="font-medium text-ink-muted">Country</span>
+          <select
+            className="saas-input mt-1"
+            value={country}
+            onChange={(e) => setCountry(e.target.value)}
+          >
+            {TIER_ONE_COUNTRIES.map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setLocationScope("local")}
+            className={`rounded-xl px-3 py-2 text-[12px] font-semibold ${
+              locationScope === "local"
+                ? "bg-brand-50 text-brand-700"
+                : "bg-[#faf8fc] text-ink-muted"
+            }`}
+          >
+            Local area
+          </button>
+          <button
+            type="button"
+            onClick={() => setLocationScope("country")}
+            className={`rounded-xl px-3 py-2 text-[12px] font-semibold ${
+              locationScope === "country"
+                ? "bg-brand-50 text-brand-700"
+                : "bg-[#faf8fc] text-ink-muted"
+            }`}
+          >
+            Entire country
+          </button>
+        </div>
+
+        {locationScope === "local" && (
+          <>
+            <label className="block text-[12px]">
+              <span className="font-medium text-ink-muted">
+                {countryMeta?.regionLabel ?? "State"}
+              </span>
+              <input
+                className="saas-input mt-1"
+                value={state}
+                onChange={(e) => setState(e.target.value)}
+              />
+            </label>
+            <label className="block text-[12px]">
+              <span className="font-medium text-ink-muted">City</span>
+              <input
+                className="saas-input mt-1"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+              />
+            </label>
+            <label className="block text-[12px]">
+              <span className="font-medium text-ink-muted">
+                {countryMeta?.postalLabel ?? "ZIP"}
+              </span>
+              <input
+                className="saas-input mt-1"
+                value={zip}
+                onChange={(e) => setZip(e.target.value)}
+              />
+            </label>
+            <label className="block text-[12px]">
+              <span className="font-medium text-ink-muted">
+                Radius ({countryMeta?.distanceUnit ?? "mi"})
+              </span>
+              <input
+                type="number"
+                className="saas-input mt-1"
+                value={radius}
+                onChange={(e) => setRadius(Number(e.target.value) || 25)}
+              />
+            </label>
+          </>
+        )}
+
+        <Button onClick={runScrape} disabled={loading}>
+          {loading ? "Scraping…" : "Run scrape"}
+        </Button>
+
+        {result && (
+          <p className="rounded-xl bg-emerald-50 px-3 py-2 text-[13px] text-emerald-800">
+            {result}
+          </p>
+        )}
+        {error && (
+          <p className="rounded-xl bg-red-50 px-3 py-2 text-[13px] text-red-700">
+            {error}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
