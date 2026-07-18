@@ -1,8 +1,11 @@
 import { prisma } from "@/lib/prisma";
+import {
+  MANAGER_ROLE,
+  SUB_ADMIN_ROLE,
+  SUPER_ADMIN_ROLE,
+} from "@/lib/roles";
 
-export const MANAGER_ROLE = "MANAGER";
-export const SUB_ADMIN_ROLE = "SUB_ADMIN";
-export const SUPER_ADMIN_ROLE = "SUPER_ADMIN";
+export { MANAGER_ROLE, SUB_ADMIN_ROLE, SUPER_ADMIN_ROLE };
 
 export const ADMIN_PERMISSIONS = [
   { key: "overview", label: "Business Overview", href: "/admin" },

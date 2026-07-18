@@ -20,7 +20,7 @@ import {
   HiOutlineViewColumns,
 } from "react-icons/hi2";
 import { formatCredits, formatNumber } from "@/lib/utils";
-import type { SessionUser } from "@/lib/auth";
+import type { SessionUser } from "@/lib/session-user";
 import { QuickLeadSearch } from "@/components/leads/quick-lead-search";
 import { getTierOneCountry } from "@/lib/constants";
 import { HudPanel } from "@/components/dashboard/hud-panel";

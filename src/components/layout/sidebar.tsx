@@ -25,7 +25,7 @@ import {
   HiOutlineViewColumns,
 } from "react-icons/hi2";
 import { cn, formatCredits } from "@/lib/utils";
-import type { SessionUser } from "@/lib/auth";
+import type { SessionUser } from "@/lib/session-user";
 
 type NavItem = {
   href: string;

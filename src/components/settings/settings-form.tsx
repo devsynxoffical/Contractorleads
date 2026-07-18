@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { SessionUser } from "@/lib/auth";
+import type { SessionUser } from "@/lib/session-user";
 
 export function SettingsForm({ user }: { user: SessionUser }) {
   const [form, setForm] = useState({

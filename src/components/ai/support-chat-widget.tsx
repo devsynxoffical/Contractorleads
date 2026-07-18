@@ -7,7 +7,7 @@ import {
   HiOutlineChatBubbleOvalLeftEllipsis,
   HiOutlineXMark,
 } from "react-icons/hi2";
-import type { SessionUser } from "@/lib/auth";
+import type { SessionUser } from "@/lib/session-user";
 
 const LOGO_GRADIENT =
   "linear-gradient(135deg, #e6007e 0%, #8e24aa 55%, #7b1fa2 100%)";

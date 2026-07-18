@@ -23,8 +23,8 @@ import {
   HiOutlineUsers,
 } from "react-icons/hi2";
 import { cn } from "@/lib/utils";
-import type { SessionUser } from "@/lib/auth";
-import { SUPER_ADMIN_ROLE } from "@/lib/auth";
+import type { SessionUser } from "@/lib/session-user";
+import { SUPER_ADMIN_ROLE } from "@/lib/roles";
 import {
   firstAllowedAdminPath,
   permissionForPath,

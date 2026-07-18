@@ -9,7 +9,7 @@ import {
   HiOutlineChevronDoubleRight,
   HiOutlineMagnifyingGlass,
 } from "react-icons/hi2";
-import type { SessionUser } from "@/lib/auth";
+import type { SessionUser } from "@/lib/session-user";
 import { cn, formatCredits } from "@/lib/utils";
 import { GlobalSearch } from "@/components/layout/global-search";
 

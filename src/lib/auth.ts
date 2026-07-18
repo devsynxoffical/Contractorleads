@@ -5,11 +5,24 @@ import { prisma } from "@/lib/prisma";
 import {
   MANAGER_ROLE,
   SUB_ADMIN_ROLE,
-  SUPER_ADMIN_ROLE as PERM_SUPER_ADMIN,
+  SUPER_ADMIN_ROLE,
+  ADMIN_STAFF_ROLES,
+} from "@/lib/roles";
+import {
   getRolePermissions,
   userHasPermission,
   type AdminPermissionKey,
 } from "@/lib/admin-permissions";
+
+export {
+  SUPER_ADMIN_ROLE,
+  MANAGER_ROLE,
+  SUB_ADMIN_ROLE,
+  ADMIN_STAFF_ROLES,
+};
+
+export type { SessionUser } from "@/lib/session-user";
+import type { SessionUser } from "@/lib/session-user";
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "leadflow-dev-secret-change-in-production",
@@ -18,41 +31,6 @@ const JWT_SECRET = new TextEncoder().encode(
 const COOKIE_NAME = "leadflow_session";
 const IMPERSONATE_COOKIE = "leadflow_impersonate";
 const SESSION_DURATION = "7d";
-
-export const SUPER_ADMIN_ROLE = PERM_SUPER_ADMIN;
-export { MANAGER_ROLE, SUB_ADMIN_ROLE };
-
-export const ADMIN_STAFF_ROLES = [
-  SUPER_ADMIN_ROLE,
-  MANAGER_ROLE,
-  SUB_ADMIN_ROLE,
-] as const;
-
-export type SessionUser = {
-  id: string;
-  email: string;
-  name: string | null;
-  role: string;
-  plan: string;
-  creditsRemaining: number;
-  onboardingComplete: boolean;
-  darkMode: boolean;
-  companyName: string | null;
-  businessDescription: string | null;
-  services: string | null;
-  idealCustomer: string | null;
-  serviceAreas: string | null;
-  mainGoal: string | null;
-  subscriptionStatus?: string | null;
-  isActive?: boolean;
-  adminNotes?: string | null;
-  /** Permission keys for admin staff (empty for agency users) */
-  permissions?: AdminPermissionKey[];
-  /** True when a SUPER_ADMIN is viewing the app as this customer */
-  impersonating?: boolean;
-  /** Real admin id when impersonating */
-  realAdminId?: string;
-};
 
 function toSessionUser(
   user: {

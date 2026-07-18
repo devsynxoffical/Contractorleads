@@ -34,7 +34,7 @@ import {
   HiOutlineXMark,
 } from "react-icons/hi2";
 import { cn, formatCredits } from "@/lib/utils";
-import type { SessionUser } from "@/lib/auth";
+import type { SessionUser } from "@/lib/session-user";
 import { TopHeader } from "@/components/layout/top-header";
 import { SupportChatWidget } from "@/components/ai/support-chat-widget";
 
