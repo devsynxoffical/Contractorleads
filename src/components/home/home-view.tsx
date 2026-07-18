@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   HiOutlineArrowPath,
@@ -20,7 +20,6 @@ import {
   CUSTOM_INDUSTRY_VALUE,
   formatSearchLabel,
   isPresetIndustry,
-  parseLeadQuery,
   resolveSearchCriteria,
 } from "@/lib/search-criteria";
 import {
@@ -48,12 +47,10 @@ type ChatMsg = {
 };
 
 const QUICK_PROMPTS = [
-  "Roofing in Austin TX",
-  "HVAC in Miami FL",
-  "Plumbing in Phoenix AZ",
-  "Solar in Dallas TX",
-  "Window tinting in Brooklyn NY",
-  "Landscaping in Denver CO",
+  "How do I get more HVAC clients this month?",
+  "Write a cold email for roofing owners",
+  "What should my Facebook ad hook be?",
+  "How do credits and Lead Finder work?",
 ];
 
 export function HomeView({ userName }: { userName?: string | null }) {
@@ -70,7 +67,8 @@ export function HomeView({ userName }: { userName?: string | null }) {
   const [city, setCity] = useState("");
   const [zip, setZip] = useState("");
   const [radius, setRadius] = useState("25");
-  const [loading, setLoading] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [chatLoading, setChatLoading] = useState(false);
   const [error, setError] = useState("");
   const [leads, setLeads] = useState<Lead[]>([]);
   const [restoring, setRestoring] = useState(true);
@@ -78,9 +76,17 @@ export function HomeView({ userName }: { userName?: string | null }) {
     {
       id: "welcome",
       role: "assistant",
-      text: `Hi${userName ? ` ${userName.split(" ")[0]}` : ""} — describe the leads you need, or set filters below and search.`,
+      text: `Hi${userName ? ` ${userName.split(" ")[0]}` : ""} — I’m your Contractor Leads AI. Ask about offers, ads, outreach, or how to use the app. Use Filters below when you want to generate leads.`,
     },
   ]);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    chatScrollRef.current?.scrollTo({
+      top: chatScrollRef.current.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [messages, chatLoading]);
 
   useEffect(() => {
     let cancelled = false;
@@ -109,7 +115,6 @@ export function HomeView({ userName }: { userName?: string | null }) {
         }
         setZip(cached.zip);
         setRadius(cached.radius ?? "25");
-        if (cached.messages?.length) setMessages(cached.messages);
         setRestoring(false);
         return;
       }
@@ -151,23 +156,6 @@ export function HomeView({ userName }: { userName?: string | null }) {
         if (s?.zip) setZip(s.zip);
         if (s?.radius) setRadius(String(s.radius));
 
-        const label = formatSearchLabel({
-          industry: industryVal,
-          country: s?.country ?? "US",
-          locationScope: s?.locationScope ?? "local",
-          state: s?.state ?? "",
-          city: customLoc ? undefined : s?.city,
-          customLocation: customLoc || undefined,
-        });
-        setMessages((m) => [
-          ...m,
-          {
-            id: crypto.randomUUID(),
-            role: "assistant",
-            text: `Restored your last search — ${found.length} leads for ${label}.`,
-          },
-        ]);
-
         saveHomeSearchCache({
           searchId: s.id,
           leads: found,
@@ -203,8 +191,7 @@ export function HomeView({ userName }: { userName?: string | null }) {
       customLocation?: string;
       radius?: number | string;
     },
-    searchId?: string,
-    nextMessages?: ChatMsg[]
+    searchId?: string
   ) {
     saveHomeSearchCache({
       searchId,
@@ -217,7 +204,6 @@ export function HomeView({ userName }: { userName?: string | null }) {
       customLocation: params.customLocation ?? "",
       zip: params.zip ?? "",
       radius: params.radius ? String(params.radius) : undefined,
-      messages: nextMessages,
     });
   }
 
@@ -264,15 +250,11 @@ export function HomeView({ userName }: { userName?: string | null }) {
     });
     if (!resolved.ok) {
       setError(resolved.error);
-      setMessages((m) => [
-        ...m,
-        { id: crypto.randomUUID(), role: "assistant", text: resolved.error },
-      ]);
       return;
     }
 
     const params = resolved.criteria;
-    setLoading(true);
+    setSearchLoading(true);
     startNavigationProgress();
     setError("");
     setLeads([]);
@@ -287,209 +269,245 @@ export function HomeView({ userName }: { userName?: string | null }) {
       const data = await res.json();
 
       if (!res.ok) {
-        const msg = data.error || "Search failed";
-        setError(msg);
-        setMessages((m) => [
-          ...m,
-          { id: crypto.randomUUID(), role: "assistant", text: msg },
-        ]);
+        setError(data.error || "Search failed");
         return;
       }
 
       const found = (data.leads ?? []) as Lead[];
       setLeads(found);
-      const assistantMsg = {
-        id: crypto.randomUUID(),
-        role: "assistant" as const,
-        text: found.length
-          ? `Found ${found.length} verified leads for ${formatSearchLabel(params)}.`
-          : `No leads found for ${formatSearchLabel(params)}. Try another city, service, or area.`,
-      };
-      setMessages((m) => {
-        const next = [...m, assistantMsg];
-        persistSearch(found, params, data.search?.id, next);
-        return next;
-      });
+      persistSearch(found, params, data.search?.id);
+      if (!found.length) {
+        setError(
+          `No leads found for ${formatSearchLabel(params)}. Try another city, service, or area.`
+        );
+      }
     } finally {
-      setLoading(false);
+      setSearchLoading(false);
       stopNavigationProgress();
     }
   }
 
-  async function handleChatSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const q = input.trim();
-    if (!q || loading) return;
+  async function askChat(override?: string) {
+    const q = (override ?? input).trim();
+    if (!q || chatLoading) return;
 
-    setMessages((m) => [
-      ...m,
-      { id: crypto.randomUUID(), role: "user", text: q },
-    ]);
+    const userMsg: ChatMsg = {
+      id: crypto.randomUUID(),
+      role: "user",
+      text: q,
+    };
+    setMessages((m) => [...m, userMsg]);
     setInput("");
+    setChatLoading(true);
 
-    const parsed = parseLeadQuery(q);
-    if (!parsed) {
+    try {
+      const res = await fetch("/api/ai/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: q }),
+      });
+
+      if (res.status === 402) {
+        setMessages((m) => [
+          ...m,
+          {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            text: "You’re out of AI credits. Upgrade under Plans & Billing, or use Filters below to search leads.",
+          },
+        ]);
+        return;
+      }
+
+      if (!res.ok) {
+        setMessages((m) => [
+          ...m,
+          {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            text: "I couldn’t reply just now. Please try again in a moment.",
+          },
+        ]);
+        return;
+      }
+
+      const contentType = res.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
+        const data = await res.json();
+        setMessages((m) => [
+          ...m,
+          {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            text: data.content || "No response.",
+          },
+        ]);
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      let out = "";
+      const assistantId = crypto.randomUUID();
+      setMessages((m) => [
+        ...m,
+        { id: assistantId, role: "assistant", text: "" },
+      ]);
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          out += decoder.decode(value);
+          const snapshot = out;
+          setMessages((m) =>
+            m.map((msg) =>
+              msg.id === assistantId ? { ...msg, text: snapshot } : msg
+            )
+          );
+        }
+      }
+
+      if (!out.trim()) {
+        setMessages((m) =>
+          m.map((msg) =>
+            msg.id === assistantId
+              ? {
+                  ...msg,
+                  text: "No response came back. Try asking again.",
+                }
+              : msg
+          )
+        );
+      }
+    } catch {
       setMessages((m) => [
         ...m,
         {
           id: crypto.randomUUID(),
           role: "assistant",
-          text: 'I need a service and location — try “Window tinting in Brooklyn NY” or use the filters below.',
+          text: "Something went wrong reaching the AI. Please try again.",
         },
       ]);
-      return;
+    } finally {
+      setChatLoading(false);
     }
+  }
 
-    if (isPresetIndustry(parsed.industry)) {
-      setSelectedIndustry(parsed.industry);
-      setIndustryMode("preset");
-    } else {
-      setCustomIndustry(parsed.industry);
-      setIndustryMode("custom");
-    }
-    if (parsed.customLocation) {
-      setLocationMode("custom");
-      setCustomLocation(parsed.customLocation);
-    } else {
-      setLocationMode("standard");
-      setState(parsed.state ?? "");
-      setCity(parsed.city ?? "");
-    }
-    setCountry(parsed.country);
-    setLocationScope(parsed.locationScope);
-    await runSearch(parsed);
+  async function handleChatSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    await askChat();
   }
 
   async function handleFilterSearch(e: React.FormEvent) {
     e.preventDefault();
-    const label = formatSearchLabel({
-      industry:
-        industryMode === "custom" ? customIndustry : selectedIndustry,
-      country,
-      locationScope,
-      state,
-      city,
-      customLocation: locationMode === "custom" ? customLocation : undefined,
-    });
-    setMessages((m) => [
-      ...m,
-      {
-        id: crypto.randomUUID(),
-        role: "user",
-        text:
-          locationScope === "country"
-            ? label
-            : `${label} · ${radius} ${getTierOneCountry(country).distanceUnit}`,
-      },
-    ]);
     await runSearch({});
   }
 
   return (
     <div className="page-pad page-enter">
       <div className="mx-auto w-full max-w-[900px]">
-        {/* Chat */}
-        <div className="animate-fade-up mx-auto flex h-[300px] w-full max-w-[900px] flex-col overflow-hidden rounded-2xl border border-border/80 bg-white shadow-[var(--shadow-card)]">
-            <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4 sm:px-5">
-              {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                >
-                  <div
-                    className={`max-w-[92%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed sm:text-[14px] ${
-                      msg.role === "user"
-                        ? "rounded-br-md text-[#041018] shadow-sm"
-                        : "rounded-bl-md border border-[#00e5ff]/20 bg-[#070d18]/90 text-ink"
-                    }`}
-                    style={
-                      msg.role === "user"
-                        ? { background: LOGO_GRADIENT }
-                        : undefined
-                    }
-                  >
-                    {msg.text}
-                  </div>
-                </div>
-              ))}
-
-              {!messages.some((m) => m.role === "user") && (
-                <div className="flex flex-wrap justify-center gap-2 pt-1">
-                  {QUICK_PROMPTS.map((p) => (
-                    <button
-                      key={p}
-                      type="button"
-                      disabled={loading}
-                      onClick={() => {
-                        setMessages((m) => [
-                          ...m,
-                          { id: crypto.randomUUID(), role: "user", text: p },
-                        ]);
-                        const parsed = parseLeadQuery(p);
-                        if (parsed) {
-                          if (isPresetIndustry(parsed.industry)) {
-                            setSelectedIndustry(parsed.industry);
-                            setIndustryMode("preset");
-                          } else {
-                            setCustomIndustry(parsed.industry);
-                            setIndustryMode("custom");
-                          }
-                          if (parsed.customLocation) {
-                            setLocationMode("custom");
-                            setCustomLocation(parsed.customLocation);
-                          } else {
-                            setLocationMode("standard");
-                            setState(parsed.state ?? "");
-                            setCity(parsed.city ?? "");
-                          }
-                          setCountry(parsed.country);
-                          setLocationScope(parsed.locationScope);
-                          void runSearch(parsed);
-                        }
-                      }}
-                      className="rounded-full border border-border bg-white px-3.5 py-1.5 text-[12px] font-medium text-ink-muted shadow-[var(--shadow-soft)] transition hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700"
-                    >
-                      {p}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {loading && (
-                <p className="flex items-center justify-center gap-2 text-[13px] text-ink-muted">
-                  <HiOutlineArrowPath className="h-4 w-4 animate-spin" />
-                  Running verification pipeline…
+        {/* AI chatbot */}
+        <div className="animate-fade-up mx-auto flex h-[360px] w-full max-w-[900px] flex-col overflow-hidden rounded-2xl border border-[#00e5ff]/15 bg-[rgba(12,22,38,0.92)] shadow-[var(--shadow-card)]">
+          <div className="flex items-center justify-between border-b border-[#00e5ff]/15 px-4 py-2.5 sm:px-5">
+            <div className="flex items-center gap-2">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#00e5ff]/15 text-[#00e5ff]">
+                <HiOutlineSparkles className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[#00e5ff]">
+                  AI assistant
                 </p>
-              )}
-            </div>
-
-            <form
-              onSubmit={handleChatSubmit}
-              className="flex shrink-0 gap-2 border-t border-[#00e5ff]/15 bg-[#0a1422]/95 px-4 py-2.5 sm:px-5"
-            >
-              <div className="relative flex-1">
-                <HiOutlineSparkles className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-400" />
-                <input
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder='Try “HVAC in Miami FL”'
-                  disabled={loading}
-                  className="h-10 w-full rounded-xl border border-[#00e5ff]/25 bg-[#070d18]/90 pl-10 pr-3 text-[14px] text-ink outline-none transition placeholder:text-ink-faint focus:border-[#00e5ff]/55 focus:ring-4 focus:ring-[var(--ring)]"
-                />
+                <p className="text-[11px] text-ink-faint">
+                  Chat · not a lead search
+                </p>
               </div>
-              <button
-                type="submit"
-                disabled={loading || !input.trim()}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[#041018] shadow-[0_8px_20px_rgba(0,229,255,0.3)] transition hover:opacity-95 disabled:opacity-45"
-                style={{ background: LOGO_GRADIENT }}
-                aria-label="Send"
+            </div>
+            <Link
+              href="/ask-expert"
+              className="text-[11px] font-semibold text-[#5eead4] hover:underline"
+            >
+              Full Ask Expert →
+            </Link>
+          </div>
+
+          <div
+            ref={chatScrollRef}
+            className="flex-1 space-y-3 overflow-y-auto px-4 py-4 sm:px-5"
+          >
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
-                <HiOutlinePaperAirplane className="h-4 w-4" />
-              </button>
-            </form>
+                <div
+                  className={`max-w-[92%] whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed sm:text-[14px] ${
+                    msg.role === "user"
+                      ? "rounded-br-md text-[#041018] shadow-sm"
+                      : "rounded-bl-md border border-[#00e5ff]/20 bg-[#070d18]/90 text-ink"
+                  }`}
+                  style={
+                    msg.role === "user"
+                      ? { background: LOGO_GRADIENT }
+                      : undefined
+                  }
+                >
+                  {msg.text || (chatLoading ? "…" : "")}
+                </div>
+              </div>
+            ))}
+
+            {!messages.some((m) => m.role === "user") && (
+              <div className="flex flex-wrap justify-center gap-2 pt-1">
+                {QUICK_PROMPTS.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    disabled={chatLoading}
+                    onClick={() => void askChat(p)}
+                    className="rounded-full border border-[#00e5ff]/25 bg-[#00e5ff]/08 px-3.5 py-1.5 text-[12px] font-medium text-[#c5d0dc] transition hover:border-[#00e5ff]/45 hover:bg-[#00e5ff]/15 hover:text-white disabled:opacity-50"
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {chatLoading && (
+              <p className="flex items-center justify-center gap-2 text-[13px] text-ink-muted">
+                <HiOutlineArrowPath className="h-4 w-4 animate-spin text-[#00e5ff]" />
+                Thinking…
+              </p>
+            )}
+          </div>
+
+          <form
+            onSubmit={handleChatSubmit}
+            className="flex shrink-0 gap-2 border-t border-[#00e5ff]/15 bg-[#0a1422]/95 px-4 py-2.5 sm:px-5"
+          >
+            <div className="relative flex-1">
+              <HiOutlineSparkles className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#00e5ff]" />
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Ask about ads, outreach, offers, or the app…"
+                disabled={chatLoading}
+                className="h-10 w-full rounded-xl border border-[#00e5ff]/25 bg-[#070d18]/90 pl-10 pr-3 text-[14px] text-ink outline-none transition placeholder:text-ink-faint focus:border-[#00e5ff]/55 focus:ring-4 focus:ring-[var(--ring)]"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={chatLoading || !input.trim()}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[#041018] shadow-[0_8px_20px_rgba(0,229,255,0.3)] transition hover:opacity-95 disabled:opacity-45"
+              style={{ background: LOGO_GRADIENT }}
+              aria-label="Send"
+            >
+              <HiOutlinePaperAirplane className="h-4 w-4" />
+            </button>
+          </form>
         </div>
 
-        {/* Filters */}
+        {/* Filters — lead search only */}
         <div className="animate-fade-up saas-card mt-5 p-5 sm:p-6" style={{ animationDelay: "0.08s" }}>
           <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
@@ -501,7 +519,7 @@ export function HomeView({ userName }: { userName?: string | null }) {
                   Filters & location
                 </h2>
                 <p className="text-[12px] text-ink-faint">
-                  Preset or custom service · state or custom area
+                  Lead search · 1.65 credits per run
                 </p>
               </div>
             </div>
@@ -709,18 +727,27 @@ export function HomeView({ userName }: { userName?: string | null }) {
             <div className="flex items-end">
               <button
                 type="submit"
-                disabled={loading}
+                disabled={searchLoading}
                 className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl text-[13px] font-semibold text-[#041018] shadow-[0_8px_22px_rgba(0,229,255,0.28)] transition hover:opacity-95 disabled:opacity-55"
                 style={{ background: LOGO_GRADIENT }}
               >
-                <HiOutlineMagnifyingGlass className="h-4 w-4" />
-                Search leads
+                {searchLoading ? (
+                  <>
+                    <HiOutlineArrowPath className="h-4 w-4 animate-spin" />
+                    Searching…
+                  </>
+                ) : (
+                  <>
+                    <HiOutlineMagnifyingGlass className="h-4 w-4" />
+                    Search leads
+                  </>
+                )}
               </button>
             </div>
           </form>
 
           {error && (
-            <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-[13px] text-red-700">
+            <p className="mt-4 rounded-xl border border-red-400/40 bg-red-500/10 px-3.5 py-2.5 text-[13px] text-red-200">
               {error}
             </p>
           )}
