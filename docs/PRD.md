@@ -36,6 +36,6 @@ Policy: **verified or blank** — never fabricate.
 | Facebook Ads sync UI | Placeholder / roadmap |
 | Stripe billing | Deferred |
 | Google OAuth | Deferred |
-| Admin panel (Module B) | Not built |
-| Super Admin panel (Module C) | Not built |
+| Super Admin panel (Module C) | Built (`/admin/login`) — manage customers, leads, scrape/copy, revenue, health, system |
+| Admin panel (Module B) | Merged into Super Admin for now |
 | Strict LinkedIn 95% provider | Partial (Proxycurl-style key) |

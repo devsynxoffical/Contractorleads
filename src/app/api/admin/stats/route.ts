@@ -22,6 +22,8 @@ export async function GET() {
     creditsAgg,
     planGroups,
     recentActivity,
+    suspendedCount,
+    savedLeadCount,
   ] = await Promise.all([
     prisma.user.count({ where: { role: { not: "SUPER_ADMIN" } } }),
     prisma.user.count({
@@ -57,7 +59,34 @@ export async function GET() {
         },
       },
     }),
+    prisma.user.count({
+      where: { role: { not: "SUPER_ADMIN" }, isActive: false },
+    }),
+    prisma.savedLead.count(),
   ]);
+
+  const dayBuckets: Array<{ date: string; searches: number; leads: number }> =
+    [];
+  for (let i = 6; i >= 0; i--) {
+    const dayStart = new Date();
+    dayStart.setHours(0, 0, 0, 0);
+    dayStart.setDate(dayStart.getDate() - i);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1);
+    const [searches, leads] = await Promise.all([
+      prisma.search.count({
+        where: { createdAt: { gte: dayStart, lt: dayEnd } },
+      }),
+      prisma.lead.count({
+        where: { createdAt: { gte: dayStart, lt: dayEnd } },
+      }),
+    ]);
+    dayBuckets.push({
+      date: dayStart.toISOString().slice(0, 10),
+      searches,
+      leads,
+    });
+  }
 
   return NextResponse.json({
     stats: {
@@ -72,6 +101,9 @@ export async function GET() {
         plan: g.plan,
         count: g._count._all,
       })),
+      suspendedCount,
+      savedLeadCount,
+      last7Days: dayBuckets,
     },
     recentActivity,
   });

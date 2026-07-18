@@ -14,6 +14,9 @@ type StatsPayload = {
     searchesWeek: number;
     creditsOutstanding: number;
     planMix: Array<{ plan: string; count: number }>;
+    suspendedCount?: number;
+    savedLeadCount?: number;
+    last7Days?: Array<{ date: string; searches: number; leads: number }>;
   };
   recentActivity: Array<{
     id: string;
@@ -73,6 +76,18 @@ export default function AdminOverviewPage() {
             >
               Copy leads
             </Link>
+            <Link
+              href="/admin/customers"
+              className="rounded-xl border border-border bg-white px-3 py-2 text-[12px] font-semibold text-ink-muted"
+            >
+              Manage customers
+            </Link>
+            <Link
+              href="/admin/activity"
+              className="rounded-xl border border-border bg-white px-3 py-2 text-[12px] font-semibold text-ink-muted"
+            >
+              Activity
+            </Link>
           </div>
         }
       />
@@ -81,7 +96,7 @@ export default function AdminOverviewPage() {
         <AdminStatCard
           label="Customers"
           value={stats.customerCount}
-          hint={`+${stats.newCustomersWeek} this week`}
+          hint={`+${stats.newCustomersWeek} this week · ${stats.suspendedCount ?? 0} suspended`}
         />
         <AdminStatCard
           label="Leads in pool"
@@ -89,10 +104,51 @@ export default function AdminOverviewPage() {
           hint={`${stats.leadsToday} created today`}
         />
         <AdminStatCard
+          label="Saved in CRMs"
+          value={stats.savedLeadCount ?? 0}
+          hint="Across all agencies"
+        />
+        <AdminStatCard
           label="Searches"
           value={stats.searchesToday}
           hint={`${stats.searchesWeek} this week`}
         />
+      </div>
+
+      {stats.last7Days && stats.last7Days.length > 0 && (
+        <section className="mt-6 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">
+          <h2 className="text-sm font-semibold text-ink">Last 7 days</h2>
+          <div className="mt-3 grid grid-cols-7 gap-2">
+            {stats.last7Days.map((d) => {
+              const max = Math.max(
+                1,
+                ...stats.last7Days!.map((x) => x.searches + x.leads),
+              );
+              const height = Math.max(
+                8,
+                Math.round(((d.searches + d.leads) / max) * 72),
+              );
+              return (
+                <div key={d.date} className="flex flex-col items-center gap-1">
+                  <div
+                    className="w-full rounded-md bg-brand-100"
+                    style={{ height }}
+                    title={`${d.searches} searches · ${d.leads} leads`}
+                  />
+                  <span className="text-[10px] text-ink-faint">
+                    {d.date.slice(5)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-[11px] text-ink-faint">
+            Bar height = searches + new leads that day
+          </p>
+        </section>
+      )}
+
+      <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <AdminStatCard
           label="Credits outstanding"
           value={Math.round(stats.creditsOutstanding)}

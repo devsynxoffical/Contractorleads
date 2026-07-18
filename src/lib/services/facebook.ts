@@ -155,12 +155,16 @@ export async function searchFacebookAdsLibrary(
 
     if (!response.ok) {
       const err = await response.text();
+      const expired =
+        /session has expired|expired|invalid.*token|oauth/i.test(err);
       return {
         ads: [],
         totalCount: 0,
         searchUrl,
         source: "link",
-        message: `Ads API unavailable (${response.status}). Open Ads Library manually. ${err.slice(0, 120)}`,
+        message: expired
+          ? "Meta access token expired. Generate a new token in Graph API Explorer, exchange it for a long-lived token, then update META_ACCESS_TOKEN in .env and Railway. Meanwhile, open the Ads Library link below."
+          : `Ads API unavailable (${response.status}). Open Ads Library manually.`,
       };
     }
 

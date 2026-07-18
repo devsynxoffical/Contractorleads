@@ -31,6 +31,8 @@ export async function GET(_request: Request, { params }: Params) {
       mainGoal: true,
       createdAt: true,
       updatedAt: true,
+      isActive: true,
+      adminNotes: true,
       searches: {
         take: 10,
         orderBy: { createdAt: "desc" },
@@ -121,6 +123,12 @@ export async function PATCH(request: Request, { params }: Params) {
   if (typeof body.onboardingComplete === "boolean") {
     data.onboardingComplete = body.onboardingComplete;
   }
+  if (typeof body.isActive === "boolean") {
+    data.isActive = body.isActive;
+  }
+  if (typeof body.adminNotes === "string") {
+    data.adminNotes = body.adminNotes;
+  }
   if (body.role === "USER" || body.role === "SUPER_ADMIN") {
     data.role = body.role;
   }
@@ -147,6 +155,8 @@ export async function PATCH(request: Request, { params }: Params) {
         idealCustomer: true,
         serviceAreas: true,
         mainGoal: true,
+        isActive: true,
+        adminNotes: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -159,4 +169,32 @@ export async function PATCH(request: Request, { params }: Params) {
     }
     return NextResponse.json({ error: message }, { status: 400 });
   }
+}
+
+export async function DELETE(_request: Request, { params }: Params) {
+  const admin = await requireSuperAdmin();
+  if (!admin) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const { id } = await params;
+  const existing = await prisma.user.findUnique({ where: { id } });
+  if (!existing) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  if (isSuperAdmin(existing)) {
+    return NextResponse.json(
+      { error: "Cannot delete a super admin from this panel" },
+      { status: 400 },
+    );
+  }
+  if (id === admin.id) {
+    return NextResponse.json(
+      { error: "Cannot delete your own account" },
+      { status: 400 },
+    );
+  }
+
+  await prisma.user.delete({ where: { id } });
+  return NextResponse.json({ ok: true });
 }

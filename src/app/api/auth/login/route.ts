@@ -31,6 +31,16 @@ export async function POST(request: Request) {
       );
     }
 
+    if (user.isActive === false) {
+      return NextResponse.json(
+        {
+          error:
+            "This account is suspended. Contact support if you believe this is a mistake.",
+        },
+        { status: 403 },
+      );
+    }
+
     const token = await createSessionToken(user.id);
     await setSessionCookie(token);
 

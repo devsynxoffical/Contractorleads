@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireSuperAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { logActivity } from "@/lib/credits";
+import { INDUSTRIES } from "@/lib/constants";
 import type { Prisma } from "@prisma/client";
 
 export async function GET(request: Request) {
@@ -16,7 +18,10 @@ export async function GET(request: Request) {
   const q = searchParams.get("q")?.trim() ?? "";
   const minScore = Number(searchParams.get("minScore") ?? 0);
   const page = Math.max(1, Number(searchParams.get("page") ?? 1));
-  const pageSize = Math.min(50, Math.max(10, Number(searchParams.get("pageSize") ?? 25)));
+  const pageSize = Math.min(
+    50,
+    Math.max(10, Number(searchParams.get("pageSize") ?? 25)),
+  );
 
   const where: Prisma.LeadWhereInput = {
     ...(industry ? { industry } : {}),
@@ -62,4 +67,59 @@ export async function GET(request: Request) {
   ]);
 
   return NextResponse.json({ leads, total, page, pageSize });
+}
+
+export async function POST(request: Request) {
+  const admin = await requireSuperAdmin();
+  if (!admin) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const body = await request.json();
+  const businessName = String(body.businessName ?? "").trim();
+  if (!businessName) {
+    return NextResponse.json(
+      { error: "businessName is required" },
+      { status: 400 },
+    );
+  }
+
+  const industry =
+    typeof body.industry === "string" &&
+    (INDUSTRIES as readonly string[]).includes(body.industry)
+      ? body.industry
+      : typeof body.industry === "string" && body.industry.trim()
+        ? body.industry.trim()
+        : "General Contractors";
+
+  const lead = await prisma.lead.create({
+    data: {
+      businessName,
+      ownerName: body.ownerName || null,
+      ownerTitle: body.ownerTitle || null,
+      phone: body.phone || null,
+      email: body.email || null,
+      website: body.website || null,
+      address: body.address || null,
+      googleMapsLink: body.googleMapsLink || null,
+      industry,
+      country: body.country || "US",
+      state: body.state || null,
+      city: body.city || null,
+      zip: body.zip || null,
+      leadScore: Number(body.leadScore) || 50,
+      qualityTier: body.qualityTier || "nurture",
+      verificationStatus: "manual",
+      outreachAngle: body.outreachAngle || null,
+    },
+  });
+
+  await logActivity(
+    admin.id,
+    "admin_create_lead",
+    `Manually created ${businessName}`,
+    { leadId: lead.id },
+  );
+
+  return NextResponse.json({ lead }, { status: 201 });
 }

@@ -17,6 +17,8 @@ model User {
   role                String   @default("USER")
   plan                String   @default("trial")
   subscriptionStatus  String   @default("trialing")
+  isActive            Boolean  @default(true)
+  adminNotes          String?
   creditsRemaining    Float    @default(20)
   onboardingComplete  Boolean  @default(false)
   darkMode            Boolean  @default(false)

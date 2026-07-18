@@ -21,6 +21,8 @@ type Customer = {
   idealCustomer: string | null;
   serviceAreas: string | null;
   mainGoal: string | null;
+  isActive: boolean;
+  adminNotes: string | null;
   searches: Array<{
     id: string;
     industry: string;
@@ -118,9 +120,50 @@ export default function AdminCustomerDetailPage() {
         title={customer.companyName || customer.name || customer.email}
         description={customer.email}
         actions={
-          <Button onClick={testAsCustomer}>Test as Customer</Button>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={testAsCustomer} disabled={!customer.isActive}>
+              Test as Customer
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => save({ isActive: !customer.isActive })}
+            >
+              {customer.isActive !== false
+                ? "Suspend account"
+                : "Reactivate account"}
+            </Button>
+            <Button
+              variant="danger"
+              onClick={async () => {
+                if (
+                  !confirm(
+                    "Delete this agency and all their searches/saved leads? This cannot be undone.",
+                  )
+                ) {
+                  return;
+                }
+                const res = await fetch(`/api/admin/customers/${id}`, {
+                  method: "DELETE",
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                  setMessage(data.error ?? "Delete failed");
+                  return;
+                }
+                router.push("/admin/customers");
+              }}
+            >
+              Delete agency
+            </Button>
+          </div>
         }
       />
+
+      {!customer.isActive && (
+        <p className="mb-4 rounded-xl bg-amber-50 px-3 py-2 text-[13px] text-amber-900">
+          This account is suspended and cannot sign in.
+        </p>
+      )}
 
       {message && (
         <p className="mb-4 rounded-xl bg-brand-50 px-3 py-2 text-[13px] text-brand-800">
@@ -286,6 +329,25 @@ export default function AdminCustomerDetailPage() {
               onClick={() => save({ password })}
             >
               Update password
+            </Button>
+          </section>
+
+          <section className="space-y-3 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">
+            <h2 className="text-sm font-semibold text-ink">
+              Internal support notes
+            </h2>
+            <textarea
+              className="saas-input min-h-[100px]"
+              placeholder="Private notes for ops/support (not visible to the agency)…"
+              value={customer.adminNotes ?? ""}
+              onChange={(e) =>
+                setCustomer({ ...customer, adminNotes: e.target.value })
+              }
+            />
+            <Button
+              onClick={() => save({ adminNotes: customer.adminNotes ?? "" })}
+            >
+              Save notes
             </Button>
           </section>
         </div>

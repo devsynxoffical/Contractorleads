@@ -43,6 +43,13 @@ export async function POST(request: Request) {
       );
     }
 
+    if (user.isActive === false) {
+      return NextResponse.json(
+        { error: "This admin account is suspended." },
+        { status: 403 },
+      );
+    }
+
     await stopImpersonation();
     const token = await createSessionToken(user.id);
     await setSessionCookie(token);

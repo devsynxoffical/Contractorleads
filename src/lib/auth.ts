@@ -29,6 +29,8 @@ export type SessionUser = {
   serviceAreas: string | null;
   mainGoal: string | null;
   subscriptionStatus?: string | null;
+  isActive?: boolean;
+  adminNotes?: string | null;
   /** True when a SUPER_ADMIN is viewing the app as this customer */
   impersonating?: boolean;
   /** Real admin id when impersonating */
@@ -52,6 +54,8 @@ function toSessionUser(
     serviceAreas: string | null;
     mainGoal: string | null;
     subscriptionStatus?: string | null;
+    isActive?: boolean;
+    adminNotes?: string | null;
   },
   extras?: Partial<SessionUser>,
 ): SessionUser {
@@ -71,6 +75,8 @@ function toSessionUser(
     serviceAreas: user.serviceAreas,
     mainGoal: user.mainGoal,
     subscriptionStatus: user.subscriptionStatus ?? null,
+    isActive: user.isActive ?? true,
+    adminNotes: user.adminNotes ?? null,
     ...extras,
   };
 }
@@ -124,6 +130,7 @@ export async function getRealSessionUser(): Promise<SessionUser | null> {
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return null;
+    if (user.isActive === false) return null;
 
     return toSessionUser(user);
   } catch {

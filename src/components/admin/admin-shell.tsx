@@ -13,6 +13,7 @@ import {
   HiOutlineKey,
   HiOutlineMagnifyingGlass,
   HiOutlineSquares2X2,
+  HiOutlineStar,
   HiOutlineUsers,
 } from "react-icons/hi2";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,8 @@ const NAV: NavItem[] = [
   { href: "/admin", label: "Business Overview", icon: HiOutlineHome },
   { href: "/admin/customers", label: "Customers", icon: HiOutlineUsers },
   { href: "/admin/leads", label: "All Leads", icon: HiOutlineSquares2X2 },
+  { href: "/admin/saved-leads", label: "Saved Leads", icon: HiOutlineStar },
+  { href: "/admin/searches", label: "All Searches", icon: HiOutlineClipboardDocumentList },
   { href: "/admin/scrape", label: "Scrape Leads", icon: HiOutlineMagnifyingGlass },
   {
     href: "/admin/copy-leads",
@@ -34,6 +37,11 @@ const NAV: NavItem[] = [
     href: "/admin/revenue",
     label: "Revenue & Subscriptions",
     icon: HiOutlineBanknotes,
+  },
+  {
+    href: "/admin/activity",
+    label: "Activity Log",
+    icon: HiOutlineClipboardDocumentList,
   },
   {
     href: "/admin/health",
