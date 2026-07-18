@@ -157,19 +157,24 @@ export async function searchFacebookAdsLibrary(
 
     if (!response.ok) {
       const err = await response.text();
-      const expired =
-        /session has expired|expired|invalid.*token|oauth/i.test(err);
       const permission =
-        /permission|ads_read|ads_archive|#10|#200/i.test(err);
+        /permission|ads_read|ads_archive|#10|#200|2332002|ads\/library\/api|Authorisation and login needed/i.test(
+          err,
+        );
+      const expired =
+        !permission &&
+        /session has expired|has expired|expired access token|invalid.*session|error_subcode.:463/i.test(
+          err,
+        );
       return {
         ads: [],
         totalCount: 0,
         searchUrl,
         source: "link",
-        message: expired
-          ? "Meta access token expired. Generate a new long-lived META_ACCESS_TOKEN in Graph API Explorer, update .env / Railway, then try again. You can still open the Ads Library link below."
-          : permission
-            ? "This Meta token cannot access Ads Library (needs ads_read / Ads Archive access). Open the public Ads Library link below, or update META_ACCESS_TOKEN."
+        message: permission
+          ? "Meta Ads Library API is not enabled for this app. Open facebook.com/ads/library/api, accept access for the Contractor Leads app, then try again. You can still use the public Ads Library link below."
+          : expired
+            ? "Meta access token expired. Generate a new long-lived META_ACCESS_TOKEN in Graph API Explorer, update .env / Railway, then try again. You can still open the Ads Library link below."
             : `Ads API unavailable (${response.status}). Open Ads Library manually.`,
       };
     }
