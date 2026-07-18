@@ -378,8 +378,8 @@ export function AppShell({
             className={cn(
               "hud-shell-aside animate-slide-left relative flex h-full w-[min(288px,86vw)] flex-col border-r shadow-2xl",
               hudMode
-                ? "border-brand-500/15 bg-[#0b1220]"
-                : "border-border bg-white",
+                ? "border-border bg-[var(--sidebar)]"
+                : "border-border bg-[var(--sidebar)]",
             )}
           >
             <SidebarNav

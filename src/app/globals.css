@@ -1038,13 +1038,12 @@ body {
 }
 
 .app-shell--hud .hud-credits-card {
-  background: rgba(168, 85, 247, 0.06) !important;
-  ring-color: rgba(168, 85, 247, 0.2);
-  border: 1px solid rgba(168, 85, 247, 0.2);
+  background: var(--brand-50) !important;
+  border: 1px solid var(--border-strong);
 }
 
 .app-shell--hud .hud-credits-card .text-brand-700 {
-  color: var(--hud-cyan) !important;
+  color: var(--brand-600) !important;
 }
 
 /* HUD vector world map (jsvectormap) — matches Traffic Analytics look */
