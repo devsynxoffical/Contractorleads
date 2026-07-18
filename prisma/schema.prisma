@@ -33,12 +33,37 @@ model User {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
-  searches     Search[]
-  savedLeads   SavedLead[]
-  scripts      Script[]
-  creditLedger CreditLedger[]
-  activities   ActivityLog[]
-  exports      Export[]
+  searches        Search[]
+  savedLeads      SavedLead[]
+  scripts         Script[]
+  creditLedger    CreditLedger[]
+  activities      ActivityLog[]
+  exports         Export[]
+  aiConversations AiConversation[]
+}
+
+/// Persisted AI assistant threads (home / Ask Expert).
+model AiConversation {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String      @default("New chat")
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  messages  AiMessage[]
+
+  @@index([userId, updatedAt])
+}
+
+model AiMessage {
+  id             String         @id @default(cuid())
+  conversationId String
+  conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String // user | assistant
+  content        String
+  createdAt      DateTime       @default(now())
+
+  @@index([conversationId, createdAt])
 }
 
 model Lead {

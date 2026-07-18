@@ -9,13 +9,20 @@ import {
 import { deductCredits, logActivity } from "@/lib/credits";
 import { prisma } from "@/lib/prisma";
 
+function titleFromMessage(message: string) {
+  const clean = message.replace(/\s+/g, " ").trim();
+  if (clean.length <= 48) return clean || "New chat";
+  return `${clean.slice(0, 45)}…`;
+}
+
 export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const { message, save, support } = await request.json();
+  const body = await request.json();
+  const { message, save, support, conversationId } = body;
   if (!message?.trim()) {
     return new Response("Message required", { status: 400 });
   }
@@ -50,7 +57,56 @@ export async function POST(request: Request) {
     return new Response("Credit error", { status: 500 });
   }
 
+  let chatId: string | null =
+    typeof conversationId === "string" && conversationId.trim()
+      ? conversationId.trim()
+      : null;
+
+  if (chatId) {
+    const owned = await prisma.aiConversation.findFirst({
+      where: { id: chatId, userId: user.id },
+      select: { id: true },
+    });
+    if (!owned) {
+      return new Response("Conversation not found", { status: 404 });
+    }
+  } else {
+    const created = await prisma.aiConversation.create({
+      data: {
+        userId: user.id,
+        title: titleFromMessage(message),
+      },
+      select: { id: true },
+    });
+    chatId = created.id;
+  }
+
+  await prisma.aiMessage.create({
+    data: {
+      conversationId: chatId,
+      role: "user",
+      content: message.trim(),
+    },
+  });
+
+  const prior = await prisma.aiMessage.findMany({
+    where: { conversationId: chatId },
+    orderBy: { createdAt: "asc" },
+    take: 24,
+    select: { role: true, content: true },
+  });
+
+  const historyMessages = prior.map((m) => ({
+    role: m.role as "user" | "assistant",
+    content: m.content,
+  }));
+
   const businessContext = buildBusinessContext(user);
+  const system = `${ASK_EXPERT_SYSTEM_PROMPT}\n\nUser business profile:\n${businessContext}`;
+
+  const headers = new Headers({
+    "X-Conversation-Id": chatId,
+  });
 
   if (!apiKey) {
     const fallback = `Here's a direct take for ${user.companyName || "your agency"}:
@@ -58,6 +114,18 @@ export async function POST(request: Request) {
 Focus on a single home-service niche in one metro first. Your offer should promise booked estimates, not "more leads." Lead with a hook like: "Your competitors are buying the ZIP codes you sleep on."
 
 For ${user.idealCustomer || "contractors"}, pitch a 14-day sprint: audit → creative → launch → optimize. CTA: "Reply YES for a 15-min fit call this week."`;
+
+    await prisma.aiMessage.create({
+      data: {
+        conversationId: chatId,
+        role: "assistant",
+        content: fallback,
+      },
+    });
+    await prisma.aiConversation.update({
+      where: { id: chatId },
+      data: { updatedAt: new Date() },
+    });
 
     if (save) {
       await prisma.script.create({
@@ -71,15 +139,38 @@ For ${user.idealCustomer || "contractors"}, pitch a 14-day sprint: audit → cre
     }
 
     await logActivity(user.id, "ai", "Ask Expert response generated");
-    return Response.json({ content: fallback, creditsRemaining: user.creditsRemaining - CREDIT_COSTS.assistant });
+    return Response.json(
+      {
+        content: fallback,
+        conversationId: chatId,
+        creditsRemaining: user.creditsRemaining - CREDIT_COSTS.assistant,
+      },
+      { headers },
+    );
   }
 
   const openai = createOpenAI({ apiKey });
   const result = streamText({
     model: openai("gpt-4o-mini"),
-    system: `${ASK_EXPERT_SYSTEM_PROMPT}\n\nUser business profile:\n${businessContext}`,
-    prompt: message,
+    system,
+    messages: historyMessages,
     onFinish: async ({ text }) => {
+      await prisma.aiMessage.create({
+        data: {
+          conversationId: chatId!,
+          role: "assistant",
+          content: text,
+        },
+      });
+      await prisma.aiConversation.update({
+        where: { id: chatId! },
+        data: {
+          updatedAt: new Date(),
+          ...(prior.filter((m) => m.role === "user").length <= 1
+            ? { title: titleFromMessage(message) }
+            : {}),
+        },
+      });
       if (save) {
         await prisma.script.create({
           data: {
@@ -94,5 +185,5 @@ For ${user.idealCustomer || "contractors"}, pitch a 14-day sprint: audit → cre
     },
   });
 
-  return result.toTextStreamResponse();
+  return result.toTextStreamResponse({ headers });
 }

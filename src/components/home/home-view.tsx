@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   HiOutlineArrowPath,
   HiOutlineFire,
   HiOutlineMagnifyingGlass,
   HiOutlineMapPin,
-  HiOutlinePaperAirplane,
-  HiOutlineSparkles,
 } from "react-icons/hi2";
 import {
   getTierOneCountry,
@@ -37,24 +35,11 @@ import {
 } from "@/components/layout/navigation-progress";
 import { LocationAutocomplete } from "@/components/leads/location-autocomplete";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
+import { AiAssistantWorkspace } from "@/components/ai/ai-assistant-workspace";
 
 type Lead = SearchSessionLead;
 
-type ChatMsg = {
-  id: string;
-  role: "user" | "assistant";
-  text: string;
-};
-
-const QUICK_PROMPTS = [
-  "How do I get more HVAC clients this month?",
-  "Write a cold email for roofing owners",
-  "What should my Facebook ad hook be?",
-  "How do credits and Lead Finder work?",
-];
-
 export function HomeView({ userName }: { userName?: string | null }) {
-  const [input, setInput] = useState("");
   const [selectedIndustry, setSelectedIndustry] = useState("");
   const [industryMode, setIndustryMode] = useState<"preset" | "custom">("preset");
   const [customIndustry, setCustomIndustry] = useState("");
@@ -68,25 +53,9 @@ export function HomeView({ userName }: { userName?: string | null }) {
   const [zip, setZip] = useState("");
   const [radius, setRadius] = useState("25");
   const [searchLoading, setSearchLoading] = useState(false);
-  const [chatLoading, setChatLoading] = useState(false);
   const [error, setError] = useState("");
   const [leads, setLeads] = useState<Lead[]>([]);
   const [restoring, setRestoring] = useState(true);
-  const [messages, setMessages] = useState<ChatMsg[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      text: `Hi${userName ? ` ${userName.split(" ")[0]}` : ""} — I’m your Contractor Leads AI. Ask about offers, ads, outreach, or how to use the app. Use Filters below when you want to generate leads.`,
-    },
-  ]);
-  const chatScrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    chatScrollRef.current?.scrollTo({
-      top: chatScrollRef.current.scrollHeight,
-      behavior: "smooth",
-    });
-  }, [messages, chatLoading]);
 
   useEffect(() => {
     let cancelled = false;
@@ -287,118 +256,6 @@ export function HomeView({ userName }: { userName?: string | null }) {
     }
   }
 
-  async function askChat(override?: string) {
-    const q = (override ?? input).trim();
-    if (!q || chatLoading) return;
-
-    const userMsg: ChatMsg = {
-      id: crypto.randomUUID(),
-      role: "user",
-      text: q,
-    };
-    setMessages((m) => [...m, userMsg]);
-    setInput("");
-    setChatLoading(true);
-
-    try {
-      const res = await fetch("/api/ai/ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: q }),
-      });
-
-      if (res.status === 402) {
-        setMessages((m) => [
-          ...m,
-          {
-            id: crypto.randomUUID(),
-            role: "assistant",
-            text: "You’re out of AI credits. Upgrade under Plans & Billing, or use Filters below to search leads.",
-          },
-        ]);
-        return;
-      }
-
-      if (!res.ok) {
-        setMessages((m) => [
-          ...m,
-          {
-            id: crypto.randomUUID(),
-            role: "assistant",
-            text: "I couldn’t reply just now. Please try again in a moment.",
-          },
-        ]);
-        return;
-      }
-
-      const contentType = res.headers.get("content-type") || "";
-      if (contentType.includes("application/json")) {
-        const data = await res.json();
-        setMessages((m) => [
-          ...m,
-          {
-            id: crypto.randomUUID(),
-            role: "assistant",
-            text: data.content || "No response.",
-          },
-        ]);
-        return;
-      }
-
-      const reader = res.body?.getReader();
-      const decoder = new TextDecoder();
-      let out = "";
-      const assistantId = crypto.randomUUID();
-      setMessages((m) => [
-        ...m,
-        { id: assistantId, role: "assistant", text: "" },
-      ]);
-
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          out += decoder.decode(value);
-          const snapshot = out;
-          setMessages((m) =>
-            m.map((msg) =>
-              msg.id === assistantId ? { ...msg, text: snapshot } : msg
-            )
-          );
-        }
-      }
-
-      if (!out.trim()) {
-        setMessages((m) =>
-          m.map((msg) =>
-            msg.id === assistantId
-              ? {
-                  ...msg,
-                  text: "No response came back. Try asking again.",
-                }
-              : msg
-          )
-        );
-      }
-    } catch {
-      setMessages((m) => [
-        ...m,
-        {
-          id: crypto.randomUUID(),
-          role: "assistant",
-          text: "Something went wrong reaching the AI. Please try again.",
-        },
-      ]);
-    } finally {
-      setChatLoading(false);
-    }
-  }
-
-  async function handleChatSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    await askChat();
-  }
-
   async function handleFilterSearch(e: React.FormEvent) {
     e.preventDefault();
     await runSearch({});
@@ -406,106 +263,8 @@ export function HomeView({ userName }: { userName?: string | null }) {
 
   return (
     <div className="page-pad page-enter">
-      <div className="mx-auto w-full max-w-[900px]">
-        {/* AI chatbot */}
-        <div className="animate-fade-up mx-auto flex h-[360px] w-full max-w-[900px] flex-col overflow-hidden rounded-2xl border border-border bg-[var(--panel-solid)] shadow-[var(--shadow-card)]">
-          <div className="flex items-center justify-between border-b border-border px-4 py-2.5 sm:px-5">
-            <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-50 text-brand-500">
-                <HiOutlineSparkles className="h-4 w-4" />
-              </span>
-              <div>
-                <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-brand-500">
-                  AI assistant
-                </p>
-                <p className="text-[11px] text-ink-faint">
-                  Chat · not a lead search
-                </p>
-              </div>
-            </div>
-            <Link
-              href="/ask-expert"
-              className="text-[11px] font-semibold text-brand-500 hover:underline"
-            >
-              Full Ask Expert →
-            </Link>
-          </div>
-
-          <div
-            ref={chatScrollRef}
-            className="flex-1 space-y-3 overflow-y-auto px-4 py-4 sm:px-5"
-          >
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-              >
-                <div
-                  className={`max-w-[92%] whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed sm:text-[14px] ${
-                    msg.role === "user"
-                      ? "rounded-br-md text-white shadow-sm"
-                      : "rounded-bl-md border border-border bg-[var(--input-bg)] text-ink"
-                  }`}
-                  style={
-                    msg.role === "user"
-                      ? { background: LOGO_GRADIENT }
-                      : undefined
-                  }
-                >
-                  {msg.text || (chatLoading ? "…" : "")}
-                </div>
-              </div>
-            ))}
-
-            {!messages.some((m) => m.role === "user") && (
-              <div className="flex flex-wrap justify-center gap-2 pt-1">
-                {QUICK_PROMPTS.map((p) => (
-                  <button
-                    key={p}
-                    type="button"
-                    disabled={chatLoading}
-                    onClick={() => void askChat(p)}
-                    className="rounded-full border border-border bg-brand-50 px-3.5 py-1.5 text-[12px] font-medium text-ink-muted transition hover:border-brand-500/45 hover:bg-brand-100 hover:text-ink disabled:opacity-50"
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {chatLoading && (
-              <p className="flex items-center justify-center gap-2 text-[13px] text-ink-muted">
-                <HiOutlineArrowPath className="h-4 w-4 animate-spin text-brand-500" />
-                Thinking…
-              </p>
-            )}
-          </div>
-
-          <form
-            onSubmit={handleChatSubmit}
-            className="flex shrink-0 gap-2 border-t border-border bg-[var(--input-bg)] px-4 py-2.5 sm:px-5"
-          >
-            <div className="relative flex-1">
-              <HiOutlineSparkles className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-500" />
-              <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask about ads, outreach, offers, or the app…"
-                disabled={chatLoading}
-                className="h-10 w-full rounded-xl border border-border bg-[var(--panel-solid)] pl-10 pr-3 text-[14px] text-ink outline-none transition placeholder:text-ink-faint focus:border-brand-500/55 focus:ring-4 focus:ring-[var(--ring)]"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={chatLoading || !input.trim()}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-[0_8px_20px_rgba(168,85,247,0.3)] transition hover:opacity-95 disabled:opacity-45"
-              style={{ background: LOGO_GRADIENT }}
-              aria-label="Send"
-            >
-              <HiOutlinePaperAirplane className="h-4 w-4" />
-            </button>
-          </form>
-        </div>
+      <div className="mx-auto w-full max-w-[1100px]">
+        <AiAssistantWorkspace userName={userName} compact />
 
         {/* Filters — lead search only */}
         <div className="animate-fade-up saas-card mt-5 p-5 sm:p-6" style={{ animationDelay: "0.08s" }}>
