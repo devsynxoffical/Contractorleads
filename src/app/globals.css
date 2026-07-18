@@ -2,10 +2,11 @@
 
 /*
  * Brand = logo gradient (hot pink → magenta → electric purple)
- * Default theme is dark; light mode via [data-theme="light"]
+ * Tokens keyed by html[data-theme] only (never bare :root) so light
+ * cannot inherit dark values.
  */
-:root,
-[data-theme="dark"] {
+html[data-theme="dark"],
+html:not([data-theme="light"]) {
   --logo-pink: #ec4899;
   --logo-magenta: #d946ef;
   --logo-purple: #a855f7;
@@ -27,10 +28,10 @@
 
   --canvas: #09060f;
   --canvas-deep: #0e0a16;
-  --surface: rgba(22, 14, 36, 0.9);
-  --surface-elevated: rgba(28, 18, 46, 0.96);
-  --border: rgba(217, 70, 239, 0.16);
-  --border-strong: rgba(236, 72, 153, 0.32);
+  --surface: rgba(22, 14, 36, 0.94);
+  --surface-elevated: rgba(28, 18, 46, 0.98);
+  --border: rgba(217, 70, 239, 0.18);
+  --border-strong: rgba(236, 72, 153, 0.35);
   --ink: #f4eef8;
   --ink-muted: #a89bb8;
   --ink-faint: #6f6280;
@@ -41,15 +42,15 @@
   --brand-500: #d946ef;
   --brand-600: #c026d3;
   --brand-700: #86198f;
-  --sidebar: rgba(10, 6, 18, 0.96);
-  --sidebar-border: rgba(217, 70, 239, 0.14);
+  --sidebar: #0c0814;
+  --sidebar-border: rgba(217, 70, 239, 0.16);
   --ring: rgba(217, 70, 239, 0.28);
   --radius-lg: 1rem;
   --radius-xl: 1.25rem;
   --btn-on-brand: #ffffff;
 
   --hud-bg: #0e0a16;
-  --hud-surface: rgba(22, 14, 36, 0.78);
+  --hud-surface: rgba(22, 14, 36, 0.94);
   --hud-cyan: #d946ef;
   --hud-cyan-dim: rgba(217, 70, 239, 0.45);
   --hud-accent: #d946ef;
@@ -64,12 +65,17 @@
     rgba(9, 6, 15, 0.9) 100%
   );
   --cover-glow: rgba(217, 70, 239, 0.22);
-  --input-bg: rgba(14, 10, 22, 0.92);
-  --input-bg-focus: rgba(22, 14, 36, 0.98);
-  --panel-solid: rgba(22, 14, 36, 0.94);
+  --input-bg: rgba(14, 10, 22, 0.95);
+  --input-bg-focus: rgba(28, 18, 46, 0.98);
+  --panel-solid: rgba(22, 14, 36, 0.96);
+  --shadow-card: 0 0 0 1px rgba(217, 70, 239, 0.12),
+    0 8px 28px rgba(0, 0, 0, 0.4);
+  --shadow-elevated: 0 0 0 1px rgba(217, 70, 239, 0.16),
+    0 12px 40px rgba(0, 0, 0, 0.5);
+  --shadow-soft: 0 2px 12px rgba(0, 0, 0, 0.3);
 }
 
-[data-theme="light"] {
+html[data-theme="light"] {
   --logo-pink: #db2777;
   --logo-magenta: #c026d3;
   --logo-purple: #9333ea;
@@ -86,54 +92,56 @@
     rgba(219, 39, 119, 0.92) 0%,
     rgba(147, 51, 234, 0.95) 100%
   );
-  --brand-glow: rgba(192, 38, 211, 0.18);
-  --brand-glow-strong: rgba(219, 39, 119, 0.24);
+  --brand-glow: rgba(192, 38, 211, 0.16);
+  --brand-glow-strong: rgba(219, 39, 119, 0.22);
 
-  --canvas: #f4eef9;
-  --canvas-deep: #ebe3f5;
+  --canvas: #f3eef9;
+  --canvas-deep: #ebe4f4;
   --surface: #ffffff;
   --surface-elevated: #ffffff;
-  --border: rgba(147, 51, 234, 0.16);
-  --border-strong: rgba(192, 38, 211, 0.3);
+  --border: rgba(147, 51, 234, 0.14);
+  --border-strong: rgba(192, 38, 211, 0.28);
   --ink: #1c1228;
   --ink-muted: #5c4d6e;
   --ink-faint: #8a7a9c;
   --brand-50: rgba(192, 38, 211, 0.08);
-  --brand-100: rgba(192, 38, 211, 0.14);
-  --brand-200: rgba(219, 39, 119, 0.2);
+  --brand-100: rgba(192, 38, 211, 0.13);
+  --brand-200: rgba(219, 39, 119, 0.18);
   --brand-400: #c026d3;
   --brand-500: #a21caf;
   --brand-600: #86198f;
   --brand-700: #701a75;
   --sidebar: #ffffff;
   --sidebar-border: rgba(147, 51, 234, 0.12);
-  --ring: rgba(192, 38, 211, 0.2);
+  --ring: rgba(192, 38, 211, 0.18);
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
   --btn-on-brand: #ffffff;
 
-  --hud-bg: #f4eef9;
+  --hud-bg: #f3eef9;
   --hud-surface: #ffffff;
   --hud-cyan: #c026d3;
-  --hud-cyan-dim: rgba(192, 38, 211, 0.4);
+  --hud-cyan-dim: rgba(192, 38, 211, 0.35);
   --hud-accent: #c026d3;
   --hud-lime: #db2777;
   --hud-text: #1c1228;
   --hud-muted: #5c4d6e;
   --hud-faint: #8a7a9c;
-  --hud-grid: rgba(147, 51, 234, 0.07);
+  --hud-grid: rgba(147, 51, 234, 0.06);
   --cover-veil: linear-gradient(
     180deg,
-    rgba(244, 238, 249, 0.88) 0%,
-    rgba(244, 238, 249, 0.96) 100%
+    rgba(243, 238, 249, 0.94) 0%,
+    rgba(243, 238, 249, 0.98) 100%
   );
-  --cover-glow: rgba(192, 38, 211, 0.1);
-  --input-bg: #f8f4fc;
+  --cover-glow: rgba(192, 38, 211, 0.08);
+  --input-bg: #f7f2fb;
   --input-bg-focus: #ffffff;
   --panel-solid: #ffffff;
   --shadow-card: 0 0 0 1px rgba(147, 51, 234, 0.08),
-    0 8px 28px rgba(80, 40, 120, 0.08);
+    0 8px 24px rgba(80, 40, 120, 0.07);
   --shadow-elevated: 0 0 0 1px rgba(147, 51, 234, 0.1),
-    0 12px 40px rgba(80, 40, 120, 0.12);
-  --shadow-soft: 0 2px 12px rgba(80, 40, 120, 0.08);
+    0 12px 36px rgba(80, 40, 120, 0.1);
+  --shadow-soft: 0 2px 10px rgba(80, 40, 120, 0.06);
 }
 
 @theme inline {
@@ -226,28 +234,28 @@ body {
 }
 
 /* Soften hard white surfaces in DARK mode only */
-[data-theme="dark"] .bg-white,
-[data-theme="dark"] .bg-white\/95,
-[data-theme="dark"] .bg-white\/90,
-[data-theme="dark"] .bg-white\/80,
-[data-theme="dark"] .bg-white\/75,
-[data-theme="dark"] .bg-white\/70,
-:root:not([data-theme="light"]) .bg-white,
-:root:not([data-theme="light"]) .bg-white\/95,
-:root:not([data-theme="light"]) .bg-white\/90,
-:root:not([data-theme="light"]) .bg-white\/80,
-:root:not([data-theme="light"]) .bg-white\/75,
-:root:not([data-theme="light"]) .bg-white\/70 {
+html[data-theme="dark"] .bg-white,
+html[data-theme="dark"] .bg-white\/95,
+html[data-theme="dark"] .bg-white\/90,
+html[data-theme="dark"] .bg-white\/80,
+html[data-theme="dark"] .bg-white\/75,
+html[data-theme="dark"] .bg-white\/70,
+html:not([data-theme="light"]) .bg-white,
+html:not([data-theme="light"]) .bg-white\/95,
+html:not([data-theme="light"]) .bg-white\/90,
+html:not([data-theme="light"]) .bg-white\/80,
+html:not([data-theme="light"]) .bg-white\/75,
+html:not([data-theme="light"]) .bg-white\/70 {
   background-color: var(--surface) !important;
 }
 
-:root:not([data-theme="light"]) .from-white {
+html:not([data-theme="light"]) .from-white {
   --tw-gradient-from: rgba(22, 14, 36, 0.95) !important;
   --tw-gradient-to: rgba(22, 14, 36, 0) !important;
   --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
 }
 
-:root:not([data-theme="light"]) .to-white {
+html:not([data-theme="light"]) .to-white {
   --tw-gradient-to: rgba(22, 14, 36, 0.95) !important;
 }
 
@@ -263,11 +271,11 @@ body {
   --tw-gradient-to: rgba(217, 70, 239, 0.06) !important;
 }
 
-:root:not([data-theme="light"]) .bg-\[\#faf8fc\],
-:root:not([data-theme="light"]) .bg-\[\#faf8fc\]\/90,
-:root:not([data-theme="light"]) .bg-\[\#f3f4f6\],
-:root:not([data-theme="light"]) .bg-\[\#f7f4fa\],
-:root:not([data-theme="light"]) .bg-\[\#faf8fb\] {
+html:not([data-theme="light"]) .bg-\[\#faf8fc\],
+html:not([data-theme="light"]) .bg-\[\#faf8fc\]\/90,
+html:not([data-theme="light"]) .bg-\[\#f3f4f6\],
+html:not([data-theme="light"]) .bg-\[\#f7f4fa\],
+html:not([data-theme="light"]) .bg-\[\#faf8fb\] {
   background-color: rgba(14, 10, 22, 0.92) !important;
   color: var(--ink) !important;
 }
@@ -1164,4 +1172,92 @@ body {
 .admin-shell--hud .hud-shell-main a.text-brand-600,
 .admin-shell--hud .hud-shell-main a.text-brand-700 {
   color: #a855f7 !important;
+}
+
+/* ─── Light mode hard overrides (beat leftover dark utilities) ─── */
+html[data-theme="light"] .app-shell--hud .hud-shell-aside,
+html[data-theme="light"] .admin-shell--hud .hud-shell-aside {
+  background: #ffffff !important;
+  border-color: rgba(147, 51, 234, 0.12) !important;
+  box-shadow: 4px 0 24px rgba(80, 40, 120, 0.06) !important;
+  color: #1c1228 !important;
+}
+
+html[data-theme="light"] .app-shell--hud .hud-shell-header,
+html[data-theme="light"] .admin-shell--hud .hud-shell-header {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(147, 51, 234, 0.12) !important;
+  color: #5c4d6e !important;
+}
+
+html[data-theme="light"] .app-shell--hud .hud-shell-footer,
+html[data-theme="light"] .admin-shell--hud .hud-shell-footer {
+  background: #ffffff !important;
+  border-color: rgba(147, 51, 234, 0.12) !important;
+}
+
+html[data-theme="light"] .saas-input,
+html[data-theme="light"] .auth-field,
+html[data-theme="light"] input.saas-input,
+html[data-theme="light"] select.saas-input,
+html[data-theme="light"] textarea.saas-input {
+  background: #f7f2fb !important;
+  color: #1c1228 !important;
+  border-color: rgba(147, 51, 234, 0.16) !important;
+}
+
+html[data-theme="light"] .saas-input:focus,
+html[data-theme="light"] .auth-field:focus {
+  background: #ffffff !important;
+}
+
+html[data-theme="light"] .saas-card,
+html[data-theme="light"] .hud-panel,
+html[data-theme="light"] .saas-card-elevated {
+  background: #ffffff !important;
+  color: #1c1228 !important;
+  border-color: rgba(147, 51, 234, 0.14) !important;
+  box-shadow: 0 0 0 1px rgba(147, 51, 234, 0.08),
+    0 8px 24px rgba(80, 40, 120, 0.07) !important;
+}
+
+html[data-theme="light"] .admin-shell--hud {
+  background: #f3eef9 !important;
+}
+
+html[data-theme="light"] .admin-shell--hud .hud-shell-main .saas-input,
+html[data-theme="light"] .admin-shell--hud .hud-shell-main input:not([type="checkbox"]):not([type="radio"]),
+html[data-theme="light"] .admin-shell--hud .hud-shell-main select,
+html[data-theme="light"] .admin-shell--hud .hud-shell-main textarea {
+  background: #f7f2fb !important;
+  color: #1c1228 !important;
+  border-color: rgba(147, 51, 234, 0.16) !important;
+}
+
+html[data-theme="light"] .admin-shell--hud .hud-shell-main .bg-white {
+  background: #ffffff !important;
+  color: #1c1228 !important;
+}
+
+html[data-theme="light"] .admin-shell--hud .hud-shell-main .text-ink {
+  color: #1c1228 !important;
+}
+
+html[data-theme="light"] .admin-shell--hud .hud-shell-main .text-ink-muted {
+  color: #5c4d6e !important;
+}
+
+/* Dark mode: never show washed white panels */
+html[data-theme="dark"] .saas-card,
+html:not([data-theme="light"]) .saas-card,
+html[data-theme="dark"] .hud-panel,
+html:not([data-theme="light"]) .hud-panel {
+  background: var(--panel-solid) !important;
+  color: var(--ink) !important;
+}
+
+html[data-theme="dark"] .saas-input,
+html:not([data-theme="light"]) .saas-input {
+  background: var(--input-bg) !important;
+  color: var(--ink) !important;
 }

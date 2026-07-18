@@ -214,7 +214,7 @@ function SidebarNav({
                       "group flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13.5px] font-medium transition-all duration-200",
                       active
                         ? "saas-nav-active"
-                        : "text-ink-muted hover:bg-[#f7f4fa] hover:text-ink"
+                        : "text-ink-muted hover:bg-brand-50 hover:text-ink"
                     )}
                   >
                     <Icon
@@ -270,7 +270,7 @@ function SidebarNav({
         <button
           type="button"
           onClick={handleLogout}
-          className="mt-3 flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-[13px] font-medium text-ink-muted transition hover:bg-[#faf8fb] hover:text-ink"
+          className="mt-3 flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-[13px] font-medium text-ink-muted transition hover:bg-brand-50 hover:text-ink"
         >
           <HiOutlineArrowRightOnRectangle className="h-4 w-4" />
           Sign out
@@ -352,7 +352,7 @@ export function AppShell({
       )}
       <aside
         className={cn(
-          "hud-shell-aside hidden h-full shrink-0 flex-col border-r border-border/70 bg-white/90 shadow-[4px_0_24px_rgba(20,17,26,0.03)] backdrop-blur-xl transition-[width,opacity,transform] duration-300 ease-out lg:flex",
+          "hud-shell-aside hidden h-full shrink-0 flex-col border-r border-border bg-[var(--sidebar)] shadow-[var(--shadow-soft)] backdrop-blur-xl transition-[width,opacity,transform] duration-300 ease-out lg:flex",
           sidebarCollapsed
             ? "w-0 overflow-hidden border-r-0 opacity-0 shadow-none"
             : "w-[268px] opacity-100",
@@ -410,9 +410,7 @@ export function AppShell({
           <div className="page-enter min-h-full">{children}</div>
         </main>
         <footer
-          className={cn(
-            "hud-shell-footer shrink-0 border-t border-border/70 bg-white/70 px-4 py-3 text-center text-[11px] text-ink-faint backdrop-blur-md sm:px-6 sm:text-[12px]",
-          )}
+          className="hud-shell-footer shrink-0 border-t border-border bg-[var(--sidebar)] px-4 py-3 text-center text-[11px] text-ink-faint backdrop-blur-md sm:px-6 sm:text-[12px]"
         >
           Copyright © 2026 Contractor Leads. All rights reserved.
         </footer>
