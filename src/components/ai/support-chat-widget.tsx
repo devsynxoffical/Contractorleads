@@ -8,9 +8,7 @@ import {
   HiOutlineXMark,
 } from "react-icons/hi2";
 import type { SessionUser } from "@/lib/session-user";
-
-const LOGO_GRADIENT =
-  "linear-gradient(135deg, #e6007e 0%, #8e24aa 55%, #7b1fa2 100%)";
+import { LOGO_GRADIENT } from "@/components/layout/page-header";
 
 type Msg = { role: "user" | "assistant"; content: string };
 

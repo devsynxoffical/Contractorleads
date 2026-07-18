@@ -96,18 +96,50 @@ body {
 }
 
 /* Soften hard white surfaces across the app under HUD */
-.bg-white {
-  background-color: rgba(12, 22, 38, 0.88) !important;
-}
+.bg-white,
+.bg-white\/95,
 .bg-white\/90,
 .bg-white\/80,
 .bg-white\/75,
 .bg-white\/70 {
-  background-color: rgba(12, 22, 38, 0.85) !important;
+  background-color: rgba(12, 22, 38, 0.92) !important;
 }
+
+.from-white {
+  --tw-gradient-from: rgba(12, 22, 38, 0.95) !important;
+  --tw-gradient-to: rgba(12, 22, 38, 0) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+.to-white {
+  --tw-gradient-to: rgba(12, 22, 38, 0.95) !important;
+}
+
+.from-\[\#faf8fc\],
+.from-\[\#faf8fb\],
 .from-\[\#fcf2f8\],
+.from-\[\#f3eef6\],
 .from-brand-50 {
   --tw-gradient-from: rgba(0, 229, 255, 0.08) !important;
+}
+
+.to-brand-50\/40 {
+  --tw-gradient-to: rgba(0, 229, 255, 0.06) !important;
+}
+
+/* Hardcoded light field fills → dark HUD fields */
+.bg-\[\#faf8fc\],
+.bg-\[\#faf8fc\]\/90,
+.bg-\[\#f3f4f6\],
+.bg-\[\#f7f4fa\],
+.bg-\[\#faf8fb\] {
+  background-color: rgba(7, 13, 24, 0.9) !important;
+  color: var(--ink) !important;
+}
+
+::selection {
+  background: rgba(0, 229, 255, 0.35);
+  color: #fff;
 }
 
 /* Shared responsive page padding */
@@ -127,11 +159,6 @@ body {
   }
 }
 
-::selection {
-  background: #f5e0ee;
-  color: #6a1b9a;
-}
-
 /* Transparent / minimal scrollbars */
 .scrollbar-thin {
   scrollbar-width: thin;
@@ -139,7 +166,7 @@ body {
 }
 
 .scrollbar-thin:hover {
-  scrollbar-color: rgba(142, 36, 170, 0.35) transparent;
+  scrollbar-color: rgba(0, 229, 255, 0.35) transparent;
 }
 
 .scrollbar-thin::-webkit-scrollbar {
@@ -157,22 +184,22 @@ body {
 }
 
 .scrollbar-thin:hover::-webkit-scrollbar-thumb {
-  background: rgba(142, 36, 170, 0.3);
+  background: rgba(0, 229, 255, 0.3);
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: rgba(230, 0, 126, 0.4);
+  background: rgba(0, 229, 255, 0.5);
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #e6007e 0%, #8e24aa 55%, #7b1fa2 100%);
+  background: linear-gradient(135deg, #00e5ff 0%, #00b8d4 55%, #0097a7 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .gradient-accent {
-  background: linear-gradient(135deg, #e6007e 0%, #8e24aa 55%, #7b1fa2 100%);
+  background: linear-gradient(135deg, #00e5ff 0%, #00b8d4 55%, #0097a7 100%);
 }
 
 /* Premium SaaS surfaces */
@@ -184,8 +211,8 @@ body {
 }
 
 .saas-card-elevated {
-  border: 1px solid rgba(228, 224, 234, 0.9);
-  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0, 229, 255, 0.15);
+  background: rgba(12, 22, 38, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-radius: var(--radius-xl);
@@ -198,7 +225,7 @@ body {
   gap: 0.4rem;
   border-radius: 999px;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(0, 229, 255, 0.08);
   padding: 0.35rem 0.75rem;
   font-size: 11px;
   font-weight: 600;

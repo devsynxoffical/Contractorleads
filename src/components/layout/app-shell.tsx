@@ -227,7 +227,7 @@ function SidebarNav({
                     />
                     <span className="flex-1 truncate">{item.label}</span>
                     {item.badge && (
-                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#e6007e]" />
+                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#00e5ff] shadow-[0_0_6px_#00e5ff]" />
                     )}
                   </Link>
                 );

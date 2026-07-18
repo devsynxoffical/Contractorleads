@@ -1,19 +1,14 @@
 import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
+const fieldClass =
+  "flex h-11 w-full rounded-xl border border-[#00e5ff]/25 bg-[#070d18]/90 px-3.5 text-sm text-ink placeholder:text-ink-faint outline-none transition hover:border-[#00e5ff]/40 focus:border-[#00e5ff]/55 focus:bg-[#0a1422] focus:ring-4 focus:ring-[var(--ring)]";
+
 export function Input({
   className,
   ...props
 }: React.InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <input
-      className={cn(
-        "flex h-11 w-full rounded-xl border border-border bg-[#faf8fc] px-3.5 text-sm text-ink placeholder:text-ink-faint outline-none transition hover:border-[#d4cedc] focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-[var(--ring)]",
-        className
-      )}
-      {...props}
-    />
-  );
+  return <input className={cn(fieldClass, className)} {...props} />;
 }
 
 export function Label({
@@ -37,13 +32,7 @@ export function Select({
   ...props
 }: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <select
-      className={cn(
-        "flex h-11 w-full appearance-none rounded-xl border border-border bg-[#faf8fc] px-3.5 text-sm text-ink outline-none transition hover:border-[#d4cedc] focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-[var(--ring)]",
-        className
-      )}
-      {...props}
-    >
+    <select className={cn(fieldClass, "appearance-none", className)} {...props}>
       {children}
     </select>
   );
@@ -57,7 +46,7 @@ export const Textarea = forwardRef<
     <textarea
       ref={ref}
       className={cn(
-        "flex min-h-[120px] w-full rounded-xl border border-border bg-[#faf8fc] px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-faint outline-none transition hover:border-[#d4cedc] focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-[var(--ring)]",
+        "flex min-h-[120px] w-full rounded-xl border border-[#00e5ff]/25 bg-[#070d18]/90 px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-faint outline-none transition hover:border-[#00e5ff]/40 focus:border-[#00e5ff]/55 focus:bg-[#0a1422] focus:ring-4 focus:ring-[var(--ring)]",
         className
       )}
       {...props}

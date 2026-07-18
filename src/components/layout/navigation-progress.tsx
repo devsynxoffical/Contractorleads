@@ -95,7 +95,7 @@ export function NavigationProgress() {
     >
       <div
         className={cn(
-          "h-full origin-left bg-gradient-to-r from-[#e6007e] via-[#8e24aa] to-[#7b1fa2]",
+          "h-full origin-left bg-gradient-to-r from-[#00e5ff] via-[#00b8d4] to-[#0097a7]",
           active
             ? "animate-nav-progress"
             : "w-full opacity-0 transition-opacity duration-200"

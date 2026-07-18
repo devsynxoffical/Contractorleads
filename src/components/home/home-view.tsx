@@ -37,6 +37,7 @@ import {
   stopNavigationProgress,
 } from "@/components/layout/navigation-progress";
 import { LocationAutocomplete } from "@/components/leads/location-autocomplete";
+import { LOGO_GRADIENT } from "@/components/layout/page-header";
 
 type Lead = SearchSessionLead;
 
@@ -45,9 +46,6 @@ type ChatMsg = {
   role: "user" | "assistant";
   text: string;
 };
-
-const LOGO_GRADIENT =
-  "linear-gradient(135deg, #e6007e 0%, #8e24aa 55%, #7b1fa2 100%)";
 
 const QUICK_PROMPTS = [
   "Roofing in Austin TX",
@@ -401,8 +399,8 @@ export function HomeView({ userName }: { userName?: string | null }) {
                   <div
                     className={`max-w-[92%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed sm:text-[14px] ${
                       msg.role === "user"
-                        ? "rounded-br-md text-white shadow-sm"
-                        : "rounded-bl-md border border-border/60 bg-[#faf8fc] text-ink"
+                        ? "rounded-br-md text-[#041018] shadow-sm"
+                        : "rounded-bl-md border border-[#00e5ff]/20 bg-[#070d18]/90 text-ink"
                     }`}
                     style={
                       msg.role === "user"
@@ -467,7 +465,7 @@ export function HomeView({ userName }: { userName?: string | null }) {
 
             <form
               onSubmit={handleChatSubmit}
-              className="flex shrink-0 gap-2 border-t border-border/80 bg-gradient-to-b from-[#faf8fc] to-white px-4 py-2.5 sm:px-5"
+              className="flex shrink-0 gap-2 border-t border-[#00e5ff]/15 bg-[#0a1422]/95 px-4 py-2.5 sm:px-5"
             >
               <div className="relative flex-1">
                 <HiOutlineSparkles className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-400" />
@@ -476,13 +474,13 @@ export function HomeView({ userName }: { userName?: string | null }) {
                   onChange={(e) => setInput(e.target.value)}
                   placeholder='Try “HVAC in Miami FL”'
                   disabled={loading}
-                  className="h-10 w-full rounded-xl border border-border bg-white pl-10 pr-3 text-[14px] text-ink outline-none transition placeholder:text-ink-faint focus:border-brand-400 focus:ring-4 focus:ring-[var(--ring)]"
+                  className="h-10 w-full rounded-xl border border-[#00e5ff]/25 bg-[#070d18]/90 pl-10 pr-3 text-[14px] text-ink outline-none transition placeholder:text-ink-faint focus:border-[#00e5ff]/55 focus:ring-4 focus:ring-[var(--ring)]"
                 />
               </div>
               <button
                 type="submit"
                 disabled={loading || !input.trim()}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-[0_8px_20px_rgba(123,31,162,0.3)] transition hover:opacity-95 disabled:opacity-45"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[#041018] shadow-[0_8px_20px_rgba(0,229,255,0.3)] transition hover:opacity-95 disabled:opacity-45"
                 style={{ background: LOGO_GRADIENT }}
                 aria-label="Send"
               >
@@ -712,7 +710,7 @@ export function HomeView({ userName }: { userName?: string | null }) {
               <button
                 type="submit"
                 disabled={loading}
-                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl text-[13px] font-semibold text-white shadow-[0_8px_22px_rgba(123,31,162,0.28)] transition hover:opacity-95 disabled:opacity-55"
+                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl text-[13px] font-semibold text-[#041018] shadow-[0_8px_22px_rgba(0,229,255,0.28)] transition hover:opacity-95 disabled:opacity-55"
                 style={{ background: LOGO_GRADIENT }}
               >
                 <HiOutlineMagnifyingGlass className="h-4 w-4" />

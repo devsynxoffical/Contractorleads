@@ -31,6 +31,7 @@ import {
   stopNavigationProgress,
 } from "@/components/layout/navigation-progress";
 import { LocationAutocomplete } from "@/components/leads/location-autocomplete";
+import { LOGO_GRADIENT } from "@/components/layout/page-header";
 
 type Lead = {
   id: string;
@@ -49,9 +50,6 @@ type ChatMsg = {
   role: "user" | "assistant";
   text: string;
 };
-
-const LOGO_GRADIENT =
-  "linear-gradient(135deg, #e6007e 0%, #8e24aa 55%, #7b1fa2 100%)";
 
 const QUICK_PROMPTS = [
   "Roofing in Austin TX",
@@ -247,7 +245,7 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
       <div className="flex items-center justify-between border-b border-border px-4 py-3 sm:px-5">
         <div className="flex items-center gap-2.5">
           <span
-            className="flex h-9 w-9 items-center justify-center rounded-xl text-white"
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-[#041018]"
             style={{ background: LOGO_GRADIENT }}
           >
             <HiOutlineChatBubbleLeftEllipsis className="h-5 w-5" />
@@ -284,7 +282,7 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
             <div
               className={`max-w-[90%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed ${
                 msg.role === "user"
-                  ? "rounded-br-md text-white"
+                  ? "rounded-br-md text-[#041018]"
                   : "rounded-bl-md bg-[#faf8fb] text-ink"
               }`}
               style={
@@ -507,7 +505,7 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
             <button
               type="submit"
               disabled={loading}
-              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg text-[12px] font-semibold text-white transition hover:opacity-95 disabled:opacity-60 sm:col-span-1"
+              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg text-[12px] font-semibold text-[#041018] transition hover:opacity-95 disabled:opacity-60 sm:col-span-1"
               style={{ background: LOGO_GRADIENT }}
             >
               <HiOutlineMagnifyingGlass className="h-3.5 w-3.5" />
@@ -530,7 +528,7 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
           <button
             type="submit"
             disabled={loading || !input.trim()}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white transition hover:opacity-95 disabled:opacity-50"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[#041018] transition hover:opacity-95 disabled:opacity-50"
             style={{ background: LOGO_GRADIENT }}
             aria-label="Send"
           >

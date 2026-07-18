@@ -54,7 +54,7 @@ export function PrimaryActionLink({
   return (
     <Link
       href={href}
-      className="inline-flex h-10 items-center gap-2 rounded-xl px-4 text-[13px] font-semibold text-white shadow-[0_6px_18px_rgba(123,31,162,0.28)] transition hover:opacity-95"
+      className="inline-flex h-10 items-center gap-2 rounded-xl px-4 text-[13px] font-semibold text-[#041018] shadow-[0_6px_18px_rgba(0,229,255,0.28)] transition hover:opacity-95"
       style={{ background: LOGO_GRADIENT }}
     >
       {children}

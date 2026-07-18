@@ -576,9 +576,8 @@ export function LeadSearchForm() {
               <div className="flex items-end sm:col-span-2 lg:col-span-1">
                 <Button
                   type="submit"
-                  className="w-full text-white"
+                  className="w-full"
                   loading={loading}
-                  style={{ background: LOGO_GRADIENT }}
                 >
                   {loading ? (
                     "Verifying pipeline…"
@@ -592,7 +591,7 @@ export function LeadSearchForm() {
               </div>
             </form>
             {error && (
-              <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              <div className="mt-4 rounded-lg border border-red-400/40 bg-red-500/10 px-3 py-2 text-sm text-red-200">
                 {error}
               </div>
             )}
@@ -647,7 +646,7 @@ export function LeadSearchForm() {
             </CardContent>
           </Card>
 
-          <Card className="border-border bg-gradient-to-br from-white to-brand-50/40 shadow-[var(--shadow-card)]">
+          <Card className="border border-[#00e5ff]/15 bg-[rgba(12,22,38,0.92)] shadow-[var(--shadow-card)]">
             <CardContent className="flex gap-3 py-4">
               <HiOutlineCpuChip className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" />
               <div>
