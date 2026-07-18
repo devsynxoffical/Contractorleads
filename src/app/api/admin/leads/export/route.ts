@@ -14,27 +14,38 @@ export async function GET(request: Request) {
   const industry = searchParams.get("industry")?.trim() ?? "";
   const country = searchParams.get("country")?.trim() ?? "";
   const q = searchParams.get("q")?.trim() ?? "";
+  const ids = (searchParams.get("ids") ?? "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
   const format = searchParams.get("format") === "xlsx" ? "xlsx" : "csv";
 
-  const where: Prisma.LeadWhereInput = {
-    ...(industry ? { industry } : {}),
-    ...(country ? { country } : {}),
-    ...(q
-      ? {
-          OR: [
-            { businessName: { contains: q, mode: "insensitive" } },
-            { ownerName: { contains: q, mode: "insensitive" } },
-            { email: { contains: q, mode: "insensitive" } },
-          ],
-        }
-      : {}),
-  };
+  const where: Prisma.LeadWhereInput =
+    ids.length > 0
+      ? { id: { in: ids } }
+      : {
+          ...(industry ? { industry } : {}),
+          ...(country ? { country } : {}),
+          ...(q
+            ? {
+                OR: [
+                  { businessName: { contains: q, mode: "insensitive" } },
+                  { ownerName: { contains: q, mode: "insensitive" } },
+                  { email: { contains: q, mode: "insensitive" } },
+                ],
+              }
+            : {}),
+        };
 
   const leads = await prisma.lead.findMany({
     where,
     orderBy: { createdAt: "desc" },
     take: 5000,
   });
+
+  if (!leads.length) {
+    return NextResponse.json({ error: "No leads to export" }, { status: 400 });
+  }
 
   const rows = leads as unknown as ExportLead[];
 

@@ -8,6 +8,7 @@ import {
   PageHeader,
   PrimaryActionLink,
 } from "@/components/layout/page-header";
+import { ExportLeadsButtons } from "@/components/leads/export-leads-buttons";
 import { HiOutlineMagnifyingGlass } from "react-icons/hi2";
 
 export default async function HotLeadsPage() {
@@ -29,10 +30,13 @@ export default async function HotLeadsPage() {
         title="Hot Leads"
         description="Highest-scoring verified leads from your searches."
         actions={
-          <PrimaryActionLink href="/leads/search">
-            <HiOutlineMagnifyingGlass className="h-4 w-4" />
-            Generate Leads
-          </PrimaryActionLink>
+          <>
+            <ExportLeadsButtons scope="hot" disabled={!leads.length} />
+            <PrimaryActionLink href="/leads/search">
+              <HiOutlineMagnifyingGlass className="h-4 w-4" />
+              Generate Leads
+            </PrimaryActionLink>
+          </>
         }
       />
 

@@ -46,6 +46,22 @@ export default function AdminSavedLeadsPage() {
       <AdminPageHeader
         title="Saved leads"
         description="Which agencies have saved which leads in their CRM."
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <a
+              href="/api/admin/saved-leads/export?format=csv"
+              className="inline-flex h-10 items-center rounded-xl border border-border bg-white px-4 text-sm font-semibold text-ink-muted hover:border-brand-200 hover:text-brand-700"
+            >
+              Export CSV
+            </a>
+            <a
+              href="/api/admin/saved-leads/export?format=xlsx"
+              className="inline-flex h-10 items-center rounded-xl border border-border bg-white px-4 text-sm font-semibold text-ink-muted hover:border-brand-200 hover:text-brand-700"
+            >
+              Export Excel
+            </a>
+          </div>
+        }
       />
       <div className="overflow-x-auto rounded-2xl border border-border/80 bg-white shadow-[var(--shadow-card)]">
         <table className="w-full min-w-[800px] text-left text-[13px]">

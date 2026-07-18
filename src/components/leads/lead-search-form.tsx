@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  HiOutlineArrowDownTray,
   HiOutlineArrowPath,
   HiOutlineBolt,
   HiOutlineChatBubbleLeftRight,
@@ -41,6 +40,7 @@ import {
   LeadResultsHeader,
   LeadResultsList,
 } from "@/components/leads/lead-result-card";
+import { ExportLeadsButtons } from "@/components/leads/export-leads-buttons";
 import {
   loadFinderSearchCache,
   saveFinderSearchCache,
@@ -348,20 +348,6 @@ export function LeadSearchForm() {
       radius: q.radius,
     });
     setFormKey((k) => k + 1);
-  }
-
-  async function exportLeads(format: "csv" | "xlsx") {
-    const res = await fetch("/api/exports", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ leadIds: Array.from(selected), format }),
-    });
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `leadflow-export.${format === "xlsx" ? "xlsx" : "csv"}`;
-    a.click();
   }
 
   const hotCount = leads.filter((l) => l.qualityTier === "hot").length;
@@ -742,22 +728,14 @@ export function LeadSearchForm() {
             hotCount={hotCount}
             avgScore={avgScore}
             actions={
-              <>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => exportLeads("csv")}
-                >
-                  <HiOutlineArrowDownTray className="h-4 w-4" /> CSV
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => exportLeads("xlsx")}
-                >
-                  <HiOutlineArrowDownTray className="h-4 w-4" /> Excel
-                </Button>
-              </>
+              <ExportLeadsButtons
+                size="sm"
+                leadIds={
+                  selected.size > 0
+                    ? Array.from(selected)
+                    : leads.map((l) => l.id)
+                }
+              />
             }
           />
           <LeadResultsList leads={leads} />

@@ -8,6 +8,7 @@ import {
   PrimaryActionLink,
   SecondaryActionLink,
 } from "@/components/layout/page-header";
+import { ExportLeadsButtons } from "@/components/leads/export-leads-buttons";
 import { HiOutlineFire, HiOutlineMagnifyingGlass } from "react-icons/hi2";
 
 export default async function AllLeadsPage() {
@@ -27,6 +28,7 @@ export default async function AllLeadsPage() {
         description={`${leads.length} AI-verified leads from your searches.`}
         actions={
           <>
+            <ExportLeadsButtons scope="all" disabled={!leads.length} />
             <SecondaryActionLink href="/leads/hot">
               <HiOutlineFire className="h-4 w-4" />
               Hot Leads

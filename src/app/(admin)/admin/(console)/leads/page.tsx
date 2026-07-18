@@ -137,17 +137,38 @@ export default function AdminLeadsPage() {
             </Button>
             <a
               href={`/api/admin/leads/export?${exportParams}&format=csv`}
-              className="inline-flex h-10 items-center rounded-xl border border-border bg-white px-4 text-sm font-semibold text-ink-muted"
+              className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-border bg-white px-4 text-sm font-semibold text-ink-muted hover:border-brand-200 hover:text-brand-700"
             >
               Export CSV
             </a>
             <a
               href={`/api/admin/leads/export?${exportParams}&format=xlsx`}
-              className="inline-flex h-10 items-center rounded-xl border border-border bg-white px-4 text-sm font-semibold text-ink-muted"
+              className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-border bg-white px-4 text-sm font-semibold text-ink-muted hover:border-brand-200 hover:text-brand-700"
             >
               Export Excel
             </a>
-          </div>
+            {selected.size > 0 && (
+              <>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    const ids = [...selected].join(",");
+                    window.location.href = `/api/admin/leads/export?ids=${encodeURIComponent(ids)}&format=csv`;
+                  }}
+                >
+                  CSV selected ({selected.size})
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    const ids = [...selected].join(",");
+                    window.location.href = `/api/admin/leads/export?ids=${encodeURIComponent(ids)}&format=xlsx`;
+                  }}
+                >
+                  Excel selected ({selected.size})
+                </Button>
+              </>
+            )}          </div>
         }
       />
 

@@ -9,6 +9,7 @@ import {
   PrimaryActionLink,
   SecondaryActionLink,
 } from "@/components/layout/page-header";
+import { ExportLeadsButtons } from "@/components/leads/export-leads-buttons";
 import { HiOutlineMagnifyingGlass, HiOutlineViewColumns } from "react-icons/hi2";
 
 export default async function SavedLeadsPage() {
@@ -28,6 +29,7 @@ export default async function SavedLeadsPage() {
         description={`${saved.length} leads in your workspace.`}
         actions={
           <>
+            <ExportLeadsButtons scope="saved" disabled={!saved.length} />
             <SecondaryActionLink href="/leads/pipeline">
               <HiOutlineViewColumns className="h-4 w-4" />
               Pipeline
