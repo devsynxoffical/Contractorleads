@@ -73,11 +73,34 @@ body {
 
 body {
   background-color: var(--canvas);
+  color: var(--ink);
+  font-family: var(--font-jakarta), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.011em;
+}
+
+/**
+ * HUD cover — always centered in the visible app canvas.
+ * Applied to main column (not body) so open/closed sidebar keeps the globe centered.
+ */
+.hud-viewport-bg {
+  position: relative;
+  isolation: isolate;
+  background-color: #070d18;
+}
+
+.hud-viewport-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
   background-image:
     linear-gradient(rgba(0, 229, 255, 0.045) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0, 229, 255, 0.045) 1px, transparent 1px),
-    radial-gradient(ellipse 70% 50% at 70% 30%, rgba(0, 180, 220, 0.2), transparent 55%),
-    linear-gradient(180deg, rgba(7, 13, 24, 0.72) 0%, rgba(7, 13, 24, 0.9) 100%),
+    radial-gradient(ellipse 70% 55% at 50% 42%, rgba(0, 180, 220, 0.22), transparent 58%),
+    linear-gradient(180deg, rgba(7, 13, 24, 0.55) 0%, rgba(7, 13, 24, 0.88) 100%),
     url("/hud-cover.png");
   background-size:
     48px 48px,
@@ -85,14 +108,13 @@ body {
     auto,
     auto,
     cover;
-  background-position: center, center, center, center, center top;
+  background-position: center, center, center, center, center center;
   background-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat;
-  background-attachment: fixed;
-  color: var(--ink);
-  font-family: var(--font-jakarta), system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  letter-spacing: -0.011em;
+}
+
+.hud-viewport-bg > * {
+  position: relative;
+  z-index: 1;
 }
 
 /* Soften hard white surfaces across the app under HUD */
@@ -730,30 +752,13 @@ body {
   position: absolute;
   inset: 0;
   z-index: 0;
-  background-color: #070d18;
-  background-image:
-    linear-gradient(var(--hud-grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--hud-grid) 1px, transparent 1px),
-    url("/hud-cover.png");
-  background-size:
-    48px 48px,
-    48px 48px,
-    cover;
-  background-position:
-    center,
-    center,
-    center top;
-  background-repeat: repeat, repeat, no-repeat;
+  /* Dashboard inherits shell cover — keep a light local veil only */
+  background: transparent;
   opacity: 1;
 }
 
 .hud-dashboard-bg::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(ellipse 70% 55% at 70% 35%, rgba(0, 180, 220, 0.18), transparent 55%),
-    linear-gradient(180deg, rgba(7, 13, 24, 0.55) 0%, rgba(7, 13, 24, 0.82) 55%, rgba(7, 13, 24, 0.94) 100%);
+  content: none;
 }
 
 .hud-dashboard-inner {
