@@ -40,13 +40,14 @@ export default function AdminLoginPage() {
         <div className="h-1.5 w-full" style={{ background: LOGO_GRADIENT }} />
         <div className="p-7 sm:p-8">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-600">
-            Super Admin
+            Admin portal
           </p>
           <h1 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-ink">
             Admin portal sign in
           </h1>
           <p className="mt-1.5 text-sm text-ink-muted">
-            Separate from agency login. Only SUPER_ADMIN accounts can enter.
+            For Super Admin, Manager, and Sub Admin staff. Agencies use the
+            regular login.
           </p>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-3">
@@ -80,7 +81,7 @@ export default function AdminLoginPage() {
               </p>
             )}
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full" loading={loading}>
               {loading ? "Signing in…" : "Sign in to admin"}
             </Button>
           </form>

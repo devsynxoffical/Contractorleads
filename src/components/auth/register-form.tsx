@@ -8,6 +8,7 @@ import {
   HiOutlineEye,
   HiOutlineEyeSlash,
   HiOutlineLockClosed,
+  HiOutlinePhone,
   HiOutlineUser,
 } from "react-icons/hi2";
 import { FcGoogle } from "react-icons/fc";
@@ -31,6 +32,13 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
     const form = new FormData(e.currentTarget);
     const password = String(form.get("password") || "");
 
+    const phone = String(form.get("phone") || "").trim();
+    if (!phone || phone.replace(/\D/g, "").length < 7) {
+      setError("Please enter a valid phone number");
+      setLoading(false);
+      return;
+    }
+
     if (password.length < 8) {
       setError("Password must be at least 8 characters");
       setLoading(false);
@@ -49,6 +57,7 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
       body: JSON.stringify({
         name: form.get("name"),
         email: form.get("email"),
+        phone,
         password,
       }),
     });
@@ -152,6 +161,27 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
               type="email"
               required
               placeholder="name@company.com"
+              className="auth-field h-12 w-full rounded-xl bg-[#f3f4f6] pl-11 pr-4 text-sm text-[#111827] outline-none transition placeholder:text-[#9ca3af] focus:bg-white focus:ring-2 focus:ring-[#7c3aed]/25"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <label
+            htmlFor="reg-phone"
+            className="text-[13px] font-semibold text-[#374151]"
+          >
+            Phone Number <span className="text-[#db2777]">*</span>
+          </label>
+          <div className="relative">
+            <HiOutlinePhone className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[#9ca3af]" />
+            <input
+              id="reg-phone"
+              name="phone"
+              type="tel"
+              required
+              autoComplete="tel"
+              placeholder="+1 (555) 000-0000"
               className="auth-field h-12 w-full rounded-xl bg-[#f3f4f6] pl-11 pr-4 text-sm text-[#111827] outline-none transition placeholder:text-[#9ca3af] focus:bg-white focus:ring-2 focus:ring-[#7c3aed]/25"
             />
           </div>

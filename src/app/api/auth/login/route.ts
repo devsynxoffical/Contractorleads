@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import {
-  SUPER_ADMIN_ROLE,
   createSessionToken,
+  isAdminStaff,
   setSessionCookie,
   verifyPassword,
 } from "@/lib/auth";
@@ -21,11 +21,11 @@ export async function POST(request: Request) {
       );
     }
 
-    if (user.role === SUPER_ADMIN_ROLE) {
+    if (isAdminStaff(user)) {
       return NextResponse.json(
         {
           error:
-            "Super admins must sign in at /admin/login — this portal is for agencies only.",
+            "Admin staff must sign in at /admin/login — this portal is for agencies only.",
         },
         { status: 403 },
       );

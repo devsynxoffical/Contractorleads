@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { requireSuperAdmin } from "@/lib/auth";
+import { ADMIN_STAFF_ROLES, requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ADMIN_PLANS } from "@/lib/admin";
 
 export async function GET() {
-  const admin = await requireSuperAdmin();
+  const admin = await requirePermission("revenue");
   if (!admin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -12,17 +12,17 @@ export async function GET() {
   const [planGroups, statusGroups, customers] = await Promise.all([
     prisma.user.groupBy({
       by: ["plan"],
-      where: { role: { not: "SUPER_ADMIN" } },
+      where: { role: { notIn: [...ADMIN_STAFF_ROLES] } },
       _count: { _all: true },
       _sum: { creditsRemaining: true },
     }),
     prisma.user.groupBy({
       by: ["subscriptionStatus"],
-      where: { role: { not: "SUPER_ADMIN" } },
+      where: { role: { notIn: [...ADMIN_STAFF_ROLES] } },
       _count: { _all: true },
     }),
     prisma.user.findMany({
-      where: { role: { not: "SUPER_ADMIN" } },
+      where: { role: { notIn: [...ADMIN_STAFF_ROLES] } },
       orderBy: { createdAt: "desc" },
       take: 100,
       select: {

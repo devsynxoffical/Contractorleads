@@ -55,9 +55,53 @@ async function main() {
     },
   });
 
+  const managerPerms = [
+    "overview",
+    "customers",
+    "leads",
+    "leads_export",
+    "saved_leads",
+    "searches",
+    "scrape",
+    "copy_leads",
+    "revenue",
+    "activity",
+    "health",
+  ];
+  const subAdminPerms = [
+    "overview",
+    "leads",
+    "leads_export",
+    "saved_leads",
+    "searches",
+    "scrape",
+    "activity",
+  ];
+
+  await prisma.adminRoleTemplate.upsert({
+    where: { role: "MANAGER" },
+    update: {},
+    create: {
+      role: "MANAGER",
+      label: "Manager",
+      permissions: JSON.stringify(managerPerms),
+    },
+  });
+
+  await prisma.adminRoleTemplate.upsert({
+    where: { role: "SUB_ADMIN" },
+    update: {},
+    create: {
+      role: "SUB_ADMIN",
+      label: "Sub Admin",
+      permissions: JSON.stringify(subAdminPerms),
+    },
+  });
+
   console.log("Seed complete:");
   console.log("  demo@leadflow.us / demo12345");
   console.log("  admin@leadflow.us / admin12345 (SUPER_ADMIN)");
+  console.log("  Role templates: MANAGER, SUB_ADMIN");
 }
 
 main()

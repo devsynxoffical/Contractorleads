@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { requireSuperAdmin } from "@/lib/auth";
+import { ADMIN_STAFF_ROLES, requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
-  const admin = await requireSuperAdmin();
+  const admin = await requirePermission("overview");
   if (!admin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -25,10 +25,10 @@ export async function GET() {
     suspendedCount,
     savedLeadCount,
   ] = await Promise.all([
-    prisma.user.count({ where: { role: { not: "SUPER_ADMIN" } } }),
+    prisma.user.count({ where: { role: { notIn: [...ADMIN_STAFF_ROLES] } } }),
     prisma.user.count({
       where: {
-        role: { not: "SUPER_ADMIN" },
+        role: { notIn: [...ADMIN_STAFF_ROLES] },
         createdAt: { gte: weekAgo },
       },
     }),
@@ -37,12 +37,12 @@ export async function GET() {
     prisma.search.count({ where: { createdAt: { gte: startOfToday } } }),
     prisma.search.count({ where: { createdAt: { gte: weekAgo } } }),
     prisma.user.aggregate({
-      where: { role: { not: "SUPER_ADMIN" } },
+      where: { role: { notIn: [...ADMIN_STAFF_ROLES] } },
       _sum: { creditsRemaining: true },
     }),
     prisma.user.groupBy({
       by: ["plan"],
-      where: { role: { not: "SUPER_ADMIN" } },
+      where: { role: { notIn: [...ADMIN_STAFF_ROLES] } },
       _count: { _all: true },
     }),
     prisma.activityLog.findMany({
@@ -60,7 +60,7 @@ export async function GET() {
       },
     }),
     prisma.user.count({
-      where: { role: { not: "SUPER_ADMIN" }, isActive: false },
+      where: { role: { notIn: [...ADMIN_STAFF_ROLES] }, isActive: false },
     }),
     prisma.savedLead.count(),
   ]);

@@ -5,6 +5,10 @@ import Link from "next/link";
 import { AdminPageHeader } from "@/components/admin/admin-shell";
 import { ADMIN_PLANS } from "@/lib/admin";
 import { Button } from "@/components/ui/button";
+import {
+  startNavigationProgress,
+  stopNavigationProgress,
+} from "@/components/layout/navigation-progress";
 
 type Customer = {
   id: string;
@@ -26,6 +30,7 @@ export default function AdminCustomersPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const [exportBusy, setExportBusy] = useState<string | null>(null);
   const [createForm, setCreateForm] = useState({
     email: "",
     password: "",
@@ -52,6 +57,30 @@ export default function AdminCustomersPage() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function downloadExport(key: string, url: string, filename: string) {
+    if (exportBusy) return;
+    setExportBusy(key);
+    startNavigationProgress();
+    try {
+      const res = await fetch(url);
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setMessage(data?.error ?? "Export failed");
+        return;
+      }
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objectUrl;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(objectUrl);
+    } finally {
+      setExportBusy(null);
+      stopNavigationProgress();
+    }
+  }
 
   async function createCustomer(e: React.FormEvent) {
     e.preventDefault();
@@ -83,21 +112,66 @@ export default function AdminCustomersPage() {
     <div>
       <AdminPageHeader
         title="Customers"
-        description="Create, edit, export, and manage every agency account."
+        description="Create, edit, export, and manage every agency account. Use marketing export for SaaS outreach lists."
         actions={
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => setShowCreate((v) => !v)}>
               {showCreate ? "Close form" : "Create agency"}
             </Button>
-            <a
-              href="/api/admin/customers/export"
-              className="inline-flex h-10 items-center rounded-xl border border-border bg-white px-4 text-sm font-semibold text-ink-muted"
+            <Button
+              variant="secondary"
+              loading={exportBusy === "csv"}
+              disabled={!!exportBusy}
+              onClick={() =>
+                downloadExport(
+                  "csv",
+                  "/api/admin/customers/export",
+                  "customers-export.csv"
+                )
+              }
             >
-              Export CSV
-            </a>
+              {exportBusy === "csv" ? "Exporting…" : "Export CSV"}
+            </Button>
+            <Button
+              variant="secondary"
+              loading={exportBusy === "mkt-csv"}
+              disabled={!!exportBusy}
+              onClick={() =>
+                downloadExport(
+                  "mkt-csv",
+                  "/api/admin/customers/marketing-export?format=csv",
+                  "agency-marketing-export.csv"
+                )
+              }
+            >
+              {exportBusy === "mkt-csv" ? "Exporting…" : "Marketing CSV"}
+            </Button>
+            <Button
+              variant="secondary"
+              loading={exportBusy === "mkt-xlsx"}
+              disabled={!!exportBusy}
+              onClick={() =>
+                downloadExport(
+                  "mkt-xlsx",
+                  "/api/admin/customers/marketing-export?format=xlsx",
+                  "agency-marketing-export.xlsx"
+                )
+              }
+            >
+              {exportBusy === "mkt-xlsx" ? "Exporting…" : "Marketing Excel"}
+            </Button>
           </div>
         }
       />
+
+      <div className="mb-5 rounded-2xl border border-brand-100 bg-gradient-to-r from-brand-50/80 to-white px-4 py-3 text-[13px] text-ink-muted">
+        <p className="font-semibold text-ink">Agency marketing data</p>
+        <p className="mt-0.5">
+          Marketing CSV / Excel pulls every agency user with email, company,
+          onboarding profile (services, ideal customer, areas, goals), plan,
+          activity counts, and signup date — ready for SaaS product outreach.
+        </p>
+      </div>
 
       {message && (
         <p className="mb-4 rounded-xl bg-brand-50 px-3 py-2 text-[13px] text-brand-800">

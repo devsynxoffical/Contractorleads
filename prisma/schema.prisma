@@ -14,6 +14,7 @@ model User {
   email               String   @unique
   passwordHash        String
   name                String?
+  phone               String?
   role                String   @default("USER")
   plan                String   @default("trial")
   subscriptionStatus  String   @default("trialing")
@@ -184,4 +185,14 @@ model Export {
   format    String
   leadIds   String
   createdAt DateTime @default(now())
+}
+
+/// Editable permission templates for MANAGER and SUB_ADMIN staff roles.
+model AdminRoleTemplate {
+  id          String   @id @default(cuid())
+  role        String   @unique // MANAGER | SUB_ADMIN
+  label       String
+  permissions String // JSON string array of permission keys
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

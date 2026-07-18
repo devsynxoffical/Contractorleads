@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireSuperAdmin } from "@/lib/auth";
+import { ADMIN_STAFF_ROLES, requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 function escapeCsv(val: string | number | null | undefined) {
@@ -11,13 +11,13 @@ function escapeCsv(val: string | number | null | undefined) {
 }
 
 export async function GET() {
-  const admin = await requireSuperAdmin();
+  const admin = await requirePermission("customers");
   if (!admin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const customers = await prisma.user.findMany({
-    where: { role: { not: "SUPER_ADMIN" } },
+    where: { role: { notIn: [...ADMIN_STAFF_ROLES] } },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,

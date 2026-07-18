@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import {
   clearSessionCookie,
-  requireSuperAdmin,
+  requireAdminStaff,
   stopImpersonation,
 } from "@/lib/auth";
 
 export async function POST() {
-  const admin = await requireSuperAdmin();
+  const admin = await requireAdminStaff();
   if (!admin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

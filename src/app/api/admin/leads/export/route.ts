@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { requireSuperAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { leadsToCsv, leadsToExcel, type ExportLead } from "@/lib/services/export";
 import type { Prisma } from "@prisma/client";
 
 export async function GET(request: Request) {
-  const admin = await requireSuperAdmin();
+  const admin = await requirePermission("leads_export");
   if (!admin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

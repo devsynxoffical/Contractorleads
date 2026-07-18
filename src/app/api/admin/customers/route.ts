@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { hashPassword, requireSuperAdmin } from "@/lib/auth";
+import { ADMIN_STAFF_ROLES, hashPassword, requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ADMIN_PLANS } from "@/lib/admin";
 import { logActivity } from "@/lib/credits";
 
 export async function GET(request: Request) {
-  const admin = await requireSuperAdmin();
+  const admin = await requirePermission("customers");
   if (!admin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
   const pageSize = Math.min(50, Math.max(10, Number(searchParams.get("pageSize") ?? 20)));
 
   const where = {
-    role: { not: "SUPER_ADMIN" as const },
+    role: { notIn: [...ADMIN_STAFF_ROLES] },
     ...(plan ? { plan } : {}),
     ...(q
       ? {
@@ -64,7 +64,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const admin = await requireSuperAdmin();
+  const admin = await requirePermission("customers");
   if (!admin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

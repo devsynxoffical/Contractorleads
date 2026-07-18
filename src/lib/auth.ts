@@ -2,6 +2,14 @@ import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import {
+  MANAGER_ROLE,
+  SUB_ADMIN_ROLE,
+  SUPER_ADMIN_ROLE as PERM_SUPER_ADMIN,
+  getRolePermissions,
+  userHasPermission,
+  type AdminPermissionKey,
+} from "@/lib/admin-permissions";
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "leadflow-dev-secret-change-in-production",
@@ -11,7 +19,14 @@ const COOKIE_NAME = "leadflow_session";
 const IMPERSONATE_COOKIE = "leadflow_impersonate";
 const SESSION_DURATION = "7d";
 
-export const SUPER_ADMIN_ROLE = "SUPER_ADMIN";
+export const SUPER_ADMIN_ROLE = PERM_SUPER_ADMIN;
+export { MANAGER_ROLE, SUB_ADMIN_ROLE };
+
+export const ADMIN_STAFF_ROLES = [
+  SUPER_ADMIN_ROLE,
+  MANAGER_ROLE,
+  SUB_ADMIN_ROLE,
+] as const;
 
 export type SessionUser = {
   id: string;
@@ -31,6 +46,8 @@ export type SessionUser = {
   subscriptionStatus?: string | null;
   isActive?: boolean;
   adminNotes?: string | null;
+  /** Permission keys for admin staff (empty for agency users) */
+  permissions?: AdminPermissionKey[];
   /** True when a SUPER_ADMIN is viewing the app as this customer */
   impersonating?: boolean;
   /** Real admin id when impersonating */
@@ -85,6 +102,17 @@ export function isSuperAdmin(user: { role: string } | null | undefined) {
   return user?.role === SUPER_ADMIN_ROLE;
 }
 
+export function isAdminStaff(user: { role: string } | null | undefined) {
+  return (
+    !!user &&
+    ADMIN_STAFF_ROLES.includes(user.role as (typeof ADMIN_STAFF_ROLES)[number])
+  );
+}
+
+export function isAgencyUser(user: { role: string } | null | undefined) {
+  return !!user && !isAdminStaff(user);
+}
+
 export async function hashPassword(password: string) {
   return bcrypt.hash(password, 12);
 }
@@ -132,7 +160,11 @@ export async function getRealSessionUser(): Promise<SessionUser | null> {
     if (!user) return null;
     if (user.isActive === false) return null;
 
-    return toSessionUser(user);
+    const permissions = isAdminStaff(user)
+      ? await getRolePermissions(user.role)
+      : [];
+
+    return toSessionUser(user, { permissions });
   } catch {
     return null;
   }
@@ -155,7 +187,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   if (targetId === real.id) return real;
 
   const target = await prisma.user.findUnique({ where: { id: targetId } });
-  if (!target || isSuperAdmin(target)) {
+  if (!target || isAdminStaff(target)) {
     cookieStore.delete(IMPERSONATE_COOKIE);
     return real;
   }
@@ -163,6 +195,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   return toSessionUser(target, {
     impersonating: true,
     realAdminId: real.id,
+    permissions: [],
   });
 }
 
@@ -180,13 +213,28 @@ export async function requireSuperAdmin(): Promise<SessionUser | null> {
   return real;
 }
 
+export async function requireAdminStaff(): Promise<SessionUser | null> {
+  const real = await getRealSessionUser();
+  if (!real || !isAdminStaff(real)) return null;
+  return real;
+}
+
+export async function requirePermission(
+  permission: AdminPermissionKey
+): Promise<SessionUser | null> {
+  const real = await requireAdminStaff();
+  if (!real) return null;
+  if (!(await userHasPermission(real, permission))) return null;
+  return real;
+}
+
 export async function startImpersonation(targetUserId: string) {
   const admin = await requireSuperAdmin();
   if (!admin) throw new Error("FORBIDDEN");
 
   const target = await prisma.user.findUnique({ where: { id: targetUserId } });
   if (!target) throw new Error("NOT_FOUND");
-  if (isSuperAdmin(target)) throw new Error("CANNOT_IMPERSONATE_ADMIN");
+  if (isAdminStaff(target)) throw new Error("CANNOT_IMPERSONATE_ADMIN");
 
   const cookieStore = await cookies();
   cookieStore.set(IMPERSONATE_COOKIE, targetUserId, {

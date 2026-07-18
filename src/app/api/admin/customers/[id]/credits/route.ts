@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { requireSuperAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/credits";
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function POST(request: Request, { params }: Params) {
-  const admin = await requireSuperAdmin();
+  const admin = await requirePermission("customers");
   if (!admin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

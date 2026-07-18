@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { requireSuperAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { getSystemKeyStatuses } from "@/lib/admin";
 
 export async function GET() {
-  const admin = await requireSuperAdmin();
+  const admin = await requirePermission("system");
   if (!admin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

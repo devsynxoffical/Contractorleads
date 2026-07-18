@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireSuperAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/credits";
 
@@ -49,7 +49,7 @@ const EDITABLE_FIELDS = [
 ] as const;
 
 export async function GET(_request: Request, { params }: Params) {
-  const admin = await requireSuperAdmin();
+  const admin = await requirePermission("leads");
   if (!admin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -91,7 +91,7 @@ export async function GET(_request: Request, { params }: Params) {
 }
 
 export async function PATCH(request: Request, { params }: Params) {
-  const admin = await requireSuperAdmin();
+  const admin = await requirePermission("leads");
   if (!admin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -144,7 +144,7 @@ export async function PATCH(request: Request, { params }: Params) {
 }
 
 export async function DELETE(_request: Request, { params }: Params) {
-  const admin = await requireSuperAdmin();
+  const admin = await requirePermission("leads");
   if (!admin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

@@ -1,12 +1,17 @@
 import { NextResponse } from "next/server";
-import { hashPassword, isSuperAdmin, requireSuperAdmin } from "@/lib/auth";
+import {
+  hashPassword,
+  isAdminStaff,
+  isSuperAdmin,
+  requirePermission,
+} from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ADMIN_PLANS, SUBSCRIPTION_STATUSES } from "@/lib/admin";
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_request: Request, { params }: Params) {
-  const admin = await requireSuperAdmin();
+  const admin = await requirePermission("customers");
   if (!admin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -65,7 +70,7 @@ export async function GET(_request: Request, { params }: Params) {
 }
 
 export async function PATCH(request: Request, { params }: Params) {
-  const admin = await requireSuperAdmin();
+  const admin = await requirePermission("customers");
   if (!admin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -172,7 +177,7 @@ export async function PATCH(request: Request, { params }: Params) {
 }
 
 export async function DELETE(_request: Request, { params }: Params) {
-  const admin = await requireSuperAdmin();
+  const admin = await requirePermission("customers");
   if (!admin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -182,9 +187,9 @@ export async function DELETE(_request: Request, { params }: Params) {
   if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  if (isSuperAdmin(existing)) {
+  if (isAdminStaff(existing)) {
     return NextResponse.json(
-      { error: "Cannot delete a super admin from this panel" },
+      { error: "Cannot delete admin staff from the customers panel — use Team & Roles" },
       { status: 400 },
     );
   }

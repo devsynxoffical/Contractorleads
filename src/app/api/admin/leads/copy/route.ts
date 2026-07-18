@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { requireSuperAdmin } from "@/lib/auth";
+import { isAdminStaff, requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/credits";
 import type { Prisma } from "@prisma/client";
 
 export async function POST(request: Request) {
-  const admin = await requireSuperAdmin();
+  const admin = await requirePermission("copy_leads");
   if (!admin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
   }
 
   const agency = await prisma.user.findUnique({ where: { id: agencyId } });
-  if (!agency || agency.role === "SUPER_ADMIN") {
+  if (!agency || isAdminStaff(agency)) {
     return NextResponse.json({ error: "Invalid agency" }, { status: 400 });
   }
 

@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { requireSuperAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isMetaConfigured } from "@/lib/services/facebook";
 import { getSystemKeyStatuses } from "@/lib/admin";
 
 export async function GET() {
-  const admin = await requireSuperAdmin();
+  const admin = await requirePermission("health");
   if (!admin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }

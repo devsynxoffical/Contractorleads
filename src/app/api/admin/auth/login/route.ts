@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import {
-  SUPER_ADMIN_ROLE,
   createSessionToken,
+  isAdminStaff,
   setSessionCookie,
   stopImpersonation,
   verifyPassword,
 } from "@/lib/auth";
 
 /**
- * Dedicated admin login — only SUPER_ADMIN accounts may sign in here.
+ * Dedicated admin login — SUPER_ADMIN, MANAGER, and SUB_ADMIN only.
  * Agency users must use /login (POST /api/auth/login).
  */
 export async function POST(request: Request) {
@@ -33,11 +33,11 @@ export async function POST(request: Request) {
       );
     }
 
-    if (user.role !== SUPER_ADMIN_ROLE) {
+    if (!isAdminStaff(user)) {
       return NextResponse.json(
         {
           error:
-            "This portal is for super admins only. Use the agency login at /login.",
+            "This portal is for admin staff only. Use the agency login at /login.",
         },
         { status: 403 },
       );
@@ -54,9 +54,15 @@ export async function POST(request: Request) {
     const token = await createSessionToken(user.id);
     await setSessionCookie(token);
 
+    const { firstAllowedAdminPath, getRolePermissions } = await import(
+      "@/lib/admin-permissions"
+    );
+    const permissions = await getRolePermissions(user.role);
+    const redirectTo = firstAllowedAdminPath(permissions);
+
     return NextResponse.json({
       ok: true,
-      redirectTo: "/admin",
+      redirectTo: redirectTo === "/admin/login" ? "/admin" : redirectTo,
       user: {
         id: user.id,
         email: user.email,
