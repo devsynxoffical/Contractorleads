@@ -28,6 +28,7 @@ export async function POST(request: Request) {
       zip,
       customLocation,
       radius,
+      requireSocialPresence,
     } = resolved.criteria;
 
     if (user.creditsRemaining < CREDIT_COSTS.search) {
@@ -59,17 +60,23 @@ export async function POST(request: Request) {
       zip,
       customLocation,
       radius,
+      requireSocialPresence,
     });
 
     // Flat charge per search (not per lead returned)
     await deductCredits(user.id, CREDIT_COSTS.search, "lead_generation");
+
+    const filterNote =
+      result.meta.requireSocialPresence && result.meta.skippedNoSocial > 0
+        ? ` (${result.meta.skippedNoSocial} skipped — no LinkedIn/social)`
+        : "";
 
     await logActivity(
       user.id,
       "search",
       `Generated ${result.leads.length} leads for ${industry} in ${
         locationScope === "country" ? country : state || city || country
-      }`,
+      }${filterNote}`,
       { searchId: result.search.id }
     );
 
@@ -82,6 +89,7 @@ export async function POST(request: Request) {
       search: result.search,
       leads: result.leads,
       creditsRemaining: credits?.creditsRemaining,
+      meta: result.meta,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Search failed";

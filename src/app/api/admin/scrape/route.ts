@@ -34,6 +34,7 @@ export async function POST(request: Request) {
       zip,
       customLocation,
       radius,
+      requireSocialPresence,
     } = resolved.criteria;
 
     const result = await runLeadPipeline({
@@ -46,6 +47,7 @@ export async function POST(request: Request) {
       zip,
       customLocation,
       radius,
+      requireSocialPresence,
     });
 
     await logActivity(
@@ -64,6 +66,7 @@ export async function POST(request: Request) {
       search: result.search,
       leads: result.leads,
       creditsRemaining: credits?.creditsRemaining,
+      meta: result.meta,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Scrape failed";

@@ -134,6 +134,8 @@ export function LeadSearchForm() {
   const [locationMode, setLocationMode] = useState<"standard" | "custom">("standard");
   const [customIndustry, setCustomIndustry] = useState("");
   const [customLocation, setCustomLocation] = useState("");
+  const [requireSocialPresence, setRequireSocialPresence] = useState(true);
+  const [filterNote, setFilterNote] = useState<string | null>(null);
   const [stage, setStage] = useState(0);
   const [restoring, setRestoring] = useState(true);
 
@@ -246,6 +248,7 @@ export function LeadSearchForm() {
     zip?: string;
     customLocation?: string;
     radius?: string | number;
+    requireSocialPresence?: boolean;
   }) {
     const resolved = resolveSearchCriteria(payload);
     if (!resolved.ok) {
@@ -257,6 +260,7 @@ export function LeadSearchForm() {
     setLoading(true);
     startNavigationProgress();
     setError("");
+    setFilterNote(null);
     setLeads([]);
     setStage(1);
 
@@ -284,6 +288,18 @@ export function LeadSearchForm() {
       setLeads(data.leads);
       setSelected(new Set(data.leads.map((l: Lead) => l.id)));
       setStage(4);
+      if (data.meta?.requireSocialPresence && data.meta?.skippedNoSocial > 0) {
+        setFilterNote(
+          `Filtered to LinkedIn + social only — skipped ${data.meta.skippedNoSocial} businesses without profiles.`
+        );
+      } else if (
+        data.meta?.requireSocialPresence &&
+        data.leads?.length === 0
+      ) {
+        setFilterNote(
+          "No businesses in this area had both LinkedIn and social profiles. Try a wider radius or turn off the filter."
+        );
+      }
       saveFinderSearchCache({
         searchId: data.search?.id,
         leads: data.leads,
@@ -333,6 +349,7 @@ export function LeadSearchForm() {
         locationScope === "local"
           ? String(form.get("radius") || "25")
           : undefined,
+      requireSocialPresence,
     });
   }
 
@@ -573,6 +590,26 @@ export function LeadSearchForm() {
                 </Select>
               </div>
               )}
+
+              <label className="flex items-start gap-3 rounded-xl border border-[#00e5ff]/20 bg-[#00e5ff]/05 px-4 py-3 sm:col-span-2 lg:col-span-3">
+                <input
+                  type="checkbox"
+                  checked={requireSocialPresence}
+                  onChange={(e) => setRequireSocialPresence(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-[#00e5ff]/40 bg-transparent text-[#00e5ff] focus:ring-[#00e5ff]"
+                />
+                <span className="text-[13px] leading-snug text-[#c5d0dc]">
+                  <span className="font-semibold text-[#00e5ff]">
+                    Require LinkedIn + social
+                  </span>
+                  <span className="mt-0.5 block text-[#8b9aab]">
+                    Only return businesses with a LinkedIn profile and at least
+                    one of Facebook, Instagram, YouTube, or TikTok. We scan more
+                    Places results to fill your list.
+                  </span>
+                </span>
+              </label>
+
               <div className="flex items-end sm:col-span-2 lg:col-span-1">
                 <Button
                   type="submit"
@@ -593,6 +630,11 @@ export function LeadSearchForm() {
             {error && (
               <div className="mt-4 rounded-lg border border-red-400/40 bg-red-500/10 px-3 py-2 text-sm text-red-200">
                 {error}
+              </div>
+            )}
+            {filterNote && !error && (
+              <div className="mt-4 rounded-lg border border-[#00e5ff]/25 bg-[#00e5ff]/08 px-3 py-2 text-sm text-[#c5d0dc]">
+                {filterNote}
               </div>
             )}
             {loading && (

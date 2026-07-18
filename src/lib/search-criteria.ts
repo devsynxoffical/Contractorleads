@@ -18,6 +18,8 @@ export type SearchCriteriaInput = {
   zip?: string;
   customLocation?: string;
   radius?: number | string;
+  /** Keep only leads with LinkedIn + at least one social profile. Default true. */
+  requireSocialPresence?: boolean | string;
 };
 
 export type ResolvedSearchCriteria = {
@@ -29,7 +31,17 @@ export type ResolvedSearchCriteria = {
   zip?: string;
   customLocation?: string;
   radius?: number;
+  requireSocialPresence: boolean;
 };
+
+function parseBool(value: unknown, defaultValue: boolean): boolean {
+  if (value === undefined || value === null || value === "") return defaultValue;
+  if (typeof value === "boolean") return value;
+  const s = String(value).toLowerCase();
+  if (s === "true" || s === "1" || s === "on" || s === "yes") return true;
+  if (s === "false" || s === "0" || s === "off" || s === "no") return false;
+  return defaultValue;
+}
 
 function extractStateFromText(text: string): string | null {
   for (const s of US_STATES) {
@@ -62,10 +74,12 @@ export function resolveSearchCriteria(
 
   const locationScope: LocationScope =
     input.locationScope === "country" ? "country" : "local";
+  const requireSocialPresence = parseBool(input.requireSocialPresence, true);
+
   if (locationScope === "country") {
     return {
       ok: true,
-      criteria: { industry, country, locationScope },
+      criteria: { industry, country, locationScope, requireSocialPresence },
     };
   }
 
@@ -92,6 +106,7 @@ export function resolveSearchCriteria(
         zip: input.zip?.trim() || undefined,
         customLocation,
         radius,
+        requireSocialPresence,
       },
     };
   }
@@ -116,6 +131,7 @@ export function resolveSearchCriteria(
       city: city || undefined,
       zip: zip || undefined,
       radius,
+      requireSocialPresence,
     },
   };
 }
@@ -223,5 +239,6 @@ export function parseLeadQuery(input: string): ResolvedSearchCriteria | null {
     city: city || customLocation,
     customLocation,
     radius: locationScope === "local" ? 25 : undefined,
+    requireSocialPresence: true,
   };
 }

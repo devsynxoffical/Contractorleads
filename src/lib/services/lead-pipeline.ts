@@ -36,7 +36,30 @@ export type SearchParams = {
   zip?: string;
   customLocation?: string;
   radius?: number;
+  /** Default true — only keep leads with LinkedIn + social. */
+  requireSocialPresence?: boolean;
 };
+
+type SocialFields = {
+  linkedinUrl?: string | null;
+  linkedinCompanyUrl?: string | null;
+  linkedinOwnerUrl?: string | null;
+  facebook?: string | null;
+  instagram?: string | null;
+  youtube?: string | null;
+  tiktok?: string | null;
+};
+
+/** LinkedIn profile/company/owner + at least one consumer social network. */
+export function leadHasLinkedInAndSocial(lead: SocialFields): boolean {
+  const hasLinkedIn = Boolean(
+    lead.linkedinUrl || lead.linkedinCompanyUrl || lead.linkedinOwnerUrl
+  );
+  const hasSocial = Boolean(
+    lead.facebook || lead.instagram || lead.youtube || lead.tiktok
+  );
+  return hasLinkedIn && hasSocial;
+}
 
 /** Race a promise against a timeout; on timeout return fallback (never block pipeline). */
 async function withTimeout<T>(
@@ -58,6 +81,14 @@ async function withTimeout<T>(
 }
 
 export async function runLeadPipeline(params: SearchParams) {
+  const requireSocial = params.requireSocialPresence !== false;
+  const targetCount = params.locationScope === "country" ? 10 : 8;
+  const fetchLimit = requireSocial
+    ? params.locationScope === "country"
+      ? 24
+      : 20
+    : targetCount;
+
   const location =
     params.customLocation?.trim() ||
     [params.city, params.state, params.zip, params.country]
@@ -86,12 +117,15 @@ export async function runLeadPipeline(params: SearchParams) {
     zip: params.zip,
     customLocation: params.customLocation,
     radius: params.radius,
-    limit: params.locationScope === "country" ? 10 : 8,
+    limit: fetchLimit,
   });
 
   const leads = [];
+  let skippedNoSocial = 0;
 
   for (const place of places) {
+    if (leads.length >= targetCount) break;
+
     // Trust Google Business Profile website — never wipe it because our
     // reachability check failed (many sites block bots / HEAD).
     const website = place.website;
@@ -152,6 +186,22 @@ export async function runLeadPipeline(params: SearchParams) {
             : {}),
         },
       }));
+
+    const socialSnapshot = {
+      linkedinUrl: linkedin.url ?? existingLead?.linkedinUrl,
+      linkedinCompanyUrl:
+        linkedin.companyUrl ?? existingLead?.linkedinCompanyUrl,
+      linkedinOwnerUrl: linkedin.ownerUrl ?? existingLead?.linkedinOwnerUrl,
+      facebook: facebook ?? existingLead?.facebook,
+      instagram: websiteSocial.instagram ?? existingLead?.instagram,
+      youtube: websiteSocial.youtube ?? existingLead?.youtube,
+      tiktok: websiteSocial.tiktok ?? existingLead?.tiktok,
+    };
+
+    if (requireSocial && !leadHasLinkedInAndSocial(socialSnapshot)) {
+      skippedNoSocial += 1;
+      continue;
+    }
 
     if (existingLead) {
       const reused = await prisma.lead.update({
@@ -263,5 +313,13 @@ export async function runLeadPipeline(params: SearchParams) {
     data: { resultCount: leads.length },
   });
 
-  return { search, leads };
+  return {
+    search,
+    leads,
+    meta: {
+      requireSocialPresence: requireSocial,
+      skippedNoSocial,
+      placesScanned: places.length,
+    },
+  };
 }
