@@ -177,11 +177,14 @@ export async function runLeadPipeline(params: SearchParams) {
 
     if (qualification.leadScore < 30) continue;
 
-    // Soft-bump website quality when the URL actually responds
+    // Prefer AI website score; only nudge slightly when we verified reachability
     const websiteQualityScore = website
-      ? Math.max(
-          qualification.websiteQualityScore ?? 0,
-          websiteReachable ? 70 : 50,
+      ? Math.min(
+          100,
+          Math.round(
+            (qualification.websiteQualityScore ?? 40) +
+              (websiteReachable ? 8 : 0),
+          ),
         )
       : qualification.websiteQualityScore;
 
@@ -249,14 +252,31 @@ export async function runLeadPipeline(params: SearchParams) {
           youtube: websiteSocial.youtube ?? existingLead.youtube,
           tiktok: websiteSocial.tiktok ?? existingLead.tiktok,
           yelpUrl: yelp?.url ?? existingLead.yelpUrl,
+          yelpRating: yelp?.rating ?? existingLead.yelpRating,
+          yelpReviews: yelp?.reviewCount ?? existingLead.yelpReviews,
           houzzUrl: houzz?.url ?? existingLead.houzzUrl,
+          houzzRating: houzz?.rating ?? existingLead.houzzRating,
+          houzzReviews: houzz?.reviewCount ?? existingLead.houzzReviews,
           nextdoor: nextdoor?.url ?? existingLead.nextdoor,
           linkedinUrl: linkedin.url ?? existingLead.linkedinUrl,
           linkedinCompanyUrl:
             linkedin.companyUrl ?? existingLead.linkedinCompanyUrl,
           linkedinOwnerUrl: linkedin.ownerUrl ?? existingLead.linkedinOwnerUrl,
-          leadScore: Math.max(existingLead.leadScore, qualification.leadScore),
-          qualityTier: qualification.qualityTier ?? existingLead.qualityTier,
+          linkedinConfidenceScore:
+            linkedin.confidence || existingLead.linkedinConfidenceScore,
+          linkedinOwnerConfidenceScore:
+            linkedin.ownerConfidence || existingLead.linkedinOwnerConfidenceScore,
+          linkedinType: linkedin.type ?? existingLead.linkedinType,
+          // Always refresh AI / live qualification (not stale dummy buckets)
+          leadScore: qualification.leadScore,
+          serviceCategory: qualification.serviceCategory,
+          revenueRangeEstimate: qualification.revenueRangeEstimate,
+          websiteQualityScore,
+          marketingOpportunityScore: qualification.marketingOpportunityScore,
+          ppcOpportunityScore: qualification.ppcOpportunityScore,
+          seoOpportunityScore: qualification.seoOpportunityScore,
+          outreachAngle: qualification.outreachAngle,
+          qualityTier: qualification.qualityTier,
         },
       });
       leads.push(reused);

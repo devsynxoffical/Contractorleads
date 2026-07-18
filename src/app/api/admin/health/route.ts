@@ -44,8 +44,8 @@ export async function GET() {
       name: "OpenAI",
       status: byKey.OPENAI_API_KEY?.configured ? "ok" : "missing",
       detail: byKey.OPENAI_API_KEY?.configured
-        ? "API key configured"
-        : "OPENAI_API_KEY missing",
+        ? "API key configured — AI qualification & Ask Expert live"
+        : "OPENAI_API_KEY missing or placeholder (sk-...) — revenue/scores use dummy rules",
     },
     {
       name: "Yelp Fusion",

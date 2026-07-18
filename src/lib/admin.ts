@@ -1,4 +1,5 @@
 import { INDUSTRIES } from "@/lib/constants";
+import { isOpenAIConfigured } from "@/lib/openai-config";
 
 export const ADMIN_PLANS = [
   { value: "trial", label: "Free Trial", priceMonthly: 0 },
@@ -93,12 +94,18 @@ export function getSystemKeyStatuses(): EnvKeyStatus[] {
     },
   ];
 
-  return rows.map((row) => ({
-    key: row.key,
-    group: row.group,
-    configured: Boolean(row.env?.trim()),
-    hint: maskHint(row.env),
-  }));
+  return rows.map((row) => {
+    const configured =
+      row.key === "OPENAI_API_KEY"
+        ? isOpenAIConfigured()
+        : Boolean(row.env?.trim());
+    return {
+      key: row.key,
+      group: row.group,
+      configured,
+      hint: configured ? maskHint(row.env) : null,
+    };
+  });
 }
 
 export function isValidIndustry(value: string) {

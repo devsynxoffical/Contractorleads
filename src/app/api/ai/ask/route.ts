@@ -7,6 +7,7 @@ import {
   CREDIT_COSTS,
 } from "@/lib/constants";
 import { deductCredits, logActivity } from "@/lib/credits";
+import { getOpenAIApiKey } from "@/lib/openai-config";
 import { prisma } from "@/lib/prisma";
 
 function titleFromMessage(message: string) {
@@ -28,7 +29,7 @@ export async function POST(request: Request) {
   }
 
   const isSupport = support === true;
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = getOpenAIApiKey();
 
   // Support/help chat is free and never saved as a script
   if (isSupport) {

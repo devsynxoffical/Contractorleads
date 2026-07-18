@@ -4,6 +4,7 @@ import { generateText } from "ai";
 import { getSessionUser, buildBusinessContext } from "@/lib/auth";
 import { CREDIT_COSTS } from "@/lib/constants";
 import { deductCredits, logActivity } from "@/lib/credits";
+import { getOpenAIApiKey } from "@/lib/openai-config";
 import { prisma } from "@/lib/prisma";
 
 const typePrompts: Record<string, string> = {
@@ -51,7 +52,7 @@ Lead Score: ${lead.leadScore}
 Outreach Angle: ${lead.outreachAngle ?? "n/a"}
 `;
 
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = getOpenAIApiKey();
   let content: string;
 
   if (!apiKey) {
