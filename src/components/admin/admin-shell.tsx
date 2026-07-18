@@ -116,19 +116,20 @@ export function AdminShell({
           : "Admin";
 
   return (
-    <div className="flex min-h-[100dvh] bg-[#f4f1f7]">
+    <div className="admin-shell--hud app-shell--hud flex min-h-[100dvh]">
       <Suspense fallback={null}>
         <NavigationProgress />
       </Suspense>
-      <aside className="hidden w-[260px] shrink-0 flex-col border-r border-border/80 bg-white lg:flex">
-        <div className="border-b border-border/80 px-5 py-4">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-brand-600">
+
+      <aside className="hud-shell-aside hidden w-[260px] shrink-0 flex-col lg:flex">
+        <div className="border-b border-[#00e5ff]/15 px-5 py-4">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#00e5ff]">
             {roleLabel}
           </p>
-          <p className="mt-1 font-[family-name:var(--font-display)] text-lg font-semibold text-ink">
+          <p className="mt-1 font-[family-name:var(--font-display)] text-lg font-semibold text-white">
             Control Panel
           </p>
-          <p className="mt-0.5 truncate text-[12px] text-ink-muted">
+          <p className="mt-0.5 truncate text-[12px] text-[#8b9aab]">
             {user.email}
           </p>
         </div>
@@ -141,10 +142,10 @@ export function AdminShell({
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-medium transition",
+                  "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium transition",
                   active
-                    ? "bg-brand-50 text-brand-700"
-                    : "text-ink-muted hover:bg-[#f7f4fa] hover:text-ink",
+                    ? "saas-nav-active bg-[#00e5ff]/12 text-[#00e5ff] shadow-[0_0_20px_rgba(0,229,255,0.12)]"
+                    : "text-[#8b9aab] hover:bg-white/[0.04] hover:text-[#e8eef6]"
                 )}
               >
                 <Icon className="h-4 w-4 shrink-0" />
@@ -153,11 +154,11 @@ export function AdminShell({
             );
           })}
         </nav>
-        <div className="border-t border-border/80 p-3 space-y-1">
+        <div className="space-y-1 border-t border-[#00e5ff]/15 p-3">
           {user.role === SUPER_ADMIN_ROLE && (
             <Link
               href="/home"
-              className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-medium text-ink-muted transition hover:bg-[#f7f4fa] hover:text-ink"
+              className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-[13px] font-medium text-[#8b9aab] transition hover:bg-white/[0.04] hover:text-[#e8eef6]"
             >
               <HiOutlineArrowLeft className="h-4 w-4" />
               Back to app
@@ -171,23 +172,25 @@ export function AdminShell({
               router.push("/admin/login");
               router.refresh();
             }}
-            className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-medium text-ink-muted transition hover:bg-[#f7f4fa] hover:text-ink"
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-[13px] font-medium text-[#8b9aab] transition hover:bg-white/[0.04] hover:text-[#e8eef6]"
           >
             Sign out of admin
           </button>
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center gap-3 border-b border-border/80 bg-white px-4 py-3 lg:hidden">
-          <HiOutlineClipboardDocumentList className="h-5 w-5 text-brand-600" />
+      <div className="relative flex min-w-0 flex-1 flex-col">
+        <div className="hud-viewport-bg pointer-events-none absolute inset-0" />
+
+        <header className="hud-shell-header relative z-[1] flex items-center gap-3 px-4 py-3 lg:hidden">
+          <HiOutlineClipboardDocumentList className="h-5 w-5 text-[#00e5ff]" />
           <div className="min-w-0 flex-1">
-            <p className="text-[13px] font-semibold text-ink">{roleLabel}</p>
-            <p className="truncate text-[11px] text-ink-muted">{user.email}</p>
+            <p className="text-[13px] font-semibold text-white">{roleLabel}</p>
+            <p className="truncate text-[11px] text-[#8b9aab]">{user.email}</p>
           </div>
         </header>
 
-        <div className="scrollbar-thin flex gap-2 overflow-x-auto border-b border-border/70 bg-white px-3 py-2 lg:hidden">
+        <div className="scrollbar-thin relative z-[1] flex gap-2 overflow-x-auto border-b border-[#00e5ff]/10 bg-[#0b1220]/80 px-3 py-2 lg:hidden">
           {visibleNav.map((item) => (
             <Link
               key={item.href}
@@ -195,8 +198,8 @@ export function AdminShell({
               className={cn(
                 "shrink-0 rounded-full px-3 py-1.5 text-[11px] font-semibold",
                 isActive(pathname, item.href)
-                  ? "bg-brand-50 text-brand-700"
-                  : "bg-[#faf8fc] text-ink-muted",
+                  ? "bg-[#00e5ff]/15 text-[#00e5ff]"
+                  : "bg-white/[0.04] text-[#8b9aab]"
               )}
             >
               {item.label}
@@ -204,7 +207,7 @@ export function AdminShell({
           ))}
         </div>
 
-        <main className="scrollbar-thin flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <main className="hud-shell-main scrollbar-thin relative z-[1] flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           <AdminRouteGuard user={user}>{children}</AdminRouteGuard>
         </main>
       </div>
@@ -222,14 +225,18 @@ export function AdminStatCard({
   hint?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-border/80 bg-white p-4 shadow-[var(--shadow-card)]">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+    <div className="hud-panel !p-4">
+      <span className="hud-bracket hud-bracket-tl" aria-hidden />
+      <span className="hud-bracket hud-bracket-tr" aria-hidden />
+      <span className="hud-bracket hud-bracket-bl" aria-hidden />
+      <span className="hud-bracket hud-bracket-br" aria-hidden />
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#5c6b7c]">
         {label}
       </p>
-      <p className="mt-1 font-[family-name:var(--font-display)] text-2xl font-semibold tabular-nums text-ink">
+      <p className="hud-stat-value mt-1 text-2xl font-semibold tabular-nums text-white">
         {value}
       </p>
-      {hint && <p className="mt-1 text-[12px] text-ink-muted">{hint}</p>}
+      {hint && <p className="mt-1 text-[12px] text-[#8b9aab]">{hint}</p>}
     </div>
   );
 }
@@ -246,11 +253,11 @@ export function AdminPageHeader({
   return (
     <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h1 className="font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-ink">
+        <h1 className="font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-[#00e5ff] [text-shadow:0_0_24px_rgba(0,229,255,0.35)]">
           {title}
         </h1>
         {description && (
-          <p className="mt-1 text-sm text-ink-muted">{description}</p>
+          <p className="mt-1 text-sm text-[#8b9aab]">{description}</p>
         )}
       </div>
       {actions}

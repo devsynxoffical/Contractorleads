@@ -915,6 +915,122 @@ body {
   color: var(--hud-cyan) !important;
 }
 
-.app-shell--hud .hud-credits-card .text-brand-600 {
-  color: var(--hud-cyan) !important;
+/* HUD vector world map (jsvectormap) — matches Traffic Analytics look */
+.lead-vector-map .jvm-container {
+  background: transparent !important;
+}
+
+.lead-vector-map .jvm-zoom-btn {
+  background: rgba(11, 18, 32, 0.92) !important;
+  border: 1px solid rgba(0, 229, 255, 0.28) !important;
+  color: #00e5ff !important;
+  border-radius: 2px !important;
+  width: 26px !important;
+  height: 26px !important;
+  line-height: 24px !important;
+  font-size: 16px !important;
+  box-shadow: none !important;
+}
+
+.lead-vector-map .jvm-zoom-btn:hover {
+  background: rgba(0, 229, 255, 0.12) !important;
+}
+
+.lead-vector-map .jvm-tooltip {
+  background: rgba(11, 18, 32, 0.96) !important;
+  border: 1px solid rgba(0, 229, 255, 0.3) !important;
+  color: #e8eef6 !important;
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  padding: 6px 10px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* ─── Super Admin HUD cascade (restyle list/table pages) ─── */
+.admin-shell--hud {
+  background: #070d18;
+  color: var(--hud-text);
+}
+
+.admin-shell--hud .hud-shell-main .text-ink {
+  color: #e8eef6 !important;
+}
+
+.admin-shell--hud .hud-shell-main .text-ink-muted {
+  color: #8b9aab !important;
+}
+
+.admin-shell--hud .hud-shell-main .text-ink-faint {
+  color: #5c6b7c !important;
+}
+
+.admin-shell--hud .hud-shell-main .bg-white {
+  background: rgba(11, 18, 32, 0.88) !important;
+  color: #e8eef6;
+}
+
+.admin-shell--hud .hud-shell-main .border-border,
+.admin-shell--hud .hud-shell-main [class*="border-border"] {
+  border-color: rgba(0, 229, 255, 0.14) !important;
+}
+
+.admin-shell--hud .hud-shell-main [class*="shadow-[var(--shadow"] {
+  box-shadow: inset 0 0 40px rgba(0, 229, 255, 0.03) !important;
+}
+
+.admin-shell--hud .hud-shell-main .bg-brand-50,
+.admin-shell--hud .hud-shell-main .bg-brand-100 {
+  background: rgba(0, 229, 255, 0.12) !important;
+  color: #00e5ff !important;
+}
+
+.admin-shell--hud .hud-shell-main .text-brand-600,
+.admin-shell--hud .hud-shell-main .text-brand-700 {
+  color: #00e5ff !important;
+}
+
+.admin-shell--hud .hud-shell-main .bg-brand-600 {
+  background: #00e5ff !important;
+  color: #041018 !important;
+}
+
+.admin-shell--hud .hud-shell-main .saas-input,
+.admin-shell--hud .hud-shell-main input:not([type="checkbox"]):not([type="radio"]),
+.admin-shell--hud .hud-shell-main select,
+.admin-shell--hud .hud-shell-main textarea {
+  background: rgba(7, 13, 24, 0.9) !important;
+  border-color: rgba(0, 229, 255, 0.2) !important;
+  color: #e8eef6 !important;
+}
+
+.admin-shell--hud .hud-shell-main input::placeholder,
+.admin-shell--hud .hud-shell-main textarea::placeholder {
+  color: #5c6b7c !important;
+}
+
+.admin-shell--hud .hud-shell-main table thead {
+  background: rgba(0, 229, 255, 0.06) !important;
+  color: #8b9aab !important;
+}
+
+.admin-shell--hud .hud-shell-main table tbody tr {
+  border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.admin-shell--hud .hud-shell-main table tbody tr:hover {
+  background: rgba(0, 229, 255, 0.04) !important;
+}
+
+.admin-shell--hud .hud-shell-main .bg-red-50 {
+  background: rgba(255, 77, 109, 0.12) !important;
+}
+
+.admin-shell--hud .hud-shell-main .text-red-600,
+.admin-shell--hud .hud-shell-main .text-red-700 {
+  color: #ff4d6d !important;
+}
+
+.admin-shell--hud .hud-shell-main a.text-brand-600,
+.admin-shell--hud .hud-shell-main a.text-brand-700 {
+  color: #00e5ff !important;
 }

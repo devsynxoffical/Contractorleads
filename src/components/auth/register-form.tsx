@@ -69,7 +69,7 @@ function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
   return (
     <>
       <div className="mb-8">
-        <h1 className="text-[28px] font-bold tracking-tight text-white sm:text-[32px]">
+        <h1 className="text-[28px] font-bold tracking-tight text-[#00e5ff] sm:text-[32px] [text-shadow:0_0_28px_rgba(0,229,255,0.35)]">
           Create Account
         </h1>
         <p className="mt-2 text-[15px] text-[#8b9aab]">

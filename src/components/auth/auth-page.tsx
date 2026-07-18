@@ -3,21 +3,43 @@
 import { useState, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import {
+  HiOutlineBolt,
+  HiOutlineMap,
+  HiOutlineShieldCheck,
+} from "react-icons/hi2";
 import { LoginForm } from "./login-form";
 import { RegisterForm } from "./register-form";
 
 type AuthMode = "login" | "register";
 
-const panelCopy: Record<AuthMode, { title: string; subtitle: string }> = {
+const panelCopy: Record<
+  AuthMode,
+  {
+    title: string;
+    subtitle: string;
+    features: { icon: typeof HiOutlineBolt; label: string }[];
+  }
+> = {
   login: {
     title: "Welcome Back",
     subtitle:
       "Sign in to access verified home-service leads and grow your agency across Tier 1 countries.",
+    features: [
+      { icon: HiOutlineShieldCheck, label: "Verified contacts only" },
+      { icon: HiOutlineMap, label: "Global lead map & scoring" },
+      { icon: HiOutlineBolt, label: "AI outreach in one click" },
+    ],
   },
   register: {
     title: "Unleash Your Pipeline",
     subtitle:
       "Join the next generation of agency owners — start with 20 free trial credits, no card required.",
+    features: [
+      { icon: HiOutlineBolt, label: "20 free trial credits" },
+      { icon: HiOutlineShieldCheck, label: "Business email verified" },
+      { icon: HiOutlineMap, label: "Search any Tier 1 market" },
+    ],
   },
 };
 
@@ -38,7 +60,7 @@ export function AuthPage({ initialMode = "login" }: { initialMode?: AuthMode }) 
   const copy = panelCopy[mode];
 
   return (
-    <div className="auth-page relative flex min-h-screen overflow-hidden">
+    <div className="auth-page relative flex min-h-screen overflow-hidden bg-[#070d18]">
       <div
         className="pointer-events-none absolute inset-0"
         style={{
@@ -77,6 +99,7 @@ export function AuthPage({ initialMode = "login" }: { initialMode?: AuthMode }) 
             style={{
               fontFamily:
                 "var(--font-outfit), var(--font-jakarta), system-ui, sans-serif",
+              textShadow: "0 0 40px rgba(0,229,255,0.25)",
             }}
           >
             {copy.title}
@@ -90,9 +113,27 @@ export function AuthPage({ initialMode = "login" }: { initialMode?: AuthMode }) 
           >
             {copy.subtitle}
           </p>
-          <div className="mt-8 flex gap-3">
+
+          <ul className="mt-10 space-y-3.5">
+            {copy.features.map((f) => {
+              const Icon = f.icon;
+              return (
+                <li key={f.label} className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 items-center justify-center border border-[#00e5ff]/30 bg-[#00e5ff]/10 text-[#00e5ff]">
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <span className="text-sm font-medium text-[#c5d0dc]">
+                    {f.label}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+
+          <div className="mt-8 flex flex-wrap gap-2">
             <span className="hud-pill">Verified leads</span>
             <span className="hud-pill hud-pill-muted">AI scored</span>
+            <span className="hud-pill hud-pill-muted">Global map</span>
           </div>
         </div>
 

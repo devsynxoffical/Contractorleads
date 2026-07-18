@@ -18,8 +18,22 @@ export default async function LeadMapPage() {
       latitude: { not: null },
       longitude: { not: null },
     },
-    take: 50,
+    take: 250,
     orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      businessName: true,
+      address: true,
+      latitude: true,
+      longitude: true,
+      qualityTier: true,
+      googleMapsLink: true,
+      city: true,
+      state: true,
+      country: true,
+      industry: true,
+      leadScore: true,
+    },
   });
 
   const geoLeads = leads
@@ -32,13 +46,18 @@ export default async function LeadMapPage() {
       longitude: l.longitude as number,
       qualityTier: l.qualityTier,
       googleMapsLink: l.googleMapsLink,
+      city: l.city,
+      state: l.state,
+      country: l.country,
+      industry: l.industry,
+      leadScore: l.leadScore,
     }));
 
   return (
     <div className="page-pad">
       <PageHeader
         title="Lead Map"
-        description="Geographic plot of leads with coordinates from Google Places."
+        description="HUD-style global map with cyan location pins — same look as Traffic Analytics."
         actions={
           <PrimaryActionLink href="/leads/search">
             <HiOutlineMagnifyingGlass className="h-4 w-4" />
