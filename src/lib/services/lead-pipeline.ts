@@ -36,7 +36,7 @@ export type SearchParams = {
   zip?: string;
   customLocation?: string;
   radius?: number;
-  /** Default true — only keep leads with LinkedIn + social. */
+  /** Default true — only keep leads with LinkedIn + social + website owner. */
   requireSocialPresence?: boolean;
 };
 
@@ -48,17 +48,24 @@ type SocialFields = {
   instagram?: string | null;
   youtube?: string | null;
   tiktok?: string | null;
+  ownerName?: string | null;
 };
 
-/** LinkedIn profile/company/owner + at least one consumer social network. */
-export function leadHasLinkedInAndSocial(lead: SocialFields): boolean {
+/** LinkedIn + consumer social + owner name scraped from the business website. */
+export function leadHasLinkedInSocialAndOwner(lead: SocialFields): boolean {
   const hasLinkedIn = Boolean(
     lead.linkedinUrl || lead.linkedinCompanyUrl || lead.linkedinOwnerUrl
   );
   const hasSocial = Boolean(
     lead.facebook || lead.instagram || lead.youtube || lead.tiktok
   );
-  return hasLinkedIn && hasSocial;
+  const hasOwner = Boolean(lead.ownerName?.trim());
+  return hasLinkedIn && hasSocial && hasOwner;
+}
+
+/** @deprecated use leadHasLinkedInSocialAndOwner */
+export function leadHasLinkedInAndSocial(lead: SocialFields): boolean {
+  return leadHasLinkedInSocialAndOwner(lead);
 }
 
 /** Race a promise against a timeout; on timeout return fallback (never block pipeline). */
@@ -83,10 +90,11 @@ async function withTimeout<T>(
 export async function runLeadPipeline(params: SearchParams) {
   const requireSocial = params.requireSocialPresence !== false;
   const targetCount = params.locationScope === "country" ? 10 : 8;
+  // Over-fetch harder — LinkedIn + social + owner is a stricter gate
   const fetchLimit = requireSocial
     ? params.locationScope === "country"
-      ? 24
-      : 20
+      ? 28
+      : 24
     : targetCount;
 
   const location =
@@ -125,6 +133,12 @@ export async function runLeadPipeline(params: SearchParams) {
 
   for (const place of places) {
     if (leads.length >= targetCount) break;
+
+    // Prefer businesses with a website — owner details come from site pages
+    if (requireSocial && !place.website) {
+      skippedNoSocial += 1;
+      continue;
+    }
 
     // Trust Google Business Profile website — never wipe it because our
     // reachability check failed (many sites block bots / HEAD).
@@ -196,9 +210,10 @@ export async function runLeadPipeline(params: SearchParams) {
       instagram: websiteSocial.instagram ?? existingLead?.instagram,
       youtube: websiteSocial.youtube ?? existingLead?.youtube,
       tiktok: websiteSocial.tiktok ?? existingLead?.tiktok,
+      ownerName: websitePeople.owner?.name ?? existingLead?.ownerName,
     };
 
-    if (requireSocial && !leadHasLinkedInAndSocial(socialSnapshot)) {
+    if (requireSocial && !leadHasLinkedInSocialAndOwner(socialSnapshot)) {
       skippedNoSocial += 1;
       continue;
     }

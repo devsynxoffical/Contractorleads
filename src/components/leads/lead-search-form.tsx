@@ -290,14 +290,14 @@ export function LeadSearchForm() {
       setStage(4);
       if (data.meta?.requireSocialPresence && data.meta?.skippedNoSocial > 0) {
         setFilterNote(
-          `Filtered to LinkedIn + social only — skipped ${data.meta.skippedNoSocial} businesses without profiles.`
+          `Filtered to LinkedIn + social + website owner — skipped ${data.meta.skippedNoSocial} businesses missing those details.`
         );
       } else if (
         data.meta?.requireSocialPresence &&
         data.leads?.length === 0
       ) {
         setFilterNote(
-          "No businesses in this area had both LinkedIn and social profiles. Try a wider radius or turn off the filter."
+          "No businesses in this area had LinkedIn, social profiles, and an owner name on their website. Try a wider radius or turn off the filter."
         );
       }
       saveFinderSearchCache({
@@ -600,12 +600,13 @@ export function LeadSearchForm() {
                 />
                 <span className="text-[13px] leading-snug text-[#c5d0dc]">
                   <span className="font-semibold text-[#00e5ff]">
-                    Require LinkedIn + social
+                    Require LinkedIn, social &amp; owner name
                   </span>
                   <span className="mt-0.5 block text-[#8b9aab]">
-                    Only return businesses with a LinkedIn profile and at least
-                    one of Facebook, Instagram, YouTube, or TikTok. We scan more
-                    Places results to fill your list.
+                    Only return businesses with a website that lists an owner
+                    (or founder/CEO), plus LinkedIn and at least one of
+                    Facebook, Instagram, YouTube, or TikTok. We scan more Places
+                    results to fill your list.
                   </span>
                 </span>
               </label>

@@ -68,7 +68,7 @@ export async function POST(request: Request) {
 
     const filterNote =
       result.meta.requireSocialPresence && result.meta.skippedNoSocial > 0
-        ? ` (${result.meta.skippedNoSocial} skipped — no LinkedIn/social)`
+        ? ` (${result.meta.skippedNoSocial} skipped — missing LinkedIn, social, or owner)`
         : "";
 
     await logActivity(

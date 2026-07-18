@@ -18,7 +18,7 @@ export type SearchCriteriaInput = {
   zip?: string;
   customLocation?: string;
   radius?: number | string;
-  /** Keep only leads with LinkedIn + at least one social profile. Default true. */
+  /** Keep only leads with LinkedIn + social + website owner name. Default true. */
   requireSocialPresence?: boolean | string;
 };
 
@@ -31,6 +31,7 @@ export type ResolvedSearchCriteria = {
   zip?: string;
   customLocation?: string;
   radius?: number;
+  /** LinkedIn + social + website owner name required when true. */
   requireSocialPresence: boolean;
 };
 
