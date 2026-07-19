@@ -1289,3 +1289,25 @@ html:not([data-theme="light"]) .saas-input {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Gamma-style marketing footer */
+.marketing-gamma-footer {
+  color: #fff;
+}
+.marketing-footer-wordmark {
+  font-size: clamp(4.5rem, 22vw, 14rem);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.02) 0%,
+    rgba(255, 255, 255, 0.07) 45%,
+    rgba(236, 72, 153, 0.12) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.06);
+  user-select: none;
+  white-space: nowrap;
+  width: 100%;
+  overflow: hidden;
+}
