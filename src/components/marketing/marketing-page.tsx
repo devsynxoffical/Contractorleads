@@ -30,6 +30,13 @@ import {
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
 import { FloatingDashboard } from "./marketing-dashboard";
 import {
+  CloudDecor,
+  SparklesDecor,
+  SoftBlob,
+  ContentPhoto,
+  MARKETING_PHOTOS,
+} from "./marketing-decor";
+import {
   Reveal,
   TiltCard,
   AnimatedNumber,
@@ -277,27 +284,31 @@ function Hero() {
 
 function SocialProof() {
   return (
-    <section className="relative border-y border-border/60 py-12">
-      <p className="mb-6 text-center text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-faint">
-        Agencies scaling home-service pipelines
-      </p>
-      <InfiniteMarquee speed={35}>
-        {LOGOS.map((name) => (
-          <span
-            key={name}
-            className="whitespace-nowrap text-[15px] font-semibold tracking-tight text-ink-muted/70"
-          >
-            {name}
-          </span>
-        ))}
-      </InfiniteMarquee>
+    <section className="relative overflow-hidden border-y border-violet-100 bg-gradient-to-b from-[#f4f7ff] via-[#faf5ff] to-[#fdf2f8] py-14 sm:py-16">
+      <CloudDecor />
+      <SparklesDecor />
+      <div className="relative z-10">
+        <p className="mb-6 text-center text-[13px] font-medium text-slate-500">
+          Agencies scaling home-service pipelines
+        </p>
+        <InfiniteMarquee speed={35}>
+          {LOGOS.map((name) => (
+            <span
+              key={name}
+              className="whitespace-nowrap rounded-full border border-white/80 bg-white/75 px-5 py-2 text-[14px] font-semibold tracking-tight text-slate-600 shadow-sm backdrop-blur"
+            >
+              {name}
+            </span>
+          ))}
+        </InfiniteMarquee>
+      </div>
     </section>
   );
 }
 
 function DashboardSection() {
   return (
-    <section id="dashboard" className="relative overflow-hidden py-24 sm:py-32">
+    <section id="dashboard" className="relative overflow-hidden bg-[var(--canvas)] py-24 sm:py-32">
       <AuroraBlob className="left-1/2 top-1/2 h-[480px] w-[480px] -translate-x-1/2 -translate-y-1/2 opacity-35" />
       <div className="relative mx-auto max-w-6xl px-5 text-center sm:px-8">
         <Reveal>
@@ -309,10 +320,7 @@ function DashboardSection() {
             Glass panels, live scores, and pipeline motion — built to feel like Linear meets a trading desk.
           </p>
         </Reveal>
-        <div className="mt-14 lg:hidden">
-          <FloatingDashboard />
-        </div>
-        <div className="mt-14 hidden lg:block">
+        <div className="mt-14">
           <FloatingDashboard />
         </div>
       </div>
@@ -322,34 +330,102 @@ function DashboardSection() {
 
 function ProblemSection() {
   return (
-    <section className="relative py-24 sm:py-28">
-      <div className="mx-auto max-w-6xl px-5 sm:px-8">
-        <Reveal className="max-w-xl">
-          <SectionEyebrow>The problem</SectionEyebrow>
-          <SectionTitle className="mt-3">
-            Contractor growth dies in the handoff
-          </SectionTitle>
-        </Reveal>
-        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {PAINS.map((p, i) => {
-            const Icon = p.icon;
-            return (
-              <Reveal key={p.title} delay={i * 0.05}>
-                <TiltCard className="h-full">
-                  <Glass className="h-full p-6">
-                    <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-brand-50 text-brand-400">
-                      <Icon className="h-5 w-5" />
-                    </span>
-                    <h3 className="mt-4 font-[family-name:var(--font-display)] text-[18px] font-semibold text-ink">
-                      {p.title}
-                    </h3>
-                    <p className="mt-2 text-[14px] leading-relaxed text-ink-muted">{p.body}</p>
-                  </Glass>
-                </TiltCard>
-              </Reveal>
-            );
-          })}
+    <section className="relative overflow-hidden bg-gradient-to-b from-[#f8fafc] via-[#f5f3ff] to-white py-24 sm:py-28">
+      <SoftBlob color="violet" className="-right-16 top-20 h-64 w-64" />
+      <SoftBlob color="pink" className="-left-10 bottom-10 h-56 w-56" />
+      <CloudDecor side="right" className="opacity-70" />
+      <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
+        <div className="grid items-center gap-12 lg:grid-cols-2">
+          <Reveal>
+            <SectionEyebrow>The problem</SectionEyebrow>
+            <SectionTitle className="mt-3 text-slate-900">
+              Contractor growth dies in the handoff
+            </SectionTitle>
+            <p className="mt-4 text-[15px] leading-relaxed text-slate-500">
+              Fake lists, slow follow-up, and five tabs of tools — agencies lose deals before the first estimate.
+            </p>
+            <div className="mt-8 grid gap-3 sm:grid-cols-2">
+              {PAINS.slice(0, 4).map((p, i) => {
+                const Icon = p.icon;
+                return (
+                  <motion.div
+                    key={p.title}
+                    initial={{ opacity: 0, y: 16 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.05 }}
+                    className="rounded-2xl border border-violet-100 bg-white p-4 shadow-[0_10px_30px_rgba(100,60,160,0.06)]"
+                  >
+                    <Icon className="h-5 w-5 text-violet-500" />
+                    <h3 className="mt-2 text-[14px] font-semibold text-slate-900">{p.title}</h3>
+                    <p className="mt-1 text-[12px] leading-relaxed text-slate-500">{p.body}</p>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </Reveal>
+          <Reveal delay={0.1}>
+            <div className="relative mx-auto aspect-[4/5] w-full max-w-md lg:max-w-none">
+              <ContentPhoto
+                src={MARKETING_PHOTOS.contractor}
+                alt="Contractor working on a job site"
+                className="absolute inset-0"
+              />
+              <motion.div
+                className="absolute -bottom-4 -left-3 z-10 max-w-[200px] rounded-2xl border border-white bg-white/95 p-3 shadow-xl backdrop-blur sm:-left-6"
+                animate={{ y: [0, -8, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-violet-500">
+                  Missed opportunity
+                </p>
+                <p className="mt-1 text-[13px] font-semibold text-slate-800">
+                  Lead went cold in 12 minutes
+                </p>
+              </motion.div>
+            </div>
+          </Reveal>
         </div>
+      </div>
+    </section>
+  );
+}
+
+function LifestyleBand() {
+  return (
+    <section className="relative overflow-hidden py-16 sm:py-20">
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(120deg, #ec4899 0%, #d946ef 45%, #7c3aed 100%)",
+        }}
+      />
+      <div className="relative z-10 mx-auto grid max-w-6xl gap-6 px-5 sm:grid-cols-3 sm:px-8">
+        {[
+          { img: MARKETING_PHOTOS.home, label: "Home-service niches", sub: "HVAC · Roofing · Plumbing" },
+          { img: MARKETING_PHOTOS.meeting, label: "Agency outreach", sub: "Scripts that book calls" },
+          { img: MARKETING_PHOTOS.analytics, label: "Live scoring", sub: "Hot · Warm · Nurture" },
+        ].map((item, i) => (
+          <Reveal key={item.label} delay={i * 0.08}>
+            <div className="group relative aspect-[5/4] overflow-hidden rounded-[28px] shadow-2xl ring-2 ring-white/30">
+              <Image
+                src={item.img}
+                alt={item.label}
+                fill
+                className="object-cover transition duration-700 group-hover:scale-105"
+                sizes="(max-width: 640px) 100vw, 33vw"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+              <div className="absolute bottom-0 p-5">
+                <p className="font-[family-name:var(--font-display)] text-[18px] font-semibold text-white">
+                  {item.label}
+                </p>
+                <p className="text-[13px] text-white/75">{item.sub}</p>
+              </div>
+            </div>
+          </Reveal>
+        ))}
       </div>
     </section>
   );
@@ -357,65 +433,73 @@ function ProblemSection() {
 
 function SolutionBento() {
   return (
-    <section className="relative overflow-hidden py-24">
-      <div className="mx-auto max-w-6xl px-5 sm:px-8">
+    <section className="relative overflow-hidden bg-gradient-to-b from-white via-[#faf5ff] to-[#fdf2f8] py-24">
+      <CloudDecor side="left" className="opacity-60" />
+      <SparklesDecor className="top-10" />
+      <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
         <Reveal className="max-w-xl">
-          <SectionEyebrow>Solution</SectionEyebrow>
-          <SectionTitle className="mt-3">One system. Zero busywork.</SectionTitle>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-violet-500">
+            Solution
+          </p>
+          <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.85rem,4.2vw,3.25rem)] font-semibold tracking-tight text-slate-900">
+            One system. Zero busywork.
+          </h2>
         </Reveal>
         <div className="mt-12 grid auto-rows-[minmax(160px,auto)] gap-4 md:grid-cols-4 md:grid-rows-2">
           <Reveal className="md:col-span-2 md:row-span-2">
-            <Glass className="flex h-full flex-col justify-between overflow-hidden p-7">
+            <div className="flex h-full flex-col justify-between overflow-hidden rounded-[28px] border border-violet-100 bg-white p-7 shadow-[0_16px_48px_rgba(100,60,160,0.08)]">
               <div>
-                <SectionEyebrow>Lead Finder</SectionEyebrow>
-                <h3 className="mt-3 font-[family-name:var(--font-display)] text-[28px] font-semibold text-ink">
+                <p className="text-[12px] font-semibold uppercase tracking-wider text-violet-500">
+                  Lead Finder
+                </p>
+                <h3 className="mt-3 font-[family-name:var(--font-display)] text-[28px] font-semibold text-slate-900">
                   Search any trade in any metro
                 </h3>
-                <p className="mt-3 max-w-sm text-[14px] text-ink-muted">
+                <p className="mt-3 max-w-sm text-[14px] text-slate-500">
                   Filters for industry, country, city, ZIP, and custom areas — with social + owner requirements.
                 </p>
               </div>
-              <div className="mt-8 h-36 rounded-2xl border border-border bg-[var(--input-bg)] p-4">
-                <div className="flex h-full items-end gap-1">
-                  {[30, 45, 38, 60, 72, 55, 88, 70].map((h, i) => (
-                    <motion.div
-                      key={i}
-                      className="flex-1 origin-bottom rounded-t"
-                      style={{ background: LOGO_GRADIENT, height: `${h}%` }}
-                      initial={{ scaleY: 0 }}
-                      whileInView={{ scaleY: 1 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: i * 0.05 }}
-                    />
-                  ))}
-                </div>
+              <div className="relative mt-8 h-40 overflow-hidden rounded-2xl">
+                <Image
+                  src={MARKETING_PHOTOS.laptop}
+                  alt="Agency workspace"
+                  fill
+                  className="object-cover"
+                  sizes="600px"
+                />
+                <div className="absolute inset-0 bg-gradient-to-tr from-violet-600/40 to-pink-500/20" />
               </div>
-            </Glass>
+            </div>
           </Reveal>
           <Reveal delay={0.08} className="md:col-span-2">
-            <Glass className="h-full p-7">
-              <HiOutlineSparkles className="h-6 w-6 text-brand-400" />
-              <h3 className="mt-3 font-[family-name:var(--font-display)] text-[20px] font-semibold text-ink">
-                AI qualification that feels human
-              </h3>
-              <p className="mt-2 text-[14px] text-ink-muted">
-                Revenue bands, opportunity scores, and a one-line angle your SDR can send today.
-              </p>
-            </Glass>
+            <div className="flex h-full gap-4 overflow-hidden rounded-[28px] border border-violet-100 bg-white p-6 shadow-[0_12px_40px_rgba(100,60,160,0.07)]">
+              <div className="relative hidden h-28 w-28 shrink-0 overflow-hidden rounded-2xl sm:block">
+                <Image src={MARKETING_PHOTOS.team} alt="Team" fill className="object-cover" sizes="112px" />
+              </div>
+              <div>
+                <HiOutlineSparkles className="h-6 w-6 text-violet-500" />
+                <h3 className="mt-3 font-[family-name:var(--font-display)] text-[20px] font-semibold text-slate-900">
+                  AI qualification that feels human
+                </h3>
+                <p className="mt-2 text-[14px] text-slate-500">
+                  Revenue bands, opportunity scores, and a one-line angle your SDR can send today.
+                </p>
+              </div>
+            </div>
           </Reveal>
           <Reveal delay={0.12}>
-            <Glass className="h-full p-6">
-              <HiOutlineMap className="h-5 w-5 text-brand-400" />
-              <h3 className="mt-3 text-[16px] font-semibold text-ink">Map HUD</h3>
-              <p className="mt-1 text-[13px] text-ink-muted">Global density at a glance.</p>
-            </Glass>
+            <div className="h-full rounded-[28px] border border-violet-100 bg-white p-6 shadow-sm">
+              <HiOutlineMap className="h-5 w-5 text-violet-500" />
+              <h3 className="mt-3 text-[16px] font-semibold text-slate-900">Map HUD</h3>
+              <p className="mt-1 text-[13px] text-slate-500">Global density at a glance.</p>
+            </div>
           </Reveal>
           <Reveal delay={0.16}>
-            <Glass className="h-full p-6">
-              <HiOutlineChatBubbleLeftRight className="h-5 w-5 text-brand-400" />
-              <h3 className="mt-3 text-[16px] font-semibold text-ink">Ask Expert</h3>
-              <p className="mt-1 text-[13px] text-ink-muted">Chat history that remembers.</p>
-            </Glass>
+            <div className="h-full rounded-[28px] border border-violet-100 bg-white p-6 shadow-sm">
+              <HiOutlineChatBubbleLeftRight className="h-5 w-5 text-violet-500" />
+              <h3 className="mt-3 text-[16px] font-semibold text-slate-900">Ask Expert</h3>
+              <p className="mt-1 text-[13px] text-slate-500">Chat history that remembers.</p>
+            </div>
           </Reveal>
         </div>
       </div>
@@ -425,11 +509,18 @@ function SolutionBento() {
 
 function FeaturesGrid() {
   return (
-    <section id="features" className="relative py-24 sm:py-28">
-      <div className="mx-auto max-w-6xl px-5 sm:px-8">
+    <section id="features" className="relative overflow-hidden bg-gradient-to-b from-[#fdf2f8] via-white to-[#f5f3ff] py-24 sm:py-28">
+      <CloudDecor side="both" className="opacity-45" />
+      <SoftBlob color="pink" className="left-10 top-10 h-48 w-48" />
+      <SoftBlob color="violet" className="bottom-10 right-10 h-56 w-56" />
+      <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
         <Reveal className="max-w-xl">
-          <SectionEyebrow>Features</SectionEyebrow>
-          <SectionTitle className="mt-3">Twelve instruments. One desk.</SectionTitle>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-violet-500">
+            Features
+          </p>
+          <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.85rem,4.2vw,3.25rem)] font-semibold tracking-tight text-slate-900">
+            Twelve instruments. One desk.
+          </h2>
         </Reveal>
         <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {FEATURES.map((f, i) => {
@@ -439,13 +530,13 @@ function FeaturesGrid() {
                 <motion.div
                   whileHover={{ y: -6, scale: 1.02 }}
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  className="group relative h-full overflow-hidden rounded-3xl border border-border bg-[var(--surface)] p-5"
+                  className="group relative h-full overflow-hidden rounded-3xl border border-violet-100 bg-white p-5 shadow-[0_10px_30px_rgba(100,60,160,0.06)]"
                 >
                   <div
                     className="absolute inset-0 opacity-0 transition group-hover:opacity-100"
                     style={{
                       background:
-                        "radial-gradient(circle at 30% 0%, rgba(236,72,153,0.18), transparent 55%)",
+                        "radial-gradient(circle at 30% 0%, rgba(236,72,153,0.12), transparent 55%)",
                     }}
                   />
                   <span
@@ -454,8 +545,8 @@ function FeaturesGrid() {
                   >
                     <Icon className="h-5 w-5" />
                   </span>
-                  <h3 className="relative mt-4 text-[15px] font-semibold text-ink">{f.title}</h3>
-                  <p className="relative mt-1.5 text-[13px] leading-relaxed text-ink-muted">{f.copy}</p>
+                  <h3 className="relative mt-4 text-[15px] font-semibold text-slate-900">{f.title}</h3>
+                  <p className="relative mt-1.5 text-[13px] leading-relaxed text-slate-500">{f.copy}</p>
                 </motion.div>
               </Reveal>
             );
@@ -475,14 +566,19 @@ function WorkflowSection() {
   const line = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
 
   return (
-    <section ref={ref} className="relative overflow-hidden py-24">
-      <div className="mx-auto max-w-3xl px-5 sm:px-8">
+    <section ref={ref} className="relative overflow-hidden bg-gradient-to-b from-[#f5f3ff] to-white py-24">
+      <SoftBlob color="violet" className="left-1/2 top-0 h-64 w-64 -translate-x-1/2" />
+      <div className="relative z-10 mx-auto max-w-3xl px-5 sm:px-8">
         <Reveal className="text-center">
-          <SectionEyebrow>Workflow</SectionEyebrow>
-          <SectionTitle className="mt-3">From search to booked job</SectionTitle>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-violet-500">
+            Workflow
+          </p>
+          <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.85rem,4vw,2.75rem)] font-semibold tracking-tight text-slate-900">
+            From search to booked job
+          </h2>
         </Reveal>
         <div className="relative mt-14">
-          <div className="absolute left-[15px] top-2 bottom-2 w-px bg-brand-50 sm:left-1/2 sm:-translate-x-px" />
+          <div className="absolute left-[15px] top-2 bottom-2 w-px bg-violet-100 sm:left-1/2 sm:-translate-x-px" />
           <motion.div
             className="absolute left-[15px] top-2 w-px sm:left-1/2 sm:-translate-x-px"
             style={{ height: line, background: LOGO_GRADIENT }}
@@ -491,14 +587,19 @@ function WorkflowSection() {
             {WORKFLOW.map((step, i) => (
               <Reveal key={step} delay={i * 0.04}>
                 <div className={`flex items-center gap-4 ${i % 2 === 1 ? "sm:flex-row-reverse" : ""}`}>
-                  <div className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[12px] font-bold text-white sm:absolute sm:left-1/2 sm:-translate-x-1/2"
+                  <div
+                    className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[12px] font-bold text-white sm:absolute sm:left-1/2 sm:-translate-x-1/2"
                     style={{ background: LOGO_GRADIENT }}
                   >
                     {i + 1}
                   </div>
-                  <Glass className={`flex-1 p-4 sm:max-w-[42%] ${i % 2 === 1 ? "sm:mr-auto" : "sm:ml-auto"}`}>
-                    <p className="text-[14px] font-semibold text-ink">{step}</p>
-                  </Glass>
+                  <div
+                    className={`flex-1 rounded-2xl border border-violet-100 bg-white p-4 shadow-sm sm:max-w-[42%] ${
+                      i % 2 === 1 ? "sm:mr-auto" : "sm:ml-auto"
+                    }`}
+                  >
+                    <p className="text-[14px] font-semibold text-slate-900">{step}</p>
+                  </div>
                 </div>
               </Reveal>
             ))}
@@ -511,20 +612,23 @@ function WorkflowSection() {
 
 function Integrations() {
   return (
-    <section className="border-y border-border py-16">
+    <section className="relative overflow-hidden border-y border-violet-100 bg-white py-16">
       <Reveal className="mb-8 text-center">
-        <SectionEyebrow>Integrations</SectionEyebrow>
-        <SectionTitle className="mt-2 text-[clamp(1.5rem,3vw,2.25rem)]">
+        <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-violet-500">
+          Integrations
+        </p>
+        <h2 className="mt-2 font-[family-name:var(--font-display)] text-[clamp(1.5rem,3vw,2.25rem)] font-semibold text-slate-900">
           Plugged into the stack you already trust
-        </SectionTitle>
+        </h2>
       </Reveal>
       <InfiniteMarquee speed={42} reverse>
         {INTEGRATIONS.map((name) => (
-          <Glass key={name} className="px-5 py-3">
-            <span className="whitespace-nowrap text-[13px] font-semibold text-ink-muted">
-              {name}
-            </span>
-          </Glass>
+          <span
+            key={name}
+            className="whitespace-nowrap rounded-full border border-violet-100 bg-[#f8f5ff] px-5 py-2.5 text-[13px] font-semibold text-slate-600 shadow-sm"
+          >
+            {name}
+          </span>
         ))}
       </InfiniteMarquee>
     </section>
@@ -819,9 +923,9 @@ function AnalyticsShowcase() {
     { label: "Pipeline health", value: 78 },
   ];
   return (
-    <section className="relative py-24">
+    <section className="relative overflow-hidden bg-[var(--canvas)] py-24">
       <AuroraBlob className="right-0 top-10 h-72 w-72 opacity-30" />
-      <div className="mx-auto max-w-6xl px-5 sm:px-8">
+      <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <Reveal>
             <SectionEyebrow>Analytics</SectionEyebrow>
@@ -829,6 +933,16 @@ function AnalyticsShowcase() {
             <p className="mt-4 text-[15px] text-ink-muted">
               Animated quality bars, booking trends, and forecast cues — so ops and sales share one truth.
             </p>
+            <div className="relative mt-8 hidden aspect-[16/10] overflow-hidden rounded-[24px] sm:block">
+              <Image
+                src={MARKETING_PHOTOS.analytics}
+                alt="Analytics dashboard"
+                fill
+                className="object-cover opacity-90"
+                sizes="560px"
+              />
+              <div className="absolute inset-0 bg-gradient-to-tr from-[#09060f]/80 via-transparent to-fuchsia-500/20" />
+            </div>
           </Reveal>
           <div className="grid grid-cols-2 gap-3">
             {metrics.map((m, i) => (
@@ -866,13 +980,36 @@ function AiSection() {
   ];
   const [active, setActive] = useState(0);
   return (
-    <section className="relative overflow-hidden py-24">
-      <div className="mx-auto max-w-6xl px-5 sm:px-8">
-        <div className="grid items-center gap-12 lg:grid-cols-[0.9fr_1.1fr]">
+    <section className="relative overflow-hidden bg-gradient-to-b from-[#f5f3ff] via-white to-[#fdf2f8] py-24">
+      <CloudDecor side="right" className="opacity-50" />
+      <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
+        <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
           <Reveal>
-            <SectionEyebrow>AI Assistant</SectionEyebrow>
-            <SectionTitle className="mt-3">Your growth expert on call</SectionTitle>
-            <p className="mt-4 text-[15px] text-ink-muted">
+            <div className="relative mx-auto aspect-[4/3] w-full max-w-lg overflow-hidden rounded-[28px] shadow-[0_20px_60px_rgba(100,60,160,0.15)] lg:max-w-none">
+              <Image
+                src={MARKETING_PHOTOS.meeting}
+                alt="Agency team planning outreach"
+                fill
+                className="object-cover"
+                sizes="(max-width: 1024px) 100vw, 50vw"
+              />
+              <div
+                className="absolute inset-0"
+                style={{
+                  background:
+                    "linear-gradient(135deg, rgba(236,72,153,0.35), transparent 50%, rgba(124,58,237,0.35))",
+                }}
+              />
+            </div>
+          </Reveal>
+          <Reveal delay={0.08}>
+            <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-violet-500">
+              AI Assistant
+            </p>
+            <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.85rem,4vw,2.75rem)] font-semibold tracking-tight text-slate-900">
+              Your growth expert on call
+            </h2>
+            <p className="mt-4 text-[15px] text-slate-500">
               Floating chat with history, presets, and streaming replies — powered by your business profile.
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
@@ -884,7 +1021,7 @@ function AiSection() {
                   className={`rounded-full border px-3.5 py-1.5 text-[12px] font-medium transition ${
                     active === i
                       ? "border-transparent text-white"
-                      : "border-border text-ink-muted hover:border-brand-500/40"
+                      : "border-violet-100 bg-white text-slate-600 hover:border-violet-300"
                   }`}
                   style={active === i ? { background: LOGO_GRADIENT } : undefined}
                 >
@@ -892,39 +1029,31 @@ function AiSection() {
                 </button>
               ))}
             </div>
-          </Reveal>
-          <Reveal delay={0.1}>
-            <TiltCard>
-              <Glass className="overflow-hidden p-5 sm:p-6">
-                <div className="mb-4 flex items-center gap-3">
-                  <motion.span
-                    className="flex h-11 w-11 items-center justify-center rounded-full text-white"
-                    style={{ background: LOGO_GRADIENT }}
-                    animate={{ boxShadow: ["0 0 0 0 rgba(217,70,239,0.5)", "0 0 0 16px rgba(217,70,239,0)", "0 0 0 0 rgba(217,70,239,0.5)"] }}
-                    transition={{ duration: 2.4, repeat: Infinity }}
-                  >
-                    <HiOutlineSparkles className="h-5 w-5" />
-                  </motion.span>
-                  <div>
-                    <p className="text-[14px] font-semibold text-ink">Ask Contractor Leads</p>
-                    <p className="text-[12px] text-ink-faint">Streaming · multi-turn</p>
-                  </div>
+            <div className="mt-6 rounded-[24px] border border-violet-100 bg-white p-5 shadow-[0_12px_40px_rgba(100,60,160,0.08)]">
+              <div className="mb-4 flex items-center gap-3">
+                <span
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-white"
+                  style={{ background: LOGO_GRADIENT }}
+                >
+                  <HiOutlineSparkles className="h-5 w-5" />
+                </span>
+                <div>
+                  <p className="text-[14px] font-semibold text-slate-900">Ask Contractor Leads</p>
+                  <p className="text-[12px] text-slate-400">Streaming · multi-turn</p>
                 </div>
-                <div className="space-y-3">
-                  <div className="ml-auto max-w-[85%] rounded-2xl rounded-br-md px-4 py-3 text-[13px] text-white" style={{ background: LOGO_GRADIENT }}>
-                    {prompts[active]}
-                  </div>
-                  <div className="max-w-[90%] rounded-2xl rounded-bl-md border border-border bg-[var(--input-bg)] px-4 py-3 text-[13px] leading-relaxed text-ink-muted">
-                    Here’s a direct angle: lead with the ZIPs they’re sleeping on, promise booked estimates in 14 days, and CTA with a 15‑min fit call…
-                    <motion.span
-                      className="ml-1 inline-block h-3.5 w-1.5 translate-y-0.5 bg-brand-400"
-                      animate={{ opacity: [1, 0, 1] }}
-                      transition={{ duration: 0.9, repeat: Infinity }}
-                    />
-                  </div>
-                </div>
-              </Glass>
-            </TiltCard>
+              </div>
+              <div className="ml-auto mb-3 max-w-[90%] rounded-2xl rounded-br-md px-4 py-3 text-[13px] text-white" style={{ background: LOGO_GRADIENT }}>
+                {prompts[active]}
+              </div>
+              <div className="max-w-[95%] rounded-2xl rounded-bl-md border border-violet-50 bg-[#f8f5ff] px-4 py-3 text-[13px] leading-relaxed text-slate-600">
+                Here’s a direct angle: lead with the ZIPs they’re sleeping on, promise booked estimates in 14 days, and CTA with a 15‑min fit call…
+                <motion.span
+                  className="ml-1 inline-block h-3.5 w-1.5 translate-y-0.5 bg-violet-500"
+                  animate={{ opacity: [1, 0, 1] }}
+                  transition={{ duration: 0.9, repeat: Infinity }}
+                />
+              </div>
+            </div>
           </Reveal>
         </div>
       </div>
@@ -935,16 +1064,25 @@ function AiSection() {
 function Pricing() {
   const [yearly, setYearly] = useState(true);
   return (
-    <section id="pricing" className="relative py-24 sm:py-28">
-      <div className="mx-auto max-w-6xl px-5 sm:px-8">
+    <section
+      id="pricing"
+      className="relative overflow-hidden bg-gradient-to-b from-white to-[#f5f3ff] py-24 sm:py-28"
+    >
+      <CloudDecor side="left" className="opacity-40" />
+      <SparklesDecor />
+      <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
         <Reveal className="text-center">
-          <SectionEyebrow>Pricing</SectionEyebrow>
-          <SectionTitle className="mt-3">Simple plans. Serious pipeline.</SectionTitle>
-          <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-border bg-[var(--surface)] p-1">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-violet-500">
+            Pricing
+          </p>
+          <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.85rem,4vw,3rem)] font-semibold tracking-tight text-slate-900">
+            Simple plans. Serious pipeline.
+          </h2>
+          <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-violet-100 bg-white p-1 shadow-sm">
             <button
               type="button"
               onClick={() => setYearly(false)}
-              className={`rounded-full px-4 py-1.5 text-[13px] font-semibold ${!yearly ? "text-white" : "text-ink-muted"}`}
+              className={`rounded-full px-4 py-1.5 text-[13px] font-semibold ${!yearly ? "text-white" : "text-slate-500"}`}
               style={!yearly ? { background: LOGO_GRADIENT } : undefined}
             >
               Monthly
@@ -952,7 +1090,7 @@ function Pricing() {
             <button
               type="button"
               onClick={() => setYearly(true)}
-              className={`rounded-full px-4 py-1.5 text-[13px] font-semibold ${yearly ? "text-white" : "text-ink-muted"}`}
+              className={`rounded-full px-4 py-1.5 text-[13px] font-semibold ${yearly ? "text-white" : "text-slate-500"}`}
               style={yearly ? { background: LOGO_GRADIENT } : undefined}
             >
               Yearly · save 20%
@@ -964,45 +1102,56 @@ function Pricing() {
             const price = plan.custom
               ? "Custom"
               : `$${yearly ? Math.round(plan.price * 0.8) : plan.price}`;
-            const Card = plan.popular ? GradientBorder : Glass;
             return (
               <Reveal key={plan.name} delay={i * 0.08}>
                 <motion.div whileHover={{ y: -8 }} className="h-full">
-                  <Card className="h-full">
-                    <div className={`flex h-full flex-col p-7 ${plan.popular ? "" : ""}`}>
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-[family-name:var(--font-display)] text-[20px] font-semibold text-ink">
-                          {plan.name}
-                        </h3>
-                        {plan.popular ? (
-                          <span className="rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase text-white" style={{ background: LOGO_GRADIENT }}>
-                            Popular
-                          </span>
-                        ) : null}
-                      </div>
-                      <p className="mt-2 text-[13px] text-ink-muted">{plan.blurb}</p>
-                      <p className="mt-6 font-[family-name:var(--font-display)] text-[40px] font-semibold text-ink">
-                        {price}
-                        {!plan.custom ? (
-                          <span className="text-[14px] font-medium text-ink-faint">/mo</span>
-                        ) : null}
-                      </p>
-                      <ul className="mt-6 flex-1 space-y-2.5">
-                        {plan.features.map((f) => (
-                          <li key={f} className="flex items-center gap-2 text-[13px] text-ink-muted">
-                            <HiOutlineCheck className="h-4 w-4 text-brand-400" /> {f}
-                          </li>
-                        ))}
-                      </ul>
-                      <Link
-                        href="/register"
-                        className="mt-8 inline-flex items-center justify-center rounded-2xl px-4 py-3 text-[13px] font-semibold text-white"
-                        style={{ background: LOGO_GRADIENT }}
-                      >
-                        {plan.custom ? "Talk to us" : "Start free"}
-                      </Link>
+                  <div
+                    className={`flex h-full flex-col rounded-[28px] border bg-white p-7 shadow-[0_16px_48px_rgba(100,60,160,0.08)] ${
+                      plan.popular
+                        ? "border-transparent ring-2 ring-violet-400"
+                        : "border-violet-100"
+                    }`}
+                    style={
+                      plan.popular
+                        ? { boxShadow: "0 0 0 1px transparent, 0 20px 50px rgba(168,85,247,0.2)" }
+                        : undefined
+                    }
+                  >
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-[family-name:var(--font-display)] text-[20px] font-semibold text-slate-900">
+                        {plan.name}
+                      </h3>
+                      {plan.popular ? (
+                        <span
+                          className="rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase text-white"
+                          style={{ background: LOGO_GRADIENT }}
+                        >
+                          Popular
+                        </span>
+                      ) : null}
                     </div>
-                  </Card>
+                    <p className="mt-2 text-[13px] text-slate-500">{plan.blurb}</p>
+                    <p className="mt-6 font-[family-name:var(--font-display)] text-[40px] font-semibold text-slate-900">
+                      {price}
+                      {!plan.custom ? (
+                        <span className="text-[14px] font-medium text-slate-400">/mo</span>
+                      ) : null}
+                    </p>
+                    <ul className="mt-6 flex-1 space-y-2.5">
+                      {plan.features.map((f) => (
+                        <li key={f} className="flex items-center gap-2 text-[13px] text-slate-600">
+                          <HiOutlineCheck className="h-4 w-4 text-violet-500" /> {f}
+                        </li>
+                      ))}
+                    </ul>
+                    <Link
+                      href="/register"
+                      className="mt-8 inline-flex items-center justify-center rounded-2xl px-4 py-3 text-[13px] font-semibold text-white"
+                      style={{ background: LOGO_GRADIENT }}
+                    >
+                      {plan.custom ? "Talk to us" : "Start free"}
+                    </Link>
+                  </div>
                 </motion.div>
               </Reveal>
             );
@@ -1015,34 +1164,67 @@ function Pricing() {
 
 function CaseStudies() {
   const cases = [
-    { title: "HVAC agency · Phoenix", metric: "+212%", label: "qualified leads / mo", quote: "We stopped buying lists. AI scoring cut wasted dials in half." },
-    { title: "Roofing media · Austin", metric: "3.1×", label: "reply rate", quote: "Owner enrichment + Meta checks made every pitch sharper." },
+    {
+      title: "HVAC agency · Phoenix",
+      metric: "+212%",
+      label: "qualified leads / mo",
+      quote: "We stopped buying lists. AI scoring cut wasted dials in half.",
+      img: MARKETING_PHOTOS.home,
+    },
+    {
+      title: "Roofing media · Austin",
+      metric: "3.1×",
+      label: "reply rate",
+      quote: "Owner enrichment + Meta checks made every pitch sharper.",
+      img: MARKETING_PHOTOS.contractor,
+    },
   ];
   return (
-    <section className="relative py-24">
-      <div className="mx-auto max-w-6xl px-5 sm:px-8">
+    <section className="relative overflow-hidden bg-gradient-to-b from-white via-[#faf5ff] to-[#fdf2f8] py-24">
+      <CloudDecor side="left" className="opacity-40" />
+      <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
         <Reveal>
-          <SectionEyebrow>Case studies</SectionEyebrow>
-          <SectionTitle className="mt-3">Proof in the pipeline</SectionTitle>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-violet-500">
+            Case studies
+          </p>
+          <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.85rem,4vw,3rem)] font-semibold tracking-tight text-slate-900">
+            Proof in the pipeline
+          </h2>
         </Reveal>
-        <div className="mt-10 grid gap-4 lg:grid-cols-2">
+        <div className="mt-10 grid gap-5 lg:grid-cols-2">
           {cases.map((c, i) => (
             <Reveal key={c.title} delay={i * 0.08}>
               <TiltCard>
-                <Glass className="overflow-hidden p-0">
-                  <div
-                    className="h-40"
-                    style={{
-                      background: `linear-gradient(135deg, rgba(236,72,153,0.35), rgba(124,58,237,0.45)), url(/hud-cover.png) center/cover`,
-                    }}
-                  />
-                  <div className="p-7">
-                    <p className="text-[12px] font-semibold uppercase tracking-wider text-brand-400">{c.title}</p>
-                    <p className="mt-2 font-[family-name:var(--font-display)] text-[40px] font-semibold text-ink">{c.metric}</p>
-                    <p className="text-[13px] text-ink-faint">{c.label}</p>
-                    <p className="mt-4 text-[15px] leading-relaxed text-ink-muted">&ldquo;{c.quote}&rdquo;</p>
+                <article className="overflow-hidden rounded-[28px] border border-violet-100 bg-white shadow-[0_16px_48px_rgba(100,60,160,0.08)]">
+                  <div className="relative h-44 sm:h-52">
+                    <Image
+                      src={c.img}
+                      alt={c.title}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 1024px) 100vw, 50vw"
+                    />
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        background:
+                          "linear-gradient(180deg, transparent 30%, rgba(15,10,30,0.75))",
+                      }}
+                    />
                   </div>
-                </Glass>
+                  <div className="p-7">
+                    <p className="text-[12px] font-semibold uppercase tracking-wider text-violet-500">
+                      {c.title}
+                    </p>
+                    <p className="mt-2 font-[family-name:var(--font-display)] text-[40px] font-semibold text-slate-900">
+                      {c.metric}
+                    </p>
+                    <p className="text-[13px] text-slate-400">{c.label}</p>
+                    <p className="mt-4 text-[15px] leading-relaxed text-slate-600">
+                      &ldquo;{c.quote}&rdquo;
+                    </p>
+                  </div>
+                </article>
               </TiltCard>
             </Reveal>
           ))}
@@ -1061,33 +1243,41 @@ function Faq() {
       f.a.toLowerCase().includes(query.toLowerCase()),
   );
   return (
-    <section id="faq" className="relative py-24">
-      <div className="mx-auto max-w-2xl px-5 sm:px-8">
+    <section id="faq" className="relative overflow-hidden bg-white py-24">
+      <SoftBlob color="violet" className="right-0 top-0 h-48 w-48" />
+      <div className="relative z-10 mx-auto max-w-2xl px-5 sm:px-8">
         <Reveal className="text-center">
-          <SectionEyebrow>FAQ</SectionEyebrow>
-          <SectionTitle className="mt-3">Answers, not fluff</SectionTitle>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-violet-500">
+            FAQ
+          </p>
+          <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.85rem,4vw,2.75rem)] font-semibold tracking-tight text-slate-900">
+            Answers, not fluff
+          </h2>
         </Reveal>
         <Reveal delay={0.08} className="mt-8">
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search questions…"
-            className="saas-input w-full rounded-2xl px-4 py-3 text-[14px]"
+            className="w-full rounded-2xl border border-violet-100 bg-[#f8f5ff] px-4 py-3 text-[14px] text-slate-800 outline-none placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
           />
         </Reveal>
         <div className="mt-6 space-y-2">
           {filtered.map((f, i) => {
             const isOpen = open === i;
             return (
-              <Glass key={f.q} className="overflow-hidden">
+              <div
+                key={f.q}
+                className="overflow-hidden rounded-2xl border border-violet-100 bg-white shadow-sm"
+              >
                 <button
                   type="button"
                   className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left"
                   onClick={() => setOpen(isOpen ? null : i)}
                 >
-                  <span className="text-[14px] font-semibold text-ink">{f.q}</span>
+                  <span className="text-[14px] font-semibold text-slate-900">{f.q}</span>
                   <motion.span animate={{ rotate: isOpen ? 180 : 0 }}>
-                    <HiOutlineChevronDown className="h-4 w-4 text-ink-faint" />
+                    <HiOutlineChevronDown className="h-4 w-4 text-slate-400" />
                   </motion.span>
                 </button>
                 <AnimatePresence initial={false}>
@@ -1099,11 +1289,13 @@ function Faq() {
                       transition={{ duration: 0.28 }}
                       className="overflow-hidden"
                     >
-                      <p className="px-5 pb-4 text-[14px] leading-relaxed text-ink-muted">{f.a}</p>
+                      <p className="px-5 pb-4 text-[14px] leading-relaxed text-slate-500">
+                        {f.a}
+                      </p>
                     </motion.div>
                   ) : null}
                 </AnimatePresence>
-              </Glass>
+              </div>
             );
           })}
         </div>
@@ -1115,35 +1307,47 @@ function Faq() {
 function FinalCta() {
   return (
     <section className="relative overflow-hidden py-28 sm:py-36">
-      <AuroraBlob className="left-1/2 top-1/2 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 opacity-50" />
-      <div className="relative mx-auto max-w-3xl px-5 text-center sm:px-8">
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(135deg, #ec4899 0%, #d946ef 40%, #7c3aed 100%)",
+        }}
+      />
+      <CloudDecor className="opacity-30 mix-blend-soft-light" />
+      <SparklesDecor className="text-white/70" />
+      <div className="relative z-10 mx-auto max-w-3xl px-5 text-center sm:px-8">
         <Reveal>
-          <h2 className="font-[family-name:var(--font-display)] text-[clamp(2.2rem,5.5vw,3.75rem)] font-semibold tracking-tight text-ink">
-            Ready to feel the need for{" "}
-            <span className="gradient-text">leads</span>?
+          <h2 className="font-[family-name:var(--font-display)] text-[clamp(2.2rem,5.5vw,3.75rem)] font-semibold tracking-tight text-white">
+            Ready to feel the need for leads?
           </h2>
-          <p className="mx-auto mt-4 max-w-md text-[15px] text-ink-muted">
+          <p className="mx-auto mt-4 max-w-md text-[15px] text-white/80">
             Start with 20 free credits. No card. Ship your first qualified batch today.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/register"
-              className="inline-flex items-center gap-2 rounded-2xl px-7 py-4 text-[15px] font-semibold text-white shadow-[0_20px_60px_rgba(168,85,247,0.45)]"
-              style={{ background: LOGO_GRADIENT }}
+              className="inline-flex items-center gap-2 rounded-2xl bg-white px-7 py-4 text-[15px] font-semibold text-violet-700 shadow-xl transition hover:bg-white/95"
             >
               Start free trial <HiOutlineArrowRight className="h-4 w-4" />
             </Link>
             <Link
               href="/login"
-              className="rounded-2xl border border-border bg-white/5 px-6 py-4 text-[14px] font-semibold text-ink backdrop-blur"
+              className="rounded-2xl border border-white/40 bg-white/10 px-6 py-4 text-[14px] font-semibold text-white backdrop-blur"
             >
               Sign in
             </Link>
           </div>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-[12px] text-ink-faint">
-            <span className="inline-flex items-center gap-1"><HiOutlineShieldCheck className="h-3.5 w-3.5" /> Business email verified</span>
-            <span className="inline-flex items-center gap-1"><HiOutlineBolt className="h-3.5 w-3.5" /> Fast onboarding</span>
-            <span className="inline-flex items-center gap-1"><HiOutlineCheck className="h-3.5 w-3.5" /> Cancel anytime</span>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-[12px] text-white/75">
+            <span className="inline-flex items-center gap-1">
+              <HiOutlineShieldCheck className="h-3.5 w-3.5" /> Business email verified
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <HiOutlineBolt className="h-3.5 w-3.5" /> Fast onboarding
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <HiOutlineCheck className="h-3.5 w-3.5" /> Cancel anytime
+            </span>
           </div>
         </Reveal>
       </div>
@@ -1334,6 +1538,7 @@ export function MarketingPage() {
       <SocialProof />
       <DashboardSection />
       <ProblemSection />
+      <LifestyleBand />
       <SolutionBento />
       <FeaturesGrid />
       <WorkflowSection />
