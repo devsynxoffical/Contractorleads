@@ -1261,3 +1261,16 @@ html:not([data-theme="light"]) .saas-input {
   background: var(--input-bg) !important;
   color: var(--ink) !important;
 }
+
+/* Marketing site */
+.marketing-hero-3d {
+  position: absolute;
+  inset: 0;
+}
+.marketing-hero-3d canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+.marketing-site {
+  overflow-x: hidden;
+}

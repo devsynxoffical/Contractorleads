@@ -1,7 +1,10 @@
-import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { MarketingPage } from "@/components/marketing/marketing-page";
 
 export default async function RootPage() {
   const user = await getSessionUser();
-  redirect(user ? "/dashboard" : "/login");
+  if (user) redirect("/dashboard");
+
+  return <MarketingPage />;
 }

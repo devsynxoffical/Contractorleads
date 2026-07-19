@@ -15,7 +15,8 @@ const outfit = Outfit({
 
 export const metadata = {
   title: "Contractor Leads | LeadFlow USA",
-  description: "Find high-quality home service leads across America",
+  description:
+    "Find verified home-service contractor leads, qualify with AI, and outreach from one interactive workspace.",
   icons: {
     icon: "/logo.png",
   },
