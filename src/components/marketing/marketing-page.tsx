@@ -658,50 +658,103 @@ function TechnologiesSection() {
   return (
     <section
       id="technology"
-      className="marketing-tech-section relative overflow-hidden py-24 sm:py-28"
+      className="marketing-tech-section relative overflow-hidden py-20 sm:py-28"
     >
-      {/* Soft Gamma-like sky wash */}
+      {/* Bright Gamma-like sky — keep this section light */}
       <div
-        className="absolute inset-0 -z-10"
+        className="absolute inset-0 -z-20"
         style={{
           background:
-            "linear-gradient(180deg, #eef2ff 0%, #f8f5ff 40%, #fdf2f8 100%)",
+            "linear-gradient(180deg, #f4f7ff 0%, #e8f0fe 35%, #f3e8ff 70%, #fce7f3 100%)",
         }}
       />
+
+      {/* Left cloud */}
+      <motion.div
+        className="pointer-events-none absolute -left-[8%] top-[4%] z-0 w-[min(52vw,420px)] select-none sm:-left-[4%] sm:top-[2%] lg:w-[480px]"
+        aria-hidden
+        animate={{ y: [0, -14, 0], x: [0, 6, 0] }}
+        transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
+      >
+        <Image
+          src="/marketing/cloud-left.png"
+          alt=""
+          width={640}
+          height={400}
+          className="h-auto w-full drop-shadow-[0_24px_60px_rgba(120,80,180,0.22)]"
+          priority={false}
+        />
+      </motion.div>
+
+      {/* Right cloud */}
+      <motion.div
+        className="pointer-events-none absolute -right-[10%] top-[8%] z-0 w-[min(55vw,440px)] select-none sm:-right-[5%] sm:top-[4%] lg:w-[500px]"
+        aria-hidden
+        animate={{ y: [0, 12, 0], x: [0, -8, 0] }}
+        transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}
+      >
+        <Image
+          src="/marketing/cloud-right.png"
+          alt=""
+          width={640}
+          height={400}
+          className="h-auto w-full drop-shadow-[0_24px_60px_rgba(120,80,180,0.22)]"
+          priority={false}
+        />
+      </motion.div>
+
+      {/* Soft glow under clouds */}
       <div
-        className="pointer-events-none absolute -left-24 top-10 h-56 w-56 rounded-full opacity-70 blur-3xl"
-        style={{ background: "radial-gradient(circle, #f9a8d4, transparent 70%)" }}
+        className="pointer-events-none absolute left-[5%] top-[18%] h-40 w-40 rounded-full bg-pink-200/50 blur-3xl"
         aria-hidden
       />
       <div
-        className="pointer-events-none absolute -right-20 top-24 h-64 w-64 rounded-full opacity-60 blur-3xl"
-        style={{ background: "radial-gradient(circle, #c4b5fd, transparent 70%)" }}
+        className="pointer-events-none absolute right-[8%] top-[22%] h-48 w-48 rounded-full bg-violet-200/50 blur-3xl"
         aria-hidden
       />
+
       {/* Sparkles */}
-      <div className="pointer-events-none absolute inset-x-0 top-16 flex justify-center gap-24 text-violet-300/80" aria-hidden>
-        <span className="text-lg">✦</span>
-        <span className="mt-8 text-sm">✧</span>
-        <span className="text-base">✦</span>
+      <div
+        className="pointer-events-none absolute inset-x-0 top-20 z-[1] flex justify-center gap-16 text-violet-400/70 sm:gap-28"
+        aria-hidden
+      >
+        <motion.span
+          className="text-xl"
+          animate={{ opacity: [0.4, 1, 0.4], scale: [0.9, 1.1, 0.9] }}
+          transition={{ duration: 2.8, repeat: Infinity }}
+        >
+          ✦
+        </motion.span>
+        <motion.span
+          className="mt-10 text-sm"
+          animate={{ opacity: [0.3, 1, 0.3] }}
+          transition={{ duration: 3.2, repeat: Infinity, delay: 0.4 }}
+        >
+          ✧
+        </motion.span>
+        <motion.span
+          className="text-lg"
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 2.5, repeat: Infinity, delay: 0.8 }}
+        >
+          ✦
+        </motion.span>
       </div>
 
-      <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
+      <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
         <Reveal className="text-center">
-          <p className="text-[13px] font-medium text-slate-500">
+          <p className="text-[14px] font-medium text-slate-500">
             Your next pipeline is in good company
           </p>
-          <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.75rem,4vw,2.75rem)] font-semibold tracking-tight text-slate-900">
-            Built with world-class technology
-          </h2>
         </Reveal>
 
-        {/* Monochrome tech logo cloud */}
-        <Reveal delay={0.08} className="mt-10">
-          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 sm:gap-x-12">
+        {/* Tech logos — soft white pills on light sky */}
+        <Reveal delay={0.06} className="mt-8">
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
             {TECH_LOGOS.map((name) => (
               <span
                 key={name}
-                className="font-[family-name:var(--font-display)] text-[15px] font-semibold tracking-tight text-slate-400 transition hover:text-slate-700 sm:text-[17px]"
+                className="rounded-full border border-white/80 bg-white/70 px-4 py-2 font-[family-name:var(--font-display)] text-[13px] font-semibold tracking-tight text-slate-600 shadow-[0_8px_24px_rgba(100,80,160,0.08)] backdrop-blur-md transition hover:-translate-y-0.5 hover:text-slate-900 sm:text-[15px]"
               >
                 {name}
               </span>
@@ -709,9 +762,12 @@ function TechnologiesSection() {
           </div>
         </Reveal>
 
-        <Reveal delay={0.12} className="mt-6 text-center">
-          <p className="font-[family-name:var(--font-display)] text-[clamp(1.35rem,3vw,1.85rem)] font-semibold tracking-tight text-slate-800">
-            Modern stack. Premium motion. Live data.
+        <Reveal delay={0.1} className="mt-10 text-center">
+          <h2 className="font-[family-name:var(--font-display)] text-[clamp(1.85rem,4.2vw,3rem)] font-semibold tracking-tight text-slate-900">
+            Built with world-class technology
+          </h2>
+          <p className="mx-auto mt-3 max-w-lg text-[15px] text-slate-500">
+            Modern stack. Premium motion. Live data — the same tools powering Stripe-level products.
           </p>
         </Reveal>
 
@@ -721,8 +777,8 @@ function TechnologiesSection() {
             <Reveal key={card.title} delay={i * 0.06}>
               <TiltCard intensity={7}>
                 <motion.article
-                  whileHover={{ y: -4 }}
-                  className="flex h-full flex-col gap-5 rounded-[28px] bg-white p-5 shadow-[0_12px_40px_rgba(80,40,120,0.08)] sm:flex-row sm:items-center sm:gap-6 sm:p-6"
+                  whileHover={{ y: -6 }}
+                  className="flex h-full flex-col gap-5 rounded-[28px] border border-white bg-white/95 p-5 shadow-[0_16px_48px_rgba(80,60,140,0.1)] backdrop-blur-sm sm:flex-row sm:items-center sm:gap-6 sm:p-6"
                 >
                   <div className="w-full shrink-0 sm:w-[42%] sm:max-w-[200px]">
                     <TechVisual kind={card.visual} />
