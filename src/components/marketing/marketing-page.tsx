@@ -174,6 +174,7 @@ function Nav() {
         </Link>
         <div className="hidden items-center gap-6 text-[13px] font-medium text-ink-muted md:flex">
           <a href="#features" className="hover:text-ink">Features</a>
+          <a href="#technology" className="hover:text-ink">Technology</a>
           <a href="#pricing" className="hover:text-ink">Pricing</a>
           <a href="#faq" className="hover:text-ink">FAQ</a>
         </div>
@@ -530,6 +531,230 @@ function Integrations() {
   );
 }
 
+const TECH_LOGOS = [
+  "Next.js",
+  "React",
+  "OpenAI",
+  "Three.js",
+  "Framer Motion",
+  "Tailwind CSS",
+  "Prisma",
+  "PostgreSQL",
+  "Google Places",
+  "Meta",
+  "Railway",
+  "TypeScript",
+];
+
+const TECH_CARDS = [
+  {
+    title: "Next.js + React",
+    copy: "App Router, server components, and a blistering UI shell — enterprise speed without the enterprise weight.",
+    visual: "next",
+    tags: ["App Router", "SSR", "TypeScript"],
+  },
+  {
+    title: "OpenAI",
+    copy: "Live lead qualification, revenue bands, and multi-turn Ask Expert — powered by gpt-4o-mini when your key is live.",
+    visual: "ai",
+    tags: ["Scoring", "Chat", "Outreach"],
+  },
+  {
+    title: "Google Places + Prisma",
+    copy: "Real contractor businesses from Places, persisted in Postgres — never a stale CSV dump.",
+    visual: "data",
+    tags: ["Places API", "Postgres", "Prisma"],
+  },
+  {
+    title: "Framer + Three.js",
+    copy: "Scroll storytelling, tilt cards, and a 3D lead orb — the marketing site moves like a product demo.",
+    visual: "motion",
+    tags: ["R3F", "Motion", "Parallax"],
+  },
+];
+
+function TechVisual({ kind }: { kind: string }) {
+  if (kind === "next") {
+    return (
+      <div className="relative flex h-full min-h-[140px] items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#1a1030] via-[#2a1548] to-[#ec4899]/40 p-4">
+        <div className="absolute inset-0 opacity-40" style={{ backgroundImage: "radial-gradient(circle at 30% 40%, #a855f7, transparent 50%)" }} />
+        <div className="relative grid w-full max-w-[140px] gap-1.5">
+          {[72, 48, 90].map((w, i) => (
+            <motion.div
+              key={i}
+              className="h-3 rounded-full bg-white/90 shadow-lg"
+              style={{ width: `${w}%` }}
+              initial={{ opacity: 0, x: -12 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 + i * 0.08 }}
+            />
+          ))}
+          <div className="mt-2 flex gap-1">
+            <span className="h-8 flex-1 rounded-xl bg-white/15 backdrop-blur" />
+            <span className="h-8 w-8 rounded-xl" style={{ background: LOGO_GRADIENT }} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (kind === "ai") {
+    return (
+      <div className="relative flex h-full min-h-[140px] items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#2a0a3d] to-[#7c3aed]/50 p-4">
+        <motion.div
+          className="relative flex h-20 w-20 items-center justify-center rounded-full text-white shadow-[0_0_40px_rgba(236,72,153,0.55)]"
+          style={{ background: LOGO_GRADIENT }}
+          animate={{ scale: [1, 1.06, 1] }}
+          transition={{ duration: 2.4, repeat: Infinity }}
+        >
+          <HiOutlineSparkles className="h-8 w-8" />
+        </motion.div>
+        <div className="absolute bottom-3 left-3 right-3 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-[10px] text-white/80 backdrop-blur">
+          Qualifying lead… score 91
+        </div>
+      </div>
+    );
+  }
+  if (kind === "data") {
+    return (
+      <div className="relative flex h-full min-h-[140px] items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#0f172a] to-[#312e81]/60 p-4">
+        <div className="relative h-24 w-24 rounded-full border border-dashed border-pink-300/40">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <span
+              key={i}
+              className="absolute h-2.5 w-2.5 rounded-full"
+              style={{
+                background: LOGO_GRADIENT,
+                top: `${50 + 38 * Math.sin((i / 6) * Math.PI * 2)}%`,
+                left: `${50 + 38 * Math.cos((i / 6) * Math.PI * 2)}%`,
+                transform: "translate(-50%, -50%)",
+              }}
+            />
+          ))}
+          <HiOutlineMap className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 text-pink-200" />
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="relative flex h-full min-h-[140px] items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#1e1033] to-[#db2777]/35 p-4">
+      <motion.div
+        className="h-16 w-16 rounded-2xl border border-white/20 bg-white/10 shadow-xl backdrop-blur"
+        style={{ rotateX: 18, rotateY: -22, transformStyle: "preserve-3d" }}
+        animate={{ y: [0, -8, 0], rotateZ: [0, 4, 0] }}
+        transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className="absolute h-10 w-10 rounded-xl"
+        style={{ background: LOGO_GRADIENT, right: "22%", top: "28%" }}
+        animate={{ y: [0, 10, 0] }}
+        transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
+      />
+    </div>
+  );
+}
+
+function TechnologiesSection() {
+  return (
+    <section
+      id="technology"
+      className="marketing-tech-section relative overflow-hidden py-24 sm:py-28"
+    >
+      {/* Soft Gamma-like sky wash */}
+      <div
+        className="absolute inset-0 -z-10"
+        style={{
+          background:
+            "linear-gradient(180deg, #eef2ff 0%, #f8f5ff 40%, #fdf2f8 100%)",
+        }}
+      />
+      <div
+        className="pointer-events-none absolute -left-24 top-10 h-56 w-56 rounded-full opacity-70 blur-3xl"
+        style={{ background: "radial-gradient(circle, #f9a8d4, transparent 70%)" }}
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute -right-20 top-24 h-64 w-64 rounded-full opacity-60 blur-3xl"
+        style={{ background: "radial-gradient(circle, #c4b5fd, transparent 70%)" }}
+        aria-hidden
+      />
+      {/* Sparkles */}
+      <div className="pointer-events-none absolute inset-x-0 top-16 flex justify-center gap-24 text-violet-300/80" aria-hidden>
+        <span className="text-lg">✦</span>
+        <span className="mt-8 text-sm">✧</span>
+        <span className="text-base">✦</span>
+      </div>
+
+      <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
+        <Reveal className="text-center">
+          <p className="text-[13px] font-medium text-slate-500">
+            Your next pipeline is in good company
+          </p>
+          <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.75rem,4vw,2.75rem)] font-semibold tracking-tight text-slate-900">
+            Built with world-class technology
+          </h2>
+        </Reveal>
+
+        {/* Monochrome tech logo cloud */}
+        <Reveal delay={0.08} className="mt-10">
+          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 sm:gap-x-12">
+            {TECH_LOGOS.map((name) => (
+              <span
+                key={name}
+                className="font-[family-name:var(--font-display)] text-[15px] font-semibold tracking-tight text-slate-400 transition hover:text-slate-700 sm:text-[17px]"
+              >
+                {name}
+              </span>
+            ))}
+          </div>
+        </Reveal>
+
+        <Reveal delay={0.12} className="mt-6 text-center">
+          <p className="font-[family-name:var(--font-display)] text-[clamp(1.35rem,3vw,1.85rem)] font-semibold tracking-tight text-slate-800">
+            Modern stack. Premium motion. Live data.
+          </p>
+        </Reveal>
+
+        {/* Gamma-style 2×2 cards */}
+        <div className="mt-14 grid gap-5 md:grid-cols-2">
+          {TECH_CARDS.map((card, i) => (
+            <Reveal key={card.title} delay={i * 0.06}>
+              <TiltCard intensity={7}>
+                <motion.article
+                  whileHover={{ y: -4 }}
+                  className="flex h-full flex-col gap-5 rounded-[28px] bg-white p-5 shadow-[0_12px_40px_rgba(80,40,120,0.08)] sm:flex-row sm:items-center sm:gap-6 sm:p-6"
+                >
+                  <div className="w-full shrink-0 sm:w-[42%] sm:max-w-[200px]">
+                    <TechVisual kind={card.visual} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-[family-name:var(--font-display)] text-[22px] font-bold tracking-tight text-slate-900">
+                      {card.title}
+                    </h3>
+                    <p className="mt-2 text-[14px] leading-relaxed text-slate-500">
+                      {card.copy}
+                    </p>
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {card.tags.map((t) => (
+                        <span
+                          key={t}
+                          className="rounded-full bg-violet-50 px-2.5 py-0.5 text-[11px] font-semibold text-violet-700"
+                        >
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </motion.article>
+              </TiltCard>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function AnalyticsShowcase() {
   const metrics = [
     { label: "Lead quality", value: 86 },
@@ -876,6 +1101,7 @@ function Footer() {
       h: "Product",
       links: [
         ["Features", "#features"],
+        ["Technology", "#technology"],
         ["Lead Finder", "/register"],
         ["AI Assistant", "#features"],
         ["Pricing", "#pricing"],
@@ -1056,6 +1282,7 @@ export function MarketingPage() {
       <FeaturesGrid />
       <WorkflowSection />
       <Integrations />
+      <TechnologiesSection />
       <AnalyticsShowcase />
       <AiSection />
       <Pricing />
