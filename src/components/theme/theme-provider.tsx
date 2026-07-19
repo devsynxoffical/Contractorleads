@@ -33,7 +33,7 @@ function applyTheme(theme: ThemeMode) {
 
 export function ThemeProvider({
   children,
-  initialTheme = "dark",
+  initialTheme = "light",
 }: {
   children: React.ReactNode;
   initialTheme?: ThemeMode;
@@ -79,7 +79,7 @@ export function useTheme() {
   const ctx = useContext(ThemeContext);
   if (!ctx) {
     return {
-      theme: "dark" as ThemeMode,
+      theme: "light" as ThemeMode,
       setTheme: (_: ThemeMode) => {},
       toggleTheme: () => {},
     };

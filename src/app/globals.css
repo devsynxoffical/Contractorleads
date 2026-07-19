@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Map Tailwind dark: to our html[data-theme] (default = dark when not light) */
+/* Map Tailwind dark: to our html[data-theme] (default = light) */
 @custom-variant dark (&:where(html[data-theme="dark"] *, html:not([data-theme="light"]) *));
 
 /*
@@ -177,7 +177,8 @@ html[data-theme="light"] {
 html,
 body {
   max-width: 100%;
-  overflow-x: hidden;
+  /* clip avoids a scroll container so position:sticky keeps working */
+  overflow-x: clip;
 }
 
 body {
@@ -1644,8 +1645,8 @@ html[data-theme="dark"] .marketing-site .bg-\[\#f8f5ff\] {
   border-radius: 9999px;
   border: 1px solid var(--glass-border);
   background: var(--glass-fill);
-  padding: 0.4em 0.875em;
-  font-size: 0.72em;
+  padding: 0.45em 1em;
+  font-size: 0.9em;
   color: var(--body-muted);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -1653,7 +1654,7 @@ html[data-theme="dark"] .marketing-site .bg-\[\#f8f5ff\] {
 }
 @media (min-width: 640px) {
   .mkt-flow-badge {
-    font-size: 0.8em;
+    font-size: 1em;
   }
 }
 .mkt-flow-heading {
@@ -1780,7 +1781,7 @@ html[data-theme="dark"] .marketing-site .bg-\[\#f8f5ff\] {
   color: #fff;
 }
 .marketing-footer-wordmark {
-  font-size: clamp(4.5rem, 22vw, 14rem);
+  font-size: clamp(2.75rem, 12vw, 9rem);
   background: linear-gradient(
     180deg,
     rgba(255, 255, 255, 0.02) 0%,

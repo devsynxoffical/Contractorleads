@@ -149,7 +149,7 @@ export function AuthSiteFooter() {
           aria-hidden
           className="marketing-footer-wordmark select-none text-center font-[family-name:var(--font-display)] font-bold uppercase leading-none tracking-[-0.06em]"
         >
-          CONTRACTOR
+          CONTRACTOR LEADS
         </p>
       </div>
 

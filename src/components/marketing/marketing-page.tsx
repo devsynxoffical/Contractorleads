@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   HiOutlineArrowRight,
   HiOutlineBolt,
@@ -25,13 +25,27 @@ import {
   HiOutlineChevronDown,
   HiOutlineCheck,
 } from "react-icons/hi2";
+import { FaLinkedinIn, FaSlack } from "react-icons/fa6";
+import {
+  SiGooglemaps,
+  SiGoogleearth,
+  SiGoogleanalytics,
+  SiGmail,
+  SiYelp,
+  SiMeta,
+  SiAnthropic,
+  SiHubspot,
+  SiInstagram,
+  SiStripe,
+  SiZapier,
+} from "react-icons/si";
+import { RiOpenaiFill } from "react-icons/ri";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
 import { FloatingDashboard } from "./marketing-dashboard";
 import {
   CloudDecor,
   SparklesDecor,
   SoftBlob,
-  ContentPhoto,
   MARKETING_PHOTOS,
 } from "./marketing-decor";
 import {
@@ -41,67 +55,154 @@ import {
   InfiniteMarquee,
 } from "./marketing-ui";
 import { MarketingFluidHero } from "./marketing-fluid-hero";
+import {
+  HillsProductStage,
+  MoonWalkFeatureGrid,
+  MaterialHillsCta,
+  FlowerFieldProofCards,
+  SocialProofBento,
+} from "./marketing-interactive-sections";
+import { StickyPlatformScroll } from "./marketing-sticky-platform";
+import {
+  SOCIAL_BRANDS,
+  INTEGRATION_BRANDS,
+  TECH_BRANDS,
+  BrandLogoChip,
+  BrandLogoMark,
+} from "./brand-logos";
 import Lenis from "lenis";
 import "lenis/dist/lenis.css";
 
-const LOGOS = [
-  "Summit Agency",
-  "Northstar Media",
-  "Blueprint Ads",
-  "Harbor Growth",
-  "Pulse Local",
-  "Vertex Digital",
-  "Atlas Home Pros",
-  "Canyon Creative",
-];
-
 const FEATURES = [
-  { icon: HiOutlineSparkles, title: "AI Lead Scoring", copy: "Hot / Warm / Nurture with revenue bands and outreach angles." },
-  { icon: HiOutlineMap, title: "Lead Finder", copy: "Live Places search across Tier‑1 markets and custom areas." },
-  { icon: HiOutlineGlobeAlt, title: "World Map HUD", copy: "See pipeline density by country and metro in one view." },
-  { icon: HiOutlineChatBubbleLeftRight, title: "AI Assistant", copy: "Multi-turn chat with history for offers, hooks, and scripts." },
-  { icon: HiOutlineUserGroup, title: "Owner Enrichment", copy: "Website people scrape + LinkedIn company/owner resolve." },
-  { icon: HiOutlineMegaphone, title: "Meta Ads Intel", copy: "Ads Library checks so you know who already spends on Meta." },
-  { icon: HiOutlineDocumentText, title: "Outreach Studio", copy: "Email, SMS, and call scripts saved to your library." },
-  { icon: HiOutlineChartBar, title: "Opportunity Scores", copy: "Website, PPC, SEO, and marketing upside scored 0–100." },
-  { icon: HiOutlineBell, title: "Live Activity", copy: "Search results and AI replies stream as they happen." },
-  { icon: HiOutlineCpuChip, title: "Business Context", copy: "Answers adapt to your agency profile and ICP." },
-  { icon: HiOutlineLink, title: "Social Presence Filter", copy: "Require LinkedIn + social + owner before a lead lands." },
-  { icon: HiOutlineShieldCheck, title: "Verified Sources", copy: "Google, Yelp, and site data — never invented phones." },
+  {
+    icon: RiOpenaiFill,
+    title: "AI Lead Scoring",
+    copy: "Hot / Warm / Nurture with revenue bands and outreach angles.",
+    color: "#000000",
+    bg: "#f4f4f5",
+  },
+  {
+    icon: SiGooglemaps,
+    title: "Lead Finder",
+    copy: "Live Places search across Tier‑1 markets and custom areas.",
+    color: "#4285F4",
+    bg: "#e8f0fe",
+  },
+  {
+    icon: SiGoogleearth,
+    title: "World Map HUD",
+    copy: "See pipeline density by country and metro in one view.",
+    color: "#34A853",
+    bg: "#e6f4ea",
+  },
+  {
+    icon: SiAnthropic,
+    title: "AI Assistant",
+    copy: "Multi-turn chat with history for offers, hooks, and scripts.",
+    color: "#D4A27F",
+    bg: "#faf4ef",
+  },
+  {
+    icon: FaLinkedinIn,
+    title: "Owner Enrichment",
+    copy: "Website people scrape + LinkedIn company/owner resolve.",
+    color: "#0A66C2",
+    bg: "#e8f1fb",
+  },
+  {
+    icon: SiMeta,
+    title: "Meta Ads Intel",
+    copy: "Ads Library checks so you know who already spends on Meta.",
+    color: "#0866FF",
+    bg: "#e7f0ff",
+  },
+  {
+    icon: SiGmail,
+    title: "Outreach Studio",
+    copy: "Email, SMS, and call scripts saved to your library.",
+    color: "#EA4335",
+    bg: "#fce8e6",
+  },
+  {
+    icon: SiGoogleanalytics,
+    title: "Opportunity Scores",
+    copy: "Website, PPC, SEO, and marketing upside scored 0–100.",
+    color: "#E37400",
+    bg: "#fef0e0",
+  },
+  {
+    icon: FaSlack,
+    title: "Live Activity",
+    copy: "Search results and AI replies stream as they happen.",
+    color: "#4A154B",
+    bg: "#f4eaf5",
+  },
+  {
+    icon: SiHubspot,
+    title: "Business Context",
+    copy: "Answers adapt to your agency profile and ICP.",
+    color: "#FF7A59",
+    bg: "#fff0eb",
+  },
+  {
+    icon: SiInstagram,
+    title: "Social Presence Filter",
+    copy: "Require LinkedIn + social + owner before a lead lands.",
+    color: "#E4405F",
+    bg: "#fce8ee",
+  },
+  {
+    icon: SiYelp,
+    title: "Verified Sources",
+    copy: "Google, Yelp, and site data — never invented phones.",
+    color: "#FF1A1A",
+    bg: "#ffe8e8",
+  },
 ];
 
 const PAINS = [
-  { icon: HiOutlineCurrencyDollar, title: "Buying fake leads", body: "Purchased lists go stale before your first dial." },
-  { icon: HiOutlineChartBar, title: "Low conversion", body: "No scoring means SDRs burn time on nurture junk." },
-  { icon: HiOutlineClock, title: "Manual follow-up", body: "Tabs, sheets, and notes never stay in sync." },
-  { icon: HiOutlinePhoneXMark, title: "Slow response", body: "Competitors reply while you’re still enriching." },
-  { icon: HiOutlineLink, title: "Disconnected tools", body: "Maps, ads, CRM, and AI live in five different apps." },
-  { icon: HiOutlineMegaphone, title: "Blind ad spend", body: "You pitch PPC without knowing if they already run Meta." },
-];
-
-const WORKFLOW = [
-  "Lead discovered",
-  "AI qualifies",
-  "Owner enriched",
-  "Ads checked",
-  "Script generated",
-  "Outreach sent",
-  "Job booked",
-];
-
-const INTEGRATIONS = [
-  "Google Places",
-  "OpenAI",
-  "Meta Ads",
-  "Yelp",
-  "LinkedIn",
-  "Stripe",
-  "Resend",
-  "Zapier",
-  "Slack",
-  "HubSpot",
-  "Twilio",
-  "Calendar",
+  {
+    icon: SiStripe,
+    title: "Buying fake leads",
+    body: "Purchased lists go stale before your first dial.",
+    color: "#635BFF",
+    bg: "#eeedff",
+  },
+  {
+    icon: SiGoogleanalytics,
+    title: "Low conversion",
+    body: "No scoring means SDRs burn time on nurture junk.",
+    color: "#E37400",
+    bg: "#fef0e0",
+  },
+  {
+    icon: FaSlack,
+    title: "Manual follow-up",
+    body: "Tabs, sheets, and notes never stay in sync.",
+    color: "#4A154B",
+    bg: "#f4eaf5",
+  },
+  {
+    icon: SiGmail,
+    title: "Slow response",
+    body: "Competitors reply while you’re still enriching.",
+    color: "#EA4335",
+    bg: "#fce8e6",
+  },
+  {
+    icon: SiZapier,
+    title: "Disconnected tools",
+    body: "Maps, ads, CRM, and AI live in five different apps.",
+    color: "#FF4A00",
+    bg: "#fff0e8",
+  },
+  {
+    icon: SiMeta,
+    title: "Blind ad spend",
+    body: "You pitch PPC without knowing if they already run Meta.",
+    color: "#0866FF",
+    bg: "#e7f0ff",
+  },
 ];
 
 const FAQS = [
@@ -209,16 +310,11 @@ function SocialProof() {
     <section className="relative overflow-hidden border-y border-slate-100 bg-[#ffffff] py-12 sm:py-14">
       <div className="relative z-10">
         <p className="mb-6 text-center text-[13px] font-medium text-slate-500">
-          Agencies scaling home-service pipelines
+          Powered by the stack agencies already trust
         </p>
         <InfiniteMarquee speed={35}>
-          {LOGOS.map((name) => (
-            <span
-              key={name}
-              className="whitespace-nowrap rounded-full border border-slate-200 bg-slate-50 px-5 py-2 text-[14px] font-semibold tracking-tight text-slate-600"
-            >
-              {name}
-            </span>
+          {SOCIAL_BRANDS.map((brand) => (
+            <BrandLogoChip key={brand.name} brand={brand} />
           ))}
         </InfiniteMarquee>
       </div>
@@ -259,12 +355,12 @@ function DashboardSection() {
 
 function ProblemSection() {
   return (
-    <section className="relative overflow-hidden bg-[#ffffff] py-24 sm:py-28">
+    <section className="relative overflow-x-clip bg-[#ffffff] py-24 sm:py-28">
       <SoftBlob color="violet" className="-right-16 top-20 h-64 w-64 opacity-40" />
       <SoftBlob color="pink" className="-left-10 bottom-10 h-56 w-56 opacity-35" />
       <CloudDecor side="right" className="opacity-55" />
-      <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
-        <div className="grid items-center gap-12 lg:grid-cols-2">
+      <div className="relative z-10 mx-auto max-w-7xl px-5 sm:px-8">
+        <div className="grid items-center gap-10 lg:grid-cols-[0.95fr_1.15fr] lg:gap-10">
           <Reveal>
             <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-fuchsia-600">
               The problem
@@ -287,7 +383,12 @@ function ProblemSection() {
                     transition={{ delay: i * 0.05 }}
                     className="rounded-2xl border border-slate-200 bg-[#ffffff] p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]"
                   >
-                    <Icon className="h-5 w-5 text-violet-600" />
+                    <span
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-xl ring-1 ring-black/[0.04]"
+                      style={{ background: p.bg, color: p.color }}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </span>
                     <h3 className="mt-2 text-[14px] font-semibold text-slate-900">{p.title}</h3>
                     <p className="mt-1 text-[12px] leading-relaxed text-slate-500">{p.body}</p>
                   </motion.div>
@@ -295,15 +396,20 @@ function ProblemSection() {
               })}
             </div>
           </Reveal>
-          <Reveal delay={0.1}>
-            <div className="relative mx-auto aspect-[4/5] w-full max-w-md lg:max-w-none">
-              <ContentPhoto
-                src={MARKETING_PHOTOS.contractor}
-                alt="Contractor working on a job site"
-                className="absolute inset-0"
-              />
+          <Reveal delay={0.1} className="relative flex items-center lg:justify-end">
+            <div className="relative mx-auto w-full max-w-3xl lg:mx-0 lg:max-w-none">
+              <div className="relative aspect-[764/463] w-full min-h-[280px] sm:min-h-[340px] lg:min-h-[420px]">
+                <Image
+                  src={MARKETING_PHOTOS.contractor}
+                  alt="Connected platforms and contractor growth tools"
+                  fill
+                  className="object-contain object-center"
+                  sizes="(max-width: 1024px) 100vw, 760px"
+                  priority
+                />
+              </div>
               <motion.div
-                className="absolute -bottom-4 -left-3 z-10 max-w-[200px] rounded-2xl border border-slate-200 bg-[#ffffff] p-3 shadow-xl sm:-left-6"
+                className="absolute bottom-2 left-2 z-10 max-w-[220px] rounded-2xl border border-slate-200 bg-[#ffffff] p-3.5 shadow-xl sm:bottom-4 sm:left-4"
                 animate={{ y: [0, -8, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
               >
@@ -317,46 +423,6 @@ function ProblemSection() {
             </div>
           </Reveal>
         </div>
-      </div>
-    </section>
-  );
-}
-
-function LifestyleBand() {
-  return (
-    <section className="relative overflow-hidden py-16 sm:py-20">
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            "linear-gradient(120deg, #ec4899 0%, #d946ef 45%, #7c3aed 100%)",
-        }}
-      />
-      <div className="relative z-10 mx-auto grid max-w-6xl gap-6 px-5 sm:grid-cols-3 sm:px-8">
-        {[
-          { img: MARKETING_PHOTOS.home, label: "Home-service niches", sub: "HVAC · Roofing · Plumbing" },
-          { img: MARKETING_PHOTOS.meeting, label: "Agency outreach", sub: "Scripts that book calls" },
-          { img: MARKETING_PHOTOS.analytics, label: "Live scoring", sub: "Hot · Warm · Nurture" },
-        ].map((item, i) => (
-          <Reveal key={item.label} delay={i * 0.08}>
-            <div className="group relative aspect-[5/4] overflow-hidden rounded-[28px] shadow-2xl ring-2 ring-white/30">
-              <Image
-                src={item.img}
-                alt={item.label}
-                fill
-                className="object-cover transition duration-700 group-hover:scale-105"
-                sizes="(max-width: 640px) 100vw, 33vw"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-              <div className="absolute bottom-0 p-5">
-                <p className="font-[family-name:var(--font-display)] text-[18px] font-semibold text-white">
-                  {item.label}
-                </p>
-                <p className="text-[13px] text-white/75">{item.sub}</p>
-              </div>
-            </div>
-          </Reveal>
-        ))}
       </div>
     </section>
   );
@@ -407,7 +473,16 @@ function SolutionBento() {
                 <Image src={MARKETING_PHOTOS.team} alt="Team" fill className="object-cover" sizes="112px" />
               </div>
               <div>
-                <HiOutlineSparkles className="h-6 w-6 text-violet-600" />
+                <BrandLogoMark
+                  brand={{
+                    name: "OpenAI",
+                    icon: RiOpenaiFill,
+                    color: "#000000",
+                    bg: "#f4f4f5",
+                  }}
+                  className="h-10 w-10"
+                  iconClassName="h-5 w-5"
+                />
                 <h3 className="mt-3 font-[family-name:var(--font-display)] text-[20px] font-semibold text-slate-900">
                   AI qualification that feels human
                 </h3>
@@ -419,14 +494,32 @@ function SolutionBento() {
           </Reveal>
           <Reveal delay={0.12}>
             <div className="h-full rounded-[28px] border border-slate-200 bg-[#ffffff] p-6 shadow-sm">
-              <HiOutlineMap className="h-5 w-5 text-violet-600" />
+              <BrandLogoMark
+                brand={{
+                  name: "Maps",
+                  icon: SiGoogleearth,
+                  color: "#34A853",
+                  bg: "#e6f4ea",
+                }}
+                className="h-9 w-9"
+                iconClassName="h-4 w-4"
+              />
               <h3 className="mt-3 text-[16px] font-semibold text-slate-900">Map HUD</h3>
               <p className="mt-1 text-[13px] text-slate-500">Global density at a glance.</p>
             </div>
           </Reveal>
           <Reveal delay={0.16}>
             <div className="h-full rounded-[28px] border border-slate-200 bg-[#ffffff] p-6 shadow-sm">
-              <HiOutlineChatBubbleLeftRight className="h-5 w-5 text-violet-600" />
+              <BrandLogoMark
+                brand={{
+                  name: "Anthropic",
+                  icon: SiAnthropic,
+                  color: "#D4A27F",
+                  bg: "#faf4ef",
+                }}
+                className="h-9 w-9"
+                iconClassName="h-4 w-4"
+              />
               <h3 className="mt-3 text-[16px] font-semibold text-slate-900">Ask Expert</h3>
               <p className="mt-1 text-[13px] text-slate-500">Chat history that remembers.</p>
             </div>
@@ -472,10 +565,10 @@ function FeaturesGrid() {
                   className="group relative h-full overflow-hidden rounded-[22px] border border-slate-200/90 bg-[#ffffff] p-5 shadow-[0_4px_20px_rgba(15,23,42,0.03)] transition-shadow hover:border-fuchsia-200/80 hover:shadow-[0_16px_40px_rgba(217,70,239,0.12)]"
                 >
                   <span
-                    className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-md shadow-fuchsia-500/25"
-                    style={{ background: LOGO_GRADIENT }}
+                    className="relative inline-flex h-11 w-11 items-center justify-center rounded-xl ring-1 ring-black/[0.04]"
+                    style={{ background: f.bg, color: f.color }}
                   >
-                    <Icon className="h-5 w-5" />
+                    <Icon className="h-[22px] w-[22px]" />
                   </span>
                   <h3 className="relative mt-4 text-[15px] font-semibold text-slate-900">{f.title}</h3>
                   <p className="relative mt-1.5 text-[13px] leading-relaxed text-slate-500">{f.copy}</p>
@@ -483,65 +576,6 @@ function FeaturesGrid() {
               </Reveal>
             );
           })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function WorkflowSection() {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start 70%", "end 40%"],
-  });
-  const line = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
-
-  return (
-    <section ref={ref} className="relative overflow-hidden bg-[#ffffff] py-24">
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-48"
-        style={{
-          background: "linear-gradient(180deg, rgba(245,243,255,0.7), transparent)",
-        }}
-        aria-hidden
-      />
-      <div className="relative z-10 mx-auto max-w-3xl px-5 sm:px-8">
-        <Reveal className="text-center">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-fuchsia-600">
-            Workflow
-          </p>
-          <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.85rem,4vw,2.75rem)] font-semibold tracking-tight text-slate-900">
-            From search to booked job
-          </h2>
-        </Reveal>
-        <div className="relative mt-14">
-          <div className="absolute left-[15px] top-2 bottom-2 w-px bg-violet-100 sm:left-1/2 sm:-translate-x-px" />
-          <motion.div
-            className="absolute left-[15px] top-2 w-px sm:left-1/2 sm:-translate-x-px"
-            style={{ height: line, background: LOGO_GRADIENT }}
-          />
-          <div className="space-y-8">
-            {WORKFLOW.map((step, i) => (
-              <Reveal key={step} delay={i * 0.04}>
-                <div className={`flex items-center gap-4 ${i % 2 === 1 ? "sm:flex-row-reverse" : ""}`}>
-                  <div
-                    className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[12px] font-bold text-white sm:absolute sm:left-1/2 sm:-translate-x-1/2"
-                    style={{ background: LOGO_GRADIENT }}
-                  >
-                    {i + 1}
-                  </div>
-                  <div
-                    className={`flex-1 rounded-2xl border border-slate-200 bg-[#ffffff] p-4 shadow-[0_4px_16px_rgba(15,23,42,0.04)] sm:max-w-[42%] ${
-                      i % 2 === 1 ? "sm:mr-auto" : "sm:ml-auto"
-                    }`}
-                  >
-                    <p className="text-[14px] font-semibold text-slate-900">{step}</p>
-                  </div>
-                </div>
-              </Reveal>
-            ))}
-          </div>
         </div>
       </div>
     </section>
@@ -560,33 +594,15 @@ function Integrations() {
         </h2>
       </Reveal>
       <InfiniteMarquee speed={42} reverse>
-        {INTEGRATIONS.map((name) => (
-          <span
-            key={name}
-            className="whitespace-nowrap rounded-full border border-violet-100 bg-[#f8f5ff] px-5 py-2.5 text-[13px] font-semibold text-slate-600 shadow-sm"
-          >
-            {name}
-          </span>
+        {INTEGRATION_BRANDS.map((brand) => (
+          <BrandLogoChip key={brand.name} brand={brand} />
         ))}
       </InfiniteMarquee>
     </section>
   );
 }
 
-const TECH_LOGOS = [
-  "Next.js",
-  "React",
-  "OpenAI",
-  "Three.js",
-  "Framer Motion",
-  "Tailwind CSS",
-  "Prisma",
-  "PostgreSQL",
-  "Google Places",
-  "Meta",
-  "Railway",
-  "TypeScript",
-];
+const TECH_LOGOS = TECH_BRANDS;
 
 const TECH_CARDS = [
   {
@@ -793,13 +809,8 @@ function TechnologiesSection() {
         {/* Tech logos — soft white pills on light sky */}
         <Reveal delay={0.06} className="mt-8">
           <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
-            {TECH_LOGOS.map((name) => (
-              <span
-                key={name}
-                className="rounded-full border border-white/80 bg-[#ffffff]/85 px-4 py-2 font-[family-name:var(--font-display)] text-[13px] font-semibold tracking-tight text-slate-600 shadow-[0_8px_24px_rgba(100,80,160,0.08)] backdrop-blur-md transition hover:-translate-y-0.5 hover:text-slate-900 sm:text-[15px]"
-              >
-                {name}
-              </span>
+            {TECH_LOGOS.map((brand) => (
+              <BrandLogoChip key={brand.name} brand={brand} size="sm" />
             ))}
           </div>
         </Reveal>
@@ -939,21 +950,24 @@ function AiSection() {
       <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
         <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
           <Reveal>
-            <div className="relative mx-auto aspect-[4/3] w-full max-w-lg overflow-hidden rounded-[28px] shadow-[0_20px_60px_rgba(100,60,160,0.12)] lg:max-w-none">
-              <Image
-                src={MARKETING_PHOTOS.meeting}
-                alt="Agency team planning outreach"
-                fill
-                className="object-cover"
-                sizes="(max-width: 1024px) 100vw, 50vw"
-              />
-              <div
-                className="absolute inset-0"
-                style={{
-                  background:
-                    "linear-gradient(135deg, rgba(236,72,153,0.28), transparent 50%, rgba(124,58,237,0.28))",
-                }}
-              />
+            <div className="relative mx-auto w-full max-w-lg overflow-hidden rounded-[22px] border border-slate-200/80 bg-[#0b0614] shadow-[0_20px_60px_rgba(100,60,160,0.18)] lg:max-w-none">
+              <div className="flex items-center gap-1.5 border-b border-white/10 bg-[#12081f] px-3 py-2">
+                <span className="h-2 w-2 rounded-full bg-[#ff5f57]" />
+                <span className="h-2 w-2 rounded-full bg-[#febc2e]" />
+                <span className="h-2 w-2 rounded-full bg-[#28c840]" />
+                <span className="ml-2 truncate text-[11px] font-medium text-white/45">
+                  contractorleads.us
+                </span>
+              </div>
+              <div className="relative aspect-[2940/1672] w-full">
+                <Image
+                  src="/darktheme1.png"
+                  alt="Ask Contractor Leads AI assistant"
+                  fill
+                  className="object-contain object-top"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                />
+              </div>
             </div>
           </Reveal>
           <Reveal delay={0.08}>
@@ -1118,78 +1132,6 @@ function Pricing() {
               </Reveal>
             );
           })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function CaseStudies() {
-  const cases = [
-    {
-      title: "HVAC agency · Phoenix",
-      metric: "+212%",
-      label: "qualified leads / mo",
-      quote: "We stopped buying lists. AI scoring cut wasted dials in half.",
-      img: MARKETING_PHOTOS.home,
-    },
-    {
-      title: "Roofing media · Austin",
-      metric: "3.1×",
-      label: "reply rate",
-      quote: "Owner enrichment + Meta checks made every pitch sharper.",
-      img: MARKETING_PHOTOS.contractor,
-    },
-  ];
-  return (
-    <section className="relative overflow-hidden bg-[#ffffff] py-24">
-      <CloudDecor side="left" className="opacity-40" />
-      <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
-        <Reveal>
-          <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-fuchsia-600">
-            Case studies
-          </p>
-          <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.85rem,4vw,3rem)] font-semibold tracking-tight text-slate-900">
-            Proof in the pipeline
-          </h2>
-        </Reveal>
-        <div className="mt-10 grid gap-5 lg:grid-cols-2">
-          {cases.map((c, i) => (
-            <Reveal key={c.title} delay={i * 0.08}>
-              <TiltCard>
-                <article className="overflow-hidden rounded-[28px] border border-slate-200 bg-[#ffffff] shadow-[0_16px_48px_rgba(100,60,160,0.08)]">
-                  <div className="relative h-44 sm:h-52">
-                    <Image
-                      src={c.img}
-                      alt={c.title}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 1024px) 100vw, 50vw"
-                    />
-                    <div
-                      className="absolute inset-0"
-                      style={{
-                        background:
-                          "linear-gradient(180deg, transparent 30%, rgba(15,10,30,0.75))",
-                      }}
-                    />
-                  </div>
-                  <div className="p-7">
-                    <p className="text-[12px] font-semibold uppercase tracking-wider text-fuchsia-600">
-                      {c.title}
-                    </p>
-                    <p className="mt-2 font-[family-name:var(--font-display)] text-[40px] font-semibold text-slate-900">
-                      {c.metric}
-                    </p>
-                    <p className="text-[13px] text-slate-400">{c.label}</p>
-                    <p className="mt-4 text-[15px] leading-relaxed text-slate-600">
-                      &ldquo;{c.quote}&rdquo;
-                    </p>
-                  </div>
-                </article>
-              </TiltCard>
-            </Reveal>
-          ))}
         </div>
       </div>
     </section>
@@ -1402,13 +1344,13 @@ function Footer() {
         aria-hidden
       />
 
-      {/* Giant CONTRACTOR watermark */}
+      {/* Giant CONTRACTOR LEADS watermark */}
       <div className="relative mx-auto max-w-[100vw] overflow-hidden pt-16 sm:pt-20">
         <p
           aria-hidden
           className="marketing-footer-wordmark select-none text-center font-[family-name:var(--font-display)] font-bold uppercase leading-none tracking-[-0.06em]"
         >
-          CONTRACTOR
+          CONTRACTOR LEADS
         </p>
       </div>
 
@@ -1506,7 +1448,12 @@ export function MarketingPage() {
   }, []);
 
   useEffect(() => {
-    const lenis = new Lenis({ smoothWheel: true });
+    const lenis = new Lenis({
+      smoothWheel: true,
+      lerp: 0.075,
+      wheelMultiplier: 0.9,
+      touchMultiplier: 1.15,
+    });
     let raf = 0;
     function frame(t: number) {
       lenis.raf(t);
@@ -1524,18 +1471,21 @@ export function MarketingPage() {
       <ScrollNav />
       <MarketingFluidHero />
       <SocialProof />
+      <HillsProductStage />
+      <MoonWalkFeatureGrid />
+      <FlowerFieldProofCards />
       <DashboardSection />
       <ProblemSection />
-      <LifestyleBand />
+      <MaterialHillsCta />
       <SolutionBento />
+      <SocialProofBento />
       <FeaturesGrid />
-      <WorkflowSection />
+      <StickyPlatformScroll />
       <Integrations />
       <TechnologiesSection />
       <AnalyticsShowcase />
       <AiSection />
       <Pricing />
-      <CaseStudies />
       <Faq />
       <FinalCta />
       <Footer />

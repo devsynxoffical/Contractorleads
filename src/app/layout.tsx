@@ -38,14 +38,14 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${jakarta.variable} ${outfit.variable} h-full`}
-      data-theme="dark"
+      data-theme="light"
       suppressHydrationWarning
     >
       <head>
         <ThemeScript />
       </head>
       <body className="min-h-full font-sans antialiased">
-        <ThemeProvider initialTheme="dark">{children}</ThemeProvider>
+        <ThemeProvider initialTheme="light">{children}</ThemeProvider>
       </body>
     </html>
   );
