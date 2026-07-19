@@ -9,8 +9,7 @@ import {
   HiOutlineEyeSlash,
   HiOutlineLockClosed,
 } from "react-icons/hi2";
-import { FcGoogle } from "react-icons/fc";
-import { FaApple } from "react-icons/fa";
+import { LOGO_GRADIENT } from "@/components/layout/page-header";
 
 type LoginFormProps = {
   onSwitchToRegister?: () => void;
@@ -50,73 +49,49 @@ export function LoginForm({ onSwitchToRegister }: LoginFormProps) {
 
   return (
     <>
-      <div className="mb-8">
-        <h1 className="text-[28px] font-bold tracking-tight text-brand-500 sm:text-[32px] [text-shadow:0_0_28px_var(--brand-glow)]">
-          Sign In
+      <div className="mb-7">
+        <h1 className="font-[family-name:var(--font-display)] text-[28px] font-semibold tracking-tight text-slate-900 sm:text-[30px]">
+          Sign in
         </h1>
-        <p className="mt-2 text-[15px] text-[#8b9aab]">
+        <p className="mt-2 text-[14px] text-slate-500">
           Don&apos;t have an account?{" "}
           {onSwitchToRegister ? (
             <button
               type="button"
               onClick={onSwitchToRegister}
-              className="font-semibold text-brand-500 hover:underline"
+              className="font-semibold text-fuchsia-600 hover:text-fuchsia-700"
             >
-              Sign up
+              Create one free
             </button>
           ) : (
             <Link
               href="/register"
-              className="font-semibold text-brand-500 hover:underline"
+              className="font-semibold text-fuchsia-600 hover:text-fuchsia-700"
             >
-              Sign up
+              Create one free
             </Link>
           )}
         </p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <button
-          type="button"
-          className="flex h-11 items-center justify-center gap-2 border border-brand-500/25 bg-brand-500/08 text-sm font-medium text-white transition hover:bg-brand-500/15"
-        >
-          <FcGoogle className="h-5 w-5" />
-          Google
-        </button>
-        <button
-          type="button"
-          className="flex h-11 items-center justify-center gap-2 border border-brand-500/25 bg-brand-500/08 text-sm font-medium text-white transition hover:bg-brand-500/15"
-        >
-          <FaApple className="h-5 w-5" />
-          Apple
-        </button>
-      </div>
-
-      <div className="my-7 flex items-center gap-3">
-        <div className="h-px flex-1 bg-brand-500/20" />
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-[#5c6b7c]">
-          Or with email
-        </span>
-        <div className="h-px flex-1 bg-brand-500/20" />
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-1.5">
           <label
             htmlFor="login-email"
-            className="text-[13px] font-semibold text-[#8b9aab]"
+            className="text-[13px] font-semibold text-slate-700"
           >
-            Email Address
+            Email
           </label>
           <div className="relative">
-            <HiOutlineEnvelope className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[#5c6b7c]" />
+            <HiOutlineEnvelope className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400" />
             <input
               id="login-email"
               name="email"
               type="email"
               required
-              placeholder="name@company.com"
-              className="auth-field h-12 w-full rounded-xl pl-11 pr-4 text-sm outline-none transition focus:ring-2 focus:ring-brand-500/25"
+              autoComplete="email"
+              placeholder="name@agency.com"
+              className="auth-field h-12 w-full rounded-xl border border-slate-200 bg-[#f8fafc] pl-11 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-fuchsia-300 focus:bg-[#ffffff] focus:ring-4 focus:ring-fuchsia-100"
             />
           </div>
         </div>
@@ -125,31 +100,32 @@ export function LoginForm({ onSwitchToRegister }: LoginFormProps) {
           <div className="flex items-center justify-between">
             <label
               htmlFor="login-password"
-              className="text-[13px] font-semibold text-[#8b9aab]"
+              className="text-[13px] font-semibold text-slate-700"
             >
               Password
             </label>
             <button
               type="button"
-              className="text-xs font-medium text-brand-500 hover:underline"
+              className="text-xs font-semibold text-fuchsia-600 hover:text-fuchsia-700"
             >
               Forgot password?
             </button>
           </div>
           <div className="relative">
-            <HiOutlineLockClosed className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[#5c6b7c]" />
+            <HiOutlineLockClosed className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400" />
             <input
               id="login-password"
               name="password"
               type={showPassword ? "text" : "password"}
               required
+              autoComplete="current-password"
               placeholder="••••••••"
-              className="auth-field h-12 w-full rounded-xl pl-11 pr-11 text-sm outline-none transition focus:ring-2 focus:ring-brand-500/25"
+              className="auth-field h-12 w-full rounded-xl border border-slate-200 bg-[#f8fafc] pl-11 pr-11 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-fuchsia-300 focus:bg-[#ffffff] focus:ring-4 focus:ring-fuchsia-100"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#5c6b7c] hover:text-brand-500"
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-fuchsia-600"
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? (
@@ -161,14 +137,19 @@ export function LoginForm({ onSwitchToRegister }: LoginFormProps) {
           </div>
         </div>
 
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error ? (
+          <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-600">
+            {error}
+          </p>
+        ) : null}
 
         <button
           type="submit"
           disabled={loading}
-          className="hud-btn-primary mt-2 h-12 w-full justify-center rounded-xl text-sm disabled:cursor-not-allowed disabled:opacity-70"
+          className="mt-1 flex h-12 w-full items-center justify-center rounded-xl text-[14px] font-semibold text-white shadow-[0_12px_28px_rgba(217,70,239,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
+          style={{ background: LOGO_GRADIENT }}
         >
-          {loading ? "Signing in…" : "Sign In"}
+          {loading ? "Signing in…" : "Sign in"}
         </button>
       </form>
     </>

@@ -7,8 +7,7 @@ import {
   HiOutlinePhone,
   HiOutlineUser,
 } from "react-icons/hi2";
-import { FcGoogle } from "react-icons/fc";
-import { FaApple } from "react-icons/fa";
+import { LOGO_GRADIENT } from "@/components/layout/page-header";
 
 type RegisterFormProps = {
   onSwitchToLogin?: () => void;
@@ -59,86 +58,62 @@ function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
     }
 
     setSuccess(
-      data.message ||
-        "Check your business email for a verification link."
+      data.message || "Check your business email for a verification link.",
     );
     if (data.verifyUrl) setDevLink(data.verifyUrl);
     setLoading(false);
   }
 
+  const fieldClass =
+    "auth-field h-12 w-full rounded-xl border border-slate-200 bg-[#f8fafc] pl-11 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-fuchsia-300 focus:bg-[#ffffff] focus:ring-4 focus:ring-fuchsia-100";
+
   return (
     <>
-      <div className="mb-8">
-        <h1 className="text-[28px] font-bold tracking-tight text-brand-500 sm:text-[32px] [text-shadow:0_0_28px_var(--brand-glow)]">
-          Create Account
+      <div className="mb-7">
+        <h1 className="font-[family-name:var(--font-display)] text-[28px] font-semibold tracking-tight text-slate-900 sm:text-[30px]">
+          Create account
         </h1>
-        <p className="mt-2 text-[15px] text-[#8b9aab]">
-          Use your official business email. We will send a verification link
-          before you set a password.{" "}
+        <p className="mt-2 text-[14px] text-slate-500">
+          Business email required. Already have an account?{" "}
           {onSwitchToLogin ? (
             <button
               type="button"
               onClick={onSwitchToLogin}
-              className="font-semibold text-brand-500 hover:underline"
+              className="font-semibold text-fuchsia-600 hover:text-fuchsia-700"
             >
-              Log in
+              Sign in
             </button>
           ) : (
             <Link
               href="/login"
-              className="font-semibold text-brand-500 hover:underline"
+              className="font-semibold text-fuchsia-600 hover:text-fuchsia-700"
             >
-              Log in
+              Sign in
             </Link>
           )}
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <button
-          type="button"
-          className="flex h-11 items-center justify-center gap-2 border border-brand-500/25 bg-brand-500/08 text-sm font-medium text-white transition hover:bg-brand-500/15"
-        >
-          <FcGoogle className="h-5 w-5" />
-          Google
-        </button>
-        <button
-          type="button"
-          className="flex h-11 items-center justify-center gap-2 border border-brand-500/25 bg-brand-500/08 text-sm font-medium text-white transition hover:bg-brand-500/15"
-        >
-          <FaApple className="h-5 w-5" />
-          Apple
-        </button>
-      </div>
-
-      <div className="my-7 flex items-center gap-3">
-        <div className="h-px flex-1 bg-brand-500/20" />
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-[#5c6b7c]">
-          Or with business email
-        </span>
-        <div className="h-px flex-1 bg-brand-500/20" />
-      </div>
-
       {success ? (
-        <div className="space-y-3 border border-brand-500/25 bg-brand-500/08 p-4 text-sm text-[#c5d0dc]">
-          <p className="font-semibold text-brand-500">Check your inbox</p>
+        <div className="space-y-3 rounded-2xl border border-fuchsia-100 bg-fuchsia-50/60 p-4 text-sm text-slate-600">
+          <p className="font-semibold text-fuchsia-700">Check your inbox</p>
           <p>{success}</p>
-          {devLink && (
-            <p className="text-[12px] text-[#8b9aab]">
+          {devLink ? (
+            <p className="text-[12px] text-slate-500">
               Dev mode (no email provider configured):{" "}
               <a
                 href={devLink}
-                className="font-semibold text-brand-500 break-all hover:underline"
+                className="break-all font-semibold text-fuchsia-600 hover:underline"
               >
                 Open verification link
               </a>
             </p>
-          )}
+          ) : null}
           <Link
             href="/login"
-            className="inline-block font-semibold text-brand-500 hover:underline"
+            className="inline-block font-semibold text-fuchsia-600 hover:text-fuchsia-700"
           >
-            Back to login
+            Back to sign in
           </Link>
         </div>
       ) : (
@@ -146,19 +121,20 @@ function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
           <div className="space-y-1.5">
             <label
               htmlFor="reg-name"
-              className="text-[13px] font-semibold text-[#8b9aab]"
+              className="text-[13px] font-semibold text-slate-700"
             >
-              Full Name
+              Full name
             </label>
             <div className="relative">
-              <HiOutlineUser className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[#5c6b7c]" />
+              <HiOutlineUser className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400" />
               <input
                 id="reg-name"
                 name="name"
                 type="text"
                 required
+                autoComplete="name"
                 placeholder="Your full name"
-                className="auth-field h-12 w-full rounded-xl pl-11 pr-4 text-sm outline-none transition focus:ring-2 focus:ring-brand-500/25"
+                className={fieldClass}
               />
             </div>
           </div>
@@ -166,22 +142,23 @@ function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
           <div className="space-y-1.5">
             <label
               htmlFor="reg-email"
-              className="text-[13px] font-semibold text-[#8b9aab]"
+              className="text-[13px] font-semibold text-slate-700"
             >
-              Business Email
+              Business email
             </label>
             <div className="relative">
-              <HiOutlineEnvelope className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[#5c6b7c]" />
+              <HiOutlineEnvelope className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400" />
               <input
                 id="reg-email"
                 name="email"
                 type="email"
                 required
+                autoComplete="email"
                 placeholder="you@yourcompany.com"
-                className="auth-field h-12 w-full rounded-xl pl-11 pr-4 text-sm outline-none transition focus:ring-2 focus:ring-brand-500/25"
+                className={fieldClass}
               />
             </div>
-            <p className="text-[12px] text-[#5c6b7c]">
+            <p className="text-[12px] text-slate-400">
               Free inboxes (Gmail, Yahoo, Outlook, etc.) are not allowed.
             </p>
           </div>
@@ -189,12 +166,12 @@ function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
           <div className="space-y-1.5">
             <label
               htmlFor="reg-phone"
-              className="text-[13px] font-semibold text-[#8b9aab]"
+              className="text-[13px] font-semibold text-slate-700"
             >
-              Phone Number <span className="text-brand-500">*</span>
+              Phone number <span className="text-fuchsia-600">*</span>
             </label>
             <div className="relative">
-              <HiOutlinePhone className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-[#5c6b7c]" />
+              <HiOutlinePhone className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400" />
               <input
                 id="reg-phone"
                 name="phone"
@@ -202,36 +179,41 @@ function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
                 required
                 autoComplete="tel"
                 placeholder="+1 (555) 000-0000"
-                className="auth-field h-12 w-full rounded-xl pl-11 pr-4 text-sm outline-none transition focus:ring-2 focus:ring-brand-500/25"
+                className={fieldClass}
               />
             </div>
           </div>
 
-          <label className="flex items-start gap-2.5 pt-1 text-[13px] text-[#8b9aab]">
+          <label className="flex items-start gap-2.5 pt-1 text-[13px] text-slate-500">
             <input
               type="checkbox"
               name="terms"
-              className="mt-0.5 h-4 w-4 rounded border-brand-500/40 bg-transparent text-brand-500 focus:ring-brand-500"
+              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-fuchsia-600 focus:ring-fuchsia-200"
             />
             <span>
               I agree to the{" "}
-              <Link href="#" className="font-medium text-brand-500 hover:underline">
+              <Link href="#" className="font-semibold text-fuchsia-600 hover:underline">
                 Terms of Service
               </Link>{" "}
               and{" "}
-              <Link href="#" className="font-medium text-brand-500 hover:underline">
+              <Link href="#" className="font-semibold text-fuchsia-600 hover:underline">
                 Privacy Policy
               </Link>
               .
             </span>
           </label>
 
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          {error ? (
+            <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-600">
+              {error}
+            </p>
+          ) : null}
 
           <button
             type="submit"
             disabled={loading}
-            className="hud-btn-primary mt-2 h-12 w-full justify-center rounded-xl text-sm disabled:cursor-not-allowed disabled:opacity-70"
+            className="mt-1 flex h-12 w-full items-center justify-center rounded-xl text-[14px] font-semibold text-white shadow-[0_12px_28px_rgba(217,70,239,0.28)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
+            style={{ background: LOGO_GRADIENT }}
           >
             {loading ? "Sending verification…" : "Send verification email"}
           </button>

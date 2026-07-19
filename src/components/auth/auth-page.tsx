@@ -1,15 +1,11 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import Image from "next/image";
+import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
-import {
-  HiOutlineBolt,
-  HiOutlineMap,
-  HiOutlineShieldCheck,
-} from "react-icons/hi2";
 import { LoginForm } from "./login-form";
 import { RegisterForm } from "./register-form";
+import { AuthBrandPanel, AuthMeshBackdrop } from "./auth-visual";
+import { AuthSiteFooter, AuthSiteHeader } from "./auth-chrome";
 
 type AuthMode = "login" | "register";
 
@@ -18,27 +14,45 @@ const panelCopy: Record<
   {
     title: string;
     subtitle: string;
-    features: { icon: typeof HiOutlineBolt; label: string }[];
+    features: { label: string; detail: string }[];
   }
 > = {
   login: {
-    title: "Welcome Back",
+    title: "Your contractor pipeline, ready when you are",
     subtitle:
-      "Sign in to access verified home-service leads and grow your agency across Tier 1 countries.",
+      "Sign in to score live leads, enrich owners, and launch outreach from one workspace.",
     features: [
-      { icon: HiOutlineShieldCheck, label: "Verified contacts only" },
-      { icon: HiOutlineMap, label: "Global lead map & scoring" },
-      { icon: HiOutlineBolt, label: "AI outreach in one click" },
+      {
+        label: "Verified contacts only",
+        detail: "Google, Yelp, and site data — never invented phones.",
+      },
+      {
+        label: "AI scoring on every lead",
+        detail: "Hot / Warm / Nurture with revenue bands and angles.",
+      },
+      {
+        label: "Outreach in one click",
+        detail: "Email, SMS, and call scripts saved to your library.",
+      },
     ],
   },
   register: {
-    title: "Unleash Your Pipeline",
+    title: "Start with 20 free credits — no card",
     subtitle:
-      "Join the next generation of agency owners — start with 20 free trial credits, no card required.",
+      "Create your agency account, verify your business email, and ship your first qualified batch today.",
     features: [
-      { icon: HiOutlineBolt, label: "20 free trial credits" },
-      { icon: HiOutlineShieldCheck, label: "Business email verified" },
-      { icon: HiOutlineMap, label: "Search any Tier 1 market" },
+      {
+        label: "Business email verified",
+        detail: "We keep free inboxes out so lead quality stays high.",
+      },
+      {
+        label: "Tier‑1 market coverage",
+        detail: "Search any trade across metros, ZIPs, and custom areas.",
+      },
+      {
+        label: "Trial credits included",
+        detail: "Explore Lead Finder, AI Assistant, and scoring risk-free.",
+      },
     ],
   },
 };
@@ -46,13 +60,23 @@ const panelCopy: Record<
 export function AuthPage({ initialMode = "login" }: { initialMode?: AuthMode }) {
   const [mode, setMode] = useState<AuthMode>(initialMode);
 
+  useEffect(() => {
+    const root = document.documentElement;
+    const prev = root.getAttribute("data-theme");
+    root.setAttribute("data-theme", "light");
+    return () => {
+      if (prev) root.setAttribute("data-theme", prev);
+      else root.removeAttribute("data-theme");
+    };
+  }, []);
+
   const switchMode = useCallback((newMode: AuthMode) => {
     setMode(newMode);
     if (typeof window !== "undefined") {
       window.history.replaceState(
         null,
         "",
-        newMode === "login" ? "/login" : "/register"
+        newMode === "login" ? "/login" : "/register",
       );
     }
   }, []);
@@ -60,129 +84,50 @@ export function AuthPage({ initialMode = "login" }: { initialMode?: AuthMode }) 
   const copy = panelCopy[mode];
 
   return (
-    <div className="auth-page relative flex min-h-screen overflow-hidden bg-[var(--canvas)]">
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          backgroundImage:
-            "linear-gradient(var(--hud-grid) 1px, transparent 1px), linear-gradient(90deg, var(--hud-grid) 1px, transparent 1px), radial-gradient(ellipse 70% 50% at 65% 35%, var(--cover-glow), transparent 55%), var(--cover-veil), url(/hud-cover.png)",
-          backgroundSize: "48px 48px, 48px 48px, auto, auto, cover",
-          backgroundPosition: "center, center, center, center, center top",
-        }}
-        aria-hidden
-      />
+    <div className="auth-page relative flex min-h-screen flex-col bg-[#ffffff] text-slate-900">
+      <AuthSiteHeader mode={mode} />
 
-      {/* Left branding */}
-      <div className="relative z-10 hidden min-h-screen w-1/2 flex-col border-r border-brand-500/15 lg:flex">
-        <div className="relative z-10 flex items-center gap-3 px-10 pt-10">
-          <div className="flex h-10 w-10 items-center justify-center border border-brand-500/35 bg-brand-500/10">
-            <Image
-              src="/logo.png"
-              alt=""
-              width={28}
-              height={28}
-              className="object-contain"
-              priority
-            />
-          </div>
-          <span className="text-[18px] font-semibold tracking-tight text-ink">
-            Contractor Leads
-          </span>
+      <main className="relative flex flex-1 flex-col lg:flex-row">
+        <div className="pointer-events-none absolute inset-0 lg:hidden" aria-hidden>
+          <AuthMeshBackdrop variant={mode} />
         </div>
 
-        <div className="relative z-10 flex flex-1 flex-col justify-center px-12 lg:px-20">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500">
-            LeadFlow
-          </p>
-          <h2
-            className="mt-3 bg-clip-text text-[40px] font-semibold leading-[1.15] tracking-[-0.02em] text-transparent lg:text-[48px]"
-            style={{
-              fontFamily:
-                "var(--font-outfit), var(--font-jakarta), system-ui, sans-serif",
-              backgroundImage: "var(--logo-gradient)",
-            }}
-          >
-            {copy.title}
-          </h2>
-          <p
-            className="mt-5 max-w-[380px] text-[16px] font-normal leading-[1.65] tracking-[0.01em] text-[#8b9aab] lg:text-[17px]"
-            style={{
-              fontFamily:
-                "var(--font-outfit), var(--font-jakarta), system-ui, sans-serif",
-            }}
-          >
-            {copy.subtitle}
-          </p>
-
-          <ul className="mt-10 space-y-3.5">
-            {copy.features.map((f) => {
-              const Icon = f.icon;
-              return (
-                <li key={f.label} className="flex items-center gap-3">
-                  <span className="flex h-9 w-9 items-center justify-center border border-brand-500/30 bg-brand-500/10 text-brand-500">
-                    <Icon className="h-4 w-4" />
-                  </span>
-                  <span className="text-sm font-medium text-[#c5d0dc]">
-                    {f.label}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-
-          <div className="mt-8 flex flex-wrap gap-2">
-            <span className="hud-pill">Verified leads</span>
-            <span className="hud-pill hud-pill-muted">AI scored</span>
-            <span className="hud-pill hud-pill-muted">Global map</span>
-          </div>
+        <div className="relative z-10 hidden w-[48%] min-w-0 xl:w-1/2 lg:block">
+          <AuthBrandPanel
+            variant={mode}
+            title={copy.title}
+            subtitle={copy.subtitle}
+            features={copy.features}
+          />
         </div>
 
-        <p className="relative z-10 px-10 pb-8 text-xs text-[#5c6b7c]">
-          © 2026 Contractor Leads
-        </p>
-      </div>
-
-      {/* Right form */}
-      <div className="relative z-10 flex min-h-screen w-full flex-col lg:w-1/2">
-        <div className="relative z-10 flex flex-1 flex-col justify-center px-6 py-12 sm:px-12 lg:px-16 xl:px-24">
-          <div className="hud-panel mx-auto w-full max-w-[420px] !p-6 sm:!p-8">
-            <span className="hud-bracket hud-bracket-tl" aria-hidden />
-            <span className="hud-bracket hud-bracket-tr" aria-hidden />
-            <span className="hud-bracket hud-bracket-bl" aria-hidden />
-            <span className="hud-bracket hud-bracket-br" aria-hidden />
-
-            <div className="mb-8 flex items-center gap-2.5 lg:hidden">
-              <Image
-                src="/logo.png"
-                alt=""
-                width={32}
-                height={32}
-                className="object-contain"
-                priority
-              />
-              <span className="text-base font-semibold text-white">
-                Contractor Leads
-              </span>
-            </div>
-
+        <div className="relative z-10 flex w-full flex-1 flex-col justify-center px-5 py-14 sm:px-10 lg:w-[52%] lg:px-14 xl:w-1/2 xl:px-20">
+          <div className="mx-auto w-full max-w-[420px] rounded-[28px] border border-slate-200/90 bg-[#ffffff] p-6 shadow-[0_20px_60px_rgba(80,40,120,0.08)] sm:p-8">
             {mode === "login" ? (
               <LoginForm onSwitchToRegister={() => switchMode("register")} />
             ) : (
               <RegisterForm onSwitchToLogin={() => switchMode("login")} />
             )}
 
-            <p className="mt-10 text-center text-sm text-[#5c6b7c]">
+            <p className="mt-8 text-center text-[13px] text-slate-400">
               Need help?{" "}
               <Link
-                href="#"
-                className="font-medium text-brand-500 hover:underline"
+                href="mailto:hello@contractorleads.us"
+                className="font-semibold text-fuchsia-600 transition hover:text-fuchsia-700"
               >
-                Contact Support
+                Contact support
               </Link>
             </p>
           </div>
+
+          <p className="mx-auto mt-8 max-w-[420px] text-center text-[11px] leading-relaxed text-slate-400">
+            By continuing you agree to our Terms and Privacy Policy. Built for
+            agencies that sell to home-service contractors.
+          </p>
         </div>
-      </div>
+      </main>
+
+      <AuthSiteFooter />
     </div>
   );
 }

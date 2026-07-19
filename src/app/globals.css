@@ -434,8 +434,33 @@ html:not([data-theme="light"]) .bg-\[\#faf8fb\] {
 }
 
 .auth-page {
-  background: transparent;
+  background: #ffffff;
   min-height: 100vh;
+  color: #0f172a;
+}
+
+/* Keep auth fields crisp white even when app theme is dark */
+html .auth-page .auth-field,
+html[data-theme="dark"] .auth-page .auth-field,
+html:not([data-theme="light"]) .auth-page .auth-field {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+html .auth-page .auth-field:focus,
+html[data-theme="dark"] .auth-page .auth-field:focus,
+html:not([data-theme="light"]) .auth-page .auth-field:focus {
+  background: #ffffff !important;
+  border-color: #f0abfc !important;
+  box-shadow: 0 0 0 4px rgba(232, 121, 249, 0.15) !important;
+}
+html .auth-page .bg-\[\#ffffff\],
+html[data-theme="dark"] .auth-page .bg-\[\#ffffff\],
+html:not([data-theme="light"]) .auth-page .bg-\[\#ffffff\],
+html .auth-page .bg-white,
+html[data-theme="dark"] .auth-page .bg-white,
+html:not([data-theme="light"]) .auth-page .bg-white {
+  background-color: #ffffff !important;
 }
 
 .auth-brand-gradient {
@@ -451,10 +476,9 @@ html:not([data-theme="light"]) .bg-\[\#faf8fb\] {
 }
 
 .auth-form-panel {
-  background-color: var(--surface);
-  background-image: linear-gradient(var(--hud-grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--hud-grid) 1px, transparent 1px);
-  background-size: 22px 22px;
+  background-color: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  box-shadow: 0 20px 60px rgba(80, 40, 120, 0.08);
 }
 
 .auth-cta,
@@ -468,23 +492,23 @@ html:not([data-theme="light"]) .bg-\[\#faf8fb\] {
 }
 
 .auth-field {
-  background: var(--input-bg) !important;
-  color: var(--ink) !important;
-  border: 1px solid var(--border);
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  border: 1px solid #e2e8f0;
 }
 
 .auth-field::placeholder {
-  color: var(--ink-faint) !important;
+  color: #94a3b8 !important;
 }
 
 .auth-field:focus {
-  background: var(--input-bg-focus) !important;
-  box-shadow: 0 0 0 3px var(--ring);
-  border-color: var(--border-strong);
+  background: #ffffff !important;
+  box-shadow: 0 0 0 4px rgba(232, 121, 249, 0.15);
+  border-color: #f0abfc;
 }
 
 .auth-page input:focus {
-  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.18);
+  box-shadow: 0 0 0 4px rgba(232, 121, 249, 0.15);
 }
 
 /* ——— Motion & surfaces ——— */
@@ -1262,7 +1286,63 @@ html:not([data-theme="light"]) .saas-input {
   color: var(--ink) !important;
 }
 
-/* Marketing site */
+/* Marketing site — always crisp light UI (beats app dark remaps on specificity) */
+.marketing-site {
+  overflow-x: clip;
+  background: #ffffff;
+  color: #0f172a;
+}
+html .marketing-site .bg-white,
+html .marketing-site .bg-white\/95,
+html .marketing-site .bg-white\/90,
+html .marketing-site .bg-white\/85,
+html .marketing-site .bg-white\/80,
+html .marketing-site .bg-white\/75,
+html .marketing-site .bg-white\/70,
+html[data-theme="dark"] .marketing-site .bg-white,
+html[data-theme="dark"] .marketing-site .bg-white\/95,
+html[data-theme="dark"] .marketing-site .bg-white\/90,
+html[data-theme="dark"] .marketing-site .bg-white\/80,
+html[data-theme="dark"] .marketing-site .bg-white\/75,
+html[data-theme="dark"] .marketing-site .bg-white\/70,
+html:not([data-theme="light"]) .marketing-site .bg-white,
+html:not([data-theme="light"]) .marketing-site .bg-white\/95,
+html:not([data-theme="light"]) .marketing-site .bg-white\/90,
+html:not([data-theme="light"]) .marketing-site .bg-white\/80,
+html:not([data-theme="light"]) .marketing-site .bg-white\/75,
+html:not([data-theme="light"]) .marketing-site .bg-white\/70 {
+  background-color: #ffffff !important;
+}
+html:not([data-theme="light"]) .marketing-site .from-white,
+html[data-theme="dark"] .marketing-site .from-white {
+  --tw-gradient-from: #ffffff !important;
+  --tw-gradient-to: rgb(255 255 255 / 0) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+html:not([data-theme="light"]) .marketing-site .to-white,
+html[data-theme="dark"] .marketing-site .to-white {
+  --tw-gradient-to: #ffffff !important;
+}
+html:not([data-theme="light"]) .marketing-site .bg-\[\#fafafa\],
+html:not([data-theme="light"]) .marketing-site .bg-\[\#f8f5ff\],
+html:not([data-theme="light"]) .marketing-site .bg-\[\#f5f3ff\],
+html:not([data-theme="light"]) .marketing-site .bg-slate-50,
+html[data-theme="dark"] .marketing-site .bg-\[\#fafafa\],
+html[data-theme="dark"] .marketing-site .bg-\[\#f8f5ff\],
+html[data-theme="dark"] .marketing-site .bg-\[\#f5f3ff\],
+html[data-theme="dark"] .marketing-site .bg-slate-50 {
+  background-color: #fafafa !important;
+  color: inherit !important;
+}
+html:not([data-theme="light"]) .marketing-site .bg-\[\#f8f5ff\],
+html[data-theme="dark"] .marketing-site .bg-\[\#f8f5ff\] {
+  background-color: #f8f5ff !important;
+}
+.marketing-site .saas-input {
+  background: #f8f5ff !important;
+  color: #0f172a !important;
+  border-color: rgba(148, 163, 184, 0.45) !important;
+}
 .marketing-hero-3d {
   position: absolute;
   inset: 0;
@@ -1270,17 +1350,6 @@ html:not([data-theme="light"]) .saas-input {
 .marketing-hero-3d canvas {
   width: 100% !important;
   height: 100% !important;
-}
-.marketing-site {
-  overflow-x: hidden;
-}
-
-/* Premium marketing site */
-.marketing-site {
-  overflow-x: clip;
-}
-.marketing-site .saas-input {
-  background: var(--input-bg) !important;
 }
 @media (prefers-reduced-motion: reduce) {
   .marketing-site * {
