@@ -178,6 +178,62 @@ export async function GET() {
     return sum + (plan?.priceMonthly ?? 0) * g._count._all;
   }, 0);
 
+  const paidPlanValues = ADMIN_PLANS.filter((p) => p.priceMonthly > 0).map(
+    (p) => p.value,
+  );
+
+  const [
+    visitorsWeek,
+    visitorsToday,
+    newPaidWeek,
+    canceledUsers,
+    activePaidUsers,
+  ] = await Promise.all([
+    prisma.search
+      .groupBy({
+        by: ["userId"],
+        where: { createdAt: { gte: weekAgo } },
+      })
+      .then((rows) => rows.length),
+    prisma.search
+      .groupBy({
+        by: ["userId"],
+        where: { createdAt: { gte: startOfToday } },
+      })
+      .then((rows) => rows.length),
+    prisma.user.count({
+      where: {
+        role: { notIn: [...ADMIN_STAFF_ROLES] },
+        plan: { in: paidPlanValues },
+        createdAt: { gte: weekAgo },
+      },
+    }),
+    prisma.user.count({
+      where: {
+        role: { notIn: [...ADMIN_STAFF_ROLES] },
+        subscriptionStatus: "canceled",
+      },
+    }),
+    prisma.user.count({
+      where: {
+        role: { notIn: [...ADMIN_STAFF_ROLES] },
+        plan: { in: paidPlanValues },
+        subscriptionStatus: { in: ["active", "past_due", "trialing"] },
+      },
+    }),
+  ]);
+
+  const grossSales = planGroups.reduce((sum, g) => {
+    const plan = ADMIN_PLANS.find((p) => p.value === g.plan);
+    return sum + (plan?.priceMonthly ?? 0) * g._count._all;
+  }, 0);
+
+  const churnDenom = activePaidUsers + canceledUsers;
+  const churnRate =
+    churnDenom > 0
+      ? Math.round((canceledUsers / churnDenom) * 1000) / 10
+      : 0;
+
   const saveRate =
     leadCount > 0
       ? Math.round((savedLeadCount / leadCount) * 1000) / 10
@@ -219,6 +275,14 @@ export async function GET() {
       exportsWeek,
       saveRate,
       mappedLeadCount: geoLeads.length,
+      // KPI strip
+      visitors: visitorsWeek,
+      visitorsToday,
+      sales: newPaidWeek,
+      newMembers: newCustomersWeek,
+      grossSales,
+      revenue: estimatedMrr,
+      churnRate,
     },
     geoLeads: geoLeads.map((l) => ({
       id: l.id,

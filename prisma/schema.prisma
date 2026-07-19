@@ -25,6 +25,10 @@ model User {
   onboardingComplete  Boolean  @default(false)
   darkMode            Boolean  @default(false)
   companyName         String?
+  /// Agency owner contact (managed from admin + settings)
+  ownerName           String?
+  ownerEmail          String?
+  ownerPhone          String?
   businessDescription String?
   services            String?
   idealCustomer       String?
@@ -40,6 +44,9 @@ model User {
   activities      ActivityLog[]
   exports         Export[]
   aiConversations AiConversation[]
+  smtpSettings    UserSmtpSettings?
+  emailSequence   EmailSequence?
+  emailEnrollments EmailEnrollment[]
 }
 
 /// Persisted AI assistant threads (home / Ask Expert).
@@ -161,6 +168,7 @@ model SavedLead {
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   notes     LeadNote[]
+  emailEnrollments EmailEnrollment[]
 
   @@unique([userId, leadId])
 }
@@ -234,4 +242,62 @@ model EmailVerification {
   createdAt DateTime @default(now())
 
   @@index([email])
+}
+
+/// Per-agency SMTP so outreach sends from their own mailbox.
+model UserSmtpSettings {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  host         String
+  port         Int      @default(587)
+  secure       Boolean  @default(false)
+  username     String
+  /// AES-encrypted SMTP password
+  passwordEnc  String
+  fromEmail    String
+  fromName     String?
+  enabled      Boolean  @default(true)
+  lastTestedAt DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+/// Day 1 / 2 / 3 email automation templates for scraped/saved leads.
+model EmailSequence {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String   @default("Lead nurture")
+  enabled     Boolean  @default(true)
+  day1Subject String   @default("Quick intro")
+  day1Body    String   @default("Hi {{ownerName}},\n\nI noticed {{businessName}} and thought we could help with more booked jobs.\n\nWorth a quick chat?\n\n{{fromName}}")
+  day2Subject String   @default("Following up")
+  day2Body    String   @default("Hi {{ownerName}},\n\nJust bumping this in case you missed it — happy to share how agencies like yours are filling their calendar.\n\n{{fromName}}")
+  day3Subject String   @default("Last note from me")
+  day3Body    String   @default("Hi {{ownerName}},\n\nI'll close the loop here. If timing is better later, just reply and I'll send details.\n\n{{fromName}}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  enrollments EmailEnrollment[]
+}
+
+/// Tracks Day 1/2/3 sends for a saved lead.
+model EmailEnrollment {
+  id          String        @id @default(cuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sequenceId  String
+  sequence    EmailSequence @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+  savedLeadId String
+  savedLead   SavedLead     @relation(fields: [savedLeadId], references: [id], onDelete: Cascade)
+  status      String        @default("active") // active | completed | paused | failed
+  day1SentAt  DateTime?
+  day2SentAt  DateTime?
+  day3SentAt  DateTime?
+  lastError   String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([userId, savedLeadId])
+  @@index([status, createdAt])
 }

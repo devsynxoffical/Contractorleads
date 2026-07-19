@@ -26,6 +26,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/input";
 import { LEAD_STATUSES } from "@/lib/constants";
 import { OutreachStudio } from "@/components/leads/outreach-studio";
+import { EnrollEmailSequenceButton } from "@/components/leads/enroll-email-sequence-button";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
 
 type FacebookAdsResult = {
@@ -1153,6 +1154,12 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
                 />
                 {crmBusy ? "Updating…" : "Mark as favorite"}
               </label>
+              {saved && lead.email ? (
+                <EnrollEmailSequenceButton
+                  savedLeadId={saved.id}
+                  hasEmail={Boolean(lead.email)}
+                />
+              ) : null}
             </CardContent>
           </Card>
 

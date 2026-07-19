@@ -15,6 +15,9 @@ type Customer = {
   email: string;
   name: string | null;
   companyName: string | null;
+  ownerName?: string | null;
+  ownerEmail?: string | null;
+  ownerPhone?: string | null;
   plan: string;
   subscriptionStatus: string;
   creditsRemaining: number;
@@ -36,6 +39,9 @@ export default function AdminCustomersPage() {
     password: "",
     name: "",
     companyName: "",
+    ownerName: "",
+    ownerEmail: "",
+    ownerPhone: "",
     plan: "trial",
     creditsRemaining: 20,
   });
@@ -101,6 +107,9 @@ export default function AdminCustomersPage() {
       password: "",
       name: "",
       companyName: "",
+      ownerName: "",
+      ownerEmail: "",
+      ownerPhone: "",
       plan: "trial",
       creditsRemaining: 20,
     });
@@ -189,10 +198,13 @@ export default function AdminCustomersPage() {
           </h2>
           {(
             [
-              ["email", "Email", "email"],
+              ["email", "Login email", "email"],
               ["password", "Password (min 8)", "password"],
               ["name", "Contact name", "text"],
-              ["companyName", "Company", "text"],
+              ["companyName", "Company / agency", "text"],
+              ["ownerName", "Agency owner name", "text"],
+              ["ownerEmail", "Owner email", "email"],
+              ["ownerPhone", "Owner phone", "tel"],
             ] as const
           ).map(([key, label, type]) => (
             <label key={key} className="block text-[12px]">
@@ -306,6 +318,12 @@ export default function AdminCustomersPage() {
                     {c.companyName || c.name || "—"}
                   </p>
                   <p className="text-[12px] text-ink-muted">{c.email}</p>
+                  {c.ownerName || c.ownerEmail ? (
+                    <p className="mt-1 text-[11px] text-ink-faint">
+                      Owner: {c.ownerName || "—"}
+                      {c.ownerEmail ? ` · ${c.ownerEmail}` : ""}
+                    </p>
+                  ) : null}
                   {c.isActive === false && (
                     <span className="mt-1 inline-block rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
                       Suspended

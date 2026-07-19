@@ -16,6 +16,9 @@ type Customer = {
   creditsRemaining: number;
   onboardingComplete: boolean;
   companyName: string | null;
+  ownerName: string | null;
+  ownerEmail: string | null;
+  ownerPhone: string | null;
   businessDescription: string | null;
   services: string | null;
   idealCustomer: string | null;
@@ -176,9 +179,12 @@ export default function AdminCustomerDetailPage() {
           <h2 className="text-sm font-semibold text-ink">Profile</h2>
           {(
             [
-              ["name", "Name"],
-              ["email", "Email"],
-              ["companyName", "Company"],
+              ["name", "Contact name"],
+              ["email", "Login email"],
+              ["companyName", "Company / agency"],
+              ["ownerName", "Agency owner name"],
+              ["ownerEmail", "Owner email"],
+              ["ownerPhone", "Owner phone"],
               ["services", "Services"],
               ["serviceAreas", "Service areas"],
               ["idealCustomer", "Ideal customer"],
@@ -216,6 +222,9 @@ export default function AdminCustomerDetailPage() {
                 name: customer.name,
                 email: customer.email,
                 companyName: customer.companyName,
+                ownerName: customer.ownerName,
+                ownerEmail: customer.ownerEmail,
+                ownerPhone: customer.ownerPhone,
                 services: customer.services,
                 serviceAreas: customer.serviceAreas,
                 idealCustomer: customer.idealCustomer,

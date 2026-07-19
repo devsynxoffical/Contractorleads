@@ -42,6 +42,9 @@ export async function GET(request: Request) {
         email: true,
         name: true,
         companyName: true,
+        ownerName: true,
+        ownerEmail: true,
+        ownerPhone: true,
         plan: true,
         subscriptionStatus: true,
         creditsRemaining: true,
@@ -77,6 +80,14 @@ export async function POST(request: Request) {
   const name = typeof body.name === "string" ? body.name.trim() : null;
   const companyName =
     typeof body.companyName === "string" ? body.companyName.trim() : null;
+  const ownerName =
+    typeof body.ownerName === "string" ? body.ownerName.trim() : null;
+  const ownerEmail =
+    typeof body.ownerEmail === "string"
+      ? body.ownerEmail.trim().toLowerCase()
+      : null;
+  const ownerPhone =
+    typeof body.ownerPhone === "string" ? body.ownerPhone.trim() : null;
   const planValues = ADMIN_PLANS.map((p) => p.value);
   const plan =
     typeof body.plan === "string" && planValues.includes(body.plan as never)
@@ -101,6 +112,9 @@ export async function POST(request: Request) {
         passwordHash: await hashPassword(password),
         name,
         companyName,
+        ownerName,
+        ownerEmail,
+        ownerPhone,
         plan,
         subscriptionStatus: plan === "trial" ? "trialing" : "active",
         creditsRemaining,

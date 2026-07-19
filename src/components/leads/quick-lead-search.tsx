@@ -15,9 +15,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import {
   getTierOneCountry,
+  getRegionAnyLabel,
+  getRegionsForCountry,
   INDUSTRIES,
   TIER_ONE_COUNTRIES,
-  US_STATES,
 } from "@/lib/constants";
 import {
   CUSTOM_INDUSTRY_VALUE,
@@ -463,14 +464,14 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
               </p>
             ) : locationMode === "standard" ? (
               <>
-                {country === "US" ? (
+                {getRegionsForCountry(country).length > 0 ? (
                   <select
                     value={state}
                     onChange={(e) => setState(e.target.value)}
                     className="h-9 rounded-lg border border-border bg-white px-2 text-[12px] text-ink outline-none focus:border-brand-400 sm:col-span-2"
                   >
-                    <option value="">Any state</option>
-                    {US_STATES.map((s) => (
+                    <option value="">{getRegionAnyLabel(country)}</option>
+                    {getRegionsForCountry(country).map((s) => (
                       <option key={s.code} value={s.code}>
                         {s.code} — {s.name}
                       </option>

@@ -118,6 +118,89 @@ export const US_STATES = [
   { code: "WY", name: "Wyoming" },
 ] as const;
 
+/** Canada provinces & territories */
+export const CA_PROVINCES = [
+  { code: "AB", name: "Alberta" },
+  { code: "BC", name: "British Columbia" },
+  { code: "MB", name: "Manitoba" },
+  { code: "NB", name: "New Brunswick" },
+  { code: "NL", name: "Newfoundland and Labrador" },
+  { code: "NS", name: "Nova Scotia" },
+  { code: "NT", name: "Northwest Territories" },
+  { code: "NU", name: "Nunavut" },
+  { code: "ON", name: "Ontario" },
+  { code: "PE", name: "Prince Edward Island" },
+  { code: "QC", name: "Quebec" },
+  { code: "SK", name: "Saskatchewan" },
+  { code: "YT", name: "Yukon" },
+] as const;
+
+/** UK nations / countries */
+export const GB_COUNTRIES = [
+  { code: "ENG", name: "England" },
+  { code: "SCT", name: "Scotland" },
+  { code: "WLS", name: "Wales" },
+  { code: "NIR", name: "Northern Ireland" },
+] as const;
+
+/** Australia states & territories */
+export const AU_STATES = [
+  { code: "ACT", name: "Australian Capital Territory" },
+  { code: "NSW", name: "New South Wales" },
+  { code: "NT", name: "Northern Territory" },
+  { code: "QLD", name: "Queensland" },
+  { code: "SA", name: "South Australia" },
+  { code: "TAS", name: "Tasmania" },
+  { code: "VIC", name: "Victoria" },
+  { code: "WA", name: "Western Australia" },
+] as const;
+
+/** New Zealand regions */
+export const NZ_REGIONS = [
+  { code: "AUK", name: "Auckland" },
+  { code: "BOP", name: "Bay of Plenty" },
+  { code: "CAN", name: "Canterbury" },
+  { code: "GIS", name: "Gisborne" },
+  { code: "HKB", name: "Hawke's Bay" },
+  { code: "MWT", name: "Manawatū-Whanganui" },
+  { code: "MBH", name: "Marlborough" },
+  { code: "NSN", name: "Nelson" },
+  { code: "NTL", name: "Northland" },
+  { code: "OTA", name: "Otago" },
+  { code: "STL", name: "Southland" },
+  { code: "TKI", name: "Taranaki" },
+  { code: "TAS", name: "Tasman" },
+  { code: "WKO", name: "Waikato" },
+  { code: "WGN", name: "Wellington" },
+  { code: "WTC", name: "West Coast" },
+] as const;
+
+export type RegionOption = { code: string; name: string };
+
+/** States / provinces / regions for a Tier‑1 country */
+export function getRegionsForCountry(countryCode?: string): RegionOption[] {
+  switch ((countryCode || "US").toUpperCase()) {
+    case "US":
+      return [...US_STATES];
+    case "CA":
+      return [...CA_PROVINCES];
+    case "GB":
+    case "UK":
+      return [...GB_COUNTRIES];
+    case "AU":
+      return [...AU_STATES];
+    case "NZ":
+      return [...NZ_REGIONS];
+    default:
+      return [];
+  }
+}
+
+export function getRegionAnyLabel(countryCode?: string) {
+  const c = getTierOneCountry(countryCode);
+  return `Any ${c.regionLabel.toLowerCase()}`;
+}
+
 export const LEAD_STATUSES = [
   { value: "new", label: "New" },
   { value: "contacted", label: "Contacted" },
@@ -139,7 +222,7 @@ You ONLY help users with using the app and resolving issues. Be concise, warm, a
 
 What you know about the app:
 - Lead Finder (/leads/search): pick a service/industry, a Tier 1 country (US, Canada, UK, Australia, New Zealand), then either "Entire country" scope or a specific area (region/state, city, postal code, radius). Each search costs 1.65 credits and returns scored leads (Hot / Warm / Nurture).
-- Home (/home): AI assistant with chat history (Ask Expert), plus a separate Filters & location form to run lead searches.
+- Home (/home): AI assistant with chat history, credits snapshot, and quick links. Use Lead Finder (/leads/search) to run searches.
 - Leads are sourced live from Google Places, verified with Yelp, and optionally enriched with LinkedIn, Houzz, Nextdoor, and Facebook/Meta.
 - Saved Leads, Hot Leads, Pipeline CRM (New → Contacted → Qualified → Closed), Lead Map, CSV/Excel exports.
 - Ask Expert (/ask-expert): AI marketing assistant (costs credits). My Scripts stores saved answers.

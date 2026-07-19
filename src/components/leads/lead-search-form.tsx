@@ -16,9 +16,10 @@ import { Input, Label, Select } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   getTierOneCountry,
+  getRegionAnyLabel,
+  getRegionsForCountry,
   INDUSTRIES,
   TIER_ONE_COUNTRIES,
-  US_STATES,
 } from "@/lib/constants";
 import {
   CUSTOM_INDUSTRY_VALUE,
@@ -53,25 +54,6 @@ import {
 } from "@/lib/client/search-session";
 
 type Lead = SearchSessionLead & { phone: string | null; industry: string | null };
-
-const PIPELINE_STEPS = [
-  {
-    title: "Google Places",
-    detail: "Canonical name, phone, address, Maps rating",
-  },
-  {
-    title: "Yelp verify",
-    detail: "Active listing + review cross-check",
-  },
-  {
-    title: "AI score",
-    detail: "Hot / Warm / Nurture qualification",
-  },
-  {
-    title: "Social enrich",
-    detail: "LinkedIn, Houzz, Nextdoor when available",
-  },
-];
 
 const QUICK_SEARCHES = [
   {
@@ -527,10 +509,10 @@ export function LeadSearchForm() {
                     <Label>
                       {getTierOneCountry(selectedCountry).regionLabel}
                     </Label>
-                    {selectedCountry === "US" ? (
+                    {getRegionsForCountry(selectedCountry).length > 0 ? (
                       <Select name="state" defaultValue={preset?.state ?? ""}>
-                        <option value="">Any state</option>
-                        {US_STATES.map((s) => (
+                        <option value="">{getRegionAnyLabel(selectedCountry)}</option>
+                        {getRegionsForCountry(selectedCountry).map((s) => (
                           <option key={s.code} value={s.code}>
                             {s.name}
                           </option>
@@ -652,43 +634,6 @@ export function LeadSearchForm() {
         </Card>
 
         <div className="animate-slide-right space-y-4">
-          <Card className="border-border shadow-[var(--shadow-card)]">
-            <CardHeader>
-              <SectionLabel>How it works</SectionLabel>
-              <CardTitle className="mt-1">Verification pipeline</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {PIPELINE_STEPS.map((step, i) => {
-                const active = loading && stage >= i + 1;
-                const done = !loading && leads.length > 0;
-                return (
-                  <div
-                    key={step.title}
-                    className={`flex gap-3 rounded-lg border px-3 py-2.5 transition ${
-                      active || done
-                        ? "border-brand-200 bg-brand-50/60"
-                        : "border-border bg-white"
-                    }`}
-                  >
-                    <span
-                      className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold ${
-                        active || done
-                          ? "bg-brand-600 text-white"
-                          : "bg-stone-100 text-ink-muted"
-                      }`}
-                    >
-                      {done ? "✓" : i + 1}
-                    </span>
-                    <div>
-                      <p className="text-sm font-semibold text-ink">{step.title}</p>
-                      <p className="text-[12px] text-ink-muted">{step.detail}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </CardContent>
-          </Card>
-
           <Card className="border border-brand-500/15 bg-[var(--panel-solid)] shadow-[var(--shadow-card)]">
             <CardContent className="flex gap-3 py-4">
               <HiOutlineCpuChip className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" />

@@ -10,6 +10,7 @@ import {
   SecondaryActionLink,
 } from "@/components/layout/page-header";
 import { ExportLeadsButtons } from "@/components/leads/export-leads-buttons";
+import { EnrollEmailSequenceButton } from "@/components/leads/enroll-email-sequence-button";
 import { HiOutlineMagnifyingGlass, HiOutlineViewColumns } from "react-icons/hi2";
 
 export default async function SavedLeadsPage() {
@@ -64,6 +65,10 @@ export default async function SavedLeadsPage() {
                 <span className="text-sm font-semibold tabular-nums text-brand-600">
                   Score {s.lead.leadScore}
                 </span>
+                <EnrollEmailSequenceButton
+                  savedLeadId={s.id}
+                  hasEmail={Boolean(s.lead.email)}
+                />
               </div>
             </CardContent>
           </Card>

@@ -35,6 +35,13 @@ type StatsPayload = {
     exportsWeek: number;
     saveRate: number;
     mappedLeadCount: number;
+    visitors: number;
+    visitorsToday: number;
+    sales: number;
+    newMembers: number;
+    grossSales: number;
+    revenue: number;
+    churnRate: number;
   };
   geoLeads: GeoLead[];
   recentActivity: Array<{
@@ -258,6 +265,39 @@ export default function AdminOverviewPage() {
           </div>
         }
       />
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+        <AdminStatCard
+          label="Visitors"
+          value={stats.visitors}
+          hint={`${stats.visitorsToday} active today · unique searchers this week`}
+        />
+        <AdminStatCard
+          label="Sales"
+          value={stats.sales}
+          hint="New paid plan signups this week"
+        />
+        <AdminStatCard
+          label="New members"
+          value={stats.newMembers}
+          hint="Agency accounts created this week"
+        />
+        <AdminStatCard
+          label="Gross sales"
+          value={`$${stats.grossSales.toLocaleString()}`}
+          hint="Est. monthly plan value across roster"
+        />
+        <AdminStatCard
+          label="Revenue (MRR)"
+          value={`$${stats.revenue.toLocaleString()}`}
+          hint="Estimated monthly recurring revenue"
+        />
+        <AdminStatCard
+          label="Churn rate"
+          value={`${stats.churnRate}%`}
+          hint="Canceled ÷ (active paid + canceled)"
+        />
+      </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <AdminStatCard

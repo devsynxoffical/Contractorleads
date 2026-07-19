@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-shell";
-import { INDUSTRIES, TIER_ONE_COUNTRIES, getTierOneCountry } from "@/lib/constants";
+import { INDUSTRIES, TIER_ONE_COUNTRIES, getTierOneCountry, getRegionAnyLabel, getRegionsForCountry } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import {
   startNavigationProgress,
@@ -127,11 +127,26 @@ export default function AdminScrapePage() {
               <span className="font-medium text-ink-muted">
                 {countryMeta?.regionLabel ?? "State"}
               </span>
-              <input
-                className="saas-input mt-1"
-                value={state}
-                onChange={(e) => setState(e.target.value)}
-              />
+              {getRegionsForCountry(country).length > 0 ? (
+                <select
+                  className="saas-input mt-1"
+                  value={state}
+                  onChange={(e) => setState(e.target.value)}
+                >
+                  <option value="">{getRegionAnyLabel(country)}</option>
+                  {getRegionsForCountry(country).map((r) => (
+                    <option key={r.code} value={r.code}>
+                      {r.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  className="saas-input mt-1"
+                  value={state}
+                  onChange={(e) => setState(e.target.value)}
+                />
+              )}
             </label>
             <label className="block text-[12px]">
               <span className="font-medium text-ink-muted">City</span>
