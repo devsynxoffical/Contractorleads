@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import dynamic from "next/dynamic";
 import { useState, useRef } from "react";
 import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import {
@@ -46,17 +45,7 @@ import {
   SectionEyebrow,
   SectionTitle,
   AuroraBlob,
-  SpotlightCursor,
-  useMouseParallax,
 } from "./marketing-ui";
-
-const MarketingHero3D = dynamic(
-  () => import("./marketing-hero-3d").then((m) => m.MarketingHero3D),
-  {
-    ssr: false,
-    loading: () => <div className="absolute inset-0 bg-[var(--canvas)]" />,
-  },
-);
 
 const LOGOS = [
   "Summit Agency",
@@ -171,27 +160,30 @@ const PLANS = [
 
 function Nav() {
   return (
-    <header className="fixed inset-x-0 top-0 z-40 border-b border-white/5 bg-[var(--canvas)]/70 backdrop-blur-xl">
+    <header className="fixed inset-x-0 top-0 z-40 border-b border-slate-200/80 bg-white/85 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-8">
         <Link href="/" className="flex items-center gap-2.5">
           <Image src="/logo.png" alt="" width={36} height={36} className="rounded-full" priority />
-          <span className="font-[family-name:var(--font-display)] text-[15px] font-semibold tracking-tight text-ink">
+          <span className="font-[family-name:var(--font-display)] text-[15px] font-semibold tracking-tight text-slate-900">
             Contractor <span className="gradient-text">Leads</span>
           </span>
         </Link>
-        <div className="hidden items-center gap-6 text-[13px] font-medium text-ink-muted md:flex">
-          <a href="#features" className="hover:text-ink">Features</a>
-          <a href="#technology" className="hover:text-ink">Technology</a>
-          <a href="#pricing" className="hover:text-ink">Pricing</a>
-          <a href="#faq" className="hover:text-ink">FAQ</a>
+        <div className="hidden items-center gap-6 text-[13px] font-medium text-slate-500 md:flex">
+          <a href="#features" className="transition hover:text-slate-900">Features</a>
+          <a href="#technology" className="transition hover:text-slate-900">Technology</a>
+          <a href="#pricing" className="transition hover:text-slate-900">Pricing</a>
+          <a href="#faq" className="transition hover:text-slate-900">FAQ</a>
         </div>
         <div className="flex items-center gap-2">
-          <Link href="/login" className="hidden rounded-xl px-3 py-2 text-[13px] font-medium text-ink-muted hover:text-ink sm:inline">
+          <Link
+            href="/login"
+            className="hidden rounded-xl px-3 py-2 text-[13px] font-medium text-slate-500 transition hover:text-slate-900 sm:inline"
+          >
             Sign in
           </Link>
           <Link
             href="/register"
-            className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px] font-semibold text-white"
+            className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px] font-semibold text-white shadow-md shadow-fuchsia-500/20"
             style={{ background: LOGO_GRADIENT }}
           >
             Start free <HiOutlineArrowRight className="h-3.5 w-3.5" />
@@ -203,42 +195,46 @@ function Nav() {
 }
 
 function Hero() {
-  const { x, y } = useMouseParallax(18);
   return (
-    <section className="relative min-h-[100svh] overflow-hidden pt-16">
-      <MarketingHero3D />
-      <motion.div style={{ x, y }} className="pointer-events-none absolute inset-0 -z-0">
-        <AuroraBlob className="left-[8%] top-[20%] h-72 w-72 opacity-40" />
-        <AuroraBlob className="right-[5%] top-[35%] h-96 w-96 opacity-30" />
-      </motion.div>
+    <section className="relative min-h-[100svh] overflow-hidden bg-white pt-16">
+      {/* Clean white → soft tint (no muddy greys) */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 50% 40% at 15% 20%, rgba(253,242,248,0.9), transparent 55%), radial-gradient(ellipse 45% 40% at 90% 30%, rgba(245,243,255,0.95), transparent 50%), linear-gradient(180deg, #ffffff 0%, #ffffff 55%, #faf5ff 100%)",
+        }}
+      />
+      <CloudDecor side="both" className="opacity-80" />
+      <SparklesDecor className="top-24 text-violet-400/60" />
 
-      <div className="relative z-10 mx-auto grid max-w-6xl gap-10 px-5 pb-16 pt-16 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:pb-24 lg:pt-20">
+      <div className="relative z-10 mx-auto grid max-w-6xl gap-10 px-5 pb-16 pt-14 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:pb-24 lg:pt-16">
         <div>
           <Reveal>
-            <p className="mb-4 font-[family-name:var(--font-display)] text-[13px] font-semibold uppercase tracking-[0.22em] text-brand-400">
+            <p className="mb-4 font-[family-name:var(--font-display)] text-[13px] font-semibold uppercase tracking-[0.22em] text-fuchsia-600">
               Contractor Leads
             </p>
-            <h1 className="font-[family-name:var(--font-display)] text-[clamp(2.6rem,6.5vw,4.6rem)] font-semibold leading-[0.98] tracking-tight text-ink">
+            <h1 className="font-[family-name:var(--font-display)] text-[clamp(2.6rem,6.5vw,4.5rem)] font-semibold leading-[1.02] tracking-tight text-slate-900">
               Generate leads that{" "}
               <span className="gradient-text">actually convert</span>
             </h1>
-            <p className="mt-5 max-w-md text-[16px] leading-relaxed text-ink-muted">
+            <p className="mt-5 max-w-md text-[16px] leading-relaxed text-slate-600">
               Live contractor discovery, AI qualification, and outreach — one premium workspace for agencies that sell results.
             </p>
           </Reveal>
           <Reveal delay={0.12} className="mt-8 flex flex-wrap gap-3">
             <Link
               href="/register"
-              className="inline-flex items-center gap-2 rounded-2xl px-6 py-3.5 text-[14px] font-semibold text-white shadow-[0_16px_48px_rgba(236,72,153,0.35)]"
+              className="inline-flex items-center gap-2 rounded-2xl px-6 py-3.5 text-[14px] font-semibold text-white shadow-[0_12px_32px_rgba(236,72,153,0.35)]"
               style={{ background: LOGO_GRADIENT }}
             >
               Start free trial <HiOutlineBolt className="h-4 w-4" />
             </Link>
             <a
               href="#dashboard"
-              className="inline-flex items-center gap-2 rounded-2xl border border-border bg-white/5 px-5 py-3.5 text-[14px] font-semibold text-ink backdrop-blur"
+              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3.5 text-[14px] font-semibold text-slate-800 shadow-sm transition hover:border-violet-200 hover:bg-violet-50/50"
             >
-              <HiOutlinePlay className="h-4 w-4 text-brand-400" /> Watch product
+              <HiOutlinePlay className="h-4 w-4 text-violet-500" /> Watch product
             </a>
           </Reveal>
           <Reveal delay={0.2} className="mt-10 flex flex-wrap items-center gap-4">
@@ -246,7 +242,7 @@ function Hero() {
               {["SA", "MK", "JL", "RT"].map((a) => (
                 <span
                   key={a}
-                  className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-[var(--canvas)] text-[11px] font-bold text-white"
+                  className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white text-[11px] font-bold text-white shadow-sm"
                   style={{ background: LOGO_GRADIENT }}
                 >
                   {a}
@@ -254,28 +250,34 @@ function Hero() {
               ))}
             </div>
             <div>
-              <p className="text-[13px] font-semibold text-ink">Trusted by growth agencies</p>
-              <p className="text-[12px] text-ink-faint">4.9 · Lead quality focus · 20 free credits</p>
+              <p className="text-[13px] font-semibold text-slate-900">
+                Trusted by growth agencies
+              </p>
+              <p className="text-[12px] text-slate-500">
+                4.9 · Lead quality focus · 20 free credits
+              </p>
             </div>
           </Reveal>
-          <Reveal delay={0.28} className="mt-8 flex flex-wrap gap-6">
+          <Reveal delay={0.28} className="mt-8 flex flex-wrap gap-8">
             {[
               { n: 12840, s: "+", l: "Leads scored" },
               { n: 34, s: "%", l: "Avg reply lift" },
               { n: 20, s: "", l: "Trial credits" },
             ].map((stat) => (
               <div key={stat.l}>
-                <p className="font-[family-name:var(--font-display)] text-[28px] font-semibold text-ink">
+                <p className="font-[family-name:var(--font-display)] text-[28px] font-semibold text-slate-900">
                   <AnimatedNumber value={stat.n} suffix={stat.s} />
                 </p>
-                <p className="text-[12px] text-ink-faint">{stat.l}</p>
+                <p className="text-[12px] text-slate-500">{stat.l}</p>
               </div>
             ))}
           </Reveal>
         </div>
 
-        <Reveal delay={0.15} y={48} className="relative hidden lg:block">
-          <FloatingDashboard />
+        <Reveal delay={0.15} y={40} className="relative lg:block">
+          <div className="mx-auto max-w-xl lg:max-w-none">
+            <FloatingDashboard />
+          </div>
         </Reveal>
       </div>
     </section>
@@ -284,9 +286,7 @@ function Hero() {
 
 function SocialProof() {
   return (
-    <section className="relative overflow-hidden border-y border-violet-100 bg-gradient-to-b from-[#f4f7ff] via-[#faf5ff] to-[#fdf2f8] py-14 sm:py-16">
-      <CloudDecor />
-      <SparklesDecor />
+    <section className="relative overflow-hidden border-y border-slate-100 bg-white py-12 sm:py-14">
       <div className="relative z-10">
         <p className="mb-6 text-center text-[13px] font-medium text-slate-500">
           Agencies scaling home-service pipelines
@@ -295,7 +295,7 @@ function SocialProof() {
           {LOGOS.map((name) => (
             <span
               key={name}
-              className="whitespace-nowrap rounded-full border border-white/80 bg-white/75 px-5 py-2 text-[14px] font-semibold tracking-tight text-slate-600 shadow-sm backdrop-blur"
+              className="whitespace-nowrap rounded-full border border-slate-150 border-slate-200 bg-slate-50 px-5 py-2 text-[14px] font-semibold tracking-tight text-slate-600"
             >
               {name}
             </span>
@@ -330,18 +330,20 @@ function DashboardSection() {
 
 function ProblemSection() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-[#f8fafc] via-[#f5f3ff] to-white py-24 sm:py-28">
-      <SoftBlob color="violet" className="-right-16 top-20 h-64 w-64" />
-      <SoftBlob color="pink" className="-left-10 bottom-10 h-56 w-56" />
-      <CloudDecor side="right" className="opacity-70" />
+    <section className="relative overflow-hidden bg-white py-24 sm:py-28">
+      <SoftBlob color="violet" className="-right-16 top-20 h-64 w-64 opacity-40" />
+      <SoftBlob color="pink" className="-left-10 bottom-10 h-56 w-56 opacity-35" />
+      <CloudDecor side="right" className="opacity-55" />
       <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <Reveal>
-            <SectionEyebrow>The problem</SectionEyebrow>
-            <SectionTitle className="mt-3 text-slate-900">
+            <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-fuchsia-600">
+              The problem
+            </p>
+            <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.85rem,4.2vw,3.25rem)] font-semibold tracking-tight text-slate-900">
               Contractor growth dies in the handoff
-            </SectionTitle>
-            <p className="mt-4 text-[15px] leading-relaxed text-slate-500">
+            </h2>
+            <p className="mt-4 text-[15px] leading-relaxed text-slate-600">
               Fake lists, slow follow-up, and five tabs of tools — agencies lose deals before the first estimate.
             </p>
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
@@ -354,9 +356,9 @@ function ProblemSection() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: i * 0.05 }}
-                    className="rounded-2xl border border-violet-100 bg-white p-4 shadow-[0_10px_30px_rgba(100,60,160,0.06)]"
+                    className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]"
                   >
-                    <Icon className="h-5 w-5 text-violet-500" />
+                    <Icon className="h-5 w-5 text-violet-600" />
                     <h3 className="mt-2 text-[14px] font-semibold text-slate-900">{p.title}</h3>
                     <p className="mt-1 text-[12px] leading-relaxed text-slate-500">{p.body}</p>
                   </motion.div>
@@ -372,11 +374,11 @@ function ProblemSection() {
                 className="absolute inset-0"
               />
               <motion.div
-                className="absolute -bottom-4 -left-3 z-10 max-w-[200px] rounded-2xl border border-white bg-white/95 p-3 shadow-xl backdrop-blur sm:-left-6"
+                className="absolute -bottom-4 -left-3 z-10 max-w-[200px] rounded-2xl border border-slate-200 bg-white p-3 shadow-xl sm:-left-6"
                 animate={{ y: [0, -8, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
               >
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-violet-500">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-fuchsia-600">
                   Missed opportunity
                 </p>
                 <p className="mt-1 text-[13px] font-semibold text-slate-800">
@@ -433,12 +435,11 @@ function LifestyleBand() {
 
 function SolutionBento() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-white via-[#faf5ff] to-[#fdf2f8] py-24">
-      <CloudDecor side="left" className="opacity-60" />
-      <SparklesDecor className="top-10" />
+    <section className="relative overflow-hidden bg-white py-24">
+      <CloudDecor side="left" className="opacity-45" />
       <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
         <Reveal className="max-w-xl">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-violet-500">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-fuchsia-600">
             Solution
           </p>
           <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.85rem,4.2vw,3.25rem)] font-semibold tracking-tight text-slate-900">
@@ -447,15 +448,15 @@ function SolutionBento() {
         </Reveal>
         <div className="mt-12 grid auto-rows-[minmax(160px,auto)] gap-4 md:grid-cols-4 md:grid-rows-2">
           <Reveal className="md:col-span-2 md:row-span-2">
-            <div className="flex h-full flex-col justify-between overflow-hidden rounded-[28px] border border-violet-100 bg-white p-7 shadow-[0_16px_48px_rgba(100,60,160,0.08)]">
+            <div className="flex h-full flex-col justify-between overflow-hidden rounded-[28px] border border-slate-200 bg-white p-7 shadow-[0_12px_40px_rgba(15,23,42,0.06)]">
               <div>
-                <p className="text-[12px] font-semibold uppercase tracking-wider text-violet-500">
+                <p className="text-[12px] font-semibold uppercase tracking-wider text-fuchsia-600">
                   Lead Finder
                 </p>
                 <h3 className="mt-3 font-[family-name:var(--font-display)] text-[28px] font-semibold text-slate-900">
                   Search any trade in any metro
                 </h3>
-                <p className="mt-3 max-w-sm text-[14px] text-slate-500">
+                <p className="mt-3 max-w-sm text-[14px] text-slate-600">
                   Filters for industry, country, city, ZIP, and custom areas — with social + owner requirements.
                 </p>
               </div>
@@ -467,36 +468,36 @@ function SolutionBento() {
                   className="object-cover"
                   sizes="600px"
                 />
-                <div className="absolute inset-0 bg-gradient-to-tr from-violet-600/40 to-pink-500/20" />
+                <div className="absolute inset-0 bg-gradient-to-tr from-violet-600/35 to-pink-500/15" />
               </div>
             </div>
           </Reveal>
           <Reveal delay={0.08} className="md:col-span-2">
-            <div className="flex h-full gap-4 overflow-hidden rounded-[28px] border border-violet-100 bg-white p-6 shadow-[0_12px_40px_rgba(100,60,160,0.07)]">
+            <div className="flex h-full gap-4 overflow-hidden rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_8px_30px_rgba(15,23,42,0.05)]">
               <div className="relative hidden h-28 w-28 shrink-0 overflow-hidden rounded-2xl sm:block">
                 <Image src={MARKETING_PHOTOS.team} alt="Team" fill className="object-cover" sizes="112px" />
               </div>
               <div>
-                <HiOutlineSparkles className="h-6 w-6 text-violet-500" />
+                <HiOutlineSparkles className="h-6 w-6 text-violet-600" />
                 <h3 className="mt-3 font-[family-name:var(--font-display)] text-[20px] font-semibold text-slate-900">
                   AI qualification that feels human
                 </h3>
-                <p className="mt-2 text-[14px] text-slate-500">
+                <p className="mt-2 text-[14px] text-slate-600">
                   Revenue bands, opportunity scores, and a one-line angle your SDR can send today.
                 </p>
               </div>
             </div>
           </Reveal>
           <Reveal delay={0.12}>
-            <div className="h-full rounded-[28px] border border-violet-100 bg-white p-6 shadow-sm">
-              <HiOutlineMap className="h-5 w-5 text-violet-500" />
+            <div className="h-full rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+              <HiOutlineMap className="h-5 w-5 text-violet-600" />
               <h3 className="mt-3 text-[16px] font-semibold text-slate-900">Map HUD</h3>
               <p className="mt-1 text-[13px] text-slate-500">Global density at a glance.</p>
             </div>
           </Reveal>
           <Reveal delay={0.16}>
-            <div className="h-full rounded-[28px] border border-violet-100 bg-white p-6 shadow-sm">
-              <HiOutlineChatBubbleLeftRight className="h-5 w-5 text-violet-500" />
+            <div className="h-full rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
+              <HiOutlineChatBubbleLeftRight className="h-5 w-5 text-violet-600" />
               <h3 className="mt-3 text-[16px] font-semibold text-slate-900">Ask Expert</h3>
               <p className="mt-1 text-[13px] text-slate-500">Chat history that remembers.</p>
             </div>
@@ -509,13 +510,11 @@ function SolutionBento() {
 
 function FeaturesGrid() {
   return (
-    <section id="features" className="relative overflow-hidden bg-gradient-to-b from-[#fdf2f8] via-white to-[#f5f3ff] py-24 sm:py-28">
-      <CloudDecor side="both" className="opacity-45" />
-      <SoftBlob color="pink" className="left-10 top-10 h-48 w-48" />
-      <SoftBlob color="violet" className="bottom-10 right-10 h-56 w-56" />
+    <section id="features" className="relative overflow-hidden bg-[#fafafa] py-24 sm:py-28">
+      <CloudDecor side="both" className="opacity-40" />
       <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
         <Reveal className="max-w-xl">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-violet-500">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-fuchsia-600">
             Features
           </p>
           <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.85rem,4.2vw,3.25rem)] font-semibold tracking-tight text-slate-900">
@@ -530,15 +529,8 @@ function FeaturesGrid() {
                 <motion.div
                   whileHover={{ y: -6, scale: 1.02 }}
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  className="group relative h-full overflow-hidden rounded-3xl border border-violet-100 bg-white p-5 shadow-[0_10px_30px_rgba(100,60,160,0.06)]"
+                  className="group relative h-full overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_8px_24px_rgba(15,23,42,0.04)]"
                 >
-                  <div
-                    className="absolute inset-0 opacity-0 transition group-hover:opacity-100"
-                    style={{
-                      background:
-                        "radial-gradient(circle at 30% 0%, rgba(236,72,153,0.12), transparent 55%)",
-                    }}
-                  />
                   <span
                     className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl text-white"
                     style={{ background: LOGO_GRADIENT }}
@@ -1517,11 +1509,14 @@ function StickyCta() {
     <div className="fixed bottom-4 left-1/2 z-40 hidden -translate-x-1/2 sm:block">
       <Link
         href="/register"
-        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-[var(--canvas)]/90 px-5 py-2.5 text-[13px] font-semibold text-ink shadow-[0_12px_40px_rgba(0,0,0,0.45)] backdrop-blur-xl"
+        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/95 px-5 py-2.5 text-[13px] font-semibold text-slate-800 shadow-[0_12px_40px_rgba(80,40,120,0.18)] backdrop-blur-xl"
       >
         <span className="h-2 w-2 rounded-full" style={{ background: LOGO_GRADIENT }} />
         Start free — 20 credits
-        <span className="rounded-full px-2 py-0.5 text-[11px] text-white" style={{ background: LOGO_GRADIENT }}>
+        <span
+          className="rounded-full px-2 py-0.5 text-[11px] text-white"
+          style={{ background: LOGO_GRADIENT }}
+        >
           Go
         </span>
       </Link>
@@ -1531,8 +1526,7 @@ function StickyCta() {
 
 export function MarketingPage() {
   return (
-    <div className="marketing-site relative min-h-screen bg-[var(--canvas)] text-ink">
-      <SpotlightCursor />
+    <div className="marketing-site relative min-h-screen bg-white text-slate-900">
       <Nav />
       <Hero />
       <SocialProof />
