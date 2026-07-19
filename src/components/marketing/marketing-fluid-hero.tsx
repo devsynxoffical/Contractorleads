@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, FormEvent } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { fluidSimulation } from "./fluid-simulation";
 
 const HEADING = "Generate leads that actually convert";
@@ -110,21 +111,14 @@ export function MarketingFluidHero() {
 
       <header className="mkt-flow-nav" data-reveal="nav">
         <Link href="/" className="mkt-flow-brand">
-          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path
-              d="M2.5 9c2.5 0 2.5 4.2 5 4.2S10 9 12 9s2.5 4.2 5 4.2S19.5 9 21.5 9"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-            />
-            <path
-              d="M2.5 15c2.5 0 2.5 4.2 5 4.2S10 15 12 15s2.5 4.2 5 4.2S19.5 15 21.5 15"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              opacity="0.5"
-            />
-          </svg>
+          <Image
+            src="/logo.png"
+            alt=""
+            width={36}
+            height={36}
+            className="mkt-flow-brand-logo"
+            priority
+          />
           Contractor Leads
         </Link>
 
