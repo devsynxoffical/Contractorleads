@@ -131,7 +131,7 @@ export function LeadResultCard({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="truncate font-[family-name:var(--font-display)] text-[16px] font-semibold tracking-tight text-white">
+                <h3 className="truncate font-[family-name:var(--font-display)] text-[16px] font-semibold tracking-tight text-ink">
                   {lead.businessName}
                 </h3>
                 <Badge variant={tierVariant(lead.qualityTier)}>
@@ -139,7 +139,7 @@ export function LeadResultCard({
                 </Badge>
                 <Badge variant="verified">AI verified</Badge>
                 {hasPublicPeople && (
-                  <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/15 px-2 py-1 text-[10px] font-semibold text-emerald-300 ring-1 ring-emerald-400/30">
+                  <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-emerald-400/30">
                     <HiOutlineUser className="h-3 w-3" />
                     {lead.ownerName
                       ? "Decision maker found"

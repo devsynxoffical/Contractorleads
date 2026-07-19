@@ -29,7 +29,7 @@ export function HudPanel({
               </h3>
             )}
             {subtitle && (
-              <p className="mt-0.5 text-[11px] text-[#7a8899]">{subtitle}</p>
+              <p className="mt-0.5 text-[11px] text-ink-muted">{subtitle}</p>
             )}
           </div>
           {actions}

@@ -98,53 +98,53 @@ html[data-theme="light"] {
   --brand-glow: rgba(192, 38, 211, 0.16);
   --brand-glow-strong: rgba(219, 39, 119, 0.22);
 
-  --canvas: #f3eef9;
-  --canvas-deep: #ebe4f4;
+  --canvas: #f6f4f9;
+  --canvas-deep: #eeeaf4;
   --surface: #ffffff;
   --surface-elevated: #ffffff;
-  --border: rgba(147, 51, 234, 0.14);
-  --border-strong: rgba(192, 38, 211, 0.28);
-  --ink: #1c1228;
-  --ink-muted: #5c4d6e;
-  --ink-faint: #8a7a9c;
-  --brand-50: rgba(192, 38, 211, 0.08);
-  --brand-100: rgba(192, 38, 211, 0.13);
-  --brand-200: rgba(219, 39, 119, 0.18);
+  --border: rgba(100, 80, 130, 0.12);
+  --border-strong: rgba(147, 51, 234, 0.22);
+  --ink: #1a1424;
+  --ink-muted: #5a5168;
+  --ink-faint: #8b8499;
+  --brand-50: rgba(192, 38, 211, 0.06);
+  --brand-100: rgba(192, 38, 211, 0.1);
+  --brand-200: rgba(219, 39, 119, 0.16);
   --brand-400: #c026d3;
   --brand-500: #a21caf;
   --brand-600: #86198f;
   --brand-700: #701a75;
   --sidebar: #ffffff;
-  --sidebar-border: rgba(147, 51, 234, 0.12);
-  --ring: rgba(192, 38, 211, 0.18);
+  --sidebar-border: rgba(100, 80, 130, 0.1);
+  --ring: rgba(192, 38, 211, 0.16);
   --radius-lg: 1rem;
   --radius-xl: 1.25rem;
   --btn-on-brand: #ffffff;
 
-  --hud-bg: #f3eef9;
+  --hud-bg: #f6f4f9;
   --hud-surface: #ffffff;
   --hud-cyan: #c026d3;
-  --hud-cyan-dim: rgba(192, 38, 211, 0.35);
+  --hud-cyan-dim: rgba(192, 38, 211, 0.3);
   --hud-accent: #c026d3;
   --hud-lime: #db2777;
-  --hud-text: #1c1228;
-  --hud-muted: #5c4d6e;
-  --hud-faint: #8a7a9c;
-  --hud-grid: rgba(147, 51, 234, 0.06);
+  --hud-text: #1a1424;
+  --hud-muted: #5a5168;
+  --hud-faint: #8b8499;
+  --hud-grid: rgba(100, 80, 130, 0.05);
   --cover-veil: linear-gradient(
     180deg,
-    rgba(243, 238, 249, 0.94) 0%,
-    rgba(243, 238, 249, 0.98) 100%
+    rgba(246, 244, 249, 0.96) 0%,
+    rgba(246, 244, 249, 0.99) 100%
   );
-  --cover-glow: rgba(192, 38, 211, 0.08);
-  --input-bg: #f7f2fb;
+  --cover-glow: rgba(192, 38, 211, 0.06);
+  --input-bg: #f3f0f7;
   --input-bg-focus: #ffffff;
   --panel-solid: #ffffff;
-  --shadow-card: 0 0 0 1px rgba(147, 51, 234, 0.08),
-    0 8px 24px rgba(80, 40, 120, 0.07);
-  --shadow-elevated: 0 0 0 1px rgba(147, 51, 234, 0.1),
-    0 12px 36px rgba(80, 40, 120, 0.1);
-  --shadow-soft: 0 2px 10px rgba(80, 40, 120, 0.06);
+  --shadow-card: 0 0 0 1px rgba(100, 80, 130, 0.07),
+    0 8px 22px rgba(40, 30, 60, 0.05);
+  --shadow-elevated: 0 0 0 1px rgba(100, 80, 130, 0.09),
+    0 12px 32px rgba(40, 30, 60, 0.08);
+  --shadow-soft: 0 2px 10px rgba(40, 30, 60, 0.05);
 }
 
 @theme inline {
@@ -229,6 +229,26 @@ body {
 
 [data-theme="light"] .hud-panel {
   box-shadow: var(--shadow-card);
+  background: var(--panel-solid);
+}
+
+/* Light mode: leftover dark HUD colors inside the logged-in shell */
+html[data-theme="light"] .app-shell--hud .text-\[\#8b9aab\],
+html[data-theme="light"] .app-shell--hud .text-\[\#7a8899\] {
+  color: var(--ink-muted) !important;
+}
+html[data-theme="light"] .app-shell--hud .bg-\[\#122033\],
+html[data-theme="light"] .app-shell--hud .bg-\[\#0f1a2c\],
+html[data-theme="light"] .app-shell--hud .bg-\[\#0b1220\],
+html[data-theme="light"] .app-shell--hud .bg-\[\#0a101a\] {
+  background-color: var(--input-bg) !important;
+}
+html[data-theme="light"] .app-shell--hud .hud-dashboard .text-white:not(.hud-btn-primary):not(.hud-btn-primary *) {
+  color: var(--ink) !important;
+}
+html[data-theme="light"] .app-shell--hud .hud-btn-primary,
+html[data-theme="light"] .app-shell--hud .hud-btn-primary * {
+  color: var(--btn-on-brand) !important;
 }
 
 .hud-viewport-bg > * {
@@ -668,8 +688,14 @@ html:not([data-theme="light"]) .auth-page .bg-white {
 .mesh-bg {
   background-color: transparent;
   background-image:
-    radial-gradient(ellipse 80% 50% at 10% -10%, rgba(168, 85, 247, 0.1), transparent),
-    radial-gradient(ellipse 60% 40% at 95% 0%, rgba(0, 184, 212, 0.08), transparent);
+    radial-gradient(ellipse 80% 50% at 10% -10%, rgba(168, 85, 247, 0.07), transparent),
+    radial-gradient(ellipse 60% 40% at 95% 0%, rgba(219, 39, 119, 0.05), transparent);
+}
+
+html[data-theme="light"] .mesh-bg {
+  background-image:
+    radial-gradient(ellipse 70% 45% at 8% -8%, rgba(168, 85, 247, 0.05), transparent),
+    radial-gradient(ellipse 55% 35% at 96% 0%, rgba(219, 39, 119, 0.04), transparent);
 }
 
 .shimmer-bar {

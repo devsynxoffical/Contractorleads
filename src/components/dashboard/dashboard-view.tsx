@@ -107,7 +107,7 @@ function HudStat({
     <>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-[#8b9aab]">
+          <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-ink-faint">
             {label}
           </p>
           <p className="hud-stat-value mt-1.5">{value}</p>
@@ -147,7 +147,7 @@ function RingStat({ label, pct }: { label: string; pct: number }) {
       <div className="hud-ring" style={{ ["--p" as string]: clamped }}>
         <span>{clamped}%</span>
       </div>
-      <p className="text-[11px] uppercase tracking-[0.1em] text-[#8b9aab]">
+      <p className="text-[11px] uppercase tracking-[0.1em] text-ink-muted">
         {label}
       </p>
     </div>
@@ -229,12 +229,11 @@ export function DashboardView({ user }: { user: SessionUser }) {
               <span className="h-1.5 w-1.5 animate-soft-pulse rounded-full bg-[#a855f7] shadow-[0_0_8px_var(--brand-500)]" />
               Live workspace · {firstName}
             </div>
-            <h1 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-              Business Insights
+            <h1 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
+              Dashboard
             </h1>
-            <p className="mt-1.5 max-w-xl text-[13px] text-[#8b9aab] sm:text-sm">
-              HUD command view — verified leads, AI scores, and pipeline signal
-              across your markets.
+            <p className="mt-1.5 max-w-xl text-[13px] text-ink-muted sm:text-sm">
+              Verified leads, AI scores, and pipeline signal across your markets.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -254,14 +253,14 @@ export function DashboardView({ user }: { user: SessionUser }) {
         </div>
 
         {!ready && (
-          <div className="mb-5 flex items-center gap-2 border border-brand-500/2 bg-black/30 px-4 py-6 text-[13px] text-[#8b9aab]">
+          <div className="mb-5 flex items-center gap-2 rounded-xl border border-border bg-[var(--panel-solid)] px-4 py-6 text-[13px] text-ink-muted shadow-[var(--shadow-card)]">
             <HiOutlineArrowPath className="h-4 w-4 animate-spin text-brand-500" />
-            Syncing HUD metrics…
+            Syncing metrics…
           </div>
         )}
 
         {loadError && (
-          <div className="mb-5 border border-red-400/40 bg-red-500/10 px-4 py-3 text-[13px] text-red-200">
+          <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] text-red-700">
             {loadError}
           </div>
         )}
@@ -338,10 +337,10 @@ export function DashboardView({ user }: { user: SessionUser }) {
                     <Icon className="h-5 w-5" />
                   </span>
                   <div className="min-w-0">
-                    <p className="text-[13px] font-semibold text-white">
+                    <p className="text-[13px] font-semibold text-ink">
                       {a.label}
                     </p>
-                    <p className="text-[11px] text-[#8b9aab]">{a.desc}</p>
+                    <p className="text-[11px] text-ink-muted">{a.desc}</p>
                   </div>
                 </HudPanel>
               </Link>
@@ -351,7 +350,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
 
         <div className="mb-5">
           <HudPanel title="Quick lead search" subtitle="Run a scoped find without leaving HUD">
-            <div className="hud-quick-search [&_.saas-input]:border-brand-500/25 [&_.saas-input]:bg-[var(--panel-solid)] [&_.saas-input]:text-white [&_label]:text-[#8b9aab]">
+            <div className="hud-quick-search [&_.saas-input]:border-brand-500/25 [&_.saas-input]:bg-[var(--panel-solid)] [&_.saas-input]:text-ink [&_label]:text-ink-muted">
               <QuickLeadSearch embedded />
             </div>
           </HudPanel>
@@ -404,10 +403,10 @@ export function DashboardView({ user }: { user: SessionUser }) {
                             : "none",
                       }}
                     />
-                    <span className="text-[10px] font-medium uppercase tracking-wider text-[#8b9aab]">
+                    <span className="text-[10px] font-medium uppercase tracking-wider text-ink-muted">
                       {d.day}
                     </span>
-                    <div className="pointer-events-none absolute bottom-[calc(100%+6px)] border border-brand-500/40 bg-[var(--panel-solid)] px-2 py-1 text-[11px] text-white opacity-0 transition group-hover:opacity-100">
+                    <div className="pointer-events-none absolute bottom-[calc(100%+6px)] border border-brand-500/40 bg-[var(--panel-solid)] px-2 py-1 text-[11px] text-ink opacity-0 transition group-hover:opacity-100">
                       {d.count} leads
                     </div>
                   </div>
@@ -428,7 +427,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
             <HudPanel title="Signal" subtitle={`Welcome back, ${user.name || firstName}`}>
               <p className="text-[13px] leading-relaxed text-[#c5d0dc]">
                 You generated{" "}
-                <strong className="text-white">{weekLeads} new leads</strong> this
+                <strong className="text-ink">{weekLeads} new leads</strong> this
                 week. Only AI-verified, quality-scored records surface here —
                 verified or blank, never fabricated.
               </p>
@@ -492,7 +491,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
                           {q.pct}%
                         </span>
                       </div>
-                      <div className="h-1.5 overflow-hidden bg-[#122033]">
+                      <div className="h-1.5 overflow-hidden bg-[var(--input-bg)]">
                         <div
                           className="animate-progress-fill h-full"
                           style={{
@@ -518,7 +517,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
                   key={i.industry || idx}
                   className="flex items-center justify-between py-2.5"
                 >
-                  <p className="text-[13px] font-medium text-white">
+                  <p className="text-[13px] font-medium text-ink">
                     {i.industry || "Unknown"}
                   </p>
                   <span className="hud-pill">{i.count}</span>
@@ -537,9 +536,9 @@ export function DashboardView({ user }: { user: SessionUser }) {
               {(data?.recentSearches ?? []).slice(0, 5).map((s) => (
                 <li key={s.id} className="py-2.5">
                   <Link href="/leads/search" className="block">
-                    <p className="text-[13px] font-medium text-white">
+                    <p className="text-[13px] font-medium text-ink">
                       {s.industry}
-                      <span className="font-normal text-[#8b9aab]">
+                      <span className="font-normal text-ink-muted">
                         {" "}
                         ·{" "}
                         {s.locationScope === "country"
@@ -613,7 +612,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
                   className="flex items-center justify-between py-2.5"
                 >
                   <div>
-                    <p className="text-[13px] font-semibold uppercase text-white">
+                    <p className="text-[13px] font-semibold uppercase text-ink">
                       {e.format}
                     </p>
                     <p className="text-[11px] text-[#5c6b7c]">
@@ -636,10 +635,10 @@ export function DashboardView({ user }: { user: SessionUser }) {
           </HudPanel>
 
           <HudPanel title="Credits" subtitle="Plan balance">
-            <p className="text-[40px] font-bold tabular-nums tracking-tight text-white">
+            <p className="text-[40px] font-bold tabular-nums tracking-tight text-ink">
               {formatCredits(creditsAnim)}
             </p>
-            <div className="mt-3 h-1.5 overflow-hidden bg-[#122033]">
+            <div className="mt-3 h-1.5 overflow-hidden bg-[var(--input-bg)]">
               <div
                 className="h-full bg-[#a855f7] shadow-[0_0_10px_var(--brand-500)]"
                 style={{ width: `${creditPct}%` }}

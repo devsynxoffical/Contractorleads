@@ -91,11 +91,11 @@ export function StatChip({
   hint?: string;
 }) {
   return (
-    <div className="rounded-xl border border-brand-500/15 bg-[rgba(12,22,38,0.85)] px-4 py-3 shadow-sm backdrop-blur">
+    <div className="rounded-xl border border-border bg-[var(--panel-solid)] px-4 py-3 shadow-[var(--shadow-card)]">
       <p className="text-[11px] font-medium uppercase tracking-wide text-ink-faint">
         {label}
       </p>
-      <p className="mt-1 text-lg font-semibold tabular-nums text-white">{value}</p>
+      <p className="mt-1 text-lg font-semibold tabular-nums text-ink">{value}</p>
       {hint && <p className="mt-0.5 text-[11px] text-ink-muted">{hint}</p>}
     </div>
   );

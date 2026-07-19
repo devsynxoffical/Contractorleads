@@ -117,6 +117,8 @@ export function LeadSearchForm() {
   const [locationMode, setLocationMode] = useState<"standard" | "custom">("standard");
   const [customIndustry, setCustomIndustry] = useState("");
   const [customLocation, setCustomLocation] = useState("");
+  const [selectedState, setSelectedState] = useState("");
+  const [city, setCity] = useState("");
   const [requireSocialPresence, setRequireSocialPresence] = useState(true);
   const [filterNote, setFilterNote] = useState<string | null>(null);
   const [stage, setStage] = useState(0);
@@ -181,6 +183,8 @@ export function LeadSearchForm() {
         setLocationMode(cached.customLocation ? "custom" : "standard");
         setCustomIndustry(isPresetIndustry(cached.industry) ? "" : cached.industry);
         setCustomLocation(cached.customLocation ?? "");
+        setSelectedState(cached.state ?? "");
+        setCity(cached.city ?? "");
         setFormKey((k) => k + 1);
         setStage(4);
         setRestoring(false);
@@ -224,6 +228,8 @@ export function LeadSearchForm() {
         setLocationMode(customLoc ? "custom" : "standard");
         setCustomIndustry(isPresetIndustry(industry) ? "" : industry);
         setCustomLocation(customLoc);
+        setSelectedState(s.state ?? "");
+        setCity(customLoc ? "" : (s.city ?? ""));
         setFormKey((k) => k + 1);
         setStage(4);
         saveFinderSearchCache({
@@ -373,6 +379,8 @@ export function LeadSearchForm() {
     setCustomIndustry("");
     setCustomLocation("");
     setSelectedIndustry(q.industry);
+    setSelectedState(q.state ?? "");
+    setCity(q.city ?? "");
     setPreset({
       industry: q.industry,
       industryMode: "preset",
@@ -490,6 +498,9 @@ export function LeadSearchForm() {
                   onChange={(e) => {
                     setSelectedCountry(e.target.value);
                     setCustomLocation("");
+                    setSelectedState("");
+                    setCity("");
+                    setFormKey((k) => k + 1);
                   }}
                 >
                   {TIER_ONE_COUNTRIES.map((country) => (
@@ -540,7 +551,14 @@ export function LeadSearchForm() {
                       {getTierOneCountry(selectedCountry).regionLabel}
                     </Label>
                     {getRegionsForCountry(selectedCountry).length > 0 ? (
-                      <Select name="state" defaultValue={preset?.state ?? ""}>
+                      <Select
+                        name="state"
+                        value={selectedState}
+                        onChange={(e) => {
+                          setSelectedState(e.target.value);
+                          setCity("");
+                        }}
+                      >
                         <option value="">{getRegionAnyLabel(selectedCountry)}</option>
                         {getRegionsForCountry(selectedCountry).map((s) => (
                           <option key={s.code} value={s.code}>
@@ -552,7 +570,8 @@ export function LeadSearchForm() {
                       <Input
                         name="state"
                         placeholder={getTierOneCountry(selectedCountry).regionLabel}
-                        defaultValue={preset?.state ?? ""}
+                        value={selectedState}
+                        onChange={(e) => setSelectedState(e.target.value)}
                       />
                     )}
                   </div>
@@ -560,8 +579,19 @@ export function LeadSearchForm() {
                     <Label>City</Label>
                     <Input
                       name="city"
-                      placeholder="Austin"
-                      defaultValue={preset?.city ?? ""}
+                      placeholder={
+                        selectedCountry === "CA"
+                          ? "Winnipeg"
+                          : selectedCountry === "GB"
+                            ? "Manchester"
+                            : selectedCountry === "AU"
+                              ? "Melbourne"
+                              : selectedCountry === "NZ"
+                                ? "Auckland"
+                                : "Austin"
+                      }
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
                     />
                   </div>
                   <div className="space-y-2">
