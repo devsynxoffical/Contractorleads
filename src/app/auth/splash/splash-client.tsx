@@ -6,14 +6,14 @@ import { useRouter } from "next/navigation";
 const HUD_GRADIENT = "var(--logo-gradient)";
 
 /**
- * Brief branded splash after login / signup completion, then dashboard.
+ * Brief branded splash after login / signup completion, then home.
  */
 export default function AuthSplashClient() {
   const router = useRouter();
 
   useEffect(() => {
     const t = window.setTimeout(() => {
-      router.replace("/dashboard");
+      router.replace("/home");
       router.refresh();
     }, 2500);
     return () => window.clearTimeout(t);

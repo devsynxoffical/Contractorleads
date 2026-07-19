@@ -43,7 +43,7 @@ const sections: NavSection[] = [
   {
     title: "Main",
     items: [
-      { href: "/dashboard", label: "Business Insights", icon: HiOutlineChartBar },
+      { href: "/dashboard", label: "Dashboard", icon: HiOutlineChartBar },
       { href: "/leads/search", label: "Lead Finder", icon: HiOutlineMagnifyingGlass },
       { href: "/leads", label: "All Leads", icon: HiOutlineSquares2X2 },
       { href: "/leads/saved", label: "Saved Leads", icon: HiOutlineStar },
