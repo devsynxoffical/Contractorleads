@@ -66,7 +66,7 @@ export default function IndustriesPage() {
 
       <div className="stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {INDUSTRIES.map((industry) => (
-          <Link key={industry} href="/leads/search" className="block">
+          <Link key={industry} href={`/leads/search?industry=${encodeURIComponent(industry)}`} className="block">
             <Card className="hover-lift h-full border-border shadow-[var(--shadow-card)]">
               <CardContent className="py-4">
                 <div className="flex items-start justify-between gap-2">

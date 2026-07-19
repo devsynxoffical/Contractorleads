@@ -11,7 +11,12 @@ import { useTheme } from "@/components/theme/theme-provider";
 export function SettingsForm({ user }: { user: SessionUser }) {
   const { theme, setTheme } = useTheme();
   const [form, setForm] = useState({
+    name: user.name ?? "",
+    phone: user.phone ?? "",
     companyName: user.companyName ?? "",
+    ownerName: user.ownerName ?? "",
+    ownerEmail: user.ownerEmail ?? "",
+    ownerPhone: user.ownerPhone ?? "",
     businessDescription: user.businessDescription ?? "",
     services: user.services ?? "",
     idealCustomer: user.idealCustomer ?? "",
@@ -45,7 +50,12 @@ export function SettingsForm({ user }: { user: SessionUser }) {
         </CardHeader>
         <CardContent className="space-y-4">
           {[
+            ["name", "Your name", "input"],
+            ["phone", "Phone", "input"],
             ["companyName", "Company name", "input"],
+            ["ownerName", "Agency owner name", "input"],
+            ["ownerEmail", "Owner email", "input"],
+            ["ownerPhone", "Owner phone", "input"],
             ["businessDescription", "Description", "textarea"],
             ["services", "Services", "textarea"],
             ["idealCustomer", "Ideal customer", "textarea"],

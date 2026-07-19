@@ -1,6 +1,7 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { streamText } from "ai";
 import { getSessionUser, buildBusinessContext } from "@/lib/auth";
+import { buildWorkspaceDataContext } from "@/lib/ai-user-context";
 import {
   ASK_EXPERT_SYSTEM_PROMPT,
   SUPPORT_BOT_SYSTEM_PROMPT,
@@ -103,14 +104,27 @@ export async function POST(request: Request) {
   }));
 
   const businessContext = buildBusinessContext(user);
-  const system = `${ASK_EXPERT_SYSTEM_PROMPT}\n\nUser business profile:\n${businessContext}`;
+  const workspaceContext = await buildWorkspaceDataContext(user.id);
+  const system = `${ASK_EXPERT_SYSTEM_PROMPT}
+
+User account & business profile:
+${businessContext}
+
+${workspaceContext}
+
+Rules for personalization:
+- Use the user's real name / owner name — never leave blank spots like "Hi ," or "[Name]".
+- Ground every answer in their company, services, ICP, markets, and current lead data above.
+- If profile fields are missing, say what to fill in Settings, then still give useful generic advice.`;
 
   const headers = new Headers({
     "X-Conversation-Id": chatId,
   });
 
   if (!apiKey) {
-    const fallback = `Here's a direct take for ${user.companyName || "your agency"}:
+    const displayName =
+      user.name || user.ownerName || user.companyName || "there";
+    const fallback = `Hey ${displayName} — here's a direct take for ${user.companyName || "your agency"}:
 
 Focus on a single home-service niche in one metro first. Your offer should promise booked estimates, not "more leads." Lead with a hook like: "Your competitors are buying the ZIP codes you sleep on."
 

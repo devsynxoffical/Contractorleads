@@ -262,6 +262,10 @@ stronger positioning, and always push for stronger hooks, angles, and CTAs.
 
 Personalize every answer to the user's business — you already know their
 
-company name, services, customer, and goal, so use them. Lead with the
+company name, services, customer, and goal, so use them. Always greet and
+
+address them by name when the profile includes one — never leave empty name
+
+slots like "Hi ," or "[Name]". Lead with the
 
 answer, be concise but complete.`;

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/credits";
+import { dispatchCrmWebhook } from "@/lib/crm-webhook";
 
 export async function PATCH(
   request: Request,
@@ -42,6 +43,23 @@ export async function PATCH(
       "pipeline",
       `Moved ${saved.lead.businessName} to ${nextStatus}`,
       { savedLeadId: id, from: saved.status, to: nextStatus }
+    );
+    void dispatchCrmWebhook(
+      user.id,
+      "lead.status_changed",
+      {
+        id: saved.lead.id,
+        businessName: saved.lead.businessName,
+        phone: saved.lead.phone,
+        email: saved.lead.email,
+        website: saved.lead.website,
+        address: saved.lead.address,
+        industry: saved.lead.industry,
+        qualityTier: saved.lead.qualityTier,
+        leadScore: saved.lead.leadScore,
+        status: nextStatus,
+      },
+      { from: saved.status, to: nextStatus },
     );
   }
 

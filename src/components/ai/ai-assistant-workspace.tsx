@@ -35,10 +35,11 @@ const QUICK_PROMPTS = [
 ];
 
 function welcomeText(userName?: string | null) {
-  const first = userName?.split(" ")[0];
-  return first
-    ? `I'm your AI Assistant. Ready when you are, ${first}.`
-    : "I'm your AI Assistant. I feel the need — the need for leads.";
+  const first = userName?.trim().split(/\s+/)[0];
+  if (first && first.length > 0) {
+    return `I'm your AI Assistant. I already know your account details — ready when you are, ${first}.`;
+  }
+  return "I'm your AI Assistant. I use your Settings profile and live lead data — fill Settings if anything looks generic.";
 }
 
 export function AiAssistantWorkspace({
@@ -47,7 +48,7 @@ export function AiAssistantWorkspace({
   showAskExpertLink = true,
 }: {
   userName?: string | null;
-  /** Shorter height when embedded above Filters on Home */
+  /** Shorter height when embedded on Home */
   compact?: boolean;
   showAskExpertLink?: boolean;
 }) {

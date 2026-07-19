@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Map Tailwind dark: to our html[data-theme] (default = dark when not light) */
+@custom-variant dark (&:where(html[data-theme="dark"] *, html:not([data-theme="light"]) *));
+
 /*
  * Brand = logo gradient (hot pink → magenta → electric purple)
  * Tokens keyed by html[data-theme] only (never bare :root) so light
@@ -269,6 +272,14 @@ html:not([data-theme="light"]) .to-white {
 
 .to-brand-50\/40 {
   --tw-gradient-to: rgba(217, 70, 239, 0.06) !important;
+}
+
+html:not([data-theme="light"]) .from-\[\#faf8fc\],
+html:not([data-theme="light"]) .from-\[\#faf8fb\],
+html:not([data-theme="light"]) .from-\[\#fcf2f8\],
+html:not([data-theme="light"]) .from-\[\#f3eef6\],
+html:not([data-theme="light"]) .from-brand-50 {
+  --tw-gradient-from: var(--brand-50) !important;
 }
 
 html:not([data-theme="light"]) .bg-\[\#faf8fc\],
@@ -877,7 +888,10 @@ html:not([data-theme="light"]) .auth-page .bg-white {
   color: var(--ink);
 }
 
-.app-shell--hud .hud-shell-header .text-ink,
+.app-shell--hud .hud-shell-header .text-ink {
+  color: var(--ink) !important;
+}
+
 .app-shell--hud .hud-shell-header .text-ink-muted,
 .app-shell--hud .hud-shell-header button {
   color: var(--ink-muted) !important;
@@ -1269,6 +1283,38 @@ html[data-theme="light"] .admin-shell--hud .hud-shell-main .text-ink {
 
 html[data-theme="light"] .admin-shell--hud .hud-shell-main .text-ink-muted {
   color: #5c4d6e !important;
+}
+
+/* App main parity with admin — beat leftover dark utilities in light mode */
+html[data-theme="light"] .app-shell--hud .hud-shell-main .bg-white,
+html[data-theme="light"] .app-shell--hud .hud-shell-main .bg-\[\#faf8fc\],
+html[data-theme="light"] .app-shell--hud .hud-shell-main .bg-\[\#faf8fb\],
+html[data-theme="light"] .app-shell--hud .hud-shell-main .bg-\[\#0b1220\],
+html[data-theme="light"] .app-shell--hud .hud-shell-main .bg-\[\#0a101a\],
+html[data-theme="light"] .app-shell--hud .hud-shell-main .bg-\[\#122033\] {
+  background: #ffffff !important;
+  color: #1c1228 !important;
+}
+
+html[data-theme="light"] .app-shell--hud .hud-shell-main .text-ink {
+  color: #1c1228 !important;
+}
+
+html[data-theme="light"] .app-shell--hud .hud-shell-main .text-ink-muted {
+  color: #5c4d6e !important;
+}
+
+html[data-theme="light"] .app-shell--hud .hud-shell-main .text-ink-faint {
+  color: #8b7a9e !important;
+}
+
+html[data-theme="light"] .app-shell--hud .hud-shell-main .bg-white\/90,
+html[data-theme="light"] .app-shell--hud .hud-shell-main .bg-white\/95 {
+  background: #ffffff !important;
+}
+
+html[data-theme="light"] .hud-viewport-bg::before {
+  opacity: 0.12 !important;
 }
 
 /* Dark mode: never show washed white panels */

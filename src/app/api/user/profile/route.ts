@@ -13,7 +13,17 @@ export async function PATCH(request: Request) {
   await prisma.user.update({
     where: { id: user.id },
     data: {
+      name: typeof body.name === "string" ? body.name.trim() || null : undefined,
+      phone: typeof body.phone === "string" ? body.phone.trim() || null : undefined,
       companyName: body.companyName,
+      ownerName:
+        typeof body.ownerName === "string" ? body.ownerName.trim() || null : undefined,
+      ownerEmail:
+        typeof body.ownerEmail === "string"
+          ? body.ownerEmail.trim().toLowerCase() || null
+          : undefined,
+      ownerPhone:
+        typeof body.ownerPhone === "string" ? body.ownerPhone.trim() || null : undefined,
       businessDescription: body.businessDescription,
       services: body.services,
       idealCustomer: body.idealCustomer,

@@ -23,6 +23,7 @@ export {
 
 export type { SessionUser } from "@/lib/session-user";
 import type { SessionUser } from "@/lib/session-user";
+export { buildBusinessContext } from "@/lib/ai-user-context";
 
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || "leadflow-dev-secret-change-in-production",
@@ -37,12 +38,16 @@ function toSessionUser(
     id: string;
     email: string;
     name: string | null;
+    phone?: string | null;
     role: string;
     plan: string;
     creditsRemaining: number;
     onboardingComplete: boolean;
     darkMode: boolean;
     companyName: string | null;
+    ownerName?: string | null;
+    ownerEmail?: string | null;
+    ownerPhone?: string | null;
     businessDescription: string | null;
     services: string | null;
     idealCustomer: string | null;
@@ -58,12 +63,16 @@ function toSessionUser(
     id: user.id,
     email: user.email,
     name: user.name,
+    phone: user.phone ?? null,
     role: user.role,
     plan: user.plan,
     creditsRemaining: user.creditsRemaining,
     onboardingComplete: user.onboardingComplete,
     darkMode: user.darkMode,
     companyName: user.companyName,
+    ownerName: user.ownerName ?? null,
+    ownerEmail: user.ownerEmail ?? null,
+    ownerPhone: user.ownerPhone ?? null,
     businessDescription: user.businessDescription,
     services: user.services,
     idealCustomer: user.idealCustomer,
@@ -227,17 +236,4 @@ export async function startImpersonation(targetUserId: string) {
 export async function stopImpersonation() {
   const cookieStore = await cookies();
   cookieStore.delete(IMPERSONATE_COOKIE);
-}
-
-export function buildBusinessContext(user: SessionUser) {
-  return [
-    user.companyName && `Company: ${user.companyName}`,
-    user.businessDescription && `Description: ${user.businessDescription}`,
-    user.services && `Services: ${user.services}`,
-    user.idealCustomer && `Ideal customer: ${user.idealCustomer}`,
-    user.serviceAreas && `Service areas: ${user.serviceAreas}`,
-    user.mainGoal && `Main goal: ${user.mainGoal}`,
-  ]
-    .filter(Boolean)
-    .join("\n");
 }

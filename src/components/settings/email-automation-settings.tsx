@@ -258,7 +258,8 @@ export function EmailAutomationSettings() {
             <CardTitle>Day 1 · 2 · 3 email automation</CardTitle>
             <p className="text-[13px] text-ink-muted">
               Templates for nurture. Use {"{{ownerName}}"}, {"{{businessName}}"},{" "}
-              {"{{fromName}}"}. Enroll leads from Saved Leads, then run due sends.
+              {"{{fromName}}"}. Day 1 sends on enroll; Days 2–3 send automatically
+              when you use the app (or via cron). Manual send is optional.
             </p>
           </CardHeader>
           <CardContent>

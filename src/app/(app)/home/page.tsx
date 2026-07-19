@@ -2,9 +2,12 @@ import { getSessionUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { HomeView } from "@/components/home/home-view";
 
-export default async function HomeAppPage() {
+export default async function HomePage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
-  return <HomeView userName={user.name} />;
+  const displayName =
+    user.name || user.ownerName || user.companyName || null;
+
+  return <HomeView userName={displayName} />;
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   HiOutlineArrowPath,
   HiOutlineBolt,
@@ -120,11 +121,40 @@ export function LeadSearchForm() {
   const [filterNote, setFilterNote] = useState<string | null>(null);
   const [stage, setStage] = useState(0);
   const [restoring, setRestoring] = useState(true);
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const qIndustry = searchParams.get("industry");
+    if (qIndustry && isPresetIndustry(qIndustry)) {
+      setSelectedIndustry(qIndustry);
+      setIndustryMode("preset");
+      setPreset((p) => ({
+        industry: qIndustry,
+        customIndustry: "",
+        industryMode: "preset",
+        country: p?.country ?? "US",
+        locationScope: p?.locationScope ?? "local",
+        locationMode: p?.locationMode ?? "standard",
+        customLocation: p?.customLocation ?? "",
+        state: p?.state,
+        city: p?.city ?? "",
+        radius: p?.radius ?? "25",
+      }));
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     let cancelled = false;
+    const deepLinkIndustry = searchParams.get("industry");
+    // Deep-link from Industries should start a fresh search form, not restore cache
+    const skipRestore = Boolean(deepLinkIndustry && isPresetIndustry(deepLinkIndustry));
 
     async function restoreSession() {
+      if (skipRestore) {
+        if (!cancelled) setRestoring(false);
+        return;
+      }
+
       const cached = loadFinderSearchCache();
       if (cached?.leads.length) {
         if (cancelled) return;
@@ -218,7 +248,7 @@ export function LeadSearchForm() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [searchParams]);
 
   async function runSearch(payload: {
     industry: string;

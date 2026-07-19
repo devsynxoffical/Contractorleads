@@ -6,5 +6,9 @@ export default async function AskExpertPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
-  return <AskExpertClient userName={user.name} />;
+  return (
+    <AskExpertClient
+      userName={user.name || user.ownerName || user.companyName}
+    />
+  );
 }

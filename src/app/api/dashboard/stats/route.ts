@@ -2,12 +2,16 @@ import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { startOfWeek, addDays, format } from "date-fns";
+import { processDueEnrollments } from "@/lib/email-automation";
 
 export async function GET() {
   const user = await getSessionUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  // Heartbeat: advance Day 2/3 emails when the user is active (no external cron required)
+  void processDueEnrollments({ userId: user.id, take: 10 });
 
   // Week starts Sunday (PRD: Sun–Sat trend)
   const weekStart = startOfWeek(new Date(), { weekStartsOn: 0 });

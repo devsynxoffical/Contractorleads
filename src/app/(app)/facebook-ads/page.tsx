@@ -36,7 +36,7 @@ export default function FacebookAdsPage() {
               Used for Facebook page lookup and Meta Ads Library searches on lead
               profiles. Without keys, the app opens the public Ads Library link.
             </p>
-            <div className="rounded-xl border border-border bg-[#faf8fc] p-3 font-mono text-[12px]">
+            <div className="rounded-xl border border-border bg-[var(--input-bg)] p-3 font-mono text-[12px] text-ink">
               <p>META_APP_ID=your-app-id</p>
               <p>META_APP_SECRET=your-app-secret</p>
               <p className="mt-2 text-ink-faint">
@@ -72,7 +72,7 @@ export default function FacebookAdsPage() {
               Resolves verified company and owner LinkedIn profiles (≥95%
               confidence). Never fabricates URLs.
             </p>
-            <div className="rounded-xl border border-border bg-[#faf8fc] p-3 font-mono text-[12px]">
+            <div className="rounded-xl border border-border bg-[var(--input-bg)] p-3 font-mono text-[12px] text-ink">
               <p>LINKEDIN_DATA_API_KEY=your-proxycurl-key</p>
             </div>
             <a

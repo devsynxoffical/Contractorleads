@@ -3,12 +3,16 @@ export type SessionUser = {
   id: string;
   email: string;
   name: string | null;
+  phone: string | null;
   role: string;
   plan: string;
   creditsRemaining: number;
   onboardingComplete: boolean;
   darkMode: boolean;
   companyName: string | null;
+  ownerName: string | null;
+  ownerEmail: string | null;
+  ownerPhone: string | null;
   businessDescription: string | null;
   services: string | null;
   idealCustomer: string | null;
