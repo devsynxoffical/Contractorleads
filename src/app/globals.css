@@ -1274,3 +1274,18 @@ html:not([data-theme="light"]) .saas-input {
 .marketing-site {
   overflow-x: hidden;
 }
+
+/* Premium marketing site */
+.marketing-site {
+  overflow-x: clip;
+}
+.marketing-site .saas-input {
+  background: var(--input-bg) !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .marketing-site * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
