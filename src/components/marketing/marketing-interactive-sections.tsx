@@ -657,23 +657,11 @@ export function SocialProofBento() {
                       &ldquo;{item.quote}&rdquo;
                     </p>
                     <div className="mt-5 flex items-center gap-3">
-                      {"brand" in item && item.brand ? (
-                        <BrandLogoMark
-                          brand={item.brand}
-                          className="h-10 w-10"
-                          iconClassName="h-5 w-5"
-                        />
-                      ) : (
-                        <span
-                          className="flex h-10 w-10 items-center justify-center rounded-full text-[12px] font-bold text-white"
-                          style={{ background: LOGO_GRADIENT }}
-                        >
-                          {item.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
-                        </span>
-                      )}
+                      <BrandLogoMark
+                        brand={item.brand}
+                        className="h-10 w-10"
+                        iconClassName="h-5 w-5"
+                      />
                       <div>
                         <p className="text-[13px] font-semibold text-slate-900">
                           {item.name}
