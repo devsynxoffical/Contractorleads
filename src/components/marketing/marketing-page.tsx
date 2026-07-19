@@ -24,7 +24,6 @@ import {
   HiOutlineLink,
   HiOutlineChevronDown,
   HiOutlineCheck,
-  HiOutlinePlay,
 } from "react-icons/hi2";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
 import { FloatingDashboard } from "./marketing-dashboard";
@@ -41,6 +40,9 @@ import {
   AnimatedNumber,
   InfiniteMarquee,
 } from "./marketing-ui";
+import { MarketingFluidHero } from "./marketing-fluid-hero";
+import Lenis from "lenis";
+import "lenis/dist/lenis.css";
 
 const LOGOS = [
   "Summit Agency",
@@ -153,9 +155,22 @@ const PLANS = [
   },
 ];
 
-function Nav() {
+function ScrollNav() {
+  const [shown, setShown] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setShown(window.scrollY > window.innerHeight * 0.85);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
-    <header className="fixed inset-x-0 top-0 z-40 border-b border-slate-200/80 bg-[#ffffff]/90 backdrop-blur-xl">
+    <header
+      className={`fixed inset-x-0 top-0 z-40 border-b border-slate-200/80 bg-[#ffffff]/90 backdrop-blur-xl transition-all duration-300 ${
+        shown ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-full opacity-0"
+      }`}
+    >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-8">
         <Link href="/" className="flex items-center gap-2.5">
           <Image src="/logo.png" alt="" width={36} height={36} className="rounded-full" priority />
@@ -186,96 +201,6 @@ function Nav() {
         </div>
       </div>
     </header>
-  );
-}
-
-function Hero() {
-  return (
-    <section className="relative min-h-[100svh] overflow-hidden bg-[#ffffff] pt-16">
-      {/* Clean white → soft tint (no muddy greys) */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse 50% 40% at 15% 20%, rgba(253,242,248,0.9), transparent 55%), radial-gradient(ellipse 45% 40% at 90% 30%, rgba(245,243,255,0.95), transparent 50%), linear-gradient(180deg, #ffffff 0%, #ffffff 55%, #faf5ff 100%)",
-        }}
-      />
-      <CloudDecor side="both" className="opacity-80" />
-      <SparklesDecor className="top-24 text-violet-400/60" />
-
-      <div className="relative z-10 mx-auto grid max-w-6xl gap-10 px-5 pb-16 pt-14 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:pb-24 lg:pt-16">
-        <div>
-          <Reveal>
-            <p className="mb-4 font-[family-name:var(--font-display)] text-[13px] font-semibold uppercase tracking-[0.22em] text-fuchsia-600">
-              Contractor Leads
-            </p>
-            <h1 className="font-[family-name:var(--font-display)] text-[clamp(2.6rem,6.5vw,4.5rem)] font-semibold leading-[1.02] tracking-tight text-slate-900">
-              Generate leads that{" "}
-              <span className="gradient-text">actually convert</span>
-            </h1>
-            <p className="mt-5 max-w-md text-[16px] leading-relaxed text-slate-600">
-              Live contractor discovery, AI qualification, and outreach — one premium workspace for agencies that sell results.
-            </p>
-          </Reveal>
-          <Reveal delay={0.12} className="mt-8 flex flex-wrap gap-3">
-            <Link
-              href="/register"
-              className="inline-flex items-center gap-2 rounded-2xl px-6 py-3.5 text-[14px] font-semibold text-white shadow-[0_12px_32px_rgba(236,72,153,0.35)]"
-              style={{ background: LOGO_GRADIENT }}
-            >
-              Start free trial <HiOutlineBolt className="h-4 w-4" />
-            </Link>
-            <a
-              href="#dashboard"
-              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-[#ffffff] px-5 py-3.5 text-[14px] font-semibold text-slate-800 shadow-sm transition hover:border-violet-200 hover:bg-violet-50/50"
-            >
-              <HiOutlinePlay className="h-4 w-4 text-violet-500" /> Watch product
-            </a>
-          </Reveal>
-          <Reveal delay={0.2} className="mt-10 flex flex-wrap items-center gap-4">
-            <div className="flex -space-x-2">
-              {["SA", "MK", "JL", "RT"].map((a) => (
-                <span
-                  key={a}
-                  className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white text-[11px] font-bold text-white shadow-sm"
-                  style={{ background: LOGO_GRADIENT }}
-                >
-                  {a}
-                </span>
-              ))}
-            </div>
-            <div>
-              <p className="text-[13px] font-semibold text-slate-900">
-                Trusted by growth agencies
-              </p>
-              <p className="text-[12px] text-slate-500">
-                4.9 · Lead quality focus · 20 free credits
-              </p>
-            </div>
-          </Reveal>
-          <Reveal delay={0.28} className="mt-8 flex flex-wrap gap-8">
-            {[
-              { n: 12840, s: "+", l: "Leads scored" },
-              { n: 34, s: "%", l: "Avg reply lift" },
-              { n: 20, s: "", l: "Trial credits" },
-            ].map((stat) => (
-              <div key={stat.l}>
-                <p className="font-[family-name:var(--font-display)] text-[28px] font-semibold text-slate-900">
-                  <AnimatedNumber value={stat.n} suffix={stat.s} />
-                </p>
-                <p className="text-[12px] text-slate-500">{stat.l}</p>
-              </div>
-            ))}
-          </Reveal>
-        </div>
-
-        <Reveal delay={0.15} y={40} className="relative lg:block">
-          <div className="mx-auto max-w-xl lg:max-w-none">
-            <FloatingDashboard />
-          </div>
-        </Reveal>
-      </div>
-    </section>
   );
 }
 
@@ -1580,10 +1505,24 @@ export function MarketingPage() {
     };
   }, []);
 
+  useEffect(() => {
+    const lenis = new Lenis({ smoothWheel: true });
+    let raf = 0;
+    function frame(t: number) {
+      lenis.raf(t);
+      raf = requestAnimationFrame(frame);
+    }
+    raf = requestAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(raf);
+      lenis.destroy();
+    };
+  }, []);
+
   return (
     <div className="marketing-site relative min-h-screen bg-[#ffffff] text-slate-900">
-      <Nav />
-      <Hero />
+      <ScrollNav />
+      <MarketingFluidHero />
       <SocialProof />
       <DashboardSection />
       <ProblemSection />
