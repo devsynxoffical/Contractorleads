@@ -141,21 +141,26 @@ export function InfiniteMarquee({
   speed = 40,
   reverse = false,
   className,
+  gap = 40,
 }: {
   children: ReactNode;
   speed?: number;
   reverse?: boolean;
   className?: string;
+  gap?: number;
 }) {
   return (
     <div className={cn("relative overflow-hidden", className)}>
       <motion.div
-        className="flex w-max gap-10"
+        className="flex w-max"
+        style={{ gap }}
         animate={{ x: reverse ? ["-50%", "0%"] : ["0%", "-50%"] }}
         transition={{ duration: speed, ease: "linear", repeat: Infinity }}
       >
-        <div className="flex shrink-0 gap-10">{children}</div>
-        <div className="flex shrink-0 gap-10" aria-hidden>
+        <div className="flex shrink-0" style={{ gap }}>
+          {children}
+        </div>
+        <div className="flex shrink-0" style={{ gap }} aria-hidden>
           {children}
         </div>
       </motion.div>

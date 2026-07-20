@@ -1,35 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import { motion } from "framer-motion";
 import {
-  HiOutlineFire,
-  HiOutlineMapPin,
-  HiOutlineCheckBadge,
-  HiOutlineSparkles,
   HiOutlineArrowRight,
-  HiOutlineStar,
-  HiOutlineChartBar,
-  HiOutlineBolt,
-  HiOutlineGlobeAlt,
-  HiOutlineUserGroup,
-  HiOutlineChatBubbleLeftRight,
-  HiOutlineCurrencyDollar,
-  HiOutlineSignal,
 } from "react-icons/hi2";
 import { FaLinkedinIn } from "react-icons/fa6";
 import {
   SiGooglemaps,
   SiAnthropic,
-  SiStripe,
   SiMeta,
   SiYelp,
   SiGoogleanalytics,
 } from "react-icons/si";
 import { RiOpenaiFill } from "react-icons/ri";
 import { Reveal, TiltCard } from "./marketing-ui";
-import { LOGO_GRADIENT } from "@/components/layout/page-header";
 import {
   SOCIAL_BRANDS,
   BrandLogoChip,
@@ -57,217 +42,12 @@ function MotionBackdrop({
   );
 }
 
-/** hills.webp — product stage showcase (static, not sticky) */
-export function HillsProductStage() {
-  const cards = [
-    {
-      id: "hot",
-      eyebrow: "Lead status",
-      value: "HOT",
-      meta: "Roofing · Austin, TX",
-      detail: "Score 94 — ready for outreach",
-      icon: HiOutlineFire,
-      tone: "solid" as const,
-      ring: 94,
-    },
-    {
-      id: "credits",
-      eyebrow: "Credits",
-      value: "450",
-      meta: "Ready to search",
-      detail: "Trial balance · top-up anytime",
-      icon: HiOutlineCurrencyDollar,
-      tone: "light" as const,
-    },
-    {
-      id: "coverage",
-      eyebrow: "Coverage",
-      value: "5 countries",
-      meta: "Tier‑1 metros lit",
-      detail: "US · CA · UK · AU · NZ",
-      icon: HiOutlineMapPin,
-      tone: "glass" as const,
-    },
-    {
-      id: "verified",
-      eyebrow: "Verified",
-      value: "Owner found",
-      meta: "LinkedIn + site",
-      detail: "Marcus R. · Summit Roofing",
-      icon: HiOutlineCheckBadge,
-      tone: "glass" as const,
-    },
-    {
-      id: "meta",
-      eyebrow: "Meta Ads",
-      value: "Active",
-      meta: "Competitor spend spotted",
-      detail: "Pitch with real context",
-      icon: HiOutlineBolt,
-      tone: "solid" as const,
-    },
-    {
-      id: "ai",
-      eyebrow: "Ask Expert",
-      value: "Script ready",
-      meta: "SMS + email + opener",
-      detail: "ICP-aware angles saved",
-      icon: HiOutlineChatBubbleLeftRight,
-      tone: "light" as const,
-      ring: 97,
-    },
-  ];
-
-  const [active, setActive] = useState(cards[0].id);
-  const current = cards.find((c) => c.id === active) ?? cards[0];
-  const CurrentIcon = current.icon;
-
-  return (
-    <section className="relative overflow-hidden py-20 sm:py-28">
-      <div className="absolute inset-0 bg-[#12081f]" />
-      <MotionBackdrop
-        src="/marketing/hills.webp"
-        opacity={0.55}
-        className="mix-blend-screen"
-      />
-      <div className="absolute inset-0 bg-gradient-to-b from-[#2e1065]/50 via-transparent to-[#0a0514]/95" />
-
-      <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
-        <Reveal className="mx-auto max-w-2xl text-center">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.22em] text-fuchsia-300">
-            Product stage
-          </p>
-          <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.9rem,4.5vw,3.25rem)] font-semibold tracking-tight text-white">
-            Signals that move with the landscape
-          </h2>
-          <p className="mx-auto mt-4 max-w-lg text-[15px] text-white/70">
-            The same HOT scores, credits, owners, and AI scripts your team sees
-            inside Contractor Leads — previewed on the terrain.
-          </p>
-        </Reveal>
-
-        <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4">
-          {cards.map((card, i) => {
-            const Icon = card.icon;
-            const isOn = active === card.id;
-            const isLight = card.tone === "light";
-            const isSolid = card.tone === "solid";
-
-            return (
-              <Reveal key={card.id} delay={(i % 3) * 0.05}>
-                <motion.button
-                  type="button"
-                  onClick={() => setActive(card.id)}
-                  onMouseEnter={() => setActive(card.id)}
-                  whileHover={{ y: -5, scale: 1.015 }}
-                  transition={{ type: "spring", stiffness: 320, damping: 22 }}
-                  className={`group relative w-full overflow-hidden rounded-[24px] border p-5 text-left shadow-[0_16px_48px_rgba(0,0,0,0.28)] backdrop-blur-xl transition sm:rounded-[26px] sm:p-6 ${
-                    isOn
-                      ? isLight
-                        ? "border-fuchsia-300/60 bg-white shadow-fuchsia-500/20"
-                        : "border-fuchsia-400/50 bg-[#1a0f2e]/95 ring-1 ring-fuchsia-400/30"
-                      : isLight
-                        ? "border-white/50 bg-white/95"
-                        : isSolid
-                          ? "border-white/15 bg-[#1a0f2e]/80"
-                          : "border-white/15 bg-white/[0.08]"
-                  }`}
-                >
-                  {(isLight || isOn) && (
-                    <div
-                      className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full opacity-50 blur-2xl"
-                      style={{ background: LOGO_GRADIENT }}
-                      aria-hidden
-                    />
-                  )}
-                  <div className="relative flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p
-                        className={`inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] ${
-                          isLight ? "text-fuchsia-600" : "text-fuchsia-300"
-                        }`}
-                      >
-                        <Icon className="h-3.5 w-3.5" />
-                        {card.eyebrow}
-                      </p>
-                      <p
-                        className={`mt-2 font-[family-name:var(--font-display)] text-[24px] font-semibold tracking-tight sm:text-[26px] ${
-                          isLight ? "text-slate-900" : "text-white"
-                        }`}
-                      >
-                        {card.value}
-                      </p>
-                      <p
-                        className={`mt-1.5 text-[13px] ${
-                          isLight ? "text-slate-500" : "text-white/60"
-                        }`}
-                      >
-                        {card.meta}
-                      </p>
-                      <p
-                        className={`mt-3 text-[12px] leading-relaxed ${
-                          isLight ? "text-slate-400" : "text-white/45"
-                        }`}
-                      >
-                        {card.detail}
-                      </p>
-                    </div>
-                    {"ring" in card && card.ring != null ? (
-                      <span
-                        className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-[13px] font-bold text-white shadow-lg"
-                        style={{ background: LOGO_GRADIENT }}
-                      >
-                        {card.ring}
-                      </span>
-                    ) : (
-                      <span
-                        className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-                          isLight
-                            ? "bg-fuchsia-50 text-fuchsia-600"
-                            : "bg-white/10 text-white/80"
-                        }`}
-                      >
-                        <Icon className="h-5 w-5" />
-                      </span>
-                    )}
-                  </div>
-                </motion.button>
-              </Reveal>
-            );
-          })}
-        </div>
-
-        <Reveal delay={0.12} className="mx-auto mt-8 max-w-xl sm:mt-10">
-          <div className="flex items-center gap-4 rounded-[22px] border border-white/15 bg-[#12081f]/88 p-4 shadow-2xl backdrop-blur-xl sm:p-5">
-            <span
-              className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white"
-              style={{ background: LOGO_GRADIENT }}
-            >
-              <HiOutlineSignal className="h-6 w-6" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-fuchsia-300">
-                Live signal
-              </p>
-              <p className="mt-0.5 truncate font-[family-name:var(--font-display)] text-[17px] font-semibold text-white">
-                {current.eyebrow}: {current.value}
-              </p>
-              <p className="truncate text-[13px] text-white/60">{current.detail}</p>
-            </div>
-            <CurrentIcon className="hidden h-7 w-7 shrink-0 text-fuchsia-300 sm:block" />
-          </div>
-        </Reveal>
-      </div>
-    </section>
-  );
-}
-
 /** moon-walk.webp — dark cinematic feature grid (once) */
 export function MoonWalkFeatureGrid() {
   const tiles = [
     {
       title: "Map density",
-      copy: "See where contractor demand clusters before you spend a credit.",
+      copy: "See where contractor demand is clustering by metro before you spend a dollar on outreach. Zoom into a ZIP, a county, or a whole state and watch lead density shift in real time.",
       badge: "Lead Map",
       brand: {
         name: "Maps",
@@ -277,8 +57,8 @@ export function MoonWalkFeatureGrid() {
       },
     },
     {
-      title: "HOT alerts",
-      copy: "Scores and outreach angles stream in as the search finishes.",
+      title: "Hot alerts",
+      copy: "Get flagged the moment a business crosses into the Hot tier — new listing, rising review velocity, or a site overhaul that signals they're investing in growth.",
       badge: "Live queue",
       brand: {
         name: "OpenAI",
@@ -289,7 +69,7 @@ export function MoonWalkFeatureGrid() {
     },
     {
       title: "Reputation",
-      copy: "Reviews and opportunity scores so you pitch winners first.",
+      copy: "Google rating, review count, and review velocity pulled live so you're not pitching a business that's quietly losing trust in its own market.",
       badge: "Top rated",
       brand: {
         name: "Yelp",
@@ -300,7 +80,7 @@ export function MoonWalkFeatureGrid() {
     },
     {
       title: "Verified owners",
-      copy: "LinkedIn + social filters — no empty shells in the export.",
+      copy: "We surface the actual decision-maker — owner, founder, or GM — scraped from the business's own site and cross-checked, not guessed from a name pattern.",
       badge: "Verified",
       brand: {
         name: "LinkedIn",
@@ -320,14 +100,13 @@ export function MoonWalkFeatureGrid() {
       <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
         <Reveal className="max-w-xl">
           <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-fuchsia-300">
-            Under moonlight
+            Workflow
           </p>
           <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.85rem,4vw,3rem)] font-semibold tracking-tight text-white">
             Four desks. Zero busywork.
           </h2>
           <p className="mt-3 text-[15px] text-white/65">
-            Cinematic moon-walk film behind interactive feature cards — hover to
-            lift each desk.
+            Everything a lead-gen desk juggles across five tabs, we collapsed into four panels.
           </p>
         </Reveal>
 
@@ -389,15 +168,11 @@ export function MaterialHillsCta() {
         <div className="relative z-10 flex min-h-[48vh] items-center px-5 py-16 sm:min-h-[56vh] sm:px-8">
           <div className="mx-auto w-full max-w-6xl">
             <Reveal>
-              <p className="text-[12px] font-semibold uppercase tracking-[0.22em] text-fuchsia-200">
-                Brand film
-              </p>
-              <h2 className="mt-3 max-w-xl font-[family-name:var(--font-display)] text-[clamp(2rem,5vw,3.4rem)] font-semibold tracking-tight text-white">
+              <h2 className="max-w-xl font-[family-name:var(--font-display)] text-[clamp(2rem,5vw,3.4rem)] font-semibold tracking-tight text-white">
                 Terrain built for serious agencies
               </h2>
               <p className="mt-4 max-w-md text-[15px] text-white/75">
-                Purple desert motion behind a single clear CTA — start free, find
-                contractors, book the call.
+                Not a toy for browsing contractor listings. A working desk for teams that dial, qualify, and close every day.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link
@@ -406,12 +181,12 @@ export function MaterialHillsCta() {
                 >
                   Start free trial <HiOutlineArrowRight className="h-4 w-4" />
                 </Link>
-                <Link
-                  href="/login"
+                <a
+                  href="mailto:hello@contractorleads.us"
                   className="inline-flex items-center gap-2 rounded-2xl border border-white/35 bg-white/10 px-5 py-3 text-[14px] font-semibold text-white backdrop-blur transition hover:bg-white/15"
                 >
-                  Sign in
-                </Link>
+                  Talk to sales
+                </a>
               </div>
             </Reveal>
           </div>
@@ -426,45 +201,45 @@ export function FlowerFieldProofCards() {
   const cards = [
     {
       icon: RiOpenaiFill,
-      title: "34% reply lift",
-      body: "Agencies that score before dialing stop wasting SDRs on nurture junk.",
+      title: "AI reply speed",
+      body: "Ask Contractor Leads answers in seconds, not a support ticket queue.",
       color: "#000000",
       bg: "#f4f4f5",
     },
     {
       icon: SiGooglemaps,
-      title: "Tier‑1 coverage",
-      body: "US, Canada, UK, Australia, New Zealand — one Lead Finder for all of them.",
+      title: "Coverage window",
+      body: "Live search across Tier-1 markets, any hour.",
       color: "#4285F4",
       bg: "#e8f0fe",
     },
     {
       icon: FaLinkedinIn,
-      title: "Owner enrichment",
-      body: "Website people scrape + LinkedIn resolve so every pitch has a name.",
+      title: "Add Expert onboarding",
+      body: "AI walks new users through their first search.",
       color: "#0A66C2",
       bg: "#e8f1fb",
     },
     {
       icon: SiAnthropic,
-      title: "Ask Expert memory",
-      body: "Multi-turn chat that knows your ICP, offer, and last scripts.",
+      title: "Trial credits included",
+      body: "Start with real search credits, not a locked demo.",
       color: "#D4A27F",
       bg: "#faf4ef",
     },
     {
-      icon: SiStripe,
-      title: "20 trial credits",
-      body: "Explore Lead Finder and AI without a card — upgrade when it converts.",
-      color: "#635BFF",
-      bg: "#eeedff",
-    },
-    {
       icon: SiMeta,
-      title: "AI angles",
-      body: "Revenue bands and one-line outreach that feels written by your best closer.",
+      title: "Fast setup",
+      body: "From signup to your first qualified batch in minutes.",
       color: "#0866FF",
       bg: "#e7f0ff",
+    },
+    {
+      icon: SiGoogleanalytics,
+      title: "Book a fit call",
+      body: "Talk to us before you commit to a plan.",
+      color: "#E37400",
+      bg: "#fef0e0",
     },
   ];
 
@@ -477,14 +252,13 @@ export function FlowerFieldProofCards() {
       <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
         <Reveal className="mx-auto max-w-2xl text-center">
           <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-fuchsia-600">
-            Why agencies stay
+            Why agencies use it
           </p>
           <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.85rem,4vw,3rem)] font-semibold tracking-tight text-slate-900">
             Clarity in the field
           </h2>
           <p className="mt-3 text-[15px] text-slate-600">
-            Soft flower-field motion behind glass cards — proof points you can
-            feel, not another dense feature wall.
+            The details that make a list usable instead of just impressive.
           </p>
         </Reveal>
 
@@ -526,7 +300,8 @@ export function SocialProofBento() {
     {
       type: "stat" as const,
       value: "34%",
-      label: "avg reply lift",
+      label:
+        "Average lift in reply rate when outreach references a verified opportunity score instead of a generic pitch",
       span: "sm:col-span-1",
       brand: {
         name: "OpenAI",
@@ -538,9 +313,9 @@ export function SocialProofBento() {
     {
       type: "quote" as const,
       quote:
-        "We stopped buying stale lists. Scoring + owner enrichment made every dial count.",
-      name: "Maya K.",
-      role: "Agency founder · Phoenix",
+        "[Placeholder] We stopped padding our lists with dead numbers the week we switched.",
+      name: "Agency founder",
+      role: "[industry] vertical",
       span: "sm:col-span-2",
       brand: {
         name: "LinkedIn",
@@ -552,7 +327,7 @@ export function SocialProofBento() {
     {
       type: "stat" as const,
       value: "12k+",
-      label: "leads scored",
+      label: "Businesses indexed and actively refreshed across live searches",
       span: "sm:col-span-1",
       brand: {
         name: "Analytics",
@@ -562,47 +337,35 @@ export function SocialProofBento() {
       },
     },
     {
-      type: "quote" as const,
-      quote: "Meta Ads checks before the pitch — we finally sound informed.",
-      name: "Jordan L.",
-      role: "Media buyer · Austin",
-      span: "sm:col-span-2",
-      brand: {
-        name: "Meta",
-        icon: SiMeta,
-        color: "#0866FF",
-        bg: "#e7f0ff",
-      },
-    },
-    {
       type: "brand" as const,
       title: "Transparent pipeline",
-      body: "Credits, searches, and CRM status in one workspace — no black-box lists.",
+      body: "Every lead's source and verification status is visible — no black-box scraping",
       span: "sm:col-span-2",
     },
     {
       type: "stat" as const,
       value: "20",
-      label: "trial credits",
+      label: "Free trial credits to run your first real search, no card required",
       span: "sm:col-span-1",
       brand: {
-        name: "Stripe",
-        icon: SiStripe,
-        color: "#635BFF",
-        bg: "#eeedff",
+        name: "OpenAI",
+        icon: RiOpenaiFill,
+        color: "#000000",
+        bg: "#f4f4f5",
       },
     },
     {
       type: "quote" as const,
-      quote: "Ask Expert remembers our ICP. Scripts land in one click.",
-      name: "Sam R.",
-      role: "SDR lead · Denver",
+      quote:
+        "[Placeholder] The outreach angle alone saved our SDRs an hour a day of research.",
+      name: "Media buyer",
+      role: "[agency name]",
       span: "sm:col-span-3",
       brand: {
-        name: "Anthropic",
-        icon: SiAnthropic,
-        color: "#D4A27F",
-        bg: "#faf4ef",
+        name: "Meta",
+        icon: SiMeta,
+        color: "#0866FF",
+        bg: "#e7f0ff",
       },
     },
   ];
@@ -612,11 +375,14 @@ export function SocialProofBento() {
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
         <Reveal className="max-w-2xl">
           <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-fuchsia-600">
-            Social proof
+            Results
           </p>
           <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.85rem,4vw,3.1rem)] font-semibold tracking-tight text-slate-900">
             Agencies that switched off fake lists
           </h2>
+          <p className="mt-3 text-[15px] leading-relaxed text-slate-600">
+            The numbers agencies actually track once they stop buying static lists.
+          </p>
         </Reveal>
 
         <Reveal delay={0.05} className="mt-8">
@@ -646,14 +412,17 @@ export function SocialProofBento() {
                     <p className="font-[family-name:var(--font-display)] text-[42px] font-semibold tracking-tight text-slate-900 sm:text-[48px]">
                       {item.value}
                     </p>
-                    <p className="mt-1 text-[12px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                    <p className="mt-2 text-[12px] leading-relaxed text-slate-500">
                       {item.label}
                     </p>
                   </>
                 )}
                 {item.type === "quote" && (
                   <>
-                    <p className="text-[16px] leading-relaxed text-slate-700 sm:text-[17px]">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                      Testimonial placeholder
+                    </p>
+                    <p className="mt-2 text-[16px] leading-relaxed text-slate-700 sm:text-[17px]">
                       &ldquo;{item.quote}&rdquo;
                     </p>
                     <div className="mt-5 flex items-center gap-3">
@@ -673,28 +442,12 @@ export function SocialProofBento() {
                 )}
                 {item.type === "brand" && (
                   <>
-                    <div className="mb-4 flex flex-wrap gap-2">
-                      {SOCIAL_BRANDS.slice(0, 4).map((b) => (
-                        <BrandLogoMark
-                          key={b.name}
-                          brand={b}
-                          className="h-9 w-9"
-                          iconClassName="h-4 w-4"
-                        />
-                      ))}
-                    </div>
                     <p className="font-[family-name:var(--font-display)] text-[28px] font-semibold tracking-tight text-slate-900">
                       {item.title}
                     </p>
                     <p className="mt-2 text-[14px] leading-relaxed text-slate-600">
                       {item.body}
                     </p>
-                    <Link
-                      href="/register"
-                      className="mt-4 inline-flex items-center gap-1 text-[13px] font-semibold text-fuchsia-600 hover:underline"
-                    >
-                      Start free <HiOutlineArrowRight className="h-3.5 w-3.5" />
-                    </Link>
                   </>
                 )}
               </motion.div>

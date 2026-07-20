@@ -51,12 +51,11 @@ import {
 import {
   Reveal,
   TiltCard,
-  AnimatedNumber,
   InfiniteMarquee,
 } from "./marketing-ui";
 import { MarketingFluidHero } from "./marketing-fluid-hero";
+import { MarketingInteractiveDemo } from "./marketing-interactive-demo";
 import {
-  HillsProductStage,
   MoonWalkFeatureGrid,
   MaterialHillsCta,
   FlowerFieldProofCards,
@@ -64,12 +63,13 @@ import {
 } from "./marketing-interactive-sections";
 import { StickyPlatformScroll } from "./marketing-sticky-platform";
 import {
-  SOCIAL_BRANDS,
   INTEGRATION_BRANDS,
   TECH_BRANDS,
   BrandLogoChip,
   BrandLogoMark,
 } from "./brand-logos";
+import { MarketingTrialModals } from "./marketing-trial-modal";
+import { setMarketingLenis } from "./marketing-scroll";
 import Lenis from "lenis";
 import "lenis/dist/lenis.css";
 
@@ -77,84 +77,84 @@ const FEATURES = [
   {
     icon: RiOpenaiFill,
     title: "AI Lead Scoring",
-    copy: "Hot / Warm / Nurture with revenue bands and outreach angles.",
+    copy: "Hot / Warm / Nurture tiers with opportunity scores and a recommended outreach angle on every business.",
     color: "#000000",
     bg: "#f4f4f5",
   },
   {
     icon: SiGooglemaps,
     title: "Lead Finder",
-    copy: "Live Places search across Tier‑1 markets and custom areas.",
+    copy: "Live Google Places search across five Tier‑1 markets, filterable down to a single ZIP and radius.",
     color: "#4285F4",
     bg: "#e8f0fe",
   },
   {
     icon: SiGoogleearth,
     title: "World Map HUD",
-    copy: "See pipeline density by country and metro in one view.",
+    copy: "See pipeline density by country and metro at a glance, not buried in a spreadsheet.",
     color: "#34A853",
     bg: "#e6f4ea",
   },
   {
     icon: SiAnthropic,
     title: "AI Assistant",
-    copy: "Multi-turn chat with history for offers, hooks, and scripts.",
+    copy: "Ask Contractor Leads for hooks, offers, funnels, and cold outreach — multi-turn, with saved chat history.",
     color: "#D4A27F",
     bg: "#faf4ef",
   },
   {
     icon: FaLinkedinIn,
     title: "Owner Enrichment",
-    copy: "Website people scrape + LinkedIn company/owner resolve.",
+    copy: "Real decision-maker names pulled from the business's own site, not guessed.",
     color: "#0A66C2",
     bg: "#e8f1fb",
   },
   {
     icon: SiMeta,
     title: "Meta Ads Intel",
-    copy: "Ads Library checks so you know who already spends on Meta.",
+    copy: "Check the Facebook Ads Library before you pitch, so you know if they're already spending.",
     color: "#0866FF",
     bg: "#e7f0ff",
   },
   {
     icon: SiGmail,
     title: "Outreach Studio",
-    copy: "Email, SMS, and call scripts saved to your library.",
+    copy: "Generate cold email, cold SMS, follow-up, and full sales scripts per lead in one click.",
     color: "#EA4335",
     bg: "#fce8e6",
   },
   {
     icon: SiGoogleanalytics,
     title: "Opportunity Scores",
-    copy: "Website, PPC, SEO, and marketing upside scored 0–100.",
+    copy: "Website, PPC, SEO, and marketing upside scored 0–100 on every lead.",
     color: "#E37400",
     bg: "#fef0e0",
   },
   {
     icon: FaSlack,
     title: "Live Activity",
-    copy: "Search results and AI replies stream as they happen.",
+    copy: "Watch search results and AI replies stream in as they happen, not after a loading spinner.",
     color: "#4A154B",
     bg: "#f4eaf5",
   },
   {
     icon: SiHubspot,
     title: "Business Context",
-    copy: "Answers adapt to your agency profile and ICP.",
+    copy: "The AI already knows your company, ICP, and goal from onboarding — you're never re-explaining your business.",
     color: "#FF7A59",
     bg: "#fff0eb",
   },
   {
     icon: SiInstagram,
     title: "Social Presence Filter",
-    copy: "Require LinkedIn + social + owner before a lead lands.",
+    copy: "Require a verified LinkedIn, social profile, and identified owner before a lead is even accepted into your results.",
     color: "#E4405F",
     bg: "#fce8ee",
   },
   {
     icon: SiYelp,
     title: "Verified Sources",
-    copy: "Google, Yelp, and site data — never invented phones.",
+    copy: "Google, Yelp, and live site data — never a phone number invented to fill a field.",
     color: "#FF1A1A",
     bg: "#ffe8e8",
   },
@@ -164,42 +164,42 @@ const PAINS = [
   {
     icon: SiStripe,
     title: "Buying fake leads",
-    body: "Purchased lists go stale before your first dial.",
+    body: "Purchased lists go stale before the first dial — disconnected numbers, closed businesses, and duplicate entries that waste a rep's whole morning.",
     color: "#635BFF",
     bg: "#eeedff",
   },
   {
     icon: SiGoogleanalytics,
     title: "Low conversion",
-    body: "No scoring means SDRs burn time on nurture junk.",
+    body: "Cold outreach without context reads like spam. No owner name, no angle, no proof you looked at their business first.",
     color: "#E37400",
     bg: "#fef0e0",
   },
   {
     icon: FaSlack,
     title: "Manual follow-up",
-    body: "Tabs, sheets, and notes never stay in sync.",
+    body: "The fortune is in the follow-up, and it's also the first thing that falls apart when a rep is juggling forty open threads in a spreadsheet.",
     color: "#4A154B",
     bg: "#f4eaf5",
   },
   {
     icon: SiGmail,
     title: "Slow response",
-    body: "Competitors reply while you’re still enriching.",
+    body: "A lead that goes 24 hours without a reply is a lead that's already talking to a competitor.",
     color: "#EA4335",
     bg: "#fce8e6",
   },
   {
     icon: SiZapier,
     title: "Disconnected tools",
-    body: "Maps, ads, CRM, and AI live in five different apps.",
+    body: "Spreadsheet for the list, separate tool for scoring, separate inbox for outreach, separate doc for notes — nothing talks to anything else.",
     color: "#FF4A00",
     bg: "#fff0e8",
   },
   {
     icon: SiMeta,
     title: "Blind ad spend",
-    body: "You pitch PPC without knowing if they already run Meta.",
+    body: "Pitching a contractor on Facebook ads without checking if they're already running them (and how well) is how you lose the meeting in the first thirty seconds.",
     color: "#0866FF",
     bg: "#e7f0ff",
   },
@@ -208,51 +208,110 @@ const PAINS = [
 const FAQS = [
   {
     q: "Is this for agencies or contractors?",
-    a: "Contractor Leads is built for marketing agencies that sell lead-gen and paid media to home-service contractors.",
+    a: "Contractor Leads is built for marketing agencies, media buyers, and sales teams that sell services to home-service contractors — not for homeowners trying to find a plumber or roofer.",
   },
   {
     q: "Are the leads real?",
-    a: "Yes. Searches run against Google Places and enrich from websites, Yelp, and optional LinkedIn/Meta sources. We don’t invent phone numbers.",
+    a: "Yes. Every business comes from live Google Places data, cross-checked against Yelp, Houzz, and the business's own website — never generated or guessed. If we can't verify a data point (like a LinkedIn profile), we leave it blank instead of showing you something wrong.",
   },
   {
     q: "How do credits work?",
-    a: "Lead searches and AI messages consume credits. New accounts start with trial credits — no card required to explore.",
+    a: "Credits are consumed by action, not by lead: running a Lead Finder search costs credits, asking the AI assistant costs credits, and generating outreach content costs a smaller amount of credits. The in-app support chat is always free and never touches your credit balance.",
   },
   {
-    q: "Can I filter for LinkedIn + social?",
-    a: "Yes. Lead Finder can require LinkedIn, at least one social profile, and a website owner name before a business is returned.",
+    q: "Can I filter for LinkedIn + social presence?",
+    a: "Yes. Turn on the Social Presence Filter in Lead Finder to only accept leads that have a verified LinkedIn profile, active social presence, and an identified owner — useful when you want a smaller, higher-confidence list over raw volume.",
   },
   {
-    q: "Does AI qualification need OpenAI?",
-    a: "For live revenue estimates and opportunity scores, yes. Without a valid OpenAI key the app falls back to rule-based heuristics.",
+    q: "Does AI qualification need me to bring my own OpenAI key?",
+    a: "No. Scoring, qualification, and the assistant all run on our backend — there's nothing extra for you to configure or pay for separately.",
   },
+];
+
+const PARTNER_LOGOS = [
+  "image.png",
+  "image copy.png",
+  "image copy 2.png",
+  "image copy 3.png",
+  "image copy 4.png",
+  "image copy 5.png",
+  "image copy 6.png",
+  "image copy 7.png",
+  "image copy 8.png",
+  "image copy 9.png",
+  "image copy 10.png",
+  "image copy 11.png",
+  "image copy 12.png",
+].map((name) => `/logos/${encodeURIComponent(name)}`);
+
+const PLAN_FEATURE_MATRIX: {
+  feature: string;
+  trial: string;
+  starter: string;
+  growth: string;
+  agency: string;
+  enterprise: string;
+}[] = [
+  { feature: "Lead Finder (live search)", trial: "Limited (trial credits)", starter: "✓", growth: "✓", agency: "✓", enterprise: "✓" },
+  { feature: "AI Lead Scoring (Hot/Warm/Nurture)", trial: "✓", starter: "✓", growth: "✓", agency: "✓", enterprise: "✓" },
+  { feature: "Lead detail: contact + owner enrichment", trial: "✓", starter: "✓", growth: "✓", agency: "✓", enterprise: "✓" },
+  { feature: "Saved Leads / Favorites / Notes", trial: "✓", starter: "✓", growth: "✓", agency: "✓", enterprise: "✓" },
+  { feature: "Pipeline CRM (Kanban)", trial: "—", starter: "✓", growth: "✓", agency: "✓", enterprise: "✓" },
+  { feature: "CSV Export", trial: "✓", starter: "✓", growth: "✓", agency: "✓", enterprise: "✓" },
+  { feature: "Excel Export", trial: "—", starter: "✓", growth: "✓", agency: "✓", enterprise: "✓" },
+  { feature: "Ask Contractor Leads (AI assistant)", trial: "Limited", starter: "✓", growth: "✓", agency: "Priority", enterprise: "Priority" },
+  { feature: "My Scripts library", trial: "✓", starter: "✓", growth: "✓", agency: "✓", enterprise: "✓" },
+  { feature: "AI Outreach Studio (email/SMS/follow-up/script)", trial: "—", starter: "✓", growth: "✓", agency: "✓", enterprise: "✓" },
+  { feature: "Dashboard & Analytics", trial: "Basic", starter: "✓", growth: "✓", agency: "✓", enterprise: "Advanced" },
+  { feature: "Lead Map", trial: "—", starter: "—", growth: "✓", agency: "✓", enterprise: "✓" },
+  { feature: "Social Presence Filter", trial: "—", starter: "—", growth: "✓", agency: "✓", enterprise: "✓" },
+  { feature: "Meta / Facebook Ads Intel", trial: "—", starter: "—", growth: "✓", agency: "✓", enterprise: "✓" },
+  { feature: "LinkedIn Verification (owner/company)", trial: "—", starter: "—", growth: "✓", agency: "✓", enterprise: "✓" },
+  { feature: "Email Automation (Day 1–3, own SMTP)", trial: "—", starter: "Single sequence", growth: "✓", agency: "✓", enterprise: "✓" },
+  { feature: "CRM Webhooks (Zapier/Make/HubSpot/custom)", trial: "—", starter: "—", growth: "✓", agency: "✓", enterprise: "✓" },
+  { feature: "Client Reports", trial: "—", starter: "—", growth: "—", agency: "✓", enterprise: "White-label" },
+  { feature: "Workspaces (multi-tenant / team)", trial: "—", starter: "—", growth: "—", agency: "✓", enterprise: "✓" },
+  { feature: "Team seats", trial: "—", starter: "—", growth: "—", agency: "✓", enterprise: "Custom" },
+  { feature: "Priority support", trial: "—", starter: "—", growth: "—", agency: "✓", enterprise: "Dedicated CSM" },
+  { feature: "Custom onboarding", trial: "—", starter: "—", growth: "—", agency: "✓", enterprise: "✓" },
+  { feature: "API access", trial: "—", starter: "—", growth: "—", agency: "—", enterprise: "✓" },
+  { feature: "Custom integrations / SSO", trial: "—", starter: "—", growth: "—", agency: "—", enterprise: "✓" },
+  { feature: "Custom credit pool", trial: "—", starter: "—", growth: "—", agency: "✓", enterprise: "✓" },
 ];
 
 const PLANS = [
   {
-    name: "Starter",
-    price: 49,
-    blurb: "For solo closers testing a new niche.",
-    features: ["Trial credits included", "Lead Finder", "AI Assistant", "Saved leads"],
+    name: "Free Trial",
+    blurb: "Lead Finder with trial credits — score and save real businesses.",
+    tier: "Start here",
+    features: ["20 free trial credits", "Lead Finder", "AI lead scoring", "Saved leads"],
   },
   {
-    name: "Pro",
-    price: 99,
-    blurb: "For agencies running weekly lead sprints.",
+    name: "Starter",
+    blurb: "Pipeline CRM, Outreach Studio, and email automation on your SMTP.",
+    tier: "Core",
+    features: ["Lead Finder", "Pipeline CRM", "Outreach Studio", "CSV + Excel export"],
+  },
+  {
+    name: "Growth",
+    blurb: "Lead Map, social filters, Meta intel, and CRM webhooks.",
+    tier: "Most adopted",
     popular: true,
-    features: [
-      "Higher credit pool",
-      "Map + enrichment",
-      "Outreach Studio",
-      "Priority AI",
-    ],
+    features: ["Everything in Starter", "Lead Map", "Social presence filter", "Meta Ads intel"],
   },
   {
     name: "Agency",
-    price: 0,
+    blurb: "Client reports, workspaces, team seats, and priority support.",
+    tier: "Teams",
     custom: true,
-    blurb: "For teams that need volume and white-glove setup.",
-    features: ["Custom credits", "Team seats", "Priority support", "Onboarding"],
+    features: ["Everything in Growth", "Client reports", "Workspaces", "Custom credit pool"],
+  },
+  {
+    name: "Enterprise",
+    blurb: "API access, SSO, dedicated CSM, and custom integrations.",
+    tier: "Custom",
+    custom: true,
+    features: ["Everything in Agency", "API access", "SSO", "Dedicated CSM"],
   },
 ];
 
@@ -297,7 +356,7 @@ function ScrollNav() {
             className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px] font-semibold text-white shadow-md shadow-fuchsia-500/20"
             style={{ background: LOGO_GRADIENT }}
           >
-            Start free <HiOutlineArrowRight className="h-3.5 w-3.5" />
+            Start free trial <HiOutlineArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
       </div>
@@ -307,14 +366,48 @@ function ScrollNav() {
 
 function SocialProof() {
   return (
-    <section className="relative overflow-hidden border-y border-slate-100 bg-[#ffffff] py-12 sm:py-14">
-      <div className="relative z-10">
-        <p className="mb-6 text-center text-[13px] font-medium text-slate-500">
-          Powered by the stack agencies already trust
+    <section
+      className="relative overflow-hidden bg-[#05040c] py-7 sm:py-9"
+      aria-label="Partner agencies"
+    >
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-[#04050c] to-transparent"
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-[#0a0514] to-transparent"
+        aria-hidden
+      />
+
+      <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
+        <p className="text-center text-[11px] font-semibold uppercase tracking-[0.24em] text-white/40">
+          Trusted by agencies selling into every trade
         </p>
-        <InfiniteMarquee speed={35}>
-          {SOCIAL_BRANDS.map((brand) => (
-            <BrandLogoChip key={brand.name} brand={brand} />
+      </div>
+
+      <div className="relative mt-5 sm:mt-6">
+        <div
+          className="pointer-events-none absolute inset-y-0 left-0 z-10 w-20 bg-gradient-to-r from-[#05040c] via-[#05040c]/90 to-transparent sm:w-32"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute inset-y-0 right-0 z-10 w-20 bg-gradient-to-l from-[#05040c] via-[#05040c]/90 to-transparent sm:w-32"
+          aria-hidden
+        />
+        <InfiniteMarquee speed={55} gap={28} className="py-1">
+          {PARTNER_LOGOS.map((src) => (
+            <div
+              key={src}
+              className="group flex shrink-0 items-center justify-center transition duration-300 hover:scale-[1.03]"
+            >
+              <Image
+                src={src}
+                alt=""
+                width={220}
+                height={72}
+                className="h-[52px] w-auto max-w-[min(220px,42vw)] rounded-md object-contain opacity-[0.88] transition duration-300 group-hover:opacity-100 sm:h-[60px] md:h-[68px]"
+              />
+            </div>
           ))}
         </InfiniteMarquee>
       </div>
@@ -336,14 +429,23 @@ function DashboardSection() {
       <div className="relative z-10 mx-auto max-w-6xl px-5 text-center sm:px-8">
         <Reveal>
           <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-fuchsia-300">
-            Product
+            Platform
           </p>
           <h2 className="mx-auto mt-3 max-w-2xl font-[family-name:var(--font-display)] text-[clamp(1.85rem,4.2vw,3.25rem)] font-semibold tracking-tight text-white">
             A floating command center for contractor demand
           </h2>
-          <p className="mx-auto mt-4 max-w-lg text-[15px] text-white/65">
-            Glass panels, live scores, and pipeline motion — built to feel like Linear meets a trading desk.
+          <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-white/65">
+            One workspace that tracks credits, searches, hot leads, and pipeline health — so you open one tab in the morning, not six.
           </p>
+          <p className="mx-auto mt-3 max-w-xl text-[14px] leading-relaxed text-white/55">
+            Your dashboard isn&apos;t a report you check once a week. It&apos;s live: total leads generated, credits remaining, saved leads, closed deals, a rolling weekly trend, and a breakdown of Hot / Warm / Nurture across your whole pipeline — all before you&apos;ve had coffee.
+          </p>
+          <Link
+            href="/register"
+            className="mt-6 inline-flex items-center gap-2 rounded-2xl border border-white/25 bg-white/10 px-5 py-2.5 text-[13px] font-semibold text-white backdrop-blur transition hover:bg-white/15"
+          >
+            Open the dashboard <HiOutlineArrowRight className="h-4 w-4" />
+          </Link>
         </Reveal>
         <div className="mt-14">
           <FloatingDashboard />
@@ -369,10 +471,10 @@ function ProblemSection() {
               Contractor growth dies in the handoff
             </h2>
             <p className="mt-4 text-[15px] leading-relaxed text-slate-600">
-              Fake lists, slow follow-up, and five tabs of tools — agencies lose deals before the first estimate.
+              Most agencies do not lose deals because their pitch is weak. They lose them in the six silent failure points between &ldquo;found a business&rdquo; and &ldquo;booked a call.&rdquo;
             </p>
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
-              {PAINS.slice(0, 4).map((p, i) => {
+              {PAINS.map((p, i) => {
                 const Icon = p.icon;
                 return (
                   <motion.div
@@ -395,6 +497,13 @@ function ProblemSection() {
                 );
               })}
             </div>
+            <Link
+              href="#features"
+              className="mt-8 inline-flex items-center gap-2 text-[14px] font-semibold text-fuchsia-600 hover:underline"
+            >
+              See how Contractor Leads fixes this
+              <HiOutlineArrowRight className="h-4 w-4" />
+            </Link>
           </Reveal>
           <Reveal delay={0.1} className="relative flex items-center lg:justify-end">
             <div className="relative mx-auto w-full max-w-3xl lg:mx-0 lg:max-w-none">
@@ -435,7 +544,7 @@ function SolutionBento() {
       <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
         <Reveal className="max-w-xl">
           <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-fuchsia-600">
-            Solution
+            Built different
           </p>
           <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.85rem,4.2vw,3.25rem)] font-semibold tracking-tight text-slate-900">
             One system. Zero busywork.
@@ -451,9 +560,15 @@ function SolutionBento() {
                 <h3 className="mt-3 font-[family-name:var(--font-display)] text-[28px] font-semibold text-slate-900">
                   Search any trade in any metro
                 </h3>
-                <p className="mt-3 max-w-sm text-[14px] text-slate-600">
-                  Filters for industry, country, city, ZIP, and custom areas — with social + owner requirements.
+                <p className="mt-3 max-w-sm text-[14px] leading-relaxed text-slate-600">
+                  Roofing in Dallas. HVAC in three ZIP codes outside Phoenix. General contractors across all of Ontario. Pick an industry, pick a footprint — entire country or a five-mile radius — and get live results pulled from Google Places, not a static database that hasn&apos;t been touched since last quarter.
                 </p>
+                <Link
+                  href="/register"
+                  className="mt-4 inline-flex items-center gap-1 text-[13px] font-semibold text-fuchsia-600 hover:underline"
+                >
+                  Try Lead Finder <HiOutlineArrowRight className="h-3.5 w-3.5" />
+                </Link>
               </div>
               <div className="relative mt-8 h-40 overflow-hidden rounded-2xl">
                 <Image
@@ -486,9 +601,15 @@ function SolutionBento() {
                 <h3 className="mt-3 font-[family-name:var(--font-display)] text-[20px] font-semibold text-slate-900">
                   AI qualification that feels human
                 </h3>
-                <p className="mt-2 text-[14px] text-slate-600">
-                  Revenue bands, opportunity scores, and a one-line angle your SDR can send today.
+                <p className="mt-2 text-[14px] leading-relaxed text-slate-600">
+                  Every business gets scored on website quality, marketing opportunity, PPC opportunity, and SEO opportunity — then handed a recommended outreach angle so your first line isn&apos;t &ldquo;Hi, I found your business online.&rdquo;
                 </p>
+                <Link
+                  href="#features"
+                  className="mt-3 inline-flex items-center gap-1 text-[13px] font-semibold text-fuchsia-600 hover:underline"
+                >
+                  See how scoring works <HiOutlineArrowRight className="h-3.5 w-3.5" />
+                </Link>
               </div>
             </div>
           </Reveal>
@@ -551,7 +672,7 @@ function FeaturesGrid() {
             Twelve instruments. One desk.
           </h2>
           <p className="mt-4 text-[15px] leading-relaxed text-slate-500">
-            Every tool your agency needs to find, score, and book contractors — without leaving the workspace.
+            Every tool a lead-gen desk needs, none of them bolted on.
           </p>
         </Reveal>
         <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -592,12 +713,21 @@ function Integrations() {
         <h2 className="mt-2 font-[family-name:var(--font-display)] text-[clamp(1.5rem,3vw,2.25rem)] font-semibold text-slate-900">
           Plugged into the stack you already trust
         </h2>
+        <p className="mx-auto mt-3 max-w-2xl text-[14px] leading-relaxed text-slate-500">
+          Contractor Leads doesn&apos;t ask you to abandon your CRM, your inbox, or your ad accounts — it feeds them.
+        </p>
+        <p className="mx-auto mt-3 max-w-2xl text-[14px] leading-relaxed text-slate-500">
+          Push saved leads and status changes straight into Zapier, Make, HubSpot, or a custom endpoint the moment they happen. Send nurture sequences from your own Gmail, Outlook, or SMTP mailbox so replies land in an inbox you already check. Connect your Meta ad account context to see contractor ad activity without leaving the lead profile.
+        </p>
       </Reveal>
       <InfiniteMarquee speed={42} reverse>
         {INTEGRATION_BRANDS.map((brand) => (
           <BrandLogoChip key={brand.name} brand={brand} />
         ))}
       </InfiniteMarquee>
+      <p className="mx-auto mt-6 max-w-xl px-5 text-center text-[11px] leading-relaxed text-slate-400 sm:px-8">
+        Integrations represent our technology stack and supported connections — availability varies by plan.
+      </p>
     </section>
   );
 }
@@ -607,25 +737,25 @@ const TECH_LOGOS = TECH_BRANDS;
 const TECH_CARDS = [
   {
     title: "Next.js + React",
-    copy: "App Router, server components, and a blistering UI shell — enterprise speed without the enterprise weight.",
+    copy: "Fast, modern interface that doesn't choke on a 500-row lead table.",
     visual: "next",
     tags: ["App Router", "SSR", "TypeScript"],
   },
   {
     title: "OpenAI",
-    copy: "Live lead qualification, revenue bands, and multi-turn Ask Expert — powered by gpt-4o-mini when your key is live.",
+    copy: "Powers scoring, qualification, and the Ask Contractor Leads assistant.",
     visual: "ai",
     tags: ["Scoring", "Chat", "Outreach"],
   },
   {
     title: "Google Places + Prisma",
-    copy: "Real contractor businesses from Places, persisted in Postgres — never a stale CSV dump.",
+    copy: "Live business data backed by a real, structured database — not a static CSV.",
     visual: "data",
     tags: ["Places API", "Postgres", "Prisma"],
   },
   {
     title: "Framer + Three.js",
-    copy: "Scroll storytelling, tilt cards, and a 3D lead orb — the marketing site moves like a product demo.",
+    copy: "The map and motion you're scrolling through right now.",
     visual: "motion",
     tags: ["R3F", "Motion", "Parallax"],
   },
@@ -816,11 +946,14 @@ function TechnologiesSection() {
         </Reveal>
 
         <Reveal delay={0.1} className="mt-10 text-center">
-          <h2 className="font-[family-name:var(--font-display)] text-[clamp(1.85rem,4.2vw,3rem)] font-semibold tracking-tight text-slate-900">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-fuchsia-600">
+            Under the hood
+          </p>
+          <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.85rem,4.2vw,3rem)] font-semibold tracking-tight text-slate-900">
             Built with world-class technology
           </h2>
           <p className="mx-auto mt-3 max-w-lg text-[15px] text-slate-500">
-            Modern stack. Premium motion. Live data — the same tools powering Stripe-level products.
+            The infrastructure choices that keep search results live instead of stale.
           </p>
         </Reveal>
 
@@ -858,71 +991,6 @@ function TechnologiesSection() {
               </TiltCard>
             </Reveal>
           ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function AnalyticsShowcase() {
-  const metrics = [
-    { label: "Lead quality", value: 86 },
-    { label: "Response time", value: 62 },
-    { label: "Conversion", value: 41 },
-    { label: "Pipeline health", value: 78 },
-  ];
-  return (
-    <section className="relative overflow-hidden bg-[#09060f] py-24">
-      <div
-        className="pointer-events-none absolute right-0 top-10 h-72 w-72 rounded-full opacity-35 blur-[90px]"
-        style={{ background: LOGO_GRADIENT }}
-        aria-hidden
-      />
-      <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
-        <div className="grid items-center gap-12 lg:grid-cols-2">
-          <Reveal>
-            <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-fuchsia-300">
-              Analytics
-            </p>
-            <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.85rem,4vw,3rem)] font-semibold tracking-tight text-white">
-              See the signal, not the noise
-            </h2>
-            <p className="mt-4 text-[15px] text-white/65">
-              Animated quality bars, booking trends, and forecast cues — so ops and sales share one truth.
-            </p>
-            <div className="relative mt-8 hidden aspect-[16/10] overflow-hidden rounded-[24px] border border-white/10 sm:block">
-              <Image
-                src={MARKETING_PHOTOS.analytics}
-                alt="Analytics dashboard"
-                fill
-                className="object-cover opacity-90"
-                sizes="560px"
-              />
-              <div className="absolute inset-0 bg-gradient-to-tr from-[#09060f]/80 via-transparent to-fuchsia-500/20" />
-            </div>
-          </Reveal>
-          <div className="grid grid-cols-2 gap-3">
-            {metrics.map((m, i) => (
-              <Reveal key={m.label} delay={i * 0.06}>
-                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur">
-                  <p className="text-[12px] text-white/45">{m.label}</p>
-                  <p className="mt-2 font-[family-name:var(--font-display)] text-[32px] font-semibold text-white">
-                    <AnimatedNumber value={m.value} suffix="%" />
-                  </p>
-                  <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
-                    <motion.div
-                      className="h-full rounded-full"
-                      style={{ background: LOGO_GRADIENT }}
-                      initial={{ width: 0 }}
-                      whileInView={{ width: `${m.value}%` }}
-                      viewport={{ once: true }}
-                      transition={{ duration: 0.9, delay: 0.1 }}
-                    />
-                  </div>
-                </div>
-              </Reveal>
-            ))}
-          </div>
         </div>
       </div>
     </section>
@@ -977,9 +1045,19 @@ function AiSection() {
             <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.85rem,4vw,2.75rem)] font-semibold tracking-tight text-slate-900">
               Your growth expert on call
             </h2>
-            <p className="mt-4 text-[15px] text-slate-500">
-              Floating chat with history, presets, and streaming replies — powered by your business profile.
+            <p className="mt-4 text-[15px] leading-relaxed text-slate-500">
+              Ask Contractor Leads isn&apos;t a generic chatbot bolted onto the sidebar. It&apos;s a senior-level growth marketer that already knows your business.
             </p>
+            <p className="mt-3 text-[14px] leading-relaxed text-slate-500">
+              The moment you finish onboarding, the assistant knows your company, your ideal customer, your service areas, and your goal — so you never waste a message re-explaining your business. Ask for a cold email, a funnel structure, a stronger CTA, or a straight answer on why your last campaign underperformed. Every answer streams in, gets a one-click copy button, and can be saved straight to your Scripts library for reuse.
+            </p>
+            <Link
+              href="/register"
+              className="mt-5 inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-[13px] font-semibold text-white"
+              style={{ background: LOGO_GRADIENT }}
+            >
+              Ask a question free <HiOutlineArrowRight className="h-4 w-4" />
+            </Link>
             <div className="mt-6 flex flex-wrap gap-2">
               {prompts.map((p, i) => (
                 <button
@@ -1030,7 +1108,6 @@ function AiSection() {
 }
 
 function Pricing() {
-  const [yearly, setYearly] = useState(true);
   return (
     <section
       id="pricing"
@@ -1049,35 +1126,17 @@ function Pricing() {
       <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
         <Reveal className="text-center">
           <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-fuchsia-600">
-            Pricing
+            Plans
           </p>
           <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.85rem,4vw,3rem)] font-semibold tracking-tight text-slate-900">
-            Simple plans. Serious pipeline.
+            Plans & functionality
           </h2>
-          <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-[#ffffff] p-1 shadow-sm">
-            <button
-              type="button"
-              onClick={() => setYearly(false)}
-              className={`rounded-full px-4 py-1.5 text-[13px] font-semibold ${!yearly ? "text-white" : "text-slate-500"}`}
-              style={!yearly ? { background: LOGO_GRADIENT } : undefined}
-            >
-              Monthly
-            </button>
-            <button
-              type="button"
-              onClick={() => setYearly(true)}
-              className={`rounded-full px-4 py-1.5 text-[13px] font-semibold ${yearly ? "text-white" : "text-slate-500"}`}
-              style={yearly ? { background: LOGO_GRADIENT } : undefined}
-            >
-              Yearly · save 20%
-            </button>
-          </div>
+          <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-slate-500">
+            Tiers, low to high: Free Trial → Starter → Growth → Agency → Enterprise. No pricing numbers on this page — feature gating only.
+          </p>
         </Reveal>
-        <div className="mt-12 grid gap-4 lg:grid-cols-3">
+        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {PLANS.map((plan, i) => {
-            const price = plan.custom
-              ? "Custom"
-              : `$${yearly ? Math.round(plan.price * 0.8) : plan.price}`;
             return (
               <Reveal key={plan.name} delay={i * 0.08}>
                 <motion.div whileHover={{ y: -8 }} className="h-full">
@@ -1107,11 +1166,8 @@ function Pricing() {
                       ) : null}
                     </div>
                     <p className="mt-2 text-[13px] text-slate-500">{plan.blurb}</p>
-                    <p className="mt-6 font-[family-name:var(--font-display)] text-[40px] font-semibold text-slate-900">
-                      {price}
-                      {!plan.custom ? (
-                        <span className="text-[14px] font-medium text-slate-400">/mo</span>
-                      ) : null}
+                    <p className="mt-6 text-[12px] font-semibold uppercase tracking-[0.14em] text-fuchsia-600">
+                      {plan.tier}
                     </p>
                     <ul className="mt-6 flex-1 space-y-2.5">
                       {plan.features.map((f) => (
@@ -1120,19 +1176,61 @@ function Pricing() {
                         </li>
                       ))}
                     </ul>
-                    <Link
-                      href="/register"
-                      className="mt-8 inline-flex items-center justify-center rounded-2xl px-4 py-3 text-[13px] font-semibold text-white"
-                      style={{ background: LOGO_GRADIENT }}
-                    >
-                      {plan.custom ? "Talk to us" : "Start free"}
-                    </Link>
+                    {plan.custom ? (
+                      <a
+                        href="mailto:hello@contractorleads.us"
+                        className="mt-8 inline-flex items-center justify-center rounded-2xl px-4 py-3 text-[13px] font-semibold text-white"
+                        style={{ background: LOGO_GRADIENT }}
+                      >
+                        Talk to us
+                      </a>
+                    ) : (
+                      <Link
+                        href="/register"
+                        className="mt-8 inline-flex items-center justify-center rounded-2xl px-4 py-3 text-[13px] font-semibold text-white"
+                        style={{ background: LOGO_GRADIENT }}
+                      >
+                        Start free trial
+                      </Link>
+                    )}
                   </div>
                 </motion.div>
               </Reveal>
             );
           })}
         </div>
+
+        <Reveal delay={0.14} className="mt-16">
+          <p className="mx-auto mt-3 max-w-3xl text-center text-[12px] leading-relaxed text-slate-500">
+            Cross-check every row against what is live in the product before you publish. Do not imply Workspaces is full multi-tenant or Client Reports is white-label-ready until those ship. Keep upgrade CTAs on &ldquo;Talk to us&rdquo; until self-serve checkout is live. Never claim unlimited searches — the system is credit-metered.
+          </p>
+          <div className="mt-6 overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <table className="w-full min-w-[720px] border-collapse text-left text-[11px] sm:text-[12px]">
+              <thead>
+                <tr className="border-b border-slate-200 bg-[#f8f5ff]">
+                  <th className="px-4 py-3 font-semibold text-slate-700">Feature</th>
+                  <th className="px-2 py-3 font-semibold text-slate-700">Free Trial</th>
+                  <th className="px-2 py-3 font-semibold text-slate-700">Starter</th>
+                  <th className="px-2 py-3 font-semibold text-slate-700">Growth</th>
+                  <th className="px-2 py-3 font-semibold text-slate-700">Agency</th>
+                  <th className="px-2 py-3 font-semibold text-slate-700">Enterprise</th>
+                </tr>
+              </thead>
+              <tbody>
+                {PLAN_FEATURE_MATRIX.map((row) => (
+                  <tr key={row.feature} className="border-b border-slate-100 last:border-0">
+                    <td className="px-4 py-2.5 text-slate-600">{row.feature}</td>
+                    {(["trial", "starter", "growth", "agency", "enterprise"] as const).map((col) => (
+                      <td key={col} className="px-2 py-2.5 text-center text-slate-600">
+                        {row[col]}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Reveal>
       </div>
     </section>
   );
@@ -1162,7 +1260,7 @@ function Faq() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search questions…"
+            placeholder="Search questions..."
             className="w-full rounded-2xl border border-violet-100 bg-[#f8f5ff] px-4 py-3 text-[14px] text-slate-800 outline-none placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
           />
         </Reveal>
@@ -1226,7 +1324,7 @@ function FinalCta() {
             Ready to feel the need for leads?
           </h2>
           <p className="mx-auto mt-4 max-w-md text-[15px] text-white/80">
-            Start with 20 free credits. No card. Ship your first qualified batch today.
+            Start with free trial credits. No card. Ship your first qualified batch today.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
@@ -1271,7 +1369,7 @@ function Footer() {
         ["Pricing", "#pricing"],
         ["Integrations", "#features"],
         ["FAQ", "#faq"],
-        ["Start free", "/register"],
+        ["Start free trial", "/register"],
       ],
     },
     {
@@ -1364,7 +1462,7 @@ function Footer() {
                 href="/register"
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-[#ffffff] px-4 py-2.5 text-[12px] font-semibold text-neutral-900 transition hover:bg-fuchsia-50"
               >
-                Start for free
+                Start free trial
                 <HiOutlineArrowRight className="h-3.5 w-3.5" />
               </Link>
               <Link
@@ -1383,7 +1481,7 @@ function Footer() {
                 className="rounded-full"
               />
               <span className="text-[12px] font-medium text-white/55">
-                Contractor Leads
+                Contractor demand, mapped, scored, and ready to dial.
               </span>
             </div>
           </div>
@@ -1424,7 +1522,7 @@ function StickyCta() {
         className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-[#ffffff]/95 px-5 py-2.5 text-[13px] font-semibold text-slate-800 shadow-[0_12px_40px_rgba(80,40,120,0.18)] backdrop-blur-xl"
       >
         <span className="h-2 w-2 rounded-full" style={{ background: LOGO_GRADIENT }} />
-        Start free — 20 credits
+        Start free — trial credits included
         <span
           className="rounded-full px-2 py-0.5 text-[11px] text-white"
           style={{ background: LOGO_GRADIENT }}
@@ -1453,7 +1551,12 @@ export function MarketingPage() {
       lerp: 0.075,
       wheelMultiplier: 0.9,
       touchMultiplier: 1.15,
+      anchors: {
+        offset: 0,
+        duration: 1.05,
+      },
     });
+    setMarketingLenis(lenis);
     let raf = 0;
     function frame(t: number) {
       lenis.raf(t);
@@ -1462,6 +1565,7 @@ export function MarketingPage() {
     raf = requestAnimationFrame(frame);
     return () => {
       cancelAnimationFrame(raf);
+      setMarketingLenis(null);
       lenis.destroy();
     };
   }, []);
@@ -1470,8 +1574,8 @@ export function MarketingPage() {
     <div className="marketing-site relative min-h-screen bg-[#ffffff] text-slate-900">
       <ScrollNav />
       <MarketingFluidHero />
+      <MarketingInteractiveDemo />
       <SocialProof />
-      <HillsProductStage />
       <MoonWalkFeatureGrid />
       <FlowerFieldProofCards />
       <DashboardSection />
@@ -1483,13 +1587,13 @@ export function MarketingPage() {
       <StickyPlatformScroll />
       <Integrations />
       <TechnologiesSection />
-      <AnalyticsShowcase />
       <AiSection />
       <Pricing />
       <Faq />
       <FinalCta />
       <Footer />
       <StickyCta />
+      <MarketingTrialModals />
     </div>
   );
 }

@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useRef, FormEvent } from "react";
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { HiOutlineArrowRight } from "react-icons/hi2";
 import { fluidSimulation } from "./fluid-simulation";
+import { handleMarketingHashClick } from "./marketing-scroll";
 
 const HEADING = "Generate leads that actually convert";
 const SUBLINE =
-  "Cut through the noise, reclaim your pipeline, and book work that truly matters.";
+  "Stop pitching contractors with a stale spreadsheet. Contractor Leads finds live, verified home-service businesses, scores them for outreach fit, and hands you the contact, the pitch angle, and the ad intel — before your first call.";
 
 function splitWords(text: string) {
   return text.split(" ").filter(Boolean);
@@ -60,7 +62,7 @@ export function MarketingFluidHero() {
 
     reveal(section.querySelector("[data-reveal='nav']"), 150, "-0.75rem");
     reveal(section.querySelector("[data-reveal='badge']"), 320, "1.25rem");
-    reveal(section.querySelector("[data-reveal='form']"), 1450, "1.25rem");
+    reveal(section.querySelector("[data-reveal='cta']"), 1450, "1.25rem");
     reveal(section.querySelector("[data-reveal='footer']"), 1650, "1.25rem");
 
     const animateWords = (
@@ -93,16 +95,20 @@ export function MarketingFluidHero() {
     };
 
     animateWords(section.querySelector("[data-reveal='heading']"), 480, 85, 720, 26);
-    animateWords(section.querySelector("[data-reveal='sub']"), 1150, 22, 600, 14);
+    const sub = section.querySelector("[data-reveal='sub']");
+    if (sub instanceof HTMLElement) {
+      sub.style.opacity = "0";
+      sub.style.transform = "translateY(14px)";
+      sub.style.transition =
+        "opacity 600ms cubic-bezier(0.33, 1, 0.68, 1) 1150ms, transform 600ms cubic-bezier(0.33, 1, 0.68, 1) 1150ms";
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          sub.style.opacity = "1";
+          sub.style.transform = "translateY(0)";
+        });
+      });
+    }
   }, []);
-
-  function onWaitlist(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    const email = String(fd.get("email") || "").trim();
-    const q = email ? `?email=${encodeURIComponent(email)}` : "";
-    window.location.href = `/register${q}`;
-  }
 
   return (
     <section ref={sectionRef} className="mkt-flow-hero" aria-label="Hero">
@@ -130,13 +136,13 @@ export function MarketingFluidHero() {
         </nav>
 
         <Link href="/register" className="mkt-flow-pill">
-          Get Started
+          Start free trial
         </Link>
       </header>
 
       <div className="mkt-flow-center">
-        <p className="mkt-flow-badge" data-reveal="badge">
-          10K+ leads already scored
+        <p className="mkt-flow-badge uppercase tracking-[0.18em]" data-reveal="badge">
+          Contractor lead intelligence
         </p>
 
         <h1 className="mkt-flow-heading" data-reveal="heading">
@@ -148,35 +154,30 @@ export function MarketingFluidHero() {
           ))}
         </h1>
 
-        <p className="mkt-flow-sub" data-reveal="sub">
-          {splitWords(SUBLINE).map((w, i, arr) => (
-            <span key={`${w}-${i}`} data-word>
-              {w}
-              {i < arr.length - 1 ? "\u00A0" : ""}
-            </span>
-          ))}
+        <p className="mkt-flow-sub mkt-flow-sub--deck" data-reveal="sub">
+          {SUBLINE}
         </p>
 
-        <div className="mkt-flow-form-wrap" data-reveal="form">
-          <form className="mkt-flow-form" onSubmit={onWaitlist}>
-            <div className="mkt-flow-bar">
-              <input
-                type="email"
-                name="email"
-                required
-                placeholder="Enter your email"
-                autoComplete="email"
-              />
-              <button type="submit" className="mkt-flow-pill mkt-flow-pill--submit">
-                Join Waitlist
-              </button>
-            </div>
-          </form>
+        <div className="mkt-flow-cta-row" data-reveal="cta">
+          <Link href="/register" className="mkt-flow-pill mkt-flow-pill--primary">
+            Start free trial
+            <HiOutlineArrowRight className="h-4 w-4" aria-hidden />
+          </Link>
+          <a
+            href="#interactive-demo"
+            className="mkt-flow-pill mkt-flow-pill--ghost"
+            onClick={(e) => handleMarketingHashClick(e, "#interactive-demo")}
+          >
+            See live demo
+          </a>
         </div>
+        <p className="mkt-flow-trust" data-reveal="cta">
+          No credit card required · 20 free credits · Cancel anytime
+        </p>
       </div>
 
       <footer className="mkt-flow-footer" data-reveal="footer">
-        © 2026 Contractor Leads — engineered for agencies.
+        Contractor demand, mapped, scored, and ready to dial.
       </footer>
     </section>
   );

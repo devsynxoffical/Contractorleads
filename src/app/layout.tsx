@@ -14,9 +14,9 @@ const outfit = Outfit({
 });
 
 export const metadata = {
-  title: "Contractor Leads | LeadFlow USA",
+  title: "Contractor Leads | Verified contractor leads for agencies",
   description:
-    "Find verified home-service contractor leads, qualify with AI, and outreach from one interactive workspace.",
+    "Find verified, AI-scored contractor leads in seconds. Built for agencies selling to home-service businesses — real contact data, no fake lists.",
   icons: {
     icon: "/logo.png",
   },

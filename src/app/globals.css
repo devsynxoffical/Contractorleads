@@ -1563,13 +1563,13 @@ html[data-theme="dark"] .marketing-site .bg-\[\#f8f5ff\] {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  height: 3em;
+  height: 3.25em;
   align-items: center;
   gap: 2.25em;
   border-radius: 9999px;
   border: 1px solid var(--glass-border);
   background: var(--glass-fill);
-  padding: 0 1.75em;
+  padding: 0 2em;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
@@ -1579,7 +1579,7 @@ html[data-theme="dark"] .marketing-site .bg-\[\#f8f5ff\] {
   }
 }
 .mkt-flow-links a {
-  font-size: 0.95em;
+  font-size: 1.05em;
   color: var(--body-muted);
   text-decoration: none;
   white-space: nowrap;
@@ -1592,11 +1592,11 @@ html[data-theme="dark"] .marketing-site .bg-\[\#f8f5ff\] {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 2.5em;
+  height: 2.75em;
   border-radius: 9999px;
   background: var(--action-inverse);
-  padding: 0 1.125em;
-  font-size: 0.85em;
+  padding: 0 1.25em;
+  font-size: 0.92em;
   font-weight: 500;
   color: var(--action-inverse-fg);
   text-decoration: none;
@@ -1608,9 +1608,9 @@ html[data-theme="dark"] .marketing-site .bg-\[\#f8f5ff\] {
 }
 @media (min-width: 640px) {
   .mkt-flow-pill {
-    height: 2.75em;
-    padding: 0 1.375em;
-    font-size: 0.95em;
+    height: 3em;
+    padding: 0 1.5em;
+    font-size: 1.05em;
   }
 }
 .mkt-flow-pill:hover {
@@ -1627,16 +1627,16 @@ html[data-theme="dark"] .marketing-site .bg-\[\#f8f5ff\] {
   flex-direction: column;
   align-items: center;
   width: 100%;
-  max-width: 22em;
+  max-width: 24em;
 }
 @media (min-width: 640px) {
   .mkt-flow-center {
-    max-width: 40em;
+    max-width: 44em;
   }
 }
 @media (min-width: 1024px) {
   .mkt-flow-center {
-    max-width: 52em;
+    max-width: 56em;
   }
 }
 .mkt-flow-badge {
@@ -1645,8 +1645,8 @@ html[data-theme="dark"] .marketing-site .bg-\[\#f8f5ff\] {
   border-radius: 9999px;
   border: 1px solid var(--glass-border);
   background: var(--glass-fill);
-  padding: 0.45em 1em;
-  font-size: 0.9em;
+  padding: 0.5em 1.1em;
+  font-size: 0.95em;
   color: var(--body-muted);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -1654,13 +1654,13 @@ html[data-theme="dark"] .marketing-site .bg-\[\#f8f5ff\] {
 }
 @media (min-width: 640px) {
   .mkt-flow-badge {
-    font-size: 1em;
+    font-size: 1.05em;
   }
 }
 .mkt-flow-heading {
   margin: 1.25em 0 0;
   max-width: 20em;
-  font-size: 2em;
+  font-size: 2.25em;
   font-weight: 500;
   line-height: 1.1;
   letter-spacing: -0.02em;
@@ -1671,19 +1671,19 @@ html[data-theme="dark"] .marketing-site .bg-\[\#f8f5ff\] {
   .mkt-flow-heading {
     margin-top: 1.75em;
     max-width: 34em;
-    font-size: 3.5em;
+    font-size: 4em;
   }
 }
 @media (min-width: 1024px) {
   .mkt-flow-heading {
-    max-width: 46em;
-    font-size: 5em;
+    max-width: 48em;
+    font-size: 5.75em;
   }
 }
 .mkt-flow-sub {
   margin: 1em 0 0;
   max-width: 20em;
-  font-size: 1em;
+  font-size: 1.05em;
   line-height: 1.5;
   color: var(--body-muted);
   font-weight: 400;
@@ -1692,13 +1692,64 @@ html[data-theme="dark"] .marketing-site .bg-\[\#f8f5ff\] {
   .mkt-flow-sub {
     margin-top: 1.25em;
     max-width: 34em;
-    font-size: 1.1em;
+    font-size: 1.2em;
   }
 }
 @media (min-width: 1024px) {
   .mkt-flow-sub {
     max-width: none;
-    font-size: 1.2em;
+    font-size: 1.35em;
+  }
+}
+.mkt-flow-sub--deck {
+  max-width: 36em;
+  line-height: 1.55;
+}
+@media (min-width: 1024px) {
+  .mkt-flow-sub--deck {
+    max-width: 44em;
+    font-size: 1.28em;
+  }
+}
+.mkt-flow-cta-row {
+  margin-top: 1.75em;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65em;
+}
+@media (min-width: 640px) {
+  .mkt-flow-cta-row {
+    margin-top: 2.25em;
+    gap: 0.75em;
+  }
+}
+.mkt-flow-pill--primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+}
+.mkt-flow-pill--ghost {
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  color: var(--heading);
+  box-shadow: none;
+}
+.mkt-flow-pill--ghost:hover {
+  background: var(--glass-fill);
+}
+.mkt-flow-trust {
+  margin: 1em 0 0;
+  max-width: 28em;
+  text-align: center;
+  font-size: 0.8em;
+  line-height: 1.5;
+  color: var(--body-muted);
+}
+@media (min-width: 640px) {
+  .mkt-flow-trust {
+    font-size: 0.9em;
   }
 }
 .mkt-flow-form-wrap {
