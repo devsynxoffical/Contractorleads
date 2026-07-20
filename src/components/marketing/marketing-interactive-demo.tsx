@@ -695,18 +695,21 @@ export function MarketingInteractiveDemo() {
                     {viewTab === "dashboard" && (
                       <div className="space-y-4" data-demo="dashboard">
                         <div className="flex flex-wrap gap-2">
-                          {[
-                            { label: "Lead Finder", tab: "search" as DemoTab },
-                            { label: "Pipeline", tab: "pipeline" as DemoTab },
-                            { label: "Lead map", gate: "map" },
-                            { label: "Export CSV", gate: "export" },
-                          ].map((action) => (
+                          {(
+                            [
+                              { label: "Lead Finder", tab: "search" },
+                              { label: "Pipeline", tab: "pipeline" },
+                              { label: "Lead map", gate: "map" },
+                              { label: "Export CSV", gate: "export" },
+                            ] as const
+                          ).map((action) => (
                             <button
                               key={action.label}
                               type="button"
-                              onClick={() =>
-                                "tab" in action ? selectTab(action.tab) : openGate(action.gate)
-                              }
+                              onClick={() => {
+                                if ("tab" in action) selectTab(action.tab);
+                                else openGate(action.gate);
+                              }}
                               className="rounded-full border border-slate-200/90 bg-white px-3 py-1.5 text-[12px] font-medium text-slate-700 shadow-sm hover:border-violet-200 hover:bg-violet-50/50"
                             >
                               {action.label}
