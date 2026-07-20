@@ -18,8 +18,18 @@ export async function POST(request: Request) {
       userAgent: request.headers.get("user-agent"),
     });
 
-    return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ error: "Could not record visit" }, { status: 500 });
+    return NextResponse.json({ ok: true, visitorKey: visitorKey.slice(0, 8) });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "unknown";
+    console.error("[marketing/session]", message);
+    return NextResponse.json(
+      {
+        error: "Could not record visit",
+        hint: /MarketingVisitor|P2021|does not exist/i.test(message)
+          ? "Run npx prisma db push (or restart Railway so start script pushes schema)"
+          : undefined,
+      },
+      { status: 500 },
+    );
   }
 }

@@ -21,6 +21,7 @@ import {
   HiOutlineStar,
   HiOutlineUserGroup,
   HiOutlineUsers,
+  HiOutlineGlobeAlt,
 } from "react-icons/hi2";
 import { cn } from "@/lib/utils";
 import type { SessionUser } from "@/lib/session-user";
@@ -42,6 +43,7 @@ type NavItem = {
 const NAV: NavItem[] = [
   { href: "/admin", label: "Business Overview", icon: HiOutlineHome, permission: "overview" },
   { href: "/admin/customers", label: "Customers", icon: HiOutlineUsers, permission: "customers" },
+  { href: "/admin/site-leads", label: "Site Leads", icon: HiOutlineGlobeAlt, permission: "customers" },
   { href: "/admin/leads", label: "All Leads", icon: HiOutlineSquares2X2, permission: "leads" },
   { href: "/admin/saved-leads", label: "Saved Leads", icon: HiOutlineStar, permission: "saved_leads" },
   { href: "/admin/searches", label: "All Searches", icon: HiOutlineClipboardDocumentList, permission: "searches" },

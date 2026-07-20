@@ -34,6 +34,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<TemplateRole, AdminPermissionKey[]
     ),
     [SUB_ADMIN_ROLE]: [
       "overview",
+      "customers",
       "leads",
       "leads_export",
       "saved_leads",
@@ -55,6 +56,7 @@ export const PATH_PERMISSION: Array<{
 }> = [
   { prefix: "/admin/team", permission: "staff" },
   { prefix: "/admin/customers", permission: "customers" },
+  { prefix: "/admin/site-leads", permission: "customers" },
   { prefix: "/admin/leads", permission: "leads" },
   { prefix: "/admin/saved-leads", permission: "saved_leads" },
   { prefix: "/admin/searches", permission: "searches" },
