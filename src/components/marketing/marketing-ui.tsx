@@ -18,24 +18,108 @@ import {
 import { cn } from "@/lib/utils";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
 
+export type RevealVariant = "up" | "down" | "left" | "right" | "scale" | "fade";
+
+const REVEAL_OFFSET: Record<RevealVariant, { x: number; y: number; scale: number; blur: string }> =
+  {
+    up: { x: 0, y: 28, scale: 1, blur: "6px" },
+    down: { x: 0, y: -20, scale: 1, blur: "6px" },
+    left: { x: 32, y: 0, scale: 1, blur: "5px" },
+    right: { x: -32, y: 0, scale: 1, blur: "5px" },
+    scale: { x: 0, y: 12, scale: 0.94, blur: "4px" },
+    fade: { x: 0, y: 0, scale: 1, blur: "8px" },
+  };
+
 export function Reveal({
   children,
   className,
   delay = 0,
-  y = 28,
+  y,
+  variant = "up",
 }: {
   children: ReactNode;
   className?: string;
   delay?: number;
+  /** @deprecated use variant="up" and custom y via variant */
   y?: number;
+  variant?: RevealVariant;
+}) {
+  const base = REVEAL_OFFSET[variant];
+  const offsetY = y ?? base.y;
+
+  return (
+    <motion.div
+      className={className}
+      initial={{
+        opacity: 0,
+        x: base.x,
+        y: offsetY,
+        scale: base.scale,
+        filter: `blur(${base.blur})`,
+      }}
+      whileInView={{
+        opacity: 1,
+        x: 0,
+        y: 0,
+        scale: 1,
+        filter: "blur(0px)",
+      }}
+      viewport={{ once: true, margin: "-48px", amount: 0.12 }}
+      transition={{ duration: 0.85, delay, ease: [0.16, 1, 0.3, 1] }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+export function StaggerReveal({
+  children,
+  className,
+  stagger = 0.07,
+  delayChildren = 0,
+}: {
+  children: ReactNode;
+  className?: string;
+  stagger?: number;
+  delayChildren?: number;
 }) {
   return (
     <motion.div
       className={className}
-      initial={{ opacity: 0, y, filter: "blur(6px)" }}
-      whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-      viewport={{ once: true, margin: "-48px", amount: 0.15 }}
-      transition={{ duration: 0.85, delay, ease: [0.16, 1, 0.3, 1] }}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: "-40px", amount: 0.08 }}
+      variants={{
+        hidden: {},
+        visible: {
+          transition: { staggerChildren: stagger, delayChildren },
+        },
+      }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+export function StaggerItem({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <motion.div
+      className={className}
+      variants={{
+        hidden: { opacity: 0, y: 22, filter: "blur(5px)" },
+        visible: {
+          opacity: 1,
+          y: 0,
+          filter: "blur(0px)",
+          transition: { duration: 0.65, ease: [0.16, 1, 0.3, 1] },
+        },
+      }}
     >
       {children}
     </motion.div>

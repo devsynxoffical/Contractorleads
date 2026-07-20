@@ -6,6 +6,7 @@ import {
   setSessionCookie,
   verifyPassword,
 } from "@/lib/auth";
+import { linkMarketingVisitorToUser } from "@/lib/marketing-session";
 
 export async function POST(request: Request) {
   try {
@@ -51,6 +52,11 @@ export async function POST(request: Request) {
 
     const token = await createSessionToken(user.id);
     await setSessionCookie(token);
+    try {
+      await linkMarketingVisitorToUser(user.id, user.email);
+    } catch {
+      /* non-blocking */
+    }
 
     return NextResponse.json({ ok: true, redirectTo: "/auth/splash" });
   } catch {

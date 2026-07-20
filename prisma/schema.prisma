@@ -304,3 +304,27 @@ model EmailEnrollment {
   @@unique([userId, savedLeadId])
   @@index([status, createdAt])
 }
+
+/// Anonymous marketing site visitors (cookie `cl_mkt_vid`) for outreach lists.
+model MarketingVisitor {
+  id              String    @id @default(cuid())
+  visitorKey      String    @unique
+  email           String?
+  emailOptIn      Boolean   @default(false)
+  source          String?
+  landingPath     String?
+  utmSource       String?
+  utmMedium       String?
+  utmCampaign     String?
+  referrer        String?
+  userAgent       String?
+  visitCount      Int       @default(1)
+  firstSeenAt     DateTime  @default(now())
+  lastSeenAt      DateTime  @default(now())
+  convertedUserId String?
+  convertedAt     DateTime?
+
+  @@index([email])
+  @@index([emailOptIn, lastSeenAt])
+  @@index([convertedUserId])
+}

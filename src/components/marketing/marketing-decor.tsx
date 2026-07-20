@@ -79,13 +79,18 @@ export function SoftBlob({
   color?: "pink" | "violet";
 }) {
   return (
-    <div
+    <motion.div
       className={cn(
         "pointer-events-none absolute rounded-full blur-3xl",
         color === "pink" ? "bg-pink-300/45" : "bg-violet-300/45",
         className,
       )}
       aria-hidden
+      animate={{
+        scale: [1, 1.08, 1],
+        opacity: [0.85, 1, 0.85],
+      }}
+      transition={{ duration: 8 + (color === "violet" ? 1.5 : 0), repeat: Infinity, ease: "easeInOut" }}
     />
   );
 }

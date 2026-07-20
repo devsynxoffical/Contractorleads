@@ -3,6 +3,7 @@ import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { businessEmailError } from "@/lib/business-email";
 import { sendEmail, verificationEmailHtml } from "@/lib/email";
+import { captureMarketingEmail } from "@/lib/marketing-session";
 
 function normalizePhone(raw: unknown): string {
   return String(raw ?? "")
@@ -84,6 +85,16 @@ export async function POST(request: Request) {
         { error: sent.error || "Could not send verification email" },
         { status: 502 }
       );
+    }
+
+    try {
+      await captureMarketingEmail({
+        email: normalizedEmail,
+        emailOptIn: true,
+        source: "register_start",
+      });
+    } catch {
+      /* non-blocking */
     }
 
     return NextResponse.json({

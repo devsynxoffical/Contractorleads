@@ -169,6 +169,20 @@ export default function AdminCustomersPage() {
             >
               {exportBusy === "mkt-xlsx" ? "Exporting…" : "Marketing Excel"}
             </Button>
+            <Button
+              variant="secondary"
+              loading={exportBusy === "site-csv"}
+              disabled={!!exportBusy}
+              onClick={() =>
+                downloadExport(
+                  "site-csv",
+                  "/api/admin/marketing-visitors/export?format=csv",
+                  "site-marketing-leads.csv"
+                )
+              }
+            >
+              {exportBusy === "site-csv" ? "Exporting…" : "Site leads CSV"}
+            </Button>
           </div>
         }
       />
@@ -179,6 +193,10 @@ export default function AdminCustomersPage() {
           Marketing CSV / Excel pulls every agency user with email, company,
           onboarding profile (services, ideal customer, areas, goals), plan,
           activity counts, and signup date — ready for SaaS product outreach.
+          <span className="mt-1 block">
+            Site leads CSV exports emails captured on the marketing homepage (cookie
+            session + modals), with UTM and conversion status.
+          </span>
         </p>
       </div>
 

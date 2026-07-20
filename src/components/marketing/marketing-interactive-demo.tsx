@@ -33,6 +33,7 @@ import {
 import { LEAD_STATUSES } from "@/lib/constants";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
 import { cn } from "@/lib/utils";
+import { Reveal } from "./marketing-ui";
 
 type DemoTab = "dashboard" | "pipeline" | "search" | "ai";
 
@@ -502,49 +503,52 @@ export function MarketingInteractiveDemo() {
   return (
     <section
       id="interactive-demo"
-      className="relative overflow-hidden bg-[#04050c] px-4 pb-12 pt-6 sm:px-6 sm:pb-14 lg:px-8"
+      className="relative overflow-hidden bg-[#04050c] px-4 pb-10 pt-5 sm:px-6 sm:pb-12 lg:px-8"
       aria-label="Interactive product demo"
     >
       <div
-        className="pointer-events-none absolute left-1/2 top-0 h-[480px] w-[min(900px,100%)] -translate-x-1/2 opacity-50 blur-[100px]"
+        className="pointer-events-none absolute left-1/2 top-0 h-[320px] w-[min(720px,100%)] -translate-x-1/2 opacity-45 blur-[80px]"
         style={{ background: LOGO_GRADIENT }}
         aria-hidden
       />
 
-      <div className="relative mx-auto max-w-[1180px]">
-        <div className="mb-6 text-center">
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-fuchsia-300/90">
-            Live product preview
-          </p>
-          <h2 className="mt-2 font-[family-name:var(--font-display)] text-[clamp(1.35rem,3.2vw,2rem)] font-semibold tracking-tight text-white">
-            Try the platform — locked features invite you to sign in
-          </h2>
-          <p className="mx-auto mt-2 max-w-xl text-[14px] leading-relaxed text-white/55">
-            Drag pipeline cards, run a sample search, and explore the sidebar. Anything that needs
-            real data opens a login prompt.
-          </p>
-        </div>
+      <div className="relative mx-auto max-w-[920px]">
+        <Reveal variant="up" y={20}>
+          <div className="mb-4 text-center sm:mb-5">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-fuchsia-300/90">
+              Live product preview
+            </p>
+            <h2 className="mt-1.5 font-[family-name:var(--font-display)] text-[clamp(1.15rem,2.6vw,1.65rem)] font-semibold tracking-tight text-white">
+              Try the platform — locked features invite you to sign in
+            </h2>
+            <p className="mx-auto mt-1.5 max-w-lg text-[13px] leading-relaxed text-white/55">
+              Drag pipeline cards, run a sample search, and explore the sidebar. Anything that needs
+              real data opens a login prompt.
+            </p>
+          </div>
+        </Reveal>
 
+        <Reveal variant="scale" delay={0.12}>
         <div
           ref={shellRef}
-          className="relative overflow-hidden rounded-[22px] border border-white/15 bg-[#ece9f2] shadow-[0_40px_120px_rgba(0,0,0,0.55)] ring-1 ring-white/10 sm:rounded-[26px]"
+          className="relative overflow-hidden rounded-[18px] border border-white/15 bg-[#ece9f2] shadow-[0_28px_80px_rgba(0,0,0,0.5)] ring-1 ring-white/10 sm:rounded-[22px]"
         >
-          <div className="flex items-center gap-2 border-b border-slate-200/80 bg-[#faf8fb] px-4 py-2.5">
-            <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
-            <span className="h-3 w-3 rounded-full bg-[#febc2e]" />
-            <span className="h-3 w-3 rounded-full bg-[#28c840]" />
-            <span className="mx-auto truncate text-[12px] font-medium text-slate-400">
+          <div className="flex items-center gap-2 border-b border-slate-200/80 bg-[#faf8fb] px-3 py-2">
+            <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
+            <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
+            <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
+            <span className="mx-auto truncate text-[11px] font-medium text-slate-400">
               app.contractorleads.us — interactive demo
             </span>
           </div>
 
-          <div className="flex min-h-[520px] lg:min-h-[560px]">
-            <aside className="hidden w-[220px] shrink-0 flex-col border-r border-slate-200/90 bg-[#faf8fb] lg:flex">
-              <div className="flex items-center gap-2 border-b border-slate-200/80 px-4 py-3">
-                <Image src="/logo.png" alt="" width={28} height={28} className="rounded-lg" />
-                <span className="text-[13px] font-semibold text-slate-800">Contractor Leads</span>
+          <div className="flex min-h-[360px] max-h-[min(68vh,480px)] lg:min-h-[400px]">
+            <aside className="hidden w-[188px] shrink-0 flex-col border-r border-slate-200/90 bg-[#faf8fb] lg:flex">
+              <div className="flex items-center gap-2 border-b border-slate-200/80 px-3 py-2.5">
+                <Image src="/logo.png" alt="" width={24} height={24} className="rounded-md" />
+                <span className="text-[12px] font-semibold text-slate-800">Contractor Leads</span>
               </div>
-              <nav className="scrollbar-thin flex-1 space-y-4 overflow-y-auto px-2 py-4">
+              <nav className="scrollbar-thin flex-1 space-y-3 overflow-y-auto px-1.5 py-3">
                 {NAV_SECTIONS.map((section) => (
                   <div key={section.title}>
                     <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">
@@ -562,7 +566,7 @@ export function MarketingInteractiveDemo() {
                             type="button"
                             onClick={() => onNav(entry)}
                             className={cn(
-                              "group flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-[13px] font-medium transition",
+                              "group flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[12px] font-medium transition",
                               active
                                 ? "bg-gradient-to-r from-fuchsia-100 to-violet-100 text-violet-900 shadow-sm"
                                 : "text-slate-600 hover:bg-white hover:text-slate-900",
@@ -608,10 +612,10 @@ export function MarketingInteractiveDemo() {
             <div className="flex min-w-0 flex-1 flex-col bg-[#f4f2f7]">
               <header
                 data-demo="header"
-                className="flex flex-wrap items-center gap-3 border-b border-slate-200/80 bg-white/95 px-4 py-3 backdrop-blur-sm sm:px-5"
+                className="flex flex-wrap items-center gap-2 border-b border-slate-200/80 bg-white/95 px-3 py-2 backdrop-blur-sm sm:px-4"
               >
                 <div className="flex min-w-0 flex-1 items-center gap-2">
-                  <h2 className="truncate text-[15px] font-semibold text-slate-900">
+                  <h2 className="truncate text-[14px] font-semibold text-slate-900">
                     {viewTab === "dashboard" && "Dashboard"}
                     {viewTab === "pipeline" && "Pipeline CRM"}
                     {viewTab === "search" && "Lead Finder"}
@@ -683,7 +687,7 @@ export function MarketingInteractiveDemo() {
                 </div>
               )}
 
-              <div className="relative flex-1 overflow-auto p-4 sm:p-5">
+              <div className="relative flex-1 overflow-auto p-3 sm:p-4">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={viewTab}
@@ -730,7 +734,7 @@ export function MarketingInteractiveDemo() {
                               <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                                 {s.l}
                               </p>
-                              <p className="mt-1 font-[family-name:var(--font-display)] text-2xl font-semibold text-slate-900">
+                              <p className="mt-1 font-[family-name:var(--font-display)] text-xl font-semibold text-slate-900">
                                 {s.v}
                               </p>
                               <p className="mt-0.5 text-[11px] font-medium text-violet-600">{s.d}</p>
@@ -749,7 +753,7 @@ export function MarketingInteractiveDemo() {
                                 Full report
                               </button>
                             </div>
-                            <div className="mt-4 flex h-28 items-end gap-1.5">
+                            <div className="mt-3 flex h-20 items-end gap-1.5">
                               {[35, 52, 44, 68, 58, 82, 71].map((h, i) => (
                                 <motion.div
                                   key={i}
@@ -785,7 +789,7 @@ export function MarketingInteractiveDemo() {
                         {columns.map((col) => (
                           <div
                             key={col.value}
-                            className="w-[210px] shrink-0 rounded-xl border border-slate-200/90 bg-[#faf8fb] p-2.5 sm:w-[230px]"
+                            className="w-[185px] shrink-0 rounded-xl border border-slate-200/90 bg-[#faf8fb] p-2 sm:w-[200px]"
                             onDragOver={(e) => e.preventDefault()}
                             onDrop={(e) => {
                               e.preventDefault();
@@ -1122,6 +1126,7 @@ export function MarketingInteractiveDemo() {
             </button>
           )}
         </div>
+        </Reveal>
       </div>
 
       <AnimatePresence>

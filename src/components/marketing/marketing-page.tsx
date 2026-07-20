@@ -41,6 +41,7 @@ import {
 } from "react-icons/si";
 import { RiOpenaiFill } from "react-icons/ri";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
+import { cn } from "@/lib/utils";
 import { FloatingDashboard } from "./marketing-dashboard";
 import {
   CloudDecor,
@@ -52,7 +53,17 @@ import {
   Reveal,
   TiltCard,
   InfiniteMarquee,
+  StaggerReveal,
+  StaggerItem,
+  SpotlightCursor,
 } from "./marketing-ui";
+import {
+  MarketingScrollProgress,
+  MarketingStickyCta,
+  MarketingNavLinks,
+  FinalCtaActions,
+  FooterReveal,
+} from "./marketing-motion";
 import { MarketingFluidHero } from "./marketing-fluid-hero";
 import { MarketingInteractiveDemo } from "./marketing-interactive-demo";
 import {
@@ -69,6 +80,8 @@ import {
   BrandLogoMark,
 } from "./brand-logos";
 import { MarketingTrialModals } from "./marketing-trial-modal";
+import { MarketingVisitTracker } from "./marketing-visit-tracker";
+import { MarketingPricingSection } from "./marketing-pricing-section";
 import { setMarketingLenis } from "./marketing-scroll";
 import Lenis from "lenis";
 import "lenis/dist/lenis.css";
@@ -244,77 +257,6 @@ const PARTNER_LOGOS = [
   "image copy 12.png",
 ].map((name) => `/logos/${encodeURIComponent(name)}`);
 
-const PLAN_FEATURE_MATRIX: {
-  feature: string;
-  trial: string;
-  starter: string;
-  growth: string;
-  agency: string;
-  enterprise: string;
-}[] = [
-  { feature: "Lead Finder (live search)", trial: "Limited (trial credits)", starter: "✓", growth: "✓", agency: "✓", enterprise: "✓" },
-  { feature: "AI Lead Scoring (Hot/Warm/Nurture)", trial: "✓", starter: "✓", growth: "✓", agency: "✓", enterprise: "✓" },
-  { feature: "Lead detail: contact + owner enrichment", trial: "✓", starter: "✓", growth: "✓", agency: "✓", enterprise: "✓" },
-  { feature: "Saved Leads / Favorites / Notes", trial: "✓", starter: "✓", growth: "✓", agency: "✓", enterprise: "✓" },
-  { feature: "Pipeline CRM (Kanban)", trial: "—", starter: "✓", growth: "✓", agency: "✓", enterprise: "✓" },
-  { feature: "CSV Export", trial: "✓", starter: "✓", growth: "✓", agency: "✓", enterprise: "✓" },
-  { feature: "Excel Export", trial: "—", starter: "✓", growth: "✓", agency: "✓", enterprise: "✓" },
-  { feature: "Ask Contractor Leads (AI assistant)", trial: "Limited", starter: "✓", growth: "✓", agency: "Priority", enterprise: "Priority" },
-  { feature: "My Scripts library", trial: "✓", starter: "✓", growth: "✓", agency: "✓", enterprise: "✓" },
-  { feature: "AI Outreach Studio (email/SMS/follow-up/script)", trial: "—", starter: "✓", growth: "✓", agency: "✓", enterprise: "✓" },
-  { feature: "Dashboard & Analytics", trial: "Basic", starter: "✓", growth: "✓", agency: "✓", enterprise: "Advanced" },
-  { feature: "Lead Map", trial: "—", starter: "—", growth: "✓", agency: "✓", enterprise: "✓" },
-  { feature: "Social Presence Filter", trial: "—", starter: "—", growth: "✓", agency: "✓", enterprise: "✓" },
-  { feature: "Meta / Facebook Ads Intel", trial: "—", starter: "—", growth: "✓", agency: "✓", enterprise: "✓" },
-  { feature: "LinkedIn Verification (owner/company)", trial: "—", starter: "—", growth: "✓", agency: "✓", enterprise: "✓" },
-  { feature: "Email Automation (Day 1–3, own SMTP)", trial: "—", starter: "Single sequence", growth: "✓", agency: "✓", enterprise: "✓" },
-  { feature: "CRM Webhooks (Zapier/Make/HubSpot/custom)", trial: "—", starter: "—", growth: "✓", agency: "✓", enterprise: "✓" },
-  { feature: "Client Reports", trial: "—", starter: "—", growth: "—", agency: "✓", enterprise: "White-label" },
-  { feature: "Workspaces (multi-tenant / team)", trial: "—", starter: "—", growth: "—", agency: "✓", enterprise: "✓" },
-  { feature: "Team seats", trial: "—", starter: "—", growth: "—", agency: "✓", enterprise: "Custom" },
-  { feature: "Priority support", trial: "—", starter: "—", growth: "—", agency: "✓", enterprise: "Dedicated CSM" },
-  { feature: "Custom onboarding", trial: "—", starter: "—", growth: "—", agency: "✓", enterprise: "✓" },
-  { feature: "API access", trial: "—", starter: "—", growth: "—", agency: "—", enterprise: "✓" },
-  { feature: "Custom integrations / SSO", trial: "—", starter: "—", growth: "—", agency: "—", enterprise: "✓" },
-  { feature: "Custom credit pool", trial: "—", starter: "—", growth: "—", agency: "✓", enterprise: "✓" },
-];
-
-const PLANS = [
-  {
-    name: "Free Trial",
-    blurb: "Lead Finder with trial credits — score and save real businesses.",
-    tier: "Start here",
-    features: ["20 free trial credits", "Lead Finder", "AI lead scoring", "Saved leads"],
-  },
-  {
-    name: "Starter",
-    blurb: "Pipeline CRM, Outreach Studio, and email automation on your SMTP.",
-    tier: "Core",
-    features: ["Lead Finder", "Pipeline CRM", "Outreach Studio", "CSV + Excel export"],
-  },
-  {
-    name: "Growth",
-    blurb: "Lead Map, social filters, Meta intel, and CRM webhooks.",
-    tier: "Most adopted",
-    popular: true,
-    features: ["Everything in Starter", "Lead Map", "Social presence filter", "Meta Ads intel"],
-  },
-  {
-    name: "Agency",
-    blurb: "Client reports, workspaces, team seats, and priority support.",
-    tier: "Teams",
-    custom: true,
-    features: ["Everything in Growth", "Client reports", "Workspaces", "Custom credit pool"],
-  },
-  {
-    name: "Enterprise",
-    blurb: "API access, SSO, dedicated CSM, and custom integrations.",
-    tier: "Custom",
-    custom: true,
-    features: ["Everything in Agency", "API access", "SSO", "Dedicated CSM"],
-  },
-];
-
 function ScrollNav() {
   const [shown, setShown] = useState(false);
 
@@ -326,24 +268,30 @@ function ScrollNav() {
   }, []);
 
   return (
-    <header
-      className={`fixed inset-x-0 top-0 z-40 border-b border-slate-200/80 bg-[#ffffff]/90 backdrop-blur-xl transition-all duration-300 ${
-        shown ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-full opacity-0"
-      }`}
+    <motion.header
+      className="fixed inset-x-0 top-0 z-40 border-b border-slate-200/80 bg-[#ffffff]/90 backdrop-blur-xl"
+      initial={false}
+      animate={
+        shown
+          ? { y: 0, opacity: 1, pointerEvents: "auto" as const }
+          : { y: "-100%", opacity: 0, pointerEvents: "none" as const }
+      }
+      transition={{ type: "spring", stiffness: 420, damping: 36 }}
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-8">
-        <Link href="/" className="flex items-center gap-2.5">
-          <Image src="/logo.png" alt="" width={36} height={36} className="rounded-full" priority />
-          <span className="font-[family-name:var(--font-display)] text-[15px] font-semibold tracking-tight text-slate-900">
-            Contractor <span className="gradient-text">Leads</span>
-          </span>
-        </Link>
-        <div className="hidden items-center gap-6 text-[13px] font-medium text-slate-500 md:flex">
-          <a href="#features" className="transition hover:text-slate-900">Features</a>
-          <a href="#technology" className="transition hover:text-slate-900">Technology</a>
-          <a href="#pricing" className="transition hover:text-slate-900">Pricing</a>
-          <a href="#faq" className="transition hover:text-slate-900">FAQ</a>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, x: -8 }}
+          animate={shown ? { opacity: 1, x: 0 } : { opacity: 0, x: -8 }}
+          transition={{ duration: 0.35 }}
+        >
+          <Link href="/" className="flex items-center gap-2.5">
+            <Image src="/logo.png" alt="" width={36} height={36} className="rounded-full" priority />
+            <span className="font-[family-name:var(--font-display)] text-[15px] font-semibold tracking-tight text-slate-900">
+              Contractor <span className="gradient-text">Leads</span>
+            </span>
+          </Link>
+        </motion.div>
+        <MarketingNavLinks className="hidden md:flex" />
         <div className="flex items-center gap-2">
           <Link
             href="/login"
@@ -351,24 +299,26 @@ function ScrollNav() {
           >
             Sign in
           </Link>
-          <Link
-            href="/register"
-            className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px] font-semibold text-white shadow-md shadow-fuchsia-500/20"
-            style={{ background: LOGO_GRADIENT }}
-          >
-            Start free trial <HiOutlineArrowRight className="h-3.5 w-3.5" />
-          </Link>
+          <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
+            <Link
+              href="/register"
+              className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px] font-semibold text-white shadow-md shadow-fuchsia-500/20"
+              style={{ background: LOGO_GRADIENT }}
+            >
+              Start free trial <HiOutlineArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </motion.div>
         </div>
       </div>
-    </header>
+    </motion.header>
   );
 }
 
 function SocialProof() {
   return (
     <section
-      className="relative overflow-hidden bg-[#05040c] py-7 sm:py-9"
-      aria-label="Partner agencies"
+      className="relative overflow-hidden bg-[#05040c] py-9 sm:py-11"
+      aria-label="Partner brands"
     >
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-[#04050c] to-transparent"
@@ -380,12 +330,14 @@ function SocialProof() {
       />
 
       <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
-        <p className="text-center text-[11px] font-semibold uppercase tracking-[0.24em] text-white/40">
-          Trusted by agencies selling into every trade
-        </p>
+        <Reveal variant="fade">
+          <p className="text-center text-[11px] font-semibold uppercase tracking-[0.24em] text-white/45 sm:text-[12px]">
+            Trusted by leading home-service brands
+          </p>
+        </Reveal>
       </div>
 
-      <div className="relative mt-5 sm:mt-6">
+      <div className="relative mt-6 sm:mt-8">
         <div
           className="pointer-events-none absolute inset-y-0 left-0 z-10 w-20 bg-gradient-to-r from-[#05040c] via-[#05040c]/90 to-transparent sm:w-32"
           aria-hidden
@@ -394,18 +346,18 @@ function SocialProof() {
           className="pointer-events-none absolute inset-y-0 right-0 z-10 w-20 bg-gradient-to-l from-[#05040c] via-[#05040c]/90 to-transparent sm:w-32"
           aria-hidden
         />
-        <InfiniteMarquee speed={55} gap={28} className="py-1">
+        <InfiniteMarquee speed={58} gap={40} className="py-2">
           {PARTNER_LOGOS.map((src) => (
             <div
               key={src}
-              className="group flex shrink-0 items-center justify-center transition duration-300 hover:scale-[1.03]"
+              className="group flex shrink-0 items-center justify-center px-1 transition duration-300 hover:scale-[1.04]"
             >
               <Image
                 src={src}
                 alt=""
-                width={220}
-                height={72}
-                className="h-[52px] w-auto max-w-[min(220px,42vw)] rounded-md object-contain opacity-[0.88] transition duration-300 group-hover:opacity-100 sm:h-[60px] md:h-[68px]"
+                width={360}
+                height={108}
+                className="h-[76px] w-auto max-w-[min(300px,50vw)] rounded-md object-contain opacity-90 transition duration-300 group-hover:opacity-100 sm:h-[90px] sm:max-w-[340px] md:h-[104px] md:max-w-[360px]"
               />
             </div>
           ))}
@@ -447,9 +399,9 @@ function DashboardSection() {
             Open the dashboard <HiOutlineArrowRight className="h-4 w-4" />
           </Link>
         </Reveal>
-        <div className="mt-14">
+        <Reveal variant="scale" delay={0.08} className="mt-14">
           <FloatingDashboard />
-        </div>
+        </Reveal>
       </div>
     </section>
   );
@@ -460,78 +412,57 @@ function ProblemSection() {
     <section className="relative overflow-x-clip bg-[#ffffff] py-24 sm:py-28">
       <SoftBlob color="violet" className="-right-16 top-20 h-64 w-64 opacity-40" />
       <SoftBlob color="pink" className="-left-10 bottom-10 h-56 w-56 opacity-35" />
-      <CloudDecor side="right" className="opacity-55" />
-      <div className="relative z-10 mx-auto max-w-7xl px-5 sm:px-8">
-        <div className="grid items-center gap-10 lg:grid-cols-[0.95fr_1.15fr] lg:gap-10">
-          <Reveal>
-            <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-fuchsia-600">
-              The problem
-            </p>
-            <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.85rem,4.2vw,3.25rem)] font-semibold tracking-tight text-slate-900">
-              Contractor growth dies in the handoff
-            </h2>
-            <p className="mt-4 text-[15px] leading-relaxed text-slate-600">
-              Most agencies do not lose deals because their pitch is weak. They lose them in the six silent failure points between &ldquo;found a business&rdquo; and &ldquo;booked a call.&rdquo;
-            </p>
-            <div className="mt-8 grid gap-3 sm:grid-cols-2">
-              {PAINS.map((p, i) => {
-                const Icon = p.icon;
-                return (
-                  <motion.div
-                    key={p.title}
-                    initial={{ opacity: 0, y: 16 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.05 }}
-                    className="rounded-2xl border border-slate-200 bg-[#ffffff] p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]"
-                  >
-                    <span
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-xl ring-1 ring-black/[0.04]"
-                      style={{ background: p.bg, color: p.color }}
-                    >
-                      <Icon className="h-4 w-4" />
-                    </span>
-                    <h3 className="mt-2 text-[14px] font-semibold text-slate-900">{p.title}</h3>
-                    <p className="mt-1 text-[12px] leading-relaxed text-slate-500">{p.body}</p>
-                  </motion.div>
-                );
-              })}
-            </div>
-            <Link
-              href="#features"
-              className="mt-8 inline-flex items-center gap-2 text-[14px] font-semibold text-fuchsia-600 hover:underline"
-            >
-              See how Contractor Leads fixes this
-              <HiOutlineArrowRight className="h-4 w-4" />
-            </Link>
-          </Reveal>
-          <Reveal delay={0.1} className="relative flex items-center lg:justify-end">
-            <div className="relative mx-auto w-full max-w-3xl lg:mx-0 lg:max-w-none">
-              <div className="relative aspect-[764/463] w-full min-h-[280px] sm:min-h-[340px] lg:min-h-[420px]">
-                <Image
-                  src={MARKETING_PHOTOS.contractor}
-                  alt="Connected platforms and contractor growth tools"
-                  fill
-                  className="object-contain object-center"
-                  sizes="(max-width: 1024px) 100vw, 760px"
-                  priority
-                />
-              </div>
+      <CloudDecor side="both" className="opacity-45" />
+      <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
+        <Reveal className="mx-auto max-w-3xl text-center">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-fuchsia-600">
+            The problem
+          </p>
+          <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.85rem,4.2vw,3.25rem)] font-semibold tracking-tight text-slate-900">
+            Contractor growth dies in the handoff
+          </h2>
+          <p className="mt-4 text-[15px] leading-relaxed text-slate-600">
+            Most agencies do not lose deals because their pitch is weak. They lose them in the six
+            silent failure points between &ldquo;found a business&rdquo; and &ldquo;booked a
+            call.&rdquo;
+          </p>
+        </Reveal>
+
+        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {PAINS.map((p, i) => {
+            const Icon = p.icon;
+            return (
               <motion.div
-                className="absolute bottom-2 left-2 z-10 max-w-[220px] rounded-2xl border border-slate-200 bg-[#ffffff] p-3.5 shadow-xl sm:bottom-4 sm:left-4"
-                animate={{ y: [0, -8, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                key={p.title}
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.06 }}
+                whileHover={{ y: -4 }}
+                className="h-full rounded-[22px] border border-slate-200 bg-[#ffffff] p-5 shadow-[0_8px_28px_rgba(15,23,42,0.05)] transition-shadow hover:border-fuchsia-200/80 hover:shadow-[0_16px_40px_rgba(217,70,239,0.1)] sm:p-6"
               >
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-fuchsia-600">
-                  Missed opportunity
-                </p>
-                <p className="mt-1 text-[13px] font-semibold text-slate-800">
-                  Lead went cold in 12 minutes
-                </p>
+                <span
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl ring-1 ring-black/[0.04]"
+                  style={{ background: p.bg, color: p.color }}
+                >
+                  <Icon className="h-[18px] w-[18px]" />
+                </span>
+                <h3 className="mt-3 text-[15px] font-semibold text-slate-900">{p.title}</h3>
+                <p className="mt-2 text-[13px] leading-relaxed text-slate-500">{p.body}</p>
               </motion.div>
-            </div>
-          </Reveal>
+            );
+          })}
         </div>
+
+        <Reveal delay={0.08} className="mt-10 text-center">
+          <Link
+            href="#features"
+            className="inline-flex items-center gap-2 text-[14px] font-semibold text-fuchsia-600 hover:underline"
+          >
+            See how Contractor Leads fixes this
+            <HiOutlineArrowRight className="h-4 w-4" />
+          </Link>
+        </Reveal>
       </div>
     </section>
   );
@@ -720,11 +651,18 @@ function Integrations() {
           Push saved leads and status changes straight into Zapier, Make, HubSpot, or a custom endpoint the moment they happen. Send nurture sequences from your own Gmail, Outlook, or SMTP mailbox so replies land in an inbox you already check. Connect your Meta ad account context to see contractor ad activity without leaving the lead profile.
         </p>
       </Reveal>
-      <InfiniteMarquee speed={42} reverse>
-        {INTEGRATION_BRANDS.map((brand) => (
-          <BrandLogoChip key={brand.name} brand={brand} />
-        ))}
-      </InfiniteMarquee>
+      <motion.div
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.8, delay: 0.1 }}
+      >
+        <InfiniteMarquee speed={42} reverse>
+          {INTEGRATION_BRANDS.map((brand) => (
+            <BrandLogoChip key={brand.name} brand={brand} />
+          ))}
+        </InfiniteMarquee>
+      </motion.div>
       <p className="mx-auto mt-6 max-w-xl px-5 text-center text-[11px] leading-relaxed text-slate-400 sm:px-8">
         Integrations represent our technology stack and supported connections — availability varies by plan.
       </p>
@@ -1089,7 +1027,17 @@ function AiSection() {
                 </div>
               </div>
               <div className="ml-auto mb-3 max-w-[90%] rounded-2xl rounded-br-md px-4 py-3 text-[13px] text-white" style={{ background: LOGO_GRADIENT }}>
-                {prompts[active]}
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={active}
+                    initial={{ opacity: 0, y: 8, filter: "blur(4px)" }}
+                    animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                    exit={{ opacity: 0, y: -6, filter: "blur(4px)" }}
+                    transition={{ duration: 0.35 }}
+                  >
+                    {prompts[active]}
+                  </motion.span>
+                </AnimatePresence>
               </div>
               <div className="max-w-[95%] rounded-2xl rounded-bl-md border border-violet-50 bg-[#f8f5ff] px-4 py-3 text-[13px] leading-relaxed text-slate-600">
                 Here’s a direct angle: lead with the ZIPs they’re sleeping on, promise booked estimates in 14 days, and CTA with a 15‑min fit call…
@@ -1111,7 +1059,7 @@ function Pricing() {
   return (
     <section
       id="pricing"
-      className="relative overflow-hidden bg-[#ffffff] py-24 sm:py-28"
+      className="relative overflow-x-clip overflow-y-visible bg-[#ffffff] py-24 sm:py-28"
     >
       <div
         className="pointer-events-none absolute inset-0"
@@ -1123,114 +1071,21 @@ function Pricing() {
       />
       <CloudDecor side="left" className="opacity-40" />
       <SparklesDecor />
-      <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
+      <div className="relative z-10 mx-auto max-w-6xl overflow-visible px-5 sm:px-8">
         <Reveal className="text-center">
           <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-fuchsia-600">
             Plans
           </p>
           <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.85rem,4vw,3rem)] font-semibold tracking-tight text-slate-900">
-            Plans & functionality
+            Starter, Growth, Agency & Enterprise
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-slate-500">
-            Tiers, low to high: Free Trial → Starter → Growth → Agency → Enterprise. No pricing numbers on this page — feature gating only.
+            Your first <span className="font-semibold text-slate-800">10 leads are on us</span> on
+            Starter only. Most teams upgrade to Growth for maps, intel, and webhooks — paid plans
+            use credits, not unlimited searches.
           </p>
         </Reveal>
-        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          {PLANS.map((plan, i) => {
-            return (
-              <Reveal key={plan.name} delay={i * 0.08}>
-                <motion.div whileHover={{ y: -8 }} className="h-full">
-                  <div
-                    className={`flex h-full flex-col rounded-[28px] border bg-[#ffffff] p-7 shadow-[0_16px_48px_rgba(100,60,160,0.08)] ${
-                      plan.popular
-                        ? "border-transparent ring-2 ring-fuchsia-400/80"
-                        : "border-slate-200"
-                    }`}
-                    style={
-                      plan.popular
-                        ? { boxShadow: "0 0 0 1px transparent, 0 20px 50px rgba(217,70,239,0.18)" }
-                        : undefined
-                    }
-                  >
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-[family-name:var(--font-display)] text-[20px] font-semibold text-slate-900">
-                        {plan.name}
-                      </h3>
-                      {plan.popular ? (
-                        <span
-                          className="rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase text-white"
-                          style={{ background: LOGO_GRADIENT }}
-                        >
-                          Popular
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="mt-2 text-[13px] text-slate-500">{plan.blurb}</p>
-                    <p className="mt-6 text-[12px] font-semibold uppercase tracking-[0.14em] text-fuchsia-600">
-                      {plan.tier}
-                    </p>
-                    <ul className="mt-6 flex-1 space-y-2.5">
-                      {plan.features.map((f) => (
-                        <li key={f} className="flex items-center gap-2 text-[13px] text-slate-600">
-                          <HiOutlineCheck className="h-4 w-4 text-violet-500" /> {f}
-                        </li>
-                      ))}
-                    </ul>
-                    {plan.custom ? (
-                      <a
-                        href="mailto:hello@contractorleads.us"
-                        className="mt-8 inline-flex items-center justify-center rounded-2xl px-4 py-3 text-[13px] font-semibold text-white"
-                        style={{ background: LOGO_GRADIENT }}
-                      >
-                        Talk to us
-                      </a>
-                    ) : (
-                      <Link
-                        href="/register"
-                        className="mt-8 inline-flex items-center justify-center rounded-2xl px-4 py-3 text-[13px] font-semibold text-white"
-                        style={{ background: LOGO_GRADIENT }}
-                      >
-                        Start free trial
-                      </Link>
-                    )}
-                  </div>
-                </motion.div>
-              </Reveal>
-            );
-          })}
-        </div>
-
-        <Reveal delay={0.14} className="mt-16">
-          <p className="mx-auto mt-3 max-w-3xl text-center text-[12px] leading-relaxed text-slate-500">
-            Cross-check every row against what is live in the product before you publish. Do not imply Workspaces is full multi-tenant or Client Reports is white-label-ready until those ship. Keep upgrade CTAs on &ldquo;Talk to us&rdquo; until self-serve checkout is live. Never claim unlimited searches — the system is credit-metered.
-          </p>
-          <div className="mt-6 overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <table className="w-full min-w-[720px] border-collapse text-left text-[11px] sm:text-[12px]">
-              <thead>
-                <tr className="border-b border-slate-200 bg-[#f8f5ff]">
-                  <th className="px-4 py-3 font-semibold text-slate-700">Feature</th>
-                  <th className="px-2 py-3 font-semibold text-slate-700">Free Trial</th>
-                  <th className="px-2 py-3 font-semibold text-slate-700">Starter</th>
-                  <th className="px-2 py-3 font-semibold text-slate-700">Growth</th>
-                  <th className="px-2 py-3 font-semibold text-slate-700">Agency</th>
-                  <th className="px-2 py-3 font-semibold text-slate-700">Enterprise</th>
-                </tr>
-              </thead>
-              <tbody>
-                {PLAN_FEATURE_MATRIX.map((row) => (
-                  <tr key={row.feature} className="border-b border-slate-100 last:border-0">
-                    <td className="px-4 py-2.5 text-slate-600">{row.feature}</td>
-                    {(["trial", "starter", "growth", "agency", "enterprise"] as const).map((col) => (
-                      <td key={col} className="px-2 py-2.5 text-center text-slate-600">
-                        {row[col]}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Reveal>
+        <MarketingPricingSection />
       </div>
     </section>
   );
@@ -1264,14 +1119,12 @@ function Faq() {
             className="w-full rounded-2xl border border-violet-100 bg-[#f8f5ff] px-4 py-3 text-[14px] text-slate-800 outline-none placeholder:text-slate-400 focus:border-violet-300 focus:ring-4 focus:ring-violet-100"
           />
         </Reveal>
-        <div className="mt-6 space-y-2">
+        <StaggerReveal className="mt-6 space-y-2" stagger={0.06}>
           {filtered.map((f, i) => {
             const isOpen = open === i;
             return (
-              <div
-                key={f.q}
-                className="overflow-hidden rounded-2xl border border-slate-200 bg-[#ffffff] shadow-sm"
-              >
+              <StaggerItem key={f.q}>
+                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-[#ffffff] shadow-sm transition-shadow hover:shadow-md">
                 <button
                   type="button"
                   className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left"
@@ -1297,10 +1150,11 @@ function Faq() {
                     </motion.div>
                   ) : null}
                 </AnimatePresence>
-              </div>
+                </div>
+              </StaggerItem>
             );
           })}
-        </div>
+        </StaggerReveal>
       </div>
     </section>
   );
@@ -1326,21 +1180,14 @@ function FinalCta() {
           <p className="mx-auto mt-4 max-w-md text-[15px] text-white/80">
             Start with free trial credits. No card. Ship your first qualified batch today.
           </p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href="/register"
-              className="inline-flex items-center gap-2 rounded-2xl bg-[#ffffff] px-7 py-4 text-[15px] font-semibold text-violet-700 shadow-xl transition hover:bg-fuchsia-50"
-            >
-              Start free trial <HiOutlineArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/login"
-              className="rounded-2xl border border-white/40 bg-white/10 px-6 py-4 text-[14px] font-semibold text-white backdrop-blur"
-            >
-              Sign in
-            </Link>
-          </div>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-[12px] text-white/75">
+          <FinalCtaActions />
+          <motion.div
+            className="mt-8 flex flex-wrap items-center justify-center gap-4 text-[12px] text-white/75"
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.25, duration: 0.6 }}
+          >
             <span className="inline-flex items-center gap-1">
               <HiOutlineShieldCheck className="h-3.5 w-3.5" /> Business email verified
             </span>
@@ -1350,7 +1197,7 @@ function FinalCta() {
             <span className="inline-flex items-center gap-1">
               <HiOutlineCheck className="h-3.5 w-3.5" /> Cancel anytime
             </span>
-          </div>
+          </motion.div>
         </Reveal>
       </div>
     </section>
@@ -1444,18 +1291,25 @@ function Footer() {
 
       {/* Giant CONTRACTOR LEADS watermark */}
       <div className="relative mx-auto max-w-[100vw] overflow-hidden pt-16 sm:pt-20">
-        <p
-          aria-hidden
-          className="marketing-footer-wordmark select-none text-center font-[family-name:var(--font-display)] font-bold uppercase leading-none tracking-[-0.06em]"
-        >
-          CONTRACTOR LEADS
-        </p>
+        <FooterReveal>
+          <motion.p
+            aria-hidden
+            className="marketing-footer-wordmark select-none text-center font-[family-name:var(--font-display)] font-bold uppercase leading-none tracking-[-0.06em]"
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-10%" }}
+            transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+          >
+            CONTRACTOR LEADS
+          </motion.p>
+        </FooterReveal>
       </div>
 
       <div className="relative mx-auto max-w-6xl border-t border-white/10 px-5 pb-10 pt-12 sm:px-8 sm:pb-14 sm:pt-14">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
           {/* Brand / get started column */}
-          <div className="lg:col-span-1">
+          <FooterReveal delay={0.05}>
+            <div className="lg:col-span-1">
             <p className="text-[13px] font-semibold text-white">Get started</p>
             <div className="mt-4 flex flex-col gap-2.5">
               <Link
@@ -1484,10 +1338,12 @@ function Footer() {
                 Contractor demand, mapped, scored, and ready to dial.
               </span>
             </div>
-          </div>
+            </div>
+          </FooterReveal>
 
-          {columns.map((col) => (
-            <div key={col.h}>
+          {columns.map((col, ci) => (
+            <FooterReveal key={col.h} delay={0.08 + ci * 0.05}>
+              <div>
               <p className="text-[13px] font-semibold text-white">{col.h}</p>
               <ul className="mt-4 space-y-2.5">
                 {col.links.map(([label, href]) => (
@@ -1501,7 +1357,8 @@ function Footer() {
                   </li>
                 ))}
               </ul>
-            </div>
+              </div>
+            </FooterReveal>
           ))}
         </div>
 
@@ -1515,23 +1372,7 @@ function Footer() {
 }
 
 function StickyCta() {
-  return (
-    <div className="fixed bottom-4 left-1/2 z-40 hidden -translate-x-1/2 sm:block">
-      <Link
-        href="/register"
-        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-[#ffffff]/95 px-5 py-2.5 text-[13px] font-semibold text-slate-800 shadow-[0_12px_40px_rgba(80,40,120,0.18)] backdrop-blur-xl"
-      >
-        <span className="h-2 w-2 rounded-full" style={{ background: LOGO_GRADIENT }} />
-        Start free — trial credits included
-        <span
-          className="rounded-full px-2 py-0.5 text-[11px] text-white"
-          style={{ background: LOGO_GRADIENT }}
-        >
-          Go
-        </span>
-      </Link>
-    </div>
-  );
+  return <MarketingStickyCta />;
 }
 
 export function MarketingPage() {
@@ -1572,6 +1413,9 @@ export function MarketingPage() {
 
   return (
     <div className="marketing-site relative min-h-screen bg-[#ffffff] text-slate-900">
+      <MarketingScrollProgress />
+      <SpotlightCursor />
+      <MarketingVisitTracker />
       <ScrollNav />
       <MarketingFluidHero />
       <MarketingInteractiveDemo />

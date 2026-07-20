@@ -5,6 +5,7 @@ import {
   hashPassword,
   setSessionCookie,
 } from "@/lib/auth";
+import { linkMarketingVisitorToUser } from "@/lib/marketing-session";
 
 /**
  * Step 2: after email verification link — create account with password and log in.
@@ -61,6 +62,11 @@ export async function POST(request: Request) {
 
     const session = await createSessionToken(user.id);
     await setSessionCookie(session);
+    try {
+      await linkMarketingVisitorToUser(user.id, user.email);
+    } catch {
+      /* non-blocking */
+    }
 
     return NextResponse.json({
       ok: true,

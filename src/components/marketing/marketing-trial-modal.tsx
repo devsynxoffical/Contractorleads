@@ -5,6 +5,7 @@ import Link from "next/link";
 import { HiOutlineXMark, HiOutlineCheck } from "react-icons/hi2";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
 import { handleMarketingHashClick } from "./marketing-scroll";
+import { subscribeMarketingEmail } from "@/lib/client/marketing-track";
 
 const WELCOME_KEY = "cl_mkt_welcome_dismissed";
 const EXIT_KEY = "cl_mkt_exit_dismissed";
@@ -55,6 +56,10 @@ function ModalShell({
 export function MarketingTrialModals() {
   const [welcomeOpen, setWelcomeOpen] = useState(false);
   const [exitOpen, setExitOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -81,11 +86,35 @@ export function MarketingTrialModals() {
   function dismissWelcome() {
     localStorage.setItem(WELCOME_KEY, "1");
     setWelcomeOpen(false);
+    setEmail("");
+    setError("");
+    setSaved(false);
   }
 
   function dismissExit() {
     localStorage.setItem(EXIT_KEY, "1");
     setExitOpen(false);
+    setEmail("");
+    setError("");
+    setSaved(false);
+  }
+
+  async function saveEmail(source: string) {
+    const trimmed = email.trim();
+    if (!trimmed) {
+      setError("Enter your work email to get updates.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      await subscribeMarketingEmail({ email: trimmed, source, emailOptIn: true });
+      setSaved(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not save email");
+    } finally {
+      setBusy(false);
+    }
   }
 
   if (!welcomeOpen && !exitOpen) return null;
@@ -109,14 +138,48 @@ export function MarketingTrialModals() {
             </li>
           ))}
         </ul>
-        <Link
-          href="/register"
-          onClick={dismissWelcome}
-          className="mt-6 inline-flex w-full items-center justify-center rounded-2xl px-4 py-3 text-[14px] font-semibold text-white"
-          style={{ background: LOGO_GRADIENT }}
-        >
-          Create free account
-        </Link>
+
+        <label className="mt-5 block text-left">
+          <span className="text-[12px] font-medium text-slate-600">
+            Email me lead-gen tips (optional)
+          </span>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@agency.com"
+            className="mt-1.5 w-full rounded-xl border border-slate-200 bg-[#faf8fb] px-3 py-2.5 text-[14px] text-slate-900 outline-none ring-violet-200 focus:ring-2"
+            autoComplete="email"
+          />
+        </label>
+        {error ? (
+          <p className="mt-2 text-left text-[12px] text-red-600">{error}</p>
+        ) : saved ? (
+          <p className="mt-2 text-left text-[12px] text-emerald-600">
+            Saved — we&apos;ll keep you posted. Your browser session is stored for follow-up.
+          </p>
+        ) : null}
+
+        <div className="mt-5 flex flex-col gap-2">
+          {email.trim() && !saved ? (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void saveEmail("welcome_modal")}
+              className="inline-flex w-full items-center justify-center rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-[14px] font-semibold text-violet-900 disabled:opacity-60"
+            >
+              {busy ? "Saving…" : "Save email & continue"}
+            </button>
+          ) : null}
+          <Link
+            href="/register"
+            onClick={dismissWelcome}
+            className="inline-flex w-full items-center justify-center rounded-2xl px-4 py-3 text-[14px] font-semibold text-white"
+            style={{ background: LOGO_GRADIENT }}
+          >
+            Create free account
+          </Link>
+        </div>
       </ModalShell>
     );
   }
@@ -126,13 +189,44 @@ export function MarketingTrialModals() {
       <p className="mt-3 text-[14px] leading-relaxed text-slate-600">
         Takes less than a minute. No card, no sales call required to start.
       </p>
+
+      <label className="mt-4 block text-left">
+        <span className="text-[12px] font-medium text-slate-600">
+          Or leave your email for a sample playbook
+        </span>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@agency.com"
+          className="mt-1.5 w-full rounded-xl border border-slate-200 bg-[#faf8fb] px-3 py-2.5 text-[14px] text-slate-900 outline-none ring-violet-200 focus:ring-2"
+          autoComplete="email"
+        />
+      </label>
+      {error ? (
+        <p className="mt-2 text-left text-[12px] text-red-600">{error}</p>
+      ) : saved ? (
+        <p className="mt-2 text-left text-[12px] text-emerald-600">Thanks — you&apos;re on the list.</p>
+      ) : null}
+
+      {email.trim() && !saved ? (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void saveEmail("exit_modal")}
+          className="mt-4 inline-flex w-full items-center justify-center rounded-2xl border border-slate-200 px-4 py-3 text-[14px] font-semibold text-slate-800 disabled:opacity-60"
+        >
+          {busy ? "Saving…" : "Email me updates"}
+        </button>
+      ) : null}
+
       <Link
         href="#interactive-demo"
         onClick={(e) => {
           dismissExit();
           handleMarketingHashClick(e, "#interactive-demo");
         }}
-        className="mt-6 inline-flex w-full items-center justify-center rounded-2xl px-4 py-3 text-[14px] font-semibold text-white"
+        className="mt-3 inline-flex w-full items-center justify-center rounded-2xl px-4 py-3 text-[14px] font-semibold text-white"
         style={{ background: LOGO_GRADIENT }}
       >
         Show me a sample search
