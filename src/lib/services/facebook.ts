@@ -47,49 +47,14 @@ export async function discoverSocialFromWebsite(website: string): Promise<{
   youtube: string | null;
   tiktok: string | null;
 }> {
-  const empty = {
-    facebook: null as string | null,
-    instagram: null as string | null,
-    youtube: null as string | null,
-    tiktok: null as string | null,
+  const { scrapeWebsiteSocialPack } = await import("./website-social-pack");
+  const pack = await scrapeWebsiteSocialPack(website);
+  return {
+    facebook: pack.facebook,
+    instagram: pack.instagram,
+    youtube: pack.youtube,
+    tiktok: pack.tiktok,
   };
-
-  try {
-    const url = website.startsWith("http") ? website : `https://${website}`;
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (compatible; LeadFlowUSA/1.0; +https://leadflowusa.com)",
-      },
-      signal: AbortSignal.timeout(10000),
-      redirect: "follow",
-    });
-    if (!response.ok) return empty;
-
-    const html = await response.text();
-
-    const fbMatch = html.match(
-      /https?:\/\/(?:www\.)?facebook\.com\/[a-zA-Z0-9._-]+/i
-    );
-    const igMatch = html.match(
-      /https?:\/\/(?:www\.)?instagram\.com\/[a-zA-Z0-9._-]+/i
-    );
-    const ytMatch = html.match(
-      /https?:\/\/(?:www\.)?youtube\.com\/(?:@|channel\/|c\/)[a-zA-Z0-9._-]+/i
-    );
-    const ttMatch = html.match(
-      /https?:\/\/(?:www\.)?tiktok\.com\/@[a-zA-Z0-9._-]+/i
-    );
-
-    return {
-      facebook: fbMatch?.[0] ?? null,
-      instagram: igMatch?.[0] ?? null,
-      youtube: ytMatch?.[0] ?? null,
-      tiktok: ttMatch?.[0] ?? null,
-    };
-  } catch {
-    return empty;
-  }
 }
 
 export async function searchFacebookPage(

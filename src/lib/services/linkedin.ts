@@ -180,28 +180,33 @@ export async function verifyLinkedInUrl(url: string): Promise<{
   }
 }
 
-/** Free: scrape the business website for a linkedin.com/company link */
+/** Free: scrape the business website for a linkedin.com/company link.
+ * Trust on-site links — LinkedIn blocks most bot HTML verification. */
 export async function discoverLinkedInFromWebsite(
   website: string
 ): Promise<string | null> {
-  const html = await fetchWebsiteHtml(website);
-  if (!html) return null;
+  const { scrapeWebsiteSocialPack } = await import("./website-social-pack");
+  const pack = await scrapeWebsiteSocialPack(website);
+  return pack.linkedinCompany || pack.linkedinOwner || null;
+}
 
-  const patterns = [
-    /https?:\/\/(?:[a-z]{2}\.)?(?:www\.)?linkedin\.com\/company\/[a-zA-Z0-9._%-]+/gi,
-    /(?:[a-z]{2}\.)?(?:www\.)?linkedin\.com\/company\/[a-zA-Z0-9._%-]+/gi,
+async function findLinkedInViaSerper(
+  businessName: string,
+  location: string,
+): Promise<string | null> {
+  const { searchPublicWeb } = await import("./web-search");
+  const queries = [
+    `${businessName} ${location} site:linkedin.com/company`,
+    `"${businessName}" site:linkedin.com/company`,
+    `${businessName} linkedin company`,
   ];
-
-  const seen = new Set<string>();
-  for (const pattern of patterns) {
-    const matches = html.match(pattern) ?? [];
-    for (const raw of matches) {
-      const normalized = normalizeLinkedInCompanyUrl(raw);
-      if (!normalized || seen.has(normalized)) continue;
-      seen.add(normalized);
-
-      const check = await verifyLinkedInUrl(normalized);
-      if (check.valid) return normalized;
+  for (const q of queries) {
+    const hits = await searchPublicWeb(q, 6);
+    for (const hit of hits) {
+      const company = normalizeLinkedInCompanyUrl(hit.url);
+      if (company) return company;
+      const owner = normalizeLinkedInProfileUrl(hit.url);
+      if (owner) return owner;
     }
   }
   return null;
@@ -275,51 +280,60 @@ export async function findLinkedInCompanyUrl(
   businessName: string,
   location: string,
   industry: string,
-  website?: string | null
+  website?: string | null,
+  opts?: {
+    /** Prefetched company URL from website pack (avoids double scrape). */
+    websiteCompanyUrl?: string | null;
+    skipWebsiteScrape?: boolean;
+  },
 ): Promise<LinkedInCompanyResult> {
-  // 1) Website link (free, highest trust when on their own site)
-  if (website) {
-    const fromSite = await discoverLinkedInFromWebsite(website);
-    if (fromSite) {
-      return { url: fromSite, confidence: 97, source: "website" };
-    }
-  }
-
   const apiKey = process.env.LINKEDIN_DATA_API_KEY;
 
-  // 2) Proxycurl by domain (paid, very accurate)
-  if (website && apiKey) {
-    const domain = extractWebsiteDomain(website);
-    if (domain) {
-      const fromDomain = await resolveViaProxycurlDomain(domain, apiKey);
-      if (fromDomain) {
-        return { url: fromDomain, confidence: 97, source: "proxycurl_domain" };
-      }
-    }
+  const fromSitePrefetch = opts?.websiteCompanyUrl
+    ? normalizeLinkedInCompanyUrl(opts.websiteCompanyUrl) || opts.websiteCompanyUrl
+    : null;
+
+  const [fromSite, fromDomain, fromSerper] = await Promise.all([
+    fromSitePrefetch
+      ? Promise.resolve(fromSitePrefetch)
+      : opts?.skipWebsiteScrape
+        ? Promise.resolve(null)
+        : website
+          ? discoverLinkedInFromWebsite(website)
+          : Promise.resolve(null),
+    website && apiKey
+      ? (async () => {
+          const domain = extractWebsiteDomain(website);
+          return domain ? resolveViaProxycurlDomain(domain, apiKey) : null;
+        })()
+      : Promise.resolve(null),
+    findLinkedInViaSerper(businessName, location),
+  ]);
+
+  if (fromSite) {
+    const company = normalizeLinkedInCompanyUrl(fromSite);
+    if (company) return { url: company, confidence: 98, source: "website" };
+    return { url: fromSite, confidence: 96, source: "website" };
+  }
+  if (fromDomain) {
+    return { url: fromDomain, confidence: 97, source: "proxycurl_domain" };
+  }
+  if (fromSerper) {
+    const company = normalizeLinkedInCompanyUrl(fromSerper);
+    if (company) return { url: company, confidence: 94, source: "slug_match" };
+    return { url: fromSerper, confidence: 92, source: "slug_match" };
   }
 
-  // 3) Proxycurl by company name (paid)
   if (apiKey) {
     const fromName = await resolveViaProxycurlName(
       businessName,
       location,
       industry,
-      apiKey
+      apiKey,
     );
     if (fromName) {
       return { url: fromName, confidence: 96, source: "proxycurl_name" };
     }
-  }
-
-  // 4) Slug guess + name match in page HTML (free, best effort)
-  const fromSlug = await resolveViaSlugGuess(businessName);
-  if (fromSlug) {
-    return { url: fromSlug, confidence: 90, source: "slug_match" };
-  }
-
-  // No paid key and free methods failed — still return a low-confidence hint
-  if (!apiKey) {
-    return { url: null, confidence: 0, source: null };
   }
 
   return { url: null, confidence: 0, source: null };
@@ -348,11 +362,15 @@ export async function resolveLinkedIn(
     website
   );
   const primary =
-    full.company.confidence >= 95
+    full.company.confidence >= 90
       ? full.company
-      : full.owner.confidence >= 95
+      : full.owner.confidence >= 90
         ? full.owner
-        : { url: null, confidence: 0, type: "none" as const };
+        : full.company.url
+          ? full.company
+          : full.owner.url
+            ? full.owner
+            : { url: null, confidence: 0, type: "none" as const };
 
   return {
     url: primary.url,
@@ -376,18 +394,28 @@ export async function resolveLinkedInProfiles(
   owner: { url: string | null; confidence: number; type: "owner" };
   companySource: LinkedInCompanyResult["source"];
 }> {
+  const pack = website
+    ? await (await import("./website-social-pack")).scrapeWebsiteSocialPack(
+        website,
+      )
+    : null;
+
   const companyResult = await findLinkedInCompanyUrl(
     businessName,
     location,
     industry,
-    website
+    website,
+    {
+      websiteCompanyUrl: pack?.linkedinCompany ?? null,
+      skipWebsiteScrape: true,
+    },
   );
 
-  let ownerUrl: string | null = null;
-  let ownerConfidence = 0;
+  let ownerUrl: string | null = pack?.linkedinOwner ?? null;
+  let ownerConfidence = ownerUrl ? 96 : 0;
   const apiKey = process.env.LINKEDIN_DATA_API_KEY;
 
-  if (ownerName && apiKey) {
+  if (!ownerUrl && ownerName && apiKey) {
     try {
       const domain = website ? extractWebsiteDomain(website) : null;
       const domainParam = domain

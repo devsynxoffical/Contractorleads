@@ -70,9 +70,9 @@ export async function enrichLeadSocial(lead: LeadRecord) {
   ]);
 
   const companyLinkedIn =
-    linkedin.company.confidence >= 95 ? linkedin.company.url : null;
+    linkedin.company.confidence >= 90 ? linkedin.company.url : null;
   const ownerLinkedIn =
-    linkedin.owner.confidence >= 95 ? linkedin.owner.url : null;
+    linkedin.owner.confidence >= 90 ? linkedin.owner.url : null;
   const primaryLinkedIn = companyLinkedIn ?? ownerLinkedIn;
 
   const updated = await prisma.lead.update({

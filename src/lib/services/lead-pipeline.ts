@@ -3,13 +3,14 @@ import { searchGooglePlaces, verifyWebsite } from "./google-places";
 import { matchYelpBusiness } from "./yelp";
 import { matchHouzzBusiness } from "./houzz";
 import { matchNextdoorBusiness } from "./nextdoor";
-import { resolveLinkedIn } from "./linkedin";
+import { findLinkedInCompanyUrl } from "./linkedin";
 import { qualifyLead } from "./qualification";
 import {
   extractWebsitePeople,
   type WebsitePeopleResult,
 } from "./website-people";
-import { discoverSocialFromWebsite, searchFacebookPage } from "./facebook";
+import { searchFacebookPage } from "./facebook";
+import { scrapeWebsiteSocialPack } from "./website-social-pack";
 import { mapPool } from "@/lib/utils/async-pool";
 import type { PlaceResult } from "./google-places";
 
@@ -19,23 +20,6 @@ const EMPTY_PEOPLE: WebsitePeopleResult = {
   email: null,
   emailSourceUrl: null,
   pagesChecked: [],
-};
-
-const EMPTY_SOCIAL = {
-  facebook: null as string | null,
-  instagram: null as string | null,
-  youtube: null as string | null,
-  tiktok: null as string | null,
-};
-
-const EMPTY_LINKEDIN = {
-  url: null as string | null,
-  companyUrl: null as string | null,
-  ownerUrl: null as string | null,
-  type: "none",
-  confidence: 0,
-  ownerConfidence: 0,
-  companySource: null as null,
 };
 
 export type SearchParams = {
@@ -63,9 +47,10 @@ type SocialFields = {
   youtube?: string | null;
   tiktok?: string | null;
   ownerName?: string | null;
+  email?: string | null;
 };
 
-/** LinkedIn + consumer social + owner name scraped from the business website. */
+/** LinkedIn + consumer social + (owner name or public email). */
 export function leadHasLinkedInSocialAndOwner(lead: SocialFields): boolean {
   const hasLinkedIn = Boolean(
     lead.linkedinUrl || lead.linkedinCompanyUrl || lead.linkedinOwnerUrl,
@@ -73,8 +58,10 @@ export function leadHasLinkedInSocialAndOwner(lead: SocialFields): boolean {
   const hasSocial = Boolean(
     lead.facebook || lead.instagram || lead.youtube || lead.tiktok,
   );
-  const hasOwner = Boolean(lead.ownerName?.trim());
-  return hasLinkedIn && hasSocial && hasOwner;
+  const hasOwnerOrContact = Boolean(
+    lead.ownerName?.trim() || lead.email?.trim(),
+  );
+  return hasLinkedIn && hasSocial && hasOwnerOrContact;
 }
 
 /** @deprecated use leadHasLinkedInSocialAndOwner */
@@ -108,13 +95,21 @@ function clampTarget(n: number | undefined) {
 export async function runLeadPipeline(params: SearchParams) {
   const requireSocial = params.requireSocialPresence === true;
   const targetCount = clampTarget(params.targetLeadCount);
-  // Over-fetch Places: social filter rejects many candidates
+  // Over-fetch Places heavily when social filter is on (many candidates lack profiles)
   const fetchLimit = requireSocial
-    ? Math.min(1200, Math.max(targetCount * 5, targetCount + 40))
+    ? Math.min(1200, Math.max(targetCount * 12, targetCount + 80))
     : Math.min(1200, Math.max(targetCount * 2, targetCount + 20));
 
-  const preferRules = targetCount >= 80 || requireSocial;
-  const placeConcurrency = targetCount >= 250 ? 14 : targetCount >= 80 ? 10 : 6;
+  const preferRules = true; // keep volume searches fast
+  const placeConcurrency = requireSocial
+    ? targetCount >= 100
+      ? 12
+      : 8
+    : targetCount >= 250
+      ? 14
+      : targetCount >= 80
+        ? 10
+        : 6;
 
   const location =
     params.customLocation?.trim() ||
@@ -223,43 +218,132 @@ async function enrichAndPersistPlace(opts: {
     opts;
 
   const website = place.website;
-  const [websiteReachable, websitePeople] = website
-    ? await Promise.all([
-        withTimeout(verifyWebsite(website), 4000, false),
-        withTimeout(extractWebsitePeople(website), 7000, EMPTY_PEOPLE),
-      ])
-    : [false, EMPTY_PEOPLE];
+  const emptyPack = {
+    linkedinCompany: null as string | null,
+    linkedinOwner: null as string | null,
+    facebook: null as string | null,
+    instagram: null as string | null,
+    youtube: null as string | null,
+    tiktok: null as string | null,
+    pagesChecked: [] as string[],
+  };
 
-  const placeForQualify = { ...place, website };
-  const [yelp, houzz, nextdoor, linkedin, qualification, websiteSocial] =
+  // One deep website scrape for LinkedIn + socials (about/contact/team pages)
+  const pack = website
+    ? await withTimeout(scrapeWebsiteSocialPack(website), 12000, emptyPack)
+    : emptyPack;
+
+  const [websiteReachable, websitePeople, companyLi, yelp, houzz, nextdoor, qualification, facebookPage] =
     await Promise.all([
-      withTimeout(matchYelpBusiness(place.name, location), 6000, null),
-      withTimeout(matchHouzzBusiness(place.name, location), 5000, null),
-      withTimeout(matchNextdoorBusiness(place.name, location), 4000, null),
+      website ? withTimeout(verifyWebsite(website), 3500, false) : Promise.resolve(false),
+      website
+        ? withTimeout(extractWebsitePeople(website), 7000, EMPTY_PEOPLE)
+        : Promise.resolve(EMPTY_PEOPLE),
       withTimeout(
-        resolveLinkedIn(
+        findLinkedInCompanyUrl(
           place.name,
           location,
           params.industry,
-          websitePeople.owner?.name,
           website,
+          {
+            websiteCompanyUrl: pack.linkedinCompany,
+            skipWebsiteScrape: true,
+          },
         ),
-        requireSocial ? 12000 : 8000,
-        EMPTY_LINKEDIN,
+        requireSocial ? 14000 : 8000,
+        { url: null, confidence: 0, source: null },
       ),
-      qualifyLead(placeForQualify, params.industry, Boolean(website), {
+      withTimeout(matchYelpBusiness(place.name, location), 5000, null),
+      withTimeout(matchHouzzBusiness(place.name, location), 4000, null),
+      withTimeout(matchNextdoorBusiness(place.name, location), 3500, null),
+      qualifyLead({ ...place, website }, params.industry, Boolean(website), {
         preferRules,
-        timeoutMs: preferRules ? 1 : 6000,
+        timeoutMs: 1,
       }),
-      website
-        ? withTimeout(discoverSocialFromWebsite(website), 6000, EMPTY_SOCIAL)
-        : Promise.resolve(EMPTY_SOCIAL),
+      !pack.facebook
+        ? withTimeout(searchFacebookPage(place.name), 5000, null)
+        : Promise.resolve(null),
     ]);
 
-  let facebook = websiteSocial.facebook;
-  if (!facebook && requireSocial) {
-    facebook = await withTimeout(searchFacebookPage(place.name), 5000, null);
+  // Serper fallback for missing LinkedIn / social when filter is on
+  let serperLinkedIn: string | null = null;
+  let serperSocial: {
+    facebook: string | null;
+    instagram: string | null;
+  } = { facebook: null, instagram: null };
+
+  const hasLi =
+    companyLi.url || pack.linkedinCompany || pack.linkedinOwner;
+  const hasSocial =
+    pack.facebook ||
+    pack.instagram ||
+    pack.youtube ||
+    pack.tiktok ||
+    facebookPage;
+
+  if (requireSocial && (!hasLi || !hasSocial)) {
+    const { searchPublicWeb } = await import("./web-search");
+    const hits = await withTimeout(
+      searchPublicWeb(
+        `"${place.name}" ${location} (linkedin OR facebook OR instagram)`,
+        8,
+      ),
+      7000,
+      [],
+    );
+    for (const hit of hits) {
+      const lower = hit.url.toLowerCase();
+      if (!serperLinkedIn && lower.includes("linkedin.com")) {
+        serperLinkedIn = hit.url;
+      }
+      if (!serperSocial.facebook && lower.includes("facebook.com")) {
+        serperSocial.facebook = hit.url.split("?")[0];
+      }
+      if (!serperSocial.instagram && lower.includes("instagram.com")) {
+        serperSocial.instagram = hit.url.split("?")[0];
+      }
+    }
   }
+
+  const companyUrl = companyLi.url || pack.linkedinCompany;
+  const ownerUrl = pack.linkedinOwner;
+  const primaryLinkedIn = companyUrl || ownerUrl || serperLinkedIn;
+
+  // Optional owner LinkedIn via Proxycurl when we have an owner name
+  let resolvedOwner = ownerUrl;
+  const apiKey = process.env.LINKEDIN_DATA_API_KEY;
+  if (!resolvedOwner && websitePeople.owner?.name && apiKey) {
+    try {
+      const first = websitePeople.owner.name.split(" ")[0] || "";
+      const last = websitePeople.owner.name.split(" ").slice(1).join(" ") || "";
+      const domain = website
+        ? new URL(website.startsWith("http") ? website : `https://${website}`)
+            .hostname.replace(/^www\./, "")
+        : null;
+      const domainParam = domain
+        ? `&company_domain=${encodeURIComponent(domain)}`
+        : "";
+      const response = await fetch(
+        `https://nubela.co/proxycurl/api/linkedin/profile/resolve?first_name=${encodeURIComponent(first)}&last_name=${encodeURIComponent(last)}${domainParam}`,
+        {
+          headers: { Authorization: `Bearer ${apiKey}` },
+          signal: AbortSignal.timeout(8000),
+        },
+      );
+      if (response.ok) {
+        const data = (await response.json()) as { url?: string };
+        if (data.url?.includes("linkedin.com/in/")) {
+          resolvedOwner = data.url.split("?")[0];
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  const facebook =
+    pack.facebook || facebookPage || serperSocial.facebook || null;
+  const instagram = pack.instagram || serperSocial.instagram || null;
 
   if (qualification.leadScore < 25) return "skipped-score";
 
@@ -289,20 +373,28 @@ async function enrichAndPersistPlace(opts: {
     }));
 
   const socialSnapshot = {
-    linkedinUrl: linkedin.url ?? existingLead?.linkedinUrl,
-    linkedinCompanyUrl:
-      linkedin.companyUrl ?? existingLead?.linkedinCompanyUrl,
-    linkedinOwnerUrl: linkedin.ownerUrl ?? existingLead?.linkedinOwnerUrl,
+    linkedinUrl: primaryLinkedIn ?? existingLead?.linkedinUrl,
+    linkedinCompanyUrl: companyUrl ?? existingLead?.linkedinCompanyUrl,
+    linkedinOwnerUrl: resolvedOwner ?? existingLead?.linkedinOwnerUrl,
     facebook: facebook ?? existingLead?.facebook,
-    instagram: websiteSocial.instagram ?? existingLead?.instagram,
-    youtube: websiteSocial.youtube ?? existingLead?.youtube,
-    tiktok: websiteSocial.tiktok ?? existingLead?.tiktok,
+    instagram: instagram ?? existingLead?.instagram,
+    youtube: pack.youtube ?? existingLead?.youtube,
+    tiktok: pack.tiktok ?? existingLead?.tiktok,
     ownerName: websitePeople.owner?.name ?? existingLead?.ownerName,
+    email: websitePeople.email ?? existingLead?.email,
   };
 
   if (requireSocial && !leadHasLinkedInSocialAndOwner(socialSnapshot)) {
     return "skipped-social";
   }
+
+  const linkedinType = companyUrl
+    ? "company"
+    : resolvedOwner
+      ? "owner"
+      : primaryLinkedIn
+        ? "company"
+        : "none";
 
   const sharedData = {
     searchId,
@@ -328,9 +420,9 @@ async function enrichAndPersistPlace(opts: {
     emailSourceUrl:
       websitePeople.emailSourceUrl ?? existingLead?.emailSourceUrl,
     facebook: facebook ?? existingLead?.facebook,
-    instagram: websiteSocial.instagram ?? existingLead?.instagram,
-    youtube: websiteSocial.youtube ?? existingLead?.youtube,
-    tiktok: websiteSocial.tiktok ?? existingLead?.tiktok,
+    instagram: instagram ?? existingLead?.instagram,
+    youtube: pack.youtube ?? existingLead?.youtube,
+    tiktok: pack.tiktok ?? existingLead?.tiktok,
     yelpUrl: yelp?.url ?? existingLead?.yelpUrl,
     yelpRating: yelp?.rating ?? existingLead?.yelpRating,
     yelpReviews: yelp?.reviewCount ?? existingLead?.yelpReviews,
@@ -338,15 +430,15 @@ async function enrichAndPersistPlace(opts: {
     houzzRating: houzz?.rating ?? existingLead?.houzzRating,
     houzzReviews: houzz?.reviewCount ?? existingLead?.houzzReviews,
     nextdoor: nextdoor?.url ?? existingLead?.nextdoor,
-    linkedinUrl: linkedin.url ?? existingLead?.linkedinUrl,
-    linkedinCompanyUrl:
-      linkedin.companyUrl ?? existingLead?.linkedinCompanyUrl,
-    linkedinOwnerUrl: linkedin.ownerUrl ?? existingLead?.linkedinOwnerUrl,
+    linkedinUrl: primaryLinkedIn ?? existingLead?.linkedinUrl,
+    linkedinCompanyUrl: companyUrl ?? existingLead?.linkedinCompanyUrl,
+    linkedinOwnerUrl: resolvedOwner ?? existingLead?.linkedinOwnerUrl,
     linkedinConfidenceScore:
-      linkedin.confidence || existingLead?.linkedinConfidenceScore,
-    linkedinOwnerConfidenceScore:
-      linkedin.ownerConfidence || existingLead?.linkedinOwnerConfidenceScore,
-    linkedinType: linkedin.type ?? existingLead?.linkedinType,
+      companyLi.confidence || existingLead?.linkedinConfidenceScore,
+    linkedinOwnerConfidenceScore: resolvedOwner
+      ? 96
+      : existingLead?.linkedinOwnerConfidenceScore,
+    linkedinType: linkedinType ?? existingLead?.linkedinType,
     leadScore: qualification.leadScore,
     serviceCategory: qualification.serviceCategory,
     revenueRangeEstimate: qualification.revenueRangeEstimate,
@@ -379,9 +471,9 @@ async function enrichAndPersistPlace(opts: {
       email: websitePeople.email,
       emailSourceUrl: websitePeople.emailSourceUrl,
       facebook,
-      instagram: websiteSocial.instagram,
-      youtube: websiteSocial.youtube,
-      tiktok: websiteSocial.tiktok,
+      instagram,
+      youtube: pack.youtube,
+      tiktok: pack.tiktok,
       phone: place.phone,
       website: website ?? null,
       googleRating: place.rating,
@@ -403,12 +495,12 @@ async function enrichAndPersistPlace(opts: {
       houzzRating: houzz?.rating ?? null,
       houzzReviews: houzz?.reviewCount ?? null,
       nextdoor: nextdoor?.url ?? null,
-      linkedinUrl: linkedin.url,
-      linkedinCompanyUrl: linkedin.companyUrl,
-      linkedinOwnerUrl: linkedin.ownerUrl,
-      linkedinConfidenceScore: linkedin.confidence || null,
-      linkedinOwnerConfidenceScore: linkedin.ownerConfidence || null,
-      linkedinType: linkedin.type,
+      linkedinUrl: primaryLinkedIn,
+      linkedinCompanyUrl: companyUrl,
+      linkedinOwnerUrl: resolvedOwner,
+      linkedinConfidenceScore: companyLi.confidence || null,
+      linkedinOwnerConfidenceScore: resolvedOwner ? 96 : null,
+      linkedinType,
       industry: params.industry,
       country: params.country,
       state: params.state,

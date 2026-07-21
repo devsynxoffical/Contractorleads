@@ -667,9 +667,10 @@ export function LeadSearchForm() {
                     Require LinkedIn, social &amp; owner name
                   </span>
                   <span className="mt-0.5 block text-ink-muted">
-                    Stricter filter — only keeps businesses with LinkedIn, a social
-                    profile, and an owner on their website. Slower and returns fewer
-                    leads; leave off for maximum volume and speed.
+                    Keep only leads with LinkedIn + a social profile + owner/email
+                    from the website. We deep-scrape About/Contact pages, trust
+                    on-site links, and use Google/Serper fallbacks so volume
+                    targets fill more reliably.
                   </span>
                 </span>
               </label>
