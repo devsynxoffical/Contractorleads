@@ -77,16 +77,31 @@ export async function assertIntegrationEnabledForUser(userId: string, kind: Inte
       apiUsageResetAt: true,
     },
   });
-  if (!user || user.isActive === false) return { ok: false as const, error: "Account inactive" };
-  if (!planFeatureEnabled(user.plan, kind)) {
-    return { ok: false as const, error: `${kind.toUpperCase()} is not available on this plan` };
+  if (!user || user.isActive === false) {
+    return { ok: false as const, error: "Account inactive" };
   }
-  // Super admin / staff always keep access when the plan includes the feature
-  if (user.role === "SUPER_ADMIN" || user.role === "MANAGER" || user.role === "SUB_ADMIN") {
+
+  const isStaff =
+    user.role === "SUPER_ADMIN" ||
+    user.role === "MANAGER" ||
+    user.role === "SUB_ADMIN";
+
+  // Super admin / staff always have API + MCP + SSO (plan display is informational)
+  if (isStaff) {
     return { ok: true as const, user };
   }
+
+  if (!planFeatureEnabled(user.plan, kind)) {
+    return {
+      ok: false as const,
+      error: `${kind.toUpperCase()} is not available on the ${user.plan} plan`,
+    };
+  }
   if (!isIntegrationToggleOn(user, kind)) {
-    return { ok: false as const, error: `${kind.toUpperCase()} access disabled by admin` };
+    return {
+      ok: false as const,
+      error: `${kind.toUpperCase()} access disabled by admin`,
+    };
   }
   return { ok: true as const, user };
 }

@@ -23,6 +23,7 @@ export function ApiAccessSettings() {
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   async function load() {
     const res = await fetch("/api/user/api-access");
@@ -54,6 +55,17 @@ export function ApiAccessSettings() {
     await load();
   }
 
+  async function copyKey() {
+    if (!apiKey) return;
+    try {
+      await navigator.clipboard.writeText(apiKey);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setMsg("Could not copy — select the key manually.");
+    }
+  }
+
   const pct = data?.access.apiMonthlyLimit
     ? Math.min(
         100,
@@ -61,12 +73,21 @@ export function ApiAccessSettings() {
       )
     : 0;
 
+  const keyForExample = apiKey || "YOUR_API_KEY";
+  const curlExample = `curl -X POST "${typeof window !== "undefined" ? window.location.origin : ""}/api/public/leads/search" \\
+  -H "Content-Type: application/json" \\
+  -H "x-api-key: ${keyForExample}" \\
+  -d '{"industry":"Roofing","country":"US","state":"TX","city":"Austin","targetLeadCount":10}'`;
+
   return (
     <Card className="border-border shadow-[var(--shadow-card)]">
       <CardHeader>
         <CardTitle>API, MCP & SSO access</CardTitle>
         <p className="text-[13px] text-ink-muted">
-          Connect your own model/tooling through API or MCP (subject to plan limits).
+          Same key works for API, MCP, and SSO. Auth with{" "}
+          <code className="text-[12px]">x-api-key</code>,{" "}
+          <code className="text-[12px]">Authorization: Bearer</code>, or{" "}
+          <code className="text-[12px]">x-sso-token</code>.
         </p>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -150,7 +171,10 @@ export function ApiAccessSettings() {
             ) : null}
 
             <p className="text-[13px] text-ink-muted">
-              API key: {data.access.apiKeyLast4 ? `••••${data.access.apiKeyLast4}` : "Not generated"}
+              API key:{" "}
+              {data.access.apiKeyLast4
+                ? `••••${data.access.apiKeyLast4}`
+                : "Not generated — click Regenerate"}
             </p>
 
             <div className="space-y-1">
@@ -169,8 +193,14 @@ export function ApiAccessSettings() {
             </div>
 
             {apiKey ? (
-              <div className="rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-[12px] text-brand-900">
-                New key: <code>{apiKey}</code>
+              <div className="space-y-2 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-[12px] text-brand-900">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span>New key:</span>
+                  <code className="break-all">{apiKey}</code>
+                  <Button type="button" variant="secondary" onClick={copyKey}>
+                    {copied ? "Copied" : "Copy"}
+                  </Button>
+                </div>
               </div>
             ) : null}
 
@@ -190,15 +220,27 @@ export function ApiAccessSettings() {
               >
                 Regenerate API key
               </Button>
-              <span className="inline-flex items-center rounded-xl bg-[#faf8fc] px-3 text-[12px] text-ink-muted">
-                API endpoint: `/api/public/leads/search`
-              </span>
-              <span className="inline-flex items-center rounded-xl bg-[#faf8fc] px-3 text-[12px] text-ink-muted">
-                MCP endpoint: `/api/public/mcp/search`
-              </span>
-              <span className="inline-flex items-center rounded-xl bg-[#faf8fc] px-3 text-[12px] text-ink-muted">
-                SSO endpoint: `/api/public/sso/leads/search` (Bearer or x-sso-token)
-              </span>
+            </div>
+
+            <div className="space-y-2 rounded-xl border border-border bg-[#faf8fc] p-3 text-[12px] text-ink-muted">
+              <p className="font-semibold text-ink">Endpoints (POST to search, GET to verify auth)</p>
+              <p>
+                API: <code className="text-ink">/api/public/leads/search</code>
+              </p>
+              <p>
+                MCP: <code className="text-ink">/api/public/mcp/search</code>
+              </p>
+              <p>
+                SSO: <code className="text-ink">/api/public/sso/leads/search</code>
+              </p>
+              <p className="pt-1 font-semibold text-ink">Example</p>
+              <pre className="overflow-x-auto whitespace-pre-wrap rounded-lg bg-white p-2 text-[11px] text-ink">
+                {curlExample}
+              </pre>
+              <p>
+                SSO tip: use <code className="text-ink">Authorization: Bearer YOUR_API_KEY</code>{" "}
+                or <code className="text-ink">x-sso-token: YOUR_API_KEY</code> — same key as API.
+              </p>
             </div>
           </>
         )}

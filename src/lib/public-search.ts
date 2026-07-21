@@ -10,28 +10,62 @@ import {
   type IntegrationKind,
 } from "@/lib/api-access";
 
-function resolveApiKeyFromRequest(request: Request, kind: IntegrationKind) {
-  const direct = request.headers.get("x-api-key")?.trim();
+const CORS_HEADERS: Record<string, string> = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers":
+    "Content-Type, Authorization, x-api-key, x-sso-token, X-Api-Key, X-SSO-Token",
+  "Access-Control-Max-Age": "86400",
+};
+
+export function publicCorsHeaders() {
+  return { ...CORS_HEADERS };
+}
+
+export function publicOptionsResponse() {
+  return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
+}
+
+function jsonWithCors(body: unknown, init?: { status?: number }) {
+  return NextResponse.json(body, {
+    status: init?.status ?? 200,
+    headers: CORS_HEADERS,
+  });
+}
+
+/**
+ * Accept any of:
+ * - x-api-key / X-Api-Key
+ * - Authorization: Bearer <key>
+ * - x-sso-token / X-SSO-Token
+ */
+export function resolveApiKeyFromRequest(request: Request): string | null {
+  const direct =
+    request.headers.get("x-api-key")?.trim() ||
+    request.headers.get("X-Api-Key")?.trim();
   if (direct) return direct;
 
-  if (kind === "sso") {
-    const bearer = request.headers.get("authorization")?.trim();
-    if (bearer?.toLowerCase().startsWith("bearer ")) {
-      return bearer.slice("bearer ".length).trim();
-    }
-    const ssoToken = request.headers.get("x-sso-token")?.trim();
-    if (ssoToken) return ssoToken;
+  const sso =
+    request.headers.get("x-sso-token")?.trim() ||
+    request.headers.get("X-SSO-Token")?.trim();
+  if (sso) return sso;
+
+  const bearer = request.headers.get("authorization")?.trim();
+  if (bearer?.toLowerCase().startsWith("bearer ")) {
+    const token = bearer.slice("bearer ".length).trim();
+    if (token) return token;
   }
 
   return null;
 }
 
 async function resolveApiUser(request: Request, kind: IntegrationKind) {
-  const apiKey = resolveApiKeyFromRequest(request, kind);
+  const apiKey = resolveApiKeyFromRequest(request);
   if (!apiKey) {
     return {
       ok: false as const,
-      error: kind === "sso" ? "Missing bearer token (SSO) or x-api-key" : "Missing x-api-key header",
+      error:
+        "Missing API credentials. Send x-api-key, Authorization: Bearer <key>, or x-sso-token.",
       status: 401,
     };
   }
@@ -40,37 +74,141 @@ async function resolveApiUser(request: Request, kind: IntegrationKind) {
     where: { apiKeyHash: hash },
     select: { id: true },
   });
-  if (!user) return { ok: false as const, error: "Invalid API key", status: 401 };
+  if (!user) {
+    return { ok: false as const, error: "Invalid API key", status: 401 };
+  }
   return { ok: true as const, userId: user.id };
 }
 
-export async function handlePublicSearch(request: Request, kind: IntegrationKind) {
+async function parseJsonBody(request: Request): Promise<
+  | { ok: true; body: Record<string, unknown> }
+  | { ok: false; error: string }
+> {
+  const text = await request.text();
+  if (!text.trim()) {
+    return {
+      ok: false,
+      error:
+        'Request body required. Example: {"industry":"Roofing","city":"Austin","state":"TX","country":"US","targetLeadCount":10}',
+    };
+  }
+  try {
+    const parsed = JSON.parse(text) as unknown;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return { ok: false, error: "JSON body must be an object." };
+    }
+    return { ok: true, body: parsed as Record<string, unknown> };
+  } catch {
+    return { ok: false, error: "Invalid JSON body." };
+  }
+}
+
+/** Lightweight auth + quota check (no search). */
+export async function handlePublicPing(request: Request, kind: IntegrationKind) {
   const resolvedUser = await resolveApiUser(request, kind);
   if (!resolvedUser.ok) {
-    return NextResponse.json({ error: resolvedUser.error }, { status: resolvedUser.status });
+    return jsonWithCors(
+      { ok: false, error: resolvedUser.error, kind },
+      { status: resolvedUser.status },
+    );
   }
 
-  const integration = await assertIntegrationEnabledForUser(resolvedUser.userId, kind);
+  const integration = await assertIntegrationEnabledForUser(
+    resolvedUser.userId,
+    kind,
+  );
   if (!integration.ok) {
-    return NextResponse.json({ error: integration.error }, { status: 403 });
+    return jsonWithCors(
+      { ok: false, error: integration.error, kind },
+      { status: 403 },
+    );
+  }
+
+  return jsonWithCors({
+    ok: true,
+    kind,
+    plan: integration.user.plan,
+    quota: {
+      used: integration.user.apiMonthlyUsed,
+      limit: integration.user.apiMonthlyLimit,
+    },
+    auth: "valid",
+    endpoints: {
+      api: "/api/public/leads/search",
+      mcp: "/api/public/mcp/search",
+      sso: "/api/public/sso/leads/search",
+    },
+    usage: {
+      method: "POST",
+      headers: [
+        "Content-Type: application/json",
+        "x-api-key: <your-key>",
+        // or Authorization: Bearer <your-key>
+        // or x-sso-token: <your-key>
+      ],
+      body: {
+        industry: "Roofing",
+        country: "US",
+        state: "TX",
+        city: "Austin",
+        targetLeadCount: 10,
+        requireSocialPresence: false,
+      },
+    },
+  });
+}
+
+export async function handlePublicSearch(
+  request: Request,
+  kind: IntegrationKind,
+) {
+  const resolvedUser = await resolveApiUser(request, kind);
+  if (!resolvedUser.ok) {
+    return jsonWithCors(
+      { error: resolvedUser.error },
+      { status: resolvedUser.status },
+    );
+  }
+
+  const integration = await assertIntegrationEnabledForUser(
+    resolvedUser.userId,
+    kind,
+  );
+  if (!integration.ok) {
+    return jsonWithCors({ error: integration.error }, { status: 403 });
   }
 
   try {
-    const body = await request.json();
+    const parsed = await parseJsonBody(request);
+    if (!parsed.ok) {
+      return jsonWithCors({ error: parsed.error }, { status: 400 });
+    }
+
+    // Public integrations default to volume (not strict social filter)
+    // unless the caller explicitly sets requireSocialPresence.
+    const body = { ...parsed.body };
+    if (
+      body.requireSocialPresence === undefined ||
+      body.requireSocialPresence === null ||
+      body.requireSocialPresence === ""
+    ) {
+      body.requireSocialPresence = false;
+    }
+
     const resolved = resolveSearchCriteria(body);
     if (!resolved.ok) {
-      return NextResponse.json({ error: resolved.error }, { status: 400 });
+      return jsonWithCors({ error: resolved.error }, { status: 400 });
     }
     if (!process.env.GOOGLE_PLACES_API_KEY) {
-      return NextResponse.json(
-        { error: "GOOGLE_PLACES_API_KEY is not configured" },
+      return jsonWithCors(
+        { error: "GOOGLE_PLACES_API_KEY is not configured on the server" },
         { status: 503 },
       );
     }
 
     const quota = await consumeApiUsage(integration.user.id, 1);
     if (!quota.ok) {
-      return NextResponse.json(
+      return jsonWithCors(
         { error: quota.error, used: quota.used, limit: quota.limit },
         { status: 429 },
       );
@@ -85,10 +223,17 @@ export async function handlePublicSearch(request: Request, kind: IntegrationKind
       integration.user.id,
       "api_search",
       `${kind.toUpperCase()} search generated ${result.leads.length} leads`,
-      { searchId: result.search.id, kind, apiUsed: quota.used, apiLimit: quota.limit },
+      {
+        searchId: result.search.id,
+        kind,
+        apiUsed: quota.used,
+        apiLimit: quota.limit,
+      },
     );
 
-    return NextResponse.json({
+    return jsonWithCors({
+      ok: true,
+      kind,
       search: result.search,
       leads: result.leads,
       meta: result.meta,
@@ -96,6 +241,7 @@ export async function handlePublicSearch(request: Request, kind: IntegrationKind
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Search failed";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error(`[public-search:${kind}]`, err);
+    return jsonWithCors({ error: message, kind }, { status: 500 });
   }
 }

@@ -45,15 +45,19 @@ async function ensurePlanFlagsEnabled(user: NonNullable<Awaited<ReturnType<typeo
   if (flags.ssoEnabled && !user.ssoEnabled) patch.ssoEnabled = true;
   if (user.apiMonthlyLimit == null) patch.apiMonthlyLimit = flags.apiMonthlyLimit;
 
-  // Staff always get plan features on
+  // Staff always get integrations on + a usable monthly ceiling
   if (
     user.role === "SUPER_ADMIN" ||
     user.role === "MANAGER" ||
     user.role === "SUB_ADMIN"
   ) {
-    if (flags.apiEnabled) patch.apiEnabled = true;
-    if (flags.mcpEnabled) patch.mcpEnabled = true;
-    if (flags.ssoEnabled) patch.ssoEnabled = true;
+    patch.apiEnabled = true;
+    patch.mcpEnabled = true;
+    patch.ssoEnabled = true;
+    const agencyCeiling = defaultApiLimitForPlan("agency");
+    if (user.apiMonthlyLimit == null || user.apiMonthlyLimit < agencyCeiling) {
+      patch.apiMonthlyLimit = agencyCeiling;
+    }
   }
 
   if (Object.keys(patch).length === 0) return user;
@@ -88,18 +92,23 @@ export async function GET() {
 
   fresh = await ensurePlanFlagsEnabled(fresh);
 
+  const isStaff =
+    fresh.role === "SUPER_ADMIN" ||
+    fresh.role === "MANAGER" ||
+    fresh.role === "SUB_ADMIN";
+
   const limit = fresh.apiMonthlyLimit ?? defaultApiLimitForPlan(fresh.plan);
   return NextResponse.json({
     plan: fresh.plan,
     planFeatures: {
-      api: planFeatureEnabled(fresh.plan, "api"),
-      mcp: planFeatureEnabled(fresh.plan, "mcp"),
-      sso: planFeatureEnabled(fresh.plan, "sso"),
+      api: isStaff || planFeatureEnabled(fresh.plan, "api"),
+      mcp: isStaff || planFeatureEnabled(fresh.plan, "mcp"),
+      sso: isStaff || planFeatureEnabled(fresh.plan, "sso"),
     },
     access: {
-      apiEnabled: fresh.apiEnabled,
-      mcpEnabled: fresh.mcpEnabled,
-      ssoEnabled: fresh.ssoEnabled,
+      apiEnabled: isStaff ? true : fresh.apiEnabled,
+      mcpEnabled: isStaff ? true : fresh.mcpEnabled,
+      ssoEnabled: isStaff ? true : fresh.ssoEnabled,
       apiKeyLast4: fresh.apiKeyLast4,
       apiMonthlyUsed: fresh.apiMonthlyUsed,
       apiMonthlyLimit: limit,
@@ -119,7 +128,13 @@ export async function POST() {
 
   fresh = await ensurePlanFlagsEnabled(fresh);
 
+  const isStaff =
+    fresh.role === "SUPER_ADMIN" ||
+    fresh.role === "MANAGER" ||
+    fresh.role === "SUB_ADMIN";
+
   const hasAnyIntegration =
+    isStaff ||
     (planFeatureEnabled(fresh.plan, "api") && fresh.apiEnabled) ||
     (planFeatureEnabled(fresh.plan, "mcp") && fresh.mcpEnabled) ||
     (planFeatureEnabled(fresh.plan, "sso") && fresh.ssoEnabled);
