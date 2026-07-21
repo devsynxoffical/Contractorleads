@@ -667,9 +667,9 @@ export function LeadSearchForm() {
                     LinkedIn + social required (on by default)
                   </span>
                   <span className="mt-0.5 block text-ink-muted">
-                    Every scrape automatically finds LinkedIn, Facebook/Instagram,
-                    owner, and Yelp. With this on, only leads that have LinkedIn +
-                    a social profile are kept.
+                    We always enrich LinkedIn, socials, owner, and team
+                    automatically. Prefer leads with LinkedIn + social first, then
+                    fill up to your exact count (e.g. 50 → 50).
                   </span>
                 </span>
               </label>
