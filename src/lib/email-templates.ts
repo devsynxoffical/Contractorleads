@@ -21,12 +21,13 @@ function esc(s: string) {
     .replace(/"/g, "&quot;");
 }
 
-function ctaButton(label: string, href: string) {
+function ctaButton(label: string, href: string, opts?: { fullWidth?: boolean }) {
+  const widthStyle = opts?.fullWidth ? "width:100%;text-align:center;" : "";
   return `
-  <table role="presentation" cellspacing="0" cellpadding="0">
+  <table role="presentation" cellspacing="0" cellpadding="0" style="${opts?.fullWidth ? "width:100%;" : ""}">
     <tr>
-      <td style="border-radius:8px;background:${EMAIL_BRAND.buttonBg};background-image:${EMAIL_BRAND.buttonGradient};">
-        <a href="${esc(href)}" style="display:inline-block;padding:12px 22px;font-family:${EMAIL_FONT};font-size:14px;font-weight:600;letter-spacing:-0.01em;color:${EMAIL_BRAND.buttonText};text-decoration:none;border-radius:8px;">
+      <td style="border-radius:10px;background:${EMAIL_BRAND.buttonBg};background-image:${EMAIL_BRAND.buttonGradient};${widthStyle}">
+        <a href="${esc(href)}" style="display:inline-block;${opts?.fullWidth ? "width:100%;box-sizing:border-box;text-align:center;" : ""}padding:13px 24px;font-family:${EMAIL_FONT};font-size:14px;font-weight:600;letter-spacing:-0.01em;color:${EMAIL_BRAND.buttonText};text-decoration:none;border-radius:10px;">
           ${esc(label)}
         </a>
       </td>
@@ -34,36 +35,79 @@ function ctaButton(label: string, href: string) {
   </table>`;
 }
 
-function featureRow(_icon: string, title: string, body: string, linkLabel?: string, linkHref?: string) {
+function secondaryButton(label: string, href: string) {
+  return `
+  <table role="presentation" cellspacing="0" cellpadding="0" style="width:100%;">
+    <tr>
+      <td style="border-radius:999px;border:1px solid ${EMAIL_BRAND.footerBorder};background:rgba(255,255,255,0.06);text-align:center;">
+        <a href="${esc(href)}" style="display:inline-block;width:100%;box-sizing:border-box;padding:11px 20px;font-family:${EMAIL_FONT};font-size:13px;font-weight:600;color:${EMAIL_BRAND.footerText};text-decoration:none;border-radius:999px;">
+          ${esc(label)}
+        </a>
+      </td>
+    </tr>
+  </table>`;
+}
+
+function whitePillButton(label: string, href: string) {
+  return `
+  <table role="presentation" cellspacing="0" cellpadding="0" style="width:100%;">
+    <tr>
+      <td style="border-radius:999px;background:#ffffff;text-align:center;">
+        <a href="${esc(href)}" style="display:inline-block;width:100%;box-sizing:border-box;padding:11px 20px;font-family:${EMAIL_FONT};font-size:13px;font-weight:600;color:#171717;text-decoration:none;border-radius:999px;">
+          ${esc(label)} →
+        </a>
+      </td>
+    </tr>
+  </table>`;
+}
+
+function featureRow(
+  _icon: string,
+  title: string,
+  body: string,
+  linkLabel?: string,
+  linkHref?: string,
+) {
   return `
   <tr>
-    <td style="padding:16px 0;border-bottom:1px solid ${EMAIL_BRAND.border};">
-      <p style="margin:0;font-family:${EMAIL_FONT};font-size:14px;font-weight:600;letter-spacing:-0.01em;color:${EMAIL_BRAND.ink};">${esc(title)}</p>
-      <p style="margin:6px 0 0;font-family:${EMAIL_FONT};font-size:13px;line-height:1.55;color:${EMAIL_BRAND.muted};">${esc(body)}</p>
-      ${
-        linkLabel && linkHref
-          ? `<p style="margin:8px 0 0;"><a href="${esc(linkHref)}" style="font-family:${EMAIL_FONT};font-size:13px;font-weight:500;color:${EMAIL_BRAND.link};text-decoration:underline;">${esc(linkLabel)}</a></p>`
-          : ""
-      }
+    <td style="padding:14px 0;border-bottom:1px solid ${EMAIL_BRAND.border};">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+        <tr>
+          <td width="40" valign="top" style="padding-right:12px;">
+            <div style="width:32px;height:32px;border-radius:9px;background:${EMAIL_BRAND.heroBg};border:1px solid ${EMAIL_BRAND.border};text-align:center;line-height:32px;font-family:${EMAIL_FONT};font-size:13px;font-weight:700;color:${EMAIL_BRAND.magenta};">
+              ◆
+            </div>
+          </td>
+          <td valign="top">
+            <p style="margin:0;font-family:${EMAIL_FONT};font-size:14px;font-weight:600;letter-spacing:-0.01em;color:${EMAIL_BRAND.ink};">${esc(title)}</p>
+            <p style="margin:5px 0 0;font-family:${EMAIL_FONT};font-size:13px;line-height:1.55;color:${EMAIL_BRAND.muted};">${esc(body)}</p>
+            ${
+              linkLabel && linkHref
+                ? `<p style="margin:8px 0 0;"><a href="${esc(linkHref)}" style="font-family:${EMAIL_FONT};font-size:13px;font-weight:600;color:${EMAIL_BRAND.link};text-decoration:none;">${esc(linkLabel)} →</a></p>`
+                : ""
+            }
+          </td>
+        </tr>
+      </table>
     </td>
   </tr>`;
 }
 
 function statsRow(leadCount: number, hotCount?: number, warmCount?: number) {
   return `
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 24px;border:1px solid ${EMAIL_BRAND.border};border-radius:8px;border-collapse:separate;overflow:hidden;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 22px;border:1px solid ${EMAIL_BRAND.border};border-radius:12px;border-collapse:separate;overflow:hidden;background:${EMAIL_BRAND.softBg};">
     <tr>
-      <td style="padding:18px 12px;width:33.33%;text-align:center;background:${EMAIL_BRAND.cardBg};">
-        <p style="margin:0;font-family:${EMAIL_FONT};font-size:22px;font-weight:600;letter-spacing:-0.03em;color:${EMAIL_BRAND.ink};">${leadCount}</p>
-        <p style="margin:6px 0 0;font-family:${EMAIL_FONT};font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:${EMAIL_BRAND.faint};">Total</p>
+      <td style="padding:18px 12px;width:33.33%;text-align:center;">
+        <p style="margin:0;font-family:${EMAIL_FONT};font-size:24px;font-weight:700;letter-spacing:-0.03em;color:${EMAIL_BRAND.ink};">${leadCount}</p>
+        <p style="margin:6px 0 0;font-family:${EMAIL_FONT};font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:${EMAIL_BRAND.faint};">Total</p>
       </td>
-      <td style="padding:18px 12px;width:33.33%;text-align:center;background:${EMAIL_BRAND.cardBg};border-left:1px solid ${EMAIL_BRAND.border};">
-        <p style="margin:0;font-family:${EMAIL_FONT};font-size:22px;font-weight:600;letter-spacing:-0.03em;color:${EMAIL_BRAND.pink};">${hotCount ?? "—"}</p>
-        <p style="margin:6px 0 0;font-family:${EMAIL_FONT};font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:${EMAIL_BRAND.faint};">Hot</p>
+      <td style="padding:18px 12px;width:33.33%;text-align:center;border-left:1px solid ${EMAIL_BRAND.border};">
+        <p style="margin:0;font-family:${EMAIL_FONT};font-size:24px;font-weight:700;letter-spacing:-0.03em;color:${EMAIL_BRAND.pink};">${hotCount ?? "—"}</p>
+        <p style="margin:6px 0 0;font-family:${EMAIL_FONT};font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:${EMAIL_BRAND.faint};">Hot</p>
       </td>
-      <td style="padding:18px 12px;width:33.33%;text-align:center;background:${EMAIL_BRAND.cardBg};border-left:1px solid ${EMAIL_BRAND.border};">
-        <p style="margin:0;font-family:${EMAIL_FONT};font-size:22px;font-weight:600;letter-spacing:-0.03em;color:${EMAIL_BRAND.purple};">${warmCount ?? "—"}</p>
-        <p style="margin:6px 0 0;font-family:${EMAIL_FONT};font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:${EMAIL_BRAND.faint};">Warm</p>
+      <td style="padding:18px 12px;width:33.33%;text-align:center;border-left:1px solid ${EMAIL_BRAND.border};">
+        <p style="margin:0;font-family:${EMAIL_FONT};font-size:24px;font-weight:700;letter-spacing:-0.03em;color:${EMAIL_BRAND.purple};">${warmCount ?? "—"}</p>
+        <p style="margin:6px 0 0;font-family:${EMAIL_FONT};font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:${EMAIL_BRAND.faint};">Warm</p>
       </td>
     </tr>
   </table>`;
@@ -75,23 +119,188 @@ function sampleList(names: string[]) {
     .map(
       (n, i) => `
     <tr>
-      <td style="padding:11px 0;font-family:${EMAIL_FONT};font-size:13px;color:${EMAIL_BRAND.ink};border-bottom:${
+      <td style="padding:12px 14px;font-family:${EMAIL_FONT};font-size:13px;font-weight:500;color:${EMAIL_BRAND.ink};border-bottom:${
         i === names.length - 1 ? "none" : `1px solid ${EMAIL_BRAND.border}`
       };">
+        <span style="display:inline-block;width:6px;height:6px;border-radius:999px;background:${EMAIL_BRAND.magenta};margin-right:10px;vertical-align:middle;"></span>
         ${esc(n)}
       </td>
     </tr>`,
     )
     .join("");
   return `
-    <p style="margin:0 0 4px;font-family:${EMAIL_FONT};font-size:12px;font-weight:600;letter-spacing:0.02em;text-transform:uppercase;color:${EMAIL_BRAND.faint};">Sample businesses</p>
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 8px;">
+    <p style="margin:0 0 8px;font-family:${EMAIL_FONT};font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${EMAIL_BRAND.faint};">Sample businesses</p>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 8px;border:1px solid ${EMAIL_BRAND.border};border-radius:12px;border-collapse:separate;overflow:hidden;background:${EMAIL_BRAND.cardBg};">
       ${rows}
     </table>`;
 }
 
+/** Site-style header: logo, nav, Sign in, Start free trial */
+function emailHeader(loginUrl: string, registerUrl: string, logo: string) {
+  const site = EMAIL_BRAND.siteUrl;
+  return `
+  <tr>
+    <td style="padding:18px 24px;background:${EMAIL_BRAND.cardBg};border-bottom:1px solid ${EMAIL_BRAND.border};">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+        <tr>
+          <td align="left" style="vertical-align:middle;">
+            <a href="${esc(site)}" style="text-decoration:none;color:${EMAIL_BRAND.ink};">
+              <table role="presentation" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td style="vertical-align:middle;padding-right:10px;">
+                    <img src="${esc(logo)}" width="36" height="36" alt="${esc(EMAIL_BRAND.name)}" style="display:block;border:0;border-radius:999px;width:36px;height:36px;" />
+                  </td>
+                  <td style="vertical-align:middle;font-family:${EMAIL_FONT};font-size:15px;font-weight:600;letter-spacing:-0.02em;color:${EMAIL_BRAND.ink};">
+                    Contractor <span style="background:${EMAIL_BRAND.buttonGradient};-webkit-background-clip:text;background-clip:text;color:${EMAIL_BRAND.magenta};">Leads</span>
+                  </td>
+                </tr>
+              </table>
+            </a>
+          </td>
+          <td align="right" style="vertical-align:middle;">
+            <a href="${esc(loginUrl)}" style="font-family:${EMAIL_FONT};font-size:12px;font-weight:500;color:${EMAIL_BRAND.muted};text-decoration:none;padding-right:10px;">Sign in</a>
+            <a href="${esc(registerUrl)}" style="display:inline-block;padding:9px 14px;font-family:${EMAIL_FONT};font-size:12px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:10px;background:${EMAIL_BRAND.buttonBg};background-image:${EMAIL_BRAND.buttonGradient};">Start free trial</a>
+          </td>
+        </tr>
+      </table>
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:14px;">
+        <tr>
+          <td align="left" style="font-family:${EMAIL_FONT};font-size:12px;">
+            <a href="${esc(site)}/#features" style="color:${EMAIL_BRAND.muted};text-decoration:none;font-weight:500;padding-right:14px;">Features</a>
+            <a href="${esc(site)}/#technology" style="color:${EMAIL_BRAND.muted};text-decoration:none;font-weight:500;padding-right:14px;">Technology</a>
+            <a href="${esc(site)}/#pricing" style="color:${EMAIL_BRAND.muted};text-decoration:none;font-weight:500;padding-right:14px;">Pricing</a>
+            <a href="${esc(site)}/#faq" style="color:${EMAIL_BRAND.muted};text-decoration:none;font-weight:500;">FAQ</a>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>`;
+}
+
+/** Soft brand hero panel under header */
+function emailHero(title: string, subtitle: string) {
+  return `
+  <tr>
+    <td style="padding:20px 24px 8px;background:${EMAIL_BRAND.cardBg};">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:separate;border-radius:16px;overflow:hidden;background:${EMAIL_BRAND.heroBg};border:1px solid ${EMAIL_BRAND.border};">
+        <tr>
+          <td style="padding:28px 24px;">
+            <p style="margin:0 0 10px;font-family:${EMAIL_FONT};font-size:11px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${EMAIL_BRAND.magenta};">
+              ${esc(EMAIL_BRAND.name)}
+            </p>
+            <h1 style="margin:0;font-family:${EMAIL_FONT};font-size:26px;line-height:1.25;font-weight:700;letter-spacing:-0.03em;color:${EMAIL_BRAND.ink};">
+              ${esc(title)}
+            </h1>
+            ${
+              subtitle.trim()
+                ? `<p style="margin:12px 0 0;font-family:${EMAIL_FONT};font-size:14px;line-height:1.55;color:${EMAIL_BRAND.muted};max-width:440px;">${esc(subtitle)}</p>`
+                : ""
+            }
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>`;
+}
+
+/** Dark marketing-style footer with CTAs + link columns */
+function emailFooter(opts: {
+  logo: string;
+  loginUrl: string;
+  registerUrl: string;
+  prefs: string;
+  unsub: string;
+}) {
+  const site = EMAIL_BRAND.siteUrl;
+  const year = new Date().getFullYear();
+  return `
+  <tr>
+    <td style="padding:0;background:${EMAIL_BRAND.footerBg};background-image:linear-gradient(180deg,${EMAIL_BRAND.footerBgTop} 0%,${EMAIL_BRAND.footerBg} 42%,#120a28 100%);">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+        <tr>
+          <td style="padding:28px 24px 8px;text-align:center;">
+            <p style="margin:0;font-family:${EMAIL_FONT};font-size:18px;font-weight:800;letter-spacing:-0.04em;text-transform:uppercase;color:rgba(255,255,255,0.18);">
+              CONTRACTOR LEADS
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:16px 24px 8px;border-top:1px solid ${EMAIL_BRAND.footerBorder};">
+            <p style="margin:0 0 12px;font-family:${EMAIL_FONT};font-size:13px;font-weight:600;color:${EMAIL_BRAND.footerText};">Get started</p>
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+              <tr>
+                <td style="padding-bottom:8px;">
+                  ${whitePillButton("Start free trial", opts.registerUrl)}
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  ${secondaryButton("Sign in", opts.loginUrl)}
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:20px 24px 8px;">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+              <tr>
+                <td width="50%" valign="top" style="padding-right:10px;">
+                  <p style="margin:0 0 10px;font-family:${EMAIL_FONT};font-size:12px;font-weight:600;color:${EMAIL_BRAND.footerText};">Product</p>
+                  <p style="margin:0 0 6px;"><a href="${esc(site)}/#features" style="font-family:${EMAIL_FONT};font-size:12px;color:${EMAIL_BRAND.footerMuted};text-decoration:none;">Features</a></p>
+                  <p style="margin:0 0 6px;"><a href="${esc(site)}/#pricing" style="font-family:${EMAIL_FONT};font-size:12px;color:${EMAIL_BRAND.footerMuted};text-decoration:none;">Pricing</a></p>
+                  <p style="margin:0 0 6px;"><a href="${esc(site)}/leads/search" style="font-family:${EMAIL_FONT};font-size:12px;color:${EMAIL_BRAND.footerMuted};text-decoration:none;">Lead Finder</a></p>
+                  <p style="margin:0;"><a href="${esc(site)}/leads/pipeline" style="font-family:${EMAIL_FONT};font-size:12px;color:${EMAIL_BRAND.footerMuted};text-decoration:none;">Pipeline CRM</a></p>
+                </td>
+                <td width="50%" valign="top" style="padding-left:10px;">
+                  <p style="margin:0 0 10px;font-family:${EMAIL_FONT};font-size:12px;font-weight:600;color:${EMAIL_BRAND.footerText};">Company</p>
+                  <p style="margin:0 0 6px;"><a href="${esc(site)}" style="font-family:${EMAIL_FONT};font-size:12px;color:${EMAIL_BRAND.footerMuted};text-decoration:none;">About</a></p>
+                  <p style="margin:0 0 6px;"><a href="${esc(site)}/#faq" style="font-family:${EMAIL_FONT};font-size:12px;color:${EMAIL_BRAND.footerMuted};text-decoration:none;">Help / FAQ</a></p>
+                  <p style="margin:0 0 6px;"><a href="mailto:${esc(EMAIL_BRAND.contactEmail)}" style="font-family:${EMAIL_FONT};font-size:12px;color:${EMAIL_BRAND.footerMuted};text-decoration:none;">Contact</a></p>
+                  <p style="margin:0;"><a href="${esc(site)}" style="font-family:${EMAIL_FONT};font-size:12px;color:${EMAIL_BRAND.footerMuted};text-decoration:none;">www.contractorleads.us</a></p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:18px 24px 10px;">
+            <table role="presentation" cellspacing="0" cellpadding="0">
+              <tr>
+                <td style="vertical-align:middle;padding-right:10px;">
+                  <img src="${esc(opts.logo)}" width="28" height="28" alt="" style="display:block;border:0;border-radius:999px;width:28px;height:28px;" />
+                </td>
+                <td style="vertical-align:middle;font-family:${EMAIL_FONT};font-size:12px;line-height:1.4;color:${EMAIL_BRAND.footerMuted};">
+                  ${esc(EMAIL_BRAND.tagline)}
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:16px 24px 24px;border-top:1px solid ${EMAIL_BRAND.footerBorder};">
+            <p style="margin:0 0 10px;font-family:${EMAIL_FONT};font-size:11px;">
+              <a href="${esc(opts.prefs)}" style="color:${EMAIL_BRAND.footerFaint};text-decoration:underline;">Email preferences</a>
+              <span style="color:${EMAIL_BRAND.footerFaint};"> · </span>
+              <a href="${esc(opts.unsub)}" style="color:${EMAIL_BRAND.footerFaint};text-decoration:underline;">Unsubscribe</a>
+              <span style="color:${EMAIL_BRAND.footerFaint};"> · </span>
+              <a href="mailto:${esc(EMAIL_BRAND.supportEmail)}" style="color:${EMAIL_BRAND.footerFaint};text-decoration:none;">${esc(EMAIL_BRAND.supportEmail)}</a>
+            </p>
+            <p style="margin:0 0 4px;font-family:${EMAIL_FONT};font-size:11px;color:${EMAIL_BRAND.footerFaint};">
+              © ${year} ${esc(EMAIL_BRAND.name)}. All rights reserved.
+            </p>
+            <p style="margin:0;font-family:${EMAIL_FONT};font-size:11px;color:${EMAIL_BRAND.footerFaint};">
+              ${esc(EMAIL_BRAND.address)} · Built for agencies that sell to contractors.
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>`;
+}
+
 /**
- * Professional product email shell — clean system typography, no gradient heroes.
+ * Full branded shell matching contractorleads.us header + dark footer.
  */
 export function renderEmailShell(params: {
   preheader: string;
@@ -104,6 +313,7 @@ export function renderEmailShell(params: {
   const base = appBaseUrl();
   const logo = emailLogoUrl();
   const loginUrl = params.links?.loginUrl || `${base}/login`;
+  const registerUrl = `${EMAIL_BRAND.siteUrl}/register`;
   const unsub = params.links?.unsubscribeUrl || `${base}/email/unsubscribe`;
   const prefs = params.links?.preferencesUrl || `${base}/email/preferences`;
 
@@ -121,59 +331,15 @@ export function renderEmailShell(params: {
   <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
     ${esc(params.preheader)}
   </div>
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:${EMAIL_BRAND.pageBg};padding:32px 16px;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:${EMAIL_BRAND.pageBg};padding:28px 12px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;border-collapse:separate;border-radius:12px;overflow:hidden;background:${EMAIL_BRAND.cardBg};border:1px solid ${EMAIL_BRAND.border};">
-          <tr>
-            <td style="padding:20px 28px 16px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-                <tr>
-                  <td align="left" style="vertical-align:middle;">
-                    <a href="${esc(EMAIL_BRAND.siteUrl)}" style="text-decoration:none;color:${EMAIL_BRAND.ink};">
-                      <table role="presentation" cellspacing="0" cellpadding="0">
-                        <tr>
-                          <td style="vertical-align:middle;padding-right:10px;">
-                            <img src="${esc(logo)}" width="32" height="32" alt="${esc(EMAIL_BRAND.name)}" style="display:block;border:0;border-radius:999px;width:32px;height:32px;" />
-                          </td>
-                          <td style="vertical-align:middle;font-family:${EMAIL_FONT};font-size:15px;font-weight:600;letter-spacing:-0.02em;color:${EMAIL_BRAND.ink};">
-                            Contractor <span style="color:${EMAIL_BRAND.magenta};">Leads</span>
-                          </td>
-                        </tr>
-                      </table>
-                    </a>
-                  </td>
-                  <td align="right" style="vertical-align:middle;">
-                    <a href="${esc(loginUrl)}" style="font-family:${EMAIL_FONT};font-size:13px;font-weight:500;color:${EMAIL_BRAND.link};text-decoration:none;">
-                      Log in
-                    </a>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;border-collapse:separate;border-radius:16px;overflow:hidden;background:${EMAIL_BRAND.cardBg};border:1px solid ${EMAIL_BRAND.border};box-shadow:0 12px 40px rgba(26,20,36,0.08);">
+          ${emailHeader(loginUrl, registerUrl, logo)}
+          ${emailHero(params.heroTitle, params.heroSubtitle)}
 
           <tr>
-            <td style="padding:0 28px;">
-              <div style="height:3px;border-radius:999px;background:${EMAIL_BRAND.buttonGradient};line-height:3px;font-size:0;">&nbsp;</div>
-            </td>
-          </tr>
-
-          <tr>
-            <td style="padding:24px 28px 8px;font-family:${EMAIL_FONT};">
-              <p style="margin:0 0 8px;font-family:${EMAIL_FONT};font-size:22px;line-height:1.3;font-weight:600;letter-spacing:-0.03em;color:${EMAIL_BRAND.ink};">
-                ${esc(params.heroTitle)}
-              </p>
-              ${
-                params.heroSubtitle.trim()
-                  ? `<p style="margin:0 0 4px;font-family:${EMAIL_FONT};font-size:14px;line-height:1.55;color:${EMAIL_BRAND.muted};">${esc(params.heroSubtitle)}</p>`
-                  : ""
-              }
-            </td>
-          </tr>
-
-          <tr>
-            <td style="padding:16px 28px 28px;font-family:${EMAIL_FONT};color:${EMAIL_BRAND.ink};">
+            <td style="padding:20px 28px 28px;font-family:${EMAIL_FONT};color:${EMAIL_BRAND.ink};background:${EMAIL_BRAND.cardBg};">
               ${params.bodyHtml}
             </td>
           </tr>
@@ -181,10 +347,10 @@ export function renderEmailShell(params: {
           ${
             params.secondaryHtml
               ? `<tr>
-            <td style="padding:0 28px 28px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:separate;border-radius:8px;border:1px solid ${EMAIL_BRAND.border};background:${EMAIL_BRAND.softBg};">
+            <td style="padding:0 24px 28px;background:${EMAIL_BRAND.cardBg};">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:separate;border-radius:14px;border:1px solid ${EMAIL_BRAND.border};background:${EMAIL_BRAND.softBg};">
                 <tr>
-                  <td style="padding:18px 18px;font-family:${EMAIL_FONT};color:${EMAIL_BRAND.ink};">
+                  <td style="padding:20px 20px;font-family:${EMAIL_FONT};color:${EMAIL_BRAND.ink};">
                     ${params.secondaryHtml}
                   </td>
                 </tr>
@@ -194,29 +360,7 @@ export function renderEmailShell(params: {
               : ""
           }
 
-          <tr>
-            <td style="padding:0 28px 24px;font-family:${EMAIL_FONT};font-size:13px;color:${EMAIL_BRAND.muted};">
-              <p style="margin:0;">— ${esc(EMAIL_BRAND.name)}</p>
-            </td>
-          </tr>
-
-          <tr>
-            <td style="padding:20px 28px 24px;border-top:1px solid ${EMAIL_BRAND.border};font-family:${EMAIL_FONT};">
-              <p style="margin:0 0 10px;font-size:12px;">
-                <a href="${esc(EMAIL_BRAND.siteUrl)}" style="color:${EMAIL_BRAND.link};text-decoration:none;font-weight:500;">www.contractorleads.us</a>
-                <span style="color:${EMAIL_BRAND.faint};"> · </span>
-                <a href="${esc(prefs)}" style="color:${EMAIL_BRAND.faint};text-decoration:underline;">Email preferences</a>
-                <span style="color:${EMAIL_BRAND.faint};"> · </span>
-                <a href="${esc(unsub)}" style="color:${EMAIL_BRAND.faint};text-decoration:underline;">Unsubscribe</a>
-              </p>
-              <p style="margin:0 0 4px;font-size:11px;line-height:1.5;color:${EMAIL_BRAND.faint};">
-                © ${new Date().getFullYear()} ${esc(EMAIL_BRAND.name)}. ${esc(EMAIL_BRAND.address)}.
-              </p>
-              <p style="margin:0;font-size:11px;color:${EMAIL_BRAND.faint};">
-                <a href="mailto:${esc(EMAIL_BRAND.supportEmail)}" style="color:${EMAIL_BRAND.faint};text-decoration:none;">${esc(EMAIL_BRAND.supportEmail)}</a>
-              </p>
-            </td>
-          </tr>
+          ${emailFooter({ logo, loginUrl, registerUrl, prefs, unsub })}
         </table>
       </td>
     </tr>
@@ -230,13 +374,15 @@ export function renderEmailShell(params: {
     params.heroTitle,
     params.heroSubtitle,
     "",
-    "Log in: " + loginUrl,
+    "Sign in: " + loginUrl,
+    "Start free trial: " + registerUrl,
     "",
     "Email preferences: " + prefs,
     "Unsubscribe: " + unsub,
     "",
     `© ${new Date().getFullYear()} ${EMAIL_BRAND.name}`,
     EMAIL_BRAND.address,
+    EMAIL_BRAND.siteUrl,
     EMAIL_BRAND.supportEmail,
   ].join("\n");
 

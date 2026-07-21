@@ -1,11 +1,11 @@
-/** Shared brand tokens for HTML email — mirrors site light theme + logo. */
+/** Shared brand tokens for HTML email — mirrors site light theme + marketing footer. */
 
 /** Canonical production site (emails always need absolute URLs). */
 export const SITE_URL = "https://www.contractorleads.us";
 
 export const EMAIL_BRAND = {
   name: "Contractor Leads",
-  tagline: "Find high-quality home service leads across America",
+  tagline: "Contractor demand, mapped, scored, and ready to dial.",
   /** Light-theme logo gradient stops (globals.css) */
   pink: "#db2777",
   magenta: "#c026d3",
@@ -20,17 +20,28 @@ export const EMAIL_BRAND = {
   softBg: "#f6f4f9",
   pageBg: "#eeeaf4",
   cardBg: "#ffffff",
+  /** Soft hero panel (brand tint, not loud) */
+  heroBg:
+    "linear-gradient(135deg,#fdf2f8 0%,#fae8ff 42%,#f3e8ff 72%,#ede9fe 100%)",
   /** Solid fallback for Outlook; gradient applied where supported */
   buttonBg: "#c026d3",
   buttonGradient:
     "linear-gradient(135deg,#db2777 0%,#c026d3 45%,#9333ea 75%,#7c3aed 100%)",
   buttonText: "#ffffff",
   link: "#86198f",
+  /** Marketing dark footer */
+  footerBg: "#0c0820",
+  footerBgTop: "#07060f",
+  footerText: "#ffffff",
+  footerMuted: "rgba(255,255,255,0.55)",
+  footerFaint: "rgba(255,255,255,0.40)",
+  footerBorder: "rgba(255,255,255,0.10)",
   /** Physical address for CAN-SPAM / deliverability */
   address:
     process.env.EMAIL_COMPANY_ADDRESS ||
     "Contractor Leads · United States",
   supportEmail: process.env.EMAIL_SUPPORT || "support@contractorleads.us",
+  contactEmail: "hello@contractorleads.us",
   /** Absolute logo URL for email clients */
   logoUrl: `${SITE_URL}/logo.png`,
   siteUrl: SITE_URL,
