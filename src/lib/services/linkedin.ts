@@ -12,7 +12,7 @@ export type LinkedInCandidate = {
 export type LinkedInCompanyResult = {
   url: string | null;
   confidence: number;
-  source: "website" | "proxycurl_domain" | "proxycurl_name" | "slug_match" | null;
+  source: "website" | "serper" | null;
 };
 
 export function isValidLinkedInUrl(url: string): boolean {
@@ -212,70 +212,7 @@ async function findLinkedInViaSerper(
   return null;
 }
 
-async function resolveViaProxycurlDomain(
-  domain: string,
-  apiKey: string
-): Promise<string | null> {
-  try {
-    const response = await fetch(
-      `https://nubela.co/proxycurl/api/linkedin/company/resolve?company_domain=${encodeURIComponent(domain)}`,
-      {
-        headers: { Authorization: `Bearer ${apiKey}` },
-        signal: AbortSignal.timeout(12000),
-      }
-    );
-    if (!response.ok) return null;
-    const data = (await response.json()) as { url?: string };
-    // Trust Proxycurl — LinkedIn blocks most server-side HTML checks
-    return data.url ? normalizeLinkedInCompanyUrl(data.url) : null;
-  } catch {
-    return null;
-  }
-}
-
-async function resolveViaProxycurlName(
-  businessName: string,
-  location: string,
-  industry: string,
-  apiKey: string
-): Promise<string | null> {
-  try {
-    const url = new URL(
-      "https://nubela.co/proxycurl/api/linkedin/company/resolve"
-    );
-    url.searchParams.set("company_name", businessName);
-    if (location) url.searchParams.set("enrich_profile", "enrich");
-    void industry;
-    void location;
-
-    const response = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${apiKey}` },
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!response.ok) return null;
-    const data = (await response.json()) as { url?: string };
-    return data.url ? normalizeLinkedInCompanyUrl(data.url) : null;
-  } catch {
-    return null;
-  }
-}
-
-/** Free: try common URL slugs — keep short so Find LinkedIn doesn't hang */
-async function resolveViaSlugGuess(
-  businessName: string
-): Promise<string | null> {
-  const slugs = slugifyBusinessName(businessName).slice(0, 3);
-  for (const slug of slugs) {
-    const url = `https://www.linkedin.com/company/${slug}/`;
-    const check = await verifyLinkedInUrl(url);
-    if (check.valid && check.html && businessNameInHtml(businessName, check.html)) {
-      return url;
-    }
-  }
-  return null;
-}
-
-/** Run all strategies to find a verified LinkedIn company page URL */
+/** Run free strategies: website scrape + Serper Google search (Proxycurl is shut down). */
 export async function findLinkedInCompanyUrl(
   businessName: string,
   location: string,
@@ -287,13 +224,14 @@ export async function findLinkedInCompanyUrl(
     skipWebsiteScrape?: boolean;
   },
 ): Promise<LinkedInCompanyResult> {
-  const apiKey = process.env.LINKEDIN_DATA_API_KEY;
+  void industry;
 
   const fromSitePrefetch = opts?.websiteCompanyUrl
-    ? normalizeLinkedInCompanyUrl(opts.websiteCompanyUrl) || opts.websiteCompanyUrl
+    ? normalizeLinkedInCompanyUrl(opts.websiteCompanyUrl) ||
+      opts.websiteCompanyUrl
     : null;
 
-  const [fromSite, fromDomain, fromSerper] = await Promise.all([
+  const [fromSite, fromSerper] = await Promise.all([
     fromSitePrefetch
       ? Promise.resolve(fromSitePrefetch)
       : opts?.skipWebsiteScrape
@@ -301,12 +239,6 @@ export async function findLinkedInCompanyUrl(
         : website
           ? discoverLinkedInFromWebsite(website)
           : Promise.resolve(null),
-    website && apiKey
-      ? (async () => {
-          const domain = extractWebsiteDomain(website);
-          return domain ? resolveViaProxycurlDomain(domain, apiKey) : null;
-        })()
-      : Promise.resolve(null),
     findLinkedInViaSerper(businessName, location),
   ]);
 
@@ -315,25 +247,10 @@ export async function findLinkedInCompanyUrl(
     if (company) return { url: company, confidence: 98, source: "website" };
     return { url: fromSite, confidence: 96, source: "website" };
   }
-  if (fromDomain) {
-    return { url: fromDomain, confidence: 97, source: "proxycurl_domain" };
-  }
   if (fromSerper) {
     const company = normalizeLinkedInCompanyUrl(fromSerper);
-    if (company) return { url: company, confidence: 94, source: "slug_match" };
-    return { url: fromSerper, confidence: 92, source: "slug_match" };
-  }
-
-  if (apiKey) {
-    const fromName = await resolveViaProxycurlName(
-      businessName,
-      location,
-      industry,
-      apiKey,
-    );
-    if (fromName) {
-      return { url: fromName, confidence: 96, source: "proxycurl_name" };
-    }
+    if (company) return { url: company, confidence: 94, source: "serper" };
+    return { url: fromSerper, confidence: 92, source: "serper" };
   }
 
   return { url: null, confidence: 0, source: null };
@@ -413,34 +330,21 @@ export async function resolveLinkedInProfiles(
 
   let ownerUrl: string | null = pack?.linkedinOwner ?? null;
   let ownerConfidence = ownerUrl ? 96 : 0;
-  const apiKey = process.env.LINKEDIN_DATA_API_KEY;
 
-  if (!ownerUrl && ownerName && apiKey) {
-    try {
-      const domain = website ? extractWebsiteDomain(website) : null;
-      const domainParam = domain
-        ? `&company_domain=${encodeURIComponent(domain)}`
-        : "";
-      const response = await fetch(
-        `https://nubela.co/proxycurl/api/linkedin/profile/resolve?first_name=${encodeURIComponent(ownerName.split(" ")[0] || "")}&last_name=${encodeURIComponent(ownerName.split(" ").slice(1).join(" ") || "")}${domainParam}`,
-        {
-          headers: { Authorization: `Bearer ${apiKey}` },
-          signal: AbortSignal.timeout(10000),
-        }
-      );
-
-      if (response.ok) {
-        const data = (await response.json()) as { url?: string };
-        const normalized = data.url
-          ? normalizeLinkedInProfileUrl(data.url)
-          : null;
-        if (normalized) {
-          ownerUrl = normalized;
-          ownerConfidence = 95;
-        }
+  // Owner LinkedIn: Serper search by person + company (no Proxycurl — shut down)
+  if (!ownerUrl && ownerName) {
+    const { searchPublicWeb } = await import("./web-search");
+    const hits = await searchPublicWeb(
+      `"${ownerName}" "${businessName}" site:linkedin.com/in`,
+      5,
+    );
+    for (const hit of hits) {
+      const normalized = normalizeLinkedInProfileUrl(hit.url);
+      if (normalized) {
+        ownerUrl = normalized;
+        ownerConfidence = 90;
+        break;
       }
-    } catch {
-      // Fall through
     }
   }
 

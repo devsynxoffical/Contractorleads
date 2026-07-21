@@ -77,9 +77,9 @@ export function getSystemKeyStatuses(): EnvKeyStatus[] {
       env: process.env.SERPER_API_KEY,
     },
     {
-      key: "LINKEDIN_DATA_API_KEY",
+      key: "NINJAPEAR_API_KEY",
       group: "Enrichment",
-      env: process.env.LINKEDIN_DATA_API_KEY,
+      env: process.env.NINJAPEAR_API_KEY || process.env.LINKEDIN_DATA_API_KEY,
     },
     {
       key: "META_APP_ID",

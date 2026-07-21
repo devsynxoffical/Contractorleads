@@ -143,23 +143,23 @@ DATABASE_URL="file:./dev.db"
 
 ---
 
-## 5) Optional: LinkedIn (Proxycurl or similar)
+## 5) Optional: NinjaPear + Serper (enrichment)
 
-**Example provider:** [https://nubela.co/proxycurl/](https://nubela.co/proxycurl/)  
-**Env variable:** `LINKEDIN_DATA_API_KEY`
+**Provider:** [https://nubela.co/](https://nubela.co/) (NinjaPear — Proxycurl is shut down)  
+**Env variables:** `NINJAPEAR_API_KEY` (or legacy `LINKEDIN_DATA_API_KEY`), plus `SERPER_API_KEY`
 
-### Steps (Proxycurl example)
+### Steps
 
-1. Sign up at Proxycurl (or another licensed LinkedIn data provider).
-2. Open dashboard → API keys.
-3. Create / copy the API key.
-4. Add to `.env`:
+1. Sign up at NinjaPear / Nubela and create an API key (buy credits — 0 credits = no enrichment).
+2. Add Serper for LinkedIn URL discovery via Google search.
+3. Add to `.env`:
 
 ```env
-LINKEDIN_DATA_API_KEY="your-proxycurl-or-provider-key"
+NINJAPEAR_API_KEY="your-ninjapear-key"
+SERPER_API_KEY="your-serper-key"
 ```
 
-Without this key, the app shows **LinkedIn Not Available** (it never invents URLs).
+NinjaPear fills Facebook/Instagram + executives from the company website. LinkedIn URLs come from website scrape + Serper (not from NinjaPear; Proxycurl is discontinued).
 
 ---
 
@@ -208,7 +208,7 @@ YELP_FUSION_API_KEY="your-yelp-key"
 | 3 | Yelp Developers | `YELP_FUSION_API_KEY` | Recommended |
 | 4 | Yourself | `JWT_SECRET` | Yes |
 | 5 | Yourself | `NEXT_PUBLIC_APP_URL` | Yes |
-| 6 | Proxycurl etc. | `LINKEDIN_DATA_API_KEY` | Optional |
+| 6 | NinjaPear + Serper | `NINJAPEAR_API_KEY`, `SERPER_API_KEY` | Optional |
 | 7 | Stripe | later | Optional (billing) |
 
 ---

@@ -41,7 +41,8 @@ PORT=3000
 OPENAI_API_KEY=""
 GOOGLE_PLACES_API_KEY=""
 YELP_FUSION_API_KEY=""
-LINKEDIN_DATA_API_KEY=""
+NINJAPEAR_API_KEY=""
+SERPER_API_KEY=""
 `;
 
 writeFileSync(join(OUT, ".env.example"), envExample);

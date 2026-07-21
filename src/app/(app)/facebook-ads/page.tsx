@@ -1,19 +1,20 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { isMetaConfigured } from "@/lib/services/facebook";
+import { isNinjaPearConfigured } from "@/lib/services/ninjapear";
 
 export default function FacebookAdsPage() {
   const metaConnected = isMetaConfigured();
-  const linkedinConfigured = Boolean(process.env.LINKEDIN_DATA_API_KEY);
+  const ninjaConfigured = isNinjaPearConfigured();
 
   return (
     <div className="page-pad page-enter">
       <div className="mb-6">
         <h1 className="font-[family-name:var(--font-display)] text-2xl font-semibold text-ink">
-          Facebook & LinkedIn integrations
+          Facebook & enrichment integrations
         </h1>
         <p className="mt-1 text-sm text-ink-muted">
-          Connect Meta and LinkedIn APIs to fetch social profiles and search the
-          Ads Library from any lead detail page.
+          Connect Meta and NinjaPear to enrich social profiles. LinkedIn URLs are
+          discovered from websites + Serper (Proxycurl is shut down).
         </p>
       </div>
 
@@ -56,32 +57,34 @@ export default function FacebookAdsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>LinkedIn (Proxycurl)</CardTitle>
+            <CardTitle>NinjaPear (company enrichment)</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div
               className={`inline-flex rounded-lg px-3 py-1 text-[12px] font-semibold ${
-                linkedinConfigured
+                ninjaConfigured
                   ? "bg-emerald-50 text-emerald-800"
                   : "bg-amber-50 text-amber-900"
               }`}
             >
-              {linkedinConfigured ? "Connected" : "Not configured"}
+              {ninjaConfigured ? "Connected" : "Not configured"}
             </div>
             <p className="text-ink-muted">
-              Resolves verified company and owner LinkedIn profiles (≥95%
-              confidence). Never fabricates URLs.
+              Website-first enrichment for Facebook/Instagram and executives.
+              LinkedIn pages still come from website scrape + Serper — Proxycurl
+              is discontinued.
             </p>
             <div className="rounded-xl border border-border bg-[var(--input-bg)] p-3 font-mono text-[12px] text-ink">
-              <p>LINKEDIN_DATA_API_KEY=your-proxycurl-key</p>
+              <p>NINJAPEAR_API_KEY=your-ninjapear-key</p>
+              <p className="mt-2 text-ink-faint">SERPER_API_KEY=your-serper-key</p>
             </div>
             <a
-              href="https://nubela.co/proxycurl/"
+              href="https://nubela.co/dashboard/api/#keys"
               target="_blank"
               rel="noopener noreferrer"
               className="text-brand-600 hover:underline"
             >
-              Get Proxycurl API key →
+              Create NinjaPear API key →
             </a>
           </CardContent>
         </Card>

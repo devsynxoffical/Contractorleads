@@ -50,14 +50,12 @@ export async function POST(
 
   const sourceLabel: Record<string, string> = {
     website: "Found on company website",
-    proxycurl_domain: "Matched via company domain (Proxycurl)",
-    proxycurl_name: "Matched via company name (Proxycurl)",
-    slug_match: "Matched via LinkedIn URL pattern",
+    serper: "Found via Google search (Serper)",
   };
 
   const missingKey =
-    !process.env.LINKEDIN_DATA_API_KEY && !result.url
-      ? "Add LINKEDIN_DATA_API_KEY (e.g. Proxycurl) for higher LinkedIn match rates. Free website + slug matching did not find a page."
+    !process.env.SERPER_API_KEY && !result.url
+      ? "Add SERPER_API_KEY for stronger LinkedIn discovery. Website scrape did not find a page."
       : null;
 
   return NextResponse.json({

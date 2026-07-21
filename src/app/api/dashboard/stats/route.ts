@@ -168,7 +168,11 @@ export async function GET() {
   );
   const placesConfigured = Boolean(process.env.GOOGLE_PLACES_API_KEY);
   const yelpConfigured = Boolean(process.env.YELP_FUSION_API_KEY);
-  const linkedinConfigured = Boolean(process.env.LINKEDIN_DATA_API_KEY);
+  const linkedinConfigured = Boolean(
+    process.env.SERPER_API_KEY ||
+      process.env.NINJAPEAR_API_KEY ||
+      process.env.LINKEDIN_DATA_API_KEY,
+  );
 
   const weekEnd = addDays(weekStart, 7);
   const weekLeadDates = await prisma.lead.findMany({

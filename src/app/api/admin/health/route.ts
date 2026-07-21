@@ -69,11 +69,11 @@ export async function GET() {
         : "META_* keys missing — Ads Library falls back to public link",
     },
     {
-      name: "LinkedIn data API",
-      status: byKey.LINKEDIN_DATA_API_KEY?.configured ? "ok" : "warn",
-      detail: byKey.LINKEDIN_DATA_API_KEY?.configured
-        ? "API key configured"
-        : "Optional — LinkedIn enrichment limited",
+      name: "NinjaPear enrichment",
+      status: byKey.NINJAPEAR_API_KEY?.configured ? "ok" : "warn",
+      detail: byKey.NINJAPEAR_API_KEY?.configured
+        ? "NinjaPear API key configured"
+        : "Optional — set NINJAPEAR_API_KEY for FB/IG + executive enrichment (Proxycurl is shut down)",
     },
     {
       name: "Transactional email",

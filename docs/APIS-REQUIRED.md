@@ -53,12 +53,12 @@ Without an email provider, signup still works in **dev**: the API returns a `ver
 
 | Variable | What it does |
 |----------|--------------|
-| `LINKEDIN_DATA_API_KEY` | Licensed LinkedIn resolve (e.g. Proxycurl). Without it → limited / “Not Available” |
+| `NINJAPEAR_API_KEY` | Company enrichment (FB/IG + executives) via NinjaPear. Legacy alias: `LINKEDIN_DATA_API_KEY`. Proxycurl is shut down. |
 | `META_ACCESS_TOKEN` | Long-lived Meta token with **Ads Library** / `ads_archive` access. Without it → public Ads Library deep link fallback |
 | `META_APP_ID` + `META_APP_SECRET` | App token fallback for Graph calls |
 | `HOUZZ_SEARCH_ENDPOINT` + `HOUZZ_API_KEY` | Houzz match via your proxy/search endpoint |
 | `NEXTDOOR_SEARCH_ENDPOINT` + `NEXTDOOR_API_KEY` | Nextdoor match (best-effort, non-blocking) |
-| `SERPER_API_KEY` | Public web search fallback for some social profiles |
+| `SERPER_API_KEY` | Public web search for LinkedIn + social discovery |
 
 ---
 
@@ -82,7 +82,8 @@ GOOGLE_PLACES_API_KEY          # Places + Autocomplete + billing
 YELP_FUSION_API_KEY
 OPENAI_API_KEY
 META_ACCESS_TOKEN              # long-lived, Ads Library access
-LINKEDIN_DATA_API_KEY          # Proxycurl or equivalent
+NINJAPEAR_API_KEY              # NinjaPear (nubela.co) — not Proxycurl
+SERPER_API_KEY                 # LinkedIn / social discovery
 RESEND_API_KEY                 # or SENDGRID_API_KEY
 EMAIL_FROM / RESEND_FROM
 ```

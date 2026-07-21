@@ -11,6 +11,10 @@ import {
 } from "./website-people";
 import { searchFacebookPage } from "./facebook";
 import { scrapeWebsiteSocialPack } from "./website-social-pack";
+import {
+  enrichCompanyFromWebsite,
+  type NinjaPearCompany,
+} from "./ninjapear";
 import { mapPool } from "@/lib/utils/async-pool";
 import type { PlaceResult } from "./google-places";
 
@@ -233,7 +237,7 @@ async function enrichAndPersistPlace(opts: {
     ? await withTimeout(scrapeWebsiteSocialPack(website), 12000, emptyPack)
     : emptyPack;
 
-  const [websiteReachable, websitePeople, companyLi, yelp, houzz, nextdoor, qualification, facebookPage] =
+  const [websiteReachable, websitePeople, companyLi, yelp, houzz, nextdoor, qualification, facebookPage, ninja] =
     await Promise.all([
       website ? withTimeout(verifyWebsite(website), 3500, false) : Promise.resolve(false),
       website
@@ -263,6 +267,13 @@ async function enrichAndPersistPlace(opts: {
       !pack.facebook
         ? withTimeout(searchFacebookPage(place.name), 5000, null)
         : Promise.resolve(null),
+      website
+        ? withTimeout<NinjaPearCompany | null>(
+            enrichCompanyFromWebsite(website),
+            12000,
+            null,
+          )
+        : Promise.resolve(null as NinjaPearCompany | null),
     ]);
 
   // Serper fallback for missing LinkedIn / social when filter is on
@@ -279,7 +290,9 @@ async function enrichAndPersistPlace(opts: {
     pack.instagram ||
     pack.youtube ||
     pack.tiktok ||
-    facebookPage;
+    facebookPage ||
+    ninja?.facebookUrl ||
+    ninja?.instagramUrl;
 
   if (requireSocial && (!hasLi || !hasSocial)) {
     const { searchPublicWeb } = await import("./web-search");
@@ -309,41 +322,40 @@ async function enrichAndPersistPlace(opts: {
   const ownerUrl = pack.linkedinOwner;
   const primaryLinkedIn = companyUrl || ownerUrl || serperLinkedIn;
 
-  // Optional owner LinkedIn via Proxycurl when we have an owner name
+  // Prefer website people; fall back to NinjaPear executives
+  const ownerName =
+    websitePeople.owner?.name ?? ninja?.ownerName ?? null;
+  const ownerTitle =
+    websitePeople.owner?.role ?? ninja?.ownerTitle ?? null;
+
+  // Owner LinkedIn via Serper when we have a name (Proxycurl shut down)
   let resolvedOwner = ownerUrl;
-  const apiKey = process.env.LINKEDIN_DATA_API_KEY;
-  if (!resolvedOwner && websitePeople.owner?.name && apiKey) {
-    try {
-      const first = websitePeople.owner.name.split(" ")[0] || "";
-      const last = websitePeople.owner.name.split(" ").slice(1).join(" ") || "";
-      const domain = website
-        ? new URL(website.startsWith("http") ? website : `https://${website}`)
-            .hostname.replace(/^www\./, "")
-        : null;
-      const domainParam = domain
-        ? `&company_domain=${encodeURIComponent(domain)}`
-        : "";
-      const response = await fetch(
-        `https://nubela.co/proxycurl/api/linkedin/profile/resolve?first_name=${encodeURIComponent(first)}&last_name=${encodeURIComponent(last)}${domainParam}`,
-        {
-          headers: { Authorization: `Bearer ${apiKey}` },
-          signal: AbortSignal.timeout(8000),
-        },
-      );
-      if (response.ok) {
-        const data = (await response.json()) as { url?: string };
-        if (data.url?.includes("linkedin.com/in/")) {
-          resolvedOwner = data.url.split("?")[0];
-        }
+  if (!resolvedOwner && ownerName) {
+    const { searchPublicWeb } = await import("./web-search");
+    const hits = await withTimeout(
+      searchPublicWeb(
+        `"${ownerName}" "${place.name}" site:linkedin.com/in`,
+        5,
+      ),
+      6000,
+      [],
+    );
+    for (const hit of hits) {
+      if (hit.url.includes("linkedin.com/in/")) {
+        resolvedOwner = hit.url.split("?")[0];
+        break;
       }
-    } catch {
-      // ignore
     }
   }
 
   const facebook =
-    pack.facebook || facebookPage || serperSocial.facebook || null;
-  const instagram = pack.instagram || serperSocial.instagram || null;
+    pack.facebook ||
+    facebookPage ||
+    ninja?.facebookUrl ||
+    serperSocial.facebook ||
+    null;
+  const instagram =
+    pack.instagram || ninja?.instagramUrl || serperSocial.instagram || null;
 
   if (qualification.leadScore < 25) return "skipped-score";
 
@@ -380,7 +392,7 @@ async function enrichAndPersistPlace(opts: {
     instagram: instagram ?? existingLead?.instagram,
     youtube: pack.youtube ?? existingLead?.youtube,
     tiktok: pack.tiktok ?? existingLead?.tiktok,
-    ownerName: websitePeople.owner?.name ?? existingLead?.ownerName,
+    ownerName: ownerName ?? existingLead?.ownerName,
     email: websitePeople.email ?? existingLead?.email,
   };
 
@@ -407,12 +419,14 @@ async function enrichAndPersistPlace(opts: {
     website: website ?? existingLead?.website,
     googleRating: place.rating ?? existingLead?.googleRating,
     reviewCount: place.reviewCount ?? existingLead?.reviewCount,
-    ownerName: websitePeople.owner?.name ?? existingLead?.ownerName,
-    ownerTitle: websitePeople.owner?.role ?? existingLead?.ownerTitle,
+    ownerName: ownerName ?? existingLead?.ownerName,
+    ownerTitle: ownerTitle ?? existingLead?.ownerTitle,
     ownerSourceUrl:
-      websitePeople.owner?.sourceUrl ?? existingLead?.ownerSourceUrl,
+      websitePeople.owner?.sourceUrl ??
+      (ninja?.ownerName ? "ninjapear" : existingLead?.ownerSourceUrl),
     ownerConfidence:
-      websitePeople.owner?.confidence ?? existingLead?.ownerConfidence,
+      websitePeople.owner?.confidence ??
+      (ninja?.ownerName ? 85 : existingLead?.ownerConfidence),
     teamMembersJson: websitePeople.team.length
       ? JSON.stringify(websitePeople.team)
       : existingLead?.teamMembersJson,
@@ -460,10 +474,13 @@ async function enrichAndPersistPlace(opts: {
   return prisma.lead.create({
     data: {
       businessName: place.name,
-      ownerName: websitePeople.owner?.name ?? null,
-      ownerTitle: websitePeople.owner?.role ?? null,
-      ownerSourceUrl: websitePeople.owner?.sourceUrl ?? null,
-      ownerConfidence: websitePeople.owner?.confidence ?? null,
+      ownerName,
+      ownerTitle,
+      ownerSourceUrl:
+        websitePeople.owner?.sourceUrl ??
+        (ninja?.ownerName ? "ninjapear" : null),
+      ownerConfidence:
+        websitePeople.owner?.confidence ?? (ninja?.ownerName ? 85 : null),
       teamMembersJson: websitePeople.team.length
         ? JSON.stringify(websitePeople.team)
         : null,
