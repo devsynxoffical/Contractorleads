@@ -35,12 +35,39 @@ export function planFeatureEnabled(plan: string, kind: IntegrationKind) {
   return Boolean(PLAN_FEATURES[(plan as keyof typeof PLAN_FEATURES) ?? "trial"]?.[kind]);
 }
 
+/** Flags to apply when a customer's plan changes (admin can still override later). */
+export function integrationFlagsForPlan(plan: string) {
+  const features =
+    PLAN_FEATURES[(plan as keyof typeof PLAN_FEATURES) ?? "trial"] ??
+    PLAN_FEATURES.trial;
+  return {
+    apiEnabled: features.api,
+    mcpEnabled: features.mcp,
+    ssoEnabled: features.sso,
+    apiMonthlyLimit: defaultApiLimitForPlan(plan),
+  };
+}
+
+export function isIntegrationToggleOn(
+  user: {
+    apiEnabled: boolean;
+    mcpEnabled: boolean;
+    ssoEnabled: boolean;
+  },
+  kind: IntegrationKind,
+) {
+  if (kind === "api") return user.apiEnabled;
+  if (kind === "mcp") return user.mcpEnabled;
+  return user.ssoEnabled;
+}
+
 export async function assertIntegrationEnabledForUser(userId: string, kind: IntegrationKind) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
       id: true,
       plan: true,
+      role: true,
       isActive: true,
       apiEnabled: true,
       mcpEnabled: true,
@@ -54,9 +81,13 @@ export async function assertIntegrationEnabledForUser(userId: string, kind: Inte
   if (!planFeatureEnabled(user.plan, kind)) {
     return { ok: false as const, error: `${kind.toUpperCase()} is not available on this plan` };
   }
-  if (kind === "api" && !user.apiEnabled) return { ok: false as const, error: "API access disabled" };
-  if (kind === "mcp" && !user.mcpEnabled) return { ok: false as const, error: "MCP access disabled" };
-  if (kind === "sso" && !user.ssoEnabled) return { ok: false as const, error: "SSO access disabled" };
+  // Super admin / staff always keep access when the plan includes the feature
+  if (user.role === "SUPER_ADMIN" || user.role === "MANAGER" || user.role === "SUB_ADMIN") {
+    return { ok: true as const, user };
+  }
+  if (!isIntegrationToggleOn(user, kind)) {
+    return { ok: false as const, error: `${kind.toUpperCase()} access disabled by admin` };
+  }
   return { ok: true as const, user };
 }
 

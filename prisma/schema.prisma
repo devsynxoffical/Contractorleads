@@ -41,9 +41,10 @@ model User {
   slackEnabled        Boolean  @default(false)
   ghlWebhookUrl       String?
   ghlEnabled          Boolean  @default(false)
-  ssoEnabled          Boolean  @default(false)
-  apiEnabled          Boolean  @default(false)
-  mcpEnabled          Boolean  @default(false)
+  /// Admin kill-switches (default on — plan still gates availability)
+  ssoEnabled          Boolean  @default(true)
+  apiEnabled          Boolean  @default(true)
+  mcpEnabled          Boolean  @default(true)
   apiMonthlyLimit     Int?
   apiMonthlyUsed      Int      @default(0)
   apiUsageResetAt     DateTime?

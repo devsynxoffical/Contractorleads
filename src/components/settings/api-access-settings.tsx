@@ -83,29 +83,71 @@ export function ApiAccessSettings() {
             <div className="grid gap-2 text-[13px] sm:grid-cols-3">
               <p className="rounded-xl bg-[#faf8fc] px-3 py-2">
                 API:{" "}
-                {data.planFeatures.api
-                  ? data.access.apiEnabled
-                    ? "Enabled"
-                    : "Disabled by admin"
-                  : "Not in your plan"}
+                <span
+                  className={
+                    data.planFeatures.api && data.access.apiEnabled
+                      ? "font-semibold text-brand-700"
+                      : "text-ink-muted"
+                  }
+                >
+                  {data.planFeatures.api
+                    ? data.access.apiEnabled
+                      ? "Enabled"
+                      : "Disabled by admin"
+                    : "Not in your plan"}
+                </span>
               </p>
               <p className="rounded-xl bg-[#faf8fc] px-3 py-2">
                 MCP:{" "}
-                {data.planFeatures.mcp
-                  ? data.access.mcpEnabled
-                    ? "Enabled"
-                    : "Disabled by admin"
-                  : "Not in your plan"}
+                <span
+                  className={
+                    data.planFeatures.mcp && data.access.mcpEnabled
+                      ? "font-semibold text-brand-700"
+                      : "text-ink-muted"
+                  }
+                >
+                  {data.planFeatures.mcp
+                    ? data.access.mcpEnabled
+                      ? "Enabled"
+                      : "Disabled by admin"
+                    : "Not in your plan"}
+                </span>
               </p>
               <p className="rounded-xl bg-[#faf8fc] px-3 py-2">
                 SSO:{" "}
-                {data.planFeatures.sso
-                  ? data.access.ssoEnabled
-                    ? "Enabled"
-                    : "Disabled by admin"
-                  : "Not in your plan"}
+                <span
+                  className={
+                    data.planFeatures.sso && data.access.ssoEnabled
+                      ? "font-semibold text-brand-700"
+                      : "text-ink-muted"
+                  }
+                >
+                  {data.planFeatures.sso
+                    ? data.access.ssoEnabled
+                      ? "Enabled"
+                      : "Disabled by admin"
+                    : "Not in your plan"}
+                </span>
               </p>
             </div>
+
+            {!data.planFeatures.api &&
+            !data.planFeatures.mcp &&
+            !data.planFeatures.sso ? (
+              <p className="text-[12px] text-ink-muted">
+                Upgrade to Starter or higher to unlock API / MCP access (SSO on Pro &amp;
+                Agency).
+              </p>
+            ) : !(
+                (data.planFeatures.api && data.access.apiEnabled) ||
+                (data.planFeatures.mcp && data.access.mcpEnabled) ||
+                (data.planFeatures.sso && data.access.ssoEnabled)
+              ) ? (
+              <p className="text-[12px] text-ink-muted">
+                Your plan includes these features, but an admin turned them off. Re-enable
+                under Admin → Customers → SSO, API &amp; MCP.
+              </p>
+            ) : null}
 
             <p className="text-[13px] text-ink-muted">
               API key: {data.access.apiKeyLast4 ? `••••${data.access.apiKeyLast4}` : "Not generated"}

@@ -7,6 +7,7 @@ import {
 } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ADMIN_PLANS, SUBSCRIPTION_STATUSES } from "@/lib/admin";
+import { integrationFlagsForPlan } from "@/lib/api-access";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -141,6 +142,14 @@ export async function PATCH(request: Request, { params }: Params) {
   }
   if (typeof body.plan === "string" && planValues.includes(body.plan as never)) {
     data.plan = body.plan;
+    // When plan changes, sync integration flags unless admin also patched them explicitly
+    const flags = integrationFlagsForPlan(body.plan);
+    if (body.apiEnabled === undefined) data.apiEnabled = flags.apiEnabled;
+    if (body.mcpEnabled === undefined) data.mcpEnabled = flags.mcpEnabled;
+    if (body.ssoEnabled === undefined) data.ssoEnabled = flags.ssoEnabled;
+    if (body.apiMonthlyLimit === undefined) {
+      data.apiMonthlyLimit = flags.apiMonthlyLimit;
+    }
   }
   if (
     typeof body.subscriptionStatus === "string" &&
