@@ -65,6 +65,7 @@ export const PATH_PERMISSION: Array<{
   { prefix: "/admin/revenue", permission: "revenue" },
   { prefix: "/admin/activity", permission: "activity" },
   { prefix: "/admin/health", permission: "health" },
+  { prefix: "/admin/email-preview", permission: "system" },
   { prefix: "/admin/system", permission: "system" },
   { prefix: "/admin", permission: "overview" },
 ];

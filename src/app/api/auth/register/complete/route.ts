@@ -6,6 +6,7 @@ import {
   setSessionCookie,
 } from "@/lib/auth";
 import { linkMarketingVisitorToUser } from "@/lib/marketing-session";
+import { sendWelcomeEmail } from "@/lib/email";
 
 /**
  * Step 2: after email verification link — create account with password and log in.
@@ -67,6 +68,12 @@ export async function POST(request: Request) {
     } catch {
       /* non-blocking */
     }
+
+    void sendWelcomeEmail({
+      userId: user.id,
+      to: user.email,
+      name: user.name,
+    });
 
     return NextResponse.json({
       ok: true,

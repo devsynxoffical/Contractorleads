@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { businessEmailError } from "@/lib/business-email";
-import { sendEmail, verificationEmailHtml } from "@/lib/email";
+import { sendVerificationEmail } from "@/lib/email";
 import { captureMarketingEmail } from "@/lib/marketing-session";
 
 function normalizePhone(raw: unknown): string {
@@ -73,11 +73,10 @@ export async function POST(request: Request) {
     );
     const verifyUrl = `${appUrl}/verify-email?token=${token}`;
 
-    const sent = await sendEmail({
+    const sent = await sendVerificationEmail({
       to: normalizedEmail,
-      subject: "Verify your Contractor Leads business email",
-      html: verificationEmailHtml(verifyUrl, displayName),
-      text: `Verify your email: ${verifyUrl}`,
+      verifyUrl,
+      name: displayName,
     });
 
     if (!sent.ok) {
@@ -97,12 +96,13 @@ export async function POST(request: Request) {
       /* non-blocking */
     }
 
+    const mocked = "mocked" in sent ? Boolean(sent.mocked) : false;
     return NextResponse.json({
       ok: true,
       message:
         "Check your business email for a verification link. After verifying, you will set your password.",
-      mocked: sent.mocked ?? false,
-      ...(sent.mocked ? { verifyUrl } : {}),
+      mocked,
+      ...(mocked ? { verifyUrl } : {}),
     });
   } catch {
     return NextResponse.json({ error: "Registration failed" }, { status: 500 });

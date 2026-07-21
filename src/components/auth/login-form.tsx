@@ -104,12 +104,12 @@ export function LoginForm({ onSwitchToRegister }: LoginFormProps) {
             >
               Password
             </label>
-            <button
-              type="button"
+            <Link
+              href="/forgot-password"
               className="text-xs font-semibold text-fuchsia-600 hover:text-fuchsia-700"
             >
               Forgot password?
-            </button>
+            </Link>
           </div>
           <div className="relative">
             <HiOutlineLockClosed className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400" />

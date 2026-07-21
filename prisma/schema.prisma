@@ -49,6 +49,8 @@ model User {
   apiUsageResetAt     DateTime?
   apiKeyHash          String?
   apiKeyLast4         String?
+  /// Product / scrape notification emails (CAN-SPAM opt-in)
+  emailMarketingOptIn Boolean  @default(true)
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
@@ -62,6 +64,7 @@ model User {
   smtpSettings    UserSmtpSettings?
   emailSequence   EmailSequence?
   emailEnrollments EmailEnrollment[]
+  passwordResets  PasswordResetToken[]
 }
 
 /// Persisted AI assistant threads (home / Ask Expert).
@@ -257,6 +260,47 @@ model EmailVerification {
   createdAt DateTime @default(now())
 
   @@index([email])
+}
+
+/// One-time password reset links (forgot password flow).
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// Admin-editable branded email templates (verify, welcome, reset, scrape).
+model EmailTemplate {
+  id                 String   @id @default(cuid())
+  key                String   @unique // verify | welcome | reset | scrape
+  label              String
+  enabled            Boolean  @default(true)
+  subject            String
+  preheader          String
+  heroTitle          String
+  heroSubtitle       String
+  headline           String
+  body               String
+  ctaLabel           String
+  ctaPath            String
+  feature1Title      String?
+  feature1Body       String?
+  feature2Title      String?
+  feature2Body       String?
+  feature3Title      String?
+  feature3Body       String?
+  secondaryTitle     String?
+  secondaryBody      String?
+  secondaryCtaLabel  String?
+  secondaryCtaPath   String?
+  updatedAt          DateTime @updatedAt
+  createdAt          DateTime @default(now())
 }
 
 /// Per-agency SMTP so outreach sends from their own mailbox.

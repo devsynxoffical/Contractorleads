@@ -22,6 +22,7 @@ import {
   HiOutlineUserGroup,
   HiOutlineUsers,
   HiOutlineGlobeAlt,
+  HiOutlineEnvelope,
 } from "react-icons/hi2";
 import { cn } from "@/lib/utils";
 import type { SessionUser } from "@/lib/session-user";
@@ -53,6 +54,7 @@ const NAV: NavItem[] = [
   { href: "/admin/activity", label: "Activity Log", icon: HiOutlineClipboardDocumentList, permission: "activity" },
   { href: "/admin/health", label: "Feature Health Audit", icon: HiOutlineHeart, permission: "health" },
   { href: "/admin/system", label: "System & API Keys", icon: HiOutlineKey, permission: "system" },
+  { href: "/admin/email-preview", label: "Email Templates", icon: HiOutlineEnvelope, permission: "system" },
   { href: "/admin/team", label: "Team & Roles", icon: HiOutlineUserGroup, permission: "staff" },
 ];
 

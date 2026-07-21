@@ -4,7 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { deductCredits, logActivity } from "@/lib/credits";
 import { CREDIT_COSTS } from "@/lib/constants";
 import { runLeadPipeline } from "@/lib/services/lead-pipeline";
-import { resolveSearchCriteria } from "@/lib/search-criteria";
+import { resolveSearchCriteria, formatSearchLabel } from "@/lib/search-criteria";
+import { sendLeadScrapeEmail } from "@/lib/email";
+import { appBaseUrl } from "@/lib/email-brand";
 
 export async function POST(request: Request) {
   const user = await getSessionUser();
@@ -79,6 +81,28 @@ export async function POST(request: Request) {
       }${filterNote}`,
       { searchId: result.search.id }
     );
+
+    const hotCount = result.leads.filter((l) => l.qualityTier === "hot").length;
+    const warmCount = result.leads.filter((l) => l.qualityTier === "warm").length;
+    void sendLeadScrapeEmail({
+      userId: user.id,
+      to: user.email,
+      name: user.name,
+      industry,
+      locationLabel: formatSearchLabel({
+        industry,
+        country,
+        locationScope,
+        state,
+        city,
+        customLocation,
+      }).replace(`${industry} `, ""),
+      leadCount: result.leads.length,
+      hotCount,
+      warmCount,
+      sampleNames: result.leads.slice(0, 5).map((l) => l.businessName),
+      searchUrl: `${appBaseUrl()}/leads/search`,
+    });
 
     const credits = await prisma.user.findUnique({
       where: { id: user.id },
