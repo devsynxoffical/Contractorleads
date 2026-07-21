@@ -1,34 +1,54 @@
-/** Shared brand tokens for HTML email (inline CSS only). */
+/** Shared brand tokens for HTML email — mirrors site light theme + logo. */
+
+/** Canonical production site (emails always need absolute URLs). */
+export const SITE_URL = "https://www.contractorleads.us";
 
 export const EMAIL_BRAND = {
   name: "Contractor Leads",
   tagline: "Find high-quality home service leads across America",
-  primary: "#e6007e",
-  secondary: "#7b1fa2",
-  ink: "#1a1224",
-  muted: "#5b5268",
-  faint: "#8b8398",
-  border: "#ebe4f2",
-  softBg: "#f7f2fa",
-  pageBg: "#ebe6df",
+  /** Light-theme logo gradient stops (globals.css) */
+  pink: "#db2777",
+  magenta: "#c026d3",
+  purple: "#9333ea",
+  violet: "#7c3aed",
+  primary: "#c026d3",
+  secondary: "#9333ea",
+  ink: "#1a1424",
+  muted: "#5a5168",
+  faint: "#8b8499",
+  border: "#ebe6f2",
+  softBg: "#f6f4f9",
+  pageBg: "#eeeaf4",
   cardBg: "#ffffff",
-  buttonBg: "#1a1224",
+  /** Solid fallback for Outlook; gradient applied where supported */
+  buttonBg: "#c026d3",
+  buttonGradient:
+    "linear-gradient(135deg,#db2777 0%,#c026d3 45%,#9333ea 75%,#7c3aed 100%)",
   buttonText: "#ffffff",
-  link: "#7b1fa2",
+  link: "#86198f",
   /** Physical address for CAN-SPAM / deliverability */
   address:
     process.env.EMAIL_COMPANY_ADDRESS ||
     "Contractor Leads · United States",
   supportEmail: process.env.EMAIL_SUPPORT || "support@contractorleads.us",
-  logoUrl:
-    process.env.NEXT_PUBLIC_APP_URL
-      ? `${process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}/logo.png`
-      : "https://wwww.contractorleads.us/logo.png",
+  /** Absolute logo URL for email clients */
+  logoUrl: `${SITE_URL}/logo.png`,
+  siteUrl: SITE_URL,
 } as const;
 
+/** System UI stack — matches Apple / Google product mail */
+export const EMAIL_FONT =
+  "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+
 export function appBaseUrl() {
-  return (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(
-    /\/$/,
-    "",
-  );
+  return (process.env.NEXT_PUBLIC_APP_URL || SITE_URL).replace(/\/$/, "");
+}
+
+/** Prefer live app URL for logo when set; always absolute for inboxes. */
+export function emailLogoUrl() {
+  const base = appBaseUrl();
+  if (base.includes("localhost") || base.includes("127.0.0.1")) {
+    return EMAIL_BRAND.logoUrl;
+  }
+  return `${base}/logo.png`;
 }

@@ -1,4 +1,9 @@
-import { EMAIL_BRAND, appBaseUrl } from "@/lib/email-brand";
+import {
+  EMAIL_BRAND,
+  EMAIL_FONT,
+  appBaseUrl,
+  emailLogoUrl,
+} from "@/lib/email-brand";
 import type { EmailTemplateFields } from "@/lib/email-template-defaults";
 import { applyEmailPlaceholders } from "@/lib/email-template-defaults";
 
@@ -16,32 +21,12 @@ function esc(s: string) {
     .replace(/"/g, "&quot;");
 }
 
-function heroBanner(title: string, subtitle: string) {
-  return `
-  <tr>
-    <td style="padding:0 24px 8px;">
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:separate;border-radius:18px;overflow:hidden;background:linear-gradient(135deg,#fce7f3 0%,#f5d0fe 28%,#ddd6fe 55%,#fbcfe8 78%,#fef3c7 100%);">
-        <tr>
-          <td style="padding:36px 28px;text-align:center;">
-            <h1 style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.25;font-weight:700;color:${EMAIL_BRAND.ink};">
-              ${esc(title)}
-            </h1>
-            <p style="margin:12px auto 0;max-width:420px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55;color:${EMAIL_BRAND.ink};opacity:0.88;">
-              ${esc(subtitle)}
-            </p>
-          </td>
-        </tr>
-      </table>
-    </td>
-  </tr>`;
-}
-
 function ctaButton(label: string, href: string) {
   return `
-  <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 auto;">
+  <table role="presentation" cellspacing="0" cellpadding="0">
     <tr>
-      <td style="border-radius:10px;background:${EMAIL_BRAND.buttonBg};">
-        <a href="${esc(href)}" style="display:inline-block;padding:14px 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:700;color:${EMAIL_BRAND.buttonText};text-decoration:none;border-radius:10px;">
+      <td style="border-radius:8px;background:${EMAIL_BRAND.buttonBg};background-image:${EMAIL_BRAND.buttonGradient};">
+        <a href="${esc(href)}" style="display:inline-block;padding:12px 22px;font-family:${EMAIL_FONT};font-size:14px;font-weight:600;letter-spacing:-0.01em;color:${EMAIL_BRAND.buttonText};text-decoration:none;border-radius:8px;">
           ${esc(label)}
         </a>
       </td>
@@ -49,35 +34,64 @@ function ctaButton(label: string, href: string) {
   </table>`;
 }
 
-function featureRow(icon: string, title: string, body: string, linkLabel?: string, linkHref?: string) {
+function featureRow(_icon: string, title: string, body: string, linkLabel?: string, linkHref?: string) {
   return `
   <tr>
-    <td style="padding:14px 0;border-bottom:1px solid ${EMAIL_BRAND.border};">
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-        <tr>
-          <td width="48" valign="top" style="padding-right:14px;">
-            <div style="width:40px;height:40px;border-radius:10px;background:${EMAIL_BRAND.softBg};text-align:center;line-height:40px;font-size:18px;">
-              ${icon}
-            </div>
-          </td>
-          <td valign="top">
-            <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:17px;font-weight:700;color:${EMAIL_BRAND.ink};">${esc(title)}</p>
-            <p style="margin:6px 0 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;line-height:1.5;color:${EMAIL_BRAND.muted};">${esc(body)}</p>
-            ${
-              linkLabel && linkHref
-                ? `<p style="margin:8px 0 0;"><a href="${esc(linkHref)}" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;color:${EMAIL_BRAND.link};text-decoration:underline;">${esc(linkLabel)}</a></p>`
-                : ""
-            }
-          </td>
-        </tr>
-      </table>
+    <td style="padding:16px 0;border-bottom:1px solid ${EMAIL_BRAND.border};">
+      <p style="margin:0;font-family:${EMAIL_FONT};font-size:14px;font-weight:600;letter-spacing:-0.01em;color:${EMAIL_BRAND.ink};">${esc(title)}</p>
+      <p style="margin:6px 0 0;font-family:${EMAIL_FONT};font-size:13px;line-height:1.55;color:${EMAIL_BRAND.muted};">${esc(body)}</p>
+      ${
+        linkLabel && linkHref
+          ? `<p style="margin:8px 0 0;"><a href="${esc(linkHref)}" style="font-family:${EMAIL_FONT};font-size:13px;font-weight:500;color:${EMAIL_BRAND.link};text-decoration:underline;">${esc(linkLabel)}</a></p>`
+          : ""
+      }
     </td>
   </tr>`;
 }
 
+function statsRow(leadCount: number, hotCount?: number, warmCount?: number) {
+  return `
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 24px;border:1px solid ${EMAIL_BRAND.border};border-radius:8px;border-collapse:separate;overflow:hidden;">
+    <tr>
+      <td style="padding:18px 12px;width:33.33%;text-align:center;background:${EMAIL_BRAND.cardBg};">
+        <p style="margin:0;font-family:${EMAIL_FONT};font-size:22px;font-weight:600;letter-spacing:-0.03em;color:${EMAIL_BRAND.ink};">${leadCount}</p>
+        <p style="margin:6px 0 0;font-family:${EMAIL_FONT};font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:${EMAIL_BRAND.faint};">Total</p>
+      </td>
+      <td style="padding:18px 12px;width:33.33%;text-align:center;background:${EMAIL_BRAND.cardBg};border-left:1px solid ${EMAIL_BRAND.border};">
+        <p style="margin:0;font-family:${EMAIL_FONT};font-size:22px;font-weight:600;letter-spacing:-0.03em;color:${EMAIL_BRAND.pink};">${hotCount ?? "—"}</p>
+        <p style="margin:6px 0 0;font-family:${EMAIL_FONT};font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:${EMAIL_BRAND.faint};">Hot</p>
+      </td>
+      <td style="padding:18px 12px;width:33.33%;text-align:center;background:${EMAIL_BRAND.cardBg};border-left:1px solid ${EMAIL_BRAND.border};">
+        <p style="margin:0;font-family:${EMAIL_FONT};font-size:22px;font-weight:600;letter-spacing:-0.03em;color:${EMAIL_BRAND.purple};">${warmCount ?? "—"}</p>
+        <p style="margin:6px 0 0;font-family:${EMAIL_FONT};font-size:11px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;color:${EMAIL_BRAND.faint};">Warm</p>
+      </td>
+    </tr>
+  </table>`;
+}
+
+function sampleList(names: string[]) {
+  if (!names.length) return "";
+  const rows = names
+    .map(
+      (n, i) => `
+    <tr>
+      <td style="padding:11px 0;font-family:${EMAIL_FONT};font-size:13px;color:${EMAIL_BRAND.ink};border-bottom:${
+        i === names.length - 1 ? "none" : `1px solid ${EMAIL_BRAND.border}`
+      };">
+        ${esc(n)}
+      </td>
+    </tr>`,
+    )
+    .join("");
+  return `
+    <p style="margin:0 0 4px;font-family:${EMAIL_FONT};font-size:12px;font-weight:600;letter-spacing:0.02em;text-transform:uppercase;color:${EMAIL_BRAND.faint};">Sample businesses</p>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 8px;">
+      ${rows}
+    </table>`;
+}
+
 /**
- * Apollo-style branded shell: soft page background, white card, gradient hero,
- * black CTA, legal footer with unsubscribe + physical address.
+ * Professional product email shell — clean system typography, no gradient heroes.
  */
 export function renderEmailShell(params: {
   preheader: string;
@@ -88,11 +102,10 @@ export function renderEmailShell(params: {
   links?: EmailShellLinks;
 }): { html: string; text: string } {
   const base = appBaseUrl();
+  const logo = emailLogoUrl();
   const loginUrl = params.links?.loginUrl || `${base}/login`;
-  const unsub =
-    params.links?.unsubscribeUrl || `${base}/email/unsubscribe`;
-  const prefs =
-    params.links?.preferencesUrl || `${base}/email/preferences`;
+  const unsub = params.links?.unsubscribeUrl || `${base}/email/unsubscribe`;
+  const prefs = params.links?.preferencesUrl || `${base}/email/preferences`;
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -108,24 +121,30 @@ export function renderEmailShell(params: {
   <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">
     ${esc(params.preheader)}
   </div>
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:${EMAIL_BRAND.pageBg};padding:28px 12px;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:${EMAIL_BRAND.pageBg};padding:32px 16px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;border-collapse:separate;border-radius:22px;overflow:hidden;background:${EMAIL_BRAND.cardBg};box-shadow:0 12px 40px rgba(26,18,36,0.08);">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;border-collapse:separate;border-radius:12px;overflow:hidden;background:${EMAIL_BRAND.cardBg};border:1px solid ${EMAIL_BRAND.border};">
           <tr>
-            <td style="padding:18px 24px 8px;">
+            <td style="padding:20px 28px 16px;">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                 <tr>
                   <td align="left" style="vertical-align:middle;">
-                    <a href="${esc(base)}" style="text-decoration:none;color:${EMAIL_BRAND.ink};">
-                      <span style="font-family:Georgia,'Times New Roman',serif;font-size:20px;font-weight:700;letter-spacing:-0.02em;">
-                        <span style="background:linear-gradient(135deg,${EMAIL_BRAND.primary},${EMAIL_BRAND.secondary});-webkit-background-clip:text;color:${EMAIL_BRAND.primary};">✦</span>
-                        ${esc(EMAIL_BRAND.name)}
-                      </span>
+                    <a href="${esc(EMAIL_BRAND.siteUrl)}" style="text-decoration:none;color:${EMAIL_BRAND.ink};">
+                      <table role="presentation" cellspacing="0" cellpadding="0">
+                        <tr>
+                          <td style="vertical-align:middle;padding-right:10px;">
+                            <img src="${esc(logo)}" width="32" height="32" alt="${esc(EMAIL_BRAND.name)}" style="display:block;border:0;border-radius:999px;width:32px;height:32px;" />
+                          </td>
+                          <td style="vertical-align:middle;font-family:${EMAIL_FONT};font-size:15px;font-weight:600;letter-spacing:-0.02em;color:${EMAIL_BRAND.ink};">
+                            Contractor <span style="color:${EMAIL_BRAND.magenta};">Leads</span>
+                          </td>
+                        </tr>
+                      </table>
                     </a>
                   </td>
                   <td align="right" style="vertical-align:middle;">
-                    <a href="${esc(loginUrl)}" style="display:inline-block;padding:8px 14px;border:1px solid ${EMAIL_BRAND.ink};border-radius:999px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;font-weight:600;color:${EMAIL_BRAND.ink};text-decoration:none;">
+                    <a href="${esc(loginUrl)}" style="font-family:${EMAIL_FONT};font-size:13px;font-weight:500;color:${EMAIL_BRAND.link};text-decoration:none;">
                       Log in
                     </a>
                   </td>
@@ -134,10 +153,27 @@ export function renderEmailShell(params: {
             </td>
           </tr>
 
-          ${heroBanner(params.heroTitle, params.heroSubtitle)}
+          <tr>
+            <td style="padding:0 28px;">
+              <div style="height:3px;border-radius:999px;background:${EMAIL_BRAND.buttonGradient};line-height:3px;font-size:0;">&nbsp;</div>
+            </td>
+          </tr>
 
           <tr>
-            <td style="padding:8px 28px 28px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:${EMAIL_BRAND.ink};">
+            <td style="padding:24px 28px 8px;font-family:${EMAIL_FONT};">
+              <p style="margin:0 0 8px;font-family:${EMAIL_FONT};font-size:22px;line-height:1.3;font-weight:600;letter-spacing:-0.03em;color:${EMAIL_BRAND.ink};">
+                ${esc(params.heroTitle)}
+              </p>
+              ${
+                params.heroSubtitle.trim()
+                  ? `<p style="margin:0 0 4px;font-family:${EMAIL_FONT};font-size:14px;line-height:1.55;color:${EMAIL_BRAND.muted};">${esc(params.heroSubtitle)}</p>`
+                  : ""
+              }
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:16px 28px 28px;font-family:${EMAIL_FONT};color:${EMAIL_BRAND.ink};">
               ${params.bodyHtml}
             </td>
           </tr>
@@ -145,10 +181,10 @@ export function renderEmailShell(params: {
           ${
             params.secondaryHtml
               ? `<tr>
-            <td style="padding:0 24px 28px;">
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:separate;border-radius:16px;background:${EMAIL_BRAND.softBg};">
+            <td style="padding:0 28px 28px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:separate;border-radius:8px;border:1px solid ${EMAIL_BRAND.border};background:${EMAIL_BRAND.softBg};">
                 <tr>
-                  <td style="padding:22px 22px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:${EMAIL_BRAND.ink};">
+                  <td style="padding:18px 18px;font-family:${EMAIL_FONT};color:${EMAIL_BRAND.ink};">
                     ${params.secondaryHtml}
                   </td>
                 </tr>
@@ -159,26 +195,25 @@ export function renderEmailShell(params: {
           }
 
           <tr>
-            <td style="padding:8px 28px 12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;color:${EMAIL_BRAND.muted};">
-              <p style="margin:0;">— The ${esc(EMAIL_BRAND.name)} Team</p>
+            <td style="padding:0 28px 24px;font-family:${EMAIL_FONT};font-size:13px;color:${EMAIL_BRAND.muted};">
+              <p style="margin:0;">— ${esc(EMAIL_BRAND.name)}</p>
             </td>
           </tr>
 
           <tr>
-            <td style="padding:20px 28px 28px;border-top:1px solid ${EMAIL_BRAND.border};text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+            <td style="padding:20px 28px 24px;border-top:1px solid ${EMAIL_BRAND.border};font-family:${EMAIL_FONT};">
               <p style="margin:0 0 10px;font-size:12px;">
-                <a href="${esc(prefs)}" style="color:${EMAIL_BRAND.faint};text-decoration:underline;">Manage preferences</a>
+                <a href="${esc(EMAIL_BRAND.siteUrl)}" style="color:${EMAIL_BRAND.link};text-decoration:none;font-weight:500;">www.contractorleads.us</a>
+                <span style="color:${EMAIL_BRAND.faint};"> · </span>
+                <a href="${esc(prefs)}" style="color:${EMAIL_BRAND.faint};text-decoration:underline;">Email preferences</a>
                 <span style="color:${EMAIL_BRAND.faint};"> · </span>
                 <a href="${esc(unsub)}" style="color:${EMAIL_BRAND.faint};text-decoration:underline;">Unsubscribe</a>
               </p>
-              <p style="margin:0 0 6px;font-size:11px;line-height:1.5;color:${EMAIL_BRAND.faint};">
+              <p style="margin:0 0 4px;font-size:11px;line-height:1.5;color:${EMAIL_BRAND.faint};">
                 © ${new Date().getFullYear()} ${esc(EMAIL_BRAND.name)}. ${esc(EMAIL_BRAND.address)}.
               </p>
               <p style="margin:0;font-size:11px;color:${EMAIL_BRAND.faint};">
-                Questions? <a href="mailto:${esc(EMAIL_BRAND.supportEmail)}" style="color:${EMAIL_BRAND.faint};">${esc(EMAIL_BRAND.supportEmail)}</a>
-              </p>
-              <p style="margin:14px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:13px;color:${EMAIL_BRAND.ink};opacity:0.55;">
-                ✦ ${esc(EMAIL_BRAND.name)}
+                <a href="mailto:${esc(EMAIL_BRAND.supportEmail)}" style="color:${EMAIL_BRAND.faint};text-decoration:none;">${esc(EMAIL_BRAND.supportEmail)}</a>
               </p>
             </td>
           </tr>
@@ -197,7 +232,7 @@ export function renderEmailShell(params: {
     "",
     "Log in: " + loginUrl,
     "",
-    "Manage preferences: " + prefs,
+    "Email preferences: " + prefs,
     "Unsubscribe: " + unsub,
     "",
     `© ${new Date().getFullYear()} ${EMAIL_BRAND.name}`,
@@ -215,34 +250,30 @@ export function verificationEmailContent(opts: {
 }) {
   const greeting = opts.name ? `Hi ${opts.name},` : "Hi,";
   const bodyHtml = `
-    <p style="margin:0 0 14px;font-family:Georgia,'Times New Roman',serif;font-size:24px;font-weight:700;color:${EMAIL_BRAND.ink};">
-      Confirm your business email
-    </p>
-    <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:${EMAIL_BRAND.muted};">
-      ${esc(greeting)} You’re one step from your Contractor Leads workspace. Verify this email, set a password, and start finding scored contractor leads.
+    <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:${EMAIL_BRAND.muted};">
+      ${esc(greeting)} Confirm this email to finish creating your account and set your password.
     </p>
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-      ${featureRow("✉", "Business-only signup", "We verify real agency emails so your pipeline stays clean.", "Open Lead Finder later", `${appBaseUrl()}/leads/search`)}
-      ${featureRow("⚡", "20 starter credits", "Run live Google Places searches with AI Hot / Warm / Nurture scores.")}
-      ${featureRow("◎", "Pipeline CRM ready", "Save leads, move stages, and push to Slack or GoHighLevel.")}
+      ${featureRow("", "Business email verification", "We only accept work emails so your workspace stays professional.")}
+      ${featureRow("", "Starter credits included", "Run live Google Places searches with Hot / Warm / Nurture scoring.")}
+      ${featureRow("", "Pipeline ready", "Save leads and sync status changes to Slack or GoHighLevel.")}
     </table>
-    <div style="margin:28px 0 8px;text-align:center;">
+    <div style="margin:28px 0 8px;">
       ${ctaButton("Verify email", opts.verifyUrl)}
     </div>
-    <p style="margin:16px 0 0;font-size:12px;line-height:1.5;color:${EMAIL_BRAND.faint};text-align:center;">
-      This link expires in 24 hours. If you didn’t sign up, you can ignore this email.
+    <p style="margin:16px 0 0;font-size:12px;line-height:1.5;color:${EMAIL_BRAND.faint};">
+      This link expires in 24 hours. If you didn’t create an account, you can ignore this message.
     </p>`;
 
   return renderEmailShell({
-    preheader: "Verify your Contractor Leads business email to finish signup.",
-    heroTitle: "Your workspace is almost ready",
-    heroSubtitle:
-      "Confirm your email, set a password, and unlock live lead search with AI scoring.",
+    preheader: "Confirm your email to finish signup.",
+    heroTitle: "Verify your email",
+    heroSubtitle: "One step left before you can sign in.",
     bodyHtml,
     secondaryHtml: `
-      <p style="margin:0 0 8px;font-family:Georgia,'Times New Roman',serif;font-size:18px;font-weight:700;">Need help?</p>
-      <p style="margin:0 0 14px;font-size:13px;line-height:1.5;color:${EMAIL_BRAND.muted};">
-        Reply to this email or write ${esc(EMAIL_BRAND.supportEmail)} — we’re happy to help.
+      <p style="margin:0 0 6px;font-family:${EMAIL_FONT};font-size:13px;font-weight:600;color:${EMAIL_BRAND.ink};">Need help?</p>
+      <p style="margin:0 0 12px;font-size:13px;line-height:1.5;color:${EMAIL_BRAND.muted};">
+        Contact ${esc(EMAIL_BRAND.supportEmail)}.
       </p>
       ${ctaButton("Log in", `${appBaseUrl()}/login`)}`,
     links: { unsubscribeUrl: opts.unsubscribeUrl },
@@ -257,33 +288,29 @@ export function welcomeEmailContent(opts: {
 }) {
   const base = appBaseUrl();
   const dash = opts.dashboardUrl || `${base}/dashboard`;
-  const greeting = opts.name ? `Welcome, ${opts.name}` : "Welcome aboard";
+  const greeting = opts.name ? `Welcome, ${opts.name}` : "Welcome";
   const bodyHtml = `
-    <p style="margin:0 0 14px;font-family:Georgia,'Times New Roman',serif;font-size:24px;font-weight:700;color:${EMAIL_BRAND.ink};">
-      ${esc(greeting)}
-    </p>
-    <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:${EMAIL_BRAND.muted};">
-      Your Contractor Leads account is live. Generate verified contractor leads, score them with AI, save to pipeline CRM, and export when you’re ready.
+    <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:${EMAIL_BRAND.muted};">
+      Your account is ready. Search for contractors by trade and location, review scored results, and save the best leads to your pipeline.
     </p>
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
-      ${featureRow("🔍", "Lead Finder", "Search by trade, city, ZIP, and radius — Places-backed, not placeholders.", "Open Lead Finder", `${base}/leads/search`)}
-      ${featureRow("🔥", "Hot leads", "Jump straight to highest-scoring opportunities.", "View hot leads", `${base}/leads/hot`)}
-      ${featureRow("▦", "Pipeline CRM", "Move New → Contacted → Qualified → Closed and sync Slack / GHL.", "Open pipeline", `${base}/leads/pipeline`)}
+      ${featureRow("", "Lead Finder", "Search by trade, city, ZIP, and radius.", "Open Lead Finder", `${base}/leads/search`)}
+      ${featureRow("", "Hot leads", "Filter to the highest-scoring opportunities.", "View hot leads", `${base}/leads/hot`)}
+      ${featureRow("", "Pipeline", "Track stages and sync Slack or GoHighLevel.", "Open pipeline", `${base}/leads/pipeline`)}
     </table>
-    <div style="margin:28px 0 8px;text-align:center;">
+    <div style="margin:28px 0 8px;">
       ${ctaButton("Open dashboard", dash)}
     </div>`;
 
   return renderEmailShell({
-    preheader: "Your Contractor Leads account is ready — start generating leads.",
-    heroTitle: "You’re in. Let’s find your next clients.",
-    heroSubtitle:
-      "Credits are loaded. Run your first search and watch Hot / Warm / Nurture scores fill your dashboard.",
+    preheader: "Your Contractor Leads account is ready.",
+    heroTitle: greeting,
+    heroSubtitle: "You’re set up and ready to run your first search.",
     bodyHtml,
     secondaryHtml: `
-      <p style="margin:0 0 8px;font-family:Georgia,'Times New Roman',serif;font-size:18px;font-weight:700;">Want more volume?</p>
-      <p style="margin:0 0 14px;font-size:13px;line-height:1.5;color:${EMAIL_BRAND.muted};">
-        Upgrade anytime under Plans & Billing for higher monthly capacity and integrations.
+      <p style="margin:0 0 6px;font-family:${EMAIL_FONT};font-size:13px;font-weight:600;color:${EMAIL_BRAND.ink};">Need more capacity?</p>
+      <p style="margin:0 0 12px;font-size:13px;line-height:1.5;color:${EMAIL_BRAND.muted};">
+        Upgrade under Plans &amp; Billing for higher monthly limits and integrations.
       </p>
       ${ctaButton("View plans", `${base}/billing`)}`,
     links: {
@@ -301,24 +328,20 @@ export function passwordResetEmailContent(opts: {
 }) {
   const greeting = opts.name ? `Hi ${opts.name},` : "Hi,";
   const bodyHtml = `
-    <p style="margin:0 0 14px;font-family:Georgia,'Times New Roman',serif;font-size:24px;font-weight:700;color:${EMAIL_BRAND.ink};">
-      Reset your password
+    <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:${EMAIL_BRAND.muted};">
+      ${esc(greeting)} We received a request to reset your password. Use the button below to choose a new one. This link expires in 1 hour.
     </p>
-    <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:${EMAIL_BRAND.muted};">
-      ${esc(greeting)} We received a request to reset your Contractor Leads password. Click below to choose a new one. This link expires in 1 hour.
-    </p>
-    <div style="margin:24px 0;text-align:center;">
+    <div style="margin:8px 0 16px;">
       ${ctaButton("Reset password", opts.resetUrl)}
     </div>
-    <p style="margin:0;font-size:12px;line-height:1.5;color:${EMAIL_BRAND.faint};text-align:center;">
-      If you didn’t request this, you can safely ignore this email — your password won’t change.
+    <p style="margin:0;font-size:12px;line-height:1.5;color:${EMAIL_BRAND.faint};">
+      If you didn’t request this, you can ignore this email. Your password will stay the same.
     </p>`;
 
   return renderEmailShell({
-    preheader: "Reset your Contractor Leads password (link expires in 1 hour).",
-    heroTitle: "Password reset request",
-    heroSubtitle:
-      "Secure link inside — use it only if you asked to reset your password.",
+    preheader: "Reset your password — link expires in 1 hour.",
+    heroTitle: "Reset your password",
+    heroSubtitle: "This link is only valid for one hour.",
     bodyHtml,
     links: {
       unsubscribeUrl: opts.unsubscribeUrl,
@@ -343,54 +366,26 @@ export function leadScrapeEmailContent(opts: {
   const searchUrl = opts.searchUrl || `${base}/leads/search`;
   const greeting = opts.name ? `Hi ${opts.name},` : "Hi,";
   const samples = (opts.sampleNames || []).slice(0, 5);
-  const sampleHtml = samples.length
-    ? `<ul style="margin:12px 0 0;padding-left:18px;font-size:13px;line-height:1.6;color:${EMAIL_BRAND.muted};">
-        ${samples.map((n) => `<li>${esc(n)}</li>`).join("")}
-      </ul>`
-    : "";
 
   const bodyHtml = `
-    <p style="margin:0 0 14px;font-family:Georgia,'Times New Roman',serif;font-size:24px;font-weight:700;color:${EMAIL_BRAND.ink};">
-      Your lead scrape is ready
+    <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:${EMAIL_BRAND.muted};">
+      ${esc(greeting)} Your <strong style="font-weight:600;color:${EMAIL_BRAND.ink};">${esc(opts.industry)}</strong> search ${esc(opts.locationLabel)} returned <strong style="font-weight:600;color:${EMAIL_BRAND.ink};">${opts.leadCount}</strong> leads.
     </p>
-    <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:${EMAIL_BRAND.muted};">
-      ${esc(greeting)} We finished generating <strong style="color:${EMAIL_BRAND.ink};">${opts.leadCount}</strong> leads for <strong style="color:${EMAIL_BRAND.ink};">${esc(opts.industry)}</strong> in <strong style="color:${EMAIL_BRAND.ink};">${esc(opts.locationLabel)}</strong>.
-    </p>
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 18px;border-collapse:separate;border-radius:14px;background:${EMAIL_BRAND.softBg};">
-      <tr>
-        <td style="padding:16px;width:33%;text-align:center;">
-          <p style="margin:0;font-size:22px;font-weight:800;color:${EMAIL_BRAND.ink};">${opts.leadCount}</p>
-          <p style="margin:4px 0 0;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:${EMAIL_BRAND.faint};">Leads</p>
-        </td>
-        <td style="padding:16px;width:33%;text-align:center;border-left:1px solid ${EMAIL_BRAND.border};">
-          <p style="margin:0;font-size:22px;font-weight:800;color:${EMAIL_BRAND.primary};">${opts.hotCount ?? "—"}</p>
-          <p style="margin:4px 0 0;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:${EMAIL_BRAND.faint};">Hot</p>
-        </td>
-        <td style="padding:16px;width:33%;text-align:center;border-left:1px solid ${EMAIL_BRAND.border};">
-          <p style="margin:0;font-size:22px;font-weight:800;color:${EMAIL_BRAND.secondary};">${opts.warmCount ?? "—"}</p>
-          <p style="margin:4px 0 0;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:${EMAIL_BRAND.faint};">Warm</p>
-        </td>
-      </tr>
-    </table>
-    ${
-      samples.length
-        ? `<p style="margin:0;font-size:13px;font-weight:600;color:${EMAIL_BRAND.ink};">Sample businesses</p>${sampleHtml}`
-        : ""
-    }
-    <div style="margin:28px 0 8px;text-align:center;">
+    ${statsRow(opts.leadCount, opts.hotCount, opts.warmCount)}
+    ${sampleList(samples)}
+    <div style="margin:24px 0 8px;">
       ${ctaButton("Review leads", searchUrl)}
     </div>`;
 
   return renderEmailShell({
-    preheader: `${opts.leadCount} new ${opts.industry} leads ready in ${opts.locationLabel}.`,
-    heroTitle: "Fresh leads just landed",
-    heroSubtitle:
-      "AI-scored contractor businesses from your latest search — verified fields only, never fabricated.",
+    preheader: `${opts.leadCount} ${opts.industry} leads ready ${opts.locationLabel}.`,
+    heroTitle: "Your search results are ready",
+    heroSubtitle: `${opts.leadCount} ${opts.industry} leads ${opts.locationLabel}.`,
     bodyHtml,
     secondaryHtml: `
-      <p style="margin:0 0 8px;font-family:Georgia,'Times New Roman',serif;font-size:18px;font-weight:700;">Next steps</p>
-      <p style="margin:0 0 14px;font-size:13px;line-height:1.5;color:${EMAIL_BRAND.muted};">
-        Save winners to pipeline, export CSV/Excel, or push status changes to Slack &amp; GoHighLevel.
+      <p style="margin:0 0 6px;font-family:${EMAIL_FONT};font-size:13px;font-weight:600;color:${EMAIL_BRAND.ink};">Next</p>
+      <p style="margin:0 0 12px;font-size:13px;line-height:1.5;color:${EMAIL_BRAND.muted};">
+        Save leads to your pipeline, export CSV, or sync status updates to Slack and GoHighLevel.
       </p>
       ${ctaButton("Open pipeline", `${base}/leads/pipeline`)}`,
     links: {
@@ -421,57 +416,40 @@ export function renderManagedTemplate(opts: {
 
   const features: Array<[string, string, string]> = [];
   if (t.feature1Title.trim())
-    features.push(["①", fill(t.feature1Title), fill(t.feature1Body)]);
+    features.push(["", fill(t.feature1Title), fill(t.feature1Body)]);
   if (t.feature2Title.trim())
-    features.push(["②", fill(t.feature2Title), fill(t.feature2Body)]);
+    features.push(["", fill(t.feature2Title), fill(t.feature2Body)]);
   if (t.feature3Title.trim())
-    features.push(["③", fill(t.feature3Title), fill(t.feature3Body)]);
+    features.push(["", fill(t.feature3Title), fill(t.feature3Body)]);
 
   const statsHtml =
     opts.scrapeStats != null
-      ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 18px;border-collapse:separate;border-radius:14px;background:${EMAIL_BRAND.softBg};">
-      <tr>
-        <td style="padding:16px;width:33%;text-align:center;">
-          <p style="margin:0;font-size:22px;font-weight:800;color:${EMAIL_BRAND.ink};">${opts.scrapeStats.leadCount}</p>
-          <p style="margin:4px 0 0;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:${EMAIL_BRAND.faint};">Leads</p>
-        </td>
-        <td style="padding:16px;width:33%;text-align:center;border-left:1px solid ${EMAIL_BRAND.border};">
-          <p style="margin:0;font-size:22px;font-weight:800;color:${EMAIL_BRAND.primary};">${opts.scrapeStats.hotCount ?? "—"}</p>
-          <p style="margin:4px 0 0;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:${EMAIL_BRAND.faint};">Hot</p>
-        </td>
-        <td style="padding:16px;width:33%;text-align:center;border-left:1px solid ${EMAIL_BRAND.border};">
-          <p style="margin:0;font-size:22px;font-weight:800;color:${EMAIL_BRAND.secondary};">${opts.scrapeStats.warmCount ?? "—"}</p>
-          <p style="margin:4px 0 0;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:${EMAIL_BRAND.faint};">Warm</p>
-        </td>
-      </tr>
-    </table>`
+      ? statsRow(
+          opts.scrapeStats.leadCount,
+          opts.scrapeStats.hotCount,
+          opts.scrapeStats.warmCount,
+        )
       : "";
 
-  const samples = (opts.sampleNames || []).slice(0, 5);
-  const sampleHtml = samples.length
-    ? `<p style="margin:0;font-size:13px;font-weight:600;color:${EMAIL_BRAND.ink};">Sample businesses</p>
-       <ul style="margin:12px 0 0;padding-left:18px;font-size:13px;line-height:1.6;color:${EMAIL_BRAND.muted};">
-        ${samples.map((n) => `<li>${esc(n)}</li>`).join("")}
-      </ul>`
-    : "";
-
   const featureTable = features.length
-    ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+    ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 8px;">
         ${features.map(([icon, title, body]) => featureRow(icon, title, body)).join("")}
       </table>`
     : "";
 
   const bodyHtml = `
-    <p style="margin:0 0 14px;font-family:Georgia,'Times New Roman',serif;font-size:24px;font-weight:700;color:${EMAIL_BRAND.ink};">
-      ${esc(fill(t.headline))}
-    </p>
-    <p style="margin:0 0 18px;font-size:15px;line-height:1.6;color:${EMAIL_BRAND.muted};">
+    ${
+      t.headline.trim()
+        ? `<p style="margin:0 0 10px;font-family:${EMAIL_FONT};font-size:15px;font-weight:600;letter-spacing:-0.01em;color:${EMAIL_BRAND.ink};">${esc(fill(t.headline))}</p>`
+        : ""
+    }
+    <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:${EMAIL_BRAND.muted};">
       ${esc(fill(t.body))}
     </p>
     ${statsHtml}
-    ${sampleHtml}
+    ${sampleList(opts.sampleNames || [])}
     ${featureTable}
-    <div style="margin:28px 0 8px;text-align:center;">
+    <div style="margin:24px 0 8px;">
       ${ctaButton(fill(t.ctaLabel), ctaHref)}
     </div>`;
 
@@ -479,14 +457,14 @@ export function renderManagedTemplate(opts: {
   if (t.secondaryTitle.trim() || t.secondaryBody.trim()) {
     const secCta =
       t.secondaryCtaLabel.trim() && t.secondaryCtaPath.trim()
-        ? `<div style="margin-top:14px;">${ctaButton(
+        ? `<div style="margin-top:12px;">${ctaButton(
             fill(t.secondaryCtaLabel),
             `${base}${t.secondaryCtaPath.startsWith("/") ? t.secondaryCtaPath : `/${t.secondaryCtaPath}`}`,
           )}</div>`
         : "";
     secondaryHtml = `
-      ${t.secondaryTitle.trim() ? `<p style="margin:0 0 8px;font-family:Georgia,'Times New Roman',serif;font-size:18px;font-weight:700;">${esc(fill(t.secondaryTitle))}</p>` : ""}
-      ${t.secondaryBody.trim() ? `<p style="margin:0 0 14px;font-size:13px;line-height:1.5;color:${EMAIL_BRAND.muted};">${esc(fill(t.secondaryBody))}</p>` : ""}
+      ${t.secondaryTitle.trim() ? `<p style="margin:0 0 6px;font-family:${EMAIL_FONT};font-size:13px;font-weight:600;color:${EMAIL_BRAND.ink};">${esc(fill(t.secondaryTitle))}</p>` : ""}
+      ${t.secondaryBody.trim() ? `<p style="margin:0 0 12px;font-size:13px;line-height:1.5;color:${EMAIL_BRAND.muted};">${esc(fill(t.secondaryBody))}</p>` : ""}
       ${secCta}`;
   }
 
