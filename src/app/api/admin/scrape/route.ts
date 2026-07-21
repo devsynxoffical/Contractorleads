@@ -35,6 +35,7 @@ export async function POST(request: Request) {
       customLocation,
       radius,
       requireSocialPresence,
+      targetLeadCount,
     } = resolved.criteria;
 
     const result = await runLeadPipeline({
@@ -48,6 +49,7 @@ export async function POST(request: Request) {
       customLocation,
       radius,
       requireSocialPresence,
+      targetLeadCount,
     });
 
     await logActivity(
