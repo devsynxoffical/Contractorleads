@@ -195,24 +195,21 @@ async function findLinkedInViaSerper(
   location: string,
 ): Promise<string | null> {
   const { searchPublicWeb } = await import("./web-search");
-  const queries = [
-    `${businessName} ${location} site:linkedin.com/company`,
-    `"${businessName}" site:linkedin.com/company`,
-    `${businessName} linkedin company`,
-  ];
-  for (const q of queries) {
-    const hits = await searchPublicWeb(q, 6);
-    for (const hit of hits) {
-      const company = normalizeLinkedInCompanyUrl(hit.url);
-      if (company) return company;
-      const owner = normalizeLinkedInProfileUrl(hit.url);
-      if (owner) return owner;
-    }
+  // One query only — sequential multi-query was the LinkedIn bottleneck
+  const hits = await searchPublicWeb(
+    `site:linkedin.com/company "${businessName}" ${location}`,
+    6,
+  );
+  for (const hit of hits) {
+    const company = normalizeLinkedInCompanyUrl(hit.url);
+    if (company) return company;
+    const owner = normalizeLinkedInProfileUrl(hit.url);
+    if (owner) return owner;
   }
   return null;
 }
 
-/** Run free strategies: website scrape + Serper Google search (Proxycurl is shut down). */
+/** Run free strategies: website scrape + public web search. */
 export async function findLinkedInCompanyUrl(
   businessName: string,
   location: string,
@@ -222,6 +219,8 @@ export async function findLinkedInCompanyUrl(
     /** Prefetched company URL from website pack (avoids double scrape). */
     websiteCompanyUrl?: string | null;
     skipWebsiteScrape?: boolean;
+    /** Skip slow public-web lookup when URL already known. */
+    skipWebSearch?: boolean;
   },
 ): Promise<LinkedInCompanyResult> {
   void industry;
@@ -231,15 +230,21 @@ export async function findLinkedInCompanyUrl(
       opts.websiteCompanyUrl
     : null;
 
+  if (fromSitePrefetch) {
+    const company = normalizeLinkedInCompanyUrl(fromSitePrefetch);
+    if (company) return { url: company, confidence: 98, source: "website" };
+    return { url: fromSitePrefetch, confidence: 96, source: "website" };
+  }
+
   const [fromSite, fromSerper] = await Promise.all([
-    fromSitePrefetch
-      ? Promise.resolve(fromSitePrefetch)
-      : opts?.skipWebsiteScrape
-        ? Promise.resolve(null)
-        : website
-          ? discoverLinkedInFromWebsite(website)
-          : Promise.resolve(null),
-    findLinkedInViaSerper(businessName, location),
+    opts?.skipWebsiteScrape
+      ? Promise.resolve(null)
+      : website
+        ? discoverLinkedInFromWebsite(website)
+        : Promise.resolve(null),
+    opts?.skipWebSearch
+      ? Promise.resolve(null)
+      : findLinkedInViaSerper(businessName, location),
   ]);
 
   if (fromSite) {
@@ -249,8 +254,8 @@ export async function findLinkedInCompanyUrl(
   }
   if (fromSerper) {
     const company = normalizeLinkedInCompanyUrl(fromSerper);
-    if (company) return { url: company, confidence: 94, source: "serper" };
-    return { url: fromSerper, confidence: 92, source: "serper" };
+    if (company) return { url: company, confidence: 94, source: "web" };
+    return { url: fromSerper, confidence: 92, source: "web" };
   }
 
   return { url: null, confidence: 0, source: null };

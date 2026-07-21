@@ -454,8 +454,8 @@ export async function searchGooglePlaces(params: {
   const results = Array.from(deduped.values()).slice(0, wanted);
   if (!results.length) return [];
 
-  // Cap Details concurrency to avoid Places quota spikes
-  return mapPool(results, fast ? 14 : 10, (place) =>
+  // Cap Details concurrency higher for volume searches
+  return mapPool(results, fast ? 20 : 12, (place) =>
     enrichOnePlace(place, apiKeyValue, { fast }),
   );
 }

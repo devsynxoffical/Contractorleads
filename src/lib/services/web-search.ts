@@ -94,7 +94,7 @@ async function searchBrave(
         Accept: "text/html,application/xhtml+xml",
         "Accept-Language": "en-US,en;q=0.9",
       },
-      signal: AbortSignal.timeout(8_000),
+      signal: AbortSignal.timeout(5_000),
       redirect: "follow",
     });
     if (!response.ok) return [];
@@ -247,7 +247,7 @@ export async function searchPublicWeb(
 
 /**
  * Targeted free searches for LinkedIn + FB/IG when the social filter is on.
- * Two focused queries (not four) to stay fast and avoid search-engine bans.
+ * Single combined query keeps enrichment under ~1 Brave round-trip.
  */
 export async function discoverSocialProfiles(
   businessName: string,
@@ -259,16 +259,11 @@ export async function discoverSocialProfiles(
 }> {
   const name = businessName.trim();
   const loc = location.trim();
-
-  const [liHits, socialHits] = await Promise.all([
-    searchPublicWeb(`site:linkedin.com/company "${name}" ${loc}`, 8),
-    searchPublicWeb(
-      `"${name}" ${loc} (facebook OR instagram OR "linkedin.com/company")`,
-      10,
-    ),
-  ]);
-
-  return pickSocialFromHits([...liHits, ...socialHits]);
+  const hits = await searchPublicWeb(
+    `"${name}" ${loc} (site:linkedin.com/company OR site:facebook.com OR site:instagram.com)`,
+    10,
+  );
+  return pickSocialFromHits(hits);
 }
 
 /** Parse LinkedIn / FB / IG URLs out of search hits. */

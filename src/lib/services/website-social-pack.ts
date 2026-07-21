@@ -37,7 +37,7 @@ async function fetchHtml(url: string): Promise<string | null> {
         "User-Agent": USER_AGENT,
         Accept: "text/html,application/xhtml+xml",
       },
-      signal: AbortSignal.timeout(9000),
+      signal: AbortSignal.timeout(5000),
       redirect: "follow",
     });
     if (!response.ok) return null;
@@ -230,13 +230,13 @@ function extractFromHtml(html: string, pageUrl: string) {
  */
 export async function scrapeWebsiteSocialPack(
   website: string,
+  opts?: { maxExtraPages?: number },
 ): Promise<WebsiteSocialPack> {
   const homepage = website.startsWith("http") ? website : `https://${website}`;
   const homeHtml = await fetchHtml(homepage);
   if (!homeHtml) return { ...EMPTY, pagesChecked: [homepage] };
 
   const home = extractFromHtml(homeHtml, homepage);
-  const pages = [homepage, ...home.nextPages];
   const pack = {
     linkedinCompany: home.linkedinCompany[0] ?? null,
     linkedinOwner: home.linkedinOwner[0] ?? null,
@@ -247,8 +247,16 @@ export async function scrapeWebsiteSocialPack(
     pagesChecked: [homepage],
   };
 
+  const hasLi = Boolean(pack.linkedinCompany || pack.linkedinOwner);
+  const hasSocial = Boolean(
+    pack.facebook || pack.instagram || pack.youtube || pack.tiktok,
+  );
+  // Homepage already complete — skip slow secondary page fetches
+  const maxExtra = opts?.maxExtraPages ?? (hasLi && hasSocial ? 0 : 2);
+  if (maxExtra <= 0 || !home.nextPages.length) return pack;
+
   const extras = await Promise.all(
-    pages.slice(1, 4).map(async (url) => {
+    home.nextPages.slice(0, maxExtra).map(async (url) => {
       const html = await fetchHtml(url);
       return html ? { url, data: extractFromHtml(html, url) } : null;
     }),
