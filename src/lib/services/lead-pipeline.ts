@@ -2,10 +2,23 @@ import { prisma } from "@/lib/prisma";
 import { searchGooglePlaces } from "./google-places";
 import { findLinkedInCompanyUrl } from "./linkedin";
 import { qualifyLead } from "./qualification";
+import {
+  extractWebsitePeople,
+  type WebsitePeopleResult,
+} from "./website-people";
 import { searchFacebookPage } from "./facebook";
 import { scrapeWebsiteSocialPack } from "./website-social-pack";
+import { matchYelpBusiness } from "./yelp";
 import { mapPool } from "@/lib/utils/async-pool";
 import type { PlaceResult } from "./google-places";
+
+const EMPTY_PEOPLE: WebsitePeopleResult = {
+  owner: null,
+  team: [],
+  email: null,
+  emailSourceUrl: null,
+  pagesChecked: [],
+};
 
 export type SearchParams = {
   userId: string;
@@ -17,7 +30,7 @@ export type SearchParams = {
   zip?: string;
   customLocation?: string;
   radius?: number;
-  /** Default false — LinkedIn + social + website owner filter. */
+  /** Default true — only keep leads with LinkedIn + social. */
   requireSocialPresence?: boolean;
   /** How many leads the client asked for (10–1000). */
   targetLeadCount?: number;
@@ -75,7 +88,8 @@ function clampTarget(n: number | undefined) {
 }
 
 export async function runLeadPipeline(params: SearchParams) {
-  const requireSocial = params.requireSocialPresence === true;
+  // Automatic: LinkedIn + social required unless explicitly turned off
+  const requireSocial = params.requireSocialPresence !== false;
   const targetCount = clampTarget(params.targetLeadCount);
   // Over-fetch Places heavily when social filter is on (many candidates lack profiles)
   const fetchLimit = requireSocial
@@ -223,9 +237,9 @@ async function enrichAndPersistPlace(opts: {
     pack.facebook || pack.instagram || pack.youtube || pack.tiktok,
   );
 
-  // Only hit Brave when the website didn't already give LinkedIn + social
+  // Automatic social discovery whenever website pack is incomplete
   const fromWeb =
-    requireSocial && (!packHasLi || !packHasSocial)
+    !packHasLi || !packHasSocial
       ? await withTimeout(discoverSocialProfiles(place.name, location), 4500, {
           linkedin: null,
           facebook: null,
@@ -246,48 +260,51 @@ async function enrichAndPersistPlace(opts: {
     fromWeb.facebook ||
     fromWeb.instagram;
 
-  // Fail fast before slow secondary APIs when filter can't be satisfied
+  // Fail fast before secondary APIs when filter can't be satisfied
   if (requireSocial && (!linkedinHint || !socialHint)) {
     return "skipped-social";
   }
 
-  // Fast path: skip Yelp/Houzz/Nextdoor/people/verify — they dominate latency
-  const [companyLi, qualification, facebookPage] = await Promise.all([
-    linkedinHint
-      ? Promise.resolve({
-          url: linkedinHint.includes("/in/")
-            ? null
-            : linkedinHint,
-          confidence: pack.linkedinCompany || fromWeb.linkedin ? 96 : 90,
-          source: (pack.linkedinCompany
-            ? "website"
-            : fromWeb.linkedin
-              ? "web"
-              : "website") as "website" | "web" | null,
-        })
-      : withTimeout(
-          findLinkedInCompanyUrl(
-            place.name,
-            location,
-            params.industry,
-            website,
-            {
-              websiteCompanyUrl: null,
-              skipWebsiteScrape: true,
-              skipWebSearch: true,
-            },
+  // Automatic light enrichment (short timeouts — no manual Fetch needed)
+  const [companyLi, qualification, facebookPage, websitePeople, yelp] =
+    await Promise.all([
+      linkedinHint
+        ? Promise.resolve({
+            url: linkedinHint.includes("/in/") ? null : linkedinHint,
+            confidence: pack.linkedinCompany || fromWeb.linkedin ? 96 : 90,
+            source: (pack.linkedinCompany
+              ? "website"
+              : fromWeb.linkedin
+                ? "web"
+                : "website") as "website" | "web" | null,
+          })
+        : withTimeout(
+            findLinkedInCompanyUrl(
+              place.name,
+              location,
+              params.industry,
+              website,
+              {
+                websiteCompanyUrl: null,
+                skipWebsiteScrape: true,
+                skipWebSearch: true,
+              },
+            ),
+            3000,
+            { url: null, confidence: 0, source: null },
           ),
-          4000,
-          { url: null, confidence: 0, source: null },
-        ),
-    qualifyLead({ ...place, website }, params.industry, Boolean(website), {
-      preferRules,
-      timeoutMs: 1,
-    }),
-    !(pack.facebook || fromWeb.facebook)
-      ? withTimeout(searchFacebookPage(place.name), 2500, null)
-      : Promise.resolve(null),
-  ]);
+      qualifyLead({ ...place, website }, params.industry, Boolean(website), {
+        preferRules,
+        timeoutMs: 1,
+      }),
+      !(pack.facebook || fromWeb.facebook)
+        ? withTimeout(searchFacebookPage(place.name), 2500, null)
+        : Promise.resolve(null),
+      website
+        ? withTimeout(extractWebsitePeople(website), 3500, EMPTY_PEOPLE)
+        : Promise.resolve(EMPTY_PEOPLE),
+      withTimeout(matchYelpBusiness(place.name, location), 2500, null),
+    ]);
 
   const companyUrl =
     (companyLi.url && !companyLi.url.includes("/in/")
@@ -302,6 +319,8 @@ async function enrichAndPersistPlace(opts: {
     (fromWeb.linkedin?.includes("/in/") ? fromWeb.linkedin : null);
   const primaryLinkedIn = companyUrl || ownerUrl || fromWeb.linkedin;
   const resolvedOwner = ownerUrl;
+  const ownerName = websitePeople.owner?.name ?? null;
+  const ownerTitle = websitePeople.owner?.role ?? null;
 
   const facebook =
     pack.facebook || facebookPage || fromWeb.facebook || null;
@@ -313,7 +332,6 @@ async function enrichAndPersistPlace(opts: {
     ? Math.min(100, Math.round(qualification.websiteQualityScore ?? 40))
     : qualification.websiteQualityScore;
 
-  // Single lookup — maps URL first, name+address only if needed
   const existingLead = place.mapsUrl
     ? await prisma.lead.findFirst({
         where: { googleMapsLink: place.mapsUrl },
@@ -360,20 +378,25 @@ async function enrichAndPersistPlace(opts: {
     website: website ?? existingLead?.website,
     googleRating: place.rating ?? existingLead?.googleRating,
     reviewCount: place.reviewCount ?? existingLead?.reviewCount,
-    ownerName: existingLead?.ownerName ?? null,
-    ownerTitle: existingLead?.ownerTitle ?? null,
-    ownerSourceUrl: existingLead?.ownerSourceUrl ?? null,
-    ownerConfidence: existingLead?.ownerConfidence ?? null,
-    teamMembersJson: existingLead?.teamMembersJson ?? null,
-    email: existingLead?.email ?? null,
-    emailSourceUrl: existingLead?.emailSourceUrl ?? null,
+    ownerName: ownerName ?? existingLead?.ownerName,
+    ownerTitle: ownerTitle ?? existingLead?.ownerTitle,
+    ownerSourceUrl:
+      websitePeople.owner?.sourceUrl ?? existingLead?.ownerSourceUrl,
+    ownerConfidence:
+      websitePeople.owner?.confidence ?? existingLead?.ownerConfidence,
+    teamMembersJson: websitePeople.team.length
+      ? JSON.stringify(websitePeople.team)
+      : existingLead?.teamMembersJson,
+    email: websitePeople.email ?? existingLead?.email,
+    emailSourceUrl:
+      websitePeople.emailSourceUrl ?? existingLead?.emailSourceUrl,
     facebook: facebook ?? existingLead?.facebook,
     instagram: instagram ?? existingLead?.instagram,
     youtube: pack.youtube ?? existingLead?.youtube,
     tiktok: pack.tiktok ?? existingLead?.tiktok,
-    yelpUrl: existingLead?.yelpUrl ?? null,
-    yelpRating: existingLead?.yelpRating ?? null,
-    yelpReviews: existingLead?.yelpReviews ?? null,
+    yelpUrl: yelp?.url ?? existingLead?.yelpUrl,
+    yelpRating: yelp?.rating ?? existingLead?.yelpRating,
+    yelpReviews: yelp?.reviewCount ?? existingLead?.yelpReviews,
     houzzUrl: existingLead?.houzzUrl ?? null,
     houzzRating: existingLead?.houzzRating ?? null,
     houzzReviews: existingLead?.houzzReviews ?? null,
@@ -396,6 +419,10 @@ async function enrichAndPersistPlace(opts: {
     seoOpportunityScore: qualification.seoOpportunityScore,
     outreachAngle: qualification.outreachAngle,
     qualityTier: qualification.qualityTier,
+    peopleEnrichedAt: websitePeople.owner || websitePeople.email
+      ? new Date()
+      : existingLead?.peopleEnrichedAt,
+    socialEnrichedAt: new Date(),
   };
 
   if (existingLead) {
@@ -408,14 +435,17 @@ async function enrichAndPersistPlace(opts: {
   return prisma.lead.create({
     data: {
       businessName: place.name,
-      ownerName: null,
-      ownerTitle: null,
-      ownerSourceUrl: null,
-      ownerConfidence: null,
-      teamMembersJson: null,
-      peopleEnrichedAt: null,
-      email: null,
-      emailSourceUrl: null,
+      ownerName,
+      ownerTitle,
+      ownerSourceUrl: websitePeople.owner?.sourceUrl ?? null,
+      ownerConfidence: websitePeople.owner?.confidence ?? null,
+      teamMembersJson: websitePeople.team.length
+        ? JSON.stringify(websitePeople.team)
+        : null,
+      peopleEnrichedAt:
+        websitePeople.owner || websitePeople.email ? new Date() : null,
+      email: websitePeople.email,
+      emailSourceUrl: websitePeople.emailSourceUrl,
       facebook,
       instagram,
       youtube: pack.youtube,
@@ -434,9 +464,9 @@ async function enrichAndPersistPlace(opts: {
       ppcOpportunityScore: qualification.ppcOpportunityScore,
       seoOpportunityScore: qualification.seoOpportunityScore,
       outreachAngle: qualification.outreachAngle,
-      yelpUrl: null,
-      yelpRating: null,
-      yelpReviews: null,
+      yelpUrl: yelp?.url ?? null,
+      yelpRating: yelp?.rating ?? null,
+      yelpReviews: yelp?.reviewCount ?? null,
       houzzUrl: null,
       houzzRating: null,
       houzzReviews: null,

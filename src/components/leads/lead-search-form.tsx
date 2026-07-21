@@ -119,7 +119,7 @@ export function LeadSearchForm() {
   const [customLocation, setCustomLocation] = useState("");
   const [selectedState, setSelectedState] = useState("");
   const [city, setCity] = useState("");
-  const [requireSocialPresence, setRequireSocialPresence] = useState(false);
+  const [requireSocialPresence, setRequireSocialPresence] = useState(true);
   const [targetLeadCount, setTargetLeadCount] = useState(50);
   const [filterNote, setFilterNote] = useState<string | null>(null);
   const [stage, setStage] = useState(0);
@@ -664,13 +664,12 @@ export function LeadSearchForm() {
                 />
                 <span className="text-[13px] leading-snug text-ink">
                   <span className="font-semibold text-brand-600">
-                    Require LinkedIn + social (FB/IG/YT/TikTok)
+                    LinkedIn + social required (on by default)
                   </span>
                   <span className="mt-0.5 block text-ink-muted">
-                    Keep only leads with LinkedIn + a social profile + owner/email
-                    from the website. We deep-scrape About/Contact pages, trust
-                    on-site links, and use Google/Serper fallbacks so volume
-                    targets fill more reliably.
+                    Every scrape automatically finds LinkedIn, Facebook/Instagram,
+                    owner, and Yelp. With this on, only leads that have LinkedIn +
+                    a social profile are kept.
                   </span>
                 </span>
               </label>

@@ -78,7 +78,7 @@ export function resolveSearchCriteria(
 
   const locationScope: LocationScope =
     input.locationScope === "country" ? "country" : "local";
-  const requireSocialPresence = parseBool(input.requireSocialPresence, false);
+  const requireSocialPresence = parseBool(input.requireSocialPresence, true);
   const rawTarget = Number(input.targetLeadCount ?? 50);
   const targetLeadCount = Number.isFinite(rawTarget)
     ? Math.max(10, Math.min(1000, Math.floor(rawTarget)))
@@ -255,7 +255,7 @@ export function parseLeadQuery(input: string): ResolvedSearchCriteria | null {
     city: city || customLocation,
     customLocation,
     radius: locationScope === "local" ? 25 : undefined,
-    requireSocialPresence: false,
+    requireSocialPresence: true,
     targetLeadCount: 50,
   };
 }
