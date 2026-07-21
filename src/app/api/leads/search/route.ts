@@ -8,6 +8,9 @@ import { resolveSearchCriteria, formatSearchLabel } from "@/lib/search-criteria"
 import { sendLeadScrapeEmail } from "@/lib/email";
 import { appBaseUrl } from "@/lib/email-brand";
 
+/** Large volume searches can run several minutes. */
+export const maxDuration = 300;
+
 export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user) {
@@ -31,12 +34,17 @@ export async function POST(request: Request) {
       customLocation,
       radius,
       requireSocialPresence,
+      targetLeadCount,
     } = resolved.criteria;
 
-    if (user.creditsRemaining < CREDIT_COSTS.search) {
+    const creditCost =
+      CREDIT_COSTS.search *
+      Math.max(1, Math.ceil(targetLeadCount / 50));
+
+    if (user.creditsRemaining < creditCost) {
       return NextResponse.json(
         {
-          error: `Insufficient credits. Each search costs ${CREDIT_COSTS.search} credits.`,
+          error: `Insufficient credits. This search costs ${creditCost.toFixed(2)} credits (${targetLeadCount} leads).`,
         },
         { status: 402 }
       );
@@ -63,10 +71,10 @@ export async function POST(request: Request) {
       customLocation,
       radius,
       requireSocialPresence,
+      targetLeadCount,
     });
 
-    // Flat charge per search (not per lead returned)
-    await deductCredits(user.id, CREDIT_COSTS.search, "lead_generation");
+    await deductCredits(user.id, creditCost, "lead_generation");
 
     const filterNote =
       result.meta.requireSocialPresence && result.meta.skippedNoSocial > 0

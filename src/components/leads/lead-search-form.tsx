@@ -119,7 +119,8 @@ export function LeadSearchForm() {
   const [customLocation, setCustomLocation] = useState("");
   const [selectedState, setSelectedState] = useState("");
   const [city, setCity] = useState("");
-  const [requireSocialPresence, setRequireSocialPresence] = useState(true);
+  const [requireSocialPresence, setRequireSocialPresence] = useState(false);
+  const [targetLeadCount, setTargetLeadCount] = useState(50);
   const [filterNote, setFilterNote] = useState<string | null>(null);
   const [stage, setStage] = useState(0);
   const [restoring, setRestoring] = useState(true);
@@ -267,6 +268,7 @@ export function LeadSearchForm() {
     customLocation?: string;
     radius?: string | number;
     requireSocialPresence?: boolean;
+    targetLeadCount?: number;
   }) {
     const resolved = resolveSearchCriteria(payload);
     if (!resolved.ok) {
@@ -368,6 +370,7 @@ export function LeadSearchForm() {
           ? String(form.get("radius") || "25")
           : undefined,
       requireSocialPresence,
+      targetLeadCount,
     });
   }
 
@@ -633,6 +636,25 @@ export function LeadSearchForm() {
               </div>
               )}
 
+              <div className="space-y-2">
+                <Label>How many leads</Label>
+                <Select
+                  value={String(targetLeadCount)}
+                  onChange={(e) => setTargetLeadCount(Number(e.target.value))}
+                >
+                  {[25, 50, 100, 250, 500, 1000].map((n) => (
+                    <option key={n} value={n}>
+                      {n} leads
+                      {n >= 250 ? " (volume — faster rules scoring)" : ""}
+                    </option>
+                  ))}
+                </Select>
+                <p className="text-[11px] text-ink-muted">
+                  Larger counts scan more Places queries in parallel. Credits scale
+                  every 50 leads.
+                </p>
+              </div>
+
               <label className="flex items-start gap-3 rounded-xl border border-brand-500/20 bg-brand-500/05 px-4 py-3 sm:col-span-2 lg:col-span-3">
                 <input
                   type="checkbox"
@@ -640,15 +662,14 @@ export function LeadSearchForm() {
                   onChange={(e) => setRequireSocialPresence(e.target.checked)}
                   className="mt-0.5 h-4 w-4 rounded border-brand-500/40 bg-transparent text-brand-500 focus:ring-brand-500"
                 />
-                <span className="text-[13px] leading-snug text-[#c5d0dc]">
-                  <span className="font-semibold text-brand-500">
+                <span className="text-[13px] leading-snug text-ink">
+                  <span className="font-semibold text-brand-600">
                     Require LinkedIn, social &amp; owner name
                   </span>
-                  <span className="mt-0.5 block text-[#8b9aab]">
-                    Only return businesses with a website that lists an owner
-                    (or founder/CEO), plus LinkedIn and at least one of
-                    Facebook, Instagram, YouTube, or TikTok. We scan more Places
-                    results to fill your list.
+                  <span className="mt-0.5 block text-ink-muted">
+                    Stricter filter — only keeps businesses with LinkedIn, a social
+                    profile, and an owner on their website. Slower and returns fewer
+                    leads; leave off for maximum volume and speed.
                   </span>
                 </span>
               </label>

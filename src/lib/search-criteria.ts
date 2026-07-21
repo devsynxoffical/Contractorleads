@@ -18,8 +18,10 @@ export type SearchCriteriaInput = {
   zip?: string;
   customLocation?: string;
   radius?: number | string;
-  /** Keep only leads with LinkedIn + social + website owner name. Default true. */
+  /** Keep only leads with LinkedIn + social + website owner name. Default false. */
   requireSocialPresence?: boolean | string;
+  /** Desired number of leads (10–1000). Default 50. */
+  targetLeadCount?: number | string;
 };
 
 export type ResolvedSearchCriteria = {
@@ -33,6 +35,7 @@ export type ResolvedSearchCriteria = {
   radius?: number;
   /** LinkedIn + social + website owner name required when true. */
   requireSocialPresence: boolean;
+  targetLeadCount: number;
 };
 
 function parseBool(value: unknown, defaultValue: boolean): boolean {
@@ -75,12 +78,22 @@ export function resolveSearchCriteria(
 
   const locationScope: LocationScope =
     input.locationScope === "country" ? "country" : "local";
-  const requireSocialPresence = parseBool(input.requireSocialPresence, true);
+  const requireSocialPresence = parseBool(input.requireSocialPresence, false);
+  const rawTarget = Number(input.targetLeadCount ?? 50);
+  const targetLeadCount = Number.isFinite(rawTarget)
+    ? Math.max(10, Math.min(1000, Math.floor(rawTarget)))
+    : 50;
 
   if (locationScope === "country") {
     return {
       ok: true,
-      criteria: { industry, country, locationScope, requireSocialPresence },
+      criteria: {
+        industry,
+        country,
+        locationScope,
+        requireSocialPresence,
+        targetLeadCount,
+      },
     };
   }
 
@@ -108,6 +121,7 @@ export function resolveSearchCriteria(
         customLocation,
         radius,
         requireSocialPresence,
+        targetLeadCount,
       },
     };
   }
@@ -133,6 +147,7 @@ export function resolveSearchCriteria(
       zip: zip || undefined,
       radius,
       requireSocialPresence,
+      targetLeadCount,
     },
   };
 }
@@ -240,6 +255,7 @@ export function parseLeadQuery(input: string): ResolvedSearchCriteria | null {
     city: city || customLocation,
     customLocation,
     radius: locationScope === "local" ? 25 : undefined,
-    requireSocialPresence: true,
+    requireSocialPresence: false,
+    targetLeadCount: 50,
   };
 }

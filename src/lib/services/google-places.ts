@@ -1,4 +1,5 @@
 import { getTierOneCountry } from "@/lib/constants";
+import { chunkArray, mapPool } from "@/lib/utils/async-pool";
 
 export type PlaceResult = {
   placeId: string;
@@ -185,59 +186,206 @@ async function enrichOnePlace(
     user_ratings_total?: number;
     geometry?: { location?: { lat: number; lng: number } };
   },
-  apiKey: string
+  apiKey: string,
+  opts?: { fast?: boolean },
 ): Promise<PlaceResult> {
   let details = await fetchPlaceDetailsLegacy(place.place_id, apiKey);
 
-  // One retry — Details occasionally flakes without website
-  if (!details?.website) {
-    await new Promise((r) => setTimeout(r, 250));
+  // One retry — Details occasionally flakes without website (skip in fast mode)
+  if (!opts?.fast && !details?.website) {
+    await new Promise((r) => setTimeout(r, 200));
     const retry = await fetchPlaceDetailsLegacy(place.place_id, apiKey);
     if (retry) {
-      details = details ? { ...details, ...retry, website: retry.website || details.website } : retry;
+      details = details
+        ? { ...details, ...retry, website: retry.website || details.website }
+        : retry;
     }
   }
 
   let website = normalizeWebsiteUrl(details?.website);
-
-  // Fallback: Places API (New) websiteUri when legacy field is empty
-  if (!website) {
+  if (!opts?.fast && !website) {
     website = await fetchWebsiteFromPlacesNew(place.place_id, apiKey);
   }
 
   const phone =
-    details?.formatted_phone_number || details?.international_phone_number;
-
-  if (!details?.name) {
-    return {
-      placeId: place.place_id,
-      name: place.name,
-      address: place.formatted_address || "",
-      website,
-      phone,
-      rating: place.rating,
-      reviewCount: place.user_ratings_total,
-      mapsUrl: `https://www.google.com/maps/place/?q=place_id:${place.place_id}`,
-      latitude: place.geometry?.location?.lat,
-      longitude: place.geometry?.location?.lng,
-    };
-  }
+    details?.formatted_phone_number ||
+    details?.international_phone_number ||
+    undefined;
 
   return {
     placeId: place.place_id,
-    name: details.name,
-    address: details.formatted_address || place.formatted_address || "",
+    name: details?.name || place.name,
+    address: details?.formatted_address || place.formatted_address || "",
     phone,
     website,
-    rating: details.rating ?? place.rating,
-    reviewCount: details.user_ratings_total ?? place.user_ratings_total,
+    rating: details?.rating ?? place.rating,
+    reviewCount: details?.user_ratings_total ?? place.user_ratings_total,
     mapsUrl:
-      details.url ||
+      details?.url ||
       `https://www.google.com/maps/place/?q=place_id:${place.place_id}`,
-    latitude: details.geometry?.location?.lat ?? place.geometry?.location?.lat,
+    latitude: details?.geometry?.location?.lat ?? place.geometry?.location?.lat,
     longitude:
-      details.geometry?.location?.lng ?? place.geometry?.location?.lng,
+      details?.geometry?.location?.lng ?? place.geometry?.location?.lng,
   };
+}
+
+function buildPlacesQueries(params: {
+  industry: string;
+  country: string;
+  locationScope: "local" | "country";
+  state?: string;
+  city?: string;
+  zip?: string;
+  customLocation?: string;
+  radius?: number;
+}): string[] {
+  const country = getTierOneCountry(params.country);
+  const loc =
+    params.locationScope === "country"
+      ? country.name
+      : params.customLocation?.trim() || locationQuery(params);
+  const trade = industryQuery(params.industry);
+  const industry = params.industry;
+
+  const queries = new Set<string>();
+  queries.add(`${trade} in ${loc}`);
+  queries.add(`${trade} near ${loc}`);
+  queries.add(`${industry} contractors ${loc}`);
+  queries.add(`${industry} company ${loc}`);
+  queries.add(`best ${trade} ${loc}`);
+  queries.add(`residential ${industry} ${loc}`);
+  queries.add(`commercial ${industry} ${loc}`);
+  queries.add(`${industry} services ${loc}`);
+
+  if (params.locationScope === "local" && params.state && params.city) {
+    queries.add(`${trade} in ${params.state}, ${country.name}`);
+    queries.add(`${trade} near ${params.state}`);
+  }
+  if (params.zip) {
+    queries.add(`${trade} ${params.zip}`);
+  }
+
+  // Country-wide: fan across major US metros for volume
+  if (params.locationScope === "country" && params.country === "US") {
+    const metros = [
+      "New York NY",
+      "Los Angeles CA",
+      "Chicago IL",
+      "Houston TX",
+      "Phoenix AZ",
+      "Philadelphia PA",
+      "San Antonio TX",
+      "San Diego CA",
+      "Dallas TX",
+      "Austin TX",
+      "Jacksonville FL",
+      "Miami FL",
+      "Atlanta GA",
+      "Denver CO",
+      "Seattle WA",
+      "Boston MA",
+      "Nashville TN",
+      "Charlotte NC",
+      "Detroit MI",
+      "Las Vegas NV",
+    ];
+    for (const metro of metros) {
+      queries.add(`${trade} in ${metro}`);
+    }
+  }
+
+  return [...queries];
+}
+
+async function textSearchPages(
+  query: string,
+  apiKeyValue: string,
+  googleRegion: string,
+  maxResults: number,
+): Promise<
+  Array<{
+    place_id: string;
+    name: string;
+    formatted_address?: string;
+    rating?: number;
+    user_ratings_total?: number;
+    geometry?: { location?: { lat: number; lng: number } };
+  }>
+> {
+  const combined: Array<{
+    place_id: string;
+    name: string;
+    formatted_address?: string;
+    rating?: number;
+    user_ratings_total?: number;
+    geometry?: { location?: { lat: number; lng: number } };
+  }> = [];
+
+  let pageToken: string | undefined;
+  for (let page = 0; page < 3 && combined.length < maxResults; page++) {
+    if (pageToken) {
+      await new Promise((r) => setTimeout(r, 1800));
+    }
+    const searchUrl = new URL(
+      "https://maps.googleapis.com/maps/api/place/textsearch/json",
+    );
+    searchUrl.searchParams.set("query", query);
+    searchUrl.searchParams.set("region", googleRegion);
+    searchUrl.searchParams.set("key", apiKeyValue);
+    if (pageToken) searchUrl.searchParams.set("pagetoken", pageToken);
+
+    const searchRes = await fetch(searchUrl.toString(), {
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!searchRes.ok) {
+      throw new GooglePlacesError(
+        `Google Places HTTP ${searchRes.status}. Try again in a moment.`,
+      );
+    }
+    const searchData = (await searchRes.json()) as {
+      status?: string;
+      error_message?: string;
+      next_page_token?: string;
+      results?: Array<{
+        place_id: string;
+        name: string;
+        formatted_address?: string;
+        rating?: number;
+        user_ratings_total?: number;
+        geometry?: { location?: { lat: number; lng: number } };
+      }>;
+    };
+
+    if (
+      searchData.status &&
+      searchData.status !== "OK" &&
+      searchData.status !== "ZERO_RESULTS"
+    ) {
+      const msg = searchData.error_message || searchData.status;
+      if (searchData.status === "REQUEST_DENIED") {
+        throw new GooglePlacesError(
+          `Google Places denied the request. Enable Billing on your Google Cloud project, then enable Places API. Details: ${msg}`,
+        );
+      }
+      if (searchData.status === "OVER_QUERY_LIMIT") {
+        throw new GooglePlacesError(
+          "Google Places quota exceeded. Check billing/quota in Google Cloud Console.",
+        );
+      }
+      if (searchData.status === "INVALID_REQUEST") {
+        throw new GooglePlacesError(
+          `Invalid Places request. Try a city name with the state. (${msg})`,
+        );
+      }
+      throw new GooglePlacesError(`Google Places error: ${msg}`);
+    }
+
+    combined.push(...(searchData.results ?? []));
+    pageToken = searchData.next_page_token || undefined;
+    if (!pageToken) break;
+  }
+
+  return combined;
 }
 
 export async function searchGooglePlaces(params: {
@@ -254,117 +402,62 @@ export async function searchGooglePlaces(params: {
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;
   if (!apiKey || apiKey.includes("your-key") || apiKey === "AIza...") {
     throw new GooglePlacesError(
-      "Google Places API key not configured. Add GOOGLE_PLACES_API_KEY to .env."
+      "Google Places API key not configured. Add GOOGLE_PLACES_API_KEY to .env.",
     );
   }
   const apiKeyValue = apiKey;
-
   const country = getTierOneCountry(params.country);
-  const loc =
-    params.locationScope === "country"
-      ? country.name
-      : params.customLocation?.trim() || locationQuery(params);
+  const wanted = Math.max(1, Math.min(params.limit ?? 10, 1200));
+  const fast = wanted >= 80;
 
-  // radius 0 = exact area phrasing; larger radii bias toward the named place
-  const query =
-    params.locationScope === "local" && params.radius === 0
-      ? `${industryQuery(params.industry)} in ${loc}`
-      : params.locationScope === "local" &&
-          typeof params.radius === "number" &&
-          params.radius > 0
-        ? `${industryQuery(params.industry)} near ${loc}`
-        : `${industryQuery(params.industry)} in ${loc}`;
+  const queries = buildPlacesQueries(params);
+  // Fewer query fan-outs for small searches; more for large targets
+  const queryBudget =
+    wanted <= 40 ? 1 : wanted <= 100 ? 4 : wanted <= 250 ? 8 : wanted <= 500 ? 14 : 22;
+  const selectedQueries = queries.slice(0, queryBudget);
 
-  async function fetchSearchPage(pageToken?: string) {
-    const searchUrl = new URL(
-      "https://maps.googleapis.com/maps/api/place/textsearch/json"
+  const deduped = new Map<
+    string,
+    {
+      place_id: string;
+      name: string;
+      formatted_address?: string;
+      rating?: number;
+      user_ratings_total?: number;
+      geometry?: { location?: { lat: number; lng: number } };
+    }
+  >();
+
+  // Fan-out Places text searches in parallel batches (each query ≤ ~60 results)
+  for (const batch of chunkArray(selectedQueries, 3)) {
+    if (deduped.size >= wanted) break;
+    const pages = await Promise.all(
+      batch.map((q) =>
+        textSearchPages(
+          q,
+          apiKeyValue,
+          country.googleRegion,
+          Math.min(60, wanted - deduped.size + 20),
+        ).catch((err) => {
+          if (err instanceof GooglePlacesError) throw err;
+          return [] as Awaited<ReturnType<typeof textSearchPages>>;
+        }),
+      ),
     );
-    searchUrl.searchParams.set("query", query);
-    searchUrl.searchParams.set("region", country.googleRegion);
-    searchUrl.searchParams.set("key", apiKeyValue);
-    if (pageToken) searchUrl.searchParams.set("pagetoken", pageToken);
-    const searchRes = await fetch(searchUrl.toString(), {
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!searchRes.ok) {
-      throw new GooglePlacesError(
-        `Google Places HTTP ${searchRes.status}. Try again in a moment.`
-      );
-    }
-    return (await searchRes.json()) as {
-      status?: string;
-      error_message?: string;
-      next_page_token?: string;
-      results?: Array<{
-        place_id: string;
-        name: string;
-        formatted_address?: string;
-        rating?: number;
-        user_ratings_total?: number;
-        geometry?: { location?: { lat: number; lng: number } };
-      }>;
-    };
-  }
-
-  const combined: Array<{
-    place_id: string;
-    name: string;
-    formatted_address?: string;
-    rating?: number;
-    user_ratings_total?: number;
-    geometry?: { location?: { lat: number; lng: number } };
-  }> = [];
-
-  let pageToken: string | undefined;
-  const wanted = Math.max(1, params.limit ?? 10);
-  for (let page = 0; page < 3 && combined.length < wanted; page++) {
-    if (pageToken) {
-      // Google requires a short wait before next_page_token becomes active.
-      await new Promise((r) => setTimeout(r, 1800));
-    }
-    const searchData = await fetchSearchPage(pageToken);
-    if (
-      searchData.status &&
-      searchData.status !== "OK" &&
-      searchData.status !== "ZERO_RESULTS"
-    ) {
-      const msg = searchData.error_message || searchData.status;
-      if (searchData.status === "REQUEST_DENIED") {
-        throw new GooglePlacesError(
-          `Google Places denied the request. Enable Billing on your Google Cloud project, then enable Places API. Details: ${msg}`
-        );
+    for (const rows of pages) {
+      for (const row of rows) {
+        if (!deduped.has(row.place_id)) deduped.set(row.place_id, row);
       }
-      if (searchData.status === "OVER_QUERY_LIMIT") {
-        throw new GooglePlacesError(
-          "Google Places quota exceeded. Check billing/quota in Google Cloud Console."
-        );
-      }
-      if (searchData.status === "INVALID_REQUEST") {
-        throw new GooglePlacesError(
-          `Invalid Places request. Try a city name with the state. (${msg})`
-        );
-      }
-      throw new GooglePlacesError(`Google Places error: ${msg}`);
     }
-    combined.push(...(searchData.results ?? []));
-    pageToken = searchData.next_page_token || undefined;
-    if (!pageToken) break;
-  }
-
-  const deduped = new Map<string, (typeof combined)[number]>();
-  for (const row of combined) {
-    if (!deduped.has(row.place_id)) deduped.set(row.place_id, row);
   }
 
   const results = Array.from(deduped.values()).slice(0, wanted);
   if (!results.length) return [];
 
-  // Parallel details — much faster and fewer dropped websites from timeouts
-  const enriched = await Promise.all(
-    results.map((place) => enrichOnePlace(place, apiKeyValue))
+  // Cap Details concurrency to avoid Places quota spikes
+  return mapPool(results, fast ? 14 : 10, (place) =>
+    enrichOnePlace(place, apiKeyValue, { fast }),
   );
-
-  return enriched;
 }
 
 /**

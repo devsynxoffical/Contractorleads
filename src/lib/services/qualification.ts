@@ -62,18 +62,21 @@ export async function qualifyLead(
   place: PlaceResult,
   industry: string,
   hasWebsite: boolean,
+  opts?: { preferRules?: boolean; timeoutMs?: number },
 ): Promise<QualificationResult> {
-  const apiKey = getOpenAIApiKey();
-  if (!apiKey) {
-    console.warn(
-      "[qualifyLead] OPENAI_API_KEY missing or placeholder — using rule-based scores (dummy revenue buckets).",
-    );
+  if (opts?.preferRules) {
     return ruleBasedQualification(place, industry, hasWebsite);
   }
 
+  const apiKey = getOpenAIApiKey();
+  if (!apiKey) {
+    return ruleBasedQualification(place, industry, hasWebsite);
+  }
+
+  const timeoutMs = opts?.timeoutMs ?? 8000;
   try {
     const openai = createOpenAI({ apiKey });
-    const { object } = await generateObject({
+    const work = generateObject({
       model: openai("gpt-4o-mini"),
       schema: qualificationSchema,
       prompt: `You are qualifying a real home-service business for a US marketing agency selling lead-gen / paid ads.
@@ -104,7 +107,15 @@ Scores (0–100):
 outreachAngle: one concrete, specific sentence an SDR could use (no fluff).
 serviceCategory: normalize to the trade (e.g. "HVAC", "Roofing").`,
     });
-    return { ...object, source: "ai" };
+
+    const raced = await Promise.race([
+      work.then((r) => ({ ok: true as const, object: r.object })),
+      new Promise<{ ok: false }>((resolve) =>
+        setTimeout(() => resolve({ ok: false }), timeoutMs),
+      ),
+    ]);
+    if (!raced.ok) return ruleBasedQualification(place, industry, hasWebsite);
+    return { ...raced.object, source: "ai" };
   } catch (err) {
     console.error(
       "[qualifyLead] OpenAI failed — falling back to rules:",
@@ -113,3 +124,5 @@ serviceCategory: normalize to the trade (e.g. "HVAC", "Roofing").`,
     return ruleBasedQualification(place, industry, hasWebsite);
   }
 }
+
+export { ruleBasedQualification };
