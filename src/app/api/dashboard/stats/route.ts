@@ -3,6 +3,7 @@ import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { startOfWeek, addDays, format } from "date-fns";
 import { processDueEnrollments } from "@/lib/email-automation";
+import { LEAD_STATUSES } from "@/lib/constants";
 
 export async function GET() {
   const user = await getSessionUser();
@@ -29,6 +30,9 @@ export async function GET() {
     recentSearches,
     recentExports,
     freshUser,
+    pipelineByStatus,
+    smtpSettings,
+    emailSequence,
   ] = await Promise.all([
     prisma.lead.count({
       where: { search: { userId: user.id } },
@@ -73,6 +77,7 @@ export async function GET() {
         locationScope: true,
         state: true,
         city: true,
+        zip: true,
         radius: true,
         resultCount: true,
         createdAt: true,
@@ -91,7 +96,25 @@ export async function GET() {
     }),
     prisma.user.findUnique({
       where: { id: user.id },
-      select: { creditsRemaining: true },
+      select: {
+        creditsRemaining: true,
+        crmWebhookUrl: true,
+        crmWebhookEnabled: true,
+        onboardingComplete: true,
+      },
+    }),
+    prisma.savedLead.groupBy({
+      by: ["status"],
+      where: { userId: user.id },
+      _count: true,
+    }),
+    prisma.userSmtpSettings.findUnique({
+      where: { userId: user.id },
+      select: { host: true, fromEmail: true },
+    }),
+    prisma.emailSequence.findUnique({
+      where: { userId: user.id },
+      select: { enabled: true },
     }),
   ]);
 
@@ -102,6 +125,28 @@ export async function GET() {
   const nurture =
     qualitySplit.find((q) => q.qualityTier === "nurture")?._count ?? 0;
   const qualityTotal = hot + warm + nurture || 1;
+
+  const validPipelineStatuses = new Set<string>(LEAD_STATUSES.map((s) => s.value));
+  const pipeline = {
+    new: 0,
+    contacted: 0,
+    qualified: 0,
+    closed: 0,
+  };
+  for (const row of pipelineByStatus) {
+    if (validPipelineStatuses.has(row.status)) {
+      pipeline[row.status as keyof typeof pipeline] = row._count;
+    } else {
+      pipeline.new += row._count;
+    }
+  }
+
+  const facebookConfigured = Boolean(
+    process.env.FACEBOOK_ACCESS_TOKEN || process.env.META_ACCESS_TOKEN,
+  );
+  const placesConfigured = Boolean(process.env.GOOGLE_PLACES_API_KEY);
+  const yelpConfigured = Boolean(process.env.YELP_FUSION_API_KEY);
+  const linkedinConfigured = Boolean(process.env.LINKEDIN_DATA_API_KEY);
 
   const weekEnd = addDays(weekStart, 7);
   const weekLeadDates = await prisma.lead.findMany({
@@ -144,6 +189,33 @@ export async function GET() {
       searchCount,
       exportCount,
       creditsRemaining: freshUser?.creditsRemaining ?? user.creditsRemaining,
+    },
+    pipeline,
+    integrations: {
+      crmWebhook: {
+        connected: Boolean(freshUser?.crmWebhookUrl && freshUser?.crmWebhookEnabled),
+        enabled: Boolean(freshUser?.crmWebhookEnabled),
+        hasUrl: Boolean(freshUser?.crmWebhookUrl),
+      },
+      emailAutomation: {
+        smtpConfigured: Boolean(smtpSettings?.host && smtpSettings?.fromEmail),
+        sequenceEnabled: Boolean(emailSequence?.enabled),
+      },
+      facebook: {
+        configured: facebookConfigured,
+        customAudience: false,
+      },
+      dataSources: {
+        googlePlaces: placesConfigured,
+        yelp: yelpConfigured,
+        linkedin: linkedinConfigured,
+      },
+      exports: {
+        csv: true,
+        excel: true,
+        pdf: false,
+      },
+      onboardingComplete: Boolean(freshUser?.onboardingComplete),
     },
     dailyLeads,
     activities,

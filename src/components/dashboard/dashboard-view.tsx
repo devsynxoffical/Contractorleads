@@ -24,6 +24,11 @@ import type { SessionUser } from "@/lib/session-user";
 import { QuickLeadSearch } from "@/components/leads/quick-lead-search";
 import { getTierOneCountry } from "@/lib/constants";
 import { HudPanel } from "@/components/dashboard/hud-panel";
+import {
+  DashboardCrmIntegrations,
+  type DashboardIntegrations,
+  type DashboardPipeline,
+} from "@/components/dashboard/dashboard-crm-integrations";
 
 type DashboardData = {
   stats: {
@@ -35,6 +40,8 @@ type DashboardData = {
     exportCount: number;
     creditsRemaining: number;
   };
+  pipeline?: DashboardPipeline;
+  integrations?: DashboardIntegrations;
   dailyLeads: { day: string; count: number }[];
   activities: { id: string; message: string; createdAt: string; type: string }[];
   recentSearches: {
@@ -354,6 +361,13 @@ export function DashboardView({ user }: { user: SessionUser }) {
               <QuickLeadSearch embedded />
             </div>
           </HudPanel>
+        </div>
+
+        <div className="mb-5">
+          <DashboardCrmIntegrations
+            pipeline={data?.pipeline}
+            integrations={data?.integrations}
+          />
         </div>
 
         <div className="grid gap-5 xl:grid-cols-[1.4fr_1fr]">

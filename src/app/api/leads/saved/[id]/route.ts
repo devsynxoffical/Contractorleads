@@ -3,6 +3,9 @@ import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/credits";
 import { dispatchCrmWebhook } from "@/lib/crm-webhook";
+import { LEAD_STATUSES } from "@/lib/constants";
+
+const ALLOWED_STATUSES = new Set<string>(LEAD_STATUSES.map((s) => s.value));
 
 export async function PATCH(
   request: Request,
@@ -27,6 +30,10 @@ export async function PATCH(
 
   const nextStatus = body.status ?? saved.status;
   const nextFavorite = body.favorite ?? saved.favorite;
+
+  if (body.status !== undefined && !ALLOWED_STATUSES.has(nextStatus)) {
+    return NextResponse.json({ error: "Invalid pipeline status" }, { status: 400 });
+  }
 
   const updated = await prisma.savedLead.update({
     where: { id },

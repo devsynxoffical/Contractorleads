@@ -790,7 +790,10 @@ export function MarketingInteractiveDemo() {
                           <div
                             key={col.value}
                             className="w-[185px] shrink-0 rounded-xl border border-slate-200/90 bg-[#faf8fb] p-2 sm:w-[200px]"
-                            onDragOver={(e) => e.preventDefault()}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              e.dataTransfer.dropEffect = "move";
+                            }}
                             onDrop={(e) => {
                               e.preventDefault();
                               const id = e.dataTransfer.getData("text/plain");
@@ -813,6 +816,7 @@ export function MarketingInteractiveDemo() {
                                   onDragStart={(e) => {
                                     cardDragMovedRef.current = false;
                                     e.dataTransfer.setData("text/plain", card.id);
+                                    e.dataTransfer.effectAllowed = "move";
                                     setDraggingId(card.id);
                                   }}
                                   onDrag={() => {
@@ -839,6 +843,23 @@ export function MarketingInteractiveDemo() {
                                     </span>
                                     <span className="text-[11px] font-medium text-slate-600">{card.score}</span>
                                   </div>
+                                  <label className="mt-2 block md:sr-only">
+                                    <span className="mb-0.5 block text-[9px] font-medium uppercase text-slate-400 md:hidden">
+                                      Stage
+                                    </span>
+                                    <select
+                                      value={card.status}
+                                      onChange={(e) => moveCard(card.id, e.target.value)}
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="h-7 w-full rounded-lg border border-slate-200 bg-[#faf8fb] px-2 text-[10px] text-slate-800 md:h-8"
+                                    >
+                                      {LEAD_STATUSES.map((s) => (
+                                        <option key={s.value} value={s.value}>
+                                          {s.label}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </label>
                                 </div>
                               ))}
                             </div>
@@ -1092,7 +1113,9 @@ export function MarketingInteractiveDemo() {
                         <HiOutlineChevronRight className="h-4 w-4" />
                       </button>
                     ) : step.advanceOn === "drag-summit-contacted" ? (
-                      <span className="text-[11px] font-medium text-emerald-300">Drag the card to continue</span>
+                      <span className="text-[11px] font-medium text-emerald-300">
+                        Drag the card or pick Contacted in the menu
+                      </span>
                     ) : (
                       <span className="text-[11px] font-medium text-emerald-300">Run search to continue</span>
                     )}

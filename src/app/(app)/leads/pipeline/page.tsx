@@ -20,10 +20,16 @@ export default async function PipelinePage() {
     orderBy: { updatedAt: "desc" },
   });
 
+  const validStatuses = new Set<string>(LEAD_STATUSES.map((s) => s.value));
+
   const columns = LEAD_STATUSES.map((status) => ({
     ...status,
     items: saved
-      .filter((s) => s.status === status.value)
+      .filter(
+        (s) =>
+          s.status === status.value ||
+          (status.value === "new" && !validStatuses.has(s.status)),
+      )
       .map((s) => ({
         id: s.id,
         status: s.status,
