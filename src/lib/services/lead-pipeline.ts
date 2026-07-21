@@ -54,23 +54,20 @@ type SocialFields = {
   email?: string | null;
 };
 
-/** LinkedIn + consumer social + (owner name or public email). */
-export function leadHasLinkedInSocialAndOwner(lead: SocialFields): boolean {
+/** LinkedIn + at least one consumer social (FB/IG/YT/TikTok). */
+export function leadHasLinkedInAndSocial(lead: SocialFields): boolean {
   const hasLinkedIn = Boolean(
     lead.linkedinUrl || lead.linkedinCompanyUrl || lead.linkedinOwnerUrl,
   );
   const hasSocial = Boolean(
     lead.facebook || lead.instagram || lead.youtube || lead.tiktok,
   );
-  const hasOwnerOrContact = Boolean(
-    lead.ownerName?.trim() || lead.email?.trim(),
-  );
-  return hasLinkedIn && hasSocial && hasOwnerOrContact;
+  return hasLinkedIn && hasSocial;
 }
 
-/** @deprecated use leadHasLinkedInSocialAndOwner */
-export function leadHasLinkedInAndSocial(lead: SocialFields): boolean {
-  return leadHasLinkedInSocialAndOwner(lead);
+/** @deprecated alias — filter no longer requires owner/email */
+export function leadHasLinkedInSocialAndOwner(lead: SocialFields): boolean {
+  return leadHasLinkedInAndSocial(lead);
 }
 
 async function withTimeout<T>(
@@ -232,16 +229,40 @@ async function enrichAndPersistPlace(opts: {
     pagesChecked: [] as string[],
   };
 
-  // One deep website scrape for LinkedIn + socials (about/contact/team pages)
+  const { discoverSocialProfiles, searchPublicWeb } = await import(
+    "./web-search"
+  );
+  const { isNinjaPearConfigured } = await import("./ninjapear");
+
+  // Deep website scrape first — fastest free source of LinkedIn + socials
   const pack = website
-    ? await withTimeout(scrapeWebsiteSocialPack(website), 12000, emptyPack)
+    ? await withTimeout(scrapeWebsiteSocialPack(website), 8000, emptyPack)
     : emptyPack;
+
+  const packHasLi = Boolean(pack.linkedinCompany || pack.linkedinOwner);
+  const packHasSocial = Boolean(
+    pack.facebook || pack.instagram || pack.youtube || pack.tiktok,
+  );
+
+  // Free Brave/DDG search only when filter is on and website pack is incomplete
+  const fromWeb =
+    requireSocial && (!packHasLi || !packHasSocial)
+      ? await withTimeout(discoverSocialProfiles(place.name, location), 10000, {
+          linkedin: null,
+          facebook: null,
+          instagram: null,
+        })
+      : {
+          linkedin: null as string | null,
+          facebook: null as string | null,
+          instagram: null as string | null,
+        };
 
   const [websiteReachable, websitePeople, companyLi, yelp, houzz, nextdoor, qualification, facebookPage, ninja] =
     await Promise.all([
       website ? withTimeout(verifyWebsite(website), 3500, false) : Promise.resolve(false),
       website
-        ? withTimeout(extractWebsitePeople(website), 7000, EMPTY_PEOPLE)
+        ? withTimeout(extractWebsitePeople(website), 6000, EMPTY_PEOPLE)
         : Promise.resolve(EMPTY_PEOPLE),
       withTimeout(
         findLinkedInCompanyUrl(
@@ -250,77 +271,36 @@ async function enrichAndPersistPlace(opts: {
           params.industry,
           website,
           {
-            websiteCompanyUrl: pack.linkedinCompany,
+            websiteCompanyUrl: pack.linkedinCompany || fromWeb.linkedin,
             skipWebsiteScrape: true,
           },
         ),
-        requireSocial ? 14000 : 8000,
+        requireSocial ? 9000 : 6000,
         { url: null, confidence: 0, source: null },
       ),
-      withTimeout(matchYelpBusiness(place.name, location), 5000, null),
-      withTimeout(matchHouzzBusiness(place.name, location), 4000, null),
-      withTimeout(matchNextdoorBusiness(place.name, location), 3500, null),
+      withTimeout(matchYelpBusiness(place.name, location), 4000, null),
+      withTimeout(matchHouzzBusiness(place.name, location), 3500, null),
+      withTimeout(matchNextdoorBusiness(place.name, location), 3000, null),
       qualifyLead({ ...place, website }, params.industry, Boolean(website), {
         preferRules,
         timeoutMs: 1,
       }),
-      !pack.facebook
-        ? withTimeout(searchFacebookPage(place.name), 5000, null)
+      !(pack.facebook || fromWeb.facebook)
+        ? withTimeout(searchFacebookPage(place.name), 4000, null)
         : Promise.resolve(null),
-      website
+      // Optional paid enrichment — skipped when no NINJAPEAR_API_KEY
+      website && isNinjaPearConfigured()
         ? withTimeout<NinjaPearCompany | null>(
             enrichCompanyFromWebsite(website),
-            12000,
+            8000,
             null,
           )
         : Promise.resolve(null as NinjaPearCompany | null),
     ]);
 
-  // Serper fallback for missing LinkedIn / social when filter is on
-  let serperLinkedIn: string | null = null;
-  let serperSocial: {
-    facebook: string | null;
-    instagram: string | null;
-  } = { facebook: null, instagram: null };
-
-  const hasLi =
-    companyLi.url || pack.linkedinCompany || pack.linkedinOwner;
-  const hasSocial =
-    pack.facebook ||
-    pack.instagram ||
-    pack.youtube ||
-    pack.tiktok ||
-    facebookPage ||
-    ninja?.facebookUrl ||
-    ninja?.instagramUrl;
-
-  if (requireSocial && (!hasLi || !hasSocial)) {
-    const { searchPublicWeb } = await import("./web-search");
-    const hits = await withTimeout(
-      searchPublicWeb(
-        `"${place.name}" ${location} (linkedin OR facebook OR instagram)`,
-        8,
-      ),
-      7000,
-      [],
-    );
-    for (const hit of hits) {
-      const lower = hit.url.toLowerCase();
-      if (!serperLinkedIn && lower.includes("linkedin.com")) {
-        serperLinkedIn = hit.url;
-      }
-      if (!serperSocial.facebook && lower.includes("facebook.com")) {
-        serperSocial.facebook = hit.url.split("?")[0];
-      }
-      if (!serperSocial.instagram && lower.includes("instagram.com")) {
-        serperSocial.instagram = hit.url.split("?")[0];
-      }
-    }
-  }
-
-  const companyUrl = companyLi.url || pack.linkedinCompany;
+  const companyUrl = companyLi.url || pack.linkedinCompany || fromWeb.linkedin;
   const ownerUrl = pack.linkedinOwner;
-  const primaryLinkedIn = companyUrl || ownerUrl || serperLinkedIn;
+  const primaryLinkedIn = companyUrl || ownerUrl || fromWeb.linkedin;
 
   // Prefer website people; fall back to NinjaPear executives
   const ownerName =
@@ -328,16 +308,15 @@ async function enrichAndPersistPlace(opts: {
   const ownerTitle =
     websitePeople.owner?.role ?? ninja?.ownerTitle ?? null;
 
-  // Owner LinkedIn via Serper when we have a name (Proxycurl shut down)
+  // Owner LinkedIn via free web search when we have a name
   let resolvedOwner = ownerUrl;
   if (!resolvedOwner && ownerName) {
-    const { searchPublicWeb } = await import("./web-search");
     const hits = await withTimeout(
       searchPublicWeb(
         `"${ownerName}" "${place.name}" site:linkedin.com/in`,
         5,
       ),
-      6000,
+      5000,
       [],
     );
     for (const hit of hits) {
@@ -352,10 +331,13 @@ async function enrichAndPersistPlace(opts: {
     pack.facebook ||
     facebookPage ||
     ninja?.facebookUrl ||
-    serperSocial.facebook ||
+    fromWeb.facebook ||
     null;
   const instagram =
-    pack.instagram || ninja?.instagramUrl || serperSocial.instagram || null;
+    pack.instagram ||
+    ninja?.instagramUrl ||
+    fromWeb.instagram ||
+    null;
 
   if (qualification.leadScore < 25) return "skipped-score";
 
@@ -396,7 +378,7 @@ async function enrichAndPersistPlace(opts: {
     email: websitePeople.email ?? existingLead?.email,
   };
 
-  if (requireSocial && !leadHasLinkedInSocialAndOwner(socialSnapshot)) {
+  if (requireSocial && !leadHasLinkedInAndSocial(socialSnapshot)) {
     return "skipped-social";
   }
 

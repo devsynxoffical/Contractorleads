@@ -70,13 +70,14 @@ export default function FacebookAdsPage() {
               {ninjaConfigured ? "Connected" : "Not configured"}
             </div>
             <p className="text-ink-muted">
-              Website-first enrichment for Facebook/Instagram and executives.
-              LinkedIn pages still come from website scrape + Serper — Proxycurl
-              is discontinued.
+              LinkedIn + social discovery is free by default (website scrape +
+              Brave Search). Optional NinjaPear adds executives / extra socials.
+              Serper speeds up search if you add a key.
             </p>
             <div className="rounded-xl border border-border bg-[var(--input-bg)] p-3 font-mono text-[12px] text-ink">
-              <p>NINJAPEAR_API_KEY=your-ninjapear-key</p>
-              <p className="mt-2 text-ink-faint">SERPER_API_KEY=your-serper-key</p>
+              <p className="text-ink-faint"># free — no key needed</p>
+              <p className="mt-2">NINJAPEAR_API_KEY=optional</p>
+              <p>SERPER_API_KEY=optional-faster</p>
             </div>
             <a
               href="https://nubela.co/dashboard/api/#keys"

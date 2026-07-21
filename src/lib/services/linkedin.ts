@@ -12,7 +12,7 @@ export type LinkedInCandidate = {
 export type LinkedInCompanyResult = {
   url: string | null;
   confidence: number;
-  source: "website" | "serper" | null;
+  source: "website" | "serper" | "web" | null;
 };
 
 export function isValidLinkedInUrl(url: string): boolean {

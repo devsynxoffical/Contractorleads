@@ -664,7 +664,7 @@ export function LeadSearchForm() {
                 />
                 <span className="text-[13px] leading-snug text-ink">
                   <span className="font-semibold text-brand-600">
-                    Require LinkedIn, social &amp; owner name
+                    Require LinkedIn + social (FB/IG/YT/TikTok)
                   </span>
                   <span className="mt-0.5 block text-ink-muted">
                     Keep only leads with LinkedIn + a social profile + owner/email
