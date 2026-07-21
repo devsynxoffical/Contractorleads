@@ -37,6 +37,13 @@ export async function GET(_request: Request, { params }: Params) {
       idealCustomer: true,
       serviceAreas: true,
       mainGoal: true,
+      ssoEnabled: true,
+      apiEnabled: true,
+      mcpEnabled: true,
+      apiMonthlyLimit: true,
+      apiMonthlyUsed: true,
+      apiUsageResetAt: true,
+      apiKeyLast4: true,
       createdAt: true,
       updatedAt: true,
       isActive: true,
@@ -115,8 +122,18 @@ export async function PATCH(request: Request, { params }: Params) {
     "idealCustomer",
     "serviceAreas",
     "mainGoal",
+    "ssoEnabled",
+    "apiEnabled",
+    "mcpEnabled",
   ] as const) {
     if (body[key] !== undefined) data[key] = body[key];
+  }
+
+  if (body.apiMonthlyLimit !== undefined) {
+    const parsed = Number(body.apiMonthlyLimit);
+    if (Number.isFinite(parsed) && parsed >= 0) {
+      data.apiMonthlyLimit = Math.floor(parsed);
+    }
   }
 
   if (typeof body.email === "string" && body.email.trim()) {
@@ -169,6 +186,13 @@ export async function PATCH(request: Request, { params }: Params) {
         idealCustomer: true,
         serviceAreas: true,
         mainGoal: true,
+        ssoEnabled: true,
+        apiEnabled: true,
+        mcpEnabled: true,
+        apiMonthlyLimit: true,
+        apiMonthlyUsed: true,
+        apiUsageResetAt: true,
+        apiKeyLast4: true,
         isActive: true,
         adminNotes: true,
         createdAt: true,

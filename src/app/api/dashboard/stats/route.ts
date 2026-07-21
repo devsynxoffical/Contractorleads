@@ -33,6 +33,7 @@ export async function GET() {
     pipelineByStatus,
     smtpSettings,
     emailSequence,
+    qualitySample,
   ] = await Promise.all([
     prisma.lead.count({
       where: { search: { userId: user.id } },
@@ -100,6 +101,10 @@ export async function GET() {
         creditsRemaining: true,
         crmWebhookUrl: true,
         crmWebhookEnabled: true,
+        slackWebhookUrl: true,
+        slackEnabled: true,
+        ghlWebhookUrl: true,
+        ghlEnabled: true,
         onboardingComplete: true,
       },
     }),
@@ -115,6 +120,23 @@ export async function GET() {
     prisma.emailSequence.findUnique({
       where: { userId: user.id },
       select: { enabled: true },
+    }),
+    prisma.lead.findMany({
+      where: { search: { userId: user.id } },
+      orderBy: { createdAt: "desc" },
+      take: 300,
+      select: {
+        leadScore: true,
+        qualityTier: true,
+        ownerName: true,
+        linkedinUrl: true,
+        linkedinCompanyUrl: true,
+        linkedinOwnerUrl: true,
+        facebook: true,
+        instagram: true,
+        youtube: true,
+        tiktok: true,
+      },
     }),
   ]);
 
@@ -180,6 +202,25 @@ export async function GET() {
     return raw.split(",").map((s) => s.trim()).filter(Boolean).length;
   }
 
+  const qualityRows = qualitySample.length || 1;
+  const avgLeadScore = Math.round(
+    qualitySample.reduce((sum, row) => sum + (row.leadScore || 0), 0) / qualityRows,
+  );
+  const completeProfiles = qualitySample.filter((row) => {
+    const hasOwner = Boolean(row.ownerName?.trim());
+    const hasLinkedIn = Boolean(
+      row.linkedinUrl || row.linkedinCompanyUrl || row.linkedinOwnerUrl,
+    );
+    const hasSocial = Boolean(
+      row.facebook || row.instagram || row.youtube || row.tiktok,
+    );
+    return hasOwner && hasLinkedIn && hasSocial;
+  }).length;
+  const completeProfileRate = Math.round((completeProfiles / qualityRows) * 100);
+  const hotRate = Math.round(
+    (qualitySample.filter((row) => row.qualityTier === "hot").length / qualityRows) * 100,
+  );
+
   return NextResponse.json({
     stats: {
       totalLeads,
@@ -196,6 +237,16 @@ export async function GET() {
         connected: Boolean(freshUser?.crmWebhookUrl && freshUser?.crmWebhookEnabled),
         enabled: Boolean(freshUser?.crmWebhookEnabled),
         hasUrl: Boolean(freshUser?.crmWebhookUrl),
+      },
+      slack: {
+        connected: Boolean(freshUser?.slackWebhookUrl && freshUser?.slackEnabled),
+        enabled: Boolean(freshUser?.slackEnabled),
+        hasUrl: Boolean(freshUser?.slackWebhookUrl),
+      },
+      ghl: {
+        connected: Boolean(freshUser?.ghlWebhookUrl && freshUser?.ghlEnabled),
+        enabled: Boolean(freshUser?.ghlEnabled),
+        hasUrl: Boolean(freshUser?.ghlWebhookUrl),
       },
       emailAutomation: {
         smtpConfigured: Boolean(smtpSettings?.host && smtpSettings?.fromEmail),
@@ -237,6 +288,13 @@ export async function GET() {
       hotCount: hot,
       warmCount: warm,
       nurtureCount: nurture,
+    },
+    qualityHealth: {
+      sampleSize: qualitySample.length,
+      avgLeadScore,
+      completeProfileRate,
+      hotRate,
+      placesScannedRecent: recentSearches.reduce((n, s) => n + (s.resultCount || 0), 0),
     },
   });
 }

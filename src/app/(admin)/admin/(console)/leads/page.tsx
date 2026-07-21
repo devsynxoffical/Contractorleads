@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AdminPageHeader } from "@/components/admin/admin-shell";
+import {
+  AdminIndustryField,
+  resolvedIndustryForQuery,
+} from "@/components/admin/admin-industry-field";
 import { INDUSTRIES, TIER_ONE_COUNTRIES } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,20 +50,24 @@ export default function AdminLeadsPage() {
   const router = useRouter();
   const [leads, setLeads] = useState<LeadRow[]>([]);
   const [total, setTotal] = useState(0);
-  const [industry, setIndustry] = useState("");
+  const [filterIndustrySelect, setFilterIndustrySelect] = useState("");
+  const [filterCustomIndustry, setFilterCustomIndustry] = useState("");
   const [country, setCountry] = useState("");
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState<Busy>("load");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showCreate, setShowCreate] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [createIndustrySelect, setCreateIndustrySelect] = useState<string>(
+    INDUSTRIES[0],
+  );
+  const [createCustomIndustry, setCreateCustomIndustry] = useState("");
   const [createForm, setCreateForm] = useState({
     businessName: "",
     ownerName: "",
     phone: "",
     email: "",
     website: "",
-    industry: INDUSTRIES[0] as string,
     country: "US",
     city: "",
     state: "",
@@ -72,6 +80,10 @@ export default function AdminLeadsPage() {
     startNavigationProgress();
     try {
       const params = new URLSearchParams();
+      const industry = resolvedIndustryForQuery(
+        filterIndustrySelect,
+        filterCustomIndustry,
+      );
       if (industry) params.set("industry", industry);
       if (country) params.set("country", country);
       if (q) params.set("q", q);
@@ -157,7 +169,14 @@ export default function AdminLeadsPage() {
       const res = await fetch("/api/admin/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(createForm),
+        body: JSON.stringify({
+          ...createForm,
+          industry:
+            resolvedIndustryForQuery(
+              createIndustrySelect,
+              createCustomIndustry,
+            ) || INDUSTRIES[0],
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -172,8 +191,13 @@ export default function AdminLeadsPage() {
     }
   }
 
+  const filteredIndustry = resolvedIndustryForQuery(
+    filterIndustrySelect,
+    filterCustomIndustry,
+  );
+
   const exportParams = new URLSearchParams({
-    ...(industry ? { industry } : {}),
+    ...(filteredIndustry ? { industry: filteredIndustry } : {}),
     ...(country ? { country } : {}),
     ...(q ? { q } : {}),
   });
@@ -305,22 +329,14 @@ export default function AdminLeadsPage() {
               />
             </label>
           ))}
-          <label className="block text-[12px]">
-            <span className="font-medium text-ink-muted">Industry</span>
-            <select
-              className="saas-input mt-1"
-              value={createForm.industry}
-              onChange={(e) =>
-                setCreateForm({ ...createForm, industry: e.target.value })
-              }
-            >
-              {INDUSTRIES.map((i) => (
-                <option key={i} value={i}>
-                  {i}
-                </option>
-              ))}
-            </select>
-          </label>
+          <AdminIndustryField
+            label="Industry"
+            selectValue={createIndustrySelect}
+            customValue={createCustomIndustry}
+            onSelectChange={setCreateIndustrySelect}
+            onCustomChange={setCreateCustomIndustry}
+            className="sm:col-span-2"
+          />
           <label className="block text-[12px]">
             <span className="font-medium text-ink-muted">Country</span>
             <select
@@ -345,20 +361,16 @@ export default function AdminLeadsPage() {
         </form>
       )}
 
-      <div className="mb-4 flex flex-wrap gap-2">
-        <select
-          className="saas-input max-w-[180px]"
-          value={industry}
-          onChange={(e) => setIndustry(e.target.value)}
-          disabled={!!busy}
-        >
-          <option value="">All services</option>
-          {INDUSTRIES.map((i) => (
-            <option key={i} value={i}>
-              {i}
-            </option>
-          ))}
-        </select>
+      <div className="mb-4 flex flex-wrap items-end gap-2">
+        <AdminIndustryField
+          label="Service"
+          allowEmpty
+          selectValue={filterIndustrySelect}
+          customValue={filterCustomIndustry}
+          onSelectChange={setFilterIndustrySelect}
+          onCustomChange={setFilterCustomIndustry}
+          className="min-w-[200px] max-w-[240px]"
+        />
         <select
           className="saas-input max-w-[160px]"
           value={country}

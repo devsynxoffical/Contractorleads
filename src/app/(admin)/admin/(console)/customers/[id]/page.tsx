@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { AdminPageHeader } from "@/components/admin/admin-shell";
 import { ADMIN_PLANS, SUBSCRIPTION_STATUSES } from "@/lib/admin";
+import { defaultApiLimitForPlan } from "@/lib/api-access";
 import { Button } from "@/components/ui/button";
 
 type Customer = {
@@ -26,6 +27,13 @@ type Customer = {
   mainGoal: string | null;
   isActive: boolean;
   adminNotes: string | null;
+  ssoEnabled: boolean;
+  apiEnabled: boolean;
+  mcpEnabled: boolean;
+  apiMonthlyLimit: number | null;
+  apiMonthlyUsed: number;
+  apiUsageResetAt: string | null;
+  apiKeyLast4: string | null;
   searches: Array<{
     id: string;
     industry: string;
@@ -49,6 +57,7 @@ export default function AdminCustomerDetailPage() {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [creditDelta, setCreditDelta] = useState("10");
   const [password, setPassword] = useState("");
+  const [latestApiKey, setLatestApiKey] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -111,6 +120,30 @@ export default function AdminCustomerDetailPage() {
     }
     router.push(data.redirectTo || "/auth/splash");
     router.refresh();
+  }
+
+  async function regenerateApiKey() {
+    setMessage(null);
+    setLatestApiKey(null);
+    const res = await fetch(`/api/admin/customers/${id}/api-key`, {
+      method: "POST",
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setMessage(data.error ?? "Could not generate API key");
+      return;
+    }
+    setLatestApiKey(data.apiKey ?? null);
+    setCustomer((prev) =>
+      prev
+        ? {
+            ...prev,
+            apiEnabled: true,
+            apiKeyLast4: data.last4 ?? prev.apiKeyLast4,
+          }
+        : prev,
+    );
+    setMessage("New API key generated. Copy and store it now.");
   }
 
   if (!customer) {
@@ -287,6 +320,97 @@ export default function AdminCustomerDetailPage() {
               }
             >
               Save plan
+            </Button>
+          </section>
+
+          <section className="space-y-3 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">
+            <h2 className="text-sm font-semibold text-ink">SSO, API & MCP</h2>
+            <p className="text-[12px] text-ink-muted">
+              Gate external integrations by plan and apply hard monthly API limits.
+            </p>
+            <label className="flex items-center justify-between rounded-xl border border-border/70 px-3 py-2">
+              <span className="text-[12px] font-medium text-ink-muted">Enable SSO</span>
+              <input
+                type="checkbox"
+                checked={customer.ssoEnabled}
+                onChange={(e) =>
+                  setCustomer({ ...customer, ssoEnabled: e.target.checked })
+                }
+              />
+            </label>
+            <label className="flex items-center justify-between rounded-xl border border-border/70 px-3 py-2">
+              <span className="text-[12px] font-medium text-ink-muted">Enable API</span>
+              <input
+                type="checkbox"
+                checked={customer.apiEnabled}
+                onChange={(e) =>
+                  setCustomer({ ...customer, apiEnabled: e.target.checked })
+                }
+              />
+            </label>
+            <label className="flex items-center justify-between rounded-xl border border-border/70 px-3 py-2">
+              <span className="text-[12px] font-medium text-ink-muted">Enable MCP</span>
+              <input
+                type="checkbox"
+                checked={customer.mcpEnabled}
+                onChange={(e) =>
+                  setCustomer({ ...customer, mcpEnabled: e.target.checked })
+                }
+              />
+            </label>
+            <label className="block text-[12px]">
+              <span className="font-medium text-ink-muted">Monthly API limit</span>
+              <input
+                className="saas-input mt-1"
+                type="number"
+                min={0}
+                value={
+                  customer.apiMonthlyLimit ??
+                  defaultApiLimitForPlan(customer.plan)
+                }
+                onChange={(e) =>
+                  setCustomer({
+                    ...customer,
+                    apiMonthlyLimit:
+                      e.target.value === "" ? null : Number(e.target.value),
+                  })
+                }
+              />
+            </label>
+            <p className="text-[12px] text-ink-muted">
+              Usage this month: {customer.apiMonthlyUsed} /{" "}
+              {customer.apiMonthlyLimit ?? defaultApiLimitForPlan(customer.plan)}
+              {customer.apiUsageResetAt
+                ? ` · reset ${new Date(customer.apiUsageResetAt).toLocaleDateString()}`
+                : ""}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="secondary" onClick={regenerateApiKey}>
+                Regenerate API key
+              </Button>
+              <span className="rounded-lg bg-[#faf8fc] px-3 py-2 text-[12px] text-ink-muted">
+                Active key: {customer.apiKeyLast4 ? `••••${customer.apiKeyLast4}` : "None"}
+              </span>
+            </div>
+            {latestApiKey && (
+              <div className="rounded-xl border border-brand-200 bg-brand-50 px-3 py-2 text-[12px] text-brand-900">
+                New key: <code>{latestApiKey}</code>
+              </div>
+            )}
+            <Button
+              disabled={saving}
+              onClick={() =>
+                save({
+                  ssoEnabled: customer.ssoEnabled,
+                  apiEnabled: customer.apiEnabled,
+                  mcpEnabled: customer.mcpEnabled,
+                  apiMonthlyLimit:
+                    customer.apiMonthlyLimit ??
+                    defaultApiLimitForPlan(customer.plan),
+                })
+              }
+            >
+              Save integration access
             </Button>
           </section>
 

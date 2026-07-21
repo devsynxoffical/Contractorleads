@@ -70,6 +70,13 @@ type DashboardData = {
     warmCount: number;
     nurtureCount: number;
   };
+  qualityHealth?: {
+    sampleSize: number;
+    avgLeadScore: number;
+    completeProfileRate: number;
+    hotRate: number;
+    placesScannedRecent: number;
+  };
 };
 
 function useCountUp(target: number, ready: boolean, duration = 900) {
@@ -201,6 +208,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
   const firstName = user.name?.split(" ")[0] || "there";
   const credits = data?.stats.creditsRemaining ?? user.creditsRemaining;
   const qs = data?.qualitySplit;
+  const qh = data?.qualityHealth;
 
   const totalLeads = useCountUp(data?.stats.totalLeads ?? 0, ready);
   const creditsAnim = useCountUp(Math.round(credits), ready);
@@ -524,6 +532,30 @@ export function DashboardView({ user }: { user: SessionUser }) {
         </div>
 
         <div className="mt-5 grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
+          <HudPanel
+            title="Lead quality health"
+            subtitle={`Last ${qh?.sampleSize ?? 0} leads scanned`}
+          >
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-xl border border-brand-500/20 bg-[var(--input-bg)]/50 px-3 py-2">
+                <p className="text-[11px] uppercase tracking-wide text-ink-faint">Avg score</p>
+                <p className="mt-1 text-xl font-bold text-ink">{qh?.avgLeadScore ?? 0}</p>
+              </div>
+              <div className="rounded-xl border border-brand-500/20 bg-[var(--input-bg)]/50 px-3 py-2">
+                <p className="text-[11px] uppercase tracking-wide text-ink-faint">Hot rate</p>
+                <p className="mt-1 text-xl font-bold text-ink">{qh?.hotRate ?? 0}%</p>
+              </div>
+              <div className="rounded-xl border border-brand-500/20 bg-[var(--input-bg)]/50 px-3 py-2">
+                <p className="text-[11px] uppercase tracking-wide text-ink-faint">Full profiles</p>
+                <p className="mt-1 text-xl font-bold text-ink">{qh?.completeProfileRate ?? 0}%</p>
+              </div>
+              <div className="rounded-xl border border-brand-500/20 bg-[var(--input-bg)]/50 px-3 py-2">
+                <p className="text-[11px] uppercase tracking-wide text-ink-faint">Recent scanned</p>
+                <p className="mt-1 text-xl font-bold text-ink">{qh?.placesScannedRecent ?? 0}</p>
+              </div>
+            </div>
+          </HudPanel>
+
           <HudPanel title="Top industries" subtitle="Most searched categories">
             <ul className="divide-y divide-brand-500/10">
               {(data?.topIndustries ?? []).map((i, idx) => (

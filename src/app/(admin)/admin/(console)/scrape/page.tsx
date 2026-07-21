@@ -2,6 +2,11 @@
 
 import { useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-shell";
+import {
+  AdminIndustryField,
+  industryPayloadForApi,
+  resolvedIndustryForQuery,
+} from "@/components/admin/admin-industry-field";
 import { INDUSTRIES, TIER_ONE_COUNTRIES, getTierOneCountry, getRegionAnyLabel, getRegionsForCountry } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,7 +15,8 @@ import {
 } from "@/components/layout/navigation-progress";
 
 export default function AdminScrapePage() {
-  const [industry, setIndustry] = useState<string>(INDUSTRIES[0]);
+  const [industrySelect, setIndustrySelect] = useState<string>(INDUSTRIES[0]);
+  const [customIndustry, setCustomIndustry] = useState("");
   const [country, setCountry] = useState("US");
   const [locationScope, setLocationScope] = useState<"local" | "country">(
     "local",
@@ -35,7 +41,7 @@ export default function AdminScrapePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          industry,
+          ...industryPayloadForApi(industrySelect, customIndustry),
           country,
           locationScope,
           state: locationScope === "local" ? state : undefined,
@@ -48,7 +54,7 @@ export default function AdminScrapePage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Scrape failed");
       setResult(
-        `Created/reused ${data.leads?.length ?? 0} leads for ${industry}.`,
+        `Created/reused ${data.leads?.length ?? 0} leads for ${resolvedIndustryForQuery(industrySelect, customIndustry) || industrySelect}.`,
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Scrape failed");
@@ -66,20 +72,12 @@ export default function AdminScrapePage() {
       />
 
       <div className="max-w-xl space-y-3 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">
-        <label className="block text-[12px]">
-          <span className="font-medium text-ink-muted">Service / niche</span>
-          <select
-            className="saas-input mt-1"
-            value={industry}
-            onChange={(e) => setIndustry(e.target.value)}
-          >
-            {INDUSTRIES.map((i) => (
-              <option key={i} value={i}>
-                {i}
-              </option>
-            ))}
-          </select>
-        </label>
+        <AdminIndustryField
+          selectValue={industrySelect}
+          customValue={customIndustry}
+          onSelectChange={setIndustrySelect}
+          onCustomChange={setCustomIndustry}
+        />
 
         <label className="block text-[12px]">
           <span className="font-medium text-ink-muted">Country</span>

@@ -26,6 +26,8 @@ export type DashboardPipeline = {
 
 export type DashboardIntegrations = {
   crmWebhook: { connected: boolean; enabled: boolean; hasUrl: boolean };
+  slack?: { connected: boolean; enabled: boolean; hasUrl: boolean };
+  ghl?: { connected: boolean; enabled: boolean; hasUrl: boolean };
   emailAutomation: { smtpConfigured: boolean; sequenceEnabled: boolean };
   facebook: { configured: boolean; customAudience: boolean };
   dataSources: { googlePlaces: boolean; yelp: boolean; linkedin: boolean };
@@ -191,6 +193,22 @@ export function DashboardCrmIntegrations({
             body="Push lead events to Zapier, Make, HubSpot, or a custom endpoint the moment status changes."
             status={webhookReady ? "ready" : i?.crmWebhook.hasUrl ? "partial" : "setup"}
             statusLabel={webhookReady ? "Connected" : i?.crmWebhook.hasUrl ? "Paused" : "Setup"}
+            icon={HiOutlineLink}
+          />
+          <IntegrationCard
+            href="/crm-webhooks"
+            title="Slack CRM alerts"
+            body="Send lead-saved and pipeline stage events into your Slack channel via incoming webhook."
+            status={i?.slack?.connected ? "ready" : i?.slack?.hasUrl ? "partial" : "setup"}
+            statusLabel={i?.slack?.connected ? "Live" : i?.slack?.hasUrl ? "Paused" : "Setup"}
+            icon={HiOutlineLink}
+          />
+          <IntegrationCard
+            href="/crm-webhooks"
+            title="GoHighLevel (GHL)"
+            body="Send LeadFlow events to your GHL webhook/workflow endpoint in real time."
+            status={i?.ghl?.connected ? "ready" : i?.ghl?.hasUrl ? "partial" : "setup"}
+            statusLabel={i?.ghl?.connected ? "Live" : i?.ghl?.hasUrl ? "Paused" : "Setup"}
             icon={HiOutlineLink}
           />
           <IntegrationCard

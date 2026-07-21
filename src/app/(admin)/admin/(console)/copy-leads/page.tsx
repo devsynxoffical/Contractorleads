@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { AdminPageHeader } from "@/components/admin/admin-shell";
+import {
+  AdminIndustryField,
+  resolvedIndustryForQuery,
+} from "@/components/admin/admin-industry-field";
 import { INDUSTRIES, TIER_ONE_COUNTRIES } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 
@@ -24,7 +28,8 @@ type Customer = {
 };
 
 export default function AdminCopyLeadsPage() {
-  const [industry, setIndustry] = useState<string>(INDUSTRIES[0]);
+  const [industrySelect, setIndustrySelect] = useState<string>(INDUSTRIES[0]);
+  const [customIndustry, setCustomIndustry] = useState("");
   const [country, setCountry] = useState("");
   const [city, setCity] = useState("");
   const [agencyId, setAgencyId] = useState("");
@@ -43,6 +48,12 @@ export default function AdminCopyLeadsPage() {
   async function preview() {
     setLoading(true);
     setMessage(null);
+    const industry = resolvedIndustryForQuery(industrySelect, customIndustry);
+    if (!industry) {
+      setLoading(false);
+      setMessage("Enter a custom service name.");
+      return;
+    }
     const params = new URLSearchParams({ industry });
     if (country) params.set("country", country);
     if (city) params.set("city", city);
@@ -101,20 +112,13 @@ export default function AdminCopyLeadsPage() {
       />
 
       <div className="mb-4 grid max-w-3xl gap-3 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)] sm:grid-cols-2">
-        <label className="block text-[12px]">
-          <span className="font-medium text-ink-muted">Service</span>
-          <select
-            className="saas-input mt-1"
-            value={industry}
-            onChange={(e) => setIndustry(e.target.value)}
-          >
-            {INDUSTRIES.map((i) => (
-              <option key={i} value={i}>
-                {i}
-              </option>
-            ))}
-          </select>
-        </label>
+        <AdminIndustryField
+          label="Service"
+          selectValue={industrySelect}
+          customValue={customIndustry}
+          onSelectChange={setIndustrySelect}
+          onCustomChange={setCustomIndustry}
+        />
         <label className="block text-[12px]">
           <span className="font-medium text-ink-muted">Country (optional)</span>
           <select

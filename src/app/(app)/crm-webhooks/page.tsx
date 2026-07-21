@@ -10,6 +10,10 @@ export default function CrmWebhooksPage() {
   const [url, setUrl] = useState("");
   const [secret, setSecret] = useState("");
   const [enabled, setEnabled] = useState(false);
+  const [slackUrl, setSlackUrl] = useState("");
+  const [slackEnabled, setSlackEnabled] = useState(false);
+  const [ghlUrl, setGhlUrl] = useState("");
+  const [ghlEnabled, setGhlEnabled] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -22,6 +26,14 @@ export default function CrmWebhooksPage() {
           setSecret(d.webhook.secret || "");
           setEnabled(Boolean(d.webhook.enabled));
         }
+        if (d.slack) {
+          setSlackUrl(d.slack.url || "");
+          setSlackEnabled(Boolean(d.slack.enabled));
+        }
+        if (d.ghl) {
+          setGhlUrl(d.ghl.url || "");
+          setGhlEnabled(Boolean(d.ghl.enabled));
+        }
       })
       .catch(() => {});
   }, []);
@@ -33,20 +45,28 @@ export default function CrmWebhooksPage() {
     const res = await fetch("/api/settings/crm-webhook", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url, secret, enabled }),
+      body: JSON.stringify({
+        url,
+        secret,
+        enabled,
+        slackUrl,
+        slackEnabled,
+        ghlUrl,
+        ghlEnabled,
+      }),
     });
     const data = await res.json();
     setBusy(false);
     setMsg(res.ok ? "Webhook saved" : data.error || "Save failed");
   }
 
-  async function testPing() {
+  async function testPing(target: "webhook" | "slack" | "ghl") {
     setBusy(true);
     setMsg(null);
     const res = await fetch("/api/settings/crm-webhook", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
+      body: JSON.stringify({ target }),
     });
     const data = await res.json();
     setBusy(false);
@@ -57,7 +77,7 @@ export default function CrmWebhooksPage() {
     <div className="page-pad page-enter space-y-5">
       <PageHeader
         title="CRM Webhooks"
-        description="Push lead events to Zapier, Make, HubSpot, or your own endpoint."
+        description="Push lead events to Slack, GoHighLevel, Zapier/Make/HubSpot, or your own endpoint."
       />
 
       {msg ? (
@@ -108,12 +128,86 @@ export default function CrmWebhooksPage() {
                 type="button"
                 variant="secondary"
                 disabled={busy || !url}
-                onClick={testPing}
+                onClick={() => testPing("webhook")}
               >
                 Send test ping
               </Button>
             </div>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Slack incoming webhook</CardTitle>
+          <p className="mt-1 text-sm text-ink-muted">
+            Send lead saved and pipeline updates into a Slack channel.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="max-w-xl space-y-4">
+            <div className="space-y-1.5">
+              <Label>Slack webhook URL</Label>
+              <Input
+                value={slackUrl}
+                onChange={(e) => setSlackUrl(e.target.value)}
+                placeholder="https://hooks.slack.com/services/..."
+              />
+            </div>
+            <label className="flex items-center gap-2 text-[13px] text-ink-muted">
+              <input
+                type="checkbox"
+                checked={slackEnabled}
+                onChange={(e) => setSlackEnabled(e.target.checked)}
+              />
+              Enable Slack delivery
+            </label>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={busy || !slackUrl}
+              onClick={() => testPing("slack")}
+            >
+              Test Slack ping
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>GoHighLevel webhook</CardTitle>
+          <p className="mt-1 text-sm text-ink-muted">
+            Send lead events into GHL workflow/webhook endpoints.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="max-w-xl space-y-4">
+            <div className="space-y-1.5">
+              <Label>GHL webhook URL</Label>
+              <Input
+                value={ghlUrl}
+                onChange={(e) => setGhlUrl(e.target.value)}
+                placeholder="https://services.leadconnectorhq.com/..."
+              />
+            </div>
+            <label className="flex items-center gap-2 text-[13px] text-ink-muted">
+              <input
+                type="checkbox"
+                checked={ghlEnabled}
+                onChange={(e) => setGhlEnabled(e.target.checked)}
+              />
+              Enable GoHighLevel delivery
+            </label>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={busy || !ghlUrl}
+              onClick={() => testPing("ghl")}
+            >
+              Test GHL ping
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

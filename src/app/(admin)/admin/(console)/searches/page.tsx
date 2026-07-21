@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AdminPageHeader } from "@/components/admin/admin-shell";
-import { INDUSTRIES } from "@/lib/constants";
+import {
+  AdminIndustryField,
+  resolvedIndustryForQuery,
+} from "@/components/admin/admin-industry-field";
 
 type SearchRow = {
   id: string;
@@ -26,9 +29,11 @@ type SearchRow = {
 export default function AdminSearchesPage() {
   const [searches, setSearches] = useState<SearchRow[]>([]);
   const [total, setTotal] = useState(0);
-  const [industry, setIndustry] = useState("");
+  const [industrySelect, setIndustrySelect] = useState("");
+  const [customIndustry, setCustomIndustry] = useState("");
 
   async function load() {
+    const industry = resolvedIndustryForQuery(industrySelect, customIndustry);
     const params = new URLSearchParams();
     if (industry) params.set("industry", industry);
     const res = await fetch(`/api/admin/searches?${params}`);
@@ -49,19 +54,15 @@ export default function AdminSearchesPage() {
         description="Every niche scrape run by any agency or admin."
       />
 
-      <div className="mb-4 flex flex-wrap gap-2">
-        <select
-          className="saas-input max-w-[180px]"
-          value={industry}
-          onChange={(e) => setIndustry(e.target.value)}
-        >
-          <option value="">All services</option>
-          {INDUSTRIES.map((i) => (
-            <option key={i} value={i}>
-              {i}
-            </option>
-          ))}
-        </select>
+      <div className="mb-4 flex flex-wrap items-end gap-2">
+        <AdminIndustryField
+          allowEmpty
+          selectValue={industrySelect}
+          customValue={customIndustry}
+          onSelectChange={setIndustrySelect}
+          onCustomChange={setCustomIndustry}
+          className="min-w-[200px] max-w-[240px]"
+        />
         <button
           type="button"
           onClick={load}

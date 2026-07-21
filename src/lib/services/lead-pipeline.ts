@@ -89,12 +89,12 @@ async function withTimeout<T>(
 
 export async function runLeadPipeline(params: SearchParams) {
   const requireSocial = params.requireSocialPresence !== false;
-  const targetCount = params.locationScope === "country" ? 10 : 8;
+  const targetCount = params.locationScope === "country" ? 18 : 12;
   // Over-fetch harder — LinkedIn + social + owner is a stricter gate
   const fetchLimit = requireSocial
     ? params.locationScope === "country"
-      ? 28
-      : 24
+      ? 60
+      : 42
     : targetCount;
 
   const location =
@@ -143,14 +143,13 @@ export async function runLeadPipeline(params: SearchParams) {
     // Trust Google Business Profile website — never wipe it because our
     // reachability check failed (many sites block bots / HEAD).
     const website = place.website;
-    const websiteReachable = website
-      ? await withTimeout(verifyWebsite(website), 9000, false)
-      : false;
-
-    // Owner/team first so the discovered owner name can drive LinkedIn lookup
-    const websitePeople = website
-      ? await withTimeout(extractWebsitePeople(website), 12000, EMPTY_PEOPLE)
-      : EMPTY_PEOPLE;
+    const [websiteReachable, websitePeople] = website
+      ? await Promise.all([
+          withTimeout(verifyWebsite(website), 6000, false),
+          // Owner/team first so discovered owner name can drive LinkedIn lookup
+          withTimeout(extractWebsitePeople(website), 9000, EMPTY_PEOPLE),
+        ])
+      : [false, EMPTY_PEOPLE];
 
     const placeForQualify = { ...place, website };
     const [yelp, houzz, nextdoor, linkedin, qualification, websiteSocial] =

@@ -8,6 +8,25 @@ export const ADMIN_PLANS = [
   { value: "agency", label: "Agency", priceMonthly: 0 },
 ] as const;
 
+export type PlanKey = (typeof ADMIN_PLANS)[number]["value"];
+
+export const PLAN_API_LIMITS: Record<PlanKey, number> = {
+  trial: 25,
+  starter: 300,
+  pro: 1500,
+  agency: 8000,
+};
+
+export const PLAN_FEATURES: Record<
+  PlanKey,
+  { api: boolean; mcp: boolean; sso: boolean }
+> = {
+  trial: { api: false, mcp: false, sso: false },
+  starter: { api: true, mcp: true, sso: false },
+  pro: { api: true, mcp: true, sso: true },
+  agency: { api: true, mcp: true, sso: true },
+};
+
 export const SUBSCRIPTION_STATUSES = [
   "trialing",
   "active",

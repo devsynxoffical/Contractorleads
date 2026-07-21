@@ -257,6 +257,7 @@ export async function searchGooglePlaces(params: {
       "Google Places API key not configured. Add GOOGLE_PLACES_API_KEY to .env."
     );
   }
+  const apiKeyValue = apiKey;
 
   const country = getTierOneCountry(params.country);
   const loc =
@@ -274,65 +275,93 @@ export async function searchGooglePlaces(params: {
         ? `${industryQuery(params.industry)} near ${loc}`
         : `${industryQuery(params.industry)} in ${loc}`;
 
-  const searchUrl = new URL(
-    "https://maps.googleapis.com/maps/api/place/textsearch/json"
-  );
-  searchUrl.searchParams.set("query", query);
-  searchUrl.searchParams.set("region", country.googleRegion);
-  searchUrl.searchParams.set("key", apiKey);
-
-  const searchRes = await fetch(searchUrl.toString(), {
-    signal: AbortSignal.timeout(15000),
-  });
-  if (!searchRes.ok) {
-    throw new GooglePlacesError(
-      `Google Places HTTP ${searchRes.status}. Try again in a moment.`
+  async function fetchSearchPage(pageToken?: string) {
+    const searchUrl = new URL(
+      "https://maps.googleapis.com/maps/api/place/textsearch/json"
     );
+    searchUrl.searchParams.set("query", query);
+    searchUrl.searchParams.set("region", country.googleRegion);
+    searchUrl.searchParams.set("key", apiKeyValue);
+    if (pageToken) searchUrl.searchParams.set("pagetoken", pageToken);
+    const searchRes = await fetch(searchUrl.toString(), {
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!searchRes.ok) {
+      throw new GooglePlacesError(
+        `Google Places HTTP ${searchRes.status}. Try again in a moment.`
+      );
+    }
+    return (await searchRes.json()) as {
+      status?: string;
+      error_message?: string;
+      next_page_token?: string;
+      results?: Array<{
+        place_id: string;
+        name: string;
+        formatted_address?: string;
+        rating?: number;
+        user_ratings_total?: number;
+        geometry?: { location?: { lat: number; lng: number } };
+      }>;
+    };
   }
 
-  const searchData = (await searchRes.json()) as {
-    status?: string;
-    error_message?: string;
-    results?: Array<{
-      place_id: string;
-      name: string;
-      formatted_address?: string;
-      rating?: number;
-      user_ratings_total?: number;
-      geometry?: { location?: { lat: number; lng: number } };
-    }>;
-  };
+  const combined: Array<{
+    place_id: string;
+    name: string;
+    formatted_address?: string;
+    rating?: number;
+    user_ratings_total?: number;
+    geometry?: { location?: { lat: number; lng: number } };
+  }> = [];
 
-  if (
-    searchData.status &&
-    searchData.status !== "OK" &&
-    searchData.status !== "ZERO_RESULTS"
-  ) {
-    const msg = searchData.error_message || searchData.status;
-    if (searchData.status === "REQUEST_DENIED") {
-      throw new GooglePlacesError(
-        `Google Places denied the request. Enable Billing on your Google Cloud project, then enable Places API. Details: ${msg}`
-      );
+  let pageToken: string | undefined;
+  const wanted = Math.max(1, params.limit ?? 10);
+  for (let page = 0; page < 3 && combined.length < wanted; page++) {
+    if (pageToken) {
+      // Google requires a short wait before next_page_token becomes active.
+      await new Promise((r) => setTimeout(r, 1800));
     }
-    if (searchData.status === "OVER_QUERY_LIMIT") {
-      throw new GooglePlacesError(
-        "Google Places quota exceeded. Check billing/quota in Google Cloud Console."
-      );
+    const searchData = await fetchSearchPage(pageToken);
+    if (
+      searchData.status &&
+      searchData.status !== "OK" &&
+      searchData.status !== "ZERO_RESULTS"
+    ) {
+      const msg = searchData.error_message || searchData.status;
+      if (searchData.status === "REQUEST_DENIED") {
+        throw new GooglePlacesError(
+          `Google Places denied the request. Enable Billing on your Google Cloud project, then enable Places API. Details: ${msg}`
+        );
+      }
+      if (searchData.status === "OVER_QUERY_LIMIT") {
+        throw new GooglePlacesError(
+          "Google Places quota exceeded. Check billing/quota in Google Cloud Console."
+        );
+      }
+      if (searchData.status === "INVALID_REQUEST") {
+        throw new GooglePlacesError(
+          `Invalid Places request. Try a city name with the state. (${msg})`
+        );
+      }
+      throw new GooglePlacesError(`Google Places error: ${msg}`);
     }
-    if (searchData.status === "INVALID_REQUEST") {
-      throw new GooglePlacesError(
-        `Invalid Places request. Try a city name with the state. (${msg})`
-      );
-    }
-    throw new GooglePlacesError(`Google Places error: ${msg}`);
+    combined.push(...(searchData.results ?? []));
+    pageToken = searchData.next_page_token || undefined;
+    if (!pageToken) break;
   }
 
-  const results = searchData.results?.slice(0, params.limit ?? 10) ?? [];
+  const deduped = new Map<string, (typeof combined)[number]>();
+  for (const row of combined) {
+    if (!deduped.has(row.place_id)) deduped.set(row.place_id, row);
+  }
+
+  const results = Array.from(deduped.values()).slice(0, wanted);
   if (!results.length) return [];
 
   // Parallel details — much faster and fewer dropped websites from timeouts
   const enriched = await Promise.all(
-    results.map((place) => enrichOnePlace(place, apiKey))
+    results.map((place) => enrichOnePlace(place, apiKeyValue))
   );
 
   return enriched;
