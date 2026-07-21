@@ -30,7 +30,7 @@ export type SearchParams = {
   zip?: string;
   customLocation?: string;
   radius?: number;
-  /** Default true — prefer LinkedIn + social; still fills exact target count. */
+  /** Default true — only keep leads with LinkedIn + social. */
   requireSocialPresence?: boolean;
   /** How many leads the client asked for (10–1000). */
   targetLeadCount?: number;
@@ -44,9 +44,9 @@ type SocialFields = {
   instagram?: string | null;
   youtube?: string | null;
   tiktok?: string | null;
+  ownerName?: string | null;
+  email?: string | null;
 };
-
-type SocialMode = "strict" | "soft" | "any";
 
 /** LinkedIn + at least one consumer social (FB/IG/YT/TikTok). */
 export function leadHasLinkedInAndSocial(lead: SocialFields): boolean {
@@ -59,17 +59,7 @@ export function leadHasLinkedInAndSocial(lead: SocialFields): boolean {
   return hasLinkedIn && hasSocial;
 }
 
-export function leadHasLinkedInOrSocial(lead: SocialFields): boolean {
-  const hasLinkedIn = Boolean(
-    lead.linkedinUrl || lead.linkedinCompanyUrl || lead.linkedinOwnerUrl,
-  );
-  const hasSocial = Boolean(
-    lead.facebook || lead.instagram || lead.youtube || lead.tiktok,
-  );
-  return hasLinkedIn || hasSocial;
-}
-
-/** @deprecated alias */
+/** @deprecated alias — filter no longer requires owner/email */
 export function leadHasLinkedInSocialAndOwner(lead: SocialFields): boolean {
   return leadHasLinkedInAndSocial(lead);
 }
@@ -97,24 +87,26 @@ function clampTarget(n: number | undefined) {
   return Math.max(10, Math.min(1000, Math.floor(n as number)));
 }
 
-function passesSocialMode(lead: SocialFields, mode: SocialMode): boolean {
-  if (mode === "any") return true;
-  if (mode === "soft") return leadHasLinkedInOrSocial(lead);
-  return leadHasLinkedInAndSocial(lead);
-}
-
 export async function runLeadPipeline(params: SearchParams) {
-  const preferSocial = params.requireSocialPresence !== false;
+  // Automatic: LinkedIn + social required unless explicitly turned off
+  const requireSocial = params.requireSocialPresence !== false;
   const targetCount = clampTarget(params.targetLeadCount);
-  // Over-fetch hard so we can still hit exact count after social filtering
-  const fetchLimit = Math.min(
-    1200,
-    Math.max(targetCount * (preferSocial ? 20 : 3), targetCount + 100),
-  );
+  // Over-fetch Places heavily when social filter is on (many candidates lack profiles)
+  const fetchLimit = requireSocial
+    ? Math.min(1200, Math.max(targetCount * 12, targetCount + 80))
+    : Math.min(1200, Math.max(targetCount * 2, targetCount + 20));
 
-  const preferRules = true;
-  const placeConcurrency =
-    targetCount >= 250 ? 22 : targetCount >= 80 ? 16 : 12;
+  const preferRules = true; // keep volume searches fast
+  // Higher concurrency — enrichment is I/O bound
+  const placeConcurrency = requireSocial
+    ? targetCount >= 100
+      ? 20
+      : 14
+    : targetCount >= 250
+      ? 22
+      : targetCount >= 80
+        ? 16
+        : 10;
 
   const location =
     params.customLocation?.trim() ||
@@ -150,64 +142,42 @@ export async function runLeadPipeline(params: SearchParams) {
   const leads: Awaited<ReturnType<typeof prisma.lead.create>>[] = [];
   let skippedNoSocial = 0;
   let scanned = 0;
-  const acceptedKeys = new Set<string>();
 
-  const ordered = [
-    ...places.filter((p) => p.website),
-    ...places.filter((p) => !p.website),
-  ];
+  // Prefer businesses with websites when social filter is on
+  const ordered = requireSocial
+    ? [
+        ...places.filter((p) => p.website),
+        ...places.filter((p) => !p.website),
+      ]
+    : places;
 
-  // Fill to exact target: strict → soft → any (so 50 means 50)
-  const modes: SocialMode[] = preferSocial
-    ? ["strict", "soft", "any"]
-    : ["any"];
+  await mapPool(ordered, placeConcurrency, async (place) => {
+    if (leads.length >= targetCount) return;
 
-  for (const mode of modes) {
-    if (leads.length >= targetCount) break;
+    scanned += 1;
 
-    await mapPool(ordered, placeConcurrency, async (place) => {
-      if (leads.length >= targetCount) return;
+    if (requireSocial && !place.website) {
+      skippedNoSocial += 1;
+      return;
+    }
 
-      const key =
-        place.mapsUrl ||
-        `${place.name}|${place.address || ""}|${place.phone || ""}`;
-      if (acceptedKeys.has(key)) return;
-
-      if (mode === "strict") scanned += 1;
-
-      if (preferSocial && mode !== "any" && !place.website) {
-        if (mode === "strict") skippedNoSocial += 1;
-        return;
-      }
-
-      const lead = await enrichAndPersistPlace({
-        place,
-        params,
-        searchId: search.id,
-        location,
-        socialMode: mode,
-        preferRules,
-      });
-
-      if (lead === "skipped-social") {
-        if (mode === "strict") skippedNoSocial += 1;
-        return;
-      }
-      if (lead === "skipped-score") return;
-      if (lead === "already-counted") {
-        acceptedKeys.add(key);
-        return;
-      }
-      if (leads.length >= targetCount) return;
-      if (leads.some((l) => l.id === lead.id)) {
-        acceptedKeys.add(key);
-        return;
-      }
-
-      acceptedKeys.add(key);
-      leads.push(lead);
+    const lead = await enrichAndPersistPlace({
+      place,
+      params,
+      searchId: search.id,
+      location,
+      requireSocial,
+      preferRules,
     });
-  }
+
+    if (lead === "skipped-social") {
+      skippedNoSocial += 1;
+      return;
+    }
+    if (lead === "skipped-score") return;
+    if (leads.length >= targetCount) return;
+    leads.push(lead);
+  });
 
   const finalLeads = leads.slice(0, targetCount);
 
@@ -220,12 +190,11 @@ export async function runLeadPipeline(params: SearchParams) {
     search,
     leads: finalLeads,
     meta: {
-      requireSocialPresence: preferSocial,
+      requireSocialPresence: requireSocial,
       skippedNoSocial,
       placesScanned: scanned || places.length,
       placesFetched: places.length,
       targetLeadCount: targetCount,
-      deliveredCount: finalLeads.length,
     },
   };
 }
@@ -235,15 +204,15 @@ async function enrichAndPersistPlace(opts: {
   params: SearchParams;
   searchId: string;
   location: string;
-  socialMode: SocialMode;
+  requireSocial: boolean;
   preferRules: boolean;
 }): Promise<
   | Awaited<ReturnType<typeof prisma.lead.create>>
   | "skipped-social"
   | "skipped-score"
-  | "already-counted"
 > {
-  const { place, params, searchId, location, socialMode, preferRules } = opts;
+  const { place, params, searchId, location, requireSocial, preferRules } =
+    opts;
 
   const website = place.website;
   const emptyPack = {
@@ -258,23 +227,19 @@ async function enrichAndPersistPlace(opts: {
 
   const { discoverSocialProfiles } = await import("./web-search");
 
-  // Parallel: social pack + owner/team (so people always attempt)
-  const [pack, websitePeople] = await Promise.all([
-    website
-      ? withTimeout(scrapeWebsiteSocialPack(website), 5000, emptyPack)
-      : Promise.resolve(emptyPack),
-    website
-      ? withTimeout(extractWebsitePeople(website), 9000, EMPTY_PEOPLE)
-      : Promise.resolve(EMPTY_PEOPLE),
-  ]);
+  // Homepage-first scrape (skips extra pages when already complete)
+  const pack = website
+    ? await withTimeout(scrapeWebsiteSocialPack(website), 4500, emptyPack)
+    : emptyPack;
 
   const packHasLi = Boolean(pack.linkedinCompany || pack.linkedinOwner);
   const packHasSocial = Boolean(
     pack.facebook || pack.instagram || pack.youtube || pack.tiktok,
   );
 
+  // Automatic social discovery whenever website pack is incomplete
   const fromWeb =
-    socialMode !== "any" && (!packHasLi || !packHasSocial)
+    !packHasLi || !packHasSocial
       ? await withTimeout(discoverSocialProfiles(place.name, location), 4500, {
           linkedin: null,
           facebook: null,
@@ -286,8 +251,7 @@ async function enrichAndPersistPlace(opts: {
           instagram: null as string | null,
         };
 
-  const linkedinHint =
-    pack.linkedinCompany || pack.linkedinOwner || fromWeb.linkedin;
+  const linkedinHint = pack.linkedinCompany || pack.linkedinOwner || fromWeb.linkedin;
   const socialHint =
     pack.facebook ||
     pack.instagram ||
@@ -296,55 +260,51 @@ async function enrichAndPersistPlace(opts: {
     fromWeb.facebook ||
     fromWeb.instagram;
 
-  const earlySnapshot: SocialFields = {
-    linkedinUrl: linkedinHint,
-    linkedinCompanyUrl: pack.linkedinCompany || fromWeb.linkedin,
-    linkedinOwnerUrl: pack.linkedinOwner,
-    facebook: pack.facebook || fromWeb.facebook,
-    instagram: pack.instagram || fromWeb.instagram,
-    youtube: pack.youtube,
-    tiktok: pack.tiktok,
-  };
-
-  if (!passesSocialMode(earlySnapshot, socialMode)) {
+  // Fail fast before secondary APIs when filter can't be satisfied
+  if (requireSocial && (!linkedinHint || !socialHint)) {
     return "skipped-social";
   }
 
-  const [companyLi, qualification, facebookPage, yelp] = await Promise.all([
-    linkedinHint
-      ? Promise.resolve({
-          url: linkedinHint.includes("/in/") ? null : linkedinHint,
-          confidence: pack.linkedinCompany || fromWeb.linkedin ? 96 : 90,
-          source: (pack.linkedinCompany
-            ? "website"
-            : fromWeb.linkedin
-              ? "web"
-              : "website") as "website" | "web" | null,
-        })
-      : withTimeout(
-          findLinkedInCompanyUrl(
-            place.name,
-            location,
-            params.industry,
-            website,
-            {
-              websiteCompanyUrl: null,
-              skipWebsiteScrape: true,
-              skipWebSearch: socialMode === "any",
-            },
+  // Automatic light enrichment (short timeouts — no manual Fetch needed)
+  const [companyLi, qualification, facebookPage, websitePeople, yelp] =
+    await Promise.all([
+      linkedinHint
+        ? Promise.resolve({
+            url: linkedinHint.includes("/in/") ? null : linkedinHint,
+            confidence: pack.linkedinCompany || fromWeb.linkedin ? 96 : 90,
+            source: (pack.linkedinCompany
+              ? "website"
+              : fromWeb.linkedin
+                ? "web"
+                : "website") as "website" | "web" | null,
+          })
+        : withTimeout(
+            findLinkedInCompanyUrl(
+              place.name,
+              location,
+              params.industry,
+              website,
+              {
+                websiteCompanyUrl: null,
+                skipWebsiteScrape: true,
+                skipWebSearch: true,
+              },
+            ),
+            3000,
+            { url: null, confidence: 0, source: null },
           ),
-          3000,
-          { url: null, confidence: 0, source: null },
-        ),
-    qualifyLead({ ...place, website }, params.industry, Boolean(website), {
-      preferRules,
-      timeoutMs: 1,
-    }),
-    !(pack.facebook || fromWeb.facebook)
-      ? withTimeout(searchFacebookPage(place.name), 2500, null)
-      : Promise.resolve(null),
-    withTimeout(matchYelpBusiness(place.name, location), 2500, null),
-  ]);
+      qualifyLead({ ...place, website }, params.industry, Boolean(website), {
+        preferRules,
+        timeoutMs: 1,
+      }),
+      !(pack.facebook || fromWeb.facebook)
+        ? withTimeout(searchFacebookPage(place.name), 2500, null)
+        : Promise.resolve(null),
+      website
+        ? withTimeout(extractWebsitePeople(website), 3500, EMPTY_PEOPLE)
+        : Promise.resolve(EMPTY_PEOPLE),
+      withTimeout(matchYelpBusiness(place.name, location), 2500, null),
+    ]);
 
   const companyUrl =
     (companyLi.url && !companyLi.url.includes("/in/")
@@ -385,12 +345,7 @@ async function enrichAndPersistPlace(opts: {
         },
       });
 
-  // If this lead was already added in a stricter pass for this search, skip
-  if (existingLead?.searchId === searchId) {
-    return "already-counted";
-  }
-
-  const socialSnapshot: SocialFields = {
+  const socialSnapshot = {
     linkedinUrl: primaryLinkedIn ?? existingLead?.linkedinUrl,
     linkedinCompanyUrl: companyUrl ?? existingLead?.linkedinCompanyUrl,
     linkedinOwnerUrl: resolvedOwner ?? existingLead?.linkedinOwnerUrl,
@@ -400,7 +355,7 @@ async function enrichAndPersistPlace(opts: {
     tiktok: pack.tiktok ?? existingLead?.tiktok,
   };
 
-  if (!passesSocialMode(socialSnapshot, socialMode)) {
+  if (requireSocial && !leadHasLinkedInAndSocial(socialSnapshot)) {
     return "skipped-social";
   }
 
@@ -411,10 +366,6 @@ async function enrichAndPersistPlace(opts: {
       : primaryLinkedIn
         ? "company"
         : "none";
-
-  const teamJson = websitePeople.team.length
-    ? JSON.stringify(websitePeople.team)
-    : existingLead?.teamMembersJson ?? null;
 
   const sharedData = {
     searchId,
@@ -433,7 +384,9 @@ async function enrichAndPersistPlace(opts: {
       websitePeople.owner?.sourceUrl ?? existingLead?.ownerSourceUrl,
     ownerConfidence:
       websitePeople.owner?.confidence ?? existingLead?.ownerConfidence,
-    teamMembersJson: teamJson,
+    teamMembersJson: websitePeople.team.length
+      ? JSON.stringify(websitePeople.team)
+      : existingLead?.teamMembersJson,
     email: websitePeople.email ?? existingLead?.email,
     emailSourceUrl:
       websitePeople.emailSourceUrl ?? existingLead?.emailSourceUrl,
@@ -466,12 +419,9 @@ async function enrichAndPersistPlace(opts: {
     seoOpportunityScore: qualification.seoOpportunityScore,
     outreachAngle: qualification.outreachAngle,
     qualityTier: qualification.qualityTier,
-    peopleEnrichedAt:
-      websitePeople.owner ||
-      websitePeople.team.length ||
-      websitePeople.email
-        ? new Date()
-        : existingLead?.peopleEnrichedAt,
+    peopleEnrichedAt: websitePeople.owner || websitePeople.email
+      ? new Date()
+      : existingLead?.peopleEnrichedAt,
     socialEnrichedAt: new Date(),
   };
 
@@ -493,11 +443,7 @@ async function enrichAndPersistPlace(opts: {
         ? JSON.stringify(websitePeople.team)
         : null,
       peopleEnrichedAt:
-        websitePeople.owner ||
-        websitePeople.team.length ||
-        websitePeople.email
-          ? new Date()
-          : null,
+        websitePeople.owner || websitePeople.email ? new Date() : null,
       email: websitePeople.email,
       emailSourceUrl: websitePeople.emailSourceUrl,
       facebook,

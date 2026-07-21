@@ -413,17 +413,7 @@ export async function searchGooglePlaces(params: {
   const queries = buildPlacesQueries(params);
   // Fewer query fan-outs for small searches; more for large targets
   const queryBudget =
-    wanted <= 25
-      ? 2
-      : wanted <= 60
-        ? 6
-        : wanted <= 120
-          ? 10
-          : wanted <= 250
-            ? 14
-            : wanted <= 500
-              ? 18
-              : 24;
+    wanted <= 40 ? 1 : wanted <= 100 ? 4 : wanted <= 250 ? 8 : wanted <= 500 ? 14 : 22;
   const selectedQueries = queries.slice(0, queryBudget);
 
   const deduped = new Map<
