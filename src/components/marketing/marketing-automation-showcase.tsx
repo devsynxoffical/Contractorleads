@@ -203,7 +203,7 @@ function ScoringCard() {
 export function MarketingAutomationShowcase() {
   return (
     <section
-      id="interactive-demo"
+      id="automation-preview"
       className="relative overflow-hidden bg-[#ffffff] px-4 py-14 sm:px-6 sm:py-16 lg:px-8"
       aria-label="Automation preview"
     >
