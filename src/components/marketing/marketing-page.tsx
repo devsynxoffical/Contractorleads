@@ -1070,7 +1070,7 @@ function Faq() {
 
 function FinalCta() {
   return (
-    <section className="relative overflow-hidden py-28 sm:py-36">
+    <section className="relative overflow-hidden py-16 sm:py-20">
       <div
         className="absolute inset-0"
         style={{
@@ -1082,15 +1082,15 @@ function FinalCta() {
       <SparklesDecor className="text-white/70" />
       <div className="relative z-10 mx-auto max-w-3xl px-5 text-center sm:px-8">
         <Reveal>
-          <h2 className="font-[family-name:var(--font-display)] text-[clamp(2.2rem,5.5vw,3.75rem)] font-semibold tracking-tight text-white">
+          <h2 className="font-[family-name:var(--font-display)] text-[clamp(1.85rem,4.5vw,3rem)] font-semibold tracking-tight text-white">
             Ready to feel the need for leads?
           </h2>
-          <p className="mx-auto mt-4 max-w-md text-[15px] text-white/80">
+          <p className="mx-auto mt-3 max-w-md text-[15px] text-white/80">
             Start with free trial credits. No card. Ship your first qualified batch today.
           </p>
           <FinalCtaActions />
           <motion.div
-            className="mt-8 flex flex-wrap items-center justify-center gap-4 text-[12px] text-white/75"
+            className="mt-6 flex flex-wrap items-center justify-center gap-4 text-[12px] text-white/75"
             initial={{ opacity: 0, y: 12 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
