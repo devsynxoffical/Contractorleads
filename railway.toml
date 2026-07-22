@@ -1,5 +1,6 @@
 # Railway deploy config for LeadFlow USA / Contractor Leads
 # Dashboard: https://railway.app → New Project → Deploy from GitHub
+# Redeploy trigger: keep Nixpacks buildCommand in sync with package.json "build"
 
 [build]
 builder = "NIXPACKS"
