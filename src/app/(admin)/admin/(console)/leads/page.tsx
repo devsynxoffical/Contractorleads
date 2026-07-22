@@ -424,7 +424,7 @@ export default function AdminLeadsPage() {
             </select>
           </label>
           <div className="sm:col-span-2">
-            <Button type="submit" loading={busy === "create}">
+            <Button type="submit" loading={busy === "create"}>
               {busy === "create" ? "Creating…" : "Create & edit"}
             </Button>
           </div>
