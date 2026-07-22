@@ -68,7 +68,6 @@ import { MarketingFluidHero } from "./marketing-fluid-hero";
 import { MarketingInteractiveDemo } from "./marketing-interactive-demo";
 import {
   MoonWalkFeatureGrid,
-  MaterialHillsCta,
   FlowerFieldProofCards,
   SocialProofBento,
 } from "./marketing-interactive-sections";
@@ -1424,7 +1423,6 @@ export function MarketingPage() {
       <FlowerFieldProofCards />
       <DashboardSection />
       <ProblemSection />
-      <MaterialHillsCta />
       <SolutionBento />
       <SocialProofBento />
       <FeaturesGrid />

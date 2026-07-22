@@ -503,7 +503,7 @@ export function MarketingInteractiveDemo() {
   return (
     <section
       id="interactive-demo"
-      className="relative overflow-hidden bg-[#04050c] px-4 pb-10 pt-5 sm:px-6 sm:pb-12 lg:px-8"
+      className="relative overflow-hidden bg-[#04050c] px-4 pb-10 pt-0 sm:px-6 sm:pb-12 sm:pt-1 lg:px-8"
       aria-label="Interactive product demo"
     >
       <div

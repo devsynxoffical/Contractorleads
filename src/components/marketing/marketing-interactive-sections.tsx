@@ -153,47 +153,9 @@ export function MoonWalkFeatureGrid() {
   );
 }
 
-/** purple-desert.webp — full-bleed CTA band (once) */
+/** purple-desert.webp — full-bleed CTA band (removed from homepage) */
 export function MaterialHillsCta() {
-  return (
-    <section className="relative overflow-hidden">
-      <div className="relative min-h-[48vh] sm:min-h-[56vh]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/marketing/purple-desert.webp"
-          alt="Purple desert brand film"
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#1a0a2e]/90 via-[#2e1065]/55 to-transparent" />
-        <div className="relative z-10 flex min-h-[48vh] items-center px-5 py-16 sm:min-h-[56vh] sm:px-8">
-          <div className="mx-auto w-full max-w-6xl">
-            <Reveal>
-              <h2 className="max-w-xl font-[family-name:var(--font-display)] text-[clamp(2rem,5vw,3.4rem)] font-semibold tracking-tight text-white">
-                Terrain built for serious agencies
-              </h2>
-              <p className="mt-4 max-w-md text-[15px] text-white/75">
-                Not a toy for browsing contractor listings. A working desk for teams that dial, qualify, and close every day.
-              </p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Link
-                  href="/register"
-                  className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-[14px] font-semibold text-slate-900 shadow-lg transition hover:bg-fuchsia-50"
-                >
-                  Start free trial <HiOutlineArrowRight className="h-4 w-4" />
-                </Link>
-                <a
-                  href="mailto:hello@contractorleads.us"
-                  className="inline-flex items-center gap-2 rounded-2xl border border-white/35 bg-white/10 px-5 py-3 text-[14px] font-semibold text-white backdrop-blur transition hover:bg-white/15"
-                >
-                  Talk to sales
-                </a>
-              </div>
-            </Reveal>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
+  return null;
 }
 
 /** flower-field.webp — soft light card gallery (once) */

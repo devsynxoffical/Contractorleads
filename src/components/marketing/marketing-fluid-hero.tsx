@@ -61,9 +61,8 @@ export function MarketingFluidHero() {
     };
 
     reveal(section.querySelector("[data-reveal='nav']"), 150, "-0.75rem");
-    reveal(section.querySelector("[data-reveal='badge']"), 320, "1.25rem");
-    reveal(section.querySelector("[data-reveal='cta']"), 1450, "1.25rem");
-    reveal(section.querySelector("[data-reveal='footer']"), 1650, "1.25rem");
+    reveal(section.querySelector("[data-reveal='cta']"), 1250, "1.25rem");
+    reveal(section.querySelector("[data-reveal='footer']"), 1450, "1.25rem");
 
     const animateWords = (
       container: Element | null,
@@ -94,13 +93,13 @@ export function MarketingFluidHero() {
       });
     };
 
-    animateWords(section.querySelector("[data-reveal='heading']"), 480, 85, 720, 26);
+    animateWords(section.querySelector("[data-reveal='heading']"), 320, 85, 720, 26);
     const sub = section.querySelector("[data-reveal='sub']");
     if (sub instanceof HTMLElement) {
       sub.style.opacity = "0";
       sub.style.transform = "translateY(14px)";
       sub.style.transition =
-        "opacity 600ms cubic-bezier(0.33, 1, 0.68, 1) 1150ms, transform 600ms cubic-bezier(0.33, 1, 0.68, 1) 1150ms";
+        "opacity 600ms cubic-bezier(0.33, 1, 0.68, 1) 980ms, transform 600ms cubic-bezier(0.33, 1, 0.68, 1) 980ms";
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           sub.style.opacity = "1";
@@ -141,10 +140,6 @@ export function MarketingFluidHero() {
       </header>
 
       <div className="mkt-flow-center">
-        <p className="mkt-flow-badge uppercase tracking-[0.18em]" data-reveal="badge">
-          Contractor lead intelligence
-        </p>
-
         <h1 className="mkt-flow-heading" data-reveal="heading">
           {splitWords(HEADING).map((w, i, arr) => (
             <span key={`${w}-${i}`} data-word>
