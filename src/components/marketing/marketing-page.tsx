@@ -361,19 +361,30 @@ function SocialProof() {
 
 function ProblemSection() {
   return (
-    <section className="relative overflow-x-clip bg-[#ffffff] py-24 sm:py-28">
-      <SoftBlob color="violet" className="-right-16 top-20 h-64 w-64 opacity-40" />
-      <SoftBlob color="pink" className="-left-10 bottom-10 h-56 w-56 opacity-35" />
-      <CloudDecor side="both" className="opacity-45" />
+    <section id="problem" className="relative overflow-hidden py-20 sm:py-28">
+      <div className="absolute inset-0 bg-[#07040f]" />
+      <div
+        className="pointer-events-none absolute inset-0 overflow-hidden opacity-[0.42]"
+        aria-hidden
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/marketing/moon-walk.webp"
+          alt=""
+          className="h-full w-full object-cover"
+        />
+      </div>
+      <div className="absolute inset-0 bg-gradient-to-b from-[#07040f]/40 via-[#07040f]/55 to-[#07040f]/92" />
+
       <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
-        <Reveal className="mx-auto max-w-3xl text-center">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-fuchsia-600">
+        <Reveal className="max-w-2xl">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-fuchsia-300">
             The problem
           </p>
-          <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.85rem,4.2vw,3.25rem)] font-semibold tracking-tight text-slate-900">
+          <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.85rem,4vw,3rem)] font-semibold tracking-tight text-white">
             Contractor growth dies in the handoff
           </h2>
-          <p className="mt-4 text-[15px] leading-relaxed text-slate-600">
+          <p className="mt-3 text-[15px] leading-relaxed text-white/65">
             Most agencies do not lose deals because their pitch is weak. They lose them in the six
             silent failure points between &ldquo;found a business&rdquo; and &ldquo;booked a
             call.&rdquo;
@@ -384,32 +395,41 @@ function ProblemSection() {
           {PAINS.map((p, i) => {
             const Icon = p.icon;
             return (
-              <motion.div
-                key={p.title}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.06 }}
-                whileHover={{ y: -4 }}
-                className="h-full rounded-[22px] border border-slate-200 bg-[#ffffff] p-5 shadow-[0_8px_28px_rgba(15,23,42,0.05)] transition-shadow hover:border-fuchsia-200/80 hover:shadow-[0_16px_40px_rgba(217,70,239,0.1)] sm:p-6"
-              >
-                <span
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl ring-1 ring-black/[0.04]"
-                  style={{ background: p.bg, color: p.color }}
-                >
-                  <Icon className="h-[18px] w-[18px]" />
-                </span>
-                <h3 className="mt-3 text-[15px] font-semibold text-slate-900">{p.title}</h3>
-                <p className="mt-2 text-[13px] leading-relaxed text-slate-500">{p.body}</p>
-              </motion.div>
+              <Reveal key={p.title} delay={i * 0.05}>
+                <TiltCard intensity={7}>
+                  <motion.div
+                    whileHover={{ y: -5 }}
+                    className="group relative h-full overflow-hidden rounded-[28px] border border-white/12 bg-white/[0.07] p-6 backdrop-blur-md"
+                  >
+                    <div className="absolute -right-10 -top-10 h-36 w-36 rounded-full bg-fuchsia-500/20 blur-3xl transition group-hover:bg-fuchsia-400/30" />
+                    <div className="flex items-center gap-2.5">
+                      <span
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl ring-1 ring-white/10"
+                        style={{ background: p.bg, color: p.color }}
+                      >
+                        <Icon className="h-5 w-5" />
+                      </span>
+                      <span className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/85">
+                        Failure {i + 1}
+                      </span>
+                    </div>
+                    <h3 className="mt-4 font-[family-name:var(--font-display)] text-[22px] font-semibold text-white">
+                      {p.title}
+                    </h3>
+                    <p className="mt-2 text-[14px] leading-relaxed text-white/65">
+                      {p.body}
+                    </p>
+                  </motion.div>
+                </TiltCard>
+              </Reveal>
             );
           })}
         </div>
 
-        <Reveal delay={0.08} className="mt-10 text-center">
+        <Reveal delay={0.1} className="mt-10">
           <Link
             href="#features"
-            className="inline-flex items-center gap-2 text-[14px] font-semibold text-fuchsia-600 hover:underline"
+            className="inline-flex items-center gap-2 text-[14px] font-semibold text-fuchsia-300 transition hover:gap-3 hover:text-white"
           >
             See how Contractor Leads fixes this
             <HiOutlineArrowRight className="h-4 w-4" />
