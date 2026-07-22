@@ -217,7 +217,7 @@ export function LeadResultCard({
 
           <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border/70 pt-3">
             <Link
-              href={`/leads/${lead.id}`}
+              href={`/leads/${lead.id}?from=all`}
               className="inline-flex h-9 items-center rounded-xl px-4 text-[12px] font-semibold text-white shadow-sm transition hover:opacity-95"
               style={{ background: LOGO_GRADIENT }}
             >

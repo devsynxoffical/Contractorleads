@@ -21,12 +21,25 @@ export async function POST(
     return NextResponse.json({ error: "Lead not found" }, { status: 404 });
   }
 
-  const result = await enrichLeadSocial(lead);
-  const verificationScore = computeVerificationScore(result.lead);
+  try {
+    const result = await enrichLeadSocial(lead);
+    const verificationScore = computeVerificationScore(result.lead);
 
-  return NextResponse.json({
-    lead: result.lead,
-    found: result.found,
-    verificationScore,
-  });
+    return NextResponse.json({
+      lead: result.lead,
+      found: result.found,
+      verificationScore,
+    });
+  } catch (e) {
+    console.error("[enrich-social]", e);
+    return NextResponse.json(
+      {
+        error:
+          e instanceof Error
+            ? e.message
+            : "Could not enrich this lead. Please try again.",
+      },
+      { status: 500 },
+    );
+  }
 }

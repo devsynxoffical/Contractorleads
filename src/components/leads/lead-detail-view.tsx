@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   HiOutlineArrowLeft,
   HiOutlineArrowPath,
+  HiOutlineArrowRight,
   HiOutlineArrowTopRightOnSquare,
   HiOutlineBookmark,
   HiOutlineCheckBadge,
@@ -94,12 +95,34 @@ type Lead = {
   industry: string | null;
   state: string | null;
   city: string | null;
-  savedBy: Array<{
+  savedBy?: Array<{
     id: string;
     status: string;
     favorite: boolean;
     notes: Array<{ id: string; content: string; createdAt: string }>;
   }>;
+};
+
+type LeadFrom = "all" | "hot" | "saved";
+
+type LeadNavigation = {
+  from: LeadFrom;
+  prevId: string | null;
+  nextId: string | null;
+  position: number | null;
+  total: number;
+};
+
+const BACK_HREF: Record<LeadFrom, string> = {
+  all: "/leads",
+  hot: "/leads/hot",
+  saved: "/leads/saved",
+};
+
+const BACK_LABEL: Record<LeadFrom, string> = {
+  all: "Back to all leads",
+  hot: "Back to hot leads",
+  saved: "Back to saved leads",
 };
 
 type TeamMember = {
@@ -274,8 +297,16 @@ function PlatformTag({ href, label }: { href?: string | null; label: string }) {
   );
 }
 
-export function LeadDetailView({ leadId }: { leadId: string }) {
+export function LeadDetailView({
+  leadId,
+  from = "all",
+}: {
+  leadId: string;
+  from?: LeadFrom;
+}) {
   const [lead, setLead] = useState<Lead | null>(null);
+  const [navigation, setNavigation] = useState<LeadNavigation | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
   const [fetchingSocial, setFetchingSocial] = useState(false);
@@ -291,10 +322,25 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
   const [crmBusy, setCrmBusy] = useState(false);
   const [noteBusy, setNoteBusy] = useState(false);
 
+  function mergeLead(updated: Lead) {
+    setLead((prev) => ({
+      ...updated,
+      savedBy: updated.savedBy ?? prev?.savedBy ?? [],
+    }));
+  }
+
   async function load() {
-    const res = await fetch(`/api/leads/${leadId}`);
+    setLoadError(null);
+    const res = await fetch(`/api/leads/${leadId}?from=${from}`);
     const data = await res.json();
+    if (!res.ok || !data.lead) {
+      setLead(null);
+      setNavigation(null);
+      setLoadError(data.error ?? "Lead not found");
+      return;
+    }
     setLead(data.lead);
+    setNavigation(data.navigation ?? null);
     if (data.lead?.facebookAdsData) {
       try {
         setAdsResult(JSON.parse(data.lead.facebookAdsData));
@@ -305,8 +351,13 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
   }
 
   useEffect(() => {
+    setLead(null);
+    setVerificationScore(null);
+    setAdsResult(null);
+    setPopup(null);
     load();
-  }, [leadId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when lead or list scope changes
+  }, [leadId, from]);
 
   useEffect(() => {
     if (lead && verificationScore === null) {
@@ -327,12 +378,12 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
   async function updateSaved(field: string, value: string | boolean) {
     setCrmBusy(true);
     try {
-      const savedId = lead?.savedBy[0]?.id;
+      const savedId = lead?.savedBy?.[0]?.id;
       if (!savedId) {
         await saveLead();
         await load();
-        const refreshed = await fetch(`/api/leads/${leadId}`).then((r) =>
-          r.json()
+        const refreshed = await fetch(`/api/leads/${leadId}?from=${from}`).then(
+          (r) => r.json(),
         );
         const id = refreshed.lead?.savedBy?.[0]?.id;
         if (!id) return;
@@ -356,7 +407,7 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
   }
 
   async function addNote() {
-    const savedId = lead?.savedBy[0]?.id;
+    const savedId = lead?.savedBy?.[0]?.id;
     if (!savedId || !note.trim()) return;
     setNoteBusy(true);
     try {
@@ -381,7 +432,8 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Enrichment failed");
-      setLead(data.lead);
+      // Enrich APIs omit savedBy — merge so the page doesn't crash.
+      mergeLead(data.lead);
       setVerificationScore(data.verificationScore ?? null);
       const found = Object.entries(data.found ?? {})
         .filter(([, v]) => v)
@@ -395,9 +447,9 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
       } else {
         setPopup({
           kind: "info",
-          title: "Nothing new found",
+          title: "No results found",
           message:
-            "We rechecked the website and public directories but found no new public details for this business.",
+            "We rechecked the website and public directories but found no owner or social details for this business.",
         });
       }
     } catch (e) {
@@ -418,6 +470,9 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
 
   async function findLinkedIn() {
     setFindingLinkedin(true);
+    const manualSearchUrl = `https://www.linkedin.com/search/results/companies/?keywords=${encodeURIComponent(
+      lead?.businessName ?? "",
+    )}`;
     try {
       const res = await fetch(`/api/leads/${leadId}/linkedin`, {
         method: "POST",
@@ -425,7 +480,7 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "LinkedIn lookup failed");
-      setLead(data.lead);
+      mergeLead(data.lead);
 
       const foundUrl =
         data.linkedin?.verified && data.linkedin?.url
@@ -443,10 +498,10 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
       } else {
         setPopup({
           kind: "info",
-          title: "No verified page found",
+          title: "No results found",
           message:
             "We couldn't confirm a LinkedIn company page automatically. You can search LinkedIn manually instead.",
-          actionUrl: linkedinSearchUrl,
+          actionUrl: data.linkedin?.searchUrl ?? manualSearchUrl,
           actionLabel: "Search on LinkedIn",
         });
       }
@@ -460,7 +515,7 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
             : e instanceof Error
               ? e.message
               : "Something went wrong. Please try again.",
-        actionUrl: linkedinSearchUrl,
+        actionUrl: manualSearchUrl,
         actionLabel: "Search on LinkedIn",
       });
     } finally {
@@ -506,6 +561,23 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
     }
   }
 
+  if (loadError) {
+    return (
+      <div className="page-pad">
+        <Link
+          href={BACK_HREF[from]}
+          className="mb-4 inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-muted transition hover:text-brand-700"
+        >
+          <HiOutlineArrowLeft className="h-4 w-4" />
+          {BACK_LABEL[from]}
+        </Link>
+        <div className="saas-card p-8 text-sm text-ink-muted">
+          {loadError}
+        </div>
+      </div>
+    );
+  }
+
   if (!lead) {
     return (
       <div className="page-pad">
@@ -516,7 +588,7 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
     );
   }
 
-  const saved = lead.savedBy[0];
+  const saved = lead.savedBy?.[0];
   const linkedinCompany =
     lead.linkedinCompanyUrl && (lead.linkedinConfidenceScore ?? 0) >= 85;
   const linkedinOwner =
@@ -535,16 +607,56 @@ export function LeadDetailView({ leadId }: { leadId: string }) {
         ? "warm"
         : "nurture";
   const linkedinSearchUrl = `https://www.linkedin.com/search/results/companies/?keywords=${encodeURIComponent(lead.businessName)}`;
+  const navFrom = navigation?.from ?? from;
+  const detailHref = (id: string) => `/leads/${id}?from=${navFrom}`;
 
   return (
     <div className="page-pad page-enter">
-      <Link
-        href="/home"
-        className="mb-4 inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-muted transition hover:text-brand-700"
-      >
-        <HiOutlineArrowLeft className="h-4 w-4" />
-        Back to results
-      </Link>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <Link
+          href={BACK_HREF[navFrom]}
+          className="inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-muted transition hover:text-brand-700"
+        >
+          <HiOutlineArrowLeft className="h-4 w-4" />
+          {BACK_LABEL[navFrom]}
+        </Link>
+
+        <div className="flex items-center gap-2">
+          {navigation && navigation.position != null && navigation.total > 0 && (
+            <span className="text-[12px] tabular-nums text-ink-faint">
+              {navigation.position} of {navigation.total}
+            </span>
+          )}
+          {navigation?.prevId ? (
+            <Link
+              href={detailHref(navigation.prevId)}
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border bg-white px-3 text-[12px] font-semibold text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
+            >
+              <HiOutlineArrowLeft className="h-3.5 w-3.5" />
+              Previous
+            </Link>
+          ) : (
+            <span className="inline-flex h-9 cursor-not-allowed items-center gap-1.5 rounded-xl border border-border/60 px-3 text-[12px] font-semibold text-ink-faint opacity-50">
+              <HiOutlineArrowLeft className="h-3.5 w-3.5" />
+              Previous
+            </span>
+          )}
+          {navigation?.nextId ? (
+            <Link
+              href={detailHref(navigation.nextId)}
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border bg-white px-3 text-[12px] font-semibold text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
+            >
+              Next
+              <HiOutlineArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          ) : (
+            <span className="inline-flex h-9 cursor-not-allowed items-center gap-1.5 rounded-xl border border-border/60 px-3 text-[12px] font-semibold text-ink-faint opacity-50">
+              Next
+              <HiOutlineArrowRight className="h-3.5 w-3.5" />
+            </span>
+          )}
+        </div>
+      </div>
 
       <div className="relative overflow-hidden rounded-[1.5rem] border border-border/80 bg-white shadow-[var(--shadow-elevated)]">
         <div className="h-1.5 w-full" style={{ background: LOGO_GRADIENT }} />

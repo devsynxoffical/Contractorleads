@@ -119,15 +119,18 @@ export async function enrichLeadSocial(lead: LeadRecord) {
     found: {
       linkedinCompany: Boolean(companyLinkedIn),
       linkedinOwner: Boolean(ownerLinkedIn),
-      owner: Boolean(updated.ownerName),
+      owner: Boolean(websitePeople.owner),
       team: websitePeople.team.length > 0,
-      email: Boolean(updated.email),
-      facebook: Boolean(updated.facebook),
-      instagram: Boolean(updated.instagram),
-      youtube: Boolean(updated.youtube),
-      tiktok: Boolean(updated.tiktok),
-      houzz: Boolean(updated.houzzUrl),
-      nextdoor: Boolean(updated.nextdoor),
+      email: Boolean(!lead.email && websitePeople.email),
+      facebook: Boolean(
+        !lead.facebook && (websiteSocial.facebook || facebookPage),
+      ),
+      instagram: Boolean(!lead.instagram && websiteSocial.instagram),
+      youtube: Boolean(!lead.youtube && websiteSocial.youtube),
+      tiktok: Boolean(!lead.tiktok && websiteSocial.tiktok),
+      houzz: Boolean(houzz?.url),
+      nextdoor: Boolean(nextdoor?.url),
+      yelp: Boolean(yelp?.url),
     },
   };
 }

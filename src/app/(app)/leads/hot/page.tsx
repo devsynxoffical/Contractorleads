@@ -49,7 +49,7 @@ export default async function HotLeadsPage() {
             <CardContent className="flex flex-wrap items-center justify-between gap-4 py-4">
               <div className="min-w-0">
                 <Link
-                  href={`/leads/${lead.id}`}
+                  href={`/leads/${lead.id}?from=hot`}
                   className="font-semibold text-ink hover:text-brand-600"
                 >
                   {lead.businessName}

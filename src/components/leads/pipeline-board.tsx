@@ -173,7 +173,7 @@ export function PipelineBoard({ initialColumns }: { initialColumns: Column[] }) 
                 >
                   <CardContent className="py-3">
                     <Link
-                      href={`/leads/${s.lead.id}`}
+                      href={`/leads/${s.lead.id}?from=saved`}
                       className="font-semibold text-ink hover:text-brand-600"
                       onClick={(e) => {
                         if (dragMovedRef.current) e.preventDefault();

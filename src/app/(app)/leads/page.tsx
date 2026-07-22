@@ -116,7 +116,7 @@ export default async function AllLeadsPage({
                 </td>
                 <td className="px-4 py-3.5 text-right">
                   <Link
-                    href={`/leads/${lead.id}`}
+                    href={`/leads/${lead.id}?from=all`}
                     className="font-semibold text-brand-600 hover:underline"
                   >
                     View

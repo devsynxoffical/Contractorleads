@@ -52,7 +52,7 @@ export default async function SavedLeadsPage() {
             <CardContent className="flex flex-wrap items-center justify-between gap-4 py-4">
               <div className="min-w-0">
                 <Link
-                  href={`/leads/${s.lead.id}`}
+                  href={`/leads/${s.lead.id}?from=saved`}
                   className="font-semibold text-ink hover:text-brand-600"
                 >
                   {s.lead.businessName}
