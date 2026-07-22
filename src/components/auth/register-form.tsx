@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   HiOutlineEnvelope,
   HiOutlinePhone,
@@ -14,6 +15,8 @@ type RegisterFormProps = {
 };
 
 function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
+  const searchParams = useSearchParams();
+  const referralCode = (searchParams.get("ref") || "").trim().toUpperCase();
   const [error, setError] = useState("");
   const [success, setSuccess] = useState<string | null>(null);
   const [devLink, setDevLink] = useState<string | null>(null);
@@ -47,6 +50,7 @@ function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
         name: form.get("name"),
         email: form.get("email"),
         phone,
+        referralCode: referralCode || undefined,
       }),
     });
 
@@ -92,6 +96,11 @@ function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
             </Link>
           )}
         </p>
+        {referralCode ? (
+          <p className="mt-3 inline-flex rounded-lg bg-emerald-50 px-2.5 py-1 text-[12px] font-semibold text-emerald-800 ring-1 ring-emerald-200">
+            Referred by code {referralCode}
+          </p>
+        ) : null}
       </div>
 
       {success ? (

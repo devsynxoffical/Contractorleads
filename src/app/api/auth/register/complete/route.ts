@@ -7,6 +7,10 @@ import {
 } from "@/lib/auth";
 import { linkMarketingVisitorToUser } from "@/lib/marketing-session";
 import { sendWelcomeEmail } from "@/lib/email";
+import {
+  applyReferralOnSignup,
+  ensureReferralCode,
+} from "@/lib/referrals";
 
 /**
  * Step 2: after email verification link — create account with password and log in.
@@ -18,12 +22,15 @@ export async function POST(request: Request) {
     const passwordStr = String(password ?? "");
 
     if (!tokenStr) {
-      return NextResponse.json({ error: "Invalid verification token" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid verification token" },
+        { status: 400 },
+      );
     }
     if (passwordStr.length < 8) {
       return NextResponse.json(
         { error: "Password must be at least 8 characters" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -32,8 +39,11 @@ export async function POST(request: Request) {
     });
     if (!pending || pending.expiresAt < new Date()) {
       return NextResponse.json(
-        { error: "Verification link expired or invalid. Please sign up again." },
-        { status: 400 }
+        {
+          error:
+            "Verification link expired or invalid. Please sign up again.",
+        },
+        { status: 400 },
       );
     }
 
@@ -44,7 +54,7 @@ export async function POST(request: Request) {
       await prisma.emailVerification.delete({ where: { id: pending.id } });
       return NextResponse.json(
         { error: "Email already registered. Please log in." },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -58,6 +68,17 @@ export async function POST(request: Request) {
         creditsRemaining: 20,
       },
     });
+
+    await ensureReferralCode(user.id);
+
+    try {
+      await applyReferralOnSignup({
+        newUserId: user.id,
+        referralCode: pending.referralCode,
+      });
+    } catch (err) {
+      console.error("[referral] apply failed", err);
+    }
 
     await prisma.emailVerification.delete({ where: { id: pending.id } });
 
@@ -82,7 +103,7 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json(
       { error: "Could not complete registration" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -71,6 +71,7 @@ async function main() {
     "scrape",
     "copy_leads",
     "revenue",
+    "referrals",
     "activity",
     "health",
   ];
@@ -86,7 +87,9 @@ async function main() {
 
   await prisma.adminRoleTemplate.upsert({
     where: { role: "MANAGER" },
-    update: {},
+    update: {
+      permissions: JSON.stringify(managerPerms),
+    },
     create: {
       role: "MANAGER",
       label: "Manager",
@@ -104,10 +107,26 @@ async function main() {
     },
   });
 
+  await prisma.referralRewardConfig.upsert({
+    where: { id: "default" },
+    update: {},
+    create: {
+      id: "default",
+      enabled: true,
+      creditsPerReferral: 10,
+      milestonesJson: JSON.stringify([
+        { minReferrals: 10, bonusCredits: 50 },
+        { minReferrals: 50, bonusCredits: 200 },
+        { minReferrals: 100, bonusCredits: 500 },
+      ]),
+    },
+  });
+
   console.log("Seed complete:");
   console.log("  demo@leadflow.us / demo12345");
   console.log("  admin@leadflow.us / admin12345 (SUPER_ADMIN)");
   console.log("  Role templates: MANAGER, SUB_ADMIN");
+  console.log("  Referral rewards config seeded");
 }
 
 main()

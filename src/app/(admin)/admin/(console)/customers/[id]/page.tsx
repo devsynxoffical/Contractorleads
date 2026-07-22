@@ -27,6 +27,15 @@ type Customer = {
   mainGoal: string | null;
   isActive: boolean;
   adminNotes: string | null;
+  referralCode: string | null;
+  referredByUserId: string | null;
+  referredBy: {
+    id: string;
+    email: string;
+    companyName: string | null;
+    name: string | null;
+    referralCode: string | null;
+  } | null;
   ssoEnabled: boolean;
   apiEnabled: boolean;
   mcpEnabled: boolean;
@@ -57,6 +66,7 @@ export default function AdminCustomerDetailPage() {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [creditDelta, setCreditDelta] = useState("10");
   const [password, setPassword] = useState("");
+  const [referredByCode, setReferredByCode] = useState("");
   const [latestApiKey, setLatestApiKey] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -64,7 +74,9 @@ export default function AdminCustomerDetailPage() {
   async function load() {
     const res = await fetch(`/api/admin/customers/${id}`);
     const data = await res.json();
-    setCustomer(data.customer ?? null);
+    const next = data.customer ?? null;
+    setCustomer(next);
+    setReferredByCode(next?.referredBy?.referralCode ?? "");
   }
 
   useEffect(() => {
@@ -86,6 +98,13 @@ export default function AdminCustomerDetailPage() {
       return;
     }
     setCustomer((prev) => (prev ? { ...prev, ...data.customer } : data.customer));
+    if (data.customer?.referredBy?.referralCode !== undefined) {
+      setReferredByCode(data.customer.referredBy?.referralCode ?? "");
+    } else if (patch.referredByCode !== undefined) {
+      setReferredByCode(
+        typeof patch.referredByCode === "string" ? patch.referredByCode : "",
+      );
+    }
     setMessage("Saved");
     setPassword("");
   }
@@ -412,6 +431,62 @@ export default function AdminCustomerDetailPage() {
             >
               Save integration access
             </Button>
+          </section>
+
+          <section className="space-y-3 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">
+            <h2 className="text-sm font-semibold text-ink">Referral attribution</h2>
+            <p className="text-[12px] text-ink-muted">
+              Their share code:{" "}
+              <span className="font-semibold text-ink">
+                {customer.referralCode || "Not generated yet"}
+              </span>
+            </p>
+            {customer.referredBy && (
+              <p className="text-[12px] text-ink-muted">
+                Currently referred by{" "}
+                <span className="font-semibold text-ink">
+                  {customer.referredBy.companyName ||
+                    customer.referredBy.name ||
+                    customer.referredBy.email}
+                </span>
+                {customer.referredBy.referralCode
+                  ? ` (${customer.referredBy.referralCode})`
+                  : ""}
+              </p>
+            )}
+            <label className="block text-[12px]">
+              <span className="font-medium text-ink-muted">
+                Set referred-by code
+              </span>
+              <input
+                className="saas-input mt-1"
+                placeholder="Referrer code (blank to clear)"
+                value={referredByCode}
+                onChange={(e) => setReferredByCode(e.target.value)}
+              />
+            </label>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                disabled={saving}
+                onClick={() =>
+                  save({
+                    referredByCode: referredByCode.trim() || null,
+                  })
+                }
+              >
+                Save attribution
+              </Button>
+              <Button
+                variant="secondary"
+                disabled={saving || !customer.referredByUserId}
+                onClick={() => {
+                  setReferredByCode("");
+                  save({ referredByCode: null });
+                }}
+              >
+                Clear
+              </Button>
+            </div>
           </section>
 
           <section className="space-y-3 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">

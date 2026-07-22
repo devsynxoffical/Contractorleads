@@ -29,6 +29,38 @@ export async function deductCredits(
   });
 }
 
+export async function addCredits(
+  userId: string,
+  amount: number,
+  action: string,
+  reference?: string,
+) {
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new Error("INVALID_CREDIT_AMOUNT");
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const user = await tx.user.findUnique({ where: { id: userId } });
+    if (!user) throw new Error("USER_NOT_FOUND");
+
+    const updated = await tx.user.update({
+      where: { id: userId },
+      data: { creditsRemaining: { increment: amount } },
+    });
+
+    await tx.creditLedger.create({
+      data: {
+        userId,
+        amount,
+        action,
+        reference,
+      },
+    });
+
+    return updated.creditsRemaining;
+  });
+}
+
 export async function logActivity(
   userId: string,
   type: string,

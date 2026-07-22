@@ -30,6 +30,7 @@ import {
   HiOutlineSquares2X2,
   HiOutlineStar,
   HiOutlineUsers,
+  HiOutlineUserPlus,
   HiOutlineViewColumns,
   HiOutlineXMark,
 } from "react-icons/hi2";
@@ -90,6 +91,7 @@ const sections: NavSection[] = [
   {
     title: "Account",
     items: [
+      { href: "/referrals", label: "Referrals", icon: HiOutlineUserPlus },
       { href: "/billing", label: "Plans & Billing", icon: HiOutlineCreditCard },
       { href: "/settings", label: "Settings", icon: HiOutlineCog6Tooth },
     ],

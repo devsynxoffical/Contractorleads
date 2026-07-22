@@ -49,6 +49,17 @@ export async function GET(_request: Request, { params }: Params) {
       updatedAt: true,
       isActive: true,
       adminNotes: true,
+      referralCode: true,
+      referredByUserId: true,
+      referredBy: {
+        select: {
+          id: true,
+          email: true,
+          companyName: true,
+          name: true,
+          referralCode: true,
+        },
+      },
       searches: {
         take: 10,
         orderBy: { createdAt: "desc" },
@@ -173,6 +184,61 @@ export async function PATCH(request: Request, { params }: Params) {
     data.passwordHash = await hashPassword(body.password);
   }
 
+  if (body.referredByCode !== undefined || body.referredByUserId !== undefined) {
+    let referrerId: string | null = null;
+    if (
+      typeof body.referredByUserId === "string" &&
+      body.referredByUserId.trim()
+    ) {
+      referrerId = body.referredByUserId.trim();
+    } else if (
+      typeof body.referredByCode === "string" &&
+      body.referredByCode.trim()
+    ) {
+      const code = body.referredByCode.trim().toUpperCase();
+      const referrer = await prisma.user.findFirst({
+        where: {
+          referralCode: { equals: code, mode: "insensitive" },
+        },
+        select: { id: true },
+      });
+      if (!referrer) {
+        return NextResponse.json(
+          { error: "Referral code not found" },
+          { status: 400 },
+        );
+      }
+      referrerId = referrer.id;
+    } else if (
+      body.referredByCode === null ||
+      body.referredByCode === "" ||
+      body.referredByUserId === null ||
+      body.referredByUserId === ""
+    ) {
+      referrerId = null;
+    }
+
+    if (referrerId === id) {
+      return NextResponse.json(
+        { error: "A user cannot refer themselves" },
+        { status: 400 },
+      );
+    }
+    if (referrerId) {
+      const referrerExists = await prisma.user.findUnique({
+        where: { id: referrerId },
+        select: { id: true },
+      });
+      if (!referrerExists) {
+        return NextResponse.json(
+          { error: "Referrer user not found" },
+          { status: 400 },
+        );
+      }
+    }
+    data.referredByUserId = referrerId;
+  }
+
   try {
     const customer = await prisma.user.update({
       where: { id },
@@ -204,6 +270,17 @@ export async function PATCH(request: Request, { params }: Params) {
         apiKeyLast4: true,
         isActive: true,
         adminNotes: true,
+        referralCode: true,
+        referredByUserId: true,
+        referredBy: {
+          select: {
+            id: true,
+            email: true,
+            companyName: true,
+            name: true,
+            referralCode: true,
+          },
+        },
         createdAt: true,
         updatedAt: true,
       },

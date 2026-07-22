@@ -52,6 +52,12 @@ model User {
   apiKeyLast4         String?
   /// Product / scrape notification emails (CAN-SPAM opt-in)
   emailMarketingOptIn Boolean  @default(true)
+  /// Unique shareable referral / affiliate code
+  referralCode        String?  @unique
+  /// Who referred this user (agency signup attribution)
+  referredByUserId    String?
+  referredBy          User?    @relation("UserReferrals", fields: [referredByUserId], references: [id], onDelete: SetNull)
+  referralsMade       User[]   @relation("UserReferrals")
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
@@ -66,6 +72,8 @@ model User {
   emailSequence   EmailSequence?
   emailEnrollments EmailEnrollment[]
   passwordResets  PasswordResetToken[]
+  referralsAsReferrer Referral[] @relation("ReferrerReferrals")
+  referralAsReferred  Referral?  @relation("ReferredReferral")
 }
 
 /// Persisted AI assistant threads (home / Ask Expert).
@@ -252,15 +260,44 @@ model AdminRoleTemplate {
 
 /// Pending agency signups awaiting business-email verification.
 model EmailVerification {
-  id        String   @id @default(cuid())
-  email     String
-  phone     String
-  name      String?
-  token     String   @unique
-  expiresAt DateTime
-  createdAt DateTime @default(now())
+  id           String   @id @default(cuid())
+  email        String
+  phone        String
+  name         String?
+  /// Optional referral code captured at signup start
+  referralCode String?
+  token        String   @unique
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
 
   @@index([email])
+}
+
+/// One successful signup attributed to a referrer (affiliate).
+model Referral {
+  id             String    @id @default(cuid())
+  referrerId     String
+  referrer       User      @relation("ReferrerReferrals", fields: [referrerId], references: [id], onDelete: Cascade)
+  referredUserId String    @unique
+  referredUser   User      @relation("ReferredReferral", fields: [referredUserId], references: [id], onDelete: Cascade)
+  status         String    @default("pending") // pending | rewarded | blocked
+  rewardCredits  Float     @default(0)
+  milestoneBonus Float     @default(0)
+  createdAt      DateTime  @default(now())
+  rewardedAt     DateTime?
+
+  @@index([referrerId, createdAt])
+  @@index([status])
+}
+
+/// Singleton-ish admin config for referral rewards and milestone tiers.
+model ReferralRewardConfig {
+  id                 String   @id @default("default")
+  enabled            Boolean  @default(true)
+  creditsPerReferral Float    @default(10)
+  /// JSON: [{ "minReferrals": 10, "bonusCredits": 50 }, ...]
+  milestonesJson     String   @default("[{\"minReferrals\":10,\"bonusCredits\":50},{\"minReferrals\":50,\"bonusCredits\":200},{\"minReferrals\":100,\"bonusCredits\":500}]")
+  updatedAt          DateTime @updatedAt
 }
 
 /// One-time password reset links (forgot password flow).

@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { randomBytes } from "crypto";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { businessEmailError } from "@/lib/business-email";
 import { sendVerificationEmail } from "@/lib/email";
 import { captureMarketingEmail } from "@/lib/marketing-session";
+import { REFERRAL_COOKIE } from "@/lib/referrals";
 
 function normalizePhone(raw: unknown): string {
   return String(raw ?? "")
@@ -22,12 +24,20 @@ function isValidPhone(phone: string): boolean {
  */
 export async function POST(request: Request) {
   try {
-    const { name, email, phone } = await request.json();
+    const body = await request.json();
+    const { name, email, phone, referralCode: bodyRef } = body;
     const normalizedEmail = String(email ?? "")
       .trim()
       .toLowerCase();
     const normalizedPhone = normalizePhone(phone);
     const displayName = name ? String(name).trim() : null;
+
+    const cookieStore = await cookies();
+    const cookieRef = cookieStore.get(REFERRAL_COOKIE)?.value;
+    const referralCode =
+      String(bodyRef || cookieRef || "")
+        .trim()
+        .toUpperCase() || null;
 
     const emailErr = businessEmailError(normalizedEmail);
     if (emailErr) {
@@ -37,7 +47,7 @@ export async function POST(request: Request) {
     if (!normalizedPhone || !isValidPhone(normalizedPhone)) {
       return NextResponse.json(
         { error: "A valid phone number is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -47,7 +57,7 @@ export async function POST(request: Request) {
     if (existing) {
       return NextResponse.json(
         { error: "Email already registered. Please log in." },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -62,15 +72,15 @@ export async function POST(request: Request) {
         email: normalizedEmail,
         phone: normalizedPhone,
         name: displayName,
+        referralCode,
         token,
         expiresAt,
       },
     });
 
-    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(
-      /\/$/,
-      ""
-    );
+    const appUrl = (
+      process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+    ).replace(/\/$/, "");
     const verifyUrl = `${appUrl}/verify-email?token=${token}`;
 
     const sent = await sendVerificationEmail({
@@ -82,7 +92,7 @@ export async function POST(request: Request) {
     if (!sent.ok) {
       return NextResponse.json(
         { error: sent.error || "Could not send verification email" },
-        { status: 502 }
+        { status: 502 },
       );
     }
 
