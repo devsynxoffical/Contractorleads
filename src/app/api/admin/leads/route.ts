@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
-import { requirePermission } from "@/lib/auth";
+import { ADMIN_STAFF_ROLES, requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/credits";
 import { INDUSTRIES } from "@/lib/constants";
-import type { Prisma } from "@prisma/client";
+import {
+  adminLeadOrderBy,
+  buildAdminLeadWhere,
+  parseAdminLeadFilters,
+} from "@/lib/admin-lead-filters";
 
 export async function GET(request: Request) {
   const admin = await requirePermission("leads");
@@ -12,39 +16,21 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const industry = searchParams.get("industry")?.trim() ?? "";
-  const country = searchParams.get("country")?.trim() ?? "";
-  const city = searchParams.get("city")?.trim() ?? "";
-  const q = searchParams.get("q")?.trim() ?? "";
-  const minScore = Number(searchParams.get("minScore") ?? 0);
+  const filters = parseAdminLeadFilters(searchParams);
   const page = Math.max(1, Number(searchParams.get("page") ?? 1));
   const pageSize = Math.min(
-    50,
-    Math.max(10, Number(searchParams.get("pageSize") ?? 25)),
+    100,
+    Math.max(10, Number(searchParams.get("pageSize") ?? 50)),
   );
 
-  const where: Prisma.LeadWhereInput = {
-    ...(industry ? { industry } : {}),
-    ...(country ? { country } : {}),
-    ...(city ? { city: { contains: city, mode: "insensitive" } } : {}),
-    ...(minScore > 0 ? { leadScore: { gte: minScore } } : {}),
-    ...(q
-      ? {
-          OR: [
-            { businessName: { contains: q, mode: "insensitive" } },
-            { ownerName: { contains: q, mode: "insensitive" } },
-            { email: { contains: q, mode: "insensitive" } },
-            { phone: { contains: q, mode: "insensitive" } },
-          ],
-        }
-      : {}),
-  };
+  const where = buildAdminLeadWhere(filters);
+  const orderBy = adminLeadOrderBy(filters.sort);
 
-  const [total, leads] = await Promise.all([
+  const [total, leads, users, categoryRows] = await Promise.all([
     prisma.lead.count({ where }),
     prisma.lead.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy,
       skip: (page - 1) * pageSize,
       take: pageSize,
       include: {
@@ -64,9 +50,46 @@ export async function GET(request: Request) {
         },
       },
     }),
+    prisma.user.findMany({
+      where: { role: { notIn: [...ADMIN_STAFF_ROLES] } },
+      orderBy: [{ companyName: "asc" }, { email: "asc" }],
+      select: {
+        id: true,
+        email: true,
+        companyName: true,
+        name: true,
+        _count: { select: { searches: true } },
+      },
+      take: 500,
+    }),
+    prisma.lead.findMany({
+      where: { industry: { not: null } },
+      distinct: ["industry"],
+      select: { industry: true },
+      orderBy: { industry: "asc" },
+      take: 200,
+    }),
   ]);
 
-  return NextResponse.json({ leads, total, page, pageSize });
+  const categories = categoryRows
+    .map((r) => r.industry)
+    .filter((v): v is string => Boolean(v?.trim()));
+
+  return NextResponse.json({
+    leads,
+    total,
+    page,
+    pageSize,
+    filters: {
+      users: users.map((u) => ({
+        id: u.id,
+        email: u.email,
+        label: u.companyName || u.name || u.email,
+        searchCount: u._count.searches,
+      })),
+      categories,
+    },
+  });
 }
 
 export async function POST(request: Request) {

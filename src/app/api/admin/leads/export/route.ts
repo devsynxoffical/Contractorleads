@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { leadsToCsv, leadsToExcel, type ExportLead } from "@/lib/services/export";
-import type { Prisma } from "@prisma/client";
+import {
+  adminLeadOrderBy,
+  buildAdminLeadWhere,
+  parseAdminLeadFilters,
+} from "@/lib/admin-lead-filters";
 
 export async function GET(request: Request) {
   const admin = await requirePermission("leads_export");
@@ -11,35 +15,19 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const industry = searchParams.get("industry")?.trim() ?? "";
-  const country = searchParams.get("country")?.trim() ?? "";
-  const q = searchParams.get("q")?.trim() ?? "";
   const ids = (searchParams.get("ids") ?? "")
     .split(",")
     .map((id) => id.trim())
     .filter(Boolean);
   const format = searchParams.get("format") === "xlsx" ? "xlsx" : "csv";
+  const filters = parseAdminLeadFilters(searchParams);
 
-  const where: Prisma.LeadWhereInput =
-    ids.length > 0
-      ? { id: { in: ids } }
-      : {
-          ...(industry ? { industry } : {}),
-          ...(country ? { country } : {}),
-          ...(q
-            ? {
-                OR: [
-                  { businessName: { contains: q, mode: "insensitive" } },
-                  { ownerName: { contains: q, mode: "insensitive" } },
-                  { email: { contains: q, mode: "insensitive" } },
-                ],
-              }
-            : {}),
-        };
+  const where =
+    ids.length > 0 ? { id: { in: ids } } : buildAdminLeadWhere(filters);
 
   const leads = await prisma.lead.findMany({
     where,
-    orderBy: { createdAt: "desc" },
+    orderBy: adminLeadOrderBy(filters.sort),
     take: 5000,
   });
 
