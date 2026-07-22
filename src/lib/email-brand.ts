@@ -51,8 +51,21 @@ export const EMAIL_BRAND = {
 export const EMAIL_FONT =
   "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
 
+function isLocalAppUrl(url: string) {
+  return /localhost|127\.0\.0\.1/i.test(url);
+}
+
+/**
+ * Canonical public app URL for share links, emails, and redirects.
+ * Ignores localhost NEXT_PUBLIC_APP_URL in production so mis-set Railway
+ * vars cannot leak into live referral / verification links.
+ */
 export function appBaseUrl() {
-  return (process.env.NEXT_PUBLIC_APP_URL || SITE_URL).replace(/\/$/, "");
+  const raw = (process.env.NEXT_PUBLIC_APP_URL || "").trim().replace(/\/$/, "");
+  if (raw && !(process.env.NODE_ENV === "production" && isLocalAppUrl(raw))) {
+    return raw;
+  }
+  return SITE_URL;
 }
 
 /** Prefer live app URL for logo when set; always absolute for inboxes. */

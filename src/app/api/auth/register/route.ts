@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { businessEmailError } from "@/lib/business-email";
 import { sendVerificationEmail } from "@/lib/email";
 import { captureMarketingEmail } from "@/lib/marketing-session";
+import { appBaseUrl } from "@/lib/email-brand";
 import { REFERRAL_COOKIE } from "@/lib/referrals";
 
 function normalizePhone(raw: unknown): string {
@@ -78,10 +79,7 @@ export async function POST(request: Request) {
       },
     });
 
-    const appUrl = (
-      process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-    ).replace(/\/$/, "");
-    const verifyUrl = `${appUrl}/verify-email?token=${token}`;
+    const verifyUrl = `${appBaseUrl()}/verify-email?token=${token}`;
 
     const sent = await sendVerificationEmail({
       to: normalizedEmail,

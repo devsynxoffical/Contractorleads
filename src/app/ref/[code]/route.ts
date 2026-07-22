@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { appBaseUrl } from "@/lib/email-brand";
 import {
   REFERRAL_COOKIE,
   REFERRAL_COOKIE_MAX_AGE,
@@ -14,10 +15,7 @@ export async function GET(
 ) {
   const { code } = await params;
   const normalized = String(code ?? "").trim().toUpperCase();
-  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(
-    /\/$/,
-    "",
-  );
+  const appUrl = appBaseUrl();
 
   const referrer = normalized ? await findReferrerByCode(normalized) : null;
   const registerUrl = new URL(`${appUrl}/register`);
