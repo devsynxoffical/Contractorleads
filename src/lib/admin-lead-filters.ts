@@ -54,12 +54,30 @@ export function buildAdminLeadWhere(
     ];
   }
 
-  if (when === "today") {
-    where.createdAt = { gte: startOfToday() };
-  } else if (when === "week") {
-    where.createdAt = { gte: startOfDaysAgo(7) };
-  } else if (when === "month") {
-    where.createdAt = { gte: startOfDaysAgo(30) };
+  const since =
+    when === "today"
+      ? startOfToday()
+      : when === "week"
+        ? startOfDaysAgo(7)
+        : when === "month"
+          ? startOfDaysAgo(30)
+          : null;
+
+  if (userId && since) {
+    // Specific user's scrape window — use search run date (pool reuse safe).
+    where.search = { userId, createdAt: { gte: since } };
+  } else if (userId) {
+    where.search = { userId };
+  } else if (since) {
+    where.AND = [
+      ...(Array.isArray(where.AND) ? where.AND : []),
+      {
+        OR: [
+          { createdAt: { gte: since } },
+          { search: { is: { createdAt: { gte: since } } } },
+        ],
+      },
+    ];
   }
 
   if (tier === "hot" || tier === "warm" || tier === "nurture") {
@@ -74,19 +92,17 @@ export function buildAdminLeadWhere(
     where.leadScore = { lt: 50 };
   }
 
-  if (userId) {
-    where.search = { userId };
-  }
-
   return where;
 }
 
 export function adminLeadOrderBy(
   sort?: string,
-): Prisma.LeadOrderByWithRelationInput {
-  if (sort === "score") return { leadScore: "desc" };
-  if (sort === "oldest") return { createdAt: "asc" };
-  return { createdAt: "desc" };
+): Prisma.LeadOrderByWithRelationInput | Prisma.LeadOrderByWithRelationInput[] {
+  if (sort === "score") return [{ leadScore: "desc" }, { createdAt: "desc" }];
+  if (sort === "oldest") {
+    return [{ search: { createdAt: "asc" } }, { createdAt: "asc" }];
+  }
+  return [{ search: { createdAt: "desc" } }, { leadScore: "desc" }];
 }
 
 export function parseAdminLeadFilters(

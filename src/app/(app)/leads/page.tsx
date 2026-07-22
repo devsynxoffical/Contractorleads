@@ -49,8 +49,22 @@ export default async function AllLeadsPage({
   const category = params.category ?? "all";
   const sort = params.sort ?? "newest";
 
+  const searchFilter: Prisma.SearchWhereInput = {
+    userId: user.id,
+  };
+
+  if (when === "today") {
+    searchFilter.createdAt = { gte: startOfToday() };
+  } else if (when === "week") {
+    searchFilter.createdAt = { gte: startOfDaysAgo(7) };
+  } else if (when === "month") {
+    searchFilter.createdAt = { gte: startOfDaysAgo(30) };
+  }
+
+  // Date filters use the search run date — reused pool leads keep an older
+  // createdAt, so filtering by lead.createdAt hid most of a fresh scrape.
   const where: Prisma.LeadWhereInput = {
-    search: { userId: user.id },
+    search: searchFilter,
   };
 
   if (query) {
@@ -64,14 +78,6 @@ export default async function AllLeadsPage({
       { industry: { contains: query, mode: "insensitive" } },
       { address: { contains: query, mode: "insensitive" } },
     ];
-  }
-
-  if (when === "today") {
-    where.createdAt = { gte: startOfToday() };
-  } else if (when === "week") {
-    where.createdAt = { gte: startOfDaysAgo(7) };
-  } else if (when === "month") {
-    where.createdAt = { gte: startOfDaysAgo(30) };
   }
 
   if (tier === "hot" || tier === "warm" || tier === "nurture") {
@@ -90,19 +96,23 @@ export default async function AllLeadsPage({
     where.industry = { equals: category, mode: "insensitive" };
   }
 
-  const orderBy: Prisma.LeadOrderByWithRelationInput =
+  const orderBy: Prisma.LeadOrderByWithRelationInput[] =
     sort === "score"
-      ? { leadScore: "desc" }
+      ? [{ leadScore: "desc" }, { createdAt: "desc" }]
       : sort === "oldest"
-        ? { createdAt: "asc" }
-        : { createdAt: "desc" };
+        ? [{ search: { createdAt: "asc" } }, { createdAt: "asc" }]
+        : [{ search: { createdAt: "desc" } }, { leadScore: "desc" }];
 
-  const [leads, categoryRows] = await Promise.all([
+  const [leads, total, categoryRows] = await Promise.all([
     prisma.lead.findMany({
       where,
       orderBy,
-      take: 200,
+      take: 1000,
+      include: {
+        search: { select: { createdAt: true, industry: true } },
+      },
     }),
+    prisma.lead.count({ where }),
     prisma.lead.findMany({
       where: { search: { userId: user.id }, industry: { not: null } },
       distinct: ["industry"],
@@ -130,8 +140,8 @@ export default async function AllLeadsPage({
         title="All Leads"
         description={
           filtersActive
-            ? `${leads.length} lead${leads.length === 1 ? "" : "s"} match your filters.`
-            : `${leads.length} AI-verified leads from your searches.`
+            ? `${total} lead${total === 1 ? "" : "s"} match your filters.`
+            : `${total} AI-verified leads from your searches.`
         }
         actions={
           <>
@@ -164,7 +174,7 @@ export default async function AllLeadsPage({
               <th className="px-4 py-3 font-medium">Industry</th>
               <th className="px-4 py-3 font-medium">Score</th>
               <th className="px-4 py-3 font-medium">Tier</th>
-              <th className="px-4 py-3 font-medium">Added</th>
+              <th className="px-4 py-3 font-medium">Found</th>
               <th className="px-4 py-3 font-medium" />
             </tr>
           </thead>
@@ -197,7 +207,7 @@ export default async function AllLeadsPage({
                   </Badge>
                 </td>
                 <td className="px-4 py-3.5 text-[12px] tabular-nums text-ink-muted">
-                  {lead.createdAt.toLocaleDateString()}
+                  {(lead.search?.createdAt ?? lead.createdAt).toLocaleDateString()}
                 </td>
                 <td className="px-4 py-3.5 text-right">
                   <Link

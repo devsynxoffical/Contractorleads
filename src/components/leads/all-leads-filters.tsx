@@ -120,6 +120,10 @@ export function AllLeadsFilters({ categories }: Props) {
           </button>
         ))}
       </div>
+      <p className="text-[11px] text-ink-faint">
+        Today / week / month = leads from searches you ran in that window
+        (includes reused pool businesses).
+      </p>
 
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         <label className="block text-[11px] font-medium text-ink-muted">
