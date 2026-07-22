@@ -1282,12 +1282,12 @@ export function MarketingPage() {
       <FeaturesGrid />
       <ProblemSection />
       <StickyPlatformScroll />
+      <MarketingAutomationShowcase />
       <Integrations />
       <TechnologiesSection />
       <AiSection />
       <Pricing />
       <Faq />
-      <MarketingAutomationShowcase />
       <FinalCta />
       <Footer />
       <StickyCta />
