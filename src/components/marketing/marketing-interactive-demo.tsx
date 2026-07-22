@@ -503,7 +503,7 @@ export function MarketingInteractiveDemo() {
   return (
     <section
       id="interactive-demo"
-      className="relative overflow-hidden bg-[#04050c] px-4 pb-10 pt-0 sm:px-6 sm:pb-12 sm:pt-1 lg:px-8"
+      className="relative overflow-hidden bg-[#04050c] px-4 pb-12 pt-0 sm:px-6 sm:pb-14 lg:px-8"
       aria-label="Interactive product demo"
     >
       <div
@@ -512,16 +512,16 @@ export function MarketingInteractiveDemo() {
         aria-hidden
       />
 
-      <div className="relative mx-auto max-w-[920px]">
+      <div className="relative mx-auto max-w-[1280px]">
         <Reveal variant="up" y={20}>
-          <div className="mb-4 text-center sm:mb-5">
+          <div className="mb-5 text-center sm:mb-6">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-fuchsia-300/90">
               Live product preview
             </p>
-            <h2 className="mt-1.5 font-[family-name:var(--font-display)] text-[clamp(1.15rem,2.6vw,1.65rem)] font-semibold tracking-tight text-white">
+            <h2 className="mt-1.5 font-[family-name:var(--font-display)] text-[clamp(1.25rem,2.8vw,1.85rem)] font-semibold tracking-tight text-white">
               Try the platform — locked features invite you to sign in
             </h2>
-            <p className="mx-auto mt-1.5 max-w-lg text-[13px] leading-relaxed text-white/55">
+            <p className="mx-auto mt-1.5 max-w-xl text-[13px] leading-relaxed text-white/55 sm:text-[14px]">
               Drag pipeline cards, run a sample search, and explore the sidebar. Anything that needs
               real data opens a login prompt.
             </p>
@@ -533,17 +533,17 @@ export function MarketingInteractiveDemo() {
           ref={shellRef}
           className="relative overflow-hidden rounded-[18px] border border-white/15 bg-[#ece9f2] shadow-[0_28px_80px_rgba(0,0,0,0.5)] ring-1 ring-white/10 sm:rounded-[22px]"
         >
-          <div className="flex items-center gap-2 border-b border-slate-200/80 bg-[#faf8fb] px-3 py-2">
+          <div className="flex items-center gap-2 border-b border-slate-200/80 bg-[#faf8fb] px-3 py-2.5 sm:px-4">
             <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
             <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
             <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
-            <span className="mx-auto truncate text-[11px] font-medium text-slate-400">
+            <span className="mx-auto truncate text-[11px] font-medium text-slate-400 sm:text-[12px]">
               app.contractorleads.us — interactive demo
             </span>
           </div>
 
-          <div className="flex min-h-[360px] max-h-[min(68vh,480px)] lg:min-h-[400px]">
-            <aside className="hidden w-[188px] shrink-0 flex-col border-r border-slate-200/90 bg-[#faf8fb] lg:flex">
+          <div className="flex min-h-[480px] max-h-[min(82vh,720px)] lg:min-h-[560px]">
+            <aside className="hidden w-[220px] shrink-0 flex-col border-r border-slate-200/90 bg-[#faf8fb] lg:flex">
               <div className="flex items-center gap-2 border-b border-slate-200/80 px-3 py-2.5">
                 <Image src="/logo.png" alt="" width={24} height={24} className="rounded-md" />
                 <span className="text-[12px] font-semibold text-slate-800">Contractor Leads</span>

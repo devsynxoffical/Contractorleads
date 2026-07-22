@@ -1419,13 +1419,13 @@ export function MarketingPage() {
       <MarketingFluidHero />
       <MarketingInteractiveDemo />
       <SocialProof />
+      <FeaturesGrid />
       <MoonWalkFeatureGrid />
       <FlowerFieldProofCards />
       <DashboardSection />
       <ProblemSection />
       <SolutionBento />
       <SocialProofBento />
-      <FeaturesGrid />
       <StickyPlatformScroll />
       <Integrations />
       <TechnologiesSection />

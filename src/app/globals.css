@@ -1453,12 +1453,12 @@ html[data-theme="dark"] .marketing-site .bg-\[\#f8f5ff\] {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 78lvh;
+  min-height: 58lvh;
   width: 100%;
   overflow: hidden;
   background: var(--hero-base);
   text-align: center;
-  padding: 4.5em 1.25em 2em;
+  padding: 4.25em 1.25em 1.25em;
   font-family: "Onest", var(--font-jakarta), sans-serif;
   font-size: var(--u);
   color: var(--heading);
@@ -1491,8 +1491,8 @@ html[data-theme="dark"] .marketing-site .bg-\[\#f8f5ff\] {
 }
 @media (min-width: 640px) {
   .mkt-flow-hero {
-    padding: 5em 2.5em 2.25em;
-    min-height: 72lvh;
+    padding: 4.75em 2.5em 1.5em;
+    min-height: 52lvh;
   }
 }
 .mkt-flow-canvas {
@@ -1672,13 +1672,13 @@ html[data-theme="dark"] .marketing-site .bg-\[\#f8f5ff\] {
   .mkt-flow-heading {
     margin-top: 0;
     max-width: 34em;
-    font-size: 4em;
+    font-size: 3.35em;
   }
 }
 @media (min-width: 1024px) {
   .mkt-flow-heading {
-    max-width: 48em;
-    font-size: 5.75em;
+    max-width: 42em;
+    font-size: 4.25em;
   }
 }
 .mkt-flow-sub {
@@ -1817,14 +1817,14 @@ html[data-theme="dark"] .marketing-site .bg-\[\#f8f5ff\] {
   z-index: 20;
   display: flex;
   justify-content: center;
-  padding: 1.25em;
-  font-size: 0.72em;
+  padding: 0.65em 1.25em 0.85em;
+  font-size: 0.68em;
   color: var(--body-muted);
 }
 @media (min-width: 640px) {
   .mkt-flow-footer {
-    padding: 1.5em 2.5em;
-    font-size: 0.8em;
+    padding: 0.75em 2.5em 1em;
+    font-size: 0.74em;
   }
 }
 
