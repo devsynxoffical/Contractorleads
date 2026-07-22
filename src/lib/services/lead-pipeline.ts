@@ -84,7 +84,7 @@ async function withTimeout<T>(
 
 function clampTarget(n: number | undefined) {
   if (!Number.isFinite(n as number)) return 50;
-  return Math.max(10, Math.min(1000, Math.floor(n as number)));
+  return Math.max(1, Math.min(1000, Math.floor(n as number)));
 }
 
 export async function runLeadPipeline(params: SearchParams) {
@@ -412,7 +412,7 @@ async function enrichAndPersistPlace(opts: {
     linkedinType: linkedinType ?? existingLead?.linkedinType,
     leadScore: qualification.leadScore,
     serviceCategory: qualification.serviceCategory,
-    revenueRangeEstimate: qualification.revenueRangeEstimate,
+    revenueRangeEstimate: qualification.revenueRangeEstimate || null,
     websiteQualityScore,
     marketingOpportunityScore: qualification.marketingOpportunityScore,
     ppcOpportunityScore: qualification.ppcOpportunityScore,
@@ -458,7 +458,7 @@ async function enrichAndPersistPlace(opts: {
       googleMapsLink: place.mapsUrl,
       leadScore: qualification.leadScore,
       serviceCategory: qualification.serviceCategory,
-      revenueRangeEstimate: qualification.revenueRangeEstimate,
+      revenueRangeEstimate: qualification.revenueRangeEstimate || null,
       websiteQualityScore,
       marketingOpportunityScore: qualification.marketingOpportunityScore,
       ppcOpportunityScore: qualification.ppcOpportunityScore,

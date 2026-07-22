@@ -31,7 +31,7 @@ type StatsPayload = {
       leads: number;
       saves: number;
     }>;
-    estimatedMrr: number;
+    estimatedMrr: number | null;
     exportsWeek: number;
     saveRate: number;
     mappedLeadCount: number;
@@ -39,8 +39,8 @@ type StatsPayload = {
     visitorsToday: number;
     sales: number;
     newMembers: number;
-    grossSales: number;
-    revenue: number;
+    grossSales: number | null;
+    revenue: number | null;
     churnRate: number;
   };
   geoLeads: GeoLead[];
@@ -284,13 +284,27 @@ export default function AdminOverviewPage() {
         />
         <AdminStatCard
           label="Gross sales"
-          value={`$${stats.grossSales.toLocaleString()}`}
-          hint="Est. monthly plan value across roster"
+          value={
+            stats.grossSales == null
+              ? "—"
+              : `$${stats.grossSales.toLocaleString()}`
+          }
+          hint={
+            stats.grossSales == null
+              ? "Unavailable until billing is connected"
+              : "Est. monthly plan value across roster"
+          }
         />
         <AdminStatCard
           label="Revenue (MRR)"
-          value={`$${stats.revenue.toLocaleString()}`}
-          hint="Estimated monthly recurring revenue"
+          value={
+            stats.revenue == null ? "—" : `$${stats.revenue.toLocaleString()}`
+          }
+          hint={
+            stats.revenue == null
+              ? "Unavailable until billing is connected"
+              : "Monthly recurring revenue"
+          }
         />
         <AdminStatCard
           label="Churn rate"
@@ -312,8 +326,16 @@ export default function AdminOverviewPage() {
         />
         <AdminStatCard
           label="Est. MRR"
-          value={`$${stats.estimatedMrr.toLocaleString()}`}
-          hint={`${stats.saveRate}% save rate · ${stats.exportsWeek} exports/wk`}
+          value={
+            stats.estimatedMrr == null
+              ? "—"
+              : `$${stats.estimatedMrr.toLocaleString()}`
+          }
+          hint={
+            stats.estimatedMrr == null
+              ? "Unavailable until billing is connected"
+              : `${stats.saveRate}% save rate · ${stats.exportsWeek} exports/wk`
+          }
         />
         <AdminStatCard
           label="Searches"

@@ -173,10 +173,9 @@ export async function GET() {
     else qualityMix.nurture += count;
   }
 
-  const estimatedMrr = planGroups.reduce((sum, g) => {
-    const plan = ADMIN_PLANS.find((p) => p.value === g.plan);
-    return sum + (plan?.priceMonthly ?? 0) * g._count._all;
-  }, 0);
+  // No Stripe / real billing yet — do not invent MRR from list prices × headcount.
+  const estimatedMrr: number | null = null;
+  const grossSales: number | null = null;
 
   const paidPlanValues = ADMIN_PLANS.filter((p) => p.priceMonthly > 0).map(
     (p) => p.value,
@@ -222,11 +221,6 @@ export async function GET() {
       },
     }),
   ]);
-
-  const grossSales = planGroups.reduce((sum, g) => {
-    const plan = ADMIN_PLANS.find((p) => p.value === g.plan);
-    return sum + (plan?.priceMonthly ?? 0) * g._count._all;
-  }, 0);
 
   const churnDenom = activePaidUsers + canceledUsers;
   const churnRate =

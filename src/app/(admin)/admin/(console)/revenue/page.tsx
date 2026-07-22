@@ -5,7 +5,7 @@ import Link from "next/link";
 import { AdminPageHeader, AdminStatCard } from "@/components/admin/admin-shell";
 
 type RevenuePayload = {
-  estimatedMrr: number;
+  estimatedMrr: number | null;
   planMix: Array<{ plan: string; count: number; credits: number }>;
   statusMix: Array<{ status: string; count: number }>;
   customers: Array<{
@@ -36,14 +36,22 @@ export default function AdminRevenuePage() {
     <div>
       <AdminPageHeader
         title="Revenue & Subscriptions"
-        description="Admin-managed plans and credits. Stripe checkout is not live yet — estimated MRR uses list prices for active plan mix."
+        description="Admin-managed plans and credits. Stripe checkout is not live yet — MRR is hidden until real billing data exists."
       />
 
       <div className="mb-6 grid gap-3 sm:grid-cols-3">
         <AdminStatCard
           label="Estimated MRR"
-          value={`$${data.estimatedMrr}`}
-          hint="From plan list prices × customer counts"
+          value={
+            data.estimatedMrr == null
+              ? "—"
+              : `$${data.estimatedMrr.toLocaleString()}`
+          }
+          hint={
+            data.estimatedMrr == null
+              ? "Unavailable until billing is connected"
+              : "From active paid subscriptions"
+          }
         />
         <AdminStatCard
           label="Paying-ready plans"

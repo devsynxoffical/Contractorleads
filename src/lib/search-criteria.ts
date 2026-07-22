@@ -81,7 +81,7 @@ export function resolveSearchCriteria(
   const requireSocialPresence = parseBool(input.requireSocialPresence, true);
   const rawTarget = Number(input.targetLeadCount ?? 50);
   const targetLeadCount = Number.isFinite(rawTarget)
-    ? Math.max(10, Math.min(1000, Math.floor(rawTarget)))
+    ? Math.max(1, Math.min(1000, Math.floor(rawTarget)))
     : 50;
 
   if (locationScope === "country") {

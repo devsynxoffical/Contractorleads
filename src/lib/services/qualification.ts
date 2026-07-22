@@ -6,7 +6,8 @@ import type { PlaceResult } from "./google-places";
 
 const qualificationSchema = z.object({
   serviceCategory: z.string(),
-  revenueRangeEstimate: z.string(),
+  // Only include when confidence is reasonable; omit rather than guess.
+  revenueRangeEstimate: z.string().optional().nullable(),
   websiteQualityScore: z.number().min(0).max(100),
   marketingOpportunityScore: z.number().min(0).max(100),
   ppcOpportunityScore: z.number().min(0).max(100),
@@ -18,6 +19,7 @@ const qualificationSchema = z.object({
 
 export type QualificationResult = z.infer<typeof qualificationSchema> & {
   source: "ai" | "rules";
+  revenueRangeEstimate: string | null;
 };
 
 function ruleBasedQualification(
@@ -43,8 +45,8 @@ function ruleBasedQualification(
 
   return {
     serviceCategory: industry,
-    revenueRangeEstimate:
-      reviews > 100 ? "$1M–$5M" : reviews > 30 ? "$500K–$1M" : "$250K–$500K",
+    // Review-count buckets are too often wrong — omit rather than invent.
+    revenueRangeEstimate: null,
     websiteQualityScore: websiteScore,
     marketingOpportunityScore: Math.round(marketingScore),
     ppcOpportunityScore: Math.round(ppcScore),
@@ -89,12 +91,13 @@ Google review count: ${place.reviewCount ?? 0}
 Website URL: ${place.website ?? "none"}
 Has website listed: ${hasWebsite}
 
-Rules for revenueRangeEstimate (REQUIRED — do NOT use generic review buckets alone):
-- Infer a realistic annual revenue band for THIS trade + market size signals (reviews, rating, website).
+Rules for revenueRangeEstimate (OPTIONAL — omit when uncertain):
+- Only include when you can reasonably infer annual revenue for THIS trade + market size (reviews, rating, website).
 - Prefer bands like: "Under $250K", "$250K–$500K", "$500K–$1M", "$1M–$3M", "$3M–$5M", "$5M–$10M", "$10M+".
 - A solo plumber with <20 reviews is usually Under $250K or $250K–$500K — not $1M+.
 - A multi-crew contractor with 200+ reviews in a metro can be $1M–$5M or higher.
-- Never invent exact dollar figures; ranges only. Be conservative when data is thin.
+- If data is thin, return null / omit the field — never invent a range from review count alone.
+- Never invent exact dollar figures; ranges only. Be conservative.
 
 Scores (0–100):
 - websiteQualityScore: presence + likely sophistication from URL/name (no site ≈ 15–35).
@@ -115,7 +118,12 @@ serviceCategory: normalize to the trade (e.g. "HVAC", "Roofing").`,
       ),
     ]);
     if (!raced.ok) return ruleBasedQualification(place, industry, hasWebsite);
-    return { ...raced.object, source: "ai" };
+    const revenue = raced.object.revenueRangeEstimate?.trim() || null;
+    return {
+      ...raced.object,
+      revenueRangeEstimate: revenue,
+      source: "ai",
+    };
   } catch (err) {
     console.error(
       "[qualifyLead] OpenAI failed — falling back to rules:",

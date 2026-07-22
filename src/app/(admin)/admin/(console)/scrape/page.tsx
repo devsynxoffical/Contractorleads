@@ -25,11 +25,22 @@ export default function AdminScrapePage() {
   const [city, setCity] = useState("");
   const [zip, setZip] = useState("");
   const [radius, setRadius] = useState(25);
+  const [targetLeadCount, setTargetLeadCount] = useState(50);
+  const [customLeadCount, setCustomLeadCount] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const countryMeta = getTierOneCountry(country);
+
+  const resolvedLeadCount = (() => {
+    if (targetLeadCount === -1) {
+      const n = Number(customLeadCount);
+      if (!Number.isFinite(n)) return 50;
+      return Math.max(1, Math.min(1000, Math.floor(n)));
+    }
+    return targetLeadCount;
+  })();
 
   async function runScrape() {
     setLoading(true);
@@ -48,13 +59,14 @@ export default function AdminScrapePage() {
           city: locationScope === "local" ? city : undefined,
           zip: locationScope === "local" ? zip : undefined,
           radius: locationScope === "local" ? radius : undefined,
+          targetLeadCount: resolvedLeadCount,
         }),
         signal: AbortSignal.timeout(180000),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Scrape failed");
       setResult(
-        `Created/reused ${data.leads?.length ?? 0} leads for ${resolvedIndustryForQuery(industrySelect, customIndustry) || industrySelect}.`,
+        `Created/reused ${data.leads?.length ?? 0} of ${resolvedLeadCount} requested leads for ${resolvedIndustryForQuery(industrySelect, customIndustry) || industrySelect}.`,
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Scrape failed");
@@ -182,8 +194,49 @@ export default function AdminScrapePage() {
           </>
         )}
 
+        <label className="block text-[12px]">
+          <span className="font-medium text-ink-muted">How many leads</span>
+          <select
+            className="saas-input mt-1"
+            value={targetLeadCount === -1 ? "custom" : String(targetLeadCount)}
+            onChange={(e) => {
+              if (e.target.value === "custom") {
+                setTargetLeadCount(-1);
+                if (!customLeadCount) setCustomLeadCount("50");
+              } else {
+                setTargetLeadCount(Number(e.target.value));
+              }
+            }}
+          >
+            {[10, 25, 50, 100, 250, 500, 1000].map((n) => (
+              <option key={n} value={n}>
+                {n} leads
+              </option>
+            ))}
+            <option value="custom">Custom number…</option>
+          </select>
+        </label>
+
+        {targetLeadCount === -1 && (
+          <label className="block text-[12px]">
+            <span className="font-medium text-ink-muted">Custom lead count</span>
+            <input
+              type="number"
+              min={1}
+              max={1000}
+              className="saas-input mt-1"
+              value={customLeadCount}
+              onChange={(e) => setCustomLeadCount(e.target.value)}
+              placeholder="e.g. 75"
+            />
+            <p className="mt-1 text-[11px] text-ink-faint">
+              Between 1 and 1000. Requesting {resolvedLeadCount} leads.
+            </p>
+          </label>
+        )}
+
         <Button onClick={runScrape} loading={loading}>
-          {loading ? "Scraping…" : "Run scrape"}
+          {loading ? "Scraping…" : `Run scrape (${resolvedLeadCount})`}
         </Button>
 
         {loading && (

@@ -38,10 +38,7 @@ export async function GET() {
     }),
   ]);
 
-  const estimatedMrr = planGroups.reduce((sum, g) => {
-    const plan = ADMIN_PLANS.find((p) => p.value === g.plan);
-    return sum + (plan?.priceMonthly ?? 0) * g._count._all;
-  }, 0);
+  const estimatedMrr: number | null = null;
 
   return NextResponse.json({
     planMix: planGroups.map((g) => ({
