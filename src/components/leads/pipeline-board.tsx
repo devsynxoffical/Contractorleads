@@ -9,11 +9,14 @@ import { cn } from "@/lib/utils";
 type PipelineItem = {
   id: string;
   status: string;
+  favorite?: boolean;
   lead: {
     id: string;
     businessName: string;
     address: string | null;
     leadScore: number;
+    email?: string | null;
+    qualityTier?: string | null;
   };
 };
 
@@ -28,11 +31,40 @@ export function PipelineBoard({ initialColumns }: { initialColumns: Column[] }) 
   const [busyId, setBusyId] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
+  const [tierFilter, setTierFilter] = useState("all");
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
   const dragMovedRef = useRef(false);
+
+  const filteredColumns = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return columns.map((col) => ({
+      ...col,
+      items: col.items.filter((item) => {
+        if (favoritesOnly && !item.favorite) return false;
+        if (
+          tierFilter !== "all" &&
+          (item.lead.qualityTier || "").toLowerCase() !== tierFilter
+        ) {
+          return false;
+        }
+        if (!q) return true;
+        return (
+          item.lead.businessName.toLowerCase().includes(q) ||
+          (item.lead.address || "").toLowerCase().includes(q) ||
+          (item.lead.email || "").toLowerCase().includes(q)
+        );
+      }),
+    }));
+  }, [columns, query, tierFilter, favoritesOnly]);
 
   const totalLeads = useMemo(
     () => columns.reduce((n, c) => n + c.items.length, 0),
     [columns],
+  );
+  const visibleCount = useMemo(
+    () => filteredColumns.reduce((n, c) => n + c.items.length, 0),
+    [filteredColumns],
   );
 
   function locateItem(cols: Column[], savedId: string) {
@@ -43,7 +75,12 @@ export function PipelineBoard({ initialColumns }: { initialColumns: Column[] }) 
     return null;
   }
 
-  function applyMove(cols: Column[], savedId: string, fromStatus: string, toStatus: string) {
+  function applyMove(
+    cols: Column[],
+    savedId: string,
+    fromStatus: string,
+    toStatus: string,
+  ) {
     let moved: PipelineItem | null = null;
     const without = cols.map((col) => {
       if (col.value !== fromStatus) return col;
@@ -57,7 +94,11 @@ export function PipelineBoard({ initialColumns }: { initialColumns: Column[] }) 
     );
   }
 
-  async function moveLead(savedId: string, fromStatus: string, toStatus: string) {
+  async function moveLead(
+    savedId: string,
+    fromStatus: string,
+    toStatus: string,
+  ) {
     if (fromStatus === toStatus) return;
     setBusyId(savedId);
     setError("");
@@ -82,6 +123,25 @@ export function PipelineBoard({ initialColumns }: { initialColumns: Column[] }) 
     });
   }
 
+  async function removeLead(savedId: string) {
+    if (!confirm("Remove this lead from your pipeline?")) return;
+    setBusyId(savedId);
+    setError("");
+    const res = await fetch(`/api/leads/saved/${savedId}`, { method: "DELETE" });
+    setBusyId(null);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || "Could not remove lead");
+      return;
+    }
+    setColumns((cols) =>
+      cols.map((col) => ({
+        ...col,
+        items: col.items.filter((i) => i.id !== savedId),
+      })),
+    );
+  }
+
   function handleDrop(targetStatus: string, savedId: string | null) {
     setDraggingId(null);
     if (!savedId) return;
@@ -93,10 +153,12 @@ export function PipelineBoard({ initialColumns }: { initialColumns: Column[] }) 
   if (!totalLeads) {
     return (
       <div className="rounded-2xl border border-dashed border-border bg-[#faf8fb] px-6 py-14 text-center">
-        <p className="text-base font-semibold text-ink">No leads in your pipeline yet</p>
+        <p className="text-base font-semibold text-ink">
+          No leads in your pipeline yet
+        </p>
         <p className="mx-auto mt-2 max-w-md text-sm text-ink-muted">
-          Save leads from Lead Finder or Saved Leads — they appear here as cards you can drag
-          between stages or move with the status menu.
+          Save leads from Lead Finder or Saved Leads — they appear here as cards
+          you can drag between stages or move with the status menu.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           <Link
@@ -118,9 +180,44 @@ export function PipelineBoard({ initialColumns }: { initialColumns: Column[] }) 
 
   return (
     <div>
+      <div className="mb-3 flex flex-wrap items-end gap-2">
+        <label className="block min-w-[200px] flex-1 text-[12px]">
+          <span className="font-medium text-ink-muted">Search pipeline</span>
+          <input
+            className="saas-input mt-1"
+            placeholder="Business, address, email…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </label>
+        <label className="block text-[12px]">
+          <span className="font-medium text-ink-muted">Tier</span>
+          <select
+            className="saas-input mt-1"
+            value={tierFilter}
+            onChange={(e) => setTierFilter(e.target.value)}
+          >
+            <option value="all">All</option>
+            <option value="hot">Hot</option>
+            <option value="warm">Warm</option>
+            <option value="nurture">Nurture</option>
+          </select>
+        </label>
+        <label className="mb-1 flex items-center gap-2 text-[12px] text-ink-muted">
+          <input
+            type="checkbox"
+            checked={favoritesOnly}
+            onChange={(e) => setFavoritesOnly(e.target.checked)}
+          />
+          Favorites only
+        </label>
+        <p className="mb-1 text-[12px] text-ink-faint">
+          Showing {visibleCount} of {totalLeads}
+        </p>
+      </div>
       <p className="mb-3 text-[12px] text-ink-muted">
-        Drag cards between columns or use the status menu on each card. Changes sync to CRM
-        webhooks when connected.
+        Drag cards between columns or use the status menu. Emailing a lead from
+        detail moves New → Contacted. Changes sync to CRM webhooks when connected.
       </p>
       {error && (
         <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-700">
@@ -128,7 +225,7 @@ export function PipelineBoard({ initialColumns }: { initialColumns: Column[] }) 
         </p>
       )}
       <div className="scrollbar-thin flex gap-4 overflow-x-auto pb-2">
-        {columns.map((col) => (
+        {filteredColumns.map((col) => (
           <div
             key={col.value}
             className={cn(
@@ -186,11 +283,19 @@ export function PipelineBoard({ initialColumns }: { initialColumns: Column[] }) 
                     </p>
                     <p className="mt-2 text-xs font-semibold tabular-nums text-brand-600">
                       Score {s.lead.leadScore}
+                      {s.lead.qualityTier
+                        ? ` · ${s.lead.qualityTier}`
+                        : ""}
+                      {s.favorite ? " · ★" : ""}
                     </p>
                     <label className="mt-2 block">
                       <span className="sr-only">Move status</span>
                       <select
-                        value={s.status}
+                        value={
+                          LEAD_STATUSES.some((st) => st.value === s.status)
+                            ? s.status
+                            : "new"
+                        }
                         disabled={busyId === s.id}
                         onChange={(e) =>
                           void moveLead(s.id, s.status, e.target.value)
@@ -204,6 +309,14 @@ export function PipelineBoard({ initialColumns }: { initialColumns: Column[] }) 
                         ))}
                       </select>
                     </label>
+                    <button
+                      type="button"
+                      className="mt-2 text-[11px] font-medium text-red-600 hover:underline"
+                      disabled={busyId === s.id}
+                      onClick={() => void removeLead(s.id)}
+                    >
+                      Remove
+                    </button>
                   </CardContent>
                 </Card>
               ))}

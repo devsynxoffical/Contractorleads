@@ -69,6 +69,8 @@ model User {
   exports         Export[]
   aiConversations AiConversation[]
   smtpSettings    UserSmtpSettings?
+  smtpAccounts    SmtpAccount[]
+  leadEmails      LeadEmail[]
   emailSequence   EmailSequence?
   emailEnrollments EmailEnrollment[]
   passwordResets  PasswordResetToken[]
@@ -160,6 +162,7 @@ model Lead {
   createdAt                 DateTime @default(now())
 
   savedBy SavedLead[]
+  emails  LeadEmail[]
 
   @@index([industry])
   @@index([country])
@@ -196,6 +199,7 @@ model SavedLead {
   updatedAt DateTime   @updatedAt
   notes     LeadNote[]
   emailEnrollments EmailEnrollment[]
+  emails    LeadEmail[]
 
   @@unique([userId, leadId])
 }
@@ -342,6 +346,7 @@ model EmailTemplate {
 }
 
 /// Per-agency SMTP so outreach sends from their own mailbox.
+/// @deprecated Prefer SmtpAccount (multiple mailboxes). Kept for migration.
 model UserSmtpSettings {
   id           String   @id @default(cuid())
   userId       String   @unique
@@ -358,6 +363,61 @@ model UserSmtpSettings {
   lastTestedAt DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+/// Multiple SMTP / from-addresses per agency (Gmail, Outlook, team inboxes).
+model SmtpAccount {
+  id           String      @id @default(cuid())
+  userId       String
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label        String      @default("Primary")
+  host         String
+  port         Int         @default(587)
+  secure       Boolean     @default(false)
+  username     String
+  passwordEnc  String
+  fromEmail    String
+  fromName     String?
+  enabled      Boolean     @default(true)
+  isDefault    Boolean     @default(false)
+  lastTestedAt DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  emails       LeadEmail[]
+
+  @@index([userId, isDefault])
+  @@index([userId, enabled])
+}
+
+/// Outbound and inbound emails tied to a lead (send from detail + reply webhook).
+model LeadEmail {
+  id            String       @id @default(cuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leadId        String
+  lead          Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  savedLeadId   String?
+  savedLead     SavedLead?   @relation(fields: [savedLeadId], references: [id], onDelete: SetNull)
+  smtpAccountId String?
+  smtpAccount   SmtpAccount? @relation(fields: [smtpAccountId], references: [id], onDelete: SetNull)
+  /// outbound | inbound
+  direction     String
+  fromEmail     String
+  toEmail       String
+  subject       String
+  body          String
+  /// sent | failed | received
+  status        String
+  error         String?
+  messageId     String?
+  inReplyTo     String?
+  enrollmentId  String?
+  createdAt     DateTime     @default(now())
+
+  @@index([userId, leadId, createdAt])
+  @@index([userId, createdAt])
+  @@index([fromEmail])
+  @@index([toEmail])
 }
 
 /// Day 1 / 2 / 3 email automation templates for scraped/saved leads.

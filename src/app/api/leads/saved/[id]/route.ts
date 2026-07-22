@@ -103,3 +103,32 @@ export async function POST(
 
   return NextResponse.json({ note });
 }
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const user = await getSessionUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+  const saved = await prisma.savedLead.findFirst({
+    where: { id, userId: user.id },
+    include: { lead: true },
+  });
+  if (!saved) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  await prisma.savedLead.delete({ where: { id } });
+  await logActivity(
+    user.id,
+    "pipeline",
+    `Removed ${saved.lead.businessName} from pipeline`,
+    { savedLeadId: id, leadId: saved.leadId },
+  );
+
+  return NextResponse.json({ ok: true });
+}

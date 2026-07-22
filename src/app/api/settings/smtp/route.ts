@@ -1,28 +1,28 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
+import {
+  createSmtpTransport,
+  getUserSmtpConfig,
+  listSmtpAccounts,
+  maskSmtpAccount,
+  migrateLegacySmtpIfNeeded,
+  upsertSmtpAccount,
+} from "@/lib/user-smtp";
 import { prisma } from "@/lib/prisma";
-import { encryptSecret } from "@/lib/crypto-secret";
-import { createSmtpTransport, getUserSmtpConfig } from "@/lib/user-smtp";
 
+/** Legacy single-SMTP API — reads/writes the default SmtpAccount. */
 export async function GET() {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const row = await prisma.userSmtpSettings.findUnique({ where: { userId: user.id } });
-  if (!row) return NextResponse.json({ settings: null });
+  await migrateLegacySmtpIfNeeded(user.id);
+  const rows = await listSmtpAccounts(user.id);
+  const def = rows.find((r) => r.isDefault) || rows[0];
+  if (!def) return NextResponse.json({ settings: null, accounts: [] });
 
   return NextResponse.json({
-    settings: {
-      host: row.host,
-      port: row.port,
-      secure: row.secure,
-      username: row.username,
-      fromEmail: row.fromEmail,
-      fromName: row.fromName,
-      enabled: row.enabled,
-      hasPassword: Boolean(row.passwordEnc),
-      lastTestedAt: row.lastTestedAt,
-    },
+    settings: maskSmtpAccount(def),
+    accounts: rows.map(maskSmtpAccount),
   });
 }
 
@@ -31,75 +31,35 @@ export async function PUT(request: Request) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const host = String(body.host || "").trim();
-  const port = Number(body.port || 587);
-  const username = String(body.username || "").trim();
-  const fromEmail = String(body.fromEmail || "").trim();
-  const fromName = String(body.fromName || "").trim() || null;
-  const secure = Boolean(body.secure);
-  const enabled = body.enabled !== false;
-  const password = String(body.password || "");
+  await migrateLegacySmtpIfNeeded(user.id);
+  const rows = await listSmtpAccounts(user.id);
+  const def = rows.find((r) => r.isDefault) || rows[0];
 
-  if (!host || !username || !fromEmail) {
-    return NextResponse.json(
-      { error: "Host, username, and from email are required" },
-      { status: 400 },
-    );
-  }
-
-  const existing = await prisma.userSmtpSettings.findUnique({
-    where: { userId: user.id },
-  });
-
-  if (!password && !existing?.passwordEnc) {
-    return NextResponse.json(
-      { error: "SMTP password is required" },
-      { status: 400 },
-    );
-  }
-
-  const passwordEnc = password
-    ? encryptSecret(password)
-    : (existing!.passwordEnc as string);
-
-  const row = await prisma.userSmtpSettings.upsert({
-    where: { userId: user.id },
-    create: {
+  try {
+    const row = await upsertSmtpAccount({
       userId: user.id,
-      host,
-      port,
-      secure,
-      username,
-      passwordEnc,
-      fromEmail,
-      fromName,
-      enabled,
-    },
-    update: {
-      host,
-      port,
-      secure,
-      username,
-      passwordEnc,
-      fromEmail,
-      fromName,
-      enabled,
-    },
-  });
-
-  return NextResponse.json({
-    ok: true,
-    settings: {
-      host: row.host,
-      port: row.port,
-      secure: row.secure,
-      username: row.username,
-      fromEmail: row.fromEmail,
-      fromName: row.fromName,
-      enabled: row.enabled,
-      hasPassword: true,
-    },
-  });
+      id: def?.id,
+      label: String(body.label || def?.label || "Primary"),
+      host: String(body.host || "").trim(),
+      port: Number(body.port || 587),
+      secure: Boolean(body.secure),
+      username: String(body.username || "").trim(),
+      password: String(body.password || ""),
+      fromEmail: String(body.fromEmail || "").trim(),
+      fromName: String(body.fromName || "").trim() || null,
+      enabled: body.enabled !== false,
+      isDefault: true,
+    });
+    return NextResponse.json({
+      ok: true,
+      settings: maskSmtpAccount(row),
+    });
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : "Failed to save SMTP" },
+      { status: 400 },
+    );
+  }
 }
 
 export async function POST(request: Request) {
@@ -108,32 +68,33 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => ({}));
   const action = body.action || "test";
-
   if (action !== "test") {
     return NextResponse.json({ error: "Unknown action" }, { status: 400 });
   }
 
-  const cfg = await getUserSmtpConfig(user.id);
+  const cfg = await getUserSmtpConfig(user.id, body.id ? String(body.id) : null);
   if (!cfg) {
-    return NextResponse.json(
-      { error: "Save SMTP settings first" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Save SMTP settings first" }, { status: 400 });
   }
 
   try {
     const transport = createSmtpTransport(cfg);
     await transport.verify();
-    await prisma.userSmtpSettings.update({
-      where: { userId: user.id },
-      data: { lastTestedAt: new Date() },
-    });
+    if (cfg.id) {
+      await prisma.smtpAccount.update({
+        where: { id: cfg.id },
+        data: { lastTestedAt: new Date() },
+      });
+    } else {
+      await prisma.userSmtpSettings.update({
+        where: { userId: user.id },
+        data: { lastTestedAt: new Date() },
+      });
+    }
     return NextResponse.json({ ok: true, message: "SMTP connection verified" });
   } catch (e) {
     return NextResponse.json(
-      {
-        error: e instanceof Error ? e.message : "SMTP test failed",
-      },
+      { error: e instanceof Error ? e.message : "SMTP test failed" },
       { status: 400 },
     );
   }

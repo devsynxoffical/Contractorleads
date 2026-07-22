@@ -29,6 +29,7 @@ import { Textarea } from "@/components/ui/input";
 import { LEAD_STATUSES } from "@/lib/constants";
 import { OutreachStudio } from "@/components/leads/outreach-studio";
 import { EnrollEmailSequenceButton } from "@/components/leads/enroll-email-sequence-button";
+import { LeadSendEmailCard } from "@/components/leads/lead-send-email-card";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
 
 type FacebookAdsResult = {
@@ -1295,8 +1296,50 @@ export function LeadDetailView({
                   hasEmail={Boolean(lead.email)}
                 />
               ) : null}
+              {saved ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={crmBusy}
+                  onClick={async () => {
+                    if (!confirm("Remove this lead from your pipeline?")) return;
+                    setCrmBusy(true);
+                    try {
+                      await fetch(`/api/leads/saved/${saved.id}`, {
+                        method: "DELETE",
+                      });
+                      await load();
+                    } finally {
+                      setCrmBusy(false);
+                    }
+                  }}
+                >
+                  Remove from pipeline
+                </Button>
+              ) : null}
             </CardContent>
           </Card>
+
+          <LeadSendEmailCard
+            leadId={lead.id}
+            leadEmail={lead.email}
+            businessName={lead.businessName}
+            ownerName={lead.ownerName}
+            onSent={(status) => {
+              if (lead.savedBy?.[0]) {
+                setLead({
+                  ...lead,
+                  savedBy: [
+                    {
+                      ...lead.savedBy[0],
+                      status,
+                    },
+                  ],
+                });
+              }
+              void load();
+            }}
+          />
 
           <Card>
             <CardHeader>

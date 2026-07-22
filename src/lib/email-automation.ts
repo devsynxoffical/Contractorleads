@@ -75,11 +75,27 @@ export async function processEnrollment(enrollmentId: string) {
   const text = renderSequenceTemplate(enrollment.sequence[bodyKey], vars);
 
   try {
-    await sendViaUserSmtp({
+    const sent = await sendViaUserSmtp({
       userId: enrollment.userId,
       to,
       subject,
       text,
+    });
+    await prisma.leadEmail.create({
+      data: {
+        userId: enrollment.userId,
+        leadId: lead.id,
+        savedLeadId: enrollment.savedLeadId,
+        smtpAccountId: sent.smtpAccountId,
+        direction: "outbound",
+        fromEmail: sent.fromEmail,
+        toEmail: to,
+        subject,
+        body: text,
+        status: "sent",
+        messageId: sent.messageId,
+        enrollmentId: enrollment.id,
+      },
     });
     const patch: Record<string, unknown> = {
       lastError: null,
@@ -95,6 +111,12 @@ export async function processEnrollment(enrollmentId: string) {
       where: { id: enrollment.id },
       data: patch,
     });
+    if (enrollment.savedLead.status === "new") {
+      await prisma.savedLead.update({
+        where: { id: enrollment.savedLeadId },
+        data: { status: "contacted" },
+      });
+    }
     return { sent: day, to };
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Send failed";

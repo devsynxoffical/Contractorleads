@@ -33,11 +33,14 @@ export default async function PipelinePage() {
       .map((s) => ({
         id: s.id,
         status: s.status,
+        favorite: s.favorite,
         lead: {
           id: s.lead.id,
           businessName: s.lead.businessName,
           address: s.lead.address,
           leadScore: s.lead.leadScore,
+          email: s.lead.email,
+          qualityTier: s.lead.qualityTier,
         },
       })),
   }));
