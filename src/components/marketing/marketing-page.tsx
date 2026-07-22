@@ -63,7 +63,7 @@ import {
   FooterReveal,
 } from "./marketing-motion";
 import { MarketingFluidHero } from "./marketing-fluid-hero";
-import { MarketingInteractiveDemo } from "./marketing-interactive-demo";
+import { MarketingDemoCarousel } from "./marketing-demo-carousel";
 import { StickyPlatformScroll } from "./marketing-sticky-platform";
 import {
   INTEGRATION_BRANDS,
@@ -1276,7 +1276,7 @@ export function MarketingPage() {
       <MarketingVisitTracker />
       <ScrollNav />
       <MarketingFluidHero />
-      <MarketingInteractiveDemo />
+      <MarketingDemoCarousel />
       <SocialProof />
       <FeaturesGrid />
       <ProblemSection />
