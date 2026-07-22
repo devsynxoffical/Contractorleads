@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ADMIN_STAFF_ROLES, requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ADMIN_PLANS } from "@/lib/admin";
+import { normalizeCountryCode, resolveLeadCoords } from "@/lib/geo";
 
 export async function GET() {
   const admin = await requirePermission("overview");
@@ -98,11 +99,8 @@ export async function GET() {
       take: 8,
     }),
     prisma.lead.findMany({
-      where: {
-        latitude: { not: null },
-        longitude: { not: null },
-      },
-      take: 180,
+      where: {},
+      take: 400,
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
@@ -233,6 +231,27 @@ export async function GET() {
       ? Math.round((savedLeadCount / leadCount) * 1000) / 10
       : 0;
 
+  const mappedGeoLeads = geoLeads.flatMap((l) => {
+    const coords = resolveLeadCoords(l);
+    if (!coords) return [];
+    return [
+      {
+        id: l.id,
+        businessName: l.businessName,
+        address: l.address,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        qualityTier: l.qualityTier,
+        googleMapsLink: l.googleMapsLink,
+        city: l.city,
+        state: l.state,
+        country: normalizeCountryCode(l.country),
+        industry: l.industry,
+        leadScore: l.leadScore,
+      },
+    ];
+  });
+
   return NextResponse.json({
     stats: {
       customerCount,
@@ -268,7 +287,7 @@ export async function GET() {
       estimatedMrr,
       exportsWeek,
       saveRate,
-      mappedLeadCount: geoLeads.length,
+      mappedLeadCount: mappedGeoLeads.length,
       // KPI strip
       visitors: visitorsWeek,
       visitorsToday,
@@ -278,20 +297,7 @@ export async function GET() {
       revenue: estimatedMrr,
       churnRate,
     },
-    geoLeads: geoLeads.map((l) => ({
-      id: l.id,
-      businessName: l.businessName,
-      address: l.address,
-      latitude: l.latitude as number,
-      longitude: l.longitude as number,
-      qualityTier: l.qualityTier,
-      googleMapsLink: l.googleMapsLink,
-      city: l.city,
-      state: l.state,
-      country: l.country,
-      industry: l.industry,
-      leadScore: l.leadScore,
-    })),
+    geoLeads: mappedGeoLeads,
     recentActivity,
   });
 }

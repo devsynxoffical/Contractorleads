@@ -423,6 +423,11 @@ async function enrichAndPersistPlace(opts: {
       ? new Date()
       : existingLead?.peopleEnrichedAt,
     socialEnrichedAt: new Date(),
+    // Always refresh coords so Lead Map stays accurate for reused pool leads
+    latitude: place.latitude ?? existingLead?.latitude ?? undefined,
+    longitude: place.longitude ?? existingLead?.longitude ?? undefined,
+    address: place.address || existingLead?.address,
+    googleMapsLink: place.mapsUrl || existingLead?.googleMapsLink,
   };
 
   if (existingLead) {

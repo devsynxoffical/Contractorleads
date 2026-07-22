@@ -88,6 +88,25 @@ export function LeadGeoMapInner({
       .slice(0, 8);
   }, [leads]);
 
+  // Deduplicate stacked pins that share the exact same coords (common in
+  // dense metros) so tooltips/clicks still map 1:1 to a lead.
+  const plotLeads = useMemo(() => {
+    const seen = new Map<string, number>();
+    return leads.map((lead) => {
+      const key = `${lead.latitude.toFixed(5)},${lead.longitude.toFixed(5)}`;
+      const n = seen.get(key) ?? 0;
+      seen.set(key, n + 1);
+      if (n === 0) return lead;
+      // Nudge duplicates by ~40–120m so each pin is clickable
+      const jitter = 0.00035 * n;
+      return {
+        ...lead,
+        latitude: lead.latitude + jitter,
+        longitude: lead.longitude + jitter * 0.8,
+      };
+    });
+  }, [leads]);
+
   const activeLead = useMemo(
     () => leads.find((l) => l.id === activeLeadId) ?? null,
     [leads, activeLeadId]
@@ -100,7 +119,7 @@ export function LeadGeoMapInner({
     mapRef.current = null;
     mapEl.current.innerHTML = "";
 
-    const markers = leads.map((lead) => ({
+    const markers = plotLeads.map((lead) => ({
       name: lead.businessName,
       coords: [lead.latitude, lead.longitude] as [number, number],
       style: {
@@ -174,14 +193,14 @@ export function LeadGeoMapInner({
         tooltip: { text: (value: string) => void },
         index: string | number
       ) {
-        const lead = leads[Number(index)];
+        const lead = plotLeads[Number(index)];
         if (!lead) return;
         tooltip.text(
           `${lead.businessName} · ${countryLabel(lead.country)}`
         );
       },
       onMarkerClick(_event: Event, index: string | number) {
-        const lead = leads[Number(index)];
+        const lead = plotLeads[Number(index)];
         if (!lead) return;
         setActiveLeadId(lead.id);
         setActiveCountry((lead.country || "US").toUpperCase());
@@ -202,7 +221,7 @@ export function LeadGeoMapInner({
       map.destroy();
       mapRef.current = null;
     };
-  }, [leads]);
+  }, [plotLeads]);
 
   return (
     <div className="space-y-5">

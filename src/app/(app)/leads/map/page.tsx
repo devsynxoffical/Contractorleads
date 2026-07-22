@@ -6,6 +6,7 @@ import {
   PrimaryActionLink,
 } from "@/components/layout/page-header";
 import { LeadGeoMap } from "@/components/leads/lead-geo-map";
+import { normalizeCountryCode, resolveLeadCoords } from "@/lib/geo";
 import { HiOutlineMagnifyingGlass } from "react-icons/hi2";
 
 export default async function LeadMapPage() {
@@ -15,11 +16,9 @@ export default async function LeadMapPage() {
   const leads = await prisma.lead.findMany({
     where: {
       search: { userId: user.id },
-      latitude: { not: null },
-      longitude: { not: null },
     },
-    take: 250,
-    orderBy: { createdAt: "desc" },
+    take: 500,
+    orderBy: [{ leadScore: "desc" }, { createdAt: "desc" }],
     select: {
       id: true,
       businessName: true,
@@ -36,28 +35,74 @@ export default async function LeadMapPage() {
     },
   });
 
-  const geoLeads = leads
-    .filter((l) => l.latitude != null && l.longitude != null)
-    .map((l) => ({
+  const geoLeads = [];
+  const backfill: Array<{ id: string; latitude: number; longitude: number }> =
+    [];
+  let unmapped = 0;
+
+  for (const l of leads) {
+    const coords = resolveLeadCoords(l);
+    if (!coords) {
+      unmapped += 1;
+      continue;
+    }
+
+    const hadStored =
+      l.latitude != null &&
+      l.longitude != null &&
+      Number.isFinite(l.latitude) &&
+      Number.isFinite(l.longitude);
+    if (!hadStored) {
+      backfill.push({
+        id: l.id,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+      });
+    }
+
+    geoLeads.push({
       id: l.id,
       businessName: l.businessName,
       address: l.address,
-      latitude: l.latitude as number,
-      longitude: l.longitude as number,
+      latitude: coords.latitude,
+      longitude: coords.longitude,
       qualityTier: l.qualityTier,
       googleMapsLink: l.googleMapsLink,
       city: l.city,
       state: l.state,
-      country: l.country,
+      country: normalizeCountryCode(l.country),
       industry: l.industry,
       leadScore: l.leadScore,
-    }));
+    });
+  }
+
+  // Persist recovered coords so the next visit and exports stay accurate
+  if (backfill.length) {
+    await Promise.all(
+      backfill.slice(0, 100).map((row) =>
+        prisma.lead.update({
+          where: { id: row.id },
+          data: {
+            latitude: row.latitude,
+            longitude: row.longitude,
+          },
+        }),
+      ),
+    );
+  }
+
+  const description =
+    geoLeads.length === 0
+      ? "No mappable leads yet. Generate leads in Lead Finder to drop pins."
+      : unmapped > 0
+        ? `${geoLeads.length} pin${geoLeads.length === 1 ? "" : "s"} on the map · ${unmapped} lead${unmapped === 1 ? "" : "s"} missing coordinates.`
+        : `${geoLeads.length} lead pin${geoLeads.length === 1 ? "" : "s"} from your searches.`;
 
   return (
     <div className="page-pad">
       <PageHeader
         title="Lead Map"
-        description="HUD-style global map with cyan location pins — same look as Traffic Analytics."
+        description={description}
         actions={
           <PrimaryActionLink href="/leads/search">
             <HiOutlineMagnifyingGlass className="h-4 w-4" />
@@ -66,7 +111,11 @@ export default async function LeadMapPage() {
         }
       />
 
-      <LeadGeoMap leads={geoLeads} />
+      <LeadGeoMap
+        leads={geoLeads}
+        title="Lead Map"
+        subtitle="Your verified leads by location"
+      />
     </div>
   );
 }
