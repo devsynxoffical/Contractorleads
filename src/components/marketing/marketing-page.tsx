@@ -800,7 +800,13 @@ function AiSection() {
     "What’s my Facebook ad hook?",
     "Prioritize Hot vs Warm this week",
   ];
+  const replies = [
+    "Lead with the ZIPs they’re sleeping on, promise booked estimates in 14 days, and CTA with a 15‑min fit call.",
+    "Hook: “Your competitors are already in Ads Library — here’s the angle they’re missing.” Keep creative local and proof-heavy.",
+    "Call Hot first (score 85+ with owner + LinkedIn). Warm gets a nurture sequence; skip Nurture until next refresh.",
+  ];
   const [active, setActive] = useState(0);
+
   return (
     <section className="relative overflow-hidden bg-[#ffffff] py-24">
       <div
@@ -815,23 +821,101 @@ function AiSection() {
       <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
         <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
           <Reveal>
-            <div className="relative mx-auto w-full max-w-lg overflow-hidden rounded-[22px] border border-slate-200/80 bg-[#0b0614] shadow-[0_20px_60px_rgba(100,60,160,0.18)] lg:max-w-none">
-              <div className="flex items-center gap-1.5 border-b border-white/10 bg-[#12081f] px-3 py-2">
-                <span className="h-2 w-2 rounded-full bg-[#ff5f57]" />
-                <span className="h-2 w-2 rounded-full bg-[#febc2e]" />
-                <span className="h-2 w-2 rounded-full bg-[#28c840]" />
-                <span className="ml-2 truncate text-[11px] font-medium text-white/45">
-                  contractorleads.us
-                </span>
-              </div>
-              <div className="relative aspect-[2940/1672] w-full">
-                <Image
-                  src="/darktheme1.png"
-                  alt="Ask Contractor Leads AI assistant"
-                  fill
-                  className="object-contain object-top"
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                />
+            <div className="relative mx-auto w-full max-w-lg lg:max-w-none">
+              <div
+                className="pointer-events-none absolute -inset-3 rounded-[28px] opacity-35 blur-2xl"
+                style={{ background: LOGO_GRADIENT }}
+                aria-hidden
+              />
+              <div className="relative overflow-hidden rounded-[20px] border border-white/15 bg-[#12081f] shadow-[0_30px_80px_rgba(80,40,120,0.35)]">
+                <div className="flex items-center gap-1.5 border-b border-white/10 bg-[#1a102c] px-3.5 py-2.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
+                  <span className="ml-2 truncate text-[12px] font-medium text-white/45">
+                    Ask Contractor Leads · AI Assistant
+                  </span>
+                  <span className="ml-auto rounded-full border border-fuchsia-400/30 bg-fuchsia-500/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-fuchsia-200">
+                    Live
+                  </span>
+                </div>
+
+                <div className="grid min-h-[360px] gap-3 p-4 sm:grid-cols-[0.85fr_1.15fr] sm:p-5">
+                  <div className="space-y-2">
+                    {["Scripts", "Cold email", "Ad hooks", "Prioritize"].map(
+                      (item, i) => (
+                        <motion.button
+                          key={item}
+                          type="button"
+                          onClick={() => setActive(i % prompts.length)}
+                          className="flex w-full items-center gap-2 rounded-xl border px-3 py-2.5 text-left text-[12px] font-medium transition"
+                          animate={{
+                            borderColor:
+                              active === i % prompts.length
+                                ? "rgba(232,121,249,0.55)"
+                                : "rgba(255,255,255,0.1)",
+                            backgroundColor:
+                              active === i % prompts.length
+                                ? "rgba(232,121,249,0.12)"
+                                : "rgba(26,16,44,1)",
+                            color:
+                              active === i % prompts.length
+                                ? "rgb(253,244,255)"
+                                : "rgba(255,255,255,0.75)",
+                          }}
+                        >
+                          <HiOutlineSparkles className="h-3.5 w-3.5 shrink-0 text-fuchsia-300" />
+                          {item}
+                        </motion.button>
+                      ),
+                    )}
+                  </div>
+
+                  <div className="flex flex-col rounded-2xl border border-white/10 bg-[#1a102c] p-3">
+                    <div className="mb-3 flex items-center gap-2 text-[11px] font-semibold text-fuchsia-200">
+                      <HiOutlineSparkles className="h-4 w-4" />
+                      Streaming reply
+                    </div>
+                    <div className="mb-2 ml-auto max-w-[92%] rounded-2xl rounded-br-md px-3 py-2 text-[12px] text-white"
+                      style={{ background: LOGO_GRADIENT }}
+                    >
+                      <AnimatePresence mode="wait">
+                        <motion.span
+                          key={`q-${active}`}
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0 }}
+                        >
+                          {prompts[active]}
+                        </motion.span>
+                      </AnimatePresence>
+                    </div>
+                    <div className="max-w-[95%] flex-1 rounded-2xl rounded-bl-md border border-white/10 bg-[#12081f] px-3 py-2.5 text-[12px] leading-relaxed text-white/75">
+                      <AnimatePresence mode="wait">
+                        <motion.span
+                          key={`a-${active}`}
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0 }}
+                        >
+                          {replies[active]}
+                        </motion.span>
+                      </AnimatePresence>
+                      <motion.span
+                        className="ml-1 inline-block h-3 w-1 translate-y-0.5 bg-fuchsia-400"
+                        animate={{ opacity: [1, 0, 1] }}
+                        transition={{ duration: 0.85, repeat: Infinity }}
+                      />
+                    </div>
+                    <motion.div
+                      className="mt-3 h-9 rounded-xl border border-white/10 bg-[#12081f] px-3 text-[11px] leading-9 text-white/35"
+                      animate={{ opacity: [0.45, 1, 0.45] }}
+                      transition={{ duration: 2.2, repeat: Infinity }}
+                    >
+                      Ask about markets, ads, or outreach…
+                    </motion.div>
+                  </div>
+                </div>
               </div>
             </div>
           </Reveal>
@@ -871,41 +955,6 @@ function AiSection() {
                   {p}
                 </button>
               ))}
-            </div>
-            <div className="mt-6 rounded-[24px] border border-slate-200 bg-[#ffffff] p-5 shadow-[0_12px_40px_rgba(100,60,160,0.08)]">
-              <div className="mb-4 flex items-center gap-3">
-                <span
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-white"
-                  style={{ background: LOGO_GRADIENT }}
-                >
-                  <HiOutlineSparkles className="h-5 w-5" />
-                </span>
-                <div>
-                  <p className="text-[14px] font-semibold text-slate-900">Ask Contractor Leads</p>
-                  <p className="text-[12px] text-slate-400">Streaming · multi-turn</p>
-                </div>
-              </div>
-              <div className="ml-auto mb-3 max-w-[90%] rounded-2xl rounded-br-md px-4 py-3 text-[13px] text-white" style={{ background: LOGO_GRADIENT }}>
-                <AnimatePresence mode="wait">
-                  <motion.span
-                    key={active}
-                    initial={{ opacity: 0, y: 8, filter: "blur(4px)" }}
-                    animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                    exit={{ opacity: 0, y: -6, filter: "blur(4px)" }}
-                    transition={{ duration: 0.35 }}
-                  >
-                    {prompts[active]}
-                  </motion.span>
-                </AnimatePresence>
-              </div>
-              <div className="max-w-[95%] rounded-2xl rounded-bl-md border border-violet-50 bg-[#f8f5ff] px-4 py-3 text-[13px] leading-relaxed text-slate-600">
-                Here’s a direct angle: lead with the ZIPs they’re sleeping on, promise booked estimates in 14 days, and CTA with a 15‑min fit call…
-                <motion.span
-                  className="ml-1 inline-block h-3.5 w-1.5 translate-y-0.5 bg-violet-500"
-                  animate={{ opacity: [1, 0, 1] }}
-                  transition={{ duration: 0.9, repeat: Infinity }}
-                />
-              </div>
             </div>
           </Reveal>
         </div>
