@@ -42,12 +42,10 @@ import {
 import { RiOpenaiFill } from "react-icons/ri";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
 import { cn } from "@/lib/utils";
-import { FloatingDashboard } from "./marketing-dashboard";
 import {
   CloudDecor,
-  SparklesDecor,
   SoftBlob,
-  MARKETING_PHOTOS,
+  SparklesDecor,
 } from "./marketing-decor";
 import {
   Reveal,
@@ -66,11 +64,6 @@ import {
 } from "./marketing-motion";
 import { MarketingFluidHero } from "./marketing-fluid-hero";
 import { MarketingInteractiveDemo } from "./marketing-interactive-demo";
-import {
-  MoonWalkFeatureGrid,
-  FlowerFieldProofCards,
-  SocialProofBento,
-} from "./marketing-interactive-sections";
 import { StickyPlatformScroll } from "./marketing-sticky-platform";
 import {
   INTEGRATION_BRANDS,
@@ -366,46 +359,6 @@ function SocialProof() {
   );
 }
 
-function DashboardSection() {
-  return (
-    <section
-      id="dashboard"
-      className="relative overflow-hidden bg-[#09060f] py-24 sm:py-32"
-    >
-      <div
-        className="pointer-events-none absolute left-1/2 top-1/2 h-[420px] w-[420px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-40 blur-[100px]"
-        style={{ background: LOGO_GRADIENT }}
-        aria-hidden
-      />
-      <div className="relative z-10 mx-auto max-w-6xl px-5 text-center sm:px-8">
-        <Reveal>
-          <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-fuchsia-300">
-            Platform
-          </p>
-          <h2 className="mx-auto mt-3 max-w-2xl font-[family-name:var(--font-display)] text-[clamp(1.85rem,4.2vw,3.25rem)] font-semibold tracking-tight text-white">
-            A floating command center for contractor demand
-          </h2>
-          <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-white/65">
-            One workspace that tracks credits, searches, hot leads, and pipeline health — so you open one tab in the morning, not six.
-          </p>
-          <p className="mx-auto mt-3 max-w-xl text-[14px] leading-relaxed text-white/55">
-            Your dashboard isn&apos;t a report you check once a week. It&apos;s live: total leads generated, credits remaining, saved leads, closed deals, a rolling weekly trend, and a breakdown of Hot / Warm / Nurture across your whole pipeline — all before you&apos;ve had coffee.
-          </p>
-          <Link
-            href="/register"
-            className="mt-6 inline-flex items-center gap-2 rounded-2xl border border-white/25 bg-white/10 px-5 py-2.5 text-[13px] font-semibold text-white backdrop-blur transition hover:bg-white/15"
-          >
-            Open the dashboard <HiOutlineArrowRight className="h-4 w-4" />
-          </Link>
-        </Reveal>
-        <Reveal variant="scale" delay={0.08} className="mt-14">
-          <FloatingDashboard />
-        </Reveal>
-      </div>
-    </section>
-  );
-}
-
 function ProblemSection() {
   return (
     <section className="relative overflow-x-clip bg-[#ffffff] py-24 sm:py-28">
@@ -462,120 +415,6 @@ function ProblemSection() {
             <HiOutlineArrowRight className="h-4 w-4" />
           </Link>
         </Reveal>
-      </div>
-    </section>
-  );
-}
-
-function SolutionBento() {
-  return (
-    <section className="relative overflow-hidden bg-[#ffffff] py-24">
-      <CloudDecor side="left" className="opacity-45" />
-      <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
-        <Reveal className="max-w-xl">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-fuchsia-600">
-            Built different
-          </p>
-          <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.85rem,4.2vw,3.25rem)] font-semibold tracking-tight text-slate-900">
-            One system. Zero busywork.
-          </h2>
-        </Reveal>
-        <div className="mt-12 grid auto-rows-[minmax(160px,auto)] gap-4 md:grid-cols-4 md:grid-rows-2">
-          <Reveal className="md:col-span-2 md:row-span-2">
-            <div className="flex h-full flex-col justify-between overflow-hidden rounded-[28px] border border-slate-200 bg-[#ffffff] p-7 shadow-[0_12px_40px_rgba(15,23,42,0.06)]">
-              <div>
-                <p className="text-[12px] font-semibold uppercase tracking-wider text-fuchsia-600">
-                  Lead Finder
-                </p>
-                <h3 className="mt-3 font-[family-name:var(--font-display)] text-[28px] font-semibold text-slate-900">
-                  Search any trade in any metro
-                </h3>
-                <p className="mt-3 max-w-sm text-[14px] leading-relaxed text-slate-600">
-                  Roofing in Dallas. HVAC in three ZIP codes outside Phoenix. General contractors across all of Ontario. Pick an industry, pick a footprint — entire country or a five-mile radius — and get live results pulled from Google Places, not a static database that hasn&apos;t been touched since last quarter.
-                </p>
-                <Link
-                  href="/register"
-                  className="mt-4 inline-flex items-center gap-1 text-[13px] font-semibold text-fuchsia-600 hover:underline"
-                >
-                  Try Lead Finder <HiOutlineArrowRight className="h-3.5 w-3.5" />
-                </Link>
-              </div>
-              <div className="relative mt-8 h-40 overflow-hidden rounded-2xl">
-                <Image
-                  src={MARKETING_PHOTOS.laptop}
-                  alt="Agency workspace"
-                  fill
-                  className="object-cover"
-                  sizes="600px"
-                />
-                <div className="absolute inset-0 bg-gradient-to-tr from-violet-600/35 to-pink-500/15" />
-              </div>
-            </div>
-          </Reveal>
-          <Reveal delay={0.08} className="md:col-span-2">
-            <div className="flex h-full gap-4 overflow-hidden rounded-[28px] border border-slate-200 bg-[#ffffff] p-6 shadow-[0_8px_30px_rgba(15,23,42,0.05)]">
-              <div className="relative hidden h-28 w-28 shrink-0 overflow-hidden rounded-2xl sm:block">
-                <Image src={MARKETING_PHOTOS.team} alt="Team" fill className="object-cover" sizes="112px" />
-              </div>
-              <div>
-                <BrandLogoMark
-                  brand={{
-                    name: "OpenAI",
-                    icon: RiOpenaiFill,
-                    color: "#000000",
-                    bg: "#f4f4f5",
-                  }}
-                  className="h-10 w-10"
-                  iconClassName="h-5 w-5"
-                />
-                <h3 className="mt-3 font-[family-name:var(--font-display)] text-[20px] font-semibold text-slate-900">
-                  AI qualification that feels human
-                </h3>
-                <p className="mt-2 text-[14px] leading-relaxed text-slate-600">
-                  Every business gets scored on website quality, marketing opportunity, PPC opportunity, and SEO opportunity — then handed a recommended outreach angle so your first line isn&apos;t &ldquo;Hi, I found your business online.&rdquo;
-                </p>
-                <Link
-                  href="#features"
-                  className="mt-3 inline-flex items-center gap-1 text-[13px] font-semibold text-fuchsia-600 hover:underline"
-                >
-                  See how scoring works <HiOutlineArrowRight className="h-3.5 w-3.5" />
-                </Link>
-              </div>
-            </div>
-          </Reveal>
-          <Reveal delay={0.12}>
-            <div className="h-full rounded-[28px] border border-slate-200 bg-[#ffffff] p-6 shadow-sm">
-              <BrandLogoMark
-                brand={{
-                  name: "Maps",
-                  icon: SiGoogleearth,
-                  color: "#34A853",
-                  bg: "#e6f4ea",
-                }}
-                className="h-9 w-9"
-                iconClassName="h-4 w-4"
-              />
-              <h3 className="mt-3 text-[16px] font-semibold text-slate-900">Map HUD</h3>
-              <p className="mt-1 text-[13px] text-slate-500">Global density at a glance.</p>
-            </div>
-          </Reveal>
-          <Reveal delay={0.16}>
-            <div className="h-full rounded-[28px] border border-slate-200 bg-[#ffffff] p-6 shadow-sm">
-              <BrandLogoMark
-                brand={{
-                  name: "Anthropic",
-                  icon: SiAnthropic,
-                  color: "#D4A27F",
-                  bg: "#faf4ef",
-                }}
-                className="h-9 w-9"
-                iconClassName="h-4 w-4"
-              />
-              <h3 className="mt-3 text-[16px] font-semibold text-slate-900">Ask Expert</h3>
-              <p className="mt-1 text-[13px] text-slate-500">Chat history that remembers.</p>
-            </div>
-          </Reveal>
-        </div>
       </div>
     </section>
   );
@@ -1334,7 +1173,7 @@ function Footer() {
                 className="rounded-full"
               />
               <span className="text-[12px] font-medium text-white/55">
-                Contractor demand, mapped, scored, and ready to dial.
+                Contractor Leads
               </span>
             </div>
             </div>
@@ -1420,12 +1259,7 @@ export function MarketingPage() {
       <MarketingInteractiveDemo />
       <SocialProof />
       <FeaturesGrid />
-      <MoonWalkFeatureGrid />
-      <FlowerFieldProofCards />
-      <DashboardSection />
       <ProblemSection />
-      <SolutionBento />
-      <SocialProofBento />
       <StickyPlatformScroll />
       <Integrations />
       <TechnologiesSection />

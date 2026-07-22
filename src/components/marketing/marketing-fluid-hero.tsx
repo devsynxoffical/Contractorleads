@@ -62,7 +62,6 @@ export function MarketingFluidHero() {
 
     reveal(section.querySelector("[data-reveal='nav']"), 150, "-0.75rem");
     reveal(section.querySelector("[data-reveal='cta']"), 1250, "1.25rem");
-    reveal(section.querySelector("[data-reveal='footer']"), 1450, "1.25rem");
 
     const animateWords = (
       container: Element | null,
@@ -170,10 +169,6 @@ export function MarketingFluidHero() {
           No credit card required · 20 free credits · Cancel anytime
         </p>
       </div>
-
-      <footer className="mkt-flow-footer" data-reveal="footer">
-        Contractor demand, mapped, scored, and ready to dial.
-      </footer>
     </section>
   );
 }
