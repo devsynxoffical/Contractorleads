@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
   HiOutlineArrowLeft,
@@ -215,6 +216,23 @@ function ResultPopup({
   popup: PopupState;
   onClose: () => void;
 }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- lock scroll for popup lifetime only
+  }, []);
+
   const iconStyles =
     popup.kind === "success"
       ? "bg-emerald-50 text-emerald-600"
@@ -222,13 +240,16 @@ function ResultPopup({
         ? "bg-red-50 text-red-600"
         : "bg-brand-50 text-brand-600";
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+      className="fixed inset-0 z-[200] flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
     >
       <button
+        type="button"
         aria-label="Close"
         className="absolute inset-0 bg-ink/40 backdrop-blur-[2px]"
         onClick={onClose}
@@ -266,6 +287,7 @@ function ResultPopup({
             </a>
           )}
           <button
+            type="button"
             onClick={onClose}
             className="inline-flex h-10 items-center justify-center rounded-xl border border-border bg-white px-4 text-[13px] font-semibold text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
           >
@@ -273,7 +295,8 @@ function ResultPopup({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
