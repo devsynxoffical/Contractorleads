@@ -20,4 +20,15 @@ YELP_FUSION_API_KEY = optional
 6. Put that URL into NEXT_PUBLIC_APP_URL and redeploy
 7. Open URL → Register → test Home search
 
+## Region (required)
+
+If deploys fail with an unrecognized region like `asia-southeast1-eqsg3a`:
+
+1. Service → **Settings** → **Scale** → **Regions**
+2. Choose **Southeast Asia (Singapore)** (or another listed region)
+3. Redeploy
+
+`railway.toml` pins `asia-southeast1` via `multiRegionConfig` so config-as-code
+overrides a stale dashboard region id.
+
 See railway.toml for build/start commands.

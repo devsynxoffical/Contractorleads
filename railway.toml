@@ -1,16 +1,22 @@
 # Railway deploy config for LeadFlow USA / Contractor Leads
 # Dashboard: https://railway.app → New Project → Deploy from GitHub
-# Redeploy trigger: keep Nixpacks buildCommand in sync with package.json "build"
+#
+# Region must be a current Metal identifier. Old node id
+# "asia-southeast1-eqsg3a" can fail validation — prefer asia-southeast1
+# (Singapore). Config-as-code overrides the dashboard Scale → Regions value.
 
 [build]
-builder = "NIXPACKS"
-# Nixpacks already runs `npm ci` in install — do not run it again (EBUSY on node_modules/.cache)
+builder = "RAILPACK"
+# Railpack / Nixpacks already installs deps — only run the app build here
 buildCommand = "npm run build"
 
 [deploy]
-# next start (via start-railway.mjs) — binds 0.0.0.0:$PORT; fails fast if DATABASE_URL missing
 startCommand = "node scripts/start-railway.mjs"
 restartPolicyType = "ON_FAILURE"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 300
 restartPolicyMaxRetries = 10
+
+# Force a valid Singapore region (overrides stale dashboard region)
+[deploy.multiRegionConfig."asia-southeast1"]
+numReplicas = 1
