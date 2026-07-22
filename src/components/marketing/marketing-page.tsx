@@ -1276,7 +1276,6 @@ export function MarketingPage() {
       <MarketingVisitTracker />
       <ScrollNav />
       <MarketingFluidHero />
-      <MarketingAutomationShowcase />
       <SocialProof />
       <FeaturesGrid />
       <ProblemSection />
@@ -1286,6 +1285,7 @@ export function MarketingPage() {
       <AiSection />
       <Pricing />
       <Faq />
+      <MarketingAutomationShowcase />
       <FinalCta />
       <Footer />
       <StickyCta />
