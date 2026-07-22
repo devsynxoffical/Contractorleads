@@ -40,53 +40,27 @@ function ModuleShell({
   children: ReactNode;
   label: string;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [tilt, setTilt] = useState({ x: 8, y: -10 });
-
-  function onMove(e: React.MouseEvent<HTMLDivElement>) {
-    const el = ref.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    const px = (e.clientX - r.left) / r.width;
-    const py = (e.clientY - r.top) / r.height;
-    setTilt({
-      x: 6 + (0.5 - py) * 10,
-      y: -8 + (px - 0.5) * 14,
-    });
-  }
-
   return (
-    <div className="relative w-full [perspective:1400px]">
+    <div className="relative w-full">
       <div
         className="pointer-events-none absolute -inset-3 rounded-[28px] opacity-40 blur-2xl sm:-inset-4"
         style={{ background: LOGO_GRADIENT }}
         aria-hidden
       />
-      <div
-        ref={ref}
-        onMouseMove={onMove}
-        onMouseLeave={() => setTilt({ x: 8, y: -10 })}
-        className="relative origin-center transition-transform duration-300 ease-out"
-        style={{
-          transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
-          transformStyle: "preserve-3d",
-        }}
-      >
-        <div className="overflow-hidden rounded-[20px] border border-white/15 bg-[#12081f] shadow-[0_30px_80px_rgba(80,40,120,0.4)]">
-          <div className="flex items-center gap-1.5 border-b border-white/10 bg-[#1a102c] px-3.5 py-2.5">
-            <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
-            <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
-            <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
-            <span className="ml-2 truncate text-[12px] font-medium text-white/45">
-              {label}
-            </span>
-            <span className="ml-auto rounded-full border border-fuchsia-400/30 bg-fuchsia-500/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-fuchsia-200">
-              Live 3D
-            </span>
-          </div>
-          <div className="relative min-h-[340px] p-4 sm:min-h-[380px] sm:p-5">
-            {children}
-          </div>
+      <div className="relative overflow-hidden rounded-[20px] border border-white/15 bg-[#12081f] shadow-[0_30px_80px_rgba(80,40,120,0.4)]">
+        <div className="flex items-center gap-1.5 border-b border-white/10 bg-[#1a102c] px-3.5 py-2.5">
+          <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
+          <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
+          <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
+          <span className="ml-2 truncate text-[12px] font-medium text-white/45">
+            {label}
+          </span>
+          <span className="ml-auto rounded-full border border-fuchsia-400/30 bg-fuchsia-500/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-fuchsia-200">
+            Live
+          </span>
+        </div>
+        <div className="relative min-h-[340px] p-4 sm:min-h-[380px] sm:p-5">
+          {children}
         </div>
       </div>
     </div>
@@ -319,11 +293,10 @@ function StickyVisual({ active }: { active: number }) {
       <AnimatePresence mode="wait">
         <motion.div
           key={step.id}
-          initial={{ opacity: 0, y: 24, rotateX: 8 }}
-          animate={{ opacity: 1, y: 0, rotateX: 0 }}
-          exit={{ opacity: 0, y: -18, rotateX: -4 }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          style={{ transformStyle: "preserve-3d" }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -14 }}
+          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
         >
           <StepModule module={step.module} />
         </motion.div>
