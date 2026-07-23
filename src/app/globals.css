@@ -36,8 +36,8 @@ html:not([data-theme="light"]) {
   --border: rgba(217, 70, 239, 0.18);
   --border-strong: rgba(236, 72, 153, 0.35);
   --ink: #f4eef8;
-  --ink-muted: #a89bb8;
-  --ink-faint: #6f6280;
+  --ink-muted: #c9bed8;
+  --ink-faint: #9a8eab;
   --brand-50: rgba(217, 70, 239, 0.1);
   --brand-100: rgba(217, 70, 239, 0.18);
   --brand-200: rgba(236, 72, 153, 0.28);
@@ -59,8 +59,8 @@ html:not([data-theme="light"]) {
   --hud-accent: #d946ef;
   --hud-lime: #f9a8d4;
   --hud-text: #f4eef8;
-  --hud-muted: #a89bb8;
-  --hud-faint: #6f6280;
+  --hud-muted: #c9bed8;
+  --hud-faint: #9a8eab;
   --hud-grid: rgba(217, 70, 239, 0.07);
   --cover-veil: linear-gradient(
     180deg,
@@ -104,9 +104,9 @@ html[data-theme="light"] {
   --surface-elevated: #ffffff;
   --border: rgba(100, 80, 130, 0.12);
   --border-strong: rgba(147, 51, 234, 0.22);
-  --ink: #1a1424;
-  --ink-muted: #5a5168;
-  --ink-faint: #8b8499;
+  --ink: #14101c;
+  --ink-muted: #2f293d;
+  --ink-faint: #4a4358;
   --brand-50: rgba(192, 38, 211, 0.06);
   --brand-100: rgba(192, 38, 211, 0.1);
   --brand-200: rgba(219, 39, 119, 0.16);
@@ -127,9 +127,9 @@ html[data-theme="light"] {
   --hud-cyan-dim: rgba(192, 38, 211, 0.3);
   --hud-accent: #c026d3;
   --hud-lime: #db2777;
-  --hud-text: #1a1424;
-  --hud-muted: #5a5168;
-  --hud-faint: #8b8499;
+  --hud-text: #14101c;
+  --hud-muted: #2f293d;
+  --hud-faint: #4a4358;
   --hud-grid: rgba(100, 80, 130, 0.05);
   --cover-veil: linear-gradient(
     180deg,
@@ -233,15 +233,58 @@ body {
   background: var(--panel-solid);
 }
 
+html[data-theme="light"] .hud-bracket {
+  opacity: 0.35;
+}
+
 /* Light mode: leftover dark HUD colors inside the logged-in shell */
+html[data-theme="light"] .app-shell--hud .text-\[\#e8eef6\],
+html[data-theme="light"] .app-shell--hud .text-\[\#c5d0dc\],
+html[data-theme="light"] .admin-shell--hud .text-\[\#e8eef6\],
+html[data-theme="light"] .admin-shell--hud .text-\[\#c5d0dc\] {
+  color: var(--ink) !important;
+}
 html[data-theme="light"] .app-shell--hud .text-\[\#8b9aab\],
-html[data-theme="light"] .app-shell--hud .text-\[\#7a8899\] {
+html[data-theme="light"] .app-shell--hud .text-\[\#7a8899\],
+html[data-theme="light"] .app-shell--hud .text-\[\#5c6b7c\],
+html[data-theme="light"] .admin-shell--hud .text-\[\#8b9aab\],
+html[data-theme="light"] .admin-shell--hud .text-\[\#7a8899\],
+html[data-theme="light"] .admin-shell--hud .text-\[\#5c6b7c\] {
   color: var(--ink-muted) !important;
 }
+
+/* Dark mode: lift faint slate-blue HUD leftovers onto readable ink */
+html:not([data-theme="light"]) .app-shell--hud .text-\[\#5c6b7c\],
+html:not([data-theme="light"]) .admin-shell--hud .text-\[\#5c6b7c\] {
+  color: var(--ink-faint) !important;
+}
+html:not([data-theme="light"]) .app-shell--hud .text-\[\#8b9aab\],
+html:not([data-theme="light"]) .app-shell--hud .text-\[\#7a8899\],
+html:not([data-theme="light"]) .admin-shell--hud .text-\[\#8b9aab\],
+html:not([data-theme="light"]) .admin-shell--hud .text-\[\#7a8899\] {
+  color: var(--ink-muted) !important;
+}
+html:not([data-theme="light"]) .app-shell--hud .text-\[\#c5d0dc\],
+html:not([data-theme="light"]) .app-shell--hud .text-\[\#e8eef6\],
+html:not([data-theme="light"]) .admin-shell--hud .text-\[\#c5d0dc\],
+html:not([data-theme="light"]) .admin-shell--hud .text-\[\#e8eef6\] {
+  color: var(--ink) !important;
+}
+
+/* Strong primary copy that was white on dark HUD */
+html[data-theme="light"] .admin-shell--hud .hud-panel .text-white:not(.hud-btn-primary):not(.hud-btn-primary *):not(button *),
+html[data-theme="light"] .app-shell--hud .hud-panel .text-white:not(.hud-btn-primary):not(.hud-btn-primary *):not(button *) {
+  color: var(--ink) !important;
+}
+
 html[data-theme="light"] .app-shell--hud .bg-\[\#122033\],
 html[data-theme="light"] .app-shell--hud .bg-\[\#0f1a2c\],
 html[data-theme="light"] .app-shell--hud .bg-\[\#0b1220\],
-html[data-theme="light"] .app-shell--hud .bg-\[\#0a101a\] {
+html[data-theme="light"] .app-shell--hud .bg-\[\#0a101a\],
+html[data-theme="light"] .admin-shell--hud .bg-\[\#122033\],
+html[data-theme="light"] .admin-shell--hud .bg-\[\#0f1a2c\],
+html[data-theme="light"] .admin-shell--hud .bg-\[\#0b1220\],
+html[data-theme="light"] .admin-shell--hud .bg-\[\#0a101a\] {
   background-color: var(--input-bg) !important;
 }
 html[data-theme="light"] .app-shell--hud .hud-dashboard .text-white:not(.hud-btn-primary):not(.hud-btn-primary *) {
@@ -971,21 +1014,23 @@ html[data-theme="light"] .mesh-bg {
 
 .hud-panel {
   position: relative;
-  padding: 1rem 1.1rem;
+  padding: 1.05rem 1.15rem;
   background: var(--hud-surface);
   border: 1px solid var(--border);
+  border-radius: 0.9rem;
   backdrop-filter: blur(10px);
-  box-shadow: inset 0 0 40px rgba(217, 70, 239, 0.04);
+  box-shadow: var(--shadow-card);
 }
 
 .hud-bracket {
   position: absolute;
-  width: 14px;
-  height: 14px;
+  width: 10px;
+  height: 10px;
   border-color: var(--logo-pink);
   border-style: solid;
   pointer-events: none;
   z-index: 2;
+  opacity: 0.55;
 }
 
 .hud-bracket-tl {
@@ -1340,7 +1385,39 @@ html[data-theme="light"] .admin-shell--hud .hud-shell-main .text-ink {
 }
 
 html[data-theme="light"] .admin-shell--hud .hud-shell-main .text-ink-muted {
-  color: #5c4d6e !important;
+  color: #2f293d !important;
+}
+
+html[data-theme="light"] .admin-shell--hud .hud-shell-main .text-ink-faint {
+  color: #4a4358 !important;
+}
+
+/* Remap hardcoded HUD hex text across admin overview / map tables (higher specificity) */
+html[data-theme="light"] .admin-shell--hud .hud-shell-main .text-\[\#e8eef6\],
+html[data-theme="light"] .admin-shell--hud .hud-shell-main .text-\[\#c5d0dc\],
+html[data-theme="light"] .app-shell--hud .hud-shell-main .text-\[\#e8eef6\],
+html[data-theme="light"] .app-shell--hud .hud-shell-main .text-\[\#c5d0dc\] {
+  color: #14101c !important;
+}
+html[data-theme="light"] .admin-shell--hud .hud-shell-main .text-\[\#8b9aab\],
+html[data-theme="light"] .admin-shell--hud .hud-shell-main .text-\[\#5c6b7c\],
+html[data-theme="light"] .admin-shell--hud .hud-shell-main .text-\[\#7a8899\],
+html[data-theme="light"] .app-shell--hud .hud-shell-main .text-\[\#8b9aab\],
+html[data-theme="light"] .app-shell--hud .hud-shell-main .text-\[\#5c6b7c\],
+html[data-theme="light"] .app-shell--hud .hud-shell-main .text-\[\#7a8899\] {
+  color: #2f293d !important;
+}
+
+html[data-theme="light"] .admin-shell--hud .hud-shell-main .hud-panel .text-white:not(a):not(button):not(button *),
+html[data-theme="light"] .app-shell--hud .hud-shell-main .hud-panel .text-white:not(a):not(button):not(button *) {
+  color: #14101c !important;
+}
+
+html[data-theme="light"] .lead-vector-map .jvm-tooltip {
+  background: #ffffff !important;
+  border-color: rgba(147, 51, 234, 0.22) !important;
+  color: #14101c !important;
+  box-shadow: 0 8px 24px rgba(40, 30, 60, 0.12) !important;
 }
 
 /* App main parity with admin — beat leftover dark utilities in light mode */
@@ -1351,19 +1428,61 @@ html[data-theme="light"] .app-shell--hud .hud-shell-main .bg-\[\#0b1220\],
 html[data-theme="light"] .app-shell--hud .hud-shell-main .bg-\[\#0a101a\],
 html[data-theme="light"] .app-shell--hud .hud-shell-main .bg-\[\#122033\] {
   background: #ffffff !important;
-  color: #1c1228 !important;
+  color: #14101c !important;
 }
 
 html[data-theme="light"] .app-shell--hud .hud-shell-main .text-ink {
-  color: #1c1228 !important;
+  color: #14101c !important;
 }
 
 html[data-theme="light"] .app-shell--hud .hud-shell-main .text-ink-muted {
-  color: #5c4d6e !important;
+  color: #2f293d !important;
 }
 
 html[data-theme="light"] .app-shell--hud .hud-shell-main .text-ink-faint {
-  color: #8b7a9e !important;
+  color: #4a4358 !important;
+}
+
+/* Slate utilities → theme ink (both shells, both themes) */
+html[data-theme="light"] .app-shell--hud .text-slate-900,
+html[data-theme="light"] .app-shell--hud .text-slate-800,
+html[data-theme="light"] .admin-shell--hud .text-slate-900,
+html[data-theme="light"] .admin-shell--hud .text-slate-800 {
+  color: #14101c !important;
+}
+html[data-theme="light"] .app-shell--hud .text-slate-600,
+html[data-theme="light"] .app-shell--hud .text-slate-500,
+html[data-theme="light"] .admin-shell--hud .text-slate-600,
+html[data-theme="light"] .admin-shell--hud .text-slate-500 {
+  color: #2f293d !important;
+}
+html[data-theme="light"] .app-shell--hud .text-slate-400,
+html[data-theme="light"] .admin-shell--hud .text-slate-400 {
+  color: #4a4358 !important;
+}
+
+html:not([data-theme="light"]) .app-shell--hud .text-slate-900,
+html:not([data-theme="light"]) .app-shell--hud .text-slate-800,
+html:not([data-theme="light"]) .app-shell--hud .text-slate-700,
+html:not([data-theme="light"]) .admin-shell--hud .text-slate-900,
+html:not([data-theme="light"]) .admin-shell--hud .text-slate-800,
+html:not([data-theme="light"]) .admin-shell--hud .text-slate-700 {
+  color: var(--ink) !important;
+}
+html:not([data-theme="light"]) .app-shell--hud .text-slate-600,
+html:not([data-theme="light"]) .app-shell--hud .text-slate-500,
+html:not([data-theme="light"]) .app-shell--hud .text-slate-400,
+html:not([data-theme="light"]) .admin-shell--hud .text-slate-600,
+html:not([data-theme="light"]) .admin-shell--hud .text-slate-500,
+html:not([data-theme="light"]) .admin-shell--hud .text-slate-400 {
+  color: var(--ink-muted) !important;
+}
+
+html:not([data-theme="light"]) .app-shell--hud .border-slate-200,
+html:not([data-theme="light"]) .app-shell--hud .border-slate-100,
+html:not([data-theme="light"]) .admin-shell--hud .border-slate-200,
+html:not([data-theme="light"]) .admin-shell--hud .border-slate-100 {
+  border-color: var(--border) !important;
 }
 
 html[data-theme="light"] .app-shell--hud .hud-shell-main .bg-white\/90,

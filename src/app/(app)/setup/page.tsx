@@ -40,20 +40,20 @@ function SetupCard({
     <Link
       href={href}
       className={cn(
-        "group flex flex-col rounded-2xl border bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition hover:shadow-[0_12px_32px_rgba(15,23,42,0.08)]",
-        ready ? "border-emerald-200" : "border-slate-200",
+        "group flex flex-col rounded-2xl border bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] transition hover:border-brand-200 hover:shadow-[var(--shadow-elevated)]",
+        ready ? "border-emerald-500/35" : "border-border",
       )}
     >
       <div className="flex items-start justify-between gap-3">
-        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-900 text-white">
+        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-ink text-[var(--canvas)] dark:bg-brand-500 dark:text-white">
           <Icon className="h-5 w-5" />
         </span>
         <span
           className={cn(
             "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide",
             ready
-              ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100"
-              : "bg-amber-50 text-amber-800 ring-1 ring-amber-100",
+              ? "bg-emerald-500/15 text-emerald-700 ring-1 ring-emerald-500/25 dark:text-emerald-300"
+              : "bg-amber-500/15 text-amber-800 ring-1 ring-amber-500/25 dark:text-amber-200",
           )}
         >
           {ready ? (
@@ -64,11 +64,11 @@ function SetupCard({
           {ready ? "Ready" : "Needs setup"}
         </span>
       </div>
-      <h2 className="mt-4 text-[17px] font-semibold text-slate-900">{title}</h2>
-      <p className="mt-1.5 flex-1 text-[13px] leading-relaxed text-slate-500">
+      <h2 className="mt-4 text-[17px] font-semibold text-ink">{title}</h2>
+      <p className="mt-1.5 flex-1 text-[13px] leading-relaxed text-ink-muted">
         {body}
       </p>
-      <span className="mt-4 inline-flex items-center gap-1.5 text-[13px] font-semibold text-slate-900 group-hover:gap-2">
+      <span className="mt-4 inline-flex items-center gap-1.5 text-[13px] font-semibold text-ink group-hover:gap-2">
         {cta}
         <HiOutlineArrowRight className="h-4 w-4" />
       </span>
@@ -133,21 +133,24 @@ export default function SetupHubPage() {
       description="Set up email, API access, and CRM sync on their own pages — not buried in Settings. Finish these once and your team can sell."
       statuses={statuses}
     >
-      <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-900 to-slate-800 p-5 text-white sm:p-6">
-        <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-white/55">
+      <div className="rounded-2xl border border-border bg-ink p-5 text-[var(--canvas)] dark:bg-gradient-to-br dark:from-brand-700 dark:to-[#1a1228] dark:text-white sm:p-6">
+        <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--canvas)]/70 dark:text-white/70">
           Setup progress
         </p>
         <p className="mt-1 text-[28px] font-semibold tabular-nums">
           {doneCount}
-          <span className="text-[16px] font-medium text-white/50"> / 4</span>
+          <span className="text-[16px] font-medium text-[var(--canvas)]/55 dark:text-white/55">
+            {" "}
+            / 4
+          </span>
         </p>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/15">
+        <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--canvas)]/20 dark:bg-white/15">
           <div
             className="h-full rounded-full bg-emerald-400 transition-all"
             style={{ width: `${(doneCount / 4) * 100}%` }}
           />
         </div>
-        <p className="mt-3 text-[13px] text-white/70">
+        <p className="mt-3 text-[13px] text-[var(--canvas)]/75 dark:text-white/75">
           Recommended order: Email → API → CRM → Business profile.
         </p>
       </div>

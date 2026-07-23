@@ -14,7 +14,7 @@ const LeadGeoMapInner = dynamic(
     ssr: false,
     loading: () => (
       <div className="hud-panel flex h-[420px] items-center justify-center sm:h-[520px]">
-        <p className="text-[13px] text-[#8b9aab]">Loading global map…</p>
+        <p className="text-[13px] text-ink-muted">Loading global map…</p>
       </div>
     ),
   }

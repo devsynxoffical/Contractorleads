@@ -58,7 +58,7 @@ export function AuthShell({
             <h1 className="mt-3 text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl lg:text-[2.75rem]">
               {headline}
             </h1>
-            <p className="mt-4 max-w-md text-[15px] leading-relaxed text-[#8b9aab]">
+            <p className="mt-4 max-w-md text-[15px] leading-relaxed text-white/75">
               {description}
             </p>
 
@@ -70,7 +70,7 @@ export function AuthShell({
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center border border-brand-500/30 bg-brand-500/10 text-brand-500">
                       <Icon className="h-5 w-5" />
                     </span>
-                    <span className="text-sm font-medium text-[#c5d0dc]">
+                    <span className="text-sm font-medium text-white/90">
                       {feature.label}
                     </span>
                   </li>
@@ -92,7 +92,7 @@ export function AuthShell({
       </div>
 
       <footer className="relative z-10 border-t border-brand-500/10 bg-[#0b1220]/70 px-6 py-4 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 text-xs text-[#5c6b7c] sm:flex-row">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 text-xs text-white/55 sm:flex-row">
           <p>© 2026 Contractor Leads. All rights reserved.</p>
           <div className="flex gap-5">
             <Link href="#" className="hover:text-brand-500">

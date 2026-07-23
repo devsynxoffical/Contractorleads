@@ -355,17 +355,17 @@ export function LeadGeoMapInner({
         <span className="hud-bracket hud-bracket-bl" aria-hidden />
         <span className="hud-bracket hud-bracket-br" aria-hidden />
 
-        <div className="relative z-[1] flex flex-wrap items-start justify-between gap-3 border-b border-brand-500/10 px-5 py-3">
+        <div className="relative z-[1] flex flex-wrap items-start justify-between gap-3 border-b border-border px-5 py-3.5">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8b9aab]">
+            <p className="text-[13px] font-semibold tracking-tight text-ink">
               {title}
             </p>
-            <h2 className="mt-0.5 text-sm font-semibold text-white">
+            <h2 className="mt-0.5 text-[12px] text-ink-muted">
               {subtitle}
             </h2>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-3 text-[10px] font-medium uppercase tracking-wide text-[#8b9aab]">
+            <div className="flex items-center gap-3 text-[11px] font-medium text-ink-muted">
               <span className="inline-flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-[#f472b6]" /> Hot
               </span>
@@ -379,7 +379,7 @@ export function LeadGeoMapInner({
             <button
               type="button"
               onClick={resetView}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-brand-500/25 bg-white/[0.04] px-2.5 py-1.5 text-[11px] font-semibold text-[#c5d0dc] transition hover:border-brand-500/45 hover:text-white"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-brand-500/25 bg-[var(--input-bg)] px-2.5 py-1.5 text-[11px] font-semibold text-ink transition hover:border-brand-500/45 hover:text-brand-500"
             >
               <HiOutlineArrowsPointingOut className="h-3.5 w-3.5" />
               Reset view
@@ -388,7 +388,7 @@ export function LeadGeoMapInner({
         </div>
 
         <div
-          className={`relative z-[1] w-full overflow-hidden bg-[#0a101a] ${
+          className={`relative z-[1] w-full overflow-hidden bg-[var(--input-bg)] ${
             compact
               ? "h-[320px] sm:h-[380px]"
               : "h-[400px] sm:h-[480px] lg:h-[540px]"
@@ -397,12 +397,12 @@ export function LeadGeoMapInner({
           <div ref={mapEl} className="lead-vector-map h-full w-full" />
 
           {!plotLeads.length && (
-            <div className="pointer-events-none absolute inset-0 z-[5] flex flex-col items-center justify-center gap-2 bg-[#0a101a]/70 px-6 text-center">
+            <div className="pointer-events-none absolute inset-0 z-[5] flex flex-col items-center justify-center gap-2 bg-[var(--panel-solid)]/80 px-6 text-center">
               <HiOutlineMapPin className="h-8 w-8 text-brand-500" />
-              <p className="text-sm font-medium text-white">
+              <p className="text-sm font-medium text-ink">
                 No mapped leads yet
               </p>
-              <p className="max-w-sm text-[13px] text-[#8b9aab]">
+              <p className="max-w-sm text-[13px] text-ink-muted">
                 Leads with coordinates or a Google Maps link appear as pins
                 here.
               </p>
@@ -414,16 +414,16 @@ export function LeadGeoMapInner({
           <div className="overflow-x-auto">
             <table className="w-full min-w-[320px] text-left text-[12px]">
               <thead>
-                <tr className="border-b border-brand-500/10 text-[10px] uppercase tracking-[0.16em] text-[#5c6b7c]">
-                  <th className="px-5 py-3 font-semibold">Country</th>
-                  <th className="px-3 py-3 font-semibold">Leads</th>
-                  <th className="px-5 py-3 font-semibold">Pct%</th>
+                <tr className="border-b border-border text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">
+                  <th className="px-5 py-3">Country</th>
+                  <th className="px-3 py-3">Leads</th>
+                  <th className="px-5 py-3">Pct%</th>
                 </tr>
               </thead>
               <tbody>
                 {countryRows.length === 0 ? (
                   <tr>
-                    <td colSpan={3} className="px-5 py-6 text-[#5c6b7c]">
+                    <td colSpan={3} className="px-5 py-6 text-ink-faint">
                       No country data yet
                     </td>
                   </tr>
@@ -437,19 +437,19 @@ export function LeadGeoMapInner({
                           setActiveCountry(row.code);
                           setActiveLeadId(null);
                         }}
-                        className={`cursor-pointer border-b border-white/[0.04] transition ${
+                        className={`cursor-pointer border-b border-border/70 transition ${
                           active
-                            ? "bg-brand-500/10 text-brand-500"
-                            : "text-[#c5d0dc] hover:bg-white/[0.03]"
+                            ? "bg-brand-50 text-brand-600"
+                            : "text-ink hover:bg-[var(--input-bg)]"
                         }`}
                       >
-                        <td className="px-5 py-2.5 font-semibold uppercase tracking-wide">
+                        <td className="px-5 py-2.5 font-semibold tracking-wide">
                           {row.name}
                         </td>
-                        <td className="px-3 py-2.5 tabular-nums">
+                        <td className="px-3 py-2.5 tabular-nums font-medium">
                           {row.count}
                         </td>
-                        <td className="px-5 py-2.5 tabular-nums">
+                        <td className="px-5 py-2.5 tabular-nums font-medium">
                           {row.pct}%
                         </td>
                       </tr>
@@ -470,16 +470,16 @@ export function LeadGeoMapInner({
                 )}deg, rgba(168,85,247,0.12) 0)`,
               }}
             >
-              <div className="flex h-[64px] w-[64px] flex-col items-center justify-center rounded-full bg-[#0b1220]">
-                <span className="text-lg font-bold tabular-nums text-white">
+              <div className="flex h-[64px] w-[64px] flex-col items-center justify-center rounded-full bg-[var(--panel-solid)]">
+                <span className="text-lg font-bold tabular-nums text-ink">
                   {plotLeads.length}
                 </span>
-                <span className="text-[9px] uppercase tracking-wider text-[#5c6b7c]">
+                <span className="text-[9px] uppercase tracking-wider text-ink-faint">
                   pins
                 </span>
               </div>
             </div>
-            <p className="text-center text-[11px] text-[#8b9aab]">
+            <p className="text-center text-[11px] text-ink-muted">
               {countryRows[0]
                 ? `${countryRows[0].name} leads ${countryRows[0].pct}%`
                 : "Awaiting mapped leads"}
@@ -492,16 +492,16 @@ export function LeadGeoMapInner({
         <div className="hud-panel">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#5c6b7c]">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-faint">
                 Selected pin
               </p>
               <Link
                 href={leadHref(leadDetailBase, activeLead.id)}
-                className="mt-1 block text-base font-semibold text-white hover:text-brand-500"
+                className="mt-1 block text-base font-semibold text-ink hover:text-brand-500"
               >
                 {activeLead.businessName}
               </Link>
-              <p className="mt-1 text-xs text-[#8b9aab]">
+              <p className="mt-1 text-xs text-ink-muted">
                 {activeLead.address ||
                   [activeLead.city, activeLead.state, activeLead.country]
                     .filter(Boolean)
@@ -535,8 +535,8 @@ export function LeadGeoMapInner({
                 activeLeadId === lead.id ? "ring-1 ring-brand-500/40" : ""
               }`}
             >
-              <p className="font-semibold text-white">{lead.businessName}</p>
-              <p className="mt-1 text-xs text-[#8b9aab]">
+              <p className="font-semibold text-ink">{lead.businessName}</p>
+              <p className="mt-1 text-xs text-ink-muted">
                 {lead.city || lead.state
                   ? [lead.city, lead.state].filter(Boolean).join(", ")
                   : lead.address || countryLabel(lead.country)}

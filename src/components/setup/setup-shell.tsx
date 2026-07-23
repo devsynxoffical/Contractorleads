@@ -64,8 +64,8 @@ export function SetupNav({
             className={cn(
               "inline-flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-semibold transition",
               active
-                ? "bg-slate-900 text-white shadow-sm"
-                : "border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50",
+                ? "bg-ink text-[var(--canvas)] shadow-sm dark:bg-brand-500 dark:text-white"
+                : "border border-border bg-[var(--surface)] text-ink hover:border-brand-200 hover:bg-brand-50",
             )}
           >
             <step.icon className="h-4 w-4 shrink-0 opacity-80" />
@@ -101,13 +101,13 @@ export function SetupShell({
   return (
     <div className="page-pad">
       <div className="mb-6">
-        <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+        <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-ink-muted">
           Workspace setup
         </p>
-        <h1 className="mt-1 font-[family-name:var(--font-display)] text-[clamp(1.5rem,3vw,2rem)] font-semibold tracking-tight text-slate-900">
+        <h1 className="mt-1 font-[family-name:var(--font-display)] text-[clamp(1.5rem,3vw,2rem)] font-semibold tracking-tight text-ink">
           {title}
         </h1>
-        <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-slate-500">
+        <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-ink-muted">
           {description}
         </p>
       </div>
@@ -116,18 +116,18 @@ export function SetupShell({
         <aside className="lg:sticky lg:top-24 lg:self-start">
           <SetupNav statuses={statuses} />
           {steps?.length ? (
-            <ol className="mt-6 hidden space-y-3 rounded-2xl border border-slate-200 bg-white p-4 lg:block">
-              <li className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+            <ol className="mt-6 hidden space-y-3 rounded-2xl border border-border bg-[var(--surface)] p-4 lg:block">
+              <li className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
                 On this page
               </li>
               {steps.map((s, i) => (
                 <li key={s.title} className="flex gap-2.5 text-[12px]">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-900 text-[10px] font-bold text-white">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ink text-[10px] font-bold text-[var(--canvas)] dark:bg-brand-500 dark:text-white">
                     {i + 1}
                   </span>
                   <span>
-                    <span className="font-semibold text-slate-800">{s.title}</span>
-                    <span className="mt-0.5 block text-slate-500">{s.body}</span>
+                    <span className="font-semibold text-ink">{s.title}</span>
+                    <span className="mt-0.5 block text-ink-muted">{s.body}</span>
                   </span>
                 </li>
               ))}

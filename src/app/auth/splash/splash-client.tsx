@@ -49,7 +49,7 @@ export default function AuthSplashClient() {
         >
           Contractor Leads
         </h1>
-        <p className="mt-2 text-sm text-[#8b9aab]">Loading your workspace…</p>
+        <p className="mt-2 text-sm text-ink-muted">Loading your workspace…</p>
         <div
           className="mt-8 h-1 w-32 overflow-hidden bg-[#122033]"
           aria-hidden

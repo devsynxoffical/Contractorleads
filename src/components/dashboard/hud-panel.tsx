@@ -21,15 +21,17 @@ export function HudPanel({
       <span className="hud-bracket hud-bracket-bl" aria-hidden />
       <span className="hud-bracket hud-bracket-br" aria-hidden />
       {(title || actions) && (
-        <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-2 border-b border-border pb-3">
           <div className="min-w-0">
             {title && (
-              <h3 className="text-[13px] font-semibold uppercase tracking-[0.12em] text-brand-400">
+              <h3 className="text-[13px] font-semibold tracking-tight text-ink">
                 {title}
               </h3>
             )}
             {subtitle && (
-              <p className="mt-0.5 text-[11px] text-ink-muted">{subtitle}</p>
+              <p className="mt-0.5 text-[12px] leading-snug text-ink-muted">
+                {subtitle}
+              </p>
             )}
           </div>
           {actions}

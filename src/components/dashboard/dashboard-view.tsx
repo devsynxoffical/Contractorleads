@@ -472,7 +472,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
           {/* Quality + welcome */}
           <div className="space-y-5">
             <HudPanel title="Signal" subtitle={`Welcome back, ${user.name || firstName}`}>
-              <p className="text-[13px] leading-relaxed text-[#c5d0dc]">
+              <p className="text-[13px] leading-relaxed text-ink">
                 You generated{" "}
                 <strong className="text-ink">{weekLeads} new leads</strong> this
                 week. Only AI-verified, quality-scored records surface here —
@@ -529,10 +529,10 @@ export function DashboardView({ user }: { user: SessionUser }) {
                   return (
                     <Link key={q.label} href={q.href} className="block">
                       <div className="mb-1 flex items-center justify-between text-[12px]">
-                        <span className="flex items-center gap-2 text-[#c5d0dc]">
+                        <span className="flex items-center gap-2 text-ink">
                           <Icon className="h-4 w-4" style={{ color: q.color }} />
                           {q.label}
-                          <span className="text-[#5c6b7c]">({q.count})</span>
+                          <span className="text-ink-faint">({q.count})</span>
                         </span>
                         <span className="font-bold" style={{ color: q.color }}>
                           {q.pct}%
@@ -595,7 +595,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
                 </li>
               ))}
               {!data?.topIndustries?.length && (
-                <li className="py-6 text-center text-[13px] text-[#5c6b7c]">
+                <li className="py-6 text-center text-[13px] text-ink-faint">
                   Industries appear after your first search.
                 </li>
               )}
@@ -619,7 +619,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
                               .join(", ")}
                       </span>
                     </p>
-                    <p className="mt-0.5 text-[11px] text-[#5c6b7c]">
+                    <p className="mt-0.5 text-[11px] text-ink-faint">
                       {s.resultCount} leads ·{" "}
                       {new Date(s.createdAt).toLocaleDateString(undefined, {
                         month: "short",
@@ -630,7 +630,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
                 </li>
               ))}
               {!data?.recentSearches?.length && (
-                <li className="py-6 text-center text-[13px] text-[#5c6b7c]">
+                <li className="py-6 text-center text-[13px] text-ink-faint">
                   No searches yet.
                 </li>
               )}
@@ -651,10 +651,10 @@ export function DashboardView({ user }: { user: SessionUser }) {
                     {a.type.slice(0, 8)}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[12px] leading-snug text-[#c5d0dc]">
+                    <p className="text-[12px] leading-snug text-ink">
                       {a.message}
                     </p>
-                    <p className="mt-0.5 text-[10px] text-[#5c6b7c]">
+                    <p className="mt-0.5 text-[10px] text-ink-faint">
                       {new Date(a.createdAt).toLocaleString(undefined, {
                         month: "short",
                         day: "numeric",
@@ -666,7 +666,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
                 </li>
               ))}
               {!data?.activities?.length && (
-                <li className="py-6 text-center text-[13px] text-[#5c6b7c]">
+                <li className="py-6 text-center text-[13px] text-ink-faint">
                   Activity appears after your first search.
                 </li>
               )}
@@ -686,7 +686,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
                     <p className="text-[13px] font-semibold uppercase text-ink">
                       {e.format}
                     </p>
-                    <p className="text-[11px] text-[#5c6b7c]">
+                    <p className="text-[11px] text-ink-faint">
                       {e.leadCount} leads ·{" "}
                       {new Date(e.createdAt).toLocaleDateString(undefined, {
                         month: "short",
@@ -698,7 +698,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
                 </li>
               ))}
               {!data?.recentExports?.length && (
-                <li className="py-6 text-center text-[13px] text-[#5c6b7c]">
+                <li className="py-6 text-center text-[13px] text-ink-faint">
                   No exports yet.
                 </li>
               )}

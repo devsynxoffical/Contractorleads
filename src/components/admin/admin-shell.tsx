@@ -279,7 +279,7 @@ export function AdminShell({
                 "shrink-0 rounded-full px-3 py-1.5 text-[11px] font-semibold",
                 isActive(pathname, item.href)
                   ? "bg-brand-500/15 text-brand-500"
-                  : "bg-white/[0.04] text-[#8b9aab]"
+                  : "bg-white/[0.04] text-ink-muted"
               )}
             >
               {item.label}
@@ -299,24 +299,36 @@ export function AdminStatCard({
   label,
   value,
   hint,
+  compact,
 }: {
   label: string;
   value: string | number;
   hint?: string;
+  compact?: boolean;
 }) {
   return (
-    <div className="hud-panel !p-4">
-      <span className="hud-bracket hud-bracket-tl" aria-hidden />
-      <span className="hud-bracket hud-bracket-tr" aria-hidden />
-      <span className="hud-bracket hud-bracket-bl" aria-hidden />
-      <span className="hud-bracket hud-bracket-br" aria-hidden />
-      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+    <div
+      className={cn(
+        "rounded-xl border border-border bg-[var(--surface)]",
+        compact ? "px-3.5 py-3" : "px-4 py-3.5",
+      )}
+    >
+      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-faint">
         {label}
       </p>
-      <p className="hud-stat-value mt-1 text-2xl font-semibold tabular-nums text-ink">
+      <p
+        className={cn(
+          "mt-1 font-semibold tabular-nums tracking-tight text-ink",
+          compact ? "text-xl" : "text-2xl",
+        )}
+      >
         {value}
       </p>
-      {hint && <p className="mt-1 text-[12px] text-ink-muted">{hint}</p>}
+      {hint ? (
+        <p className="mt-1 line-clamp-2 text-[12px] leading-snug text-ink-muted">
+          {hint}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -331,16 +343,20 @@ export function AdminPageHeader({
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <h1 className="font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-brand-500 [text-shadow:0_0_24px_var(--brand-glow)]">
+    <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="min-w-0">
+        <h1 className="font-[family-name:var(--font-display)] text-[1.65rem] font-semibold tracking-tight text-ink sm:text-2xl">
           {title}
         </h1>
-        {description && (
-          <p className="mt-1 text-sm text-ink-muted">{description}</p>
-        )}
+        {description ? (
+          <p className="mt-1 max-w-xl text-sm leading-relaxed text-ink-muted">
+            {description}
+          </p>
+        ) : null}
       </div>
-      {actions}
+      {actions ? (
+        <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>
+      ) : null}
     </div>
   );
 }

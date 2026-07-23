@@ -697,7 +697,7 @@ export function LeadSearchForm() {
               </div>
             )}
             {filterNote && !error && (
-              <div className="mt-4 rounded-lg border border-brand-500/25 bg-brand-500/08 px-3 py-2 text-sm text-[#c5d0dc]">
+              <div className="mt-4 rounded-lg border border-brand-500/25 bg-brand-500/08 px-3 py-2 text-sm text-ink">
                 {filterNote}
               </div>
             )}

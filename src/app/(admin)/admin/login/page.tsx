@@ -49,10 +49,10 @@ export default function AdminLoginPage() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-500">
             Admin portal
           </p>
-          <h1 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-white">
+          <h1 className="mt-2 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-ink">
             Control Panel sign in
           </h1>
-          <p className="mt-1.5 text-sm text-[#8b9aab]">
+          <p className="mt-1.5 text-sm text-ink-muted">
             For Super Admin, Manager, and Sub Admin staff. Agencies use the
             regular login.
           </p>
@@ -60,9 +60,9 @@ export default function AdminLoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-3 px-7 py-6 sm:px-8">
           <label className="block text-[12px]">
-            <span className="font-medium text-[#8b9aab]">Email</span>
+            <span className="font-medium text-ink-muted">Email</span>
             <div className="relative mt-1">
-              <HiOutlineEnvelope className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5c6b7c]" />
+              <HiOutlineEnvelope className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
               <input
                 type="email"
                 required
@@ -75,9 +75,9 @@ export default function AdminLoginPage() {
             </div>
           </label>
           <label className="block text-[12px]">
-            <span className="font-medium text-[#8b9aab]">Password</span>
+            <span className="font-medium text-ink-muted">Password</span>
             <div className="relative mt-1">
-              <HiOutlineLockClosed className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5c6b7c]" />
+              <HiOutlineLockClosed className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
               <input
                 type="password"
                 required
@@ -104,7 +104,7 @@ export default function AdminLoginPage() {
           </button>
         </form>
 
-        <p className="border-t border-brand-500/10 px-7 py-4 text-center text-[12px] text-[#5c6b7c] sm:px-8">
+        <p className="border-t border-brand-500/10 px-7 py-4 text-center text-[12px] text-ink-faint sm:px-8">
           Agency account?{" "}
           <Link
             href="/login"
