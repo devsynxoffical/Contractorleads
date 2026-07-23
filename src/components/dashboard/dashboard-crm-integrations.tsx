@@ -14,7 +14,7 @@ import {
   HiOutlineKey,
   HiOutlineWrenchScrewdriver,
 } from "react-icons/hi2";
-import { SiMeta, SiZapier, SiHubspot } from "react-icons/si";
+import { SiMeta, SiZapier } from "react-icons/si";
 import { FaLinkedinIn } from "react-icons/fa6";
 import { cn } from "@/lib/utils";
 import { HudPanel } from "@/components/dashboard/hud-panel";
