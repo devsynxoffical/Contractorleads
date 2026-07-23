@@ -45,7 +45,9 @@ import type { SessionUser } from "@/lib/session-user";
 import { TopHeader } from "@/components/layout/top-header";
 import { SupportChatWidget } from "@/components/ai/support-chat-widget";
 import { WorkspaceSettingsMenu } from "@/components/layout/workspace-settings-menu";
-import { planHasFeature } from "@/lib/plans";
+import { userHasPlanFeature } from "@/lib/plan-access";
+import { ADMIN_STAFF_ROLES } from "@/lib/roles";
+import { ProductTourWalkthrough } from "@/components/onboarding/product-tour-walkthrough";
 
 type NavItem = {
   href: string;
@@ -142,7 +144,7 @@ function buildSections(user: SessionUser): NavSection[] {
     .map((section) => ({
       ...section,
       items: section.items.filter(
-        (item) => !item.feature || planHasFeature(user.plan, item.feature),
+        (item) => !item.feature || userHasPlanFeature(user, item.feature),
       ),
     }))
     .filter((section) => section.items.length > 0);
@@ -386,6 +388,26 @@ export function AppShell({
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [tourDone, setTourDone] = useState(
+    Boolean(user.productTourCompleted),
+  );
+  const [forceTour, setForceTour] = useState(false);
+
+  useEffect(() => {
+    function onReplay() {
+      setForceTour(true);
+      setTourDone(false);
+    }
+    window.addEventListener("leadflow:replay-product-tour", onReplay);
+    return () => {
+      window.removeEventListener("leadflow:replay-product-tour", onReplay);
+    };
+  }, []);
+
+  const showProductTour =
+    (forceTour || !tourDone) &&
+    !user.impersonating &&
+    !(ADMIN_STAFF_ROLES as readonly string[]).includes(user.role);
 
   useEffect(() => {
     const stored = localStorage.getItem(SIDEBAR_KEY);
@@ -515,6 +537,13 @@ export function AppShell({
       </div>
 
       <SupportChatWidget user={user} />
+      <ProductTourWalkthrough
+        open={showProductTour}
+        onCompleted={() => {
+          setTourDone(true);
+          setForceTour(false);
+        }}
+      />
     </div>
   );
 }

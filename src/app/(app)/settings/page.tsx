@@ -3,7 +3,7 @@ import { getSessionUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import Link from "next/link";
-import { planHasFeature } from "@/lib/plans";
+import { userHasPlanFeature } from "@/lib/plan-access";
 
 export default async function SettingsPage() {
   const user = await getSessionUser();
@@ -29,7 +29,7 @@ export default async function SettingsPage() {
           Billing and plan usage
         </Link>
         <Link
-          href={planHasFeature(user.plan, "teams") ? "/team" : "/billing"}
+          href={userHasPlanFeature(user, "teams") ? "/team" : "/billing"}
           className="rounded-xl border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-800 hover:border-slate-300"
         >
           Users &amp; teams

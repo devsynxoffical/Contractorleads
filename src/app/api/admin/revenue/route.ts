@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ADMIN_STAFF_ROLES, requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ADMIN_PLANS } from "@/lib/admin";
+import { getPlanPriceMap, normalizePlan } from "@/lib/plans";
 
 export async function GET() {
   const admin = await requirePermission("revenue");
@@ -9,7 +10,7 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const [planGroups, statusGroups, customers] = await Promise.all([
+  const [planGroups, statusGroups, customers, prices] = await Promise.all([
     prisma.user.groupBy({
       by: ["plan"],
       where: { role: { notIn: [...ADMIN_STAFF_ROLES] } },
@@ -36,9 +37,21 @@ export async function GET() {
         createdAt: true,
       },
     }),
+    getPlanPriceMap(),
   ]);
 
-  const estimatedMrr: number | null = null;
+  const activePaid = await prisma.user.findMany({
+    where: {
+      role: { notIn: [...ADMIN_STAFF_ROLES] },
+      subscriptionStatus: { in: ["active", "trialing"] },
+      plan: { in: ["starter", "growth", "agency", "enterprise"] },
+    },
+    select: { plan: true },
+  });
+
+  const estimatedMrr = activePaid.reduce((sum, u) => {
+    return sum + (prices[normalizePlan(u.plan)] ?? 0);
+  }, 0);
 
   return NextResponse.json({
     planMix: planGroups.map((g) => ({
@@ -50,7 +63,7 @@ export async function GET() {
       status: g.subscriptionStatus,
       count: g._count._all,
     })),
-    estimatedMrr,
+    estimatedMrr: Math.round(estimatedMrr * 100) / 100,
     plans: ADMIN_PLANS,
     customers,
   });

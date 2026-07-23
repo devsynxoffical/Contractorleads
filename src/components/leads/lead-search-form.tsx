@@ -426,8 +426,8 @@ export function LeadSearchForm() {
         <div className="stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatChip label="Coverage" value="Tier 1" hint="US · CA · UK · AU · NZ" />
           <StatChip label="Industries" value="12" hint="Roofing → GCs" />
-          <StatChip label="Cost" value="1.33 credits" hint="Per lead" />
-          <StatChip label="Pipeline" value="4 layers" hint="Places → AI score" />
+          <StatChip label="Find" value="Free" hint="Up to 1,000 leads" />
+          <StatChip label="Unlock" value="1.33 credits" hint="View / export" />
         </div>
       </div>
 

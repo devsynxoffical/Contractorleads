@@ -30,7 +30,7 @@ import {
   type DashboardIntegrations,
   type DashboardPipeline,
 } from "@/components/dashboard/dashboard-crm-integrations";
-import { planHasFeature } from "@/lib/plans";
+import { userHasPlanFeature } from "@/lib/plan-access";
 
 type DashboardData = {
   stats: {
@@ -345,7 +345,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
               desc: "New → closed",
               icon: HiOutlineViewColumns,
             },
-            ...(planHasFeature(user.plan, "teams")
+            ...(userHasPlanFeature(user, "teams")
               ? [
                   {
                     href: "/team",

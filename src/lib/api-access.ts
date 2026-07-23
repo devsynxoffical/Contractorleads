@@ -4,6 +4,7 @@ import {
   defaultApiLimitForPlan as planApiLimit,
   featuresForPlan,
 } from "@/lib/plans";
+import { isSubscriptionEntitled } from "@/lib/plan-access";
 
 export type IntegrationKind = "api" | "mcp" | "sso";
 
@@ -70,6 +71,7 @@ export async function assertIntegrationEnabledForUser(userId: string, kind: Inte
       plan: true,
       role: true,
       isActive: true,
+      subscriptionStatus: true,
       apiEnabled: true,
       mcpEnabled: true,
       ssoEnabled: true,
@@ -90,6 +92,13 @@ export async function assertIntegrationEnabledForUser(userId: string, kind: Inte
   // Super admin / staff always have API + MCP + SSO (plan display is informational)
   if (isStaff) {
     return { ok: true as const, user };
+  }
+
+  if (!isSubscriptionEntitled(user.subscriptionStatus, user.plan)) {
+    return {
+      ok: false as const,
+      error: "Subscription inactive — update billing to restore access",
+    };
   }
 
   if (!planFeatureEnabled(user.plan, kind)) {

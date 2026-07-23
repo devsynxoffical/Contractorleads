@@ -209,9 +209,9 @@ export const LEAD_STATUSES = [
 ] as const;
 
 export const CREDIT_COSTS = {
-  /** Credits charged per lead requested in Lead Finder. */
+  /** Credits charged to unlock / export one lead (search itself is free). */
   lead: 1.33,
-  search: 1.33,
+  search: 0,
   assistant: 1.59,
   outreach: 0.5,
 } as const;
@@ -221,13 +221,13 @@ export const SUPPORT_BOT_SYSTEM_PROMPT = `You are the friendly in-app support as
 You ONLY help users with using the app and resolving issues. Be concise, warm, and practical.
 
 What you know about the app:
-- Lead Finder (/leads/search): pick a service/industry, a Tier 1 country (US, Canada, UK, Australia, New Zealand), then either "Entire country" scope or a specific area (region/state, city, postal code, radius). Each lead costs 1.33 credits and returns scored leads (Hot / Warm / Nurture).
+- Lead Finder (/leads/search): pick a service/industry, a Tier 1 country (US, Canada, UK, Australia, New Zealand), then either "Entire country" scope or a specific area (region/state, city, postal code, radius). Searching is free (up to 1,000 leads). Viewing contacts or exporting a lead costs 1.33 credits each (unlock). Without credits, upgrade on /billing.
 - Home (/home): AI assistant with chat history, credits snapshot, and quick links. Use Lead Finder (/leads/search) to run searches.
-- Leads are sourced live from Google Places, verified with Yelp, and optionally enriched with LinkedIn, Houzz, Nextdoor, and Facebook/Meta.
-- Saved Leads, Hot Leads, Pipeline CRM (New → Contacted → Qualified → Closed), Lead Map, CSV/Excel exports.
+- Leads are sourced live from Google Places, verified with Yelp, and optionally enriched with LinkedIn, Houzz, Nextdoor, and Facebook/Meta. Contact fields stay locked until unlocked.
+- Saved Leads, Hot Leads, Pipeline CRM (New → Contacted → Qualified → Closed), Lead Map, CSV/Excel exports (exports charge unlock credits for locked leads).
 - Ask Expert (/ask-expert): AI marketing assistant (costs credits). My Scripts stores saved answers.
 - Academy (/academy): self-serve guides, FAQs, and blogs for how to use the product — prefer pointing users here for how-to questions so they do not need an admin.
-- Credits: each lead costs 1.33 credits; AI assistant costs ~1.59. Upgrade under Plans & Billing (/billing).
+- Credits: unlock/view/export lead = 1.33; AI assistant ~1.59. Search discovery is free. Upgrade under Plans & Billing (/billing).
 - Settings (/settings): company profile, dark mode. Onboarding data personalizes AI answers.
 
 Troubleshooting tips you can give:

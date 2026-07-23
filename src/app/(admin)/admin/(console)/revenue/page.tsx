@@ -36,7 +36,7 @@ export default function AdminRevenuePage() {
     <div>
       <AdminPageHeader
         title="Revenue & Subscriptions"
-        description="Admin-managed plans and credits. Stripe checkout is not live yet — MRR is hidden until real billing data exists."
+        description="Stripe Checkout syncs plan and subscription status via webhooks. Estimated MRR uses active paid subscribers when billing data is present."
       />
 
       <div className="mb-6 grid gap-3 sm:grid-cols-3">

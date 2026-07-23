@@ -9,6 +9,10 @@ import {
   hashApiKey,
   type IntegrationKind,
 } from "@/lib/api-access";
+import {
+  assertSearchRateLimit,
+  redactLeadsForUser,
+} from "@/lib/lead-access";
 
 const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
@@ -206,6 +210,11 @@ export async function handlePublicSearch(
       );
     }
 
+    const rate = await assertSearchRateLimit(integration.user.id);
+    if (!rate.ok) {
+      return jsonWithCors({ error: rate.error }, { status: 429 });
+    }
+
     const quota = await consumeApiUsage(integration.user.id, 1);
     if (!quota.ok) {
       return jsonWithCors(
@@ -231,12 +240,24 @@ export async function handlePublicSearch(
       },
     );
 
+    const redacted = await redactLeadsForUser(
+      integration.user.id,
+      result.leads,
+    );
+
     return jsonWithCors({
       ok: true,
       kind,
       search: result.search,
-      leads: result.leads,
-      meta: result.meta,
+      leads: redacted,
+      meta: {
+        ...result.meta,
+        billing: {
+          searchCharged: 0,
+          unlockCostPerLead: 1.33,
+          note: "Contacts are redacted until unlocked via the app (1.33 credits each).",
+        },
+      },
       quota: { used: quota.used, limit: quota.limit },
     });
   } catch (err) {

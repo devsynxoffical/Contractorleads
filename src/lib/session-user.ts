@@ -8,6 +8,7 @@ export type SessionUser = {
   plan: string;
   creditsRemaining: number;
   onboardingComplete: boolean;
+  productTourCompleted?: boolean;
   darkMode: boolean;
   companyName: string | null;
   ownerName: string | null;

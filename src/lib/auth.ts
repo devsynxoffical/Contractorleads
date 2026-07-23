@@ -43,6 +43,7 @@ function toSessionUser(
     plan: string;
     creditsRemaining: number;
     onboardingComplete: boolean;
+    productTourCompleted?: boolean;
     darkMode: boolean;
     companyName: string | null;
     ownerName?: string | null;
@@ -68,6 +69,7 @@ function toSessionUser(
     plan: user.plan,
     creditsRemaining: user.creditsRemaining,
     onboardingComplete: user.onboardingComplete,
+    productTourCompleted: user.productTourCompleted ?? false,
     darkMode: user.darkMode,
     companyName: user.companyName,
     ownerName: user.ownerName ?? null,

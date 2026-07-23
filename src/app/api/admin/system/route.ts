@@ -10,6 +10,6 @@ export async function GET() {
 
   return NextResponse.json({
     keys: getSystemKeyStatuses(),
-    note: "Secrets are never shown in full. Set them in Railway Variables or local .env — not from this UI.",
+    note: "Stripe Billing keys can be edited above (or via Admin → System). Other secrets stay in Railway Variables / .env — full values are never shown.",
   });
 }

@@ -7,6 +7,7 @@ import {
   integrationFlagsForPlan,
   planFeatureEnabled,
 } from "@/lib/api-access";
+import { isSubscriptionEntitled } from "@/lib/plan-access";
 
 async function loadAccess(userId: string) {
   return prisma.user.findUnique({
@@ -16,6 +17,7 @@ async function loadAccess(userId: string) {
       plan: true,
       role: true,
       isActive: true,
+      subscriptionStatus: true,
       apiEnabled: true,
       mcpEnabled: true,
       ssoEnabled: true,
@@ -70,6 +72,7 @@ async function ensurePlanFlagsEnabled(user: NonNullable<Awaited<ReturnType<typeo
       plan: true,
       role: true,
       isActive: true,
+      subscriptionStatus: true,
       apiEnabled: true,
       mcpEnabled: true,
       ssoEnabled: true,
@@ -132,6 +135,19 @@ export async function POST() {
     fresh.role === "SUPER_ADMIN" ||
     fresh.role === "MANAGER" ||
     fresh.role === "SUB_ADMIN";
+
+  if (
+    !isStaff &&
+    !isSubscriptionEntitled(fresh.subscriptionStatus, fresh.plan)
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "Subscription inactive — update billing to restore API access.",
+      },
+      { status: 403 },
+    );
+  }
 
   const hasAnyIntegration =
     isStaff ||

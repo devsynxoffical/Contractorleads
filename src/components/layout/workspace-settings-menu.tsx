@@ -11,7 +11,8 @@ import {
   HiOutlineUserGroup,
 } from "react-icons/hi2";
 import { cn } from "@/lib/utils";
-import { planHasFeature, planLabel } from "@/lib/plans";
+import { planLabel } from "@/lib/plans";
+import { userHasPlanFeature } from "@/lib/plan-access";
 import type { SessionUser } from "@/lib/session-user";
 
 type MenuItem = {
@@ -74,7 +75,7 @@ export function WorkspaceSettingsMenu({
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const progress = useSetupProgress(user);
-  const canTeams = planHasFeature(user.plan, "teams");
+  const canTeams = userHasPlanFeature(user, "teams");
 
   const items: MenuItem[] = [
     {

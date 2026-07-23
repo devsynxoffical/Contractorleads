@@ -5,12 +5,12 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader, PrimaryActionLink } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { HiOutlineCog6Tooth } from "react-icons/hi2";
-import { planHasFeature } from "@/lib/plans";
+import { requirePlanFeatureOrRedirect } from "@/lib/plan-access";
 
 export default async function WorkspacesPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
-  if (!planHasFeature(user.plan, "workspaces")) redirect("/billing");
+  requirePlanFeatureOrRedirect(user, "workspaces");
 
   const [searches, saved, scripts] = await Promise.all([
     prisma.search.count({ where: { userId: user.id } }),

@@ -47,6 +47,13 @@ export function ExportLeadsButtons({
 
       if (!res.ok) {
         const data = await res.json().catch(() => null);
+        if (res.status === 402 && data?.upgradeUrl) {
+          const go = confirm(
+            `${data.error || "Not enough credits to export."}\n\nOpen Billing to purchase a plan?`,
+          );
+          if (go) window.location.href = data.upgradeUrl;
+          return;
+        }
         alert(data?.error ?? "Export failed");
         return;
       }

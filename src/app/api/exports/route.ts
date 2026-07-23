@@ -3,6 +3,12 @@ import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { leadsToCsv, leadsToExcel, type ExportLead } from "@/lib/services/export";
 import { logActivity } from "@/lib/credits";
+import {
+  getUnlockedLeadIds,
+  insufficientCreditsPayload,
+  unlockLeads,
+} from "@/lib/lead-access";
+import { CREDIT_COSTS } from "@/lib/constants";
 
 type Scope = "all" | "saved" | "hot";
 
@@ -45,7 +51,7 @@ function exportResponse(leads: ExportLead[], format: "csv" | "xlsx") {
               "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             "Content-Disposition": `attachment; filename="leadflow-export.xlsx"`,
           },
-        })
+        }),
     );
   }
 
@@ -56,8 +62,54 @@ function exportResponse(leads: ExportLead[], format: "csv" | "xlsx") {
         "Content-Type": "text/csv; charset=utf-8",
         "Content-Disposition": `attachment; filename="leadflow-export.csv"`,
       },
-    })
+    }),
   );
+}
+
+async function chargeUnlocksForExport(userId: string, leadIds: string[]) {
+  const unlocked = await getUnlockedLeadIds(userId, leadIds);
+  const locked = leadIds.filter((id) => !unlocked.has(id));
+  if (!locked.length) {
+    return { ok: true as const, charged: 0 };
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { creditsRemaining: true },
+  });
+  const needed =
+    Math.round(CREDIT_COSTS.lead * locked.length * 100) / 100;
+  const balance = user?.creditsRemaining ?? 0;
+  if (balance < needed) {
+    return {
+      ok: false as const,
+      response: NextResponse.json(
+        {
+          ...insufficientCreditsPayload(needed, balance),
+          lockedCount: locked.length,
+          tip: "Unlock fewer leads, or upgrade your plan on Billing.",
+        },
+        { status: 402 },
+      ),
+    };
+  }
+
+  try {
+    const result = await unlockLeads({ userId, leadIds: locked });
+    return { ok: true as const, charged: result.charged };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unlock failed";
+    if (message === "INSUFFICIENT_CREDITS") {
+      return {
+        ok: false as const,
+        response: NextResponse.json(
+          insufficientCreditsPayload(needed, balance),
+          { status: 402 },
+        ),
+      };
+    }
+    throw err;
+  }
 }
 
 export async function GET(request: Request) {
@@ -77,6 +129,12 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "No leads to export" }, { status: 400 });
   }
 
+  const billed = await chargeUnlocksForExport(
+    user.id,
+    leads.map((l) => l.id),
+  );
+  if (!billed.ok) return billed.response;
+
   await prisma.export.create({
     data: {
       userId: user.id,
@@ -88,7 +146,9 @@ export async function GET(request: Request) {
   await logActivity(
     user.id,
     "export",
-    `Exported ${leads.length} ${scope} leads as ${format}`
+    `Exported ${leads.length} ${scope} leads as ${format}${
+      billed.charged ? ` (unlocked ${billed.charged} credits)` : ""
+    }`,
   );
 
   return exportResponse(leads as ExportLead[], format);
@@ -122,6 +182,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No leads found" }, { status: 404 });
   }
 
+  const billed = await chargeUnlocksForExport(
+    user.id,
+    leads.map((l) => l.id),
+  );
+  if (!billed.ok) return billed.response;
+
   await prisma.export.create({
     data: {
       userId: user.id,
@@ -130,7 +196,13 @@ export async function POST(request: Request) {
     },
   });
 
-  await logActivity(user.id, "export", `Exported ${leads.length} leads as ${format}`);
+  await logActivity(
+    user.id,
+    "export",
+    `Exported ${leads.length} leads as ${format}${
+      billed.charged ? ` (unlocked ${billed.charged} credits)` : ""
+    }`,
+  );
 
   return exportResponse(leads as ExportLead[], format);
 }

@@ -19,10 +19,15 @@ model User {
   role                String   @default("USER")
   plan                String   @default("trial")
   subscriptionStatus  String   @default("trialing")
+  stripeCustomerId    String?  @unique
+  stripeSubscriptionId String? @unique
+  stripePriceId       String?
   isActive            Boolean  @default(true)
   adminNotes          String?
   creditsRemaining    Float    @default(20)
   onboardingComplete  Boolean  @default(false)
+  /// Post-purchase product walkthrough dismissed or finished
+  productTourCompleted Boolean @default(false)
   darkMode            Boolean  @default(false)
   companyName         String?
   /// Agency owner contact (managed from admin + settings)
@@ -81,6 +86,7 @@ model User {
   referralWithdrawals ReferralWithdrawal[]
   referralEarnings    ReferralEarningLedger[]
   teamMembers     TeamMember[]
+  leadUnlocks     LeadUnlock[]
 }
 
 /// Agency+ seat invites managed by the account owner.
@@ -186,11 +192,26 @@ model Lead {
 
   savedBy SavedLead[]
   emails  LeadEmail[]
+  unlocks LeadUnlock[]
 
   @@index([industry])
   @@index([country])
   @@index([googleMapsLink])
   @@index([createdAt])
+}
+
+/// Paid unlock — contact/export fields stay redacted until this exists.
+model LeadUnlock {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  credits   Float    @default(1.33)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, leadId])
+  @@index([userId, createdAt])
 }
 
 model Search {
@@ -306,6 +327,17 @@ model PlanPricingConfig {
   /// JSON: { "trial": 0, "starter": 19.99, "growth": 49, "agency": 99, "enterprise": 0 }
   pricesJson String   @default("{\"trial\":0,\"starter\":19.99,\"growth\":49,\"agency\":99,\"enterprise\":0}")
   updatedAt  DateTime @updatedAt
+}
+
+/// Admin-editable Stripe Billing keys (overrides env when set).
+model StripeBillingConfig {
+  id             String   @id @default("default")
+  secretKey      String   @default("")
+  webhookSecret  String   @default("")
+  priceStarter   String   @default("")
+  priceGrowth    String   @default("")
+  priceAgency    String   @default("")
+  updatedAt      DateTime @updatedAt
 }
 
 /// One signup attributed to a referrer. Commission pays on first paid plan purchase.

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { planHasFeature, teamSeatLimit } from "@/lib/plans";
+import { teamSeatLimit } from "@/lib/plans";
+import { userHasPlanFeature } from "@/lib/plan-access";
 
 const ROLES = new Set(["admin", "member", "viewer"]);
 
@@ -16,7 +17,7 @@ export async function GET() {
   if ("error" in auth && auth.error) return auth.error;
   const user = auth.user!;
 
-  if (!planHasFeature(user.plan, "teams")) {
+  if (!userHasPlanFeature(user, "teams")) {
     return NextResponse.json(
       {
         error: "Users & teams requires the Agency plan",
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
   if ("error" in auth && auth.error) return auth.error;
   const user = auth.user!;
 
-  if (!planHasFeature(user.plan, "teams")) {
+  if (!userHasPlanFeature(user, "teams")) {
     return NextResponse.json(
       { error: "Users & teams requires the Agency plan" },
       { status: 403 },
@@ -111,7 +112,7 @@ export async function PATCH(request: NextRequest) {
   if ("error" in auth && auth.error) return auth.error;
   const user = auth.user!;
 
-  if (!planHasFeature(user.plan, "teams")) {
+  if (!userHasPlanFeature(user, "teams")) {
     return NextResponse.json(
       { error: "Users & teams requires the Agency plan" },
       { status: 403 },
@@ -155,7 +156,7 @@ export async function DELETE(request: NextRequest) {
   if ("error" in auth && auth.error) return auth.error;
   const user = auth.user!;
 
-  if (!planHasFeature(user.plan, "teams")) {
+  if (!userHasPlanFeature(user, "teams")) {
     return NextResponse.json(
       { error: "Users & teams requires the Agency plan" },
       { status: 403 },

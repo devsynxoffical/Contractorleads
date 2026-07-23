@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isLeadUnlocked, redactLead } from "@/lib/lead-access";
+import { CREDIT_COSTS } from "@/lib/constants";
 
 type LeadFrom = "all" | "hot" | "saved";
 
@@ -21,8 +23,14 @@ export async function GET(
   const { id } = await params;
   const from = parseFrom(new URL(request.url).searchParams.get("from"));
 
-  const lead = await prisma.lead.findUnique({
-    where: { id },
+  const lead = await prisma.lead.findFirst({
+    where: {
+      id,
+      OR: [
+        { search: { userId: user.id } },
+        { savedBy: { some: { userId: user.id } } },
+      ],
+    },
     include: {
       savedBy: {
         where: { userId: user.id },
@@ -63,8 +71,6 @@ export async function GET(
     orderedIds = rows.map((r) => r.id);
   }
 
-  // If current lead isn't in the scoped list (e.g. opened from search),
-  // fall back to all leads so prev/next still work.
   if (!orderedIds.includes(id) && from !== "all") {
     const rows = await prisma.lead.findMany({
       where: { search: { userId: user.id } },
@@ -80,8 +86,15 @@ export async function GET(
   const nextId =
     idx >= 0 && idx < orderedIds.length - 1 ? orderedIds[idx + 1] : null;
 
+  const unlocked = await isLeadUnlocked(user.id, id);
+
   return NextResponse.json({
-    lead,
+    lead: redactLead(lead, unlocked),
+    unlock: {
+      unlocked,
+      cost: CREDIT_COSTS.lead,
+      creditsRemaining: user.creditsRemaining,
+    },
     navigation: {
       from,
       prevId,

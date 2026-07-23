@@ -215,8 +215,8 @@ export async function GET() {
     },
     {
       id: "system",
-      title: "System & env keys",
-      description: "Configured secrets (masked) and platform notes",
+      title: "System & Stripe keys",
+      description: "Edit Stripe Billing keys in-admin; other secrets stay masked from env",
       href: "/admin/system",
       metric: "Infra",
       status: "ready",

@@ -3,6 +3,7 @@ import { ADMIN_STAFF_ROLES, requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ADMIN_PLANS } from "@/lib/admin";
 import { normalizeCountryCode, resolveLeadCoords } from "@/lib/geo";
+import { getPlanPriceMap, normalizePlan } from "@/lib/plans";
 
 export async function GET() {
   const admin = await requirePermission("overview");
@@ -181,8 +182,23 @@ export async function GET() {
     else qualityMix.nurture += count;
   }
 
-  // No Stripe / real billing yet — do not invent MRR from list prices × headcount.
-  const estimatedMrr: number | null = null;
+  // Estimated MRR from active/trialing paid subscribers × list prices
+  const priceMap = await getPlanPriceMap();
+  const mrrUsers = await prisma.user.findMany({
+    where: {
+      role: { notIn: [...ADMIN_STAFF_ROLES] },
+      subscriptionStatus: { in: ["active", "trialing"] },
+      plan: { in: ["starter", "growth", "agency", "enterprise"] },
+    },
+    select: { plan: true },
+  });
+  const estimatedMrr =
+    Math.round(
+      mrrUsers.reduce(
+        (sum, u) => sum + (priceMap[normalizePlan(u.plan)] ?? 0),
+        0,
+      ) * 100,
+    ) / 100;
   const grossSales: number | null = null;
 
   const paidPlanValues = ADMIN_PLANS.filter((p) => p.priceMonthly > 0).map(

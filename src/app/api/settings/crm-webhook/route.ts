@@ -2,10 +2,14 @@ import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { dispatchCrmWebhook } from "@/lib/crm-webhook";
+import { assertPlanFeatureApi } from "@/lib/plan-access";
 
 export async function GET() {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const forbidden = assertPlanFeatureApi(user, "crm");
+  if (forbidden) return forbidden;
 
   const row = await prisma.user.findUnique({
     where: { id: user.id },
@@ -40,6 +44,9 @@ export async function GET() {
 export async function PUT(request: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const forbidden = assertPlanFeatureApi(user, "crm");
+  if (forbidden) return forbidden;
 
   const body = await request.json();
   const url = String(body.url || "").trim();
@@ -88,6 +95,10 @@ export async function PUT(request: Request) {
 export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const forbidden = assertPlanFeatureApi(user, "crm");
+  if (forbidden) return forbidden;
+
   const body = await request.json().catch(() => ({}));
   const targetRaw = String(body.target || "webhook");
   const target = (["webhook", "slack", "ghl"].includes(targetRaw)

@@ -2,8 +2,7 @@ import { getSessionUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { PageHeader, LOGO_GRADIENT } from "@/components/layout/page-header";
+import { PageHeader } from "@/components/layout/page-header";
 import {
   MARKETING_PLANS,
   formatPlanPrice,
@@ -12,21 +11,57 @@ import {
 } from "@/components/marketing/marketing-plans-data";
 import { normalizePlan, planLabel, featuresForPlan } from "@/lib/plans";
 import { formatCredits } from "@/lib/utils";
+import { isStripeConfigured } from "@/lib/stripe";
+import { BillingCheckoutButton } from "@/components/billing/billing-checkout-button";
+import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 
-export default async function BillingPage() {
+export default async function BillingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ checkout?: string }>;
+}) {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
+  const params = await searchParams;
   const current = normalizePlan(user.plan);
   const features = featuresForPlan(user.plan);
+  const stripeReady = await isStripeConfigured();
+
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { stripeCustomerId: true, subscriptionStatus: true },
+  });
+  const hasStripeCustomer = Boolean(dbUser?.stripeCustomerId);
+  const status = dbUser?.subscriptionStatus || user.subscriptionStatus || "—";
 
   return (
     <div className="page-pad">
       <PageHeader
         title="Billing and plan usage"
-        description="Your current plan, credit balance, and what unlocks as you move Starter → Growth → Agency → Enterprise."
+        description="Subscribe with Stripe, manage your subscription, and see which features unlock Starter → Growth → Agency → Enterprise."
       />
+
+      {params.checkout === "success" ? (
+        <p className="mb-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-[13px] text-emerald-800 dark:text-emerald-200">
+          Payment received. Your plan updates when Stripe confirms the
+          subscription (usually a few seconds). Refresh if features still look
+          locked.
+        </p>
+      ) : null}
+      {params.checkout === "canceled" ? (
+        <p className="mb-4 rounded-xl border border-border bg-[var(--surface)] px-4 py-3 text-[13px] text-ink-muted">
+          Checkout canceled — no charge was made.
+        </p>
+      ) : null}
+
+      {!stripeReady ? (
+        <p className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-[13px] text-amber-900 dark:text-amber-100">
+          Stripe env vars are not fully configured on this server. Contact your
+          admin to add Stripe keys under Admin → System & API Keys.
+        </p>
+      ) : null}
 
       <Card className="max-w-2xl border-border shadow-[var(--shadow-card)]">
         <CardHeader>
@@ -42,9 +77,7 @@ export default async function BillingPage() {
                 {formatCredits(user.creditsRemaining)} credits remaining
               </p>
             </div>
-            <Badge variant="brand">
-              {user.subscriptionStatus || "active"}
-            </Badge>
+            <Badge variant="brand">{status}</Badge>
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
             {[
@@ -72,16 +105,29 @@ export default async function BillingPage() {
               </div>
             ))}
           </div>
+          {hasStripeCustomer ? (
+            <BillingCheckoutButton
+              planId={current}
+              label="Manage billing"
+              manage
+            />
+          ) : null}
           {!features.teams ? (
             <p className="text-[13px] text-ink-muted">
               Need seats for your agency?{" "}
-              <Link href="/team" className="font-semibold text-brand-600 hover:underline">
+              <Link
+                href="/team"
+                className="font-semibold text-brand-600 hover:underline"
+              >
                 Users &amp; teams
               </Link>{" "}
               unlocks on Agency.
             </p>
           ) : (
-            <Link href="/team" className="text-[13px] font-semibold text-brand-600 hover:underline">
+            <Link
+              href="/team"
+              className="text-[13px] font-semibold text-brand-600 hover:underline"
+            >
               Manage users &amp; teams →
             </Link>
           )}
@@ -92,6 +138,7 @@ export default async function BillingPage() {
         {MARKETING_PLANS.map((plan) => {
           const active = plan.id === current;
           const perLead = pricePerLead(plan.priceMonthly, plan.leadsIncluded);
+          const isEnterprise = plan.custom || plan.id === "enterprise";
           return (
             <Card
               key={plan.id}
@@ -133,19 +180,31 @@ export default async function BillingPage() {
                     <li key={f}>· {f}</li>
                   ))}
                 </ul>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  className="mt-4 w-full"
-                  disabled
-                  style={
-                    plan.popular
-                      ? { background: LOGO_GRADIENT, color: "white", border: 0 }
-                      : undefined
-                  }
-                >
-                  Stripe — coming soon
-                </Button>
+                {isEnterprise ? (
+                  <a
+                    href="mailto:hello@contractorleads.us"
+                    className="mt-4 inline-flex h-8 w-full items-center justify-center rounded-lg border border-border bg-[var(--surface)] px-3 text-xs font-semibold text-ink shadow-[var(--shadow-soft)] hover:border-brand-200"
+                  >
+                    Talk to sales
+                  </a>
+                ) : active ? (
+                  <BillingCheckoutButton
+                    planId={plan.id}
+                    label={hasStripeCustomer ? "Manage billing" : "Current plan"}
+                    popular={plan.popular}
+                    disabled={!hasStripeCustomer}
+                    manage={hasStripeCustomer}
+                  />
+                ) : (
+                  <BillingCheckoutButton
+                    planId={plan.id}
+                    label={
+                      stripeReady ? `Subscribe to ${plan.name}` : "Stripe unavailable"
+                    }
+                    popular={plan.popular}
+                    disabled={!stripeReady}
+                  />
+                )}
               </CardContent>
             </Card>
           );

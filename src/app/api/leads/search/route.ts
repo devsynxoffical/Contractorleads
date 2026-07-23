@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { deductCredits, logActivity } from "@/lib/credits";
-import { CREDIT_COSTS } from "@/lib/constants";
+import { logActivity } from "@/lib/credits";
 import { runLeadPipeline } from "@/lib/services/lead-pipeline";
 import { resolveSearchCriteria, formatSearchLabel } from "@/lib/search-criteria";
 import { sendLeadScrapeEmail } from "@/lib/email";
 import { appBaseUrl } from "@/lib/email-brand";
+import {
+  assertSearchRateLimit,
+  redactLeadsForUser,
+} from "@/lib/lead-access";
 
 /** Large volume searches can run several minutes. */
 export const maxDuration = 300;
@@ -18,6 +21,11 @@ export async function POST(request: Request) {
   }
 
   try {
+    const rate = await assertSearchRateLimit(user.id);
+    if (!rate.ok) {
+      return NextResponse.json({ error: rate.error }, { status: 429 });
+    }
+
     const body = await request.json();
     const resolved = resolveSearchCriteria(body);
     if (!resolved.ok) {
@@ -37,25 +45,13 @@ export async function POST(request: Request) {
       targetLeadCount,
     } = resolved.criteria;
 
-    const creditCost =
-      Math.round(CREDIT_COSTS.lead * Math.max(1, targetLeadCount) * 100) / 100;
-
-    if (user.creditsRemaining < creditCost) {
-      return NextResponse.json(
-        {
-          error: `Insufficient credits. This search costs ${creditCost.toFixed(2)} credits (${targetLeadCount} leads × ${CREDIT_COSTS.lead} each).`,
-        },
-        { status: 402 }
-      );
-    }
-
     if (!process.env.GOOGLE_PLACES_API_KEY) {
       return NextResponse.json(
         {
           error:
             "Google Places API key not configured. Add GOOGLE_PLACES_API_KEY to your environment.",
         },
-        { status: 503 }
+        { status: 503 },
       );
     }
 
@@ -73,8 +69,6 @@ export async function POST(request: Request) {
       targetLeadCount,
     });
 
-    await deductCredits(user.id, creditCost, "lead_generation");
-
     const filterNote =
       result.meta.requireSocialPresence && result.meta.skippedNoSocial > 0
         ? ` (${result.meta.skippedNoSocial} skipped — missing LinkedIn, social, or owner)`
@@ -83,14 +77,16 @@ export async function POST(request: Request) {
     await logActivity(
       user.id,
       "search",
-      `Generated ${result.leads.length} leads for ${industry} in ${
+      `Found ${result.leads.length} leads for ${industry} in ${
         locationScope === "country" ? country : state || city || country
-      }${filterNote}`,
-      { searchId: result.search.id }
+      }${filterNote} (preview — unlock to view contacts)`,
+      { searchId: result.search.id },
     );
 
     const hotCount = result.leads.filter((l) => l.qualityTier === "hot").length;
-    const warmCount = result.leads.filter((l) => l.qualityTier === "warm").length;
+    const warmCount = result.leads.filter(
+      (l) => l.qualityTier === "warm",
+    ).length;
     void sendLeadScrapeEmail({
       userId: user.id,
       to: user.email,
@@ -116,20 +112,23 @@ export async function POST(request: Request) {
       select: { creditsRemaining: true },
     });
 
+    const redacted = await redactLeadsForUser(user.id, result.leads);
+
     return NextResponse.json({
       search: result.search,
-      leads: result.leads,
+      leads: redacted,
       creditsRemaining: credits?.creditsRemaining,
-      meta: result.meta,
+      meta: {
+        ...result.meta,
+        billing: {
+          searchCharged: 0,
+          unlockCostPerLead: 1.33,
+          note: "Search is free. Unlock a lead (view contacts) or export to spend credits.",
+        },
+      },
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Search failed";
-    if (message === "INSUFFICIENT_CREDITS") {
-      return NextResponse.json(
-        { error: "Insufficient credits. Upgrade your plan to continue." },
-        { status: 402 }
-      );
-    }
     const isPlaces =
       err instanceof Error &&
       (err.name === "GooglePlacesError" ||
@@ -137,7 +136,7 @@ export async function POST(request: Request) {
         message.includes("Billing"));
     return NextResponse.json(
       { error: message },
-      { status: isPlaces ? 503 : 500 }
+      { status: isPlaces ? 503 : 500 },
     );
   }
 }

@@ -86,6 +86,11 @@ NINJAPEAR_API_KEY              # NinjaPear (nubela.co) — not Proxycurl
 SERPER_API_KEY                 # LinkedIn / social discovery
 RESEND_API_KEY                 # or SENDGRID_API_KEY
 EMAIL_FROM / RESEND_FROM
+STRIPE_SECRET_KEY              # Stripe Billing (sk_live_… / sk_test_…)
+STRIPE_WEBHOOK_SECRET          # whsec_… for /api/billing/webhook
+STRIPE_PRICE_STARTER           # price_… monthly Starter
+STRIPE_PRICE_GROWTH            # price_… monthly Growth
+STRIPE_PRICE_AGENCY            # price_… monthly Agency
 ```
 
 Admin **Feature Health** (`/admin/health`) shows configured vs missing for these integrations.

@@ -111,6 +111,25 @@ export function AcademyHub() {
         eyebrow="Academy"
         title="Learn Contractor Leads"
         description="Guides, FAQs, and playbooks so your team can use the product without waiting on admin. Search anything — Lead Finder, email, credits, referrals, and more."
+        actions={
+          <button
+            type="button"
+            className="rounded-xl border border-border bg-[var(--surface)] px-3.5 py-2 text-[13px] font-semibold text-ink hover:border-brand-200"
+            onClick={() => {
+              void fetch("/api/user/product-tour", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ reset: true }),
+              }).finally(() => {
+                window.dispatchEvent(
+                  new Event("leadflow:replay-product-tour"),
+                );
+              });
+            }}
+          >
+            Replay product tour
+          </button>
+        }
       />
 
       <div className="rounded-2xl border border-border bg-[var(--surface)] p-4 shadow-[var(--shadow-card)] sm:p-5">
