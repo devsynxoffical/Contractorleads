@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ComponentType } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import type { IconType } from "react-icons";
 import {
   HiOutlineArrowRight,
   HiOutlineBolt,
@@ -61,6 +62,7 @@ import {
   MarketingNavLinks,
   FinalCtaActions,
   FooterReveal,
+  usePrefersReducedMotion,
 } from "./marketing-motion";
 import { MarketingFluidHero } from "./marketing-fluid-hero";
 import { MarketingInteractiveDemo } from "./marketing-interactive-demo";
@@ -441,7 +443,94 @@ function ProblemSection() {
   );
 }
 
+function FeatureLogo({
+  icon: Icon,
+  color,
+  bg,
+  index,
+  reduced,
+}: {
+  icon: IconType | ComponentType<{ className?: string }>;
+  color: string;
+  bg: string;
+  index: number;
+  reduced: boolean;
+}) {
+  const pattern = index % 4;
+  const idle =
+    reduced
+      ? undefined
+      : pattern === 0
+        ? { y: [0, -4, 0], rotate: [0, -4, 0, 4, 0] }
+        : pattern === 1
+          ? { scale: [1, 1.08, 1], rotate: [0, 6, 0] }
+          : pattern === 2
+            ? { y: [0, -3, 0], scale: [1, 1.05, 1] }
+            : { rotate: [0, 8, -6, 0] };
+
+  return (
+    <span className="relative inline-flex">
+      {!reduced && (
+        <motion.span
+          className="absolute inset-0 rounded-xl"
+          style={{ background: color, opacity: 0.18 }}
+          animate={{ scale: [1, 1.35, 1], opacity: [0.2, 0.05, 0.2] }}
+          transition={{
+            duration: 2.8 + (index % 3) * 0.35,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: index * 0.12,
+          }}
+          aria-hidden
+        />
+      )}
+      <motion.span
+        className="relative inline-flex h-11 w-11 items-center justify-center rounded-xl ring-1 ring-black/[0.04] shadow-[0_6px_16px_rgba(15,23,42,0.06)]"
+        style={{ background: bg, color }}
+        animate={idle}
+        transition={
+          reduced
+            ? undefined
+            : {
+                duration: 3.2 + (index % 4) * 0.4,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: index * 0.15,
+              }
+        }
+        whileHover={
+          reduced
+            ? undefined
+            : {
+                scale: 1.14,
+                rotate: pattern % 2 === 0 ? 8 : -8,
+                y: -2,
+                boxShadow: `0 12px 28px ${color}33`,
+              }
+        }
+        whileTap={reduced ? undefined : { scale: 0.96 }}
+      >
+        <motion.span
+          className="inline-flex"
+          whileHover={
+            reduced
+              ? undefined
+              : {
+                  rotate: [0, -12, 12, 0],
+                  transition: { duration: 0.55 },
+                }
+          }
+        >
+          <Icon className="h-[22px] w-[22px]" />
+        </motion.span>
+      </motion.span>
+    </span>
+  );
+}
+
 function FeaturesGrid() {
+  const reduced = usePrefersReducedMotion();
+
   return (
     <section id="features" className="relative overflow-hidden bg-[#ffffff] py-24 sm:py-28">
       <div
@@ -467,7 +556,6 @@ function FeaturesGrid() {
         </Reveal>
         <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {FEATURES.map((f, i) => {
-            const Icon = f.icon;
             return (
               <Reveal key={f.title} delay={(i % 4) * 0.04}>
                 <motion.div
@@ -475,14 +563,24 @@ function FeaturesGrid() {
                   transition={{ type: "spring", stiffness: 320, damping: 22 }}
                   className="group relative h-full overflow-hidden rounded-[22px] border border-slate-200/90 bg-[#ffffff] p-5 shadow-[0_4px_20px_rgba(15,23,42,0.03)] transition-shadow hover:border-fuchsia-200/80 hover:shadow-[0_16px_40px_rgba(217,70,239,0.12)]"
                 >
-                  <span
-                    className="relative inline-flex h-11 w-11 items-center justify-center rounded-xl ring-1 ring-black/[0.04]"
-                    style={{ background: f.bg, color: f.color }}
-                  >
-                    <Icon className="h-[22px] w-[22px]" />
-                  </span>
-                  <h3 className="relative mt-4 text-[15px] font-semibold text-slate-900">{f.title}</h3>
-                  <p className="relative mt-1.5 text-[13px] leading-relaxed text-slate-500">{f.copy}</p>
+                  <div
+                    className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100"
+                    style={{ background: f.color }}
+                    aria-hidden
+                  />
+                  <FeatureLogo
+                    icon={f.icon}
+                    color={f.color}
+                    bg={f.bg}
+                    index={i}
+                    reduced={reduced}
+                  />
+                  <h3 className="relative mt-4 text-[15px] font-semibold text-slate-900">
+                    {f.title}
+                  </h3>
+                  <p className="relative mt-1.5 text-[13px] leading-relaxed text-slate-500">
+                    {f.copy}
+                  </p>
                 </motion.div>
               </Reveal>
             );
