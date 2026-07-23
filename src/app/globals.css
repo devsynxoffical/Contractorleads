@@ -1420,6 +1420,24 @@ html[data-theme="light"] .lead-vector-map .jvm-tooltip {
   box-shadow: 0 8px 24px rgba(40, 30, 60, 0.12) !important;
 }
 
+html[data-theme="light"] .lead-vector-map .jvm-zoom-btn {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(124, 58, 237, 0.28) !important;
+  color: #7c3aed !important;
+  box-shadow: 0 4px 14px rgba(60, 40, 90, 0.1) !important;
+}
+
+html[data-theme="light"] .lead-vector-map .jvm-zoom-btn:hover {
+  background: rgba(124, 58, 237, 0.1) !important;
+  border-color: rgba(124, 58, 237, 0.45) !important;
+}
+
+html[data-theme="light"] .lead-map-canvas {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 40%, rgba(167, 139, 250, 0.12), transparent 70%),
+    #ebe6f4 !important;
+}
+
 /* App main parity with admin — beat leftover dark utilities in light mode */
 html[data-theme="light"] .app-shell--hud .hud-shell-main .bg-white,
 html[data-theme="light"] .app-shell--hud .hud-shell-main .bg-\[\#faf8fc\],

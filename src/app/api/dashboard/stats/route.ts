@@ -4,6 +4,10 @@ import { prisma } from "@/lib/prisma";
 import { startOfWeek, addDays, format } from "date-fns";
 import { processDueEnrollments } from "@/lib/email-automation";
 import { LEAD_STATUSES } from "@/lib/constants";
+import { normalizeCountryCode, resolveLeadCoords } from "@/lib/geo";
+import { getUnlockedLeadIds } from "@/lib/lead-access";
+import { planHasFeature } from "@/lib/plans";
+import { isSubscriptionEntitled } from "@/lib/plan-access";
 
 export async function GET() {
   const user = await getSessionUser();
@@ -310,5 +314,61 @@ export async function GET() {
       hotRate,
       placesScannedRecent: recentSearches.reduce((n, s) => n + (s.resultCount || 0), 0),
     },
+    map: await (async () => {
+      const mapAllowed =
+        planHasFeature(user.plan, "map") &&
+        isSubscriptionEntitled(user.subscriptionStatus, user.plan);
+      if (!mapAllowed) {
+        return { allowed: false as const, leads: [], lockedCount: 0 };
+      }
+      const rows = await prisma.lead.findMany({
+        where: { search: { userId: user.id } },
+        take: 200,
+        orderBy: [{ leadScore: "desc" }, { createdAt: "desc" }],
+        select: {
+          id: true,
+          businessName: true,
+          address: true,
+          latitude: true,
+          longitude: true,
+          qualityTier: true,
+          googleMapsLink: true,
+          city: true,
+          state: true,
+          country: true,
+          industry: true,
+          leadScore: true,
+        },
+      });
+      const unlocked = await getUnlockedLeadIds(
+        user.id,
+        rows.map((l) => l.id),
+      );
+      const leads = [];
+      for (const l of rows) {
+        if (!unlocked.has(l.id)) continue;
+        const coords = resolveLeadCoords(l);
+        if (!coords) continue;
+        leads.push({
+          id: l.id,
+          businessName: l.businessName,
+          address: l.address,
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          qualityTier: l.qualityTier,
+          googleMapsLink: l.googleMapsLink,
+          city: l.city,
+          state: l.state,
+          country: normalizeCountryCode(l.country),
+          industry: l.industry,
+          leadScore: l.leadScore,
+        });
+      }
+      return {
+        allowed: true as const,
+        leads,
+        lockedCount: rows.length - unlocked.size,
+      };
+    })(),
   });
 }

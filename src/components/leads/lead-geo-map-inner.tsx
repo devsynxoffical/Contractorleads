@@ -6,6 +6,7 @@ import jsVectorMap from "jsvectormap";
 import "jsvectormap/dist/jsvectormap.min.css";
 import "jsvectormap/dist/maps/world.js";
 import { HiOutlineArrowsPointingOut, HiOutlineMapPin } from "react-icons/hi2";
+import { useTheme } from "@/components/theme/theme-provider";
 
 export type GeoLead = {
   id: string;
@@ -63,6 +64,27 @@ function tierColor(tier?: string | null) {
   return "#38bdf8";
 }
 
+function mapPalette(isLight: boolean) {
+  if (isLight) {
+    return {
+      land: "#d4cce3",
+      landHover: "#b9aed4",
+      landStroke: "#b4a8cc",
+      landSelected: "#7c3aed",
+      markerStroke: "#ffffff",
+      markerHoverFill: "#ffffff",
+    };
+  }
+  return {
+    land: "#243044",
+    landHover: "#334761",
+    landStroke: "#152033",
+    landSelected: "#7c3aed",
+    markerStroke: "#0b1220",
+    markerHoverFill: "#ffffff",
+  };
+}
+
 function leadHref(base: string, id: string) {
   const root = base.replace(/\/$/, "");
   return `${root}/${id}`;
@@ -82,6 +104,9 @@ export function LeadGeoMapInner({
   /** Path prefix for lead detail links, e.g. `/admin/leads` */
   leadDetailBase?: string;
 }) {
+  const { theme } = useTheme();
+  const isLight = theme === "light";
+  const palette = mapPalette(isLight);
   const mapEl = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapInstance | null>(null);
   const plotRef = useRef<GeoLead[]>([]);
@@ -160,14 +185,14 @@ export function LeadGeoMapInner({
       style: {
         initial: {
           fill: tierColor(lead.qualityTier),
-          stroke: "#0b1220",
-          strokeWidth: 1.5,
-          strokeOpacity: 0.9,
+          stroke: palette.markerStroke,
+          strokeWidth: isLight ? 1.25 : 1.5,
+          strokeOpacity: isLight ? 1 : 0.9,
           fillOpacity: 0.95,
           r: 5,
         },
         hover: {
-          fill: "#ffffff",
+          fill: palette.markerHoverFill,
           stroke: tierColor(lead.qualityTier),
           strokeWidth: 2.5,
           strokeOpacity: 1,
@@ -192,32 +217,32 @@ export function LeadGeoMapInner({
       showTooltip: true,
       regionStyle: {
         initial: {
-          fill: "#243044",
+          fill: palette.land,
           fillOpacity: 1,
-          stroke: "#152033",
-          strokeWidth: 0.45,
+          stroke: palette.landStroke,
+          strokeWidth: isLight ? 0.55 : 0.45,
           strokeOpacity: 1,
         },
         hover: {
-          fill: "#334761",
+          fill: palette.landHover,
           fillOpacity: 1,
           cursor: "pointer",
         },
         selected: {
-          fill: "#7c3aed",
-          fillOpacity: 0.45,
+          fill: palette.landSelected,
+          fillOpacity: isLight ? 0.55 : 0.45,
         },
       },
       markerStyle: {
         initial: {
           fill: "#38bdf8",
-          stroke: "#0b1220",
-          strokeWidth: 1.5,
+          stroke: palette.markerStroke,
+          strokeWidth: isLight ? 1.25 : 1.5,
           fillOpacity: 0.95,
           r: 5,
         },
         hover: {
-          fill: "#ffffff",
+          fill: palette.markerHoverFill,
           stroke: "#38bdf8",
           strokeWidth: 2.5,
           r: 7,
@@ -294,9 +319,9 @@ export function LeadGeoMapInner({
       map.destroy();
       mapRef.current = null;
     };
-    // Recreate only when pin set changes (stable signature) or reset
+    // Recreate when pins, theme, or reset change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [plotSignature, viewEpoch]);
+  }, [plotSignature, viewEpoch, theme]);
 
   // Soft focus when a lead is selected — never slam to max zoom
   useEffect(() => {
@@ -348,23 +373,32 @@ export function LeadGeoMapInner({
   }, [leads, activeCountry]);
 
   return (
-    <div className="space-y-5">
-      <div className="hud-panel overflow-hidden !p-0">
-        <span className="hud-bracket hud-bracket-tl" aria-hidden />
-        <span className="hud-bracket hud-bracket-tr" aria-hidden />
-        <span className="hud-bracket hud-bracket-bl" aria-hidden />
-        <span className="hud-bracket hud-bracket-br" aria-hidden />
+    <div className={compact ? "space-y-3" : "space-y-5"}>
+      <div
+        className={
+          compact
+            ? "overflow-hidden rounded-xl border border-border"
+            : "hud-panel overflow-hidden !p-0"
+        }
+      >
+        {!compact && (
+          <>
+            <span className="hud-bracket hud-bracket-tl" aria-hidden />
+            <span className="hud-bracket hud-bracket-tr" aria-hidden />
+            <span className="hud-bracket hud-bracket-bl" aria-hidden />
+            <span className="hud-bracket hud-bracket-br" aria-hidden />
+          </>
+        )}
 
-        <div className="relative z-[1] flex flex-wrap items-start justify-between gap-3 border-b border-border px-5 py-3.5">
-          <div>
-            <p className="text-[13px] font-semibold tracking-tight text-ink">
-              {title}
-            </p>
-            <h2 className="mt-0.5 text-[12px] text-ink-muted">
-              {subtitle}
-            </h2>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
+        <div className="relative z-[1] flex flex-wrap items-start justify-between gap-3 border-b border-border px-4 py-3 sm:px-5 sm:py-3.5">
+          {!compact ? (
+            <div>
+              <p className="text-[13px] font-semibold tracking-tight text-ink">
+                {title}
+              </p>
+              <h2 className="mt-0.5 text-[12px] text-ink-muted">{subtitle}</h2>
+            </div>
+          ) : (
             <div className="flex items-center gap-3 text-[11px] font-medium text-ink-muted">
               <span className="inline-flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-[#f472b6]" /> Hot
@@ -376,21 +410,36 @@ export function LeadGeoMapInner({
                 <span className="h-2 w-2 rounded-full bg-[#38bdf8]" /> Nurture
               </span>
             </div>
+          )}
+          <div className="flex flex-wrap items-center gap-3">
+            {!compact && (
+              <div className="flex items-center gap-3 text-[11px] font-medium text-ink-muted">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-[#f472b6]" /> Hot
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-[#c084fc]" /> Warm
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-[#38bdf8]" /> Nurture
+                </span>
+              </div>
+            )}
             <button
               type="button"
               onClick={resetView}
               className="inline-flex items-center gap-1.5 rounded-lg border border-brand-500/25 bg-[var(--input-bg)] px-2.5 py-1.5 text-[11px] font-semibold text-ink transition hover:border-brand-500/45 hover:text-brand-500"
             >
               <HiOutlineArrowsPointingOut className="h-3.5 w-3.5" />
-              Reset view
+              {compact ? "Reset" : "Reset view"}
             </button>
           </div>
         </div>
 
         <div
-          className={`relative z-[1] w-full overflow-hidden bg-[var(--input-bg)] ${
+          className={`lead-map-canvas relative z-[1] w-full overflow-hidden bg-[var(--input-bg)] ${
             compact
-              ? "h-[320px] sm:h-[380px]"
+              ? "h-[280px] sm:h-[340px]"
               : "h-[400px] sm:h-[480px] lg:h-[540px]"
           }`}
         >
@@ -403,13 +452,14 @@ export function LeadGeoMapInner({
                 No mapped leads yet
               </p>
               <p className="max-w-sm text-[13px] text-ink-muted">
-                Leads with coordinates or a Google Maps link appear as pins
-                here.
+                Unlock leads with coordinates or a Google Maps link to plot
+                pins here.
               </p>
             </div>
           )}
         </div>
 
+        {!compact && (
         <div className="relative z-[1] grid gap-0 border-t border-brand-500/10 lg:grid-cols-[1fr_220px]">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[320px] text-left text-[12px]">
@@ -486,6 +536,7 @@ export function LeadGeoMapInner({
             </p>
           </div>
         </div>
+        )}
       </div>
 
       {activeLead && (

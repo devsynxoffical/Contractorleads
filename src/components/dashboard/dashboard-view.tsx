@@ -31,6 +31,7 @@ import {
   type DashboardPipeline,
 } from "@/components/dashboard/dashboard-crm-integrations";
 import { userHasPlanFeature } from "@/lib/plan-access";
+import { LeadGeoMap, type GeoLead } from "@/components/leads/lead-geo-map";
 
 type DashboardData = {
   stats: {
@@ -78,6 +79,11 @@ type DashboardData = {
     completeProfileRate: number;
     hotRate: number;
     placesScannedRecent: number;
+  };
+  map?: {
+    allowed: boolean;
+    leads: GeoLead[];
+    lockedCount: number;
   };
 };
 
@@ -394,6 +400,57 @@ export function DashboardView({ user }: { user: SessionUser }) {
               <QuickLeadSearch embedded />
             </div>
           </HudPanel>
+        </div>
+
+        <div className="mb-5">
+          {userHasPlanFeature(user, "map") ? (
+            <HudPanel
+              title="Lead map"
+              subtitle={
+                data?.map?.leads?.length
+                  ? `${data.map.leads.length} unlocked pin${data.map.leads.length === 1 ? "" : "s"}${
+                      data.map.lockedCount
+                        ? ` · ${data.map.lockedCount} locked`
+                        : ""
+                    }`
+                  : "Unlocked leads with coordinates appear here"
+              }
+              actions={
+                <Link href="/leads/map" className="hud-btn-ghost text-[12px]">
+                  Full map
+                </Link>
+              }
+            >
+              <LeadGeoMap
+                leads={data?.map?.leads ?? []}
+                compact
+                title="Territory"
+                subtitle="Unlocked lead pins"
+                leadDetailBase="/leads"
+              />
+            </HudPanel>
+          ) : (
+            <HudPanel
+              title="Lead map"
+              subtitle="Growth+ unlocks territory pins on your dashboard"
+              actions={
+                <Link href="/billing" className="hud-btn-primary text-[12px]">
+                  Upgrade
+                </Link>
+              }
+            >
+              <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-[var(--canvas)]/40 px-4 py-8 text-center">
+                <HiOutlineMap className="h-8 w-8 text-brand-500" />
+                <p className="max-w-sm text-[13px] text-ink-muted">
+                  Map your unlocked Hot leads by city once you upgrade to Growth
+                  or higher.
+                </p>
+                <Link href="/billing" className="text-[13px] font-semibold text-brand-600 hover:underline">
+                  View plans →
+                </Link>
+              </div>
+            </HudPanel>
+          )}
         </div>
 
         <div className="mb-5">
