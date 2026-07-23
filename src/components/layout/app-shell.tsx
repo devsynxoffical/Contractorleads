@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   NavigationProgress,
   startNavigationProgress,
@@ -155,10 +155,42 @@ function buildSections(user: SessionUser): NavSection[] {
   ];
 }
 
-function isActive(pathname: string, href: string) {
+const LEAD_SECTION_ROUTES = new Set([
+  "search",
+  "hot",
+  "saved",
+  "pipeline",
+  "map",
+]);
+
+function isLeadDetailPath(pathname: string) {
+  const parts = pathname.split("/").filter(Boolean);
+  return (
+    parts.length === 2 &&
+    parts[0] === "leads" &&
+    !LEAD_SECTION_ROUTES.has(parts[1])
+  );
+}
+
+function isActive(
+  pathname: string,
+  href: string,
+  from?: string | null,
+) {
+  if (isLeadDetailPath(pathname)) {
+    const source =
+      from === "hot" || from === "saved" || from === "all" ? from : "all";
+    if (href === "/leads/hot") return source === "hot";
+    if (href === "/leads/saved") return source === "saved";
+    if (href === "/leads") return source === "all";
+    return false;
+  }
+
   if (href === "/leads") return pathname === "/leads";
   if (href === "/home") return pathname === "/home";
-  if (href === "/setup") return pathname === "/setup";
+  if (href === "/setup") {
+    return pathname === "/setup" || pathname.startsWith("/setup/");
+  }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -178,6 +210,8 @@ function SidebarNav({
   hud?: boolean;
 }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const from = searchParams.get("from");
   const router = useRouter();
 
   async function handleLogout() {
@@ -246,7 +280,7 @@ function SidebarNav({
             </p>
             <div className="space-y-0.5">
               {section.items.map((item) => {
-                const active = isActive(pathname, item.href);
+                const active = isActive(pathname, item.href, from);
                 const Icon = item.icon;
                 return (
                   <Link
@@ -410,7 +444,9 @@ export function AppShell({
         aria-hidden={sidebarCollapsed}
       >
         <div className="flex h-full w-[268px] flex-col">
-          <SidebarNav user={user} onCollapse={toggleSidebar} hud={hudMode} />
+          <Suspense fallback={null}>
+            <SidebarNav user={user} onCollapse={toggleSidebar} hud={hudMode} />
+          </Suspense>
         </div>
       </aside>
 
@@ -431,13 +467,15 @@ export function AppShell({
                 : "border-border bg-[var(--sidebar)]",
             )}
           >
-            <SidebarNav
-              user={user}
-              showClose
-              onClose={() => setMobileOpen(false)}
-              onNavigate={() => setMobileOpen(false)}
-              hud={hudMode}
-            />
+            <Suspense fallback={null}>
+              <SidebarNav
+                user={user}
+                showClose
+                onClose={() => setMobileOpen(false)}
+                onNavigate={() => setMobileOpen(false)}
+                hud={hudMode}
+              />
+            </Suspense>
           </aside>
         </div>
       )}
