@@ -109,6 +109,20 @@ export async function GET() {
         ? "Configured (needed for verification email links)"
         : "NEXT_PUBLIC_APP_URL not set — verification links may point to localhost",
     },
+    {
+      name: "Inbound email webhook",
+      status: byKey.INBOUND_EMAIL_SECRET?.configured ? "ok" : "warn",
+      detail: byKey.INBOUND_EMAIL_SECRET?.configured
+        ? "INBOUND_EMAIL_SECRET set — reply webhook can authenticate"
+        : "Optional — set INBOUND_EMAIL_SECRET for /api/email/inbound",
+    },
+    {
+      name: "SMTP secret encryption",
+      status: byKey.SECRET_ENCRYPTION_KEY?.configured ? "ok" : "warn",
+      detail: byKey.SECRET_ENCRYPTION_KEY?.configured
+        ? "Customer SMTP passwords encrypt at rest"
+        : "Set SECRET_ENCRYPTION_KEY for production SMTP vaulting",
+    },
   ];
 
   return NextResponse.json({

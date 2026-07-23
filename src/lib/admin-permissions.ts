@@ -9,6 +9,7 @@ export { MANAGER_ROLE, SUB_ADMIN_ROLE, SUPER_ADMIN_ROLE };
 
 export const ADMIN_PERMISSIONS = [
   { key: "overview", label: "Business Overview", href: "/admin" },
+  { key: "platform", label: "Platform Control", href: "/admin/platform" },
   { key: "customers", label: "Customers", href: "/admin/customers" },
   { key: "leads", label: "All Leads", href: "/admin/leads" },
   { key: "leads_export", label: "Lead exports (CSV / Excel)", href: null },
@@ -16,8 +17,11 @@ export const ADMIN_PERMISSIONS = [
   { key: "searches", label: "All Searches", href: "/admin/searches" },
   { key: "scrape", label: "Scrape Leads", href: "/admin/scrape" },
   { key: "copy_leads", label: "Copy Leads", href: "/admin/copy-leads" },
+  { key: "plans", label: "Plans & Entitlements", href: "/admin/plans" },
   { key: "revenue", label: "Revenue & Subscriptions", href: "/admin/revenue" },
   { key: "referrals", label: "Referrals & Affiliates", href: "/admin/referrals" },
+  { key: "communications", label: "Email & Outreach", href: "/admin/communications" },
+  { key: "exports", label: "Exports Log", href: "/admin/exports" },
   { key: "activity", label: "Activity Log", href: "/admin/activity" },
   { key: "health", label: "Feature Health Audit", href: "/admin/health" },
   { key: "system", label: "System & API Keys", href: "/admin/system" },
@@ -35,12 +39,16 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<TemplateRole, AdminPermissionKey[]
     ),
     [SUB_ADMIN_ROLE]: [
       "overview",
+      "platform",
       "customers",
       "leads",
       "leads_export",
       "saved_leads",
       "searches",
       "scrape",
+      "plans",
+      "communications",
+      "exports",
       "activity",
     ],
   };
@@ -56,6 +64,10 @@ export const PATH_PERMISSION: Array<{
   permission: AdminPermissionKey | "staff";
 }> = [
   { prefix: "/admin/team", permission: "staff" },
+  { prefix: "/admin/platform", permission: "platform" },
+  { prefix: "/admin/plans", permission: "plans" },
+  { prefix: "/admin/communications", permission: "communications" },
+  { prefix: "/admin/exports", permission: "exports" },
   { prefix: "/admin/customers", permission: "customers" },
   { prefix: "/admin/site-leads", permission: "customers" },
   { prefix: "/admin/leads", permission: "leads" },
@@ -95,15 +107,31 @@ export function isTemplateRole(role: string): role is TemplateRole {
 
 export async function ensureRoleTemplates() {
   for (const role of TEMPLATE_ROLES) {
-    await prisma.adminRoleTemplate.upsert({
+    const defaults = DEFAULT_ROLE_PERMISSIONS[role];
+    const existing = await prisma.adminRoleTemplate.findUnique({
       where: { role },
-      update: {},
-      create: {
-        role,
-        label: ROLE_LABELS[role],
-        permissions: JSON.stringify(DEFAULT_ROLE_PERMISSIONS[role]),
-      },
     });
+    if (!existing) {
+      await prisma.adminRoleTemplate.create({
+        data: {
+          role,
+          label: ROLE_LABELS[role],
+          permissions: JSON.stringify(defaults),
+        },
+      });
+      continue;
+    }
+    // Merge newly added permission keys into existing templates
+    const current = parsePermissions(existing.permissions);
+    const missing = defaults.filter((k) => !current.includes(k));
+    if (missing.length) {
+      await prisma.adminRoleTemplate.update({
+        where: { role },
+        data: {
+          permissions: JSON.stringify([...current, ...missing]),
+        },
+      });
+    }
   }
 }
 

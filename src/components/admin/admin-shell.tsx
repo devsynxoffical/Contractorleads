@@ -12,6 +12,7 @@ import {
   HiOutlineArrowLeft,
   HiOutlineBanknotes,
   HiOutlineClipboardDocumentList,
+  HiOutlineDocumentArrowDown,
   HiOutlineDocumentDuplicate,
   HiOutlineHeart,
   HiOutlineHome,
@@ -24,6 +25,9 @@ import {
   HiOutlineUsers,
   HiOutlineGlobeAlt,
   HiOutlineEnvelope,
+  HiOutlineWrenchScrewdriver,
+  HiOutlineCreditCard,
+  HiOutlineChatBubbleLeftRight,
 } from "react-icons/hi2";
 import { cn } from "@/lib/utils";
 import type { SessionUser } from "@/lib/session-user";
@@ -42,22 +46,71 @@ type NavItem = {
   permission: AdminPermissionKey | "staff";
 };
 
-const NAV: NavItem[] = [
-  { href: "/admin", label: "Business Overview", icon: HiOutlineHome, permission: "overview" },
-  { href: "/admin/customers", label: "Customers", icon: HiOutlineUsers, permission: "customers" },
-  { href: "/admin/site-leads", label: "Site Leads", icon: HiOutlineGlobeAlt, permission: "customers" },
-  { href: "/admin/leads", label: "All Leads", icon: HiOutlineSquares2X2, permission: "leads" },
-  { href: "/admin/saved-leads", label: "Saved Leads", icon: HiOutlineStar, permission: "saved_leads" },
-  { href: "/admin/searches", label: "All Searches", icon: HiOutlineClipboardDocumentList, permission: "searches" },
-  { href: "/admin/scrape", label: "Scrape Leads", icon: HiOutlineMagnifyingGlass, permission: "scrape" },
-  { href: "/admin/copy-leads", label: "Copy Leads", icon: HiOutlineDocumentDuplicate, permission: "copy_leads" },
-  { href: "/admin/revenue", label: "Revenue & Subscriptions", icon: HiOutlineBanknotes, permission: "revenue" },
-  { href: "/admin/referrals", label: "Referrals & Affiliates", icon: HiOutlineUserPlus, permission: "referrals" },
-  { href: "/admin/activity", label: "Activity Log", icon: HiOutlineClipboardDocumentList, permission: "activity" },
-  { href: "/admin/health", label: "Feature Health Audit", icon: HiOutlineHeart, permission: "health" },
-  { href: "/admin/system", label: "System & API Keys", icon: HiOutlineKey, permission: "system" },
-  { href: "/admin/email-preview", label: "Email Templates", icon: HiOutlineEnvelope, permission: "system" },
-  { href: "/admin/team", label: "Team & Roles", icon: HiOutlineUserGroup, permission: "staff" },
+type NavSection = {
+  title: string;
+  items: NavItem[];
+};
+
+const NAV_SECTIONS: NavSection[] = [
+  {
+    title: "Control",
+    items: [
+      { href: "/admin", label: "Business Overview", icon: HiOutlineHome, permission: "overview" },
+      {
+        href: "/admin/platform",
+        label: "Platform Control",
+        icon: HiOutlineWrenchScrewdriver,
+        permission: "platform",
+      },
+    ],
+  },
+  {
+    title: "Growth",
+    items: [
+      { href: "/admin/customers", label: "Customers", icon: HiOutlineUsers, permission: "customers" },
+      { href: "/admin/site-leads", label: "Site Leads", icon: HiOutlineGlobeAlt, permission: "customers" },
+      { href: "/admin/plans", label: "Plans & Entitlements", icon: HiOutlineCreditCard, permission: "plans" },
+      { href: "/admin/revenue", label: "Revenue & Subscriptions", icon: HiOutlineBanknotes, permission: "revenue" },
+      { href: "/admin/referrals", label: "Referrals & Affiliates", icon: HiOutlineUserPlus, permission: "referrals" },
+    ],
+  },
+  {
+    title: "Lead ops",
+    items: [
+      { href: "/admin/leads", label: "All Leads", icon: HiOutlineSquares2X2, permission: "leads" },
+      { href: "/admin/saved-leads", label: "Saved Leads", icon: HiOutlineStar, permission: "saved_leads" },
+      { href: "/admin/searches", label: "All Searches", icon: HiOutlineClipboardDocumentList, permission: "searches" },
+      { href: "/admin/scrape", label: "Scrape Leads", icon: HiOutlineMagnifyingGlass, permission: "scrape" },
+      { href: "/admin/copy-leads", label: "Copy Leads", icon: HiOutlineDocumentDuplicate, permission: "copy_leads" },
+    ],
+  },
+  {
+    title: "Communications",
+    items: [
+      {
+        href: "/admin/communications",
+        label: "Email & Outreach",
+        icon: HiOutlineChatBubbleLeftRight,
+        permission: "communications",
+      },
+      { href: "/admin/email-preview", label: "Email Templates", icon: HiOutlineEnvelope, permission: "system" },
+      {
+        href: "/admin/exports",
+        label: "Exports Log",
+        icon: HiOutlineDocumentArrowDown,
+        permission: "exports",
+      },
+    ],
+  },
+  {
+    title: "System",
+    items: [
+      { href: "/admin/activity", label: "Activity Log", icon: HiOutlineClipboardDocumentList, permission: "activity" },
+      { href: "/admin/health", label: "Feature Health Audit", icon: HiOutlineHeart, permission: "health" },
+      { href: "/admin/system", label: "System & API Keys", icon: HiOutlineKey, permission: "system" },
+      { href: "/admin/team", label: "Team & Roles", icon: HiOutlineUserGroup, permission: "staff" },
+    ],
+  },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -112,7 +165,12 @@ export function AdminShell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const visibleNav = NAV.filter((item) => canAccess(user, item.permission));
+  const visibleSections = NAV_SECTIONS.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => canAccess(user, item.permission)),
+  })).filter((section) => section.items.length > 0);
+  const flatNav = visibleSections.flatMap((s) => s.items);
+
   const roleLabel =
     user.role === SUPER_ADMIN_ROLE
       ? "Super Admin"
@@ -128,7 +186,7 @@ export function AdminShell({
         <NavigationProgress />
       </Suspense>
 
-      <aside className="hud-shell-aside hidden w-[260px] shrink-0 flex-col lg:flex">
+      <aside className="hud-shell-aside hidden w-[268px] shrink-0 flex-col lg:flex">
         <div className="border-b border-brand-500/15 px-5 py-4">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
@@ -145,26 +203,35 @@ export function AdminShell({
             <ThemeToggle compact />
           </div>
         </div>
-        <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
-          {visibleNav.map((item) => {
-            const active = isActive(pathname, item.href);
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium transition",
-                  active
-                    ? "saas-nav-active bg-brand-500/12 text-brand-500 shadow-[0_0_20px_var(--brand-glow)]"
-                    : "text-ink-muted hover:bg-brand-50 hover:text-ink"
-                )}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                {item.label}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 space-y-5 overflow-y-auto p-3">
+          {visibleSections.map((section) => (
+            <div key={section.title}>
+              <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
+                {section.title}
+              </p>
+              <div className="space-y-0.5">
+                {section.items.map((item) => {
+                  const active = isActive(pathname, item.href);
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium transition",
+                        active
+                          ? "saas-nav-active bg-brand-500/12 text-brand-500 shadow-[0_0_20px_var(--brand-glow)]"
+                          : "text-ink-muted hover:bg-brand-50 hover:text-ink"
+                      )}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
         <div className="space-y-1 border-t border-brand-500/15 p-3">
           {user.role === SUPER_ADMIN_ROLE && (
@@ -204,7 +271,7 @@ export function AdminShell({
         </header>
 
         <div className="scrollbar-thin relative z-[1] flex gap-2 overflow-x-auto border-b border-brand-500/10 bg-[var(--surface)] px-3 py-2 lg:hidden">
-          {visibleNav.map((item) => (
+          {flatNav.map((item) => (
             <Link
               key={item.href}
               href={item.href}

@@ -250,7 +250,10 @@ export default function AdminOverviewPage() {
         description="Platform-wide health for customers, leads, revenue, and geo coverage."
         actions={
           <div className="flex flex-wrap gap-2">
-            <Link href="/admin/scrape" className="hud-btn-primary text-[12px]">
+            <Link href="/admin/platform" className="hud-btn-primary text-[12px]">
+              Platform Control
+            </Link>
+            <Link href="/admin/scrape" className="hud-btn-ghost text-[12px]">
               Scrape leads
             </Link>
             <Link href="/admin/copy-leads" className="hud-btn-ghost text-[12px]">

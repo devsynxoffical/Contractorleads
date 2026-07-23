@@ -94,6 +94,16 @@ export function getSystemKeyStatuses(): EnvKeyStatus[] {
       group: "Email",
       env: process.env.EMAIL_FROM || process.env.RESEND_FROM,
     },
+    {
+      key: "INBOUND_EMAIL_SECRET",
+      group: "Email",
+      env: process.env.INBOUND_EMAIL_SECRET,
+    },
+    {
+      key: "SECRET_ENCRYPTION_KEY",
+      group: "Security",
+      env: process.env.SECRET_ENCRYPTION_KEY || process.env.CREDENTIALS_SECRET,
+    },
   ];
 
   return rows.map((row) => {

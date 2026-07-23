@@ -11,6 +11,7 @@ type Customer = {
   id: string;
   email: string;
   name: string | null;
+  phone: string | null;
   role: string;
   plan: string;
   subscriptionStatus: string;
@@ -43,6 +44,38 @@ type Customer = {
   apiMonthlyUsed: number;
   apiUsageResetAt: string | null;
   apiKeyLast4: string | null;
+  crmWebhookUrl: string | null;
+  crmWebhookSecret: string | null;
+  crmWebhookEnabled: boolean;
+  slackWebhookUrl: string | null;
+  slackEnabled: boolean;
+  ghlWebhookUrl: string | null;
+  ghlEnabled: boolean;
+  emailMarketingOptIn: boolean;
+  teamMembers: Array<{
+    id: string;
+    email: string;
+    name: string | null;
+    role: string;
+    status: string;
+    invitedAt: string;
+  }>;
+  smtpAccounts: Array<{
+    id: string;
+    label: string;
+    host: string;
+    fromEmail: string;
+    enabled: boolean;
+    isDefault: boolean;
+    updatedAt: string;
+  }>;
+  emailSequence: {
+    id: string;
+    name: string;
+    enabled: boolean;
+    updatedAt: string;
+    _count: { enrollments: number };
+  } | null;
   searches: Array<{
     id: string;
     industry: string;
@@ -56,7 +89,15 @@ type Customer = {
     action: string;
     createdAt: string;
   }>;
-  _count: { searches: number; savedLeads: number };
+  _count: {
+    searches: number;
+    savedLeads: number;
+    activities: number;
+    scripts: number;
+    leadEmails: number;
+    exports: number;
+    teamMembers: number;
+  };
 };
 
 export default function AdminCustomerDetailPage() {
@@ -97,7 +138,24 @@ export default function AdminCustomerDetailPage() {
       setMessage(data.error ?? "Save failed");
       return;
     }
-    setCustomer((prev) => (prev ? { ...prev, ...data.customer } : data.customer));
+    setCustomer((prev) =>
+      prev
+        ? {
+            ...prev,
+            ...data.customer,
+            teamMembers: prev.teamMembers,
+            smtpAccounts: prev.smtpAccounts,
+            emailSequence: prev.emailSequence,
+            searches: prev.searches,
+            creditLedger: prev.creditLedger,
+            _count: prev._count,
+            referredBy:
+              data.customer.referredBy !== undefined
+                ? data.customer.referredBy
+                : prev.referredBy,
+          }
+        : data.customer,
+    );
     if (data.customer?.referredBy?.referralCode !== undefined) {
       setReferredByCode(data.customer.referredBy?.referralCode ?? "");
     } else if (patch.referredByCode !== undefined) {
@@ -558,13 +616,171 @@ export default function AdminCustomerDetailPage() {
               Save notes
             </Button>
           </section>
+
+          <section className="space-y-3 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">
+            <h2 className="text-sm font-semibold text-ink">
+              CRM · Slack · GHL webhooks
+            </h2>
+            <label className="flex items-center justify-between rounded-xl border border-border/70 px-3 py-2">
+              <span className="text-[12px] font-medium text-ink-muted">
+                CRM webhook enabled
+              </span>
+              <input
+                type="checkbox"
+                checked={customer.crmWebhookEnabled}
+                onChange={(e) =>
+                  setCustomer({
+                    ...customer,
+                    crmWebhookEnabled: e.target.checked,
+                  })
+                }
+              />
+            </label>
+            <label className="block text-[12px]">
+              <span className="font-medium text-ink-muted">CRM webhook URL</span>
+              <input
+                className="saas-input mt-1"
+                value={customer.crmWebhookUrl ?? ""}
+                onChange={(e) =>
+                  setCustomer({ ...customer, crmWebhookUrl: e.target.value })
+                }
+              />
+            </label>
+            <label className="block text-[12px]">
+              <span className="font-medium text-ink-muted">CRM webhook secret</span>
+              <input
+                className="saas-input mt-1"
+                value={customer.crmWebhookSecret ?? ""}
+                onChange={(e) =>
+                  setCustomer({ ...customer, crmWebhookSecret: e.target.value })
+                }
+              />
+            </label>
+            <label className="flex items-center justify-between rounded-xl border border-border/70 px-3 py-2">
+              <span className="text-[12px] font-medium text-ink-muted">
+                Slack enabled
+              </span>
+              <input
+                type="checkbox"
+                checked={customer.slackEnabled}
+                onChange={(e) =>
+                  setCustomer({ ...customer, slackEnabled: e.target.checked })
+                }
+              />
+            </label>
+            <label className="block text-[12px]">
+              <span className="font-medium text-ink-muted">Slack webhook URL</span>
+              <input
+                className="saas-input mt-1"
+                value={customer.slackWebhookUrl ?? ""}
+                onChange={(e) =>
+                  setCustomer({ ...customer, slackWebhookUrl: e.target.value })
+                }
+              />
+            </label>
+            <label className="flex items-center justify-between rounded-xl border border-border/70 px-3 py-2">
+              <span className="text-[12px] font-medium text-ink-muted">
+                GoHighLevel enabled
+              </span>
+              <input
+                type="checkbox"
+                checked={customer.ghlEnabled}
+                onChange={(e) =>
+                  setCustomer({ ...customer, ghlEnabled: e.target.checked })
+                }
+              />
+            </label>
+            <label className="block text-[12px]">
+              <span className="font-medium text-ink-muted">GHL webhook URL</span>
+              <input
+                className="saas-input mt-1"
+                value={customer.ghlWebhookUrl ?? ""}
+                onChange={(e) =>
+                  setCustomer({ ...customer, ghlWebhookUrl: e.target.value })
+                }
+              />
+            </label>
+            <label className="flex items-center justify-between rounded-xl border border-border/70 px-3 py-2">
+              <span className="text-[12px] font-medium text-ink-muted">
+                Marketing email opt-in
+              </span>
+              <input
+                type="checkbox"
+                checked={customer.emailMarketingOptIn}
+                onChange={(e) =>
+                  setCustomer({
+                    ...customer,
+                    emailMarketingOptIn: e.target.checked,
+                  })
+                }
+              />
+            </label>
+            <Button
+              disabled={saving}
+              onClick={() =>
+                save({
+                  crmWebhookEnabled: customer.crmWebhookEnabled,
+                  crmWebhookUrl: customer.crmWebhookUrl,
+                  crmWebhookSecret: customer.crmWebhookSecret,
+                  slackEnabled: customer.slackEnabled,
+                  slackWebhookUrl: customer.slackWebhookUrl,
+                  ghlEnabled: customer.ghlEnabled,
+                  ghlWebhookUrl: customer.ghlWebhookUrl,
+                  emailMarketingOptIn: customer.emailMarketingOptIn,
+                })
+              }
+            >
+              Save webhooks &amp; opt-in
+            </Button>
+          </section>
+
+          <section className="space-y-3 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">
+            <h2 className="text-sm font-semibold text-ink">
+              Users &amp; teams ({customer.teamMembers?.length ?? 0} seats)
+            </h2>
+            <ul className="max-h-48 space-y-1 overflow-y-auto text-[12px] text-ink-muted">
+              {(customer.teamMembers ?? []).length === 0 && (
+                <li>No team invites yet (Agency+).</li>
+              )}
+              {(customer.teamMembers ?? []).map((m) => (
+                <li key={m.id} className="rounded-lg bg-[#faf8fc] px-2 py-1.5">
+                  {m.name || m.email} · {m.role} · {m.status}
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <section className="space-y-3 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">
+            <h2 className="text-sm font-semibold text-ink">
+              Email setup
+            </h2>
+            <p className="text-[12px] text-ink-muted">
+              Sequence:{" "}
+              {customer.emailSequence
+                ? `${customer.emailSequence.name} (${customer.emailSequence.enabled ? "on" : "off"}) · ${customer.emailSequence._count.enrollments} enrollments`
+                : "Not configured"}
+            </p>
+            <ul className="max-h-40 space-y-1 overflow-y-auto text-[12px] text-ink-muted">
+              {(customer.smtpAccounts ?? []).length === 0 && (
+                <li>No SMTP accounts.</li>
+              )}
+              {(customer.smtpAccounts ?? []).map((a) => (
+                <li key={a.id} className="rounded-lg bg-[#faf8fc] px-2 py-1.5">
+                  {a.label} · {a.fromEmail} · {a.host}
+                  {a.isDefault ? " · default" : ""}
+                  {!a.enabled ? " · disabled" : ""}
+                </li>
+              ))}
+            </ul>
+          </section>
         </div>
       </div>
 
       <section className="mt-5 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">
         <h2 className="text-sm font-semibold text-ink">
-          Recent searches ({customer._count.searches} total ·{" "}
-          {customer._count.savedLeads} saved leads)
+          Usage snapshot · {customer._count.searches} searches ·{" "}
+          {customer._count.savedLeads} saved · {customer._count.leadEmails} emails ·{" "}
+          {customer._count.exports} exports · {customer._count.scripts} scripts
         </h2>
         <ul className="mt-3 space-y-2 text-[13px]">
           {customer.searches.map((s) => (
