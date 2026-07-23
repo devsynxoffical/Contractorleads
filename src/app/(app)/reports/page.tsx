@@ -6,10 +6,12 @@ import { PageHeader, PrimaryActionLink } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { HiOutlineArrowDownTray } from "react-icons/hi2";
+import { planHasFeature } from "@/lib/plans";
 
 export default async function ClientReportsPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
+  if (!planHasFeature(user.plan, "reports")) redirect("/billing");
 
   const saved = await prisma.savedLead.findMany({
     where: { userId: user.id },

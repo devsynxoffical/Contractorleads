@@ -24,7 +24,7 @@ export default function SetupApiPage() {
       steps={[
         {
           title: "Confirm plan access",
-          body: "Starter+ unlocks API/MCP. Pro/Agency unlock SSO.",
+          body: "Growth+ unlocks API/MCP. Agency+ unlocks SSO.",
         },
         {
           title: "Generate API key",

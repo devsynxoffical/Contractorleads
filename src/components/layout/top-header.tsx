@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import {
   HiOutlineBars3,
   HiOutlineBell,
@@ -10,9 +9,10 @@ import {
   HiOutlineMagnifyingGlass,
 } from "react-icons/hi2";
 import type { SessionUser } from "@/lib/session-user";
-import { cn, formatCredits } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { GlobalSearch } from "@/components/layout/global-search";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { WorkspaceSettingsMenu } from "@/components/layout/workspace-settings-menu";
 
 const LOGO_GRADIENT = "var(--logo-gradient)";
 
@@ -94,25 +94,7 @@ export function TopHeader({
             </span>
           </button>
 
-          <Link
-            href="/settings"
-            className="flex items-center gap-2.5 rounded-xl border border-transparent py-1 pl-1 pr-1.5 transition hover:border-border hover:bg-brand-50 sm:pr-2.5"
-          >
-            <div
-              className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full text-xs font-bold text-white shadow-sm ring-2 ring-brand-500/35"
-              style={{ background: LOGO_GRADIENT }}
-            >
-              {(user.name || user.email).charAt(0).toUpperCase()}
-            </div>
-            <div className="hidden min-w-0 max-w-[130px] md:block">
-              <p className="truncate text-[12px] font-semibold tracking-tight text-ink">
-                {user.name || "User"}
-              </p>
-              <p className="truncate text-[10px] font-medium text-ink-faint">
-                {formatCredits(user.creditsRemaining)} credits
-              </p>
-            </div>
-          </Link>
+          <WorkspaceSettingsMenu user={user} variant="header" />
         </div>
       </div>
 

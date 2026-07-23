@@ -76,6 +76,25 @@ model User {
   passwordResets  PasswordResetToken[]
   referralsAsReferrer Referral[] @relation("ReferrerReferrals")
   referralAsReferred  Referral?  @relation("ReferredReferral")
+  teamMembers     TeamMember[]
+}
+
+/// Agency+ seat invites managed by the account owner.
+model TeamMember {
+  id          String    @id @default(cuid())
+  ownerUserId String
+  owner       User      @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  email       String
+  name        String?
+  role        String    @default("member") // admin | member | viewer
+  status      String    @default("pending") // pending | active | revoked
+  invitedAt   DateTime  @default(now())
+  acceptedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([ownerUserId, email])
+  @@index([ownerUserId, status])
 }
 
 /// Persisted AI assistant threads (home / Ask Expert).

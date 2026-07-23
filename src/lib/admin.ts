@@ -1,31 +1,14 @@
 import { INDUSTRIES } from "@/lib/constants";
 import { isOpenAIConfigured } from "@/lib/openai-config";
+import {
+  ADMIN_PLANS,
+  PLAN_API_LIMITS,
+  PLAN_FEATURES,
+  type PlanId,
+} from "@/lib/plans";
 
-export const ADMIN_PLANS = [
-  { value: "trial", label: "Free Trial", priceMonthly: 0 },
-  { value: "starter", label: "Starter", priceMonthly: 49 },
-  { value: "pro", label: "Pro", priceMonthly: 99 },
-  { value: "agency", label: "Agency", priceMonthly: 0 },
-] as const;
-
-export type PlanKey = (typeof ADMIN_PLANS)[number]["value"];
-
-export const PLAN_API_LIMITS: Record<PlanKey, number> = {
-  trial: 25,
-  starter: 300,
-  pro: 1500,
-  agency: 8000,
-};
-
-export const PLAN_FEATURES: Record<
-  PlanKey,
-  { api: boolean; mcp: boolean; sso: boolean }
-> = {
-  trial: { api: false, mcp: false, sso: false },
-  starter: { api: true, mcp: true, sso: false },
-  pro: { api: true, mcp: true, sso: true },
-  agency: { api: true, mcp: true, sso: true },
-};
+export { ADMIN_PLANS, PLAN_API_LIMITS, PLAN_FEATURES };
+export type PlanKey = PlanId;
 
 export const SUBSCRIPTION_STATUSES = [
   "trialing",

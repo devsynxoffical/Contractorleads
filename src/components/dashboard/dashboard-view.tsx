@@ -18,6 +18,7 @@ import {
   HiOutlineUserGroup,
   HiOutlineWallet,
   HiOutlineViewColumns,
+  HiOutlineCog6Tooth,
 } from "react-icons/hi2";
 import { formatCredits, formatNumber } from "@/lib/utils";
 import type { SessionUser } from "@/lib/session-user";
@@ -29,6 +30,7 @@ import {
   type DashboardIntegrations,
   type DashboardPipeline,
 } from "@/components/dashboard/dashboard-crm-integrations";
+import { planHasFeature } from "@/lib/plans";
 
 type DashboardData = {
   stats: {
@@ -317,7 +319,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
         </div>
 
         {/* Quick actions */}
-        <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {[
             {
               href: "/leads/search",
@@ -342,6 +344,29 @@ export function DashboardView({ user }: { user: SessionUser }) {
               label: "Pipeline CRM",
               desc: "New → closed",
               icon: HiOutlineViewColumns,
+            },
+            ...(planHasFeature(user.plan, "teams")
+              ? [
+                  {
+                    href: "/team",
+                    label: "Users & teams",
+                    desc: "Invite Agency seats",
+                    icon: HiOutlineUserGroup,
+                  },
+                ]
+              : [
+                  {
+                    href: "/billing",
+                    label: "Upgrade for teams",
+                    desc: "Agency unlocks seats",
+                    icon: HiOutlineUserGroup,
+                  },
+                ]),
+            {
+              href: "/setup",
+              label: "Workspace setup",
+              desc: "Email · API · CRM",
+              icon: HiOutlineCog6Tooth,
             },
           ].map((a) => {
             const Icon = a.icon;

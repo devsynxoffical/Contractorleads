@@ -32,6 +32,7 @@ import {
   HiOutlineSquares2X2,
   HiOutlineStar,
   HiOutlineUsers,
+  HiOutlineUserGroup,
   HiOutlineUserPlus,
   HiOutlineViewColumns,
   HiOutlineWrenchScrewdriver,
@@ -41,12 +42,16 @@ import { cn, formatCredits } from "@/lib/utils";
 import type { SessionUser } from "@/lib/session-user";
 import { TopHeader } from "@/components/layout/top-header";
 import { SupportChatWidget } from "@/components/ai/support-chat-widget";
+import { WorkspaceSettingsMenu } from "@/components/layout/workspace-settings-menu";
+import { planHasFeature } from "@/lib/plans";
 
 type NavItem = {
   href: string;
   label: string;
   icon: IconType;
   badge?: boolean;
+  /** Hide unless plan includes this feature */
+  feature?: "map" | "crm" | "teams" | "reports" | "workspaces" | "api";
 };
 
 type NavSection = {
@@ -54,63 +59,87 @@ type NavSection = {
   items: NavItem[];
 };
 
-const sections: NavSection[] = [
-  {
-    title: "Main",
-    items: [
-      { href: "/home", label: "Home", icon: HiOutlineHome },
-      { href: "/dashboard", label: "Dashboard", icon: HiOutlineChartBar },
-      { href: "/leads/search", label: "Lead Finder", icon: HiOutlineMagnifyingGlass },
-      { href: "/leads", label: "All Leads", icon: HiOutlineSquares2X2 },
-      { href: "/leads/saved", label: "Saved Leads", icon: HiOutlineStar },
-      { href: "/leads/hot", label: "Hot Leads", icon: HiOutlineFire, badge: true },
-      { href: "/leads/pipeline", label: "Pipeline CRM", icon: HiOutlineViewColumns },
-      { href: "/leads/map", label: "Lead Map", icon: HiOutlineMap },
-    ],
-  },
-  {
-    title: "AI Assistant",
-    items: [
-      {
-        href: "/ask-expert",
-        label: "Ask Contractor Leads",
-        icon: HiOutlineChatBubbleLeftRight,
-      },
-      { href: "/scripts", label: "My Scripts", icon: HiOutlineBookOpen },
-    ],
-  },
-  {
-    title: "Setup",
-    items: [
-      { href: "/setup", label: "Setup hub", icon: HiOutlineWrenchScrewdriver },
-      { href: "/setup/email", label: "Email & SMTP", icon: HiOutlineEnvelope },
-      { href: "/setup/api", label: "API · MCP · SSO", icon: HiOutlineKey },
-      { href: "/setup/crm", label: "CRM webhooks", icon: HiOutlineLink },
-    ],
-  },
-  {
-    title: "Platform",
-    items: [
-      { href: "/industries", label: "Industries", icon: HiOutlineHomeModern },
-      { href: "/analytics", label: "Analytics", icon: HiOutlineArrowTrendingDown },
-      { href: "/ai-tools", label: "AI Tools", icon: HiOutlineCpuChip },
-      { href: "/workspaces", label: "Workspaces", icon: HiOutlineUsers },
-      { href: "/reports", label: "Client Reports", icon: HiOutlineArrowUpTray },
-      { href: "/facebook-ads", label: "Facebook Ads", icon: HiOutlineMegaphone },
-    ],
-  },
-  {
-    title: "Account",
-    items: [
-      { href: "/referrals", label: "Referrals", icon: HiOutlineUserPlus },
-      { href: "/billing", label: "Plans & Billing", icon: HiOutlineCreditCard },
-      { href: "/settings", label: "Business profile", icon: HiOutlineCog6Tooth },
-    ],
-  },
-];
-
 function buildSections(user: SessionUser): NavSection[] {
-  if (user.role !== "SUPER_ADMIN" && !user.realAdminId) return sections;
+  const sections: NavSection[] = [
+    {
+      title: "Main",
+      items: [
+        { href: "/home", label: "Home", icon: HiOutlineHome },
+        { href: "/dashboard", label: "Dashboard", icon: HiOutlineChartBar },
+        { href: "/leads/search", label: "Lead Finder", icon: HiOutlineMagnifyingGlass },
+        { href: "/leads", label: "All Leads", icon: HiOutlineSquares2X2 },
+        { href: "/leads/saved", label: "Saved Leads", icon: HiOutlineStar },
+        { href: "/leads/hot", label: "Hot Leads", icon: HiOutlineFire, badge: true },
+        { href: "/leads/pipeline", label: "Pipeline CRM", icon: HiOutlineViewColumns },
+        { href: "/leads/map", label: "Lead Map", icon: HiOutlineMap, feature: "map" },
+      ],
+    },
+    {
+      title: "AI Assistant",
+      items: [
+        {
+          href: "/ask-expert",
+          label: "Ask Contractor Leads",
+          icon: HiOutlineChatBubbleLeftRight,
+        },
+        { href: "/scripts", label: "My Scripts", icon: HiOutlineBookOpen },
+      ],
+    },
+    {
+      title: "Setup",
+      items: [
+        { href: "/setup", label: "Setup hub", icon: HiOutlineWrenchScrewdriver },
+        { href: "/setup/email", label: "Email & SMTP", icon: HiOutlineEnvelope },
+        { href: "/setup/api", label: "API · MCP · SSO", icon: HiOutlineKey, feature: "api" },
+        { href: "/setup/crm", label: "CRM webhooks", icon: HiOutlineLink, feature: "crm" },
+      ],
+    },
+    {
+      title: "Platform",
+      items: [
+        { href: "/industries", label: "Industries", icon: HiOutlineHomeModern },
+        { href: "/analytics", label: "Analytics", icon: HiOutlineArrowTrendingDown },
+        { href: "/ai-tools", label: "AI Tools", icon: HiOutlineCpuChip },
+        {
+          href: "/team",
+          label: "Users & teams",
+          icon: HiOutlineUserGroup,
+          feature: "teams",
+        },
+        {
+          href: "/workspaces",
+          label: "Workspaces",
+          icon: HiOutlineUsers,
+          feature: "workspaces",
+        },
+        {
+          href: "/reports",
+          label: "Client Reports",
+          icon: HiOutlineArrowUpTray,
+          feature: "reports",
+        },
+        { href: "/facebook-ads", label: "Facebook Ads", icon: HiOutlineMegaphone },
+      ],
+    },
+    {
+      title: "Account",
+      items: [
+        { href: "/referrals", label: "Referrals", icon: HiOutlineUserPlus },
+        { href: "/billing", label: "Plans & Billing", icon: HiOutlineCreditCard },
+      ],
+    },
+  ];
+
+  const filtered = sections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter(
+        (item) => !item.feature || planHasFeature(user.plan, item.feature),
+      ),
+    }))
+    .filter((section) => section.items.length > 0);
+
+  if (user.role !== "SUPER_ADMIN" && !user.realAdminId) return filtered;
   return [
     {
       title: "Admin",
@@ -122,7 +151,7 @@ function buildSections(user: SessionUser): NavSection[] {
         },
       ],
     },
-    ...sections,
+    ...filtered,
   ];
 }
 
@@ -252,6 +281,12 @@ function SidebarNav({
       </nav>
 
       <div className="shrink-0 border-t border-border/80 p-4">
+        <WorkspaceSettingsMenu
+          user={user}
+          variant="sidebar"
+          onNavigate={onNavigate}
+          className="mb-2"
+        />
         <div
           className={cn(
             "hud-credits-card relative overflow-hidden rounded-2xl p-3.5 ring-1",

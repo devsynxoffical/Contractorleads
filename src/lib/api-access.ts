@@ -1,6 +1,9 @@
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
-import { PLAN_API_LIMITS, PLAN_FEATURES } from "@/lib/admin";
+import {
+  defaultApiLimitForPlan as planApiLimit,
+  featuresForPlan,
+} from "@/lib/plans";
 
 export type IntegrationKind = "api" | "mcp" | "sso";
 
@@ -28,18 +31,16 @@ export function timingSafeKeyEqual(a: string, b: string) {
 }
 
 export function defaultApiLimitForPlan(plan: string) {
-  return PLAN_API_LIMITS[(plan as keyof typeof PLAN_API_LIMITS) ?? "trial"] ?? 0;
+  return planApiLimit(plan);
 }
 
 export function planFeatureEnabled(plan: string, kind: IntegrationKind) {
-  return Boolean(PLAN_FEATURES[(plan as keyof typeof PLAN_FEATURES) ?? "trial"]?.[kind]);
+  return Boolean(featuresForPlan(plan)[kind]);
 }
 
 /** Flags to apply when a customer's plan changes (admin can still override later). */
 export function integrationFlagsForPlan(plan: string) {
-  const features =
-    PLAN_FEATURES[(plan as keyof typeof PLAN_FEATURES) ?? "trial"] ??
-    PLAN_FEATURES.trial;
+  const features = featuresForPlan(plan);
   return {
     apiEnabled: features.api,
     mcpEnabled: features.mcp,
