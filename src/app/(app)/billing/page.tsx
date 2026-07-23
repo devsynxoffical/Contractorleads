@@ -4,7 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PageHeader, LOGO_GRADIENT } from "@/components/layout/page-header";
-import { MARKETING_PLANS } from "@/components/marketing/marketing-plans-data";
+import {
+  MARKETING_PLANS,
+  formatPlanPrice,
+  formatPricePerLead,
+  pricePerLead,
+} from "@/components/marketing/marketing-plans-data";
 import { normalizePlan, planLabel, featuresForPlan } from "@/lib/plans";
 import { formatCredits } from "@/lib/utils";
 import Link from "next/link";
@@ -86,6 +91,7 @@ export default async function BillingPage() {
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {MARKETING_PLANS.map((plan) => {
           const active = plan.id === current;
+          const perLead = pricePerLead(plan.priceMonthly, plan.leadsIncluded);
           return (
             <Card
               key={plan.id}
@@ -108,13 +114,18 @@ export default async function BillingPage() {
                 <p className="mt-2 text-2xl font-semibold tracking-tight text-ink">
                   {plan.priceMonthly == null
                     ? "Custom"
-                    : `$${plan.priceMonthly}`}
+                    : `$${formatPlanPrice(plan.priceMonthly)}`}
                   {plan.priceMonthly != null ? (
                     <span className="text-sm font-medium text-ink-faint">
                       /mo
                     </span>
                   ) : null}
                 </p>
+                {perLead != null ? (
+                  <p className="mt-1 text-[13px] font-semibold tabular-nums text-brand-600">
+                    {formatPricePerLead(perLead)} / lead
+                  </p>
+                ) : null}
                 <p className="mt-1 text-sm text-ink-muted">{plan.creditsLabel}</p>
                 <p className="mt-2 text-[12px] text-ink-faint">{plan.blurb}</p>
                 <ul className="mt-3 space-y-1.5 text-[12px] text-ink-muted">

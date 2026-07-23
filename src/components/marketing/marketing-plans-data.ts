@@ -164,6 +164,8 @@ export type MarketingPlanCard = {
   priceMonthly: number | null;
   /** Shown when annual billing selected (per-month equivalent) */
   priceAnnualMonthly: number | null;
+  /** Leads included in the monthly allotment (null = unlimited / custom) */
+  leadsIncluded: number | null;
   creditsLabel: string;
   creditsDetail: string;
   ctaLabel: string;
@@ -176,13 +178,40 @@ export type MarketingPlanCard = {
   features: string[];
 };
 
+/** Format plan price for marketing cards ($19.99 stays precise). */
+export function formatPlanPrice(amount: number) {
+  return Number.isInteger(amount) ? String(amount) : amount.toFixed(2);
+}
+
+/** Effective $ per lead for marketing (4 decimals). */
+export function pricePerLead(
+  planPrice: number | null | undefined,
+  leadsIncluded: number | null | undefined,
+): number | null {
+  if (
+    planPrice == null ||
+    leadsIncluded == null ||
+    !Number.isFinite(planPrice) ||
+    !Number.isFinite(leadsIncluded) ||
+    leadsIncluded <= 0
+  ) {
+    return null;
+  }
+  return planPrice / leadsIncluded;
+}
+
+export function formatPricePerLead(amount: number) {
+  return `$${amount.toFixed(4)}`;
+}
+
 export const MARKETING_PLANS: MarketingPlanCard[] = [
   {
     id: "starter",
     name: "Starter",
     blurb: "Start generating and closing contractor leads — free trial included.",
-    priceMonthly: 10,
-    priceAnnualMonthly: 8,
+    priceMonthly: 19.99,
+    priceAnnualMonthly: 15.99,
+    leadsIncluded: 1000,
     creditsLabel: "1,330 credits / mo (1,000 leads)",
     creditsDetail: "1.33 credits per lead · 10 free leads on signup to start",
     ctaLabel: "Get started free",
@@ -203,8 +232,9 @@ export const MARKETING_PLANS: MarketingPlanCard[] = [
     id: "growth",
     name: "Growth",
     blurb: "Essential maps, Meta intel, and webhooks for agencies closing every week.",
-    priceMonthly: 20,
-    priceAnnualMonthly: 15,
+    priceMonthly: 49,
+    priceAnnualMonthly: 39,
+    leadsIncluded: 7500,
     creditsLabel: "9,975 credits / mo (7,500 leads)",
     creditsDetail: "1.33 credits per lead · best for daily outreach",
     ctaLabel: "Buy now",
@@ -227,8 +257,9 @@ export const MARKETING_PLANS: MarketingPlanCard[] = [
     id: "agency",
     name: "Agency",
     blurb: "For teams running multiple clients who need seats, reports, and priority support.",
-    priceMonthly: 40,
-    priceAnnualMonthly: 30,
+    priceMonthly: 99,
+    priceAnnualMonthly: 79,
+    leadsIncluded: 20000,
     creditsLabel: "26,600 credits / mo (20,000 leads)",
     creditsDetail: "1.33 credits per lead · shared team pool",
     ctaLabel: "Buy now",
@@ -252,6 +283,7 @@ export const MARKETING_PLANS: MarketingPlanCard[] = [
     blurb: "Power, flexibility, and governance for large orgs and white-label rollouts.",
     priceMonthly: null,
     priceAnnualMonthly: null,
+    leadsIncluded: null,
     creditsLabel: "Unlimited leads",
     creditsDetail: "No lead cap · custom SLA & volume terms",
     ctaLabel: "Talk to sales",

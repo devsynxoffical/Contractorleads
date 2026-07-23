@@ -27,9 +27,9 @@ export type PlanFeatures = {
 
 export const ADMIN_PLANS = [
   { value: "trial", label: "Free Trial", priceMonthly: 0 },
-  { value: "starter", label: "Starter", priceMonthly: 10 },
-  { value: "growth", label: "Growth", priceMonthly: 20 },
-  { value: "agency", label: "Agency", priceMonthly: 40 },
+  { value: "starter", label: "Starter", priceMonthly: 19.99 },
+  { value: "growth", label: "Growth", priceMonthly: 49 },
+  { value: "agency", label: "Agency", priceMonthly: 99 },
   { value: "enterprise", label: "Enterprise", priceMonthly: 0 },
 ] as const;
 

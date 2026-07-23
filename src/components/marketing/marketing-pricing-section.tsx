@@ -11,7 +11,7 @@ import {
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
 import { cn } from "@/lib/utils";
 import { Reveal } from "./marketing-ui";
-import { MARKETING_PLANS } from "./marketing-plans-data";
+import { MARKETING_PLANS, formatPlanPrice, formatPricePerLead, pricePerLead } from "./marketing-plans-data";
 
 export function MarketingPricingSection() {
   const [billing, setBilling] = useState<"monthly" | "annual">("annual");
@@ -20,8 +20,8 @@ export function MarketingPricingSection() {
     <>
       <Reveal delay={0.04} className="mt-10 flex flex-col items-center gap-5">
         <p className="mx-auto max-w-2xl text-center text-[15px] leading-relaxed text-slate-600">
-          Simple seats-and-credits pricing. Start free, then pick the plan that
-          matches how many contractors you close each month.
+          Transparent seats-and-credits pricing with the effective cost per lead
+          shown on every plan. Start free, then scale when you&apos;re closing.
         </p>
 
         <div
@@ -74,6 +74,7 @@ export function MarketingPricingSection() {
               : billing === "annual"
                 ? plan.priceAnnualMonthly
                 : plan.priceMonthly;
+          const perLead = pricePerLead(price, plan.leadsIncluded);
           const showStrike =
             billing === "annual" &&
             plan.priceMonthly != null &&
@@ -124,11 +125,11 @@ export function MarketingPricingSection() {
                     <div className="flex items-end gap-2">
                       {showStrike ? (
                         <span className="mb-1 text-[18px] font-semibold text-slate-400 line-through">
-                          ${plan.priceMonthly}
+                          ${formatPlanPrice(plan.priceMonthly!)}
                         </span>
                       ) : null}
                       <p className="font-[family-name:var(--font-display)] text-[44px] font-semibold leading-none tracking-tight text-slate-900">
-                        ${price}
+                        ${formatPlanPrice(price)}
                       </p>
                       <span className="mb-1 text-[14px] font-medium text-slate-500">
                         /mo
@@ -142,6 +143,29 @@ export function MarketingPricingSection() {
                         ? "Per month, billed annually"
                         : "Per month, billed monthly"}
                   </p>
+
+                  {perLead != null ? (
+                    <div className="mt-3 inline-flex items-baseline gap-1.5 rounded-full bg-fuchsia-50 px-3 py-1.5 ring-1 ring-fuchsia-100">
+                      <span className="font-[family-name:var(--font-display)] text-[18px] font-semibold tabular-nums tracking-tight text-fuchsia-700">
+                        {formatPricePerLead(perLead)}
+                      </span>
+                      <span className="text-[12px] font-semibold text-fuchsia-600/90">
+                        / lead
+                      </span>
+                    </div>
+                  ) : plan.custom ? (
+                    <div className="mt-3 inline-flex items-baseline gap-1.5 rounded-full bg-slate-50 px-3 py-1.5 ring-1 ring-slate-200">
+                      <span className="text-[13px] font-semibold text-slate-700">
+                        Custom / lead
+                      </span>
+                    </div>
+                  ) : null}
+                  {perLead != null && plan.leadsIncluded ? (
+                    <p className="mt-1.5 text-[11px] leading-snug text-slate-400">
+                      Based on {plan.leadsIncluded.toLocaleString()} leads /
+                      month included
+                    </p>
+                  ) : null}
                 </div>
 
                 <div className="mt-4 flex items-start gap-2.5 rounded-xl bg-slate-50 px-3 py-2.5">
