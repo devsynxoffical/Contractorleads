@@ -1668,17 +1668,74 @@ html[data-theme="dark"] .marketing-site .bg-\[\#f8f5ff\] {
   color: var(--heading);
   text-align: center;
 }
+.mkt-flow-brand-mark {
+  margin: 0 0 0.55em;
+  font-size: 1.15em;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #fff;
+  text-shadow: 0 1px 24px rgba(236, 72, 153, 0.35);
+}
+@media (min-width: 640px) {
+  .mkt-flow-brand-mark {
+    font-size: 1.45em;
+    margin-bottom: 0.65em;
+  }
+}
+.mkt-flow-heading--rotator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.12em;
+  max-width: 22em;
+}
+.mkt-flow-heading-static {
+  display: block;
+  font-weight: 500;
+  color: rgba(238, 240, 246, 0.88);
+}
+.mkt-flow-rotator {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 2.4em;
+  overflow: hidden;
+}
+.mkt-flow-rotator-line {
+  display: block;
+  grid-area: 1 / 1;
+  width: 100%;
+  font-weight: 600;
+  background: linear-gradient(120deg, #fda4af 0%, #f0abfc 42%, #c4b5fd 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  line-height: 1.15;
+}
 @media (min-width: 640px) {
   .mkt-flow-heading {
     margin-top: 0;
     max-width: 34em;
     font-size: 3.75em;
   }
+  .mkt-flow-heading--rotator {
+    max-width: 18em;
+  }
+  .mkt-flow-rotator {
+    min-height: 2.35em;
+  }
 }
 @media (min-width: 1024px) {
   .mkt-flow-heading {
     max-width: 46em;
     font-size: 5em;
+  }
+  .mkt-flow-heading--rotator {
+    max-width: 14.5em;
+    font-size: 4.25em;
+  }
+  .mkt-flow-rotator {
+    min-height: 2.3em;
   }
 }
 .mkt-flow-sub {

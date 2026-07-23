@@ -1,23 +1,32 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { AnimatePresence, motion } from "framer-motion";
 import { HiOutlineArrowRight } from "react-icons/hi2";
 import { fluidSimulation } from "./fluid-simulation";
 import { handleMarketingHashClick } from "./marketing-scroll";
+import { usePrefersReducedMotion } from "./marketing-motion";
 
-const HEADING = "Generate leads that actually convert";
+/** Rotating conversion lines — sell the outcome, not the feature. */
+const ROTATING_LINES = [
+  "close paying retainers this month",
+  "book discovery calls that convert",
+  "fill your pipeline with ready buyers",
+  "turn dials into signed clients",
+  "land your next six-figure client",
+];
+
 const SUBLINE =
-  "Stop pitching contractors with a stale spreadsheet. Contractor Leads finds live, verified home-service businesses, scores them for outreach fit, and hands you the contact, the pitch angle, and the ad intel — before your first call.";
-
-function splitWords(text: string) {
-  return text.split(" ").filter(Boolean);
-}
+  "Verified contractor leads, scored and dial-ready — so your team sells instead of researching. Start free, prove ROI, upgrade when you’re closing.";
 
 export function MarketingFluidHero() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
+  const reduced = usePrefersReducedMotion();
+  const [lineIndex, setLineIndex] = useState(0);
+  const [entered, setEntered] = useState(false);
 
   useEffect(() => {
     const id = "onest-font";
@@ -26,7 +35,7 @@ export function MarketingFluidHero() {
       link.id = id;
       link.rel = "stylesheet";
       link.href =
-        "https://fonts.googleapis.com/css2?family=Onest:wght@400;500&display=swap";
+        "https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&display=swap";
       document.head.appendChild(link);
     }
   }, []);
@@ -42,6 +51,19 @@ export function MarketingFluidHero() {
     }
     return () => destroy?.();
   }, []);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setEntered(true), 80);
+    return () => window.clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (reduced) return;
+    const id = window.setInterval(() => {
+      setLineIndex((i) => (i + 1) % ROTATING_LINES.length);
+    }, 3200);
+    return () => window.clearInterval(id);
+  }, [reduced]);
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -61,52 +83,13 @@ export function MarketingFluidHero() {
     };
 
     reveal(section.querySelector("[data-reveal='nav']"), 150, "-0.75rem");
-    reveal(section.querySelector("[data-reveal='cta']"), 1250, "1.25rem");
-
-    const animateWords = (
-      container: Element | null,
-      baseDelay: number,
-      stagger: number,
-      duration: number,
-      fromY: number,
-    ) => {
-      if (!container) return;
-      const words = container.querySelectorAll<HTMLElement>("[data-word]");
-      words.forEach((word, i) => {
-        word.style.display = "inline-block";
-        word.style.opacity = "0";
-        word.style.transform = `translateY(${fromY}px)`;
-        word.style.transition = `opacity ${duration}ms cubic-bezier(0.33, 1, 0.68, 1) ${
-          baseDelay + i * stagger
-        }ms, transform ${duration}ms cubic-bezier(0.33, 1, 0.68, 1) ${
-          baseDelay + i * stagger
-        }ms`;
-      });
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          words.forEach((word) => {
-            word.style.opacity = "1";
-            word.style.transform = "translateY(0)";
-          });
-        });
-      });
-    };
-
-    animateWords(section.querySelector("[data-reveal='heading']"), 320, 85, 720, 26);
-    const sub = section.querySelector("[data-reveal='sub']");
-    if (sub instanceof HTMLElement) {
-      sub.style.opacity = "0";
-      sub.style.transform = "translateY(14px)";
-      sub.style.transition =
-        "opacity 600ms cubic-bezier(0.33, 1, 0.68, 1) 980ms, transform 600ms cubic-bezier(0.33, 1, 0.68, 1) 980ms";
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          sub.style.opacity = "1";
-          sub.style.transform = "translateY(0)";
-        });
-      });
-    }
+    reveal(section.querySelector("[data-reveal='brand']"), 280, "1rem");
+    reveal(section.querySelector("[data-reveal='hook']"), 480, "1.1rem");
+    reveal(section.querySelector("[data-reveal='sub']"), 900, "1rem");
+    reveal(section.querySelector("[data-reveal='cta']"), 1100, "1.25rem");
   }, []);
+
+  const activeLine = ROTATING_LINES[lineIndex];
 
   return (
     <section ref={sectionRef} className="mkt-flow-hero" aria-label="Hero">
@@ -139,13 +122,30 @@ export function MarketingFluidHero() {
       </header>
 
       <div className="mkt-flow-center">
-        <h1 className="mkt-flow-heading" data-reveal="heading">
-          {splitWords(HEADING).map((w, i, arr) => (
-            <span key={`${w}-${i}`} data-word>
-              {w}
-              {i < arr.length - 1 ? "\u00A0" : ""}
-            </span>
-          ))}
+        <p className="mkt-flow-brand-mark" data-reveal="brand">
+          Contractor Leads
+        </p>
+
+        <h1 className="mkt-flow-heading mkt-flow-heading--rotator" data-reveal="hook">
+          <span className="mkt-flow-heading-static">The fastest way to </span>
+          <span className="mkt-flow-rotator" aria-live="polite">
+            {reduced || !entered ? (
+              <span className="mkt-flow-rotator-line">{ROTATING_LINES[0]}</span>
+            ) : (
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.span
+                  key={activeLine}
+                  className="mkt-flow-rotator-line"
+                  initial={{ opacity: 0, y: 22, filter: "blur(6px)" }}
+                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                  exit={{ opacity: 0, y: -18, filter: "blur(6px)" }}
+                  transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  {activeLine}
+                </motion.span>
+              </AnimatePresence>
+            )}
+          </span>
         </h1>
 
         <p className="mkt-flow-sub mkt-flow-sub--deck" data-reveal="sub">
@@ -154,19 +154,19 @@ export function MarketingFluidHero() {
 
         <div className="mkt-flow-cta-row" data-reveal="cta">
           <Link href="/register" className="mkt-flow-pill mkt-flow-pill--primary">
-            Start free trial
+            Start closing leads free
             <HiOutlineArrowRight className="h-4 w-4" aria-hidden />
           </Link>
           <a
-            href="#interactive-demo"
+            href="#pricing"
             className="mkt-flow-pill mkt-flow-pill--ghost"
-            onClick={(e) => handleMarketingHashClick(e, "#interactive-demo")}
+            onClick={(e) => handleMarketingHashClick(e, "#pricing")}
           >
-            See live demo
+            See plans
           </a>
         </div>
         <p className="mkt-flow-trust" data-reveal="cta">
-          No credit card required · 20 free credits · Cancel anytime
+          20 free credits · No card required · Upgrade when you close
         </p>
       </div>
     </section>
