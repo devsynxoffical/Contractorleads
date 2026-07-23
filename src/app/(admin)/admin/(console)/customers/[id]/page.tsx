@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { AdminPageHeader } from "@/components/admin/admin-shell";
 import { ADMIN_PLANS, SUBSCRIPTION_STATUSES } from "@/lib/admin";
-import { defaultApiLimitForPlan } from "@/lib/api-access";
+import { defaultApiLimitForPlan } from "@/lib/plans";
 import { Button } from "@/components/ui/button";
 
 type Customer = {

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { dispatchCrmWebhook } from "@/lib/crm-webhook";
-import { assertPlanFeatureApi } from "@/lib/plan-access";
+import { assertPlanFeatureApi } from "@/lib/plan-access-server";
 
 export async function GET() {
   const user = await getSessionUser();

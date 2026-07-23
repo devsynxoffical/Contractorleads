@@ -6,7 +6,7 @@ import { PageHeader, PrimaryActionLink } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { HiOutlineArrowDownTray } from "react-icons/hi2";
-import { requirePlanFeatureOrRedirect } from "@/lib/plan-access";
+import { requirePlanFeatureOrRedirect } from "@/lib/plan-access-server";
 
 export default async function ClientReportsPage() {
   const user = await getSessionUser();

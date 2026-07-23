@@ -1,6 +1,6 @@
 import { getSessionUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { requirePlanFeatureOrRedirect } from "@/lib/plan-access";
+import { requirePlanFeatureOrRedirect } from "@/lib/plan-access-server";
 import { SetupCrmClient } from "@/components/setup/setup-crm-client";
 
 export default async function SetupCrmPage() {

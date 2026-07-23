@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader, PrimaryActionLink } from "@/components/layout/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { HiOutlineCog6Tooth } from "react-icons/hi2";
-import { requirePlanFeatureOrRedirect } from "@/lib/plan-access";
+import { requirePlanFeatureOrRedirect } from "@/lib/plan-access-server";
 
 export default async function WorkspacesPage() {
   const user = await getSessionUser();

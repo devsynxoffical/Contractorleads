@@ -8,7 +8,7 @@ import {
 import { LeadGeoMap } from "@/components/leads/lead-geo-map";
 import { normalizeCountryCode, resolveLeadCoords } from "@/lib/geo";
 import { HiOutlineMagnifyingGlass } from "react-icons/hi2";
-import { requirePlanFeatureOrRedirect } from "@/lib/plan-access";
+import { requirePlanFeatureOrRedirect } from "@/lib/plan-access-server";
 
 export default async function LeadMapPage() {
   const user = await getSessionUser();
