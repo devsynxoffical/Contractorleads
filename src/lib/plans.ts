@@ -134,3 +134,86 @@ export function teamSeatLimit(plan: string | null | undefined) {
 export function defaultApiLimitForPlan(plan: string | null | undefined) {
   return PLAN_API_LIMITS[normalizePlan(plan)];
 }
+
+/** Hardcoded catalog defaults (overridden by PlanPricingConfig in DB). */
+export function planMonthlyPrice(plan: string | null | undefined): number {
+  const id = normalizePlan(plan);
+  return ADMIN_PLANS.find((row) => row.value === id)?.priceMonthly ?? 0;
+}
+
+export function isPaidPlan(plan: string | null | undefined): boolean {
+  return planMonthlyPrice(plan) > 0;
+}
+
+export type PlanPriceMap = Record<PlanId, number>;
+
+function defaultPriceMap(): PlanPriceMap {
+  return Object.fromEntries(
+    ADMIN_PLANS.map((p) => [p.value, p.priceMonthly]),
+  ) as PlanPriceMap;
+}
+
+function parsePriceMap(raw: string | null | undefined): PlanPriceMap {
+  const base = defaultPriceMap();
+  if (!raw) return base;
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    for (const id of PLAN_IDS) {
+      const n = Number(parsed[id]);
+      if (Number.isFinite(n) && n >= 0) base[id] = Math.round(n * 100) / 100;
+    }
+    return base;
+  } catch {
+    return base;
+  }
+}
+
+export async function getPlanPriceMap(): Promise<PlanPriceMap> {
+  const { prisma } = await import("@/lib/prisma");
+  const row = await prisma.planPricingConfig.upsert({
+    where: { id: "default" },
+    update: {},
+    create: {
+      id: "default",
+      pricesJson: JSON.stringify(defaultPriceMap()),
+    },
+  });
+  return parsePriceMap(row.pricesJson);
+}
+
+export async function savePlanPriceMap(
+  input: Partial<Record<string, number>>,
+): Promise<PlanPriceMap> {
+  const { prisma } = await import("@/lib/prisma");
+  const current = await getPlanPriceMap();
+  for (const id of PLAN_IDS) {
+    if (input[id] === undefined) continue;
+    const n = Number(input[id]);
+    if (Number.isFinite(n) && n >= 0) {
+      current[id] = Math.round(n * 100) / 100;
+    }
+  }
+  const row = await prisma.planPricingConfig.upsert({
+    where: { id: "default" },
+    update: { pricesJson: JSON.stringify(current) },
+    create: {
+      id: "default",
+      pricesJson: JSON.stringify(current),
+    },
+  });
+  return parsePriceMap(row.pricesJson);
+}
+
+/** Effective monthly list price (admin override or catalog default). */
+export async function getPlanMonthlyPrice(
+  plan: string | null | undefined,
+): Promise<number> {
+  const prices = await getPlanPriceMap();
+  return prices[normalizePlan(plan)] ?? 0;
+}
+
+export async function isPaidPlanEffective(
+  plan: string | null | undefined,
+): Promise<boolean> {
+  return (await getPlanMonthlyPrice(plan)) > 0;
+}

@@ -8,23 +8,25 @@ import {
   stopNavigationProgress,
 } from "@/components/layout/navigation-progress";
 
-type Milestone = { minReferrals: number; bonusCredits: number };
+type Milestone = { minReferrals: number; bonusUsd: number };
 
 type Payload = {
   config: {
     enabled: boolean;
-    creditsPerReferral: number;
+    commissionPercent: number;
+    minWithdrawalUsd: number;
     milestones: Milestone[];
   };
   totalReferrals: number;
   recent: Array<{
     id: string;
     status: string;
-    rewardCredits: number;
-    milestoneBonus: number;
+    commissionUsd: number;
+    milestoneBonusUsd: number;
+    planAtReward: string | null;
     createdAt: string;
     referrer: { label: string; email: string; code: string | null };
-    referred: { label: string; email: string };
+    referred: { label: string; email: string; plan: string };
   }>;
   leaderboard: Array<{
     userId: string;
@@ -32,14 +34,36 @@ type Payload = {
     email: string;
     code: string | null;
     referrals: number;
-    credits: number;
+    earnedUsd: number;
+    balanceUsd: number;
+  }>;
+  withdrawals: Array<{
+    id: string;
+    amountUsd: number;
+    method: string;
+    payoutDetails: string;
+    status: string;
+    adminNote: string | null;
+    createdAt: string;
+    user: {
+      id: string;
+      label: string;
+      email: string;
+      code: string | null;
+      balanceUsd: number;
+    };
   }>;
 };
+
+function money(n: number) {
+  return `$${n.toFixed(2)}`;
+}
 
 export default function AdminReferralsPage() {
   const [data, setData] = useState<Payload | null>(null);
   const [enabled, setEnabled] = useState(true);
-  const [creditsPerReferral, setCreditsPerReferral] = useState(10);
+  const [commissionPercent, setCommissionPercent] = useState(20);
+  const [minWithdrawalUsd, setMinWithdrawalUsd] = useState(25);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -53,7 +77,8 @@ export default function AdminReferralsPage() {
       if (!res.ok) throw new Error(json.error || "Failed to load");
       setData(json);
       setEnabled(json.config.enabled);
-      setCreditsPerReferral(json.config.creditsPerReferral);
+      setCommissionPercent(json.config.commissionPercent);
+      setMinWithdrawalUsd(json.config.minWithdrawalUsd);
       setMilestones(json.config.milestones ?? []);
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Failed to load");
@@ -77,16 +102,46 @@ export default function AdminReferralsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           enabled,
-          creditsPerReferral,
+          commissionPercent,
+          minWithdrawalUsd,
           milestones,
         }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Save failed");
-      setMessage("Referral rewards saved.");
+      setMessage("Referral commission settings saved.");
       await load();
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Save failed");
+    } finally {
+      setBusy(false);
+      stopNavigationProgress();
+    }
+  }
+
+  async function processWithdrawal(
+    withdrawalId: string,
+    status: "paid" | "rejected",
+  ) {
+    setBusy(true);
+    startNavigationProgress();
+    setMessage(null);
+    try {
+      const res = await fetch("/api/admin/referrals", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ withdrawalId, status }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Update failed");
+      setMessage(
+        status === "paid"
+          ? "Withdrawal marked as paid."
+          : "Withdrawal rejected — balance restored.",
+      );
+      await load();
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "Update failed");
     } finally {
       setBusy(false);
       stopNavigationProgress();
@@ -103,54 +158,65 @@ export default function AdminReferralsPage() {
     return <p className="animate-pulse text-sm text-ink-muted">Loading…</p>;
   }
 
+  const pendingWithdrawals =
+    data?.withdrawals.filter((w) => w.status === "pending") ?? [];
+
   return (
     <div className="space-y-5">
       <AdminPageHeader
         title="Referrals & Affiliates"
-        description="Configure credit rewards per signup and milestone bonuses for high-volume affiliates (10, 50, 100+)."
+        description="Pay cash commission when a referred agency buys a plan. Set commission % here; edit plan list prices under Plans & Entitlements."
         actions={
-          <Button onClick={save} loading={busy} disabled={busy}>
-            Save rewards
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={save} loading={busy} disabled={busy}>
+              Save settings
+            </Button>
+            <a
+              href="/admin/plans"
+              className="inline-flex h-9 items-center rounded-xl border border-border bg-[var(--surface)] px-3 text-[12px] font-semibold text-ink"
+            >
+              Edit plan prices →
+            </a>
+          </div>
         }
       />
 
-      {message && (
+      {message ? (
         <p className="rounded-xl bg-brand-50 px-3 py-2 text-[13px] text-brand-800">
           {message}
         </p>
-      )}
+      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border border-border/80 bg-white p-4 shadow-[var(--shadow-card)]">
+        <div className="rounded-2xl border border-border bg-[var(--surface)] p-4 shadow-[var(--shadow-card)]">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
-            Total rewarded referrals
+            Paid conversions
           </p>
-          <p className="mt-1 text-2xl font-bold tabular-nums">
+          <p className="mt-1 text-2xl font-bold tabular-nums text-ink">
             {data?.totalReferrals ?? 0}
           </p>
         </div>
-        <div className="rounded-2xl border border-border/80 bg-white p-4 shadow-[var(--shadow-card)]">
+        <div className="rounded-2xl border border-border bg-[var(--surface)] p-4 shadow-[var(--shadow-card)]">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
             Program status
           </p>
-          <p className="mt-1 text-2xl font-bold">
+          <p className="mt-1 text-2xl font-bold text-ink">
             {enabled ? "On" : "Off"}
           </p>
         </div>
-        <div className="rounded-2xl border border-border/80 bg-white p-4 shadow-[var(--shadow-card)]">
+        <div className="rounded-2xl border border-border bg-[var(--surface)] p-4 shadow-[var(--shadow-card)]">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
-            Credits / referral
+            Commission
           </p>
-          <p className="mt-1 text-2xl font-bold tabular-nums">
-            {creditsPerReferral}
+          <p className="mt-1 text-2xl font-bold tabular-nums text-ink">
+            {commissionPercent}%
           </p>
         </div>
       </div>
 
-      <section className="space-y-3 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">
-        <h2 className="text-sm font-semibold text-ink">Reward settings</h2>
-        <label className="flex items-center gap-2 text-[13px]">
+      <section className="space-y-3 rounded-2xl border border-border bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
+        <h2 className="text-sm font-semibold text-ink">Commission settings</h2>
+        <label className="flex items-center gap-2 text-[13px] text-ink">
           <input
             type="checkbox"
             checked={enabled}
@@ -159,25 +225,45 @@ export default function AdminReferralsPage() {
           />
           Referral program enabled
         </label>
-        <label className="block max-w-xs text-[12px]">
-          <span className="font-medium text-ink-muted">
-            Credits per successful signup
-          </span>
-          <input
-            type="number"
-            min={0}
-            step={0.5}
-            className="saas-input mt-1"
-            value={creditsPerReferral}
-            onChange={(e) => setCreditsPerReferral(Number(e.target.value) || 0)}
-            disabled={busy}
-          />
-        </label>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block text-[12px]">
+            <span className="font-medium text-ink-muted">
+              Commission % of first paid plan
+            </span>
+            <input
+              type="number"
+              min={0}
+              step={0.5}
+              className="saas-input mt-1"
+              value={commissionPercent}
+              onChange={(e) =>
+                setCommissionPercent(Number(e.target.value) || 0)
+              }
+              disabled={busy}
+            />
+          </label>
+          <label className="block text-[12px]">
+            <span className="font-medium text-ink-muted">
+              Minimum withdrawal (USD)
+            </span>
+            <input
+              type="number"
+              min={0}
+              step={1}
+              className="saas-input mt-1"
+              value={minWithdrawalUsd}
+              onChange={(e) =>
+                setMinWithdrawalUsd(Number(e.target.value) || 0)
+              }
+              disabled={busy}
+            />
+          </label>
+        </div>
 
         <div className="pt-2">
           <div className="mb-2 flex items-center justify-between">
             <h3 className="text-[13px] font-semibold text-ink">
-              Milestone bonuses
+              Milestone cash bonuses
             </h3>
             <button
               type="button"
@@ -185,7 +271,7 @@ export default function AdminReferralsPage() {
               onClick={() =>
                 setMilestones((prev) => [
                   ...prev,
-                  { minReferrals: 100, bonusCredits: 500 },
+                  { minReferrals: 100, bonusUsd: 250 },
                 ])
               }
             >
@@ -199,7 +285,7 @@ export default function AdminReferralsPage() {
                 className="flex flex-wrap items-end gap-2"
               >
                 <label className="block text-[11px] text-ink-muted">
-                  Min referrals
+                  Min paid referrals
                   <input
                     type="number"
                     min={1}
@@ -213,15 +299,15 @@ export default function AdminReferralsPage() {
                   />
                 </label>
                 <label className="block text-[11px] text-ink-muted">
-                  Bonus credits
+                  Bonus USD
                   <input
                     type="number"
                     min={0}
                     className="saas-input mt-1 w-28"
-                    value={m.bonusCredits}
+                    value={m.bonusUsd}
                     onChange={(e) =>
                       updateMilestone(i, {
-                        bonusCredits: Number(e.target.value) || 0,
+                        bonusUsd: Number(e.target.value) || 0,
                       })
                     }
                   />
@@ -237,65 +323,132 @@ export default function AdminReferralsPage() {
                 </button>
               </div>
             ))}
-            {!milestones.length && (
+            {!milestones.length ? (
               <p className="text-[12px] text-ink-muted">
-                No milestones yet. Add tiers like 10 / 50 / 100+ referrals.
+                No milestones yet. Add tiers like 10 / 50 / 100+ paid referrals.
               </p>
-            )}
+            ) : null}
           </div>
         </div>
       </section>
 
+      <section className="rounded-2xl border border-border bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
+        <h2 className="text-sm font-semibold text-ink">
+          Withdrawal queue
+          {pendingWithdrawals.length ? (
+            <span className="ml-2 text-brand-600">
+              ({pendingWithdrawals.length} pending)
+            </span>
+          ) : null}
+        </h2>
+        <ul className="mt-3 space-y-2">
+          {(data?.withdrawals ?? []).slice(0, 20).map((w) => (
+            <li
+              key={w.id}
+              className="rounded-xl border border-border bg-[var(--input-bg)] px-3 py-3 text-[13px]"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="font-semibold text-ink">
+                    {money(w.amountUsd)} · {w.user.label}
+                  </p>
+                  <p className="text-[12px] text-ink-muted">
+                    {w.user.email}
+                    {w.user.code ? ` · ${w.user.code}` : ""} · {w.method}
+                  </p>
+                  <p className="mt-1 text-[12px] text-ink">
+                    {w.payoutDetails}
+                  </p>
+                  <p className="mt-1 text-[11px] text-ink-faint">
+                    {new Date(w.createdAt).toLocaleString()} · {w.status}
+                  </p>
+                </div>
+                {w.status === "pending" ? (
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={busy}
+                      onClick={() => processWithdrawal(w.id, "paid")}
+                    >
+                      Mark paid
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      disabled={busy}
+                      onClick={() => processWithdrawal(w.id, "rejected")}
+                    >
+                      Reject
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
+            </li>
+          ))}
+          {!data?.withdrawals?.length ? (
+            <p className="text-[13px] text-ink-muted">No withdrawal requests yet.</p>
+          ) : null}
+        </ul>
+      </section>
+
       <div className="grid gap-5 lg:grid-cols-2">
-        <section className="rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">
+        <section className="rounded-2xl border border-border bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
           <h2 className="text-sm font-semibold text-ink">Leaderboard</h2>
           <ul className="mt-3 space-y-2">
             {(data?.leaderboard ?? []).map((row) => (
               <li
                 key={row.userId}
-                className="flex items-center justify-between rounded-xl bg-[#faf8fc] px-3 py-2 text-[13px]"
+                className="flex items-center justify-between rounded-xl bg-[var(--input-bg)] px-3 py-2 text-[13px]"
               >
                 <div>
-                  <p className="font-semibold">{row.label}</p>
+                  <p className="font-semibold text-ink">{row.label}</p>
                   <p className="text-[11px] text-ink-muted">
                     {row.email}
                     {row.code ? ` · ${row.code}` : ""}
                   </p>
                 </div>
                 <div className="text-right tabular-nums">
-                  <p className="font-semibold">{row.referrals} refs</p>
+                  <p className="font-semibold text-ink">
+                    {row.referrals} paid
+                  </p>
                   <p className="text-[11px] text-ink-muted">
-                    {Math.round(row.credits * 10) / 10} credits
+                    {money(row.earnedUsd)} earned · {money(row.balanceUsd)} bal
                   </p>
                 </div>
               </li>
             ))}
-            {!data?.leaderboard?.length && (
-              <p className="text-[13px] text-ink-muted">No referrals yet.</p>
-            )}
+            {!data?.leaderboard?.length ? (
+              <p className="text-[13px] text-ink-muted">No conversions yet.</p>
+            ) : null}
           </ul>
         </section>
 
-        <section className="rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">
+        <section className="rounded-2xl border border-border bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
           <h2 className="text-sm font-semibold text-ink">Recent referrals</h2>
           <ul className="mt-3 space-y-2">
             {(data?.recent ?? []).map((row) => (
               <li
                 key={row.id}
-                className="rounded-xl bg-[#faf8fc] px-3 py-2 text-[13px]"
+                className="rounded-xl bg-[var(--input-bg)] px-3 py-2 text-[13px]"
               >
-                <p className="font-semibold">
+                <p className="font-semibold text-ink">
                   {row.referrer.label} → {row.referred.label}
                 </p>
                 <p className="text-[11px] text-ink-muted">
-                  +{row.rewardCredits + row.milestoneBonus} credits ·{" "}
-                  {new Date(row.createdAt).toLocaleString()}
+                  {row.status === "rewarded"
+                    ? `${money(row.commissionUsd + row.milestoneBonusUsd)}${row.planAtReward ? ` · ${row.planAtReward}` : ""}`
+                    : row.status === "pending"
+                      ? "Awaiting plan purchase"
+                      : row.status}{" "}
+                  · {new Date(row.createdAt).toLocaleString()}
                 </p>
               </li>
             ))}
-            {!data?.recent?.length && (
+            {!data?.recent?.length ? (
               <p className="text-[13px] text-ink-muted">No activity yet.</p>
-            )}
+            ) : null}
           </ul>
         </section>
       </div>

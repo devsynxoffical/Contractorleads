@@ -8,6 +8,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { ADMIN_PLANS, SUBSCRIPTION_STATUSES } from "@/lib/admin";
 import { integrationFlagsForPlan } from "@/lib/api-access";
+import { applyReferralCommissionOnPurchase } from "@/lib/referrals";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -299,6 +300,9 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 
   try {
+    const previousPlan = existing.plan;
+    const previousStatus = existing.subscriptionStatus;
+
     const customer = await prisma.user.update({
       where: { id },
       data,
@@ -353,6 +357,26 @@ export async function PATCH(request: Request, { params }: Params) {
         updatedAt: true,
       },
     });
+
+    const planChanged =
+      typeof data.plan === "string" && data.plan !== previousPlan;
+    const statusChanged =
+      typeof data.subscriptionStatus === "string" &&
+      data.subscriptionStatus !== previousStatus;
+
+    if (planChanged || statusChanged) {
+      try {
+        await applyReferralCommissionOnPurchase({
+          userId: customer.id,
+          plan: customer.plan,
+          previousPlan,
+          subscriptionStatus: customer.subscriptionStatus,
+        });
+      } catch (err) {
+        console.error("[referral] commission on purchase failed", err);
+      }
+    }
+
     return NextResponse.json({ customer });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Update failed";

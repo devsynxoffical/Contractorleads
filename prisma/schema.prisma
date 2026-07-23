@@ -54,6 +54,8 @@ model User {
   emailMarketingOptIn Boolean  @default(true)
   /// Unique shareable referral / affiliate code
   referralCode        String?  @unique
+  /// Withdrawable referral commission balance (USD)
+  referralBalanceUsd  Float    @default(0)
   /// Who referred this user (agency signup attribution)
   referredByUserId    String?
   referredBy          User?    @relation("UserReferrals", fields: [referredByUserId], references: [id], onDelete: SetNull)
@@ -76,6 +78,8 @@ model User {
   passwordResets  PasswordResetToken[]
   referralsAsReferrer Referral[] @relation("ReferrerReferrals")
   referralAsReferred  Referral?  @relation("ReferredReferral")
+  referralWithdrawals ReferralWithdrawal[]
+  referralEarnings    ReferralEarningLedger[]
   teamMembers     TeamMember[]
 }
 
@@ -296,31 +300,81 @@ model EmailVerification {
   @@index([email])
 }
 
-/// One successful signup attributed to a referrer (affiliate).
+/// Admin-editable monthly list prices used for billing display + referral commission.
+model PlanPricingConfig {
+  id         String   @id @default("default")
+  /// JSON: { "trial": 0, "starter": 19.99, "growth": 49, "agency": 99, "enterprise": 0 }
+  pricesJson String   @default("{\"trial\":0,\"starter\":19.99,\"growth\":49,\"agency\":99,\"enterprise\":0}")
+  updatedAt  DateTime @updatedAt
+}
+
+/// One signup attributed to a referrer. Commission pays on first paid plan purchase.
 model Referral {
-  id             String    @id @default(cuid())
-  referrerId     String
-  referrer       User      @relation("ReferrerReferrals", fields: [referrerId], references: [id], onDelete: Cascade)
-  referredUserId String    @unique
-  referredUser   User      @relation("ReferredReferral", fields: [referredUserId], references: [id], onDelete: Cascade)
-  status         String    @default("pending") // pending | rewarded | blocked
-  rewardCredits  Float     @default(0)
-  milestoneBonus Float     @default(0)
-  createdAt      DateTime  @default(now())
-  rewardedAt     DateTime?
+  id                String    @id @default(cuid())
+  referrerId        String
+  referrer          User      @relation("ReferrerReferrals", fields: [referrerId], references: [id], onDelete: Cascade)
+  referredUserId    String    @unique
+  referredUser      User      @relation("ReferredReferral", fields: [referredUserId], references: [id], onDelete: Cascade)
+  status            String    @default("pending") // pending | rewarded | blocked
+  /// Legacy credit fields (unused — kept for existing rows)
+  rewardCredits     Float     @default(0)
+  milestoneBonus    Float     @default(0)
+  commissionUsd     Float     @default(0)
+  milestoneBonusUsd Float     @default(0)
+  planAtReward      String?
+  purchaseAmountUsd Float?
+  createdAt         DateTime  @default(now())
+  rewardedAt        DateTime?
 
   @@index([referrerId, createdAt])
   @@index([status])
 }
 
-/// Singleton-ish admin config for referral rewards and milestone tiers.
+/// Singleton admin config for referral cash commissions and milestone tiers.
 model ReferralRewardConfig {
   id                 String   @id @default("default")
   enabled            Boolean  @default(true)
-  creditsPerReferral Float    @default(10)
-  /// JSON: [{ "minReferrals": 10, "bonusCredits": 50 }, ...]
-  milestonesJson     String   @default("[{\"minReferrals\":10,\"bonusCredits\":50},{\"minReferrals\":50,\"bonusCredits\":200},{\"minReferrals\":100,\"bonusCredits\":500}]")
+  /// Percent of first paid plan monthly price paid as commission
+  commissionPercent  Float    @default(20)
+  minWithdrawalUsd   Float    @default(25)
+  /// Legacy — unused
+  creditsPerReferral Float    @default(0)
+  /// JSON: [{ "minReferrals": 10, "bonusUsd": 25 }, ...]
+  milestonesJson     String   @default("[{\"minReferrals\":10,\"bonusUsd\":25},{\"minReferrals\":50,\"bonusUsd\":100},{\"minReferrals\":100,\"bonusUsd\":250}]")
   updatedAt          DateTime @updatedAt
+}
+
+/// User-requested cash payout from referralBalanceUsd.
+model ReferralWithdrawal {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amountUsd     Float
+  method        String    @default("paypal") // paypal | bank | other
+  payoutDetails String
+  status        String    @default("pending") // pending | paid | rejected
+  adminNote     String?
+  processedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}
+
+/// Append-only cash ledger for referral earnings and withdrawals.
+model ReferralEarningLedger {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amountUsd  Float
+  action     String // commission | milestone | withdrawal | withdrawal_reversal
+  reference  String?
+  metaJson   String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([action])
 }
 
 /// One-time password reset links (forgot password flow).
