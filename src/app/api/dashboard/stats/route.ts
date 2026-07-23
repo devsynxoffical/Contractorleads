@@ -106,6 +106,10 @@ export async function GET() {
         ghlWebhookUrl: true,
         ghlEnabled: true,
         onboardingComplete: true,
+        apiEnabled: true,
+        mcpEnabled: true,
+        ssoEnabled: true,
+        apiKeyLast4: true,
       },
     }),
     prisma.savedLead.groupBy({
@@ -113,9 +117,9 @@ export async function GET() {
       where: { userId: user.id },
       _count: true,
     }),
-    prisma.userSmtpSettings.findUnique({
-      where: { userId: user.id },
-      select: { host: true, fromEmail: true },
+    prisma.smtpAccount.findFirst({
+      where: { userId: user.id, enabled: true },
+      select: { id: true, fromEmail: true },
     }),
     prisma.emailSequence.findUnique({
       where: { userId: user.id },
@@ -253,8 +257,14 @@ export async function GET() {
         hasUrl: Boolean(freshUser?.ghlWebhookUrl),
       },
       emailAutomation: {
-        smtpConfigured: Boolean(smtpSettings?.host && smtpSettings?.fromEmail),
+        smtpConfigured: Boolean(smtpSettings?.fromEmail || smtpSettings?.id),
         sequenceEnabled: Boolean(emailSequence?.enabled),
+      },
+      apiAccess: {
+        apiEnabled: Boolean(freshUser?.apiEnabled),
+        mcpEnabled: Boolean(freshUser?.mcpEnabled),
+        ssoEnabled: Boolean(freshUser?.ssoEnabled),
+        hasKey: Boolean(freshUser?.apiKeyLast4),
       },
       facebook: {
         configured: facebookConfigured,

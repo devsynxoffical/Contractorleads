@@ -13,8 +13,10 @@ import {
   HiOutlineCog6Tooth,
   HiOutlineCreditCard,
   HiOutlineCpuChip,
+  HiOutlineEnvelope,
   HiOutlineFire,
   HiOutlineHomeModern,
+  HiOutlineKey,
   HiOutlineLink,
   HiOutlineMagnifyingGlass,
   HiOutlineMap,
@@ -24,6 +26,7 @@ import {
   HiOutlineUsers,
   HiOutlineUserPlus,
   HiOutlineViewColumns,
+  HiOutlineWrenchScrewdriver,
 } from "react-icons/hi2";
 import { cn, formatCredits } from "@/lib/utils";
 import type { SessionUser } from "@/lib/session-user";
@@ -61,6 +64,15 @@ const sections: NavSection[] = [
     ],
   },
   {
+    title: "Setup",
+    items: [
+      { href: "/setup", label: "Setup hub", icon: HiOutlineWrenchScrewdriver },
+      { href: "/setup/email", label: "Email & SMTP", icon: HiOutlineEnvelope },
+      { href: "/setup/api", label: "API · MCP · SSO", icon: HiOutlineKey },
+      { href: "/setup/crm", label: "CRM webhooks", icon: HiOutlineLink },
+    ],
+  },
+  {
     title: "Platform",
     items: [
       { href: "/industries", label: "Industries", icon: HiOutlineHomeModern },
@@ -69,7 +81,6 @@ const sections: NavSection[] = [
       { href: "/workspaces", label: "Workspaces", icon: HiOutlineUsers },
       { href: "/reports", label: "Client Reports", icon: HiOutlineArrowUpTray },
       { href: "/facebook-ads", label: "Facebook Ads", icon: HiOutlineMegaphone },
-      { href: "/crm-webhooks", label: "CRM Webhooks", icon: HiOutlineLink },
     ],
   },
   {
@@ -77,7 +88,7 @@ const sections: NavSection[] = [
     items: [
       { href: "/referrals", label: "Referrals", icon: HiOutlineUserPlus },
       { href: "/billing", label: "Plans & Billing", icon: HiOutlineCreditCard },
-      { href: "/settings", label: "Settings", icon: HiOutlineCog6Tooth },
+      { href: "/settings", label: "Business profile", icon: HiOutlineCog6Tooth },
     ],
   },
 ];
@@ -85,6 +96,9 @@ const sections: NavSection[] = [
 function isActive(pathname: string, href: string) {
   if (href === "/leads") {
     return pathname === "/leads";
+  }
+  if (href === "/setup") {
+    return pathname === "/setup";
   }
   return pathname === href || pathname.startsWith(`${href}/`);
 }

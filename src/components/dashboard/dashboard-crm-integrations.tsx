@@ -11,6 +11,8 @@ import {
   HiOutlineViewColumns,
   HiOutlineArrowDownTray,
   HiOutlineSparkles,
+  HiOutlineKey,
+  HiOutlineWrenchScrewdriver,
 } from "react-icons/hi2";
 import { SiMeta, SiZapier, SiHubspot } from "react-icons/si";
 import { FaLinkedinIn } from "react-icons/fa6";
@@ -29,6 +31,12 @@ export type DashboardIntegrations = {
   slack?: { connected: boolean; enabled: boolean; hasUrl: boolean };
   ghl?: { connected: boolean; enabled: boolean; hasUrl: boolean };
   emailAutomation: { smtpConfigured: boolean; sequenceEnabled: boolean };
+  apiAccess?: {
+    apiEnabled: boolean;
+    mcpEnabled: boolean;
+    ssoEnabled: boolean;
+    hasKey: boolean;
+  };
   facebook: { configured: boolean; customAudience: boolean };
   dataSources: { googlePlaces: boolean; yelp: boolean; linkedin: boolean };
   exports: { csv: boolean; excel: boolean; pdf: boolean };
@@ -173,48 +181,37 @@ export function DashboardCrmIntegrations({
       </HudPanel>
 
       <HudPanel
-        title="Integrations & automation"
-        subtitle="CRM push · email sequences · data sources · exports"
+        title="Workspace setup"
+        subtitle="Email · API · CRM — each has its own guided page"
         actions={
-          <span className="hud-pill">
-            {[
-              webhookReady,
-              smtpReady,
-              Boolean(i?.dataSources.googlePlaces),
-            ].filter(Boolean).length}
-            /3 core live
-          </span>
+          <Link href="/setup" className="hud-btn-ghost text-[11px]">
+            <HiOutlineWrenchScrewdriver className="h-3.5 w-3.5" />
+            Open setup hub
+          </Link>
         }
       >
+        <div className="mb-3 flex flex-wrap gap-2">
+          <Link href="/setup/email" className="hud-btn-primary">
+            <HiOutlineEnvelope className="h-4 w-4" />
+            Email & SMTP
+          </Link>
+          <Link href="/setup/api" className="hud-btn-ghost">
+            <HiOutlineKey className="h-4 w-4" />
+            API · MCP · SSO
+          </Link>
+          <Link href="/setup/crm" className="hud-btn-ghost">
+            <HiOutlineLink className="h-4 w-4" />
+            CRM webhooks
+          </Link>
+          <Link href="/settings" className="hud-btn-ghost">
+            Business profile
+          </Link>
+        </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <IntegrationCard
-            href="/crm-webhooks"
-            title="CRM webhooks"
-            body="Push lead events to Zapier, Make, HubSpot, or a custom endpoint the moment status changes."
-            status={webhookReady ? "ready" : i?.crmWebhook.hasUrl ? "partial" : "setup"}
-            statusLabel={webhookReady ? "Connected" : i?.crmWebhook.hasUrl ? "Paused" : "Setup"}
-            icon={HiOutlineLink}
-          />
-          <IntegrationCard
-            href="/crm-webhooks"
-            title="Slack CRM alerts"
-            body="Send lead-saved and pipeline stage events into your Slack channel via incoming webhook."
-            status={i?.slack?.connected ? "ready" : i?.slack?.hasUrl ? "partial" : "setup"}
-            statusLabel={i?.slack?.connected ? "Live" : i?.slack?.hasUrl ? "Paused" : "Setup"}
-            icon={HiOutlineLink}
-          />
-          <IntegrationCard
-            href="/crm-webhooks"
-            title="GoHighLevel (GHL)"
-            body="Send LeadFlow events to your GHL webhook/workflow endpoint in real time."
-            status={i?.ghl?.connected ? "ready" : i?.ghl?.hasUrl ? "partial" : "setup"}
-            statusLabel={i?.ghl?.connected ? "Live" : i?.ghl?.hasUrl ? "Paused" : "Setup"}
-            icon={HiOutlineLink}
-          />
-          <IntegrationCard
-            href="/settings"
-            title="Email automation"
-            body="Day 1–3 nurture sequences from your own SMTP (Gmail, Outlook, or custom mail)."
+            href="/setup/email"
+            title="Email & SMTP"
+            body="Multiple mailboxes, send from lead detail, Day 1–3 nurture sequences."
             status={
               smtpReady && sequenceOn
                 ? "ready"
@@ -232,6 +229,50 @@ export function DashboardCrmIntegrations({
             icon={HiOutlineEnvelope}
           />
           <IntegrationCard
+            href="/setup/api"
+            title="API · MCP · SSO"
+            body="Generate your live key and call public search endpoints from your stack."
+            status={
+              i?.apiAccess?.hasKey
+                ? "ready"
+                : i?.apiAccess?.apiEnabled
+                  ? "partial"
+                  : "setup"
+            }
+            statusLabel={
+              i?.apiAccess?.hasKey
+                ? "Key live"
+                : i?.apiAccess?.apiEnabled
+                  ? "Enabled"
+                  : "Setup"
+            }
+            icon={HiOutlineKey}
+          />
+          <IntegrationCard
+            href="/setup/crm"
+            title="CRM webhooks"
+            body="Push lead events to Zapier, Make, HubSpot, or a custom endpoint the moment status changes."
+            status={webhookReady ? "ready" : i?.crmWebhook.hasUrl ? "partial" : "setup"}
+            statusLabel={webhookReady ? "Connected" : i?.crmWebhook.hasUrl ? "Paused" : "Setup"}
+            icon={HiOutlineLink}
+          />
+          <IntegrationCard
+            href="/setup/crm"
+            title="Slack CRM alerts"
+            body="Send lead-saved and pipeline stage events into your Slack channel via incoming webhook."
+            status={i?.slack?.connected ? "ready" : i?.slack?.hasUrl ? "partial" : "setup"}
+            statusLabel={i?.slack?.connected ? "Live" : i?.slack?.hasUrl ? "Paused" : "Setup"}
+            icon={HiOutlineLink}
+          />
+          <IntegrationCard
+            href="/setup/crm"
+            title="GoHighLevel (GHL)"
+            body="Send LeadFlow events to your GHL webhook/workflow endpoint in real time."
+            status={i?.ghl?.connected ? "ready" : i?.ghl?.hasUrl ? "partial" : "setup"}
+            statusLabel={i?.ghl?.connected ? "Live" : i?.ghl?.hasUrl ? "Paused" : "Setup"}
+            icon={HiOutlineLink}
+          />
+          <IntegrationCard
             href="/facebook-ads"
             title="Meta / Facebook"
             body={
@@ -247,7 +288,7 @@ export function DashboardCrmIntegrations({
           <IntegrationCard
             href="/leads"
             title="CSV & Excel export"
-            body="Export verified lead fields only — blank LinkedIn/socials when unverified. PDF export still deferred."
+            body="Export verified lead fields only — blank LinkedIn/socials when unverified."
             status="ready"
             statusLabel="CSV · XLSX"
             icon={HiOutlineArrowDownTray}
@@ -255,7 +296,7 @@ export function DashboardCrmIntegrations({
           <IntegrationCard
             href="/leads/search"
             title="Data sources"
-            body={`Places ${i?.dataSources.googlePlaces ? "on" : "off"} · Yelp ${i?.dataSources.yelp ? "on" : "off"} · LinkedIn verify ${i?.dataSources.linkedin ? "on" : "off"}. Verified or blank.`}
+            body={`Places ${i?.dataSources.googlePlaces ? "on" : "off"} · Yelp ${i?.dataSources.yelp ? "on" : "off"} · LinkedIn verify ${i?.dataSources.linkedin ? "on" : "off"}.`}
             status={
               i?.dataSources.googlePlaces
                 ? i.dataSources.yelp || i.dataSources.linkedin
@@ -267,9 +308,9 @@ export function DashboardCrmIntegrations({
             icon={HiOutlineSparkles}
           />
           <IntegrationCard
-            href="/crm-webhooks"
+            href="/setup/crm"
             title="Zapier · Make · HubSpot"
-            body="Point any of these tools at your LeadFlow webhook URL — no native OAuth apps required."
+            body="Point any of these tools at your webhook URL — no native OAuth apps required."
             status={webhookReady ? "ready" : "setup"}
             statusLabel={webhookReady ? "Via webhook" : "Connect URL"}
             icon={SiZapier}
@@ -292,17 +333,12 @@ export function DashboardCrmIntegrations({
             <FaLinkedinIn className="h-3.5 w-3.5 text-[#0A66C2]" />
             LinkedIn: verified ≥95% or “Not Available”
           </span>
-          <span className="text-ink-faint">·</span>
-          <span className="inline-flex items-center gap-1.5">
-            <SiHubspot className="h-3.5 w-3.5 text-[#FF7A59]" />
-            HubSpot via webhook
-          </span>
           <Link
-            href="/crm-webhooks"
+            href="/setup"
             className="ml-auto inline-flex items-center gap-1 font-semibold text-brand-400 hover:text-brand-300"
           >
             <HiOutlineArrowPath className="h-3.5 w-3.5" />
-            Configure
+            Setup hub
           </Link>
         </div>
       </HudPanel>
