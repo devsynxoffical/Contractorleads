@@ -99,8 +99,18 @@ export async function GET() {
       take: 8,
     }),
     prisma.lead.findMany({
-      where: {},
-      take: 400,
+      where: {
+        OR: [
+          {
+            AND: [
+              { latitude: { not: null } },
+              { longitude: { not: null } },
+            ],
+          },
+          { googleMapsLink: { not: null } },
+        ],
+      },
+      take: 800,
       orderBy: { createdAt: "desc" },
       select: {
         id: true,

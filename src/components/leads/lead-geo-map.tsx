@@ -25,11 +25,13 @@ export function LeadGeoMap({
   compact,
   title,
   subtitle,
+  leadDetailBase,
 }: {
   leads: GeoLead[];
   compact?: boolean;
   title?: string;
   subtitle?: string;
+  leadDetailBase?: string;
 }) {
   return (
     <LeadGeoMapInner
@@ -37,6 +39,7 @@ export function LeadGeoMap({
       compact={compact}
       title={title}
       subtitle={subtitle}
+      leadDetailBase={leadDetailBase}
     />
   );
 }

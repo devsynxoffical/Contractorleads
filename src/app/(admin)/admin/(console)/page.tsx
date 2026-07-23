@@ -389,6 +389,7 @@ export default function AdminOverviewPage() {
         compact
         title="Traffic Analytics"
         subtitle="Global lead pin map · pool-wide"
+        leadDetailBase="/admin/leads"
       />
 
       <div className="grid gap-5 lg:grid-cols-3">
