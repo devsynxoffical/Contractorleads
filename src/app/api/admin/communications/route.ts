@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getEmailDashboardStats } from "@/lib/email-dashboard";
 
 export async function GET(request: Request) {
   const admin = await requirePermission("communications");
@@ -11,15 +12,8 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const take = Math.min(Number(url.searchParams.get("take") || 50), 200);
 
-  const [
-    emails,
-    smtpAccounts,
-    sequences,
-    enrollmentsActive,
-    emailCount,
-    smtpCount,
-    sequenceCount,
-  ] = await Promise.all([
+  const [stats, emails, smtpAccounts, sequences] = await Promise.all([
+    getEmailDashboardStats(),
     prisma.leadEmail.findMany({
       take,
       orderBy: { createdAt: "desc" },
@@ -54,6 +48,7 @@ export async function GET(request: Request) {
         host: true,
         fromEmail: true,
         isDefault: true,
+        enabled: true,
         updatedAt: true,
         user: {
           select: { id: true, email: true, companyName: true, name: true },
@@ -74,19 +69,10 @@ export async function GET(request: Request) {
         _count: { select: { enrollments: true } },
       },
     }),
-    prisma.emailEnrollment.count({ where: { status: "active" } }),
-    prisma.leadEmail.count(),
-    prisma.smtpAccount.count(),
-    prisma.emailSequence.count(),
   ]);
 
   return NextResponse.json({
-    summary: {
-      emails: emailCount,
-      smtpAccounts: smtpCount,
-      sequences: sequenceCount,
-      enrollmentsActive,
-    },
+    stats,
     emails,
     smtpAccounts,
     sequences,

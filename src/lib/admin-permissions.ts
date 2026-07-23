@@ -20,7 +20,7 @@ export const ADMIN_PERMISSIONS = [
   { key: "plans", label: "Plans & Entitlements", href: "/admin/plans" },
   { key: "revenue", label: "Revenue & Subscriptions", href: "/admin/revenue" },
   { key: "referrals", label: "Referrals & Affiliates", href: "/admin/referrals" },
-  { key: "communications", label: "Email & Outreach", href: "/admin/communications" },
+  { key: "communications", label: "Email dashboard", href: "/admin/communications" },
   { key: "exports", label: "Exports Log", href: "/admin/exports" },
   { key: "activity", label: "Activity Log", href: "/admin/activity" },
   { key: "health", label: "Feature Health Audit", href: "/admin/health" },

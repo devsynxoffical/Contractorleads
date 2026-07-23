@@ -151,8 +151,8 @@ export async function GET() {
     },
     {
       id: "comms",
-      title: "Email & outreach",
-      description: "SMTP accounts, sequences, one-off / inbound lead emails",
+      title: "Email dashboard",
+      description: "Delivered / received / failed lead emails, SMTP, sequences",
       href: "/admin/communications",
       metric: `${leadEmails} emails · ${sequencesEnabled} sequences`,
       status: "ready",

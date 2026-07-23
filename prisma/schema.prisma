@@ -485,10 +485,13 @@ model LeadEmail {
   messageId     String?
   inReplyTo     String?
   enrollmentId  String?
+  /// Set when an agent opens an inbound message in the inbox
+  readAt        DateTime?
   createdAt     DateTime     @default(now())
 
   @@index([userId, leadId, createdAt])
   @@index([userId, createdAt])
+  @@index([userId, direction, createdAt])
   @@index([fromEmail])
   @@index([toEmail])
 }

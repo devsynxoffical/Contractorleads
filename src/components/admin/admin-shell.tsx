@@ -89,7 +89,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       {
         href: "/admin/communications",
-        label: "Email & Outreach",
+        label: "Email dashboard",
         icon: HiOutlineChatBubbleLeftRight,
         permission: "communications",
       },

@@ -24,6 +24,7 @@ import {
   HiOutlineFire,
   HiOutlineHome,
   HiOutlineHomeModern,
+  HiOutlineInbox,
   HiOutlineKey,
   HiOutlineLink,
   HiOutlineMagnifyingGlass,
@@ -89,6 +90,7 @@ function buildSections(user: SessionUser): NavSection[] {
       title: "Setup",
       items: [
         { href: "/setup", label: "Setup hub", icon: HiOutlineWrenchScrewdriver },
+        { href: "/inbox", label: "Email inbox", icon: HiOutlineInbox },
         { href: "/setup/email", label: "Email & SMTP", icon: HiOutlineEnvelope },
         { href: "/setup/api", label: "API · MCP · SSO", icon: HiOutlineKey, feature: "api" },
         { href: "/setup/crm", label: "CRM webhooks", icon: HiOutlineLink, feature: "crm" },

@@ -13,6 +13,9 @@ export async function sendLeadEmail(opts: {
   subject: string;
   body: string;
   smtpAccountId?: string | null;
+  /** When replying to an inbound message */
+  inReplyToMessageId?: string | null;
+  references?: string | null;
 }) {
   const subject = opts.subject.trim();
   const body = opts.body.trim();
@@ -43,6 +46,8 @@ export async function sendLeadEmail(opts: {
       subject,
       text: body,
       accountId: opts.smtpAccountId,
+      inReplyTo: opts.inReplyToMessageId || undefined,
+      references: opts.references || opts.inReplyToMessageId || undefined,
     });
 
     const emailRow = await prisma.leadEmail.create({
@@ -58,6 +63,7 @@ export async function sendLeadEmail(opts: {
         body,
         status: "sent",
         messageId: sent.messageId,
+        inReplyTo: opts.inReplyToMessageId || null,
       },
     });
 
@@ -112,10 +118,59 @@ export async function sendLeadEmail(opts: {
         body,
         status: "failed",
         error: msg,
+        inReplyTo: opts.inReplyToMessageId || null,
       },
     });
     throw e;
   }
+}
+
+/**
+ * Reply to an inbound LeadEmail (or any thread message for that lead).
+ */
+export async function replyToLeadEmail(opts: {
+  userId: string;
+  emailId: string;
+  body: string;
+  subject?: string;
+  smtpAccountId?: string | null;
+}) {
+  const original = await prisma.leadEmail.findFirst({
+    where: { id: opts.emailId, userId: opts.userId },
+    include: { lead: { select: { id: true, businessName: true, email: true } } },
+  });
+  if (!original) throw new Error("Email not found");
+
+  const body = opts.body.trim();
+  if (!body) throw new Error("Reply body is required");
+
+  const baseSubject = original.subject || "(no subject)";
+  const subject =
+    opts.subject?.trim() ||
+    (baseSubject.toLowerCase().startsWith("re:")
+      ? baseSubject
+      : `Re: ${baseSubject}`);
+
+  const refs = [original.messageId, original.inReplyTo].filter(Boolean).join(" ");
+
+  const result = await sendLeadEmail({
+    userId: opts.userId,
+    leadId: original.leadId,
+    subject,
+    body,
+    smtpAccountId: opts.smtpAccountId || original.smtpAccountId,
+    inReplyToMessageId: original.messageId,
+    references: refs || original.messageId,
+  });
+
+  if (!original.readAt && original.direction === "inbound") {
+    await prisma.leadEmail.update({
+      where: { id: original.id },
+      data: { readAt: new Date() },
+    });
+  }
+
+  return result;
 }
 
 /**
