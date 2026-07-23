@@ -515,13 +515,13 @@ export function MarketingInteractiveDemo() {
       <div className="relative mx-auto max-w-[980px]">
         <Reveal variant="up" y={20}>
           <div className="mb-4 text-center sm:mb-5">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-fuchsia-300/90">
+            <p className="inline-flex items-center rounded-full border border-fuchsia-300/35 bg-fuchsia-500/15 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-fuchsia-100 shadow-[0_0_24px_rgba(232,121,249,0.25)] sm:text-[12px]">
               Live product preview
             </p>
-            <h2 className="mt-1.5 font-[family-name:var(--font-display)] text-[clamp(1.15rem,2.5vw,1.55rem)] font-semibold tracking-tight text-white">
+            <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.2rem,2.6vw,1.65rem)] font-semibold tracking-tight text-white">
               Try the platform — locked features invite you to sign in
             </h2>
-            <p className="mx-auto mt-1.5 max-w-lg text-[13px] leading-relaxed text-white/55">
+            <p className="mx-auto mt-2 max-w-lg text-[14px] leading-relaxed text-white/75 sm:text-[15px]">
               Drag pipeline cards, run a sample search, and explore the sidebar. Anything that needs
               real data opens a login prompt.
             </p>

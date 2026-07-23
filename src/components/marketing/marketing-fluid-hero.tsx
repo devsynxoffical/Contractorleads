@@ -3,13 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { AnimatePresence, motion } from "framer-motion";
 import { HiOutlineArrowRight } from "react-icons/hi2";
 import { fluidSimulation } from "./fluid-simulation";
 import { handleMarketingHashClick } from "./marketing-scroll";
 import { usePrefersReducedMotion } from "./marketing-motion";
 
-/** Rotating conversion lines — sell the outcome, not the feature. */
+/** Rotating conversion lines — typewriter cycles through these. */
 const ROTATING_LINES = [
   "close paying retainers this month",
   "book discovery calls that convert",
@@ -21,12 +20,99 @@ const ROTATING_LINES = [
 const SUBLINE =
   "Verified contractor leads, scored and dial-ready — so your team sells instead of researching. Start free, prove ROI, upgrade when you’re closing.";
 
+type TypePhase = "typing" | "holding" | "deleting";
+
+function useTypewriter(
+  lines: string[],
+  enabled: boolean,
+  opts?: {
+    typeMs?: number;
+    deleteMs?: number;
+    holdMs?: number;
+  },
+) {
+  const typeMs = opts?.typeMs ?? 42;
+  const deleteMs = opts?.deleteMs ?? 28;
+  const holdMs = opts?.holdMs ?? 1800;
+  const [lineIndex, setLineIndex] = useState(0);
+  const [text, setText] = useState(enabled ? "" : lines[0] ?? "");
+  const [phase, setPhase] = useState<TypePhase>("typing");
+
+  useEffect(() => {
+    if (!enabled) {
+      setText(lines[0] ?? "");
+      setPhase("holding");
+      return;
+    }
+
+    let cancelled = false;
+    let timer: number | undefined;
+    let index = 0;
+    let current = "";
+    let mode: TypePhase = "typing";
+
+    const schedule = (fn: () => void, ms: number) => {
+      timer = window.setTimeout(() => {
+        if (!cancelled) fn();
+      }, ms);
+    };
+
+    const tick = () => {
+      if (cancelled) return;
+      const full = lines[index] ?? "";
+
+      if (mode === "typing") {
+        current = full.slice(0, current.length + 1);
+        setText(current);
+        if (current === full) {
+          mode = "holding";
+          setPhase("holding");
+          schedule(tick, holdMs);
+          return;
+        }
+        setPhase("typing");
+        schedule(tick, typeMs);
+        return;
+      }
+
+      if (mode === "holding") {
+        mode = "deleting";
+        setPhase("deleting");
+        schedule(tick, deleteMs);
+        return;
+      }
+
+      current = current.slice(0, -1);
+      setText(current);
+      if (current.length === 0) {
+        index = (index + 1) % lines.length;
+        setLineIndex(index);
+        mode = "typing";
+        setPhase("typing");
+        schedule(tick, typeMs + 120);
+        return;
+      }
+      setPhase("deleting");
+      schedule(tick, deleteMs);
+    };
+
+    schedule(tick, 400);
+
+    return () => {
+      cancelled = true;
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [enabled, lines, typeMs, deleteMs, holdMs]);
+
+  return { text, lineIndex, phase };
+}
+
 export function MarketingFluidHero() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
   const reduced = usePrefersReducedMotion();
-  const [lineIndex, setLineIndex] = useState(0);
   const [entered, setEntered] = useState(false);
+  const { text, phase } = useTypewriter(ROTATING_LINES, !reduced && entered);
 
   useEffect(() => {
     const id = "onest-font";
@@ -35,7 +121,7 @@ export function MarketingFluidHero() {
       link.id = id;
       link.rel = "stylesheet";
       link.href =
-        "https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&display=swap";
+        "https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap";
       document.head.appendChild(link);
     }
   }, []);
@@ -56,14 +142,6 @@ export function MarketingFluidHero() {
     const t = window.setTimeout(() => setEntered(true), 80);
     return () => window.clearTimeout(t);
   }, []);
-
-  useEffect(() => {
-    if (reduced) return;
-    const id = window.setInterval(() => {
-      setLineIndex((i) => (i + 1) % ROTATING_LINES.length);
-    }, 3200);
-    return () => window.clearInterval(id);
-  }, [reduced]);
 
   useEffect(() => {
     const section = sectionRef.current;
@@ -88,8 +166,6 @@ export function MarketingFluidHero() {
     reveal(section.querySelector("[data-reveal='sub']"), 900, "1rem");
     reveal(section.querySelector("[data-reveal='cta']"), 1100, "1.25rem");
   }, []);
-
-  const activeLine = ROTATING_LINES[lineIndex];
 
   return (
     <section ref={sectionRef} className="mkt-flow-hero" aria-label="Hero">
@@ -129,22 +205,15 @@ export function MarketingFluidHero() {
         <h1 className="mkt-flow-heading mkt-flow-heading--rotator" data-reveal="hook">
           <span className="mkt-flow-heading-static">The fastest way to </span>
           <span className="mkt-flow-rotator" aria-live="polite">
-            {reduced || !entered ? (
-              <span className="mkt-flow-rotator-line">{ROTATING_LINES[0]}</span>
-            ) : (
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.span
-                  key={activeLine}
-                  className="mkt-flow-rotator-line"
-                  initial={{ opacity: 0, y: 22, filter: "blur(6px)" }}
-                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                  exit={{ opacity: 0, y: -18, filter: "blur(6px)" }}
-                  transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  {activeLine}
-                </motion.span>
-              </AnimatePresence>
-            )}
+            <span className="mkt-flow-type-wrap">
+              <span className="mkt-flow-rotator-line">{text || "\u00A0"}</span>
+              {!reduced && (
+                <span
+                  className={`mkt-flow-caret${phase === "holding" ? " mkt-flow-caret--blink" : ""}`}
+                  aria-hidden
+                />
+              )}
+            </span>
           </span>
         </h1>
 
@@ -166,7 +235,15 @@ export function MarketingFluidHero() {
           </a>
         </div>
         <p className="mkt-flow-trust" data-reveal="cta">
-          10 free leads · No card required · Upgrade when you close
+          <span>10 free leads</span>
+          <span className="mkt-flow-trust-dot" aria-hidden>
+            ·
+          </span>
+          <span>No card required</span>
+          <span className="mkt-flow-trust-dot" aria-hidden>
+            ·
+          </span>
+          <span>Upgrade when you close</span>
         </p>
       </div>
     </section>
