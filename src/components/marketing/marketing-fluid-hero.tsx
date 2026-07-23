@@ -166,7 +166,7 @@ export function MarketingFluidHero() {
           </a>
         </div>
         <p className="mkt-flow-trust" data-reveal="cta">
-          20 free credits · No card required · Upgrade when you close
+          10 free leads · No card required · Upgrade when you close
         </p>
       </div>
     </section>
