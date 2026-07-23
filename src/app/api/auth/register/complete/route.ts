@@ -65,7 +65,7 @@ export async function POST(request: Request) {
         name: pending.name,
         passwordHash: await hashPassword(passwordStr),
         emailVerifiedAt: new Date(),
-        creditsRemaining: 20,
+        creditsRemaining: 13.3,
       },
     });
 

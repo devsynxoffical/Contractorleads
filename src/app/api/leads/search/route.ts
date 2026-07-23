@@ -38,13 +38,12 @@ export async function POST(request: Request) {
     } = resolved.criteria;
 
     const creditCost =
-      CREDIT_COSTS.search *
-      Math.max(1, Math.ceil(targetLeadCount / 50));
+      Math.round(CREDIT_COSTS.lead * Math.max(1, targetLeadCount) * 100) / 100;
 
     if (user.creditsRemaining < creditCost) {
       return NextResponse.json(
         {
-          error: `Insufficient credits. This search costs ${creditCost.toFixed(2)} credits (${targetLeadCount} leads).`,
+          error: `Insufficient credits. This search costs ${creditCost.toFixed(2)} credits (${targetLeadCount} leads × ${CREDIT_COSTS.lead} each).`,
         },
         { status: 402 }
       );
