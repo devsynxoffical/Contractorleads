@@ -142,61 +142,112 @@ export const PLAN_COMPARISON_ROWS: PlanMatrixRow[] = PLAN_MATRIX_GROUPS.flatMap(
   (g) => g.rows,
 );
 
-export const MARKETING_PLANS = [
+export type MarketingPlanCard = {
+  id: PlanColumnId;
+  name: string;
+  blurb: string;
+  /** Monthly list price; null = custom / talk to sales */
+  priceMonthly: number | null;
+  /** Shown when annual billing selected (per-month equivalent) */
+  priceAnnualMonthly: number | null;
+  creditsLabel: string;
+  creditsDetail: string;
+  ctaLabel: string;
+  ctaHref: string;
+  secondaryCtaLabel?: string;
+  secondaryCtaHref?: string;
+  popular?: boolean;
+  trialOffer?: boolean;
+  custom?: boolean;
+  features: string[];
+};
+
+export const MARKETING_PLANS: MarketingPlanCard[] = [
   {
+    id: "starter",
     name: "Starter",
-    blurb: "Try the full pipeline on us — score, save, and export your first batch.",
-    tier: "Your first 10 leads are on us",
+    blurb: "Start generating and closing contractor leads — free trial included.",
+    priceMonthly: 49,
+    priceAnnualMonthly: 39,
+    creditsLabel: "20 trial credits on signup",
+    creditsDetail: "Then purchase credit packs as you grow",
+    ctaLabel: "Get started free",
+    ctaHref: "/register",
     trialOffer: true,
     features: [
-      "10 free leads on signup (Starter only)",
+      "10 free leads on signup",
       "Lead Finder + live search",
       "AI scoring + owner enrichment",
       "Pipeline CRM + saved leads",
       "Outreach Studio + scripts",
       "CSV & Excel export",
+      "1 email nurture sequence",
     ],
   },
   {
+    id: "growth",
     name: "Growth",
-    blurb: "Lead Map, Meta intel, webhooks — what most agencies run day to day.",
-    tier: "Most popular",
+    blurb: "Essential maps, Meta intel, and webhooks for agencies closing every week.",
+    priceMonthly: 99,
+    priceAnnualMonthly: 79,
+    creditsLabel: "300 search credits / mo",
+    creditsDetail: "Best value for daily outreach teams",
+    ctaLabel: "Buy now",
+    ctaHref: "/register",
+    secondaryCtaLabel: "Start free trial",
+    secondaryCtaHref: "/register",
     popular: true,
     features: [
-      "All Starter features (paid credits)",
+      "Everything in Starter",
       "Lead Map + social filters",
       "Meta Ads intel",
       "Dashboard & analytics",
       "Full email automation",
       "CRM webhooks (Zapier, HubSpot)",
+      "API + MCP access",
     ],
   },
   {
+    id: "agency",
     name: "Agency",
-    blurb: "Client reports, workspaces, team seats, and priority support.",
-    tier: "For teams",
-    custom: true,
+    blurb: "For teams running multiple clients who need seats, reports, and priority support.",
+    priceMonthly: 249,
+    priceAnnualMonthly: 199,
+    creditsLabel: "1,500 search credits / mo",
+    creditsDetail: "Shared pool across your team",
+    ctaLabel: "Buy now",
+    ctaHref: "/register",
+    secondaryCtaLabel: "Talk to sales",
+    secondaryCtaHref: "mailto:hello@contractorleads.us",
     features: [
       "Everything in Growth",
       "Client reports",
       "Multi-tenant workspaces",
       "Team seats",
       "Priority AI assistant",
-      "Custom credit pool",
+      "Custom credit pool options",
+      "SSO available",
     ],
   },
   {
+    id: "enterprise",
     name: "Enterprise",
-    blurb: "API access, SSO, dedicated CSM, and custom integrations.",
-    tier: "Custom scale",
+    blurb: "Power, flexibility, and governance for large orgs and white-label rollouts.",
+    priceMonthly: null,
+    priceAnnualMonthly: null,
+    creditsLabel: "Custom credit volume",
+    creditsDetail: "Dedicated pool + SLA",
+    ctaLabel: "Talk to sales",
+    ctaHref: "mailto:hello@contractorleads.us",
     custom: true,
     features: [
       "Everything in Agency",
       "Advanced analytics",
       "White-label reports",
-      "API access",
-      "SSO & custom integrations",
+      "Full API + SSO",
+      "Custom integrations",
       "Dedicated customer success",
+      "Volume pricing",
     ],
   },
 ] as const;

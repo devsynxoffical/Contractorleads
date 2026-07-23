@@ -967,30 +967,19 @@ function Pricing() {
   return (
     <section
       id="pricing"
-      className="relative overflow-x-clip overflow-y-visible bg-[#ffffff] py-24 sm:py-28"
+      className="relative overflow-x-clip overflow-y-visible bg-[#f6f7f9] py-24 sm:py-28"
     >
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse 50% 40% at 50% 0%, rgba(245,243,255,0.9), transparent 60%)",
-        }}
-        aria-hidden
-      />
-      <CloudDecor side="left" className="opacity-40" />
-      <SparklesDecor />
       <div className="relative z-10 mx-auto max-w-6xl overflow-visible px-5 sm:px-8">
         <Reveal className="text-center">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-fuchsia-600">
-            Plans
+          <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+            Pricing
           </p>
           <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.85rem,4vw,3rem)] font-semibold tracking-tight text-slate-900">
-            Starter, Growth, Agency & Enterprise
+            Plans that scale with your closed deals
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-slate-500">
-            Your first <span className="font-semibold text-slate-800">10 leads are on us</span> on
-            Starter only. Most teams upgrade to Growth for maps, intel, and webhooks — paid plans
-            use credits, not unlimited searches.
+            Start free with trial credits. Upgrade when your team is booking
+            calls and signing retainers — not before.
           </p>
         </Reveal>
         <MarketingPricingSection />
