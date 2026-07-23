@@ -1652,6 +1652,32 @@ html[data-theme="dark"] .marketing-site .bg-\[\#f8f5ff\] {
   outline: none;
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.7);
 }
+.mkt-flow-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+.mkt-flow-pill--login {
+  background: transparent;
+  color: rgba(248, 250, 252, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow: none;
+}
+.mkt-flow-pill--login:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.45);
+  color: #fff;
+}
+@media (max-width: 479px) {
+  .mkt-flow-pill--login {
+    padding: 0 0.9em;
+    font-size: 0.85em;
+  }
+  .mkt-flow-nav-actions .mkt-flow-pill:not(.mkt-flow-pill--login) {
+    padding: 0 0.95em;
+    font-size: 0.85em;
+  }
+}
 .mkt-flow-center {
   position: relative;
   z-index: 10;

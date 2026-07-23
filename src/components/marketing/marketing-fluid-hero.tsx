@@ -192,9 +192,14 @@ export function MarketingFluidHero() {
           <a href="#faq">FAQ</a>
         </nav>
 
-        <Link href="/register" className="mkt-flow-pill">
-          Start free trial
-        </Link>
+        <div className="mkt-flow-nav-actions">
+          <Link href="/login" className="mkt-flow-pill mkt-flow-pill--login">
+            Log in
+          </Link>
+          <Link href="/register" className="mkt-flow-pill">
+            Start free trial
+          </Link>
+        </div>
       </header>
 
       <div className="mkt-flow-center">
