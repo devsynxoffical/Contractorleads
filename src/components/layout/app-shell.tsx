@@ -10,6 +10,7 @@ import {
 } from "@/components/layout/navigation-progress";
 import type { IconType } from "react-icons";
 import {
+  HiOutlineAcademicCap,
   HiOutlineArrowRightOnRectangle,
   HiOutlineArrowTrendingDown,
   HiOutlineArrowUpTray,
@@ -84,6 +85,11 @@ function buildSections(user: SessionUser): NavSection[] {
           icon: HiOutlineChatBubbleLeftRight,
         },
         { href: "/scripts", label: "My Scripts", icon: HiOutlineBookOpen },
+        {
+          href: "/academy",
+          label: "Academy",
+          icon: HiOutlineAcademicCap,
+        },
       ],
     },
     {
@@ -192,6 +198,9 @@ function isActive(
   if (href === "/home") return pathname === "/home";
   if (href === "/setup") {
     return pathname === "/setup" || pathname.startsWith("/setup/");
+  }
+  if (href === "/academy") {
+    return pathname === "/academy" || pathname.startsWith("/academy/");
   }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
