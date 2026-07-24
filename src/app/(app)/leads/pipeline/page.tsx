@@ -49,7 +49,7 @@ export default async function PipelinePage() {
     <div className="page-pad">
       <PageHeader
         title="Pipeline CRM"
-        description="Track saved leads: New → Contacted → Qualified → Closed. Change status on any card."
+        description="Add leads from Lead Finder, then move them New → Contacted → Qualified → Closed. Drag cards or use the status menu on each card."
         actions={
           <>
             <SecondaryActionLink href="/leads/saved">

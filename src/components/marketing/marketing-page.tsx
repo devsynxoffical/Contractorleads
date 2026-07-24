@@ -9,7 +9,6 @@ import {
   HiOutlineArrowRight,
   HiOutlineBolt,
   HiOutlineSparkles,
-  HiOutlineMap,
   HiOutlineChatBubbleLeftRight,
   HiOutlineChartBar,
   HiOutlineUserGroup,
@@ -70,9 +69,7 @@ import { MarketingAutomationShowcase } from "./marketing-automation-showcase";
 import { StickyPlatformScroll } from "./marketing-sticky-platform";
 import {
   INTEGRATION_BRANDS,
-  TECH_BRANDS,
   BrandLogoChip,
-  BrandLogoMark,
 } from "./brand-logos";
 import { MarketingTrialModals } from "./marketing-trial-modal";
 import { MarketingVisitTracker } from "./marketing-visit-tracker";
@@ -239,13 +236,10 @@ const FAQS = [
 const PARTNER_LOGOS = [
   "image.png",
   "image copy.png",
-  "image copy 2.png",
   "image copy 3.png",
-  "image copy 4.png",
   "image copy 5.png",
   "image copy 6.png",
   "image copy 7.png",
-  "image copy 8.png",
   "image copy 9.png",
   "image copy 10.png",
   "image copy 11.png",
@@ -593,7 +587,10 @@ function FeaturesGrid() {
 
 function Integrations() {
   return (
-    <section className="relative overflow-hidden border-y border-slate-100 bg-[#ffffff] py-16">
+    <section
+      id="integrations"
+      className="relative overflow-hidden border-y border-slate-100 bg-[#ffffff] py-16"
+    >
       <Reveal className="mb-8 text-center">
         <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-fuchsia-600">
           Integrations
@@ -623,271 +620,6 @@ function Integrations() {
       <p className="mx-auto mt-6 max-w-xl px-5 text-center text-[11px] leading-relaxed text-slate-400 sm:px-8">
         Integrations represent our technology stack and supported connections — availability varies by plan.
       </p>
-    </section>
-  );
-}
-
-const TECH_LOGOS = TECH_BRANDS;
-
-const TECH_CARDS = [
-  {
-    title: "Next.js + React",
-    copy: "Fast, modern interface that doesn't choke on a 500-row lead table.",
-    visual: "next",
-    tags: ["App Router", "SSR", "TypeScript"],
-  },
-  {
-    title: "OpenAI",
-    copy: "Powers scoring, qualification, and the Ask Contractor Leads assistant.",
-    visual: "ai",
-    tags: ["Scoring", "Chat", "Outreach"],
-  },
-  {
-    title: "Google Places + Prisma",
-    copy: "Live business data backed by a real, structured database — not a static CSV.",
-    visual: "data",
-    tags: ["Places API", "Postgres", "Prisma"],
-  },
-  {
-    title: "Framer + Three.js",
-    copy: "The map and motion you're scrolling through right now.",
-    visual: "motion",
-    tags: ["R3F", "Motion", "Parallax"],
-  },
-];
-
-function TechVisual({ kind }: { kind: string }) {
-  if (kind === "next") {
-    return (
-      <div className="relative flex h-full min-h-[140px] items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#1a1030] via-[#2a1548] to-[#ec4899]/40 p-4">
-        <div className="absolute inset-0 opacity-40" style={{ backgroundImage: "radial-gradient(circle at 30% 40%, #a855f7, transparent 50%)" }} />
-        <div className="relative grid w-full max-w-[140px] gap-1.5">
-          {[72, 48, 90].map((w, i) => (
-            <motion.div
-              key={i}
-              className="h-3 rounded-full bg-white/90 shadow-lg"
-              style={{ width: `${w}%` }}
-              initial={{ opacity: 0, x: -12 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 + i * 0.08 }}
-            />
-          ))}
-          <div className="mt-2 flex gap-1">
-            <span className="h-8 flex-1 rounded-xl bg-white/15 backdrop-blur" />
-            <span className="h-8 w-8 rounded-xl" style={{ background: LOGO_GRADIENT }} />
-          </div>
-        </div>
-      </div>
-    );
-  }
-  if (kind === "ai") {
-    return (
-      <div className="relative flex h-full min-h-[140px] items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#2a0a3d] to-[#7c3aed]/50 p-4">
-        <motion.div
-          className="relative flex h-20 w-20 items-center justify-center rounded-full text-white shadow-[0_0_40px_rgba(236,72,153,0.55)]"
-          style={{ background: LOGO_GRADIENT }}
-          animate={{ scale: [1, 1.06, 1] }}
-          transition={{ duration: 2.4, repeat: Infinity }}
-        >
-          <HiOutlineSparkles className="h-8 w-8" />
-        </motion.div>
-        <div className="absolute bottom-3 left-3 right-3 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-[10px] text-white/80 backdrop-blur">
-          Qualifying lead… score 91
-        </div>
-      </div>
-    );
-  }
-  if (kind === "data") {
-    return (
-      <div className="relative flex h-full min-h-[140px] items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#0f172a] to-[#312e81]/60 p-4">
-        <div className="relative h-24 w-24 rounded-full border border-dashed border-pink-300/40">
-          {[0, 1, 2, 3, 4, 5].map((i) => (
-            <span
-              key={i}
-              className="absolute h-2.5 w-2.5 rounded-full"
-              style={{
-                background: LOGO_GRADIENT,
-                top: `${50 + 38 * Math.sin((i / 6) * Math.PI * 2)}%`,
-                left: `${50 + 38 * Math.cos((i / 6) * Math.PI * 2)}%`,
-                transform: "translate(-50%, -50%)",
-              }}
-            />
-          ))}
-          <HiOutlineMap className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 text-pink-200" />
-        </div>
-      </div>
-    );
-  }
-  return (
-    <div className="relative flex h-full min-h-[140px] items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#1e1033] to-[#db2777]/35 p-4">
-      <motion.div
-        className="h-16 w-16 rounded-2xl border border-white/20 bg-white/10 shadow-xl backdrop-blur"
-        style={{ rotateX: 18, rotateY: -22, transformStyle: "preserve-3d" }}
-        animate={{ y: [0, -8, 0], rotateZ: [0, 4, 0] }}
-        transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        className="absolute h-10 w-10 rounded-xl"
-        style={{ background: LOGO_GRADIENT, right: "22%", top: "28%" }}
-        animate={{ y: [0, 10, 0] }}
-        transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
-      />
-    </div>
-  );
-}
-
-function TechnologiesSection() {
-  return (
-    <section
-      id="technology"
-      className="marketing-tech-section relative overflow-hidden py-20 sm:py-28"
-    >
-      {/* Bright Gamma-like sky — keep this section light */}
-      <div
-        className="absolute inset-0 -z-20"
-        style={{
-          background:
-            "linear-gradient(180deg, #f4f7ff 0%, #e8f0fe 35%, #f3e8ff 70%, #fce7f3 100%)",
-        }}
-      />
-
-      {/* Left cloud */}
-      <motion.div
-        className="pointer-events-none absolute -left-[8%] top-[4%] z-0 w-[min(52vw,420px)] select-none sm:-left-[4%] sm:top-[2%] lg:w-[480px]"
-        aria-hidden
-        animate={{ y: [0, -14, 0], x: [0, 6, 0] }}
-        transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
-      >
-        <Image
-          src="/marketing/cloud-left.png"
-          alt=""
-          width={640}
-          height={400}
-          className="h-auto w-full drop-shadow-[0_24px_60px_rgba(120,80,180,0.22)]"
-          priority={false}
-        />
-      </motion.div>
-
-      {/* Right cloud */}
-      <motion.div
-        className="pointer-events-none absolute -right-[10%] top-[8%] z-0 w-[min(55vw,440px)] select-none sm:-right-[5%] sm:top-[4%] lg:w-[500px]"
-        aria-hidden
-        animate={{ y: [0, 12, 0], x: [0, -8, 0] }}
-        transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}
-      >
-        <Image
-          src="/marketing/cloud-right.png"
-          alt=""
-          width={640}
-          height={400}
-          className="h-auto w-full drop-shadow-[0_24px_60px_rgba(120,80,180,0.22)]"
-          priority={false}
-        />
-      </motion.div>
-
-      {/* Soft glow under clouds */}
-      <div
-        className="pointer-events-none absolute left-[5%] top-[18%] h-40 w-40 rounded-full bg-pink-200/50 blur-3xl"
-        aria-hidden
-      />
-      <div
-        className="pointer-events-none absolute right-[8%] top-[22%] h-48 w-48 rounded-full bg-violet-200/50 blur-3xl"
-        aria-hidden
-      />
-
-      {/* Sparkles */}
-      <div
-        className="pointer-events-none absolute inset-x-0 top-20 z-[1] flex justify-center gap-16 text-violet-400/70 sm:gap-28"
-        aria-hidden
-      >
-        <motion.span
-          className="text-xl"
-          animate={{ opacity: [0.4, 1, 0.4], scale: [0.9, 1.1, 0.9] }}
-          transition={{ duration: 2.8, repeat: Infinity }}
-        >
-          ✦
-        </motion.span>
-        <motion.span
-          className="mt-10 text-sm"
-          animate={{ opacity: [0.3, 1, 0.3] }}
-          transition={{ duration: 3.2, repeat: Infinity, delay: 0.4 }}
-        >
-          ✧
-        </motion.span>
-        <motion.span
-          className="text-lg"
-          animate={{ opacity: [0.5, 1, 0.5] }}
-          transition={{ duration: 2.5, repeat: Infinity, delay: 0.8 }}
-        >
-          ✦
-        </motion.span>
-      </div>
-
-      <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
-        <Reveal className="text-center">
-          <p className="text-[14px] font-medium text-slate-500">
-            Your next pipeline is in good company
-          </p>
-        </Reveal>
-
-        {/* Tech logos — soft white pills on light sky */}
-        <Reveal delay={0.06} className="mt-8">
-          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
-            {TECH_LOGOS.map((brand) => (
-              <BrandLogoChip key={brand.name} brand={brand} size="sm" />
-            ))}
-          </div>
-        </Reveal>
-
-        <Reveal delay={0.1} className="mt-10 text-center">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.2em] text-fuchsia-600">
-            Under the hood
-          </p>
-          <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.85rem,4.2vw,3rem)] font-semibold tracking-tight text-slate-900">
-            Built with world-class technology
-          </h2>
-          <p className="mx-auto mt-3 max-w-lg text-[15px] text-slate-500">
-            The infrastructure choices that keep search results live instead of stale.
-          </p>
-        </Reveal>
-
-        {/* Gamma-style 2×2 cards */}
-        <div className="mt-14 grid gap-5 md:grid-cols-2">
-          {TECH_CARDS.map((card, i) => (
-            <Reveal key={card.title} delay={i * 0.06}>
-              <TiltCard intensity={7}>
-                <motion.article
-                  whileHover={{ y: -6 }}
-                  className="flex h-full flex-col gap-5 rounded-[28px] border border-slate-200/80 bg-[#ffffff] p-5 shadow-[0_16px_48px_rgba(80,60,140,0.1)] sm:flex-row sm:items-center sm:gap-6 sm:p-6"
-                >
-                  <div className="w-full shrink-0 sm:w-[42%] sm:max-w-[200px]">
-                    <TechVisual kind={card.visual} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-[family-name:var(--font-display)] text-[22px] font-bold tracking-tight text-slate-900">
-                      {card.title}
-                    </h3>
-                    <p className="mt-2 text-[14px] leading-relaxed text-slate-500">
-                      {card.copy}
-                    </p>
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      {card.tags.map((t) => (
-                        <span
-                          key={t}
-                          className="rounded-full bg-violet-50 px-2.5 py-0.5 text-[11px] font-semibold text-violet-700"
-                        >
-                          {t}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </motion.article>
-              </TiltCard>
-            </Reveal>
-          ))}
-        </div>
-      </div>
     </section>
   );
 }
@@ -1205,7 +937,7 @@ function Footer() {
       h: "Product",
       links: [
         ["Features", "#features"],
-        ["Technology", "#technology"],
+        ["Technology", "#integrations"],
         ["Lead Finder", "/register"],
         ["AI Assistant", "#features"],
         ["Pricing", "#pricing"],
@@ -1420,7 +1152,6 @@ export function MarketingPage() {
       <StickyPlatformScroll />
       <MarketingAutomationShowcase />
       <Integrations />
-      <TechnologiesSection />
       <AiSection />
       <Pricing />
       <Faq />

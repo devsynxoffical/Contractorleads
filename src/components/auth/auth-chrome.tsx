@@ -10,7 +10,7 @@ const FOOTER_COLUMNS = [
     h: "Product",
     links: [
       ["Features", "/#features"],
-      ["Technology", "/#technology"],
+      ["Technology", "/#integrations"],
       ["Lead Finder", "/register"],
       ["AI Assistant", "/#features"],
       ["Pricing", "/#pricing"],
@@ -70,7 +70,7 @@ export function AuthSiteHeader({
           <Link href="/#features" className="transition hover:text-slate-900">
             Features
           </Link>
-          <Link href="/#technology" className="transition hover:text-slate-900">
+          <Link href="/#integrations" className="transition hover:text-slate-900">
             Technology
           </Link>
           <Link href="/#pricing" className="transition hover:text-slate-900">

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import {
   HiOutlineCheckBadge,
@@ -8,6 +9,7 @@ import {
   HiOutlineMapPin,
   HiOutlinePhone,
   HiOutlineUser,
+  HiOutlineViewColumns,
   HiStar,
 } from "react-icons/hi2";
 import { Badge } from "@/components/ui/badge";
@@ -98,6 +100,10 @@ export function LeadResultCard({
   lead: LeadResult;
   index?: number;
 }) {
+  const [pipelineBusy, setPipelineBusy] = useState(false);
+  const [inPipeline, setInPipeline] = useState(false);
+  const [pipelineError, setPipelineError] = useState<string | null>(null);
+
   const location =
     [lead.city, lead.state, lead.zip].filter(Boolean).join(", ") ||
     lead.address ||
@@ -114,6 +120,23 @@ export function LeadResultCard({
     }
   })();
   const hasPublicPeople = Boolean(lead.ownerName || teamCount);
+
+  async function addToPipeline() {
+    if (pipelineBusy || inPipeline) return;
+    setPipelineBusy(true);
+    setPipelineError(null);
+    try {
+      const res = await fetch(`/api/leads/${lead.id}/save`, { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setPipelineError(data.error || "Could not add to pipeline");
+        return;
+      }
+      setInPipeline(true);
+    } finally {
+      setPipelineBusy(false);
+    }
+  }
 
   return (
     <article
@@ -226,6 +249,19 @@ export function LeadResultCard({
             >
               View full profile
             </Link>
+            <button
+              type="button"
+              onClick={() => void addToPipeline()}
+              disabled={pipelineBusy || inPipeline}
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-brand-500/30 bg-brand-50 px-3 text-[12px] font-semibold text-brand-700 transition hover:border-brand-500/50 disabled:opacity-60"
+            >
+              <HiOutlineViewColumns className="h-3.5 w-3.5" />
+              {pipelineBusy
+                ? "Adding…"
+                : inPipeline
+                  ? "In pipeline"
+                  : "Add to pipeline"}
+            </button>
             {lead.phone && (
               <a
                 href={`tel:${lead.phone}`}
@@ -255,6 +291,9 @@ export function LeadResultCard({
               </a>
             )}
           </div>
+          {pipelineError ? (
+            <p className="mt-2 text-[11px] text-red-600">{pipelineError}</p>
+          ) : null}
         </div>
       </div>
     </article>

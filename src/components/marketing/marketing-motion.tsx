@@ -98,7 +98,7 @@ export function MarketingNavLinks({
 }) {
   const links = [
     ["Features", "#features"],
-    ["Technology", "#technology"],
+    ["Technology", "#integrations"],
     ["Pricing", "#pricing"],
     ["FAQ", "#faq"],
   ] as const;

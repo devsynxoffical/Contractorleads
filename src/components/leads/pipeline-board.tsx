@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { LEAD_STATUSES } from "@/lib/constants";
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,11 +30,16 @@ export function PipelineBoard({ initialColumns }: { initialColumns: Column[] }) 
   const [columns, setColumns] = useState(initialColumns);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [tierFilter, setTierFilter] = useState("all");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const dragMovedRef = useRef(false);
+
+  useEffect(() => {
+    setColumns(initialColumns);
+  }, [initialColumns]);
 
   const filteredColumns = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -103,47 +108,60 @@ export function PipelineBoard({ initialColumns }: { initialColumns: Column[] }) 
     setBusyId(savedId);
     setError("");
 
-    const res = await fetch(`/api/leads/saved/${savedId}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: toStatus }),
-    });
+    // Optimistic UI — move immediately, roll back on failure
+    const snapshot = columns;
+    setColumns((cols) => applyMove(cols, savedId, fromStatus, toStatus));
 
-    setBusyId(null);
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setError(data.error || "Could not update status");
-      return;
+    try {
+      const res = await fetch(`/api/leads/saved/${savedId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: toStatus }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setColumns(snapshot);
+        setError(data.error || "Could not update status");
+      }
+    } catch {
+      setColumns(snapshot);
+      setError("Network error — status was not saved");
+    } finally {
+      setBusyId(null);
     }
-
-    setColumns((cols) => {
-      const located = locateItem(cols, savedId);
-      const from = located?.fromStatus ?? fromStatus;
-      return applyMove(cols, savedId, from, toStatus);
-    });
   }
 
   async function removeLead(savedId: string) {
     if (!confirm("Remove this lead from your pipeline?")) return;
     setBusyId(savedId);
     setError("");
-    const res = await fetch(`/api/leads/saved/${savedId}`, { method: "DELETE" });
-    setBusyId(null);
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setError(data.error || "Could not remove lead");
-      return;
-    }
+    const snapshot = columns;
     setColumns((cols) =>
       cols.map((col) => ({
         ...col,
         items: col.items.filter((i) => i.id !== savedId),
       })),
     );
+    try {
+      const res = await fetch(`/api/leads/saved/${savedId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setColumns(snapshot);
+        setError(data.error || "Could not remove lead");
+      }
+    } catch {
+      setColumns(snapshot);
+      setError("Network error — lead was not removed");
+    } finally {
+      setBusyId(null);
+    }
   }
 
   function handleDrop(targetStatus: string, savedId: string | null) {
     setDraggingId(null);
+    setDropTarget(null);
     if (!savedId) return;
     const located = locateItem(columns, savedId);
     if (!located || located.fromStatus === targetStatus) return;
@@ -156,9 +174,11 @@ export function PipelineBoard({ initialColumns }: { initialColumns: Column[] }) 
         <p className="text-base font-semibold text-ink">
           No leads in your pipeline yet
         </p>
-        <p className="mx-auto mt-2 max-w-md text-sm text-ink-muted">
-          Save leads from Lead Finder or Saved Leads — they appear here as cards
-          you can drag between stages or move with the status menu.
+        <p className="mx-auto mt-2 max-w-lg text-sm text-ink-muted">
+          Pipeline only shows leads you add. From Lead Finder, click{" "}
+          <span className="font-semibold text-ink">Add to pipeline</span> on a
+          result — or open a lead and save it. Then drag cards between New →
+          Contacted → Qualified → Closed.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           <Link
@@ -216,8 +236,9 @@ export function PipelineBoard({ initialColumns }: { initialColumns: Column[] }) 
         </p>
       </div>
       <p className="mb-3 text-[12px] text-ink-muted">
-        Drag cards between columns or use the status menu. Emailing a lead from
-        detail moves New → Contacted. Changes sync to CRM webhooks when connected.
+        Drag a card onto another column, or pick a stage from the menu. On
+        mobile, use the status menu. Emailing a lead from its profile moves New
+        → Contacted.
       </p>
       {error && (
         <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-700">
@@ -230,15 +251,23 @@ export function PipelineBoard({ initialColumns }: { initialColumns: Column[] }) 
             key={col.value}
             className={cn(
               "w-[240px] shrink-0 rounded-xl border border-border bg-[#faf8fb] p-3 transition sm:w-[260px]",
-              draggingId && "border-brand-200/80",
+              dropTarget === col.value &&
+                "border-brand-500 bg-brand-50/60 ring-2 ring-brand-300/40",
             )}
             onDragOver={(e) => {
               e.preventDefault();
               e.dataTransfer.dropEffect = "move";
+              setDropTarget(col.value);
+            }}
+            onDragLeave={() => {
+              setDropTarget((cur) => (cur === col.value ? null : cur));
             }}
             onDrop={(e) => {
               e.preventDefault();
-              handleDrop(col.value, e.dataTransfer.getData("text/plain") || null);
+              handleDrop(
+                col.value,
+                e.dataTransfer.getData("text/plain") || null,
+              );
             }}
           >
             <div className="mb-3 flex items-center justify-between px-1">
@@ -261,7 +290,10 @@ export function PipelineBoard({ initialColumns }: { initialColumns: Column[] }) 
                   onDrag={() => {
                     dragMovedRef.current = true;
                   }}
-                  onDragEnd={() => setDraggingId(null)}
+                  onDragEnd={() => {
+                    setDraggingId(null);
+                    setDropTarget(null);
+                  }}
                   className={cn(
                     "cursor-grab border-border shadow-sm transition hover:border-brand-200 active:cursor-grabbing",
                     busyId === s.id && "opacity-60",
@@ -297,6 +329,8 @@ export function PipelineBoard({ initialColumns }: { initialColumns: Column[] }) 
                             : "new"
                         }
                         disabled={busyId === s.id}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()}
                         onChange={(e) =>
                           void moveLead(s.id, s.status, e.target.value)
                         }
@@ -321,7 +355,13 @@ export function PipelineBoard({ initialColumns }: { initialColumns: Column[] }) 
                 </Card>
               ))}
               {!col.items.length && (
-                <p className="rounded-lg border border-dashed border-border bg-white px-3 py-6 text-center text-xs text-ink-faint">
+                <p
+                  className={cn(
+                    "rounded-lg border border-dashed border-border bg-white px-3 py-6 text-center text-xs text-ink-faint",
+                    dropTarget === col.value &&
+                      "border-brand-400 text-brand-600",
+                  )}
+                >
                   Drop leads here
                 </p>
               )}

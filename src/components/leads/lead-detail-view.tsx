@@ -395,9 +395,17 @@ export function LeadDetailView({
 
   async function saveLead() {
     setSaving(true);
-    await fetch(`/api/leads/${leadId}/save`, { method: "POST" });
-    await load();
-    setSaving(false);
+    try {
+      const res = await fetch(`/api/leads/${leadId}/save`, { method: "POST" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Could not add to pipeline");
+        return;
+      }
+      await load();
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function updateSaved(field: string, value: string | boolean) {
@@ -742,10 +750,10 @@ export function LeadDetailView({
             <Button onClick={saveLead} loading={saving}>
               {!saving && <HiOutlineBookmark className="h-4 w-4" />}
               {saving
-                ? "Saving…"
+                ? "Adding…"
                 : saved
-                  ? "Saved to workspace"
-                  : "Save lead"}
+                  ? "In pipeline"
+                  : "Add to pipeline"}
             </Button>
           </div>
         </div>

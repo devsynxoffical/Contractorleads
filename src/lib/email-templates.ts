@@ -167,7 +167,7 @@ function emailHeader(loginUrl: string, registerUrl: string, logo: string) {
         <tr>
           <td align="left" style="font-family:${EMAIL_FONT};font-size:12px;">
             <a href="${esc(site)}/#features" style="color:${EMAIL_BRAND.muted};text-decoration:none;font-weight:500;padding-right:14px;">Features</a>
-            <a href="${esc(site)}/#technology" style="color:${EMAIL_BRAND.muted};text-decoration:none;font-weight:500;padding-right:14px;">Technology</a>
+            <a href="${esc(site)}/#integrations" style="color:${EMAIL_BRAND.muted};text-decoration:none;font-weight:500;padding-right:14px;">Technology</a>
             <a href="${esc(site)}/#pricing" style="color:${EMAIL_BRAND.muted};text-decoration:none;font-weight:500;padding-right:14px;">Pricing</a>
             <a href="${esc(site)}/#faq" style="color:${EMAIL_BRAND.muted};text-decoration:none;font-weight:500;">FAQ</a>
           </td>
