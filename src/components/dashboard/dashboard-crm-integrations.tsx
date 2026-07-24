@@ -14,7 +14,7 @@ import {
   HiOutlineKey,
   HiOutlineWrenchScrewdriver,
 } from "react-icons/hi2";
-import { SiMeta, SiZapier } from "react-icons/si";
+import { SiZapier } from "react-icons/si";
 import { FaLinkedinIn } from "react-icons/fa6";
 import { cn } from "@/lib/utils";
 import { HudPanel } from "@/components/dashboard/hud-panel";
@@ -271,19 +271,6 @@ export function DashboardCrmIntegrations({
             status={i?.ghl?.connected ? "ready" : i?.ghl?.hasUrl ? "partial" : "setup"}
             statusLabel={i?.ghl?.connected ? "Live" : i?.ghl?.hasUrl ? "Paused" : "Setup"}
             icon={HiOutlineLink}
-          />
-          <IntegrationCard
-            href="/facebook-ads"
-            title="Meta / Facebook"
-            body={
-              i?.facebook.customAudience
-                ? "Custom Audience sync is connected."
-                : "Ads Library intel is available. Custom Audience sync is on the roadmap."
-            }
-            status={i?.facebook.customAudience ? "ready" : "roadmap"}
-            statusLabel={i?.facebook.customAudience ? "Synced" : "Roadmap"}
-            icon={SiMeta}
-            brand="#0866FF"
           />
           <IntegrationCard
             href="/leads"

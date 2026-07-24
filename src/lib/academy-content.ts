@@ -683,9 +683,9 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
       },
       {
         heading: "Facebook / enrichment integrations",
-        body: "Optional Meta and NinjaPear enrichment may be configured at the platform level. LinkedIn discovery uses website + Serper patterns. Blank socials are still normal when enrichment cannot confirm a profile.",
-        href: "/facebook-ads",
-        hrefLabel: "Open enrichment integrations →",
+        body: "Optional Meta Ads Library checks and social enrichment run on individual lead profiles. LinkedIn discovery uses website + Serper patterns. Blank socials are still normal when enrichment cannot confirm a profile.",
+        href: "/leads",
+        hrefLabel: "Open leads →",
       },
     ],
   },

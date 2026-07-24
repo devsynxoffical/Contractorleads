@@ -30,7 +30,6 @@ import {
   HiOutlineLink,
   HiOutlineMagnifyingGlass,
   HiOutlineMap,
-  HiOutlineMegaphone,
   HiOutlineSquares2X2,
   HiOutlineStar,
   HiOutlineUsers,
@@ -128,7 +127,6 @@ function buildSections(user: SessionUser): NavSection[] {
           icon: HiOutlineArrowUpTray,
           feature: "reports",
         },
-        { href: "/facebook-ads", label: "Facebook Ads", icon: HiOutlineMegaphone },
       ],
     },
     {

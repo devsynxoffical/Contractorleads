@@ -20,7 +20,6 @@ import {
   HiOutlineLink,
   HiOutlineMagnifyingGlass,
   HiOutlineMap,
-  HiOutlineMegaphone,
   HiOutlineSquares2X2,
   HiOutlineStar,
   HiOutlineUsers,
@@ -80,7 +79,6 @@ const sections: NavSection[] = [
       { href: "/ai-tools", label: "AI Tools", icon: HiOutlineCpuChip },
       { href: "/workspaces", label: "Workspaces", icon: HiOutlineUsers },
       { href: "/reports", label: "Client Reports", icon: HiOutlineArrowUpTray },
-      { href: "/facebook-ads", label: "Facebook Ads", icon: HiOutlineMegaphone },
     ],
   },
   {
