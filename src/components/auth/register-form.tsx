@@ -16,7 +16,7 @@ type RegisterFormProps = {
 
 function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
   const searchParams = useSearchParams();
-  const referralCode = (searchParams.get("ref") || "").trim().toUpperCase();
+  const referralCode = (searchParams.get("ref") || "").trim();
   const [error, setError] = useState("");
   const [success, setSuccess] = useState<string | null>(null);
   const [devLink, setDevLink] = useState<string | null>(null);

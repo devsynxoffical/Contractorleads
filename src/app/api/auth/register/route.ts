@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     const referralCode =
       String(bodyRef || cookieRef || "")
         .trim()
-        .toUpperCase() || null;
+        .toLowerCase() || null;
 
     const emailErr = businessEmailError(normalizedEmail);
     if (emailErr) {

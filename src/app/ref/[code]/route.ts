@@ -14,7 +14,7 @@ export async function GET(
   { params }: { params: Promise<{ code: string }> },
 ) {
   const { code } = await params;
-  const normalized = String(code ?? "").trim().toUpperCase();
+  const normalized = String(code ?? "").trim();
   const appUrl = appBaseUrl();
 
   const referrer = normalized ? await findReferrerByCode(normalized) : null;

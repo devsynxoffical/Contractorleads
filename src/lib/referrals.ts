@@ -114,20 +114,70 @@ export async function saveRewardConfig(input: {
   };
 }
 
-function makeCodeCandidate() {
-  return randomBytes(4).toString("hex").toUpperCase();
+/** Old random hex codes (e.g. 015EB0E2) — migrate to name-based. */
+function isLegacyReferralCode(code: string) {
+  return /^[0-9a-f]{8}$/i.test(code.trim());
 }
 
-/** Ensure the user has a unique referral code; create one if missing. */
+/** "Vishali Sharma" / "vishali@x.com" → "vishali" */
+export function slugifyReferralBase(input: string): string {
+  const slug = input
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "")
+    .slice(0, 20);
+  return slug || "user";
+}
+
+async function allocateNameReferralCode(opts: {
+  userId: string;
+  name: string | null;
+  email: string;
+}): Promise<string> {
+  const base = slugifyReferralBase(
+    opts.name?.trim() || opts.email.split("@")[0] || "user",
+  );
+
+  for (let n = 1; n <= 999; n++) {
+    const code = `${base}${String(n).padStart(3, "0")}`;
+    const taken = await prisma.user.findFirst({
+      where: {
+        referralCode: { equals: code, mode: "insensitive" },
+        NOT: { id: opts.userId },
+      },
+      select: { id: true },
+    });
+    if (!taken) return code;
+  }
+
+  // Extremely unlikely: base001–base999 all taken
+  return `${base}${randomBytes(2).toString("hex")}`;
+}
+
+/**
+ * Ensure the user has a unique referral code (e.g. vishali001).
+ * Migrates legacy 8-char hex codes to the name-based format.
+ */
 export async function ensureReferralCode(userId: string): Promise<string> {
   const existing = await prisma.user.findUnique({
     where: { id: userId },
-    select: { referralCode: true },
+    select: { referralCode: true, name: true, email: true },
   });
-  if (existing?.referralCode) return existing.referralCode;
+  if (!existing) {
+    throw new Error("User not found");
+  }
 
-  for (let i = 0; i < 8; i++) {
-    const code = makeCodeCandidate();
+  if (existing.referralCode && !isLegacyReferralCode(existing.referralCode)) {
+    return existing.referralCode;
+  }
+
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const code = await allocateNameReferralCode({
+      userId,
+      name: existing.name,
+      email: existing.email,
+    });
     try {
       const updated = await prisma.user.update({
         where: { id: userId },
@@ -140,7 +190,7 @@ export async function ensureReferralCode(userId: string): Promise<string> {
     }
   }
 
-  const fallback = `${userId.slice(-6).toUpperCase()}${makeCodeCandidate().slice(0, 2)}`;
+  const fallback = `${slugifyReferralBase(existing.name || existing.email)}${randomBytes(3).toString("hex")}`;
   const updated = await prisma.user.update({
     where: { id: userId },
     data: { referralCode: fallback },
@@ -150,7 +200,7 @@ export async function ensureReferralCode(userId: string): Promise<string> {
 }
 
 export async function findReferrerByCode(code: string) {
-  const normalized = code.trim().toUpperCase();
+  const normalized = code.trim();
   if (!normalized) return null;
   return prisma.user.findFirst({
     where: {

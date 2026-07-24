@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { searchGooglePlaces } from "./google-places";
 import { findLinkedInCompanyUrl } from "./linkedin";
-import { qualifyLead } from "./qualification";
+import { finalizeLeadScore, qualifyLead } from "./qualification";
 import {
   extractWebsitePeople,
   type WebsitePeopleResult,
@@ -359,6 +359,32 @@ async function enrichAndPersistPlace(opts: {
     return "skipped-social";
   }
 
+  const ownerNameFinal = ownerName ?? existingLead?.ownerName ?? null;
+  const emailFinal = websitePeople.email ?? existingLead?.email ?? null;
+  const websiteFinal = website ?? existingLead?.website ?? null;
+  const hasSocial = Boolean(
+    socialSnapshot.facebook ||
+      socialSnapshot.instagram ||
+      socialSnapshot.youtube ||
+      socialSnapshot.tiktok,
+  );
+  const hasLinkedIn = Boolean(
+    socialSnapshot.linkedinUrl ||
+      socialSnapshot.linkedinCompanyUrl ||
+      socialSnapshot.linkedinOwnerUrl,
+  );
+
+  const scored = finalizeLeadScore(qualification.leadScore, {
+    hasWebsite: Boolean(websiteFinal),
+    hasEmail: Boolean(emailFinal),
+    hasOwner: Boolean(ownerNameFinal),
+    hasLinkedIn,
+    hasSocial,
+    hasPhone: Boolean(place.phone ?? existingLead?.phone),
+  });
+
+  if (scored.leadScore < 25) return "skipped-score";
+
   const linkedinType = companyUrl
     ? "company"
     : resolvedOwner
@@ -375,10 +401,10 @@ async function enrichAndPersistPlace(opts: {
     city: params.city ?? existingLead?.city,
     zip: params.zip ?? existingLead?.zip,
     phone: place.phone ?? existingLead?.phone,
-    website: website ?? existingLead?.website,
+    website: websiteFinal,
     googleRating: place.rating ?? existingLead?.googleRating,
     reviewCount: place.reviewCount ?? existingLead?.reviewCount,
-    ownerName: ownerName ?? existingLead?.ownerName,
+    ownerName: ownerNameFinal,
     ownerTitle: ownerTitle ?? existingLead?.ownerTitle,
     ownerSourceUrl:
       websitePeople.owner?.sourceUrl ?? existingLead?.ownerSourceUrl,
@@ -387,7 +413,7 @@ async function enrichAndPersistPlace(opts: {
     teamMembersJson: websitePeople.team.length
       ? JSON.stringify(websitePeople.team)
       : existingLead?.teamMembersJson,
-    email: websitePeople.email ?? existingLead?.email,
+    email: emailFinal,
     emailSourceUrl:
       websitePeople.emailSourceUrl ?? existingLead?.emailSourceUrl,
     facebook: facebook ?? existingLead?.facebook,
@@ -410,7 +436,7 @@ async function enrichAndPersistPlace(opts: {
       ? 96
       : existingLead?.linkedinOwnerConfidenceScore,
     linkedinType: linkedinType ?? existingLead?.linkedinType,
-    leadScore: qualification.leadScore,
+    leadScore: scored.leadScore,
     serviceCategory: qualification.serviceCategory,
     revenueRangeEstimate: qualification.revenueRangeEstimate || null,
     websiteQualityScore,
@@ -418,7 +444,7 @@ async function enrichAndPersistPlace(opts: {
     ppcOpportunityScore: qualification.ppcOpportunityScore,
     seoOpportunityScore: qualification.seoOpportunityScore,
     outreachAngle: qualification.outreachAngle,
-    qualityTier: qualification.qualityTier,
+    qualityTier: scored.qualityTier,
     peopleEnrichedAt: websitePeople.owner || websitePeople.email
       ? new Date()
       : existingLead?.peopleEnrichedAt,
@@ -440,7 +466,7 @@ async function enrichAndPersistPlace(opts: {
   return prisma.lead.create({
     data: {
       businessName: place.name,
-      ownerName,
+      ownerName: ownerNameFinal,
       ownerTitle,
       ownerSourceUrl: websitePeople.owner?.sourceUrl ?? null,
       ownerConfidence: websitePeople.owner?.confidence ?? null,
@@ -449,19 +475,19 @@ async function enrichAndPersistPlace(opts: {
         : null,
       peopleEnrichedAt:
         websitePeople.owner || websitePeople.email ? new Date() : null,
-      email: websitePeople.email,
+      email: emailFinal,
       emailSourceUrl: websitePeople.emailSourceUrl,
       facebook,
       instagram,
       youtube: pack.youtube,
       tiktok: pack.tiktok,
       phone: place.phone,
-      website: website ?? null,
+      website: websiteFinal,
       googleRating: place.rating,
       reviewCount: place.reviewCount,
       address: place.address,
       googleMapsLink: place.mapsUrl,
-      leadScore: qualification.leadScore,
+      leadScore: scored.leadScore,
       serviceCategory: qualification.serviceCategory,
       revenueRangeEstimate: qualification.revenueRangeEstimate || null,
       websiteQualityScore,
@@ -483,7 +509,7 @@ async function enrichAndPersistPlace(opts: {
       linkedinOwnerConfidenceScore: resolvedOwner ? 96 : null,
       linkedinType,
       socialEnrichedAt: new Date(),
-      qualityTier: qualification.qualityTier,
+      qualityTier: scored.qualityTier,
       searchId,
       industry: params.industry,
       country: params.country,
