@@ -15,6 +15,11 @@ export type AdminIndustryFieldProps = {
   allowEmpty?: boolean;
   emptyLabel?: string;
   className?: string;
+  /**
+   * Extra niches already in the pool (e.g. custom scrapes like "Agency owners").
+   * Shown under “Scraped niches” so admins can pick them again.
+   */
+  knownNiches?: string[];
 };
 
 export function resolvedIndustryForQuery(
@@ -46,8 +51,24 @@ export function AdminIndustryField({
   allowEmpty = false,
   emptyLabel = "All services",
   className,
+  knownNiches = [],
 }: AdminIndustryFieldProps) {
   const isCustom = selectValue === CUSTOM_INDUSTRY_VALUE;
+  const presetSet = new Set<string>(INDUSTRIES);
+  const scrapedNiches = Array.from(
+    new Set(
+      knownNiches
+        .map((n) => n.trim())
+        .filter((n) => n && !presetSet.has(n)),
+    ),
+  ).sort((a, b) => a.localeCompare(b));
+
+  // Keep a selected scraped niche visible even if not yet in knownNiches
+  const selectOptionsIncludeValue =
+    !selectValue ||
+    selectValue === CUSTOM_INDUSTRY_VALUE ||
+    presetSet.has(selectValue) ||
+    scrapedNiches.includes(selectValue);
 
   return (
     <div className={className}>
@@ -64,6 +85,18 @@ export function AdminIndustryField({
               {i}
             </option>
           ))}
+          {scrapedNiches.length > 0 && (
+            <optgroup label="Scraped niches">
+              {scrapedNiches.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {!selectOptionsIncludeValue && selectValue && (
+            <option value={selectValue}>{selectValue}</option>
+          )}
           <option value={CUSTOM_INDUSTRY_VALUE}>Custom service…</option>
         </select>
       </label>
@@ -74,7 +107,7 @@ export function AdminIndustryField({
             className="saas-input mt-1"
             value={customValue}
             onChange={(e) => onCustomChange(e.target.value)}
-            placeholder="e.g. Window tinting, Dog grooming"
+            placeholder="e.g. Window tinting, Agency owners"
             required
           />
         </label>
