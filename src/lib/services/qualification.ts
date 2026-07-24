@@ -96,6 +96,62 @@ export function finalizeLeadScore(
   return { leadScore: score, qualityTier: tierFromScore(score) };
 }
 
+/** Reconstruct Places-style base (≤70) from stored Google fields. */
+export function baseScoreFromStoredSignals(lead: {
+  googleRating?: number | null;
+  reviewCount?: number | null;
+  website?: string | null;
+}): number {
+  const rating = lead.googleRating ?? 0;
+  const reviews = lead.reviewCount ?? 0;
+  const hasWebsite = Boolean(lead.website?.trim());
+  const ratingPts = Math.min(28, rating * 5.2);
+  const reviewPts = Math.min(28, Math.log10(reviews + 1) * 14);
+  const websitePts = hasWebsite ? 12 : 0;
+  return Math.round(
+    Math.min(70, Math.max(18, ratingPts + reviewPts + websitePts)),
+  );
+}
+
+/**
+ * Recompute leadScore / qualityTier from fields already on the lead row.
+ * Use after the scoring rules change, or for admin bulk fix.
+ */
+export function scoreLeadFromStoredFields(lead: {
+  googleRating?: number | null;
+  reviewCount?: number | null;
+  website?: string | null;
+  email?: string | null;
+  ownerName?: string | null;
+  phone?: string | null;
+  linkedinUrl?: string | null;
+  linkedinCompanyUrl?: string | null;
+  linkedinOwnerUrl?: string | null;
+  facebook?: string | null;
+  instagram?: string | null;
+  youtube?: string | null;
+  tiktok?: string | null;
+}): { leadScore: number; qualityTier: "hot" | "warm" | "nurture" } {
+  const base = baseScoreFromStoredSignals(lead);
+  return finalizeLeadScore(base, {
+    hasWebsite: Boolean(lead.website?.trim()),
+    hasEmail: Boolean(lead.email?.trim()),
+    hasOwner: Boolean(lead.ownerName?.trim()),
+    hasLinkedIn: Boolean(
+      lead.linkedinUrl?.trim() ||
+        lead.linkedinCompanyUrl?.trim() ||
+        lead.linkedinOwnerUrl?.trim(),
+    ),
+    hasSocial: Boolean(
+      lead.facebook?.trim() ||
+        lead.instagram?.trim() ||
+        lead.youtube?.trim() ||
+        lead.tiktok?.trim(),
+    ),
+    hasPhone: Boolean(lead.phone?.trim()),
+  });
+}
+
 /**
  * Rules-only base score from Google Places signals (before enrichment).
  * Intentionally capped well below 100 — completeness finalizes the score.

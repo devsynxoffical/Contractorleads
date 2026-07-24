@@ -21,6 +21,7 @@ type Busy =
   | "load"
   | "create"
   | "delete"
+  | "rescore"
   | "export-csv"
   | "export-xlsx"
   | "export-sel-csv"
@@ -265,6 +266,43 @@ export default function AdminLeadsPage() {
       resolvedIndustryForQuery(filterIndustrySelect, filterCustomIndustry),
     );
 
+  async function rescoreLeads() {
+    if (busy) return;
+    const scope = selected.size
+      ? `${selected.size} selected lead(s)`
+      : hasActiveFilters
+        ? "leads matching current filters"
+        : "ALL leads in the pool";
+    if (
+      !confirm(
+        `Recalculate scores for ${scope}?\n\nScore 100 only when website, email, owner, LinkedIn, and social are all present.`,
+      )
+    ) {
+      return;
+    }
+    setBusy("rescore");
+    startNavigationProgress();
+    try {
+      const res = await fetch(`/api/admin/leads/rescore?${filterParams}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(selected.size ? { ids: [...selected] } : {}),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage(data.error ?? "Rescore failed");
+        return;
+      }
+      setMessage(
+        `Rescored ${data.scanned} lead(s): ${data.updated} updated, ${data.unchanged} unchanged.`,
+      );
+      await load();
+    } finally {
+      setBusy(null);
+      stopNavigationProgress();
+    }
+  }
+
   const industryOptions = Array.from(
     new Set([
       ...categories,
@@ -291,6 +329,18 @@ export default function AdminLeadsPage() {
               {busy === "delete"
                 ? "Deleting…"
                 : `Delete selected (${selected.size})`}
+            </Button>
+            <Button
+              variant="secondary"
+              loading={busy === "rescore"}
+              disabled={!!busy}
+              onClick={rescoreLeads}
+            >
+              {busy === "rescore"
+                ? "Rescoring…"
+                : selected.size
+                  ? `Fix scores (${selected.size})`
+                  : "Fix scores"}
             </Button>
             <Button
               variant="secondary"
@@ -652,7 +702,11 @@ export default function AdminLeadsPage() {
                   <td className="px-4 py-3">
                     <p className="font-semibold text-ink">{lead.businessName}</p>
                     <p className="text-[12px] text-ink-muted">
-                      {lead.ownerName || lead.phone || lead.email || "—"}
+                      {lead.ownerName
+                        ? lead.ownerName
+                        : lead.phone
+                          ? `No owner · ${lead.phone}`
+                          : lead.email || "No owner"}
                     </p>
                   </td>
                   <td className="px-4 py-3">{lead.industry}</td>
