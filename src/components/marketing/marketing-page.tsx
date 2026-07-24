@@ -63,6 +63,7 @@ import {
   FooterReveal,
   usePrefersReducedMotion,
 } from "./marketing-motion";
+import { FooterLivePurchases } from "./footer-live-purchases";
 import { MarketingFluidHero } from "./marketing-fluid-hero";
 import { MarketingInteractiveDemo } from "./marketing-interactive-demo";
 import { MarketingAutomationShowcase } from "./marketing-automation-showcase";
@@ -1089,7 +1090,13 @@ function Footer() {
           ))}
         </div>
 
-        <div className="mt-14 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-6 text-[12px] text-white/40 sm:flex-row">
+        <FooterReveal delay={0.28}>
+          <div className="mt-12 border-t border-white/10 pt-8">
+            <FooterLivePurchases />
+          </div>
+        </FooterReveal>
+
+        <div className="mt-4 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-6 text-[12px] text-white/40 sm:flex-row">
           <p>© {new Date().getFullYear()} Contractor Leads. All rights reserved.</p>
           <p className="text-white/30">Built for agencies that sell to contractors.</p>
         </div>
