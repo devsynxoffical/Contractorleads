@@ -42,7 +42,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     plan = (await planFromSubscription(sub)) || plan;
   }
 
-  if (!plan || plan === "trial" || plan === "enterprise") {
+  if (!plan || plan === "enterprise") {
     plan = normalizePlan(session.metadata?.plan || "starter");
   }
 
@@ -118,7 +118,7 @@ async function handleSubscriptionDeleted(sub: Stripe.Subscription) {
 
   await syncUserSubscription({
     userId,
-    plan: "trial",
+    plan: "starter",
     subscriptionStatus: "canceled",
     stripeCustomerId:
       typeof sub.customer === "string" ? sub.customer : sub.customer?.id,
@@ -168,7 +168,7 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
     plan = normalizePlan(existing?.plan);
   }
 
-  if (plan === "trial" || plan === "enterprise") return;
+  if (plan === "enterprise") return;
 
   await syncUserSubscription({
     userId,

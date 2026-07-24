@@ -77,7 +77,7 @@ export function MarketingStickyCta() {
           animate={reduced ? undefined : { scale: [1, 1.35, 1] }}
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
         />
-        Start free — trial credits included
+        Start free — 10 leads included
         <span
           className="rounded-full px-2 py-0.5 text-[11px] text-white"
           style={{ background: LOGO_GRADIENT }}
@@ -126,7 +126,7 @@ export function MarketingNavLinks({
 export function FinalCtaActions() {
   const reduced = usePrefersReducedMotion();
   const items = [
-    { type: "link" as const, href: "/register", primary: true, label: "Start free trial" },
+    { type: "link" as const, href: "/register", primary: true, label: "Get started free" },
     { type: "link" as const, href: "/login", primary: false, label: "Sign in" },
   ];
 

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ADMIN_STAFF_ROLES, hashPassword, requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ADMIN_PLANS } from "@/lib/admin";
+import { STARTER_FREE_CREDITS } from "@/lib/plans";
 import { logActivity } from "@/lib/credits";
 
 export async function GET(request: Request) {
@@ -92,11 +93,11 @@ export async function POST(request: Request) {
   const plan =
     typeof body.plan === "string" && planValues.includes(body.plan as never)
       ? body.plan
-      : "trial";
+      : "starter";
   const creditsRemaining =
     typeof body.creditsRemaining === "number" && body.creditsRemaining >= 0
       ? body.creditsRemaining
-      : 20;
+      : STARTER_FREE_CREDITS;
 
   if (!email || !password || password.length < 8) {
     return NextResponse.json(
@@ -116,7 +117,7 @@ export async function POST(request: Request) {
         ownerEmail,
         ownerPhone,
         plan,
-        subscriptionStatus: plan === "trial" ? "trialing" : "active",
+        subscriptionStatus: plan === "starter" ? "trialing" : "active",
         creditsRemaining,
         onboardingComplete: Boolean(body.onboardingComplete),
         role: "USER",

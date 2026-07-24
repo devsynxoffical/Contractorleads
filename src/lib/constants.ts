@@ -209,7 +209,7 @@ export const LEAD_STATUSES = [
 ] as const;
 
 export const CREDIT_COSTS = {
-  /** Credits charged to unlock / export one lead (search itself is free). */
+  /** Credits charged to export one lead (search + in-app view are free). */
   lead: 1.33,
   search: 0,
   assistant: 1.59,

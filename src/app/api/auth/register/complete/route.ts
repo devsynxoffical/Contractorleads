@@ -7,11 +7,11 @@ import {
 } from "@/lib/auth";
 import { linkMarketingVisitorToUser } from "@/lib/marketing-session";
 import { sendWelcomeEmail } from "@/lib/email";
+import { STARTER_FREE_CREDITS } from "@/lib/plans";
 import {
   applyReferralOnSignup,
   ensureReferralCode,
 } from "@/lib/referrals";
-
 /**
  * Step 2: after email verification link — create account with password and log in.
  */
@@ -65,7 +65,9 @@ export async function POST(request: Request) {
         name: pending.name,
         passwordHash: await hashPassword(passwordStr),
         emailVerifiedAt: new Date(),
-        creditsRemaining: 13.3,
+        plan: "starter",
+        subscriptionStatus: "trialing",
+        creditsRemaining: STARTER_FREE_CREDITS,
       },
     });
 

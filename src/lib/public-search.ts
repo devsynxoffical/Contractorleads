@@ -11,8 +11,11 @@ import {
 } from "@/lib/api-access";
 import {
   assertSearchRateLimit,
+  getLeadGenerationCapacity,
+  leadLimitPayload,
   redactLeadsForUser,
 } from "@/lib/lead-access";
+import { CREDIT_COSTS } from "@/lib/constants";
 
 const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
@@ -215,6 +218,11 @@ export async function handlePublicSearch(
       return jsonWithCors({ error: rate.error }, { status: 429 });
     }
 
+    const capacity = await getLeadGenerationCapacity(integration.user.id);
+    if (capacity.available < 1) {
+      return jsonWithCors(leadLimitPayload(capacity), { status: 402 });
+    }
+
     const quota = await consumeApiUsage(integration.user.id, 1);
     if (!quota.ok) {
       return jsonWithCors(
@@ -223,9 +231,15 @@ export async function handlePublicSearch(
       );
     }
 
+    const targetLeadCount = Math.min(
+      resolved.criteria.targetLeadCount,
+      capacity.available,
+    );
+
     const result = await runLeadPipeline({
       userId: integration.user.id,
       ...resolved.criteria,
+      targetLeadCount,
     });
 
     await logActivity(
@@ -250,12 +264,16 @@ export async function handlePublicSearch(
       kind,
       search: result.search,
       leads: redacted,
+      capacity: await getLeadGenerationCapacity(integration.user.id),
       meta: {
         ...result.meta,
+        requestedLeadCount: resolved.criteria.targetLeadCount,
+        targetLeadCount,
+        cappedByLeadLimit: targetLeadCount < resolved.criteria.targetLeadCount,
         billing: {
           searchCharged: 0,
-          unlockCostPerLead: 1.33,
-          note: "Contacts are redacted until unlocked via the app (1.33 credits each).",
+          exportCostPerLead: CREDIT_COSTS.lead,
+          note: "Generation is capped by remaining lead capacity. Export spends 1.33 credits per lead.",
         },
       },
       quota: { used: quota.used, limit: quota.limit },

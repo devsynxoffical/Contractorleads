@@ -26,7 +26,7 @@ export const PLAN_MATRIX_GROUPS: PlanMatrixGroup[] = [
     label: "Getting started",
     rows: [
       {
-        feature: "Free trial — first 10 leads on us",
+        feature: "10 free leads on signup — pay after you scrape them",
         starter: "✓",
         growth: "—",
         agency: "—",
@@ -208,12 +208,12 @@ export const MARKETING_PLANS: MarketingPlanCard[] = [
   {
     id: "starter",
     name: "Starter",
-    blurb: "Start generating and closing contractor leads — free trial included.",
+    blurb: "Start free with 10 leads, then subscribe when you're ready to scale.",
     priceMonthly: 19.99,
     priceAnnualMonthly: 15.99,
     leadsIncluded: 1000,
     creditsLabel: "1,330 credits / mo (1,000 leads)",
-    creditsDetail: "1.33 credits per lead · 10 free leads on signup to start",
+    creditsDetail: "1.33 credits per lead · 10 free leads included to start — pay after you use them",
     ctaLabel: "Get started free",
     ctaHref: "/register",
     trialOffer: true,
@@ -239,7 +239,7 @@ export const MARKETING_PLANS: MarketingPlanCard[] = [
     creditsDetail: "1.33 credits per lead · best for daily outreach",
     ctaLabel: "Buy now",
     ctaHref: "/register",
-    secondaryCtaLabel: "Start free trial",
+    secondaryCtaLabel: "Get started free",
     secondaryCtaHref: "/register",
     popular: true,
     features: [

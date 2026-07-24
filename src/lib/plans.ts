@@ -1,10 +1,9 @@
 /**
- * Product plans: Starter → Growth → Agency → Enterprise (+ trial).
- * Legacy "pro" maps to Growth.
+ * Product plans: Starter → Growth → Agency → Enterprise.
+ * Legacy "trial" / "pro" map via normalizePlan.
  */
 
 export const PLAN_IDS = [
-  "trial",
   "starter",
   "growth",
   "agency",
@@ -26,15 +25,17 @@ export type PlanFeatures = {
 };
 
 export const ADMIN_PLANS = [
-  { value: "trial", label: "Free Trial", priceMonthly: 0 },
   { value: "starter", label: "Starter", priceMonthly: 19.99 },
   { value: "growth", label: "Growth", priceMonthly: 49 },
   { value: "agency", label: "Agency", priceMonthly: 99 },
   { value: "enterprise", label: "Enterprise", priceMonthly: 0 },
 ] as const;
 
+/** Free leads included on signup / unpaid Starter (credits ÷ 1.33). */
+export const STARTER_FREE_LEADS = 10;
+export const STARTER_FREE_CREDITS = 13.3;
+
 export const PLAN_API_LIMITS: Record<PlanId, number> = {
-  trial: 25,
   starter: 100,
   growth: 1500,
   agency: 8000,
@@ -43,7 +44,6 @@ export const PLAN_API_LIMITS: Record<PlanId, number> = {
 
 /** Soft seat caps (owner counts as 1). */
 export const TEAM_SEAT_LIMITS: Record<PlanId, number> = {
-  trial: 1,
   starter: 1,
   growth: 1,
   agency: 5,
@@ -51,16 +51,6 @@ export const TEAM_SEAT_LIMITS: Record<PlanId, number> = {
 };
 
 export const PLAN_FEATURES: Record<PlanId, PlanFeatures> = {
-  trial: {
-    api: false,
-    mcp: false,
-    sso: false,
-    teams: false,
-    map: false,
-    crm: false,
-    reports: false,
-    workspaces: false,
-  },
   starter: {
     api: false,
     mcp: false,
@@ -104,11 +94,12 @@ export const PLAN_FEATURES: Record<PlanId, PlanFeatures> = {
 };
 
 export function normalizePlan(plan: string | null | undefined): PlanId {
-  const p = String(plan || "trial").toLowerCase().trim();
+  const p = String(plan || "starter").toLowerCase().trim();
   if (p === "pro") return "growth";
-  if (p === "free" || p === "trialing") return "trial";
+  // Legacy Free Trial accounts → Starter
+  if (p === "free" || p === "trial" || p === "trialing") return "starter";
   if ((PLAN_IDS as readonly string[]).includes(p)) return p as PlanId;
-  return "trial";
+  return "starter";
 }
 
 export function planLabel(plan: string | null | undefined) {

@@ -135,7 +135,7 @@ function sampleList(names: string[]) {
     </table>`;
 }
 
-/** Site-style header: logo, nav, Sign in, Start free trial */
+/** Site-style header: logo, nav, Sign in, Get started free */
 function emailHeader(loginUrl: string, registerUrl: string, logo: string) {
   const site = EMAIL_BRAND.siteUrl;
   return `
@@ -159,7 +159,7 @@ function emailHeader(loginUrl: string, registerUrl: string, logo: string) {
           </td>
           <td align="right" style="vertical-align:middle;">
             <a href="${esc(loginUrl)}" style="font-family:${EMAIL_FONT};font-size:12px;font-weight:500;color:${EMAIL_BRAND.muted};text-decoration:none;padding-right:10px;">Sign in</a>
-            <a href="${esc(registerUrl)}" style="display:inline-block;padding:9px 14px;font-family:${EMAIL_FONT};font-size:12px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:10px;background:${EMAIL_BRAND.buttonBg};background-image:${EMAIL_BRAND.buttonGradient};">Start free trial</a>
+            <a href="${esc(registerUrl)}" style="display:inline-block;padding:9px 14px;font-family:${EMAIL_FONT};font-size:12px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:10px;background:${EMAIL_BRAND.buttonBg};background-image:${EMAIL_BRAND.buttonGradient};">Get started free</a>
           </td>
         </tr>
       </table>
@@ -230,7 +230,7 @@ function emailFooter(opts: {
             <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
               <tr>
                 <td style="padding-bottom:8px;">
-                  ${whitePillButton("Start free trial", opts.registerUrl)}
+                  ${whitePillButton("Get started free", opts.registerUrl)}
                 </td>
               </tr>
               <tr>
@@ -375,7 +375,7 @@ export function renderEmailShell(params: {
     params.heroSubtitle,
     "",
     "Sign in: " + loginUrl,
-    "Start free trial: " + registerUrl,
+    "Get started free: " + registerUrl,
     "",
     "Email preferences: " + prefs,
     "Unsubscribe: " + unsub,

@@ -256,7 +256,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
       },
       {
         heading: "Step 4 — Result size and credits",
-        body: "Each lead returned costs 1.33 credits. A pull of 20 leads ≈ 26.6 credits. While learning the UI, use smaller batches. Scale only after you confirm industry + geo fit and that your team can work the list the same day.",
+        body: "You can only generate as many leads as your credit balance allows (1.33 credits ≈ 1 lead slot). Unexported leads also count against that limit. Viewing is free; export spends credits. Example: 100 credits ≈ 75 leads — you cannot generate 200 until you export or buy more.",
         bullets: [
           "Credits are spent on returned leads, not on empty curiosity clicks",
           "Re-running the same search again spends credits again — save keepers instead",
@@ -560,7 +560,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
     category: "billing",
     title: "Plans, credits, and billing (full breakdown)",
     summary:
-      "Credit burn rates, plan ladder (Trial → Starter → Growth → Agency → Enterprise), feature unlocks, and what to do when you hit 402.",
+      "Credit burn rates, plan ladder (Starter → Growth → Agency → Enterprise), feature unlocks, and what to do when you hit 402.",
     readingMinutes: 10,
     updatedAt: "2026-07-23",
     tags: ["credits", "plans", "upgrade", "billing"],
@@ -569,7 +569,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
         heading: "Credit costs",
         body: "Credits power search and AI. Typical costs:",
         bullets: [
-          "Lead Finder: 1.33 credits per lead returned",
+          "Lead Finder: capped by credit lead limit; export 1.33 credits per lead",
           "Ask Expert / AI assistant: about 1.59 credits per use",
         ],
         tip: "Product how-tos in Academy and the support bot do not replace Ask Expert for strategy — and they do not burn Ask Expert credits the same way.",
@@ -578,8 +578,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
         heading: "Plan ladder and list prices (defaults)",
         body: "Exact prices can be edited by admin, but the product ladder is:",
         bullets: [
-          "Free Trial — explore; limited features",
-          "Starter (~$19.99/mo) — core search & CRM; no map/API by default",
+          "Starter — 10 free leads on signup, then subscribe (~$19.99/mo) for 1,000 leads/mo; core search & CRM",
           "Growth (~$49/mo) — API, MCP, map, CRM webhooks",
           "Agency (~$99/mo) — teams, SSO, reports, workspaces + Growth features",
           "Enterprise — highest limits; custom pricing",
@@ -966,7 +965,7 @@ export const ACADEMY_FAQS: AcademyFaq[] = [
     category: "billing",
     question: "How many credits does a search cost?",
     answer:
-      "Lead Finder charges 1.33 credits per lead returned (example: 20 leads ≈ 26.6 credits). Ask Expert uses about 1.59 credits per request. Check Plans & Billing for your balance.",
+      "Lead Finder generation is capped by your remaining credits (and unexported leads already in your account). Viewing is free. Export costs 1.33 credits per lead. Ask Expert uses about 1.59 credits per request. Check Plans & Billing for your balance.",
     relatedSlugs: ["plans-credits-billing", "five-mistakes-that-waste-credits"],
   },
   {

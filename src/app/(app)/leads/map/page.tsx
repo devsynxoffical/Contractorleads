@@ -37,20 +37,12 @@ export default async function LeadMapPage() {
     },
   });
 
-  const { getUnlockedLeadIds } = await import("@/lib/lead-access");
-  const unlocked = await getUnlockedLeadIds(
-    user.id,
-    leads.map((l) => l.id),
-  );
-  // Exact coordinates only for unlocked leads (anti-scrape)
-  const plottable = leads.filter((l) => unlocked.has(l.id));
-
   const geoLeads = [];
   const backfill: Array<{ id: string; latitude: number; longitude: number }> =
     [];
   let unmapped = 0;
 
-  for (const l of plottable) {
+  for (const l of leads) {
     const coords = resolveLeadCoords(l);
     if (!coords) {
       unmapped += 1;
@@ -101,14 +93,11 @@ export default async function LeadMapPage() {
     );
   }
 
-  const lockedOffMap = leads.length - plottable.length;
   const description =
     geoLeads.length === 0
-      ? lockedOffMap > 0
-        ? `${lockedOffMap} lead${lockedOffMap === 1 ? "" : "s"} found — unlock them to plot exact map pins.`
-        : "No mappable leads yet. Generate leads in Lead Finder to drop pins."
-      : lockedOffMap > 0 || unmapped > 0
-        ? `${geoLeads.length} unlocked pin${geoLeads.length === 1 ? "" : "s"} · ${lockedOffMap} locked · ${unmapped} missing coordinates.`
+      ? "No mappable leads yet. Generate leads in Lead Finder to drop pins."
+      : unmapped > 0
+        ? `${geoLeads.length} pin${geoLeads.length === 1 ? "" : "s"} · ${unmapped} missing coordinates.`
         : `${geoLeads.length} lead pin${geoLeads.length === 1 ? "" : "s"} from your searches.`;
 
   return (

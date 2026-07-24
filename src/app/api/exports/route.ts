@@ -41,7 +41,24 @@ async function loadUserLeads(userId: string, scope: Scope) {
   });
 }
 
-function exportResponse(leads: ExportLead[], format: "csv" | "xlsx") {
+function exportResponse(
+  leads: ExportLead[],
+  format: "csv" | "xlsx",
+  meta?: {
+    requested: number;
+    exported: number;
+    skippedForCredits: number;
+    charged: number;
+  },
+) {
+  const headers: Record<string, string> = {};
+  if (meta) {
+    headers["X-Export-Requested"] = String(meta.requested);
+    headers["X-Export-Count"] = String(meta.exported);
+    headers["X-Export-Skipped"] = String(meta.skippedForCredits);
+    headers["X-Export-Charged"] = String(meta.charged);
+  }
+
   if (format === "xlsx") {
     return leadsToExcel(leads).then(
       (buffer) =>
@@ -50,6 +67,7 @@ function exportResponse(leads: ExportLead[], format: "csv" | "xlsx") {
             "Content-Type":
               "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             "Content-Disposition": `attachment; filename="leadflow-export.xlsx"`,
+            ...headers,
           },
         }),
     );
@@ -61,55 +79,96 @@ function exportResponse(leads: ExportLead[], format: "csv" | "xlsx") {
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
         "Content-Disposition": `attachment; filename="leadflow-export.csv"`,
+        ...headers,
       },
     }),
   );
 }
 
-async function chargeUnlocksForExport(userId: string, leadIds: string[]) {
-  const unlocked = await getUnlockedLeadIds(userId, leadIds);
-  const locked = leadIds.filter((id) => !unlocked.has(id));
-  if (!locked.length) {
-    return { ok: true as const, charged: 0 };
+/**
+ * View is free. Credits are spent only when exporting.
+ * Already-exported leads re-export free. New exports cost CREDIT_COSTS.lead each,
+ * limited by remaining balance (partial export when credits < locked count).
+ */
+async function billAndSelectForExport<T extends { id: string }>(
+  userId: string,
+  leads: T[],
+) {
+  const ids = leads.map((l) => l.id);
+  const unlocked = await getUnlockedLeadIds(userId, ids);
+  const alreadyPaid = leads.filter((l) => unlocked.has(l.id));
+  const unpaid = leads.filter((l) => !unlocked.has(l.id));
+
+  if (!unpaid.length) {
+    return {
+      ok: true as const,
+      exportLeads: leads,
+      charged: 0,
+      skippedForCredits: 0,
+      requested: leads.length,
+    };
   }
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { creditsRemaining: true },
   });
-  const needed =
-    Math.round(CREDIT_COSTS.lead * locked.length * 100) / 100;
   const balance = user?.creditsRemaining ?? 0;
-  if (balance < needed) {
+  const maxAffordable = Math.floor(balance / CREDIT_COSTS.lead + 1e-9);
+
+  if (maxAffordable <= 0 && alreadyPaid.length === 0) {
+    const needed =
+      Math.round(CREDIT_COSTS.lead * unpaid.length * 100) / 100;
     return {
       ok: false as const,
       response: NextResponse.json(
         {
           ...insufficientCreditsPayload(needed, balance),
-          lockedCount: locked.length,
-          tip: "Unlock fewer leads, or upgrade your plan on Billing.",
+          lockedCount: unpaid.length,
+          maxExportable: 0,
+          tip: "Purchase credits on Billing, then export. Search and viewing stay free.",
         },
         { status: 402 },
       ),
     };
   }
 
-  try {
-    const result = await unlockLeads({ userId, leadIds: locked });
-    return { ok: true as const, charged: result.charged };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Unlock failed";
-    if (message === "INSUFFICIENT_CREDITS") {
-      return {
-        ok: false as const,
-        response: NextResponse.json(
-          insufficientCreditsPayload(needed, balance),
-          { status: 402 },
-        ),
-      };
+  const toCharge = unpaid.slice(0, Math.max(0, maxAffordable));
+  const skipped = unpaid.slice(toCharge.length);
+  const exportLeads = [...alreadyPaid, ...toCharge];
+
+  let charged = 0;
+  if (toCharge.length) {
+    try {
+      const result = await unlockLeads({
+        userId,
+        leadIds: toCharge.map((l) => l.id),
+      });
+      charged = result.charged;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Export billing failed";
+      if (message === "INSUFFICIENT_CREDITS") {
+        const needed =
+          Math.round(CREDIT_COSTS.lead * toCharge.length * 100) / 100;
+        return {
+          ok: false as const,
+          response: NextResponse.json(
+            insufficientCreditsPayload(needed, balance),
+            { status: 402 },
+          ),
+        };
+      }
+      throw err;
     }
-    throw err;
   }
+
+  return {
+    ok: true as const,
+    exportLeads,
+    charged,
+    skippedForCredits: skipped.length,
+    requested: leads.length,
+  };
 }
 
 export async function GET(request: Request) {
@@ -129,29 +188,35 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "No leads to export" }, { status: 400 });
   }
 
-  const billed = await chargeUnlocksForExport(
-    user.id,
-    leads.map((l) => l.id),
-  );
+  const billed = await billAndSelectForExport(user.id, leads);
   if (!billed.ok) return billed.response;
 
+  const exportLeads = billed.exportLeads;
   await prisma.export.create({
     data: {
       userId: user.id,
       format,
-      leadIds: JSON.stringify(leads.map((l) => l.id)),
+      leadIds: JSON.stringify(exportLeads.map((l) => l.id)),
     },
   });
 
+  const skipNote = billed.skippedForCredits
+    ? ` · ${billed.skippedForCredits} skipped (credits)`
+    : "";
   await logActivity(
     user.id,
     "export",
-    `Exported ${leads.length} ${scope} leads as ${format}${
-      billed.charged ? ` (unlocked ${billed.charged} credits)` : ""
-    }`,
+    `Exported ${exportLeads.length}/${billed.requested} ${scope} leads as ${format}${
+      billed.charged ? ` (${billed.charged} credits)` : ""
+    }${skipNote}`,
   );
 
-  return exportResponse(leads as ExportLead[], format);
+  return exportResponse(exportLeads as ExportLead[], format, {
+    requested: billed.requested,
+    exported: exportLeads.length,
+    skippedForCredits: billed.skippedForCredits,
+    charged: billed.charged,
+  });
 }
 
 export async function POST(request: Request) {
@@ -182,27 +247,39 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No leads found" }, { status: 404 });
   }
 
-  const billed = await chargeUnlocksForExport(
-    user.id,
-    leads.map((l) => l.id),
-  );
+  // Preserve request order when possible
+  const byId = new Map(leads.map((l) => [l.id, l]));
+  const ordered = (leadIds as string[])
+    .map((id) => byId.get(id))
+    .filter((l): l is (typeof leads)[number] => Boolean(l));
+
+  const billed = await billAndSelectForExport(user.id, ordered);
   if (!billed.ok) return billed.response;
 
+  const exportLeads = billed.exportLeads;
   await prisma.export.create({
     data: {
       userId: user.id,
       format,
-      leadIds: JSON.stringify(leads.map((l) => l.id)),
+      leadIds: JSON.stringify(exportLeads.map((l) => l.id)),
     },
   });
 
+  const skipNote = billed.skippedForCredits
+    ? ` · ${billed.skippedForCredits} skipped (credits)`
+    : "";
   await logActivity(
     user.id,
     "export",
-    `Exported ${leads.length} leads as ${format}${
-      billed.charged ? ` (unlocked ${billed.charged} credits)` : ""
-    }`,
+    `Exported ${exportLeads.length}/${billed.requested} leads as ${format}${
+      billed.charged ? ` (${billed.charged} credits)` : ""
+    }${skipNote}`,
   );
 
-  return exportResponse(leads as ExportLead[], format);
+  return exportResponse(exportLeads as unknown as ExportLead[], format, {
+    requested: billed.requested,
+    exported: exportLeads.length,
+    skippedForCredits: billed.skippedForCredits,
+    charged: billed.charged,
+  });
 }

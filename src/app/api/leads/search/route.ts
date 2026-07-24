@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/credits";
 import { runLeadPipeline } from "@/lib/services/lead-pipeline";
 import { resolveSearchCriteria, formatSearchLabel } from "@/lib/search-criteria";
@@ -8,11 +7,23 @@ import { sendLeadScrapeEmail } from "@/lib/email";
 import { appBaseUrl } from "@/lib/email-brand";
 import {
   assertSearchRateLimit,
-  redactLeadsForUser,
+  getLeadGenerationCapacity,
+  leadLimitPayload,
 } from "@/lib/lead-access";
+import { CREDIT_COSTS } from "@/lib/constants";
 
 /** Large volume searches can run several minutes. */
 export const maxDuration = 300;
+
+/** Remaining lead generation capacity for the signed-in user. */
+export async function GET() {
+  const user = await getSessionUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const capacity = await getLeadGenerationCapacity(user.id);
+  return NextResponse.json({ capacity });
+}
 
 export async function POST(request: Request) {
   const user = await getSessionUser();
@@ -32,6 +43,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: resolved.error }, { status: 400 });
     }
 
+    const capacity = await getLeadGenerationCapacity(user.id);
+    if (capacity.available < 1) {
+      return NextResponse.json(leadLimitPayload(capacity), { status: 402 });
+    }
+
     const {
       industry,
       country,
@@ -42,8 +58,11 @@ export async function POST(request: Request) {
       customLocation,
       radius,
       requireSocialPresence,
-      targetLeadCount,
+      targetLeadCount: requestedCount,
     } = resolved.criteria;
+
+    const targetLeadCount = Math.min(requestedCount, capacity.available);
+    const capped = targetLeadCount < requestedCount;
 
     if (!process.env.GOOGLE_PLACES_API_KEY) {
       return NextResponse.json(
@@ -73,13 +92,16 @@ export async function POST(request: Request) {
       result.meta.requireSocialPresence && result.meta.skippedNoSocial > 0
         ? ` (${result.meta.skippedNoSocial} skipped — missing LinkedIn, social, or owner)`
         : "";
+    const capNote = capped
+      ? ` (capped to ${targetLeadCount} by lead limit)`
+      : "";
 
     await logActivity(
       user.id,
       "search",
       `Found ${result.leads.length} leads for ${industry} in ${
         locationScope === "country" ? country : state || city || country
-      }${filterNote} (preview — unlock to view contacts)`,
+      }${filterNote}${capNote}`,
       { searchId: result.search.id },
     );
 
@@ -107,23 +129,27 @@ export async function POST(request: Request) {
       searchUrl: `${appBaseUrl()}/leads/search`,
     });
 
-    const credits = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: { creditsRemaining: true },
-    });
+    const freshCapacity = await getLeadGenerationCapacity(user.id);
 
-    const redacted = await redactLeadsForUser(user.id, result.leads);
+    const redacted = result.leads.map((lead) => ({
+      ...lead,
+      unlocked: true,
+    }));
 
     return NextResponse.json({
       search: result.search,
       leads: redacted,
-      creditsRemaining: credits?.creditsRemaining,
+      creditsRemaining: freshCapacity.balance,
+      capacity: freshCapacity,
       meta: {
         ...result.meta,
+        requestedLeadCount: requestedCount,
+        targetLeadCount,
+        cappedByLeadLimit: capped,
         billing: {
           searchCharged: 0,
-          unlockCostPerLead: 1.33,
-          note: "Search is free. Unlock a lead (view contacts) or export to spend credits.",
+          exportCostPerLead: CREDIT_COSTS.lead,
+          note: "You can generate up to your remaining lead limit. Viewing is free; export spends 1.33 credits per lead.",
         },
       },
     });

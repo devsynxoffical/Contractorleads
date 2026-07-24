@@ -107,7 +107,7 @@ export function MarketingPricingSection() {
                     </h3>
                     {plan.trialOffer ? (
                       <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-100">
-                        Free trial
+                        10 free leads
                       </span>
                     ) : null}
                   </div>

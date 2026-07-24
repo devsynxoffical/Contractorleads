@@ -8,7 +8,8 @@ import { ADMIN_STAFF_ROLES } from "@/lib/roles";
 
 /**
  * Paid-plan features require an entitled subscription status.
- * Trial users keep trial entitlements. Staff bypass gates.
+ * Unpaid Starter (trialing / empty) keeps core Starter entitlements.
+ * Staff bypass gates.
  * Client-safe — do not import next/headers or next/server here.
  */
 export function isSubscriptionEntitled(
@@ -17,7 +18,8 @@ export function isSubscriptionEntitled(
 ) {
   const status = (subscriptionStatus || "").toLowerCase().trim();
   const normalized = normalizePlan(plan);
-  if (normalized === "trial") {
+  // Unpaid Starter: signup grant / free 10 leads before subscribe
+  if (normalized === "starter") {
     return status === "" || status === "trialing" || status === "active";
   }
   return status === "active" || status === "trialing";
@@ -39,8 +41,8 @@ export function userHasPlanFeature(
 ) {
   if (isStaffRole(user.role)) return true;
   if (!isSubscriptionEntitled(user.subscriptionStatus, user.plan)) {
-    // Canceled / past_due / unpaid: only trial-level features
-    return Boolean(featuresForPlan("trial")[feature]);
+    // Canceled / past_due / unpaid paid plans: core Starter features only
+    return Boolean(featuresForPlan("starter")[feature]);
   }
   return planHasFeature(user.plan, feature);
 }

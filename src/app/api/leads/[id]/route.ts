@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isLeadUnlocked, redactLead } from "@/lib/lead-access";
 import { CREDIT_COSTS } from "@/lib/constants";
 
 type LeadFrom = "all" | "hot" | "saved";
@@ -86,14 +85,13 @@ export async function GET(
   const nextId =
     idx >= 0 && idx < orderedIds.length - 1 ? orderedIds[idx + 1] : null;
 
-  const unlocked = await isLeadUnlocked(user.id, id);
-
   return NextResponse.json({
-    lead: redactLead(lead, unlocked),
+    lead: { ...lead, unlocked: true },
     unlock: {
-      unlocked,
+      unlocked: true,
       cost: CREDIT_COSTS.lead,
       creditsRemaining: user.creditsRemaining,
+      note: "Viewing is free. Credits are charged only when exporting.",
     },
     navigation: {
       from,

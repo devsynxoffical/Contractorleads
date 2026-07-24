@@ -307,7 +307,7 @@ export function SocialProofBento() {
     {
       type: "stat" as const,
       value: "20",
-      label: "Free trial credits to run your first real search, no card required",
+      label: "10 free leads on Starter to run your first real search — subscribe after you use them",
       span: "sm:col-span-1",
       brand: {
         name: "OpenAI",

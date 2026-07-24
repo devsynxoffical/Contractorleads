@@ -147,7 +147,7 @@ export async function unlockLeads(opts: {
   await deductCredits(
     opts.userId,
     cost,
-    "lead_unlock",
+    "lead_export",
     toUnlock.length === 1 ? toUnlock[0] : `${toUnlock.length}_leads`,
   );
 
@@ -162,8 +162,8 @@ export async function unlockLeads(opts: {
 
   await logActivity(
     opts.userId,
-    "lead_unlock",
-    `Unlocked ${toUnlock.length} lead${toUnlock.length === 1 ? "" : "s"} (${cost} credits)`,
+    "lead_export",
+    `Exported / billed ${toUnlock.length} lead${toUnlock.length === 1 ? "" : "s"} (${cost} credits)`,
     { leadIds: toUnlock, cost },
   );
 
@@ -190,7 +190,7 @@ export async function assertSearchRateLimit(userId: string) {
   if (count >= MAX_PER_HOUR) {
     return {
       ok: false as const,
-      error: `Search rate limit reached (${MAX_PER_HOUR}/hour). Unlock leads you already found, or try again later.`,
+      error: `Search rate limit reached (${MAX_PER_HOUR}/hour). Try again later.`,
     };
   }
   return { ok: true as const };
@@ -202,10 +202,64 @@ export function lockedContactPlaceholder() {
 
 export function insufficientCreditsPayload(needed: number, balance: number) {
   return {
-    error: `Insufficient credits. Unlocking costs ${needed.toFixed(2)} credits (you have ${balance.toFixed(2)}). Purchase or upgrade a plan on Billing.`,
+    error: `Insufficient credits to export. Export costs ${needed.toFixed(2)} credits (you have ${balance.toFixed(2)}). Purchase or upgrade a plan on Billing.`,
     code: "INSUFFICIENT_CREDITS",
     needed,
     balance,
+    upgradeUrl: "/billing",
+  };
+}
+
+/** How many unpaid leads the user can still export with current balance. */
+export function maxExportableFromBalance(balance: number) {
+  return Math.max(0, Math.floor(balance / CREDIT_COSTS.lead + 1e-9));
+}
+
+/**
+ * Lead generation capacity: credit slots minus owned leads not yet exported/paid.
+ * Prevents generating more inventory than the user can export with current credits.
+ */
+export async function getLeadGenerationCapacity(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { creditsRemaining: true },
+  });
+  const balance = user?.creditsRemaining ?? 0;
+  const creditSlots = maxExportableFromBalance(balance);
+
+  const unpaidOwned = await prisma.lead.count({
+    where: {
+      search: { userId },
+      unlocks: { none: { userId } },
+    },
+  });
+
+  const available = Math.max(0, creditSlots - unpaidOwned);
+
+  return {
+    balance,
+    creditSlots,
+    unpaidOwned,
+    available,
+    costPerLead: CREDIT_COSTS.lead,
+  };
+}
+
+export function leadLimitPayload(capacity: {
+  available: number;
+  creditSlots: number;
+  unpaidOwned: number;
+  balance: number;
+}) {
+  return {
+    error:
+      capacity.available <= 0
+        ? capacity.unpaidOwned > 0
+          ? `Lead limit reached. You have ${capacity.unpaidOwned} lead${capacity.unpaidOwned === 1 ? "" : "s"} waiting to export and ${capacity.balance.toFixed(2)} credits (~${capacity.creditSlots} export slots). Export existing leads or purchase more credits on Billing.`
+          : `No lead capacity left. You have ${capacity.balance.toFixed(2)} credits. Purchase a plan on Billing to generate more leads.`
+        : `You can generate at most ${capacity.available} more lead${capacity.available === 1 ? "" : "s"} with your current credits.`,
+    code: "LEAD_LIMIT",
+    ...capacity,
     upgradeUrl: "/billing",
   };
 }

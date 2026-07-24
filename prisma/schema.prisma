@@ -17,14 +17,14 @@ model User {
   phone               String?
   emailVerifiedAt     DateTime?
   role                String   @default("USER")
-  plan                String   @default("trial")
+  plan                String   @default("starter")
   subscriptionStatus  String   @default("trialing")
   stripeCustomerId    String?  @unique
   stripeSubscriptionId String? @unique
   stripePriceId       String?
   isActive            Boolean  @default(true)
   adminNotes          String?
-  creditsRemaining    Float    @default(20)
+  creditsRemaining    Float    @default(13.3)
   onboardingComplete  Boolean  @default(false)
   /// Post-purchase product walkthrough dismissed or finished
   productTourCompleted Boolean @default(false)

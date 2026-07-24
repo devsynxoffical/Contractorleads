@@ -346,9 +346,6 @@ export function LeadDetailView({
 
   const [crmBusy, setCrmBusy] = useState(false);
   const [noteBusy, setNoteBusy] = useState(false);
-  const [unlockBusy, setUnlockBusy] = useState(false);
-  const [unlockCost, setUnlockCost] = useState(1.33);
-  const [unlockError, setUnlockError] = useState<string | null>(null);
 
   function mergeLead(updated: Lead) {
     setLead((prev) => ({
@@ -369,10 +366,6 @@ export function LeadDetailView({
     }
     setLead(data.lead);
     setNavigation(data.navigation ?? null);
-    if (typeof data.unlock?.cost === "number") {
-      setUnlockCost(data.unlock.cost);
-    }
-    setUnlockError(null);
     if (data.lead?.facebookAdsData) {
       try {
         setAdsResult(JSON.parse(data.lead.facebookAdsData));
@@ -593,31 +586,6 @@ export function LeadDetailView({
     }
   }
 
-  async function unlockLead() {
-    setUnlockBusy(true);
-    setUnlockError(null);
-    try {
-      const res = await fetch(`/api/leads/${leadId}/unlock`, {
-        method: "POST",
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setUnlockError(data.error || "Could not unlock");
-        if (res.status === 402 && data.upgradeUrl) {
-          const go = confirm(
-            `${data.error}\n\nOpen Billing to purchase a plan?`,
-          );
-          if (go) window.location.href = data.upgradeUrl;
-        }
-        return;
-      }
-      if (data.lead) mergeLead(data.lead);
-      else await load();
-    } finally {
-      setUnlockBusy(false);
-    }
-  }
-
   if (loadError) {
     return (
       <div className="page-pad">
@@ -669,41 +637,6 @@ export function LeadDetailView({
 
   return (
     <div className="page-pad page-enter">
-      {lead.unlocked === false ? (
-        <div className="mb-5 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-4 sm:px-5">
-          <p className="text-[14px] font-semibold text-ink">
-            Contacts are locked
-          </p>
-          <p className="mt-1 text-[13px] text-ink-muted">
-            Finding leads is free. Unlock this profile for{" "}
-            <span className="font-semibold tabular-nums text-ink">
-              {unlockCost} credits
-            </span>{" "}
-            to see phone, email, website, maps, and export it. Out of credits?
-            Purchase a plan on Billing.
-          </p>
-          {unlockError ? (
-            <p className="mt-2 text-[13px] text-red-600">{unlockError}</p>
-          ) : null}
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              type="button"
-              disabled={unlockBusy}
-              onClick={() => void unlockLead()}
-              className="inline-flex h-9 items-center rounded-xl px-4 text-[13px] font-semibold text-white"
-              style={{ background: LOGO_GRADIENT }}
-            >
-              {unlockBusy ? "Unlocking…" : `Unlock · ${unlockCost} credits`}
-            </button>
-            <Link
-              href="/billing"
-              className="inline-flex h-9 items-center rounded-xl border border-border bg-[var(--surface)] px-4 text-[13px] font-semibold text-ink"
-            >
-              Purchase plan
-            </Link>
-          </div>
-        </div>
-      ) : null}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <Link
           href={BACK_HREF[navFrom]}

@@ -138,12 +138,8 @@ export function LeadResultCard({
                 <Badge variant={tierVariant(lead.qualityTier)}>
                   {lead.qualityTier ?? "nurture"}
                 </Badge>
-                {lead.unlocked === false ? (
-                  <Badge variant="nurture">Locked · 1.33 credits</Badge>
-                ) : (
-                  <Badge variant="verified">AI verified</Badge>
-                )}
-                {lead.unlocked !== false && hasPublicPeople && (
+                <Badge variant="verified">AI verified</Badge>
+                {hasPublicPeople && (
                   <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-emerald-400/30">
                     <HiOutlineUser className="h-3 w-3" />
                     {lead.ownerName
@@ -155,10 +151,7 @@ export function LeadResultCard({
               <p className="mt-1.5 flex items-start gap-1.5 text-[13px] text-ink-muted">
                 <HiOutlineMapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-500" />
               <span className="line-clamp-2">
-                {lead.unlocked === false
-                  ? location.replace(/,?\s*\d{5}(-\d{4})?$/, "") ||
-                    "City preview — unlock for full address"
-                  : lead.address || location}
+                {lead.address || location}
               </span>
               </p>
             </div>
@@ -193,42 +186,28 @@ export function LeadResultCard({
             <div className="flex items-center gap-2 rounded-xl bg-[#faf8fc] px-3 py-2 text-[12px] text-ink-muted">
               <HiOutlineUser className="h-3.5 w-3.5 shrink-0 text-brand-500" />
               <span className="truncate">
-                {lead.unlocked === false
-                  ? "Owner locked"
-                  : lead.ownerName
-                    ? `${lead.ownerName}${lead.ownerTitle ? ` · ${lead.ownerTitle}` : ""}`
-                    : teamCount
-                      ? `${teamCount} public team member${teamCount === 1 ? "" : "s"}`
-                      : lead.peopleEnrichedAt
-                        ? "No public owner found"
-                        : "Owner not checked"}
+                {lead.ownerName
+                  ? `${lead.ownerName}${lead.ownerTitle ? ` · ${lead.ownerTitle}` : ""}`
+                  : teamCount
+                    ? `${teamCount} public team member${teamCount === 1 ? "" : "s"}`
+                    : lead.peopleEnrichedAt
+                      ? "No public owner found"
+                      : "Owner not checked"}
               </span>
             </div>
             <div className="flex items-center gap-2 rounded-xl bg-[#faf8fc] px-3 py-2 text-[12px] text-ink-muted">
               <HiOutlinePhone className="h-3.5 w-3.5 shrink-0 text-brand-500" />
-              <span className="truncate">
-                {lead.unlocked === false
-                  ? "Phone locked"
-                  : lead.phone || "Phone N/A"}
-              </span>
+              <span className="truncate">{lead.phone || "Phone N/A"}</span>
             </div>
             <div className="flex items-center gap-2 rounded-xl bg-[#faf8fc] px-3 py-2 text-[12px] text-ink-muted">
               <HiOutlineGlobeAlt className="h-3.5 w-3.5 shrink-0 text-brand-500" />
               <span className="truncate">
-                {lead.unlocked === false
-                  ? "Website locked"
-                  : lead.website
-                    ? "Website found"
-                    : "No website"}
+                {lead.website ? "Website found" : "No website"}
               </span>
             </div>
             <div className="flex items-center gap-2 rounded-xl bg-[#faf8fc] px-3 py-2 text-[12px] text-ink-muted">
               <HiOutlineEnvelope className="h-3.5 w-3.5 shrink-0 text-brand-500" />
-              <span className="truncate">
-                {lead.unlocked === false
-                  ? "Email locked"
-                  : lead.email || "Email N/A"}
-              </span>
+              <span className="truncate">{lead.email || "Email N/A"}</span>
             </div>
           </div>
 
@@ -245,9 +224,9 @@ export function LeadResultCard({
               className="inline-flex h-9 items-center rounded-xl px-4 text-[12px] font-semibold text-white shadow-sm transition hover:opacity-95"
               style={{ background: LOGO_GRADIENT }}
             >
-              {lead.unlocked === false ? "Unlock profile · 1.33" : "View full profile"}
+              View full profile
             </Link>
-            {lead.unlocked !== false && lead.phone && (
+            {lead.phone && (
               <a
                 href={`tel:${lead.phone}`}
                 className="inline-flex h-9 items-center rounded-xl border border-border bg-white px-3 text-[12px] font-semibold text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
@@ -255,7 +234,7 @@ export function LeadResultCard({
                 Call
               </a>
             )}
-            {lead.unlocked !== false && lead.website && (
+            {lead.website && (
               <a
                 href={lead.website}
                 target="_blank"
@@ -265,7 +244,7 @@ export function LeadResultCard({
                 Website
               </a>
             )}
-            {lead.unlocked !== false && lead.googleMapsLink && (
+            {lead.googleMapsLink && (
               <a
                 href={lead.googleMapsLink}
                 target="_blank"

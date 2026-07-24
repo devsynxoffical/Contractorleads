@@ -197,7 +197,7 @@ export function MarketingFluidHero() {
             Log in
           </Link>
           <Link href="/register" className="mkt-flow-pill">
-            Start free trial
+            Get started free
           </Link>
         </div>
       </header>

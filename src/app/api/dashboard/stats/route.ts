@@ -5,7 +5,6 @@ import { startOfWeek, addDays, format } from "date-fns";
 import { processDueEnrollments } from "@/lib/email-automation";
 import { LEAD_STATUSES } from "@/lib/constants";
 import { normalizeCountryCode, resolveLeadCoords } from "@/lib/geo";
-import { getUnlockedLeadIds } from "@/lib/lead-access";
 import { planHasFeature } from "@/lib/plans";
 import { isSubscriptionEntitled } from "@/lib/plan-access";
 
@@ -340,13 +339,8 @@ export async function GET() {
           leadScore: true,
         },
       });
-      const unlocked = await getUnlockedLeadIds(
-        user.id,
-        rows.map((l) => l.id),
-      );
       const leads = [];
       for (const l of rows) {
-        if (!unlocked.has(l.id)) continue;
         const coords = resolveLeadCoords(l);
         if (!coords) continue;
         leads.push({
@@ -367,7 +361,7 @@ export async function GET() {
       return {
         allowed: true as const,
         leads,
-        lockedCount: rows.length - unlocked.size,
+        lockedCount: 0,
       };
     })(),
   });

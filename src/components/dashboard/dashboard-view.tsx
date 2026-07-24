@@ -408,12 +408,8 @@ export function DashboardView({ user }: { user: SessionUser }) {
               title="Lead map"
               subtitle={
                 data?.map?.leads?.length
-                  ? `${data.map.leads.length} unlocked pin${data.map.leads.length === 1 ? "" : "s"}${
-                      data.map.lockedCount
-                        ? ` · ${data.map.lockedCount} locked`
-                        : ""
-                    }`
-                  : "Unlocked leads with coordinates appear here"
+                  ? `${data.map.leads.length} pin${data.map.leads.length === 1 ? "" : "s"}`
+                  : "Leads with coordinates appear here"
               }
               actions={
                 <Link href="/leads/map" className="hud-btn-ghost text-[12px]">
@@ -425,7 +421,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
                 leads={data?.map?.leads ?? []}
                 compact
                 title="Territory"
-                subtitle="Unlocked lead pins"
+                subtitle="Lead pins"
                 leadDetailBase="/leads"
               />
             </HudPanel>
@@ -442,8 +438,8 @@ export function DashboardView({ user }: { user: SessionUser }) {
               <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-[var(--canvas)]/40 px-4 py-8 text-center">
                 <HiOutlineMap className="h-8 w-8 text-brand-500" />
                 <p className="max-w-sm text-[13px] text-ink-muted">
-                  Map your unlocked Hot leads by city once you upgrade to Growth
-                  or higher.
+                  Map your Hot leads by city once you upgrade to Growth or
+                  higher.
                 </p>
                 <Link href="/billing" className="text-[13px] font-semibold text-brand-600 hover:underline">
                   View plans →

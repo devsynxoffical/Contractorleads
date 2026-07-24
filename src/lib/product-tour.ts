@@ -34,7 +34,7 @@ export const PRODUCT_TOUR_STEPS: ProductTourStep[] = [
   {
     id: "lead-finder",
     title: "Lead Finder — find contractors",
-    body: "Pick an industry, Tier‑1 country, and location scope. Searching is free (up to 1,000 leads). Unlock a lead for 1.33 credits to see phone, email, and website — or export.",
+    body: "Pick an industry, Tier‑1 country, and location scope. You can only generate up to your remaining lead limit (based on credits). Viewing is free; export uses 1.33 credits per lead.",
     bullets: [
       "Entire country for breadth, city/postal for local focus",
       "Scores show Hot / Warm / Nurture",

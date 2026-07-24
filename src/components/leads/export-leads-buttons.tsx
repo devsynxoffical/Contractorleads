@@ -41,7 +41,7 @@ export function ExportLeadsButtons({
         });
       } else {
         res = await fetch(
-          `/api/exports?scope=${scope ?? "all"}&format=${format}`
+          `/api/exports?scope=${scope ?? "all"}&format=${format}`,
         );
       }
 
@@ -58,6 +58,10 @@ export function ExportLeadsButtons({
         return;
       }
 
+      const exported = Number(res.headers.get("X-Export-Count") || 0);
+      const requested = Number(res.headers.get("X-Export-Requested") || 0);
+      const skipped = Number(res.headers.get("X-Export-Skipped") || 0);
+
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -65,6 +69,12 @@ export function ExportLeadsButtons({
       a.download = `leadflow-export.${format === "xlsx" ? "xlsx" : "csv"}`;
       a.click();
       URL.revokeObjectURL(url);
+
+      if (skipped > 0 && exported > 0) {
+        alert(
+          `Exported ${exported} of ${requested} leads. ${skipped} skipped because you need more credits (1.33 per lead). Purchase more on Billing to export the rest.`,
+        );
+      }
     } finally {
       setBusy(null);
       stopNavigationProgress();

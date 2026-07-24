@@ -300,7 +300,7 @@ function ScrollNav() {
               className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px] font-semibold text-white shadow-md shadow-fuchsia-500/20"
               style={{ background: LOGO_GRADIENT }}
             >
-              Start free trial <HiOutlineArrowRight className="h-3.5 w-3.5" />
+              Get started free <HiOutlineArrowRight className="h-3.5 w-3.5" />
             </Link>
           </motion.div>
         </div>
@@ -1076,7 +1076,7 @@ function Pricing() {
             Plans that scale with your closed deals
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-slate-500">
-            Start free with trial credits. Upgrade when your team is booking
+            Start free with 10 leads on Starter. Upgrade when your team is booking
             calls and signing retainers — not before.
           </p>
         </Reveal>
@@ -1173,7 +1173,7 @@ function FinalCta() {
             Ready to feel the need for leads?
           </h2>
           <p className="mx-auto mt-3 max-w-md text-[15px] text-white/80">
-            Start with free trial credits. No card. Ship your first qualified batch today.
+            Start with 10 free leads on Starter. No card required. Ship your first qualified batch today.
           </p>
           <FinalCtaActions />
           <motion.div
@@ -1211,7 +1211,7 @@ function Footer() {
         ["Pricing", "#pricing"],
         ["Integrations", "#features"],
         ["FAQ", "#faq"],
-        ["Start free trial", "/register"],
+        ["Get started free", "/register"],
       ],
     },
     {
@@ -1311,7 +1311,7 @@ function Footer() {
                 href="/register"
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-[#ffffff] px-4 py-2.5 text-[12px] font-semibold text-neutral-900 transition hover:bg-fuchsia-50"
               >
-                Start free trial
+                Get started free
                 <HiOutlineArrowRight className="h-3.5 w-3.5" />
               </Link>
               <Link

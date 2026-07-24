@@ -60,7 +60,7 @@ export default function AdminRevenuePage() {
             .reduce((s, p) => s + p.count, 0)}
         />
         <AdminStatCard
-          label="Trialing"
+          label="Unpaid Starter"
           value={
             data.statusMix.find((s) => s.status === "trialing")?.count ?? 0
           }

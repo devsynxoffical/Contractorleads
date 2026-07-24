@@ -452,8 +452,8 @@ export function LeadGeoMapInner({
                 No mapped leads yet
               </p>
               <p className="max-w-sm text-[13px] text-ink-muted">
-                Unlock leads with coordinates or a Google Maps link to plot
-                pins here.
+                Leads with coordinates or a Google Maps link appear as pins
+                here.
               </p>
             </div>
           )}

@@ -10,13 +10,12 @@ import {
 } from "@/components/layout/page-header";
 import { ExportLeadsButtons } from "@/components/leads/export-leads-buttons";
 import { HiOutlineMagnifyingGlass } from "react-icons/hi2";
-import { redactLeadsForUser } from "@/lib/lead-access";
 
 export default async function HotLeadsPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
-  const raw = await prisma.lead.findMany({
+  const leads = await prisma.lead.findMany({
     where: {
       qualityTier: "hot",
       search: { userId: user.id },
@@ -24,13 +23,12 @@ export default async function HotLeadsPage() {
     orderBy: { leadScore: "desc" },
     take: 50,
   });
-  const leads = await redactLeadsForUser(user.id, raw);
 
   return (
     <div className="page-pad">
       <PageHeader
         title="Hot Leads"
-        description="Highest-scoring verified leads from your searches."
+        description="Highest-scoring verified leads from your searches. Viewing is free — credits are used only when you export."
         actions={
           <>
             <ExportLeadsButtons scope="hot" disabled={!leads.length} />
@@ -57,16 +55,9 @@ export default async function HotLeadsPage() {
                   {lead.businessName}
                 </Link>
                 <p className="mt-1 text-sm text-ink-muted">
-                  {lead.unlocked
-                    ? lead.address ||
-                      [lead.city, lead.state].filter(Boolean).join(", ")
-                    : [lead.city, lead.state].filter(Boolean).join(", ") ||
-                      "Locked — unlock to view address"}
-                  {!lead.unlocked ? (
-                    <span className="ml-2 text-[11px] font-semibold text-amber-700">
-                      Locked
-                    </span>
-                  ) : null}
+                  {lead.address ||
+                    [lead.city, lead.state].filter(Boolean).join(", ") ||
+                    "Location pending"}
                 </p>
               </div>
               <div className="flex items-center gap-2">

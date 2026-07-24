@@ -121,10 +121,35 @@ export function LeadSearchForm() {
   const [city, setCity] = useState("");
   const [requireSocialPresence, setRequireSocialPresence] = useState(true);
   const [targetLeadCount, setTargetLeadCount] = useState(50);
+  const [leadCapacity, setLeadCapacity] = useState<number | null>(null);
   const [filterNote, setFilterNote] = useState<string | null>(null);
   const [stage, setStage] = useState(0);
   const [restoring, setRestoring] = useState(true);
   const searchParams = useSearchParams();
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadCapacity() {
+      try {
+        const res = await fetch("/api/leads/search");
+        const data = await res.json();
+        if (!cancelled && res.ok && typeof data.capacity?.available === "number") {
+          setLeadCapacity(data.capacity.available);
+          setTargetLeadCount((n) =>
+            data.capacity.available > 0
+              ? Math.min(n, data.capacity.available)
+              : n,
+          );
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    void loadCapacity();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const qIndustry = searchParams.get("industry");
@@ -300,6 +325,9 @@ export function LeadSearchForm() {
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || "Search failed");
+        if (typeof data.available === "number") {
+          setLeadCapacity(data.available);
+        }
         setLoading(false);
         setStage(0);
         return;
@@ -307,8 +335,15 @@ export function LeadSearchForm() {
 
       setLeads(data.leads);
       setSelected(new Set(data.leads.map((l: Lead) => l.id)));
+      if (typeof data.capacity?.available === "number") {
+        setLeadCapacity(data.capacity.available);
+      }
       setStage(4);
-      if (data.meta?.requireSocialPresence && data.meta?.skippedNoSocial > 0) {
+      if (data.meta?.cappedByLeadLimit) {
+        setFilterNote(
+          `Requested ${data.meta.requestedLeadCount} leads — capped to ${data.meta.targetLeadCount} by your remaining lead limit. Export existing leads or buy credits to raise the cap.`,
+        );
+      } else if (data.meta?.requireSocialPresence && data.meta?.skippedNoSocial > 0) {
         setFilterNote(
           `Filtered to LinkedIn + social + website owner — skipped ${data.meta.skippedNoSocial} businesses missing those details.`
         );
@@ -426,8 +461,8 @@ export function LeadSearchForm() {
         <div className="stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatChip label="Coverage" value="Tier 1" hint="US · CA · UK · AU · NZ" />
           <StatChip label="Industries" value="12" hint="Roofing → GCs" />
-          <StatChip label="Find" value="Free" hint="Up to 1,000 leads" />
-          <StatChip label="Unlock" value="1.33 credits" hint="View / export" />
+          <StatChip label="Find" value="Free" hint="Up to your lead limit" />
+          <StatChip label="Export" value="1.33 credits" hint="Per lead downloaded" />
         </div>
       </div>
 
@@ -639,19 +674,41 @@ export function LeadSearchForm() {
               <div className="space-y-2">
                 <Label>How many leads</Label>
                 <Select
-                  value={String(targetLeadCount)}
+                  value={String(
+                    leadCapacity != null && leadCapacity > 0
+                      ? Math.min(targetLeadCount, leadCapacity)
+                      : targetLeadCount,
+                  )}
                   onChange={(e) => setTargetLeadCount(Number(e.target.value))}
+                  disabled={leadCapacity === 0}
                 >
-                  {[25, 50, 100, 250, 500, 1000].map((n) => (
-                    <option key={n} value={n}>
-                      {n} leads
-                      {n >= 250 ? " (volume — faster rules scoring)" : ""}
-                    </option>
-                  ))}
+                  {leadCapacity === 0 ? (
+                    <option value={targetLeadCount}>0 leads available</option>
+                  ) : (
+                    [25, 50, 100, 250, 500, 1000]
+                      .filter((n) => leadCapacity == null || n <= leadCapacity)
+                      .concat(
+                        leadCapacity != null &&
+                          leadCapacity > 0 &&
+                          ![25, 50, 100, 250, 500, 1000].includes(leadCapacity)
+                          ? [leadCapacity]
+                          : [],
+                      )
+                      .sort((a, b) => a - b)
+                      .map((n) => (
+                        <option key={n} value={n}>
+                          {n} leads
+                          {n >= 250 ? " (volume — faster rules scoring)" : ""}
+                        </option>
+                      ))
+                  )}
                 </Select>
                 <p className="text-[11px] text-ink-muted">
-                  Larger counts scan more Places queries in parallel. Credits scale
-                  every 50 leads.
+                  {leadCapacity == null
+                    ? "Limited by your remaining credits (1.33 credits ≈ 1 exportable lead)."
+                    : leadCapacity <= 0
+                      ? "Lead limit reached — export existing leads or purchase credits on Billing."
+                      : `You can generate up to ${leadCapacity} more lead${leadCapacity === 1 ? "" : "s"} with your current credits. Viewing is free; export spends credits.`}
                 </p>
               </div>
 
@@ -679,6 +736,7 @@ export function LeadSearchForm() {
                   type="submit"
                   className="w-full"
                   loading={loading}
+                  disabled={leadCapacity === 0}
                 >
                   {loading ? (
                     "Verifying pipeline…"
