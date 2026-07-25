@@ -16,6 +16,9 @@ type StripeStatus = {
   publishableKeyHint: string | null;
   webhookSecretConfigured: boolean;
   webhookSecretHint: string | null;
+  priceStarter: string;
+  priceGrowth: string;
+  priceAgency: string;
   checkoutReady: boolean;
   source: string;
   updatedAt: string | null;
@@ -41,6 +44,9 @@ export default function AdminSystemPage() {
   const [secretKey, setSecretKey] = useState("");
   const [publishableKey, setPublishableKey] = useState("");
   const [webhookSecret, setWebhookSecret] = useState("");
+  const [priceStarter, setPriceStarter] = useState("");
+  const [priceGrowth, setPriceGrowth] = useState("");
+  const [priceAgency, setPriceAgency] = useState("");
   const [email, setEmail] = useState<EmailStatus | null>(null);
   const [resendApiKey, setResendApiKey] = useState("");
   const [fromEmail, setFromEmail] = useState("");
@@ -61,6 +67,9 @@ export default function AdminSystemPage() {
     setSecretKey("");
     setPublishableKey("");
     setWebhookSecret("");
+    setPriceStarter(stripeRes.priceStarter || "");
+    setPriceGrowth(stripeRes.priceGrowth || "");
+    setPriceAgency(stripeRes.priceAgency || "");
     setEmail(emailRes);
     setFromEmail(emailRes.fromEmail || "");
     setResendApiKey("");
@@ -111,6 +120,9 @@ export default function AdminSystemPage() {
           secretKey: secretKey.trim() || undefined,
           publishableKey: publishableKey.trim() || undefined,
           webhookSecret: webhookSecret.trim() || undefined,
+          priceStarter,
+          priceGrowth,
+          priceAgency,
         }),
       });
       const json = await res.json();
@@ -118,7 +130,7 @@ export default function AdminSystemPage() {
       setMessage(
         json.checkoutReady
           ? "Stripe settings saved. Checkout is ready."
-          : "Stripe keys saved. Existing checkout configuration is incomplete.",
+          : "Saved. Add secret key + all three live price IDs to enable Checkout.",
       );
       await load();
     } catch (err) {
@@ -246,8 +258,8 @@ export default function AdminSystemPage() {
           <div>
             <h2 className="text-sm font-semibold text-ink">Stripe Billing</h2>
             <p className="mt-1 max-w-2xl text-[13px] text-ink-muted">
-              Add your Stripe API keys below. The webhook signing secret is
-              optional. Existing products and plan price settings stay unchanged.
+              Use live keys with live price IDs (or test with test). Mixing
+              modes causes “No such price” errors on upgrade.
             </p>
           </div>
           {stripe ? (
@@ -353,6 +365,39 @@ export default function AdminSystemPage() {
               Clear saved webhook secret
             </button>
           ) : null}
+
+          <p className="pt-2 text-[12px] font-semibold text-ink">
+            Plan price IDs (from Stripe → Products, Live mode)
+          </p>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <label className="block text-[12px] font-medium text-ink-muted">
+              Starter price ID
+              <input
+                className="saas-input mt-1.5 font-mono text-[13px]"
+                placeholder="price_…"
+                value={priceStarter}
+                onChange={(e) => setPriceStarter(e.target.value)}
+              />
+            </label>
+            <label className="block text-[12px] font-medium text-ink-muted">
+              Growth price ID
+              <input
+                className="saas-input mt-1.5 font-mono text-[13px]"
+                placeholder="price_…"
+                value={priceGrowth}
+                onChange={(e) => setPriceGrowth(e.target.value)}
+              />
+            </label>
+            <label className="block text-[12px] font-medium text-ink-muted">
+              Agency price ID
+              <input
+                className="saas-input mt-1.5 font-mono text-[13px]"
+                placeholder="price_…"
+                value={priceAgency}
+                onChange={(e) => setPriceAgency(e.target.value)}
+              />
+            </label>
+          </div>
 
           <div className="flex flex-wrap items-center gap-3 pt-1">
             <Button type="submit" disabled={busy} size="sm">
