@@ -11,7 +11,8 @@ import {
 } from "@/components/marketing/marketing-plans-data";
 import { normalizePlan, planLabel, featuresForPlan } from "@/lib/plans";
 import { formatCredits } from "@/lib/utils";
-import { isStripeConfigured } from "@/lib/stripe";
+import { getStripe, isStripeConfigured } from "@/lib/stripe";
+import { notifyCheckoutAbandoned } from "@/lib/billing-stripe";
 import { BillingCheckoutButton } from "@/components/billing/billing-checkout-button";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
@@ -19,7 +20,7 @@ import Link from "next/link";
 export default async function BillingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ checkout?: string }>;
+  searchParams: Promise<{ checkout?: string; session_id?: string }>;
 }) {
   const user = await getSessionUser();
   if (!user) redirect("/login");
@@ -28,6 +29,34 @@ export default async function BillingPage({
   const current = normalizePlan(user.plan);
   const features = featuresForPlan(user.plan);
   const stripeReady = await isStripeConfigured();
+
+  // User clicked "back" / canceled on Stripe Checkout — send follow-up email.
+  if (params.checkout === "canceled" && params.session_id && stripeReady) {
+    try {
+      const stripe = await getStripe();
+      const session = await stripe.checkout.sessions.retrieve(params.session_id);
+      if (
+        session &&
+        session.status !== "complete" &&
+        session.payment_status !== "paid"
+      ) {
+        const sessionUserId =
+          session.metadata?.userId ||
+          session.client_reference_id ||
+          null;
+        if (sessionUserId === user.id) {
+          await notifyCheckoutAbandoned({
+            userId: user.id,
+            sessionId: session.id,
+            plan: session.metadata?.plan ?? null,
+            reason: "canceled",
+          });
+        }
+      }
+    } catch (err) {
+      console.error("billing cancel abandoned email", err);
+    }
+  }
 
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },
@@ -52,7 +81,8 @@ export default async function BillingPage({
       ) : null}
       {params.checkout === "canceled" ? (
         <p className="mb-4 rounded-xl border border-border bg-[var(--surface)] px-4 py-3 text-[13px] text-ink-muted">
-          Checkout canceled — no charge was made.
+          Checkout canceled — no charge was made. We emailed you a link to finish
+          whenever you&apos;re ready.
         </p>
       ) : null}
 

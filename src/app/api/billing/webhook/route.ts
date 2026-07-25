@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import {
   extractSubscriptionPriceId,
+  notifyCheckoutAbandoned,
   planFromSubscription,
   resolveUserIdFromStripeCustomer,
   syncUserSubscription,
@@ -57,6 +58,34 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     stripeSubscriptionId: subscriptionId,
     stripePriceId: priceId,
     grantMonthlyCredits: false,
+  });
+}
+
+/** User started Checkout but never paid (left or session timed out). */
+async function handleCheckoutAbandoned(
+  session: Stripe.Checkout.Session,
+  reason: "canceled" | "expired",
+) {
+  // Only incomplete / open / expired unpaid sessions.
+  if (session.status === "complete" || session.payment_status === "paid") {
+    return;
+  }
+
+  const userId =
+    session.metadata?.userId ||
+    session.client_reference_id ||
+    (await resolveUserIdFromStripeCustomer(
+      typeof session.customer === "string"
+        ? session.customer
+        : session.customer?.id,
+    ));
+  if (!userId || !session.id) return;
+
+  await notifyCheckoutAbandoned({
+    userId,
+    sessionId: session.id,
+    plan: session.metadata?.plan ?? null,
+    reason,
   });
 }
 
@@ -211,6 +240,12 @@ export async function POST(request: Request) {
       case "checkout.session.completed":
         await handleCheckoutCompleted(
           event.data.object as Stripe.Checkout.Session,
+        );
+        break;
+      case "checkout.session.expired":
+        await handleCheckoutAbandoned(
+          event.data.object as Stripe.Checkout.Session,
+          "expired",
         );
         break;
       case "customer.subscription.created":

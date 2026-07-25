@@ -541,6 +541,115 @@ export function leadScrapeEmailContent(opts: {
   });
 }
 
+export function purchaseConfirmationEmailContent(opts: {
+  name?: string | null;
+  planName: string;
+  monthlyCredits?: number | null;
+  monthlyLeads?: number | null;
+  isUpgrade?: boolean;
+  dashboardUrl?: string;
+  billingUrl?: string;
+  unsubscribeUrl?: string;
+  preferencesUrl?: string;
+}) {
+  const base = appBaseUrl();
+  const dash = opts.dashboardUrl || `${base}/dashboard`;
+  const billing = opts.billingUrl || `${base}/billing`;
+  const greeting = opts.name ? `Thanks, ${opts.name}!` : "Thank you!";
+  const creditsText =
+    opts.monthlyCredits != null
+      ? `${opts.monthlyCredits.toLocaleString()} credits${
+          opts.monthlyLeads != null
+            ? ` (~${opts.monthlyLeads.toLocaleString()} leads)`
+            : ""
+        } are now on your account each month.`
+      : "Your new monthly credits are now on your account.";
+
+  const bodyHtml = `
+    <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:${EMAIL_BRAND.muted};">
+      ${esc(greeting)} Your payment was successful and your
+      <strong style="font-weight:600;color:${EMAIL_BRAND.ink};">${esc(opts.planName)}</strong>
+      plan is now active. ${esc(creditsText)}
+    </p>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+      ${featureRow("", `${opts.planName} plan active`, "Higher monthly limits and every feature your plan unlocks are live now.")}
+      ${featureRow("", "Credits refreshed", "Run Lead Finder, AI scoring, and outreach — credits renew each billing cycle.", "Open dashboard", dash)}
+      ${featureRow("", "Manage anytime", "Update your plan, payment method, or invoices under Plans & Billing.", "Manage billing", billing)}
+    </table>
+    <div style="margin:28px 0 8px;">
+      ${ctaButton("Go to dashboard", dash)}
+    </div>
+    <p style="margin:16px 0 0;font-size:12px;line-height:1.5;color:${EMAIL_BRAND.faint};">
+      A receipt for this payment is emailed separately by our payment processor (Stripe).
+    </p>`;
+
+  return renderEmailShell({
+    preheader: `Your ${opts.planName} plan is active — thank you for your purchase.`,
+    heroTitle: opts.isUpgrade
+      ? `You're now on ${opts.planName}`
+      : `Welcome to ${opts.planName}`,
+    heroSubtitle: "Payment confirmed — your plan is active and ready to use.",
+    bodyHtml,
+    secondaryHtml: `
+      <p style="margin:0 0 6px;font-family:${EMAIL_FONT};font-size:13px;font-weight:600;color:${EMAIL_BRAND.ink};">Questions about your plan?</p>
+      <p style="margin:0 0 12px;font-size:13px;line-height:1.5;color:${EMAIL_BRAND.muted};">
+        Reply to this email or contact ${esc(EMAIL_BRAND.supportEmail)} and we'll help.
+      </p>
+      ${ctaButton("Manage billing", billing)}`,
+    links: {
+      unsubscribeUrl: opts.unsubscribeUrl,
+      preferencesUrl: opts.preferencesUrl,
+    },
+  });
+}
+
+export function checkoutAbandonedEmailContent(opts: {
+  name?: string | null;
+  planName: string;
+  billingUrl?: string;
+  unsubscribeUrl?: string;
+  preferencesUrl?: string;
+}) {
+  const base = appBaseUrl();
+  const billing = opts.billingUrl || `${base}/billing`;
+  const greeting = opts.name ? `Hi ${opts.name},` : "Hi,";
+
+  const bodyHtml = `
+    <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:${EMAIL_BRAND.muted};">
+      ${esc(greeting)} You started checkout for the
+      <strong style="font-weight:600;color:${EMAIL_BRAND.ink};">${esc(opts.planName)}</strong>
+      plan but didn’t finish. No charge was made — your payment details weren’t processed.
+    </p>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+      ${featureRow("", "Pick up where you left off", "Complete checkout anytime to unlock higher monthly lead limits.")}
+      ${featureRow("", "No payment taken", "Leaving checkout never charges your card.")}
+      ${featureRow("", "Need a different plan?", "Compare Starter, Growth, and Agency on the billing page.", "View plans", billing)}
+    </table>
+    <div style="margin:28px 0 8px;">
+      ${ctaButton(`Complete ${opts.planName} checkout`, billing)}
+    </div>
+    <p style="margin:16px 0 0;font-size:12px;line-height:1.5;color:${EMAIL_BRAND.faint};">
+      If you ran into a payment issue, reply to this email or contact ${esc(EMAIL_BRAND.supportEmail)}.
+    </p>`;
+
+  return renderEmailShell({
+    preheader: `Still interested in ${opts.planName}? Finish checkout anytime — no charge was made.`,
+    heroTitle: "Checkout wasn’t completed",
+    heroSubtitle: `Your ${opts.planName} plan is still waiting whenever you’re ready.`,
+    bodyHtml,
+    secondaryHtml: `
+      <p style="margin:0 0 6px;font-family:${EMAIL_FONT};font-size:13px;font-weight:600;color:${EMAIL_BRAND.ink};">Questions before you subscribe?</p>
+      <p style="margin:0 0 12px;font-size:13px;line-height:1.5;color:${EMAIL_BRAND.muted};">
+        We’re happy to help — ${esc(EMAIL_BRAND.supportEmail)}.
+      </p>
+      ${ctaButton("Back to billing", billing)}`,
+    links: {
+      unsubscribeUrl: opts.unsubscribeUrl,
+      preferencesUrl: opts.preferencesUrl,
+    },
+  });
+}
+
 export { ctaButton, featureRow };
 
 export function renderManagedTemplate(opts: {

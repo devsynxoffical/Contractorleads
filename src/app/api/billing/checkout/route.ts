@@ -77,8 +77,8 @@ export async function POST(request: Request) {
     customer: customerId,
     client_reference_id: dbUser.id,
     line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${base}/billing?checkout=success`,
-    cancel_url: `${base}/billing?checkout=canceled`,
+    success_url: `${base}/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${base}/billing?checkout=canceled&session_id={CHECKOUT_SESSION_ID}`,
     allow_promotion_codes: true,
     metadata: {
       userId: dbUser.id,

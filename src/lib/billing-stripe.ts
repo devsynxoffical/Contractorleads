@@ -2,12 +2,16 @@ import { prisma } from "@/lib/prisma";
 import { integrationFlagsForPlan } from "@/lib/api-access";
 import { applyReferralCommissionOnPurchase } from "@/lib/referrals";
 import { logActivity } from "@/lib/credits";
-import { normalizePlan, type PlanId } from "@/lib/plans";
+import { sendCheckoutAbandonedEmail, sendPurchaseConfirmationEmail } from "@/lib/email";
+import { normalizePlan, planLabel, type PlanId } from "@/lib/plans";
 import {
   PLAN_MONTHLY_CREDITS,
   planFromPriceId,
   type StripeCheckoutPlan,
 } from "@/lib/stripe";
+
+const ACTIVE_STATUSES = new Set(["active", "trialing"]);
+const ABANDONED_EMAIL_TYPE = "checkout_abandoned_email";
 
 function mapStripeStatus(status: string | null | undefined) {
   const s = (status || "").toLowerCase();
@@ -38,6 +42,8 @@ export async function syncUserSubscription(opts: {
       plan: true,
       subscriptionStatus: true,
       creditsRemaining: true,
+      email: true,
+      name: true,
     },
   });
   if (!previous) return null;
@@ -125,6 +131,36 @@ export async function syncUserSubscription(opts: {
     subscriptionStatus: status,
   });
 
+  // Thank-you / confirmation email on a NEW paid activation or a plan change.
+  // Not sent on monthly renewals (same plan, already active).
+  const wasActive = ACTIVE_STATUSES.has(
+    mapStripeStatus(previous.subscriptionStatus),
+  );
+  const isNowActive = ACTIVE_STATUSES.has(status);
+  const isNewActivation = isNowActive && !wasActive;
+  const isPlanChange =
+    isNowActive && normalizePlan(previous.plan) !== plan;
+
+  if (previous.email && (isNewActivation || isPlanChange)) {
+    const monthlyCredits =
+      PLAN_MONTHLY_CREDITS[plan as StripeCheckoutPlan] ?? null;
+    const monthlyLeads =
+      monthlyCredits != null ? Math.round(monthlyCredits / 1.33) : null;
+    try {
+      await sendPurchaseConfirmationEmail({
+        userId: opts.userId,
+        to: previous.email,
+        name: previous.name,
+        planName: planLabel(plan),
+        monthlyCredits,
+        monthlyLeads,
+        isUpgrade: isPlanChange && !isNewActivation,
+      });
+    } catch (err) {
+      console.error("purchase confirmation email failed", err);
+    }
+  }
+
   await logActivity(
     opts.userId,
     "stripe_subscription_sync",
@@ -170,4 +206,70 @@ export async function planFromSubscription(subscription: {
     if (n === "starter" || n === "growth" || n === "agency") return n;
   }
   return planFromPriceId(extractSubscriptionPriceId(subscription));
+}
+
+/**
+ * Email when a user starts Stripe Checkout but leaves / lets it expire.
+ * Deduped per Checkout session so cancel + expired don't double-send.
+ */
+export async function notifyCheckoutAbandoned(opts: {
+  userId: string;
+  sessionId: string;
+  plan?: string | null;
+  reason?: "canceled" | "expired";
+}) {
+  const sessionId = opts.sessionId.trim();
+  if (!sessionId || !opts.userId) return { sent: false as const, reason: "missing" };
+
+  const already = await prisma.activityLog.findFirst({
+    where: {
+      userId: opts.userId,
+      type: ABANDONED_EMAIL_TYPE,
+      message: { contains: sessionId },
+    },
+    select: { id: true },
+  });
+  if (already) return { sent: false as const, reason: "already_sent" };
+
+  const user = await prisma.user.findUnique({
+    where: { id: opts.userId },
+    select: { email: true, name: true, plan: true, subscriptionStatus: true },
+  });
+  if (!user?.email) return { sent: false as const, reason: "no_email" };
+
+  // Skip if they already completed a paid subscription somehow.
+  if (ACTIVE_STATUSES.has(mapStripeStatus(user.subscriptionStatus))) {
+    const current = normalizePlan(user.plan);
+    const attempted = opts.plan ? normalizePlan(opts.plan) : null;
+    if (attempted && current === attempted) {
+      return { sent: false as const, reason: "already_subscribed" };
+    }
+  }
+
+  const planName = planLabel(opts.plan || "growth");
+
+  try {
+    const result = await sendCheckoutAbandonedEmail({
+      userId: opts.userId,
+      to: user.email,
+      name: user.name,
+      planName,
+    });
+    await logActivity(
+      opts.userId,
+      ABANDONED_EMAIL_TYPE,
+      `Abandoned checkout email for session ${sessionId}`,
+      {
+        sessionId,
+        plan: opts.plan ?? null,
+        reason: opts.reason ?? "canceled",
+        emailOk: result.ok,
+        mocked: result.mocked ?? false,
+      },
+    );
+    return { sent: result.ok, reason: result.ok ? "sent" : "email_failed" };
+  } catch (err) {
+    console.error("checkout abandoned email failed", err);
+    return { sent: false as const, reason: "error" };
+  }
 }

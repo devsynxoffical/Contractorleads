@@ -2,6 +2,8 @@ import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import { appBaseUrl } from "@/lib/email-brand";
 import {
+  checkoutAbandonedEmailContent,
+  purchaseConfirmationEmailContent,
   renderManagedTemplate,
   verificationEmailContent,
 } from "@/lib/email-templates";
@@ -309,6 +311,73 @@ export async function sendLeadScrapeEmail(opts: {
     text: rendered.text,
     unsubscribeUrl: unsub,
     tags: ["lead-scrape"],
+  });
+}
+
+/**
+ * Purchase / subscription confirmation ("thank you for purchasing").
+ * Transactional — always sent (not gated by marketing opt-in).
+ */
+export async function sendPurchaseConfirmationEmail(opts: {
+  userId: string;
+  to: string;
+  name?: string | null;
+  planName: string;
+  monthlyCredits?: number | null;
+  monthlyLeads?: number | null;
+  isUpgrade?: boolean;
+}) {
+  const unsub = unsubscribeUrlForUser(opts.userId);
+  const prefs = preferencesUrlForUser(opts.userId);
+  const content = purchaseConfirmationEmailContent({
+    name: opts.name,
+    planName: opts.planName,
+    monthlyCredits: opts.monthlyCredits,
+    monthlyLeads: opts.monthlyLeads,
+    isUpgrade: opts.isUpgrade,
+    dashboardUrl: `${appBaseUrl()}/dashboard`,
+    billingUrl: `${appBaseUrl()}/billing`,
+    unsubscribeUrl: unsub,
+    preferencesUrl: prefs,
+  });
+  return sendEmail({
+    to: opts.to,
+    subject: opts.isUpgrade
+      ? `You're now on ${opts.planName} — Contractor Leads`
+      : `Thanks for subscribing to ${opts.planName}`,
+    html: content.html,
+    text: content.text,
+    unsubscribeUrl: unsub,
+    tags: ["purchase-confirmation"],
+  });
+}
+
+/**
+ * Checkout started but not completed (canceled or expired session).
+ * Transactional — always sent (not gated by marketing opt-in).
+ */
+export async function sendCheckoutAbandonedEmail(opts: {
+  userId: string;
+  to: string;
+  name?: string | null;
+  planName: string;
+}) {
+  const unsub = unsubscribeUrlForUser(opts.userId);
+  const prefs = preferencesUrlForUser(opts.userId);
+  const content = checkoutAbandonedEmailContent({
+    name: opts.name,
+    planName: opts.planName,
+    billingUrl: `${appBaseUrl()}/billing`,
+    unsubscribeUrl: unsub,
+    preferencesUrl: prefs,
+  });
+  return sendEmail({
+    to: opts.to,
+    subject: `Still interested in ${opts.planName}? Finish checkout anytime`,
+    html: content.html,
+    text: content.text,
+    unsubscribeUrl: unsub,
+    tags: ["checkout-abandoned"],
   });
 }
 
