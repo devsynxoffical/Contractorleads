@@ -10,6 +10,7 @@ export function BillingCheckoutButton({
   popular,
   disabled,
   manage,
+  className,
 }: {
   planId: string;
   label: string;
@@ -17,6 +18,7 @@ export function BillingCheckoutButton({
   disabled?: boolean;
   /** Open Stripe Customer Portal instead of Checkout */
   manage?: boolean;
+  className?: string;
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +49,6 @@ export function BillingCheckoutButton({
         window.location.href = data.url;
         return;
       }
-      // In-place plan change (upgrade/downgrade) — no Checkout redirect
       if (data.updated) {
         window.location.href =
           data.redirectUrl || "/billing?checkout=success";
@@ -62,15 +63,15 @@ export function BillingCheckoutButton({
   }
 
   return (
-    <div className="mt-4 space-y-2">
+    <div className={`space-y-2 ${className ?? "mt-4"}`}>
       <Button
         variant="secondary"
         size="sm"
-        className="w-full"
+        className="h-9 w-full"
         disabled={disabled || loading}
         onClick={() => void onClick()}
         style={
-          popular && !disabled
+          popular && !disabled && !manage
             ? { background: LOGO_GRADIENT, color: "white", border: 0 }
             : undefined
         }
