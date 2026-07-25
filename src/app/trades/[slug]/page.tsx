@@ -8,6 +8,7 @@ import {
   softwareApplicationJsonLd,
 } from "@/components/seo/json-ld";
 import {
+  SEO_REGIONS,
   TRADE_PAGES,
   buildMetadata,
   getTradeBySlug,
@@ -85,6 +86,27 @@ export default async function TradePage({ params }: Params) {
             <li>Owner / decision-maker enrichment from the company site</li>
             <li>AI opportunity scores for website, PPC, SEO, and marketing fit</li>
             <li>Cold email, SMS, and call scripts from Outreach Studio</li>
+          </ul>
+        </div>
+        <div>
+          <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold text-slate-900">
+            Browse by state
+          </h2>
+          <p className="mt-2 text-[14px] text-slate-500">
+            Agency landers for {trade.name.toLowerCase()} contractors in every
+            U.S. state.
+          </p>
+          <ul className="mt-4 flex flex-wrap gap-2">
+            {SEO_REGIONS.map((r) => (
+              <li key={r.slug}>
+                <Link
+                  href={`/trades/${trade.slug}/${r.slug}`}
+                  className="inline-flex rounded-full border border-violet-100 bg-white px-3 py-1.5 text-[13px] font-semibold text-slate-700 hover:border-fuchsia-300"
+                >
+                  {r.name}
+                </Link>
+              </li>
+            ))}
           </ul>
         </div>
         <div>

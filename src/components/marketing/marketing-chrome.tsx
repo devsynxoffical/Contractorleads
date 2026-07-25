@@ -1,12 +1,21 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { ReactNode } from "react";
+import { SEO } from "@/lib/seo";
 
 const NAV = [
   { href: "/features", label: "Features" },
   { href: "/pricing", label: "Pricing" },
   { href: "/trades", label: "Trades" },
+  { href: "/blog", label: "Blog" },
   { href: "/about", label: "About" },
+];
+
+const SOCIAL = [
+  { href: SEO.social.linkedin, label: "LinkedIn" },
+  { href: SEO.social.instagram, label: "Instagram" },
+  { href: SEO.social.tiktok, label: "TikTok" },
+  { href: SEO.social.x, label: "X" },
 ];
 
 export function MarketingChrome({
@@ -120,6 +129,23 @@ export function MarketingChrome({
                     Privacy
                   </Link>
                 </li>
+              </ul>
+              <p className="mt-6 text-[11px] font-bold uppercase tracking-[0.16em] text-white/40">
+                Social
+              </p>
+              <ul className="mt-3 space-y-2 text-[13px] text-white/70">
+                {SOCIAL.map((s) => (
+                  <li key={s.href}>
+                    <a
+                      href={s.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-white"
+                    >
+                      {s.label}
+                    </a>
+                  </li>
+                ))}
               </ul>
             </div>
           </div>

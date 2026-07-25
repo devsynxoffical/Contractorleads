@@ -943,7 +943,7 @@ function Footer() {
         ["Features", "/features"],
         ["Pricing", "/pricing"],
         ["Trades", "/trades"],
-        ["Lead Finder", "/register"],
+        ["Blog", "/blog"],
         ["FAQ", "/#faq"],
         ["Get started free", "/register"],
       ],
@@ -963,11 +963,10 @@ function Footer() {
     {
       h: "Social",
       links: [
-        ["Instagram", "#"],
-        ["LinkedIn", "#"],
-        ["TikTok", "#"],
-        ["X", "#"],
-        ["YouTube", "#"],
+        ["LinkedIn", "https://www.linkedin.com/company/contractorleads"],
+        ["Instagram", "https://www.instagram.com/contractorleads"],
+        ["TikTok", "https://www.tiktok.com/@contractorleads"],
+        ["X", "https://x.com/contractorleads"],
       ],
     },
     {
@@ -975,8 +974,6 @@ function Footer() {
       links: [
         ["Privacy Policy", "/privacy"],
         ["Terms of Service", "/terms"],
-        ["Cookie Notice", "#"],
-        ["Acceptable Use", "#"],
       ],
     },
   ];

@@ -1,4 +1,4 @@
-import { absoluteUrl, MARKETING_FAQ, SEO, seoBaseUrl } from "@/lib/seo";
+import { absoluteUrl, MARKETING_FAQ, SEO, seoBaseUrl, seoSameAs } from "@/lib/seo";
 import { EMAIL_BRAND } from "@/lib/email-brand";
 
 export function JsonLd({ data }: { data: Record<string, unknown> | Array<Record<string, unknown>> }) {
@@ -19,7 +19,7 @@ export function organizationJsonLd() {
     logo: absoluteUrl("/logo.png"),
     email: EMAIL_BRAND.contactEmail,
     description: SEO.defaultDescription,
-    sameAs: [] as string[],
+    sameAs: seoSameAs(),
   };
 }
 
@@ -91,3 +91,38 @@ export function breadcrumbJsonLd(
     })),
   };
 }
+
+export function blogPostingJsonLd(opts: {
+  title: string;
+  description: string;
+  path: string;
+  datePublished: string;
+  dateModified?: string;
+  keywords?: string[];
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: opts.title,
+    description: opts.description,
+    url: absoluteUrl(opts.path),
+    datePublished: opts.datePublished,
+    dateModified: opts.dateModified || opts.datePublished,
+    author: {
+      "@type": "Organization",
+      name: SEO.siteName,
+      url: seoBaseUrl(),
+    },
+    publisher: {
+      "@type": "Organization",
+      name: SEO.siteName,
+      logo: {
+        "@type": "ImageObject",
+        url: absoluteUrl("/logo.png"),
+      },
+    },
+    mainEntityOfPage: absoluteUrl(opts.path),
+    keywords: opts.keywords?.join(", "),
+  };
+}
+

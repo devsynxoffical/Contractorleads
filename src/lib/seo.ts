@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { SITE_URL, appBaseUrl } from "@/lib/email-brand";
-import { INDUSTRIES } from "@/lib/constants";
+import { INDUSTRIES, US_STATES } from "@/lib/constants";
 
 /** Canonical marketing origin for metadata, sitemap, and JSON-LD. */
 export function seoBaseUrl() {
@@ -33,7 +33,30 @@ export const SEO = {
   twitterHandle: "@contractorleads",
   locale: "en_US",
   ogImagePath: "/opengraph-image",
+  /**
+   * Public social profiles for Organization sameAs + footer.
+   * Override with NEXT_PUBLIC_SOCIAL_* env vars when handles change.
+   */
+  social: {
+    linkedin:
+      process.env.NEXT_PUBLIC_SOCIAL_LINKEDIN?.trim() ||
+      "https://www.linkedin.com/company/contractorleads",
+    instagram:
+      process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM?.trim() ||
+      "https://www.instagram.com/contractorleads",
+    tiktok:
+      process.env.NEXT_PUBLIC_SOCIAL_TIKTOK?.trim() ||
+      "https://www.tiktok.com/@contractorleads",
+    x:
+      process.env.NEXT_PUBLIC_SOCIAL_X?.trim() ||
+      "https://x.com/contractorleads",
+  },
 } as const;
+
+/** Profiles included in JSON-LD sameAs (non-empty only). */
+export function seoSameAs(): string[] {
+  return Object.values(SEO.social).filter(Boolean);
+}
 
 export const MARKETING_FAQ: Array<{ q: string; a: string }> = [
   {
@@ -248,3 +271,38 @@ export function absoluteUrl(path = "/") {
   if (!path || path === "/") return base;
   return `${base}${path.startsWith("/") ? path : `/${path}`}`;
 }
+
+export type SeoRegion = {
+  slug: string;
+  name: string;
+  code: string;
+  kind: "state";
+};
+
+function regionSlug(name: string) {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+/** All US states as SEO region landers (e.g. /trades/roofing/texas). */
+export const SEO_REGIONS: SeoRegion[] = US_STATES.map((s) => ({
+  slug: regionSlug(s.name),
+  name: s.name,
+  code: s.code,
+  kind: "state" as const,
+}));
+
+export function getRegionBySlug(slug: string) {
+  return SEO_REGIONS.find((r) => r.slug === slug) ?? null;
+}
+
+/** Public blog helpers — Academy articles published on the marketing site. */
+export {
+  ACADEMY_ARTICLES as BLOG_ARTICLES,
+  ACADEMY_CATEGORIES as BLOG_CATEGORIES,
+  getAcademyArticle as getBlogArticle,
+  categoryLabel as blogCategoryLabel,
+} from "@/lib/academy-content";
+
