@@ -15,7 +15,7 @@ if (!process.env.DATABASE_URL) {
 console.log("Pre-deploy: prisma db push...");
 const push = spawnSync(
   "npx",
-  ["prisma", "db", "push", "--skip-generate"],
+  ["prisma", "db", "push", "--skip-generate", "--accept-data-loss"],
   {
     stdio: "inherit",
     env: process.env,

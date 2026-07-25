@@ -20,7 +20,7 @@ if (process.env.DATABASE_URL) {
   console.log("[start] Ensuring DB schema (prisma db push)...");
   const push = spawnSync(
     "npx",
-    ["prisma", "db", "push", "--skip-generate"],
+    ["prisma", "db", "push", "--skip-generate", "--accept-data-loss"],
     { stdio: "inherit", env: process.env, timeout: 120_000 },
   );
   if (push.error) {
