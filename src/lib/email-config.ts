@@ -19,7 +19,8 @@ export type EmailProviderStatus = {
   updatedAt: string | null;
 };
 
-export const DEFAULT_FROM_EMAIL = "Contractor Leads <onboarding@resend.dev>";
+export const DEFAULT_FROM_EMAIL =
+  "Contractor Leads <hello@contractorleads.us>";
 
 function maskHint(value: string | undefined | null): string | null {
   const v = value?.trim();

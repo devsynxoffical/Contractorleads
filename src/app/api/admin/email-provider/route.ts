@@ -43,7 +43,7 @@ export async function PUT(request: Request) {
     return NextResponse.json(
       {
         error:
-          'From address must contain a valid email, e.g. Contractor Leads <noreply@contractorleads.us>.',
+          'From address must contain a valid email, e.g. Contractor Leads <hello@contractorleads.us>.',
       },
       { status: 400 },
     );

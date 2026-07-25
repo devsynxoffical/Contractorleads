@@ -219,11 +219,16 @@ export default function AdminSystemPage() {
             From address (must use a domain verified in Resend)
             <input
               className="saas-input mt-1.5 font-mono text-[13px]"
-              placeholder="Contractor Leads <noreply@contractorleads.us>"
+              placeholder="Contractor Leads <hello@contractorleads.us>"
               value={fromEmail}
               onChange={(e) => setFromEmail(e.target.value)}
             />
           </label>
+          <p className="text-[11px] text-ink-faint">
+            Prefer a replyable address like hello@ or support@ — avoid noreply@.
+            For best deliverability, send from a subdomain (e.g.
+            mail.contractorleads.us) once it&apos;s verified in Resend.
+          </p>
 
           <div className="flex flex-wrap items-center gap-3 pt-1">
             <Button type="submit" disabled={emailBusy} size="sm">

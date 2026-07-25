@@ -14,6 +14,28 @@ import {
 } from "@/lib/email-config";
 import type { EmailTemplateKey } from "@/lib/email-template-defaults";
 
+/** Strip HTML for a reliable plain-text alternative (Resend deliverability). */
+function htmlToPlainText(html: string): string {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n\n")
+    .replace(/<\/tr>/gi, "\n")
+    .replace(/<\/(div|h[1-6]|li)>/gi, "\n")
+    .replace(/<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi, "$2 ($1)")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 /**
  * Send transactional email via Resend (preferred) or SendGrid.
  * Keys come from admin settings (DB) first, then env.
@@ -22,7 +44,7 @@ import type { EmailTemplateKey } from "@/lib/email-template-defaults";
  * so live signups can't hand out verification links in the browser.
  *
  * Deliverability helpers:
- * - plain-text alternative
+ * - plain-text alternative (always included)
  * - List-Unsubscribe headers when unsubscribeUrl is provided
  */
 export async function sendEmail(params: {
@@ -35,6 +57,8 @@ export async function sendEmail(params: {
 }): Promise<{ ok: boolean; mocked?: boolean; error?: string }> {
   const config = await getEmailProviderSecrets().catch(() => null);
   const from = config?.fromEmail || DEFAULT_FROM_EMAIL;
+  const text =
+    (params.text && params.text.trim()) || htmlToPlainText(params.html);
 
   const listUnsub = params.unsubscribeUrl
     ? `<${params.unsubscribeUrl}>`
@@ -48,7 +72,7 @@ export async function sendEmail(params: {
         to: [params.to],
         subject: params.subject,
         html: params.html,
-        text: params.text,
+        text,
         headers: listUnsub
           ? {
               "List-Unsubscribe": listUnsub,
@@ -96,9 +120,7 @@ export async function sendEmail(params: {
           from: { email: fromEmail, name: "Contractor Leads" },
           subject: params.subject,
           content: [
-            ...(params.text
-              ? [{ type: "text/plain", value: params.text }]
-              : []),
+            { type: "text/plain", value: text },
             { type: "text/html", value: params.html },
           ],
           headers: listUnsub
