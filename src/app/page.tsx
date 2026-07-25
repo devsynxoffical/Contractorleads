@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import { getSessionUser } from "@/lib/auth";
-import { redirect } from "next/navigation";
 import { MarketingPage } from "@/components/marketing/marketing-page";
 import {
   JsonLd,
@@ -18,11 +16,7 @@ export const metadata: Metadata = buildMetadata({
 });
 
 export default async function RootPage() {
-  const user = await getSessionUser();
-  if (user) {
-    redirect(user.onboardingComplete ? "/home" : "/onboarding");
-  }
-
+  // Logged-in users can still visit the marketing homepage; header shows Dashboard.
   return (
     <>
       <JsonLd data={organizationJsonLd()} />

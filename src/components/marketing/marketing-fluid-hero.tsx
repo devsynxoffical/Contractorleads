@@ -7,6 +7,7 @@ import { HiOutlineArrowRight } from "react-icons/hi2";
 import { fluidSimulation } from "./fluid-simulation";
 import { handleMarketingHashClick } from "./marketing-scroll";
 import { usePrefersReducedMotion } from "./marketing-motion";
+import { MarketingAuthActions, MarketingHeroPrimaryCta } from "./marketing-auth-actions";
 
 /** Rotating conversion lines — typewriter cycles through these. */
 const ROTATING_LINES = [
@@ -193,14 +194,7 @@ export function MarketingFluidHero() {
           <a href="/#faq">FAQ</a>
         </nav>
 
-        <div className="mkt-flow-nav-actions">
-          <Link href="/login" className="mkt-flow-pill mkt-flow-pill--login">
-            Log in
-          </Link>
-          <Link href="/register" className="mkt-flow-pill">
-            Get started free
-          </Link>
-        </div>
+        <MarketingAuthActions variant="hero" />
       </header>
 
       <div className="mkt-flow-center">
@@ -228,10 +222,7 @@ export function MarketingFluidHero() {
         </p>
 
         <div className="mkt-flow-cta-row" data-reveal="cta">
-          <Link href="/register" className="mkt-flow-pill mkt-flow-pill--primary">
-            Start closing leads free
-            <HiOutlineArrowRight className="h-4 w-4" aria-hidden />
-          </Link>
+          <MarketingHeroPrimaryCta />
           <a
             href="#pricing"
             className="mkt-flow-pill mkt-flow-pill--ghost"

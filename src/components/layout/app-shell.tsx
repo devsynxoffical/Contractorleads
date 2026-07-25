@@ -224,31 +224,37 @@ function SidebarNav({
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex h-16 shrink-0 items-center gap-2.5 border-b border-border/80 px-5">
-        <div
-          className={cn(
-            "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-[var(--shadow-soft)] ring-1",
-            hud
-              ? "bg-brand-500/10 ring-brand-500/30"
-              : "bg-gradient-to-br from-brand-50 to-white ring-border/80",
-          )}
+        <Link
+          href="/"
+          className="flex min-w-0 flex-1 items-center gap-2.5 rounded-xl outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-brand-500/40"
+          title="Back to Contractor Leads homepage"
         >
-          <Image
-            src="/logo.png"
-            alt=""
-            width={26}
-            height={26}
-            className="object-contain"
-            priority
-          />
-        </div>
-        <div className="min-w-0 flex-1">
-          <span className="block truncate font-[family-name:var(--font-display)] text-[15px] font-semibold tracking-tight text-ink">
-            Contractor Leads
-          </span>
-          <span className="block truncate text-[10px] font-medium text-ink-faint">
-            LeadFlow USA
-          </span>
-        </div>
+          <div
+            className={cn(
+              "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-[var(--shadow-soft)] ring-1",
+              hud
+                ? "bg-brand-500/10 ring-brand-500/30"
+                : "bg-gradient-to-br from-brand-50 to-white ring-border/80",
+            )}
+          >
+            <Image
+              src="/logo.png"
+              alt="Contractor Leads"
+              width={26}
+              height={26}
+              className="object-contain"
+              priority
+            />
+          </div>
+          <div className="min-w-0 flex-1">
+            <span className="block truncate font-[family-name:var(--font-display)] text-[15px] font-semibold tracking-tight text-ink">
+              Contractor Leads
+            </span>
+            <span className="block truncate text-[10px] font-medium text-ink-faint">
+              LeadFlow USA
+            </span>
+          </div>
+        </Link>
         {onCollapse && (
           <button
             type="button"

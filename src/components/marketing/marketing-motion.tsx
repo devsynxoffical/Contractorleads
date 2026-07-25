@@ -43,6 +43,7 @@ export function MarketingScrollProgress() {
 
 export function MarketingStickyCta() {
   const [visible, setVisible] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
   const reduced = usePrefersReducedMotion();
 
   useEffect(() => {
@@ -50,6 +51,20 @@ export function MarketingStickyCta() {
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/auth/me")
+      .then((r) => {
+        if (!cancelled) setLoggedIn(r.ok);
+      })
+      .catch(() => {
+        if (!cancelled) setLoggedIn(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (
@@ -68,7 +83,7 @@ export function MarketingStickyCta() {
       }
     >
       <Link
-        href="/register"
+        href={loggedIn ? "/dashboard" : "/register"}
         className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-[#ffffff]/95 px-5 py-2.5 text-[13px] font-semibold text-slate-800 shadow-[0_12px_40px_rgba(80,40,120,0.18)] backdrop-blur-xl transition hover:shadow-[0_16px_48px_rgba(217,70,239,0.22)]"
       >
         <motion.span
@@ -77,7 +92,7 @@ export function MarketingStickyCta() {
           animate={reduced ? undefined : { scale: [1, 1.35, 1] }}
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
         />
-        Start free — 10 leads included
+        {loggedIn ? "Open Dashboard" : "Start free — 10 leads included"}
         <span
           className="rounded-full px-2 py-0.5 text-[11px] text-white"
           style={{ background: LOGO_GRADIENT }}
@@ -125,10 +140,28 @@ export function MarketingNavLinks({
 
 export function FinalCtaActions() {
   const reduced = usePrefersReducedMotion();
-  const items = [
-    { type: "link" as const, href: "/register", primary: true, label: "Get started free" },
-    { type: "link" as const, href: "/login", primary: false, label: "Sign in" },
-  ];
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/auth/me")
+      .then((r) => {
+        if (!cancelled) setLoggedIn(r.ok);
+      })
+      .catch(() => {
+        if (!cancelled) setLoggedIn(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const items = loggedIn
+    ? [{ type: "link" as const, href: "/dashboard", primary: true, label: "Go to Dashboard" }]
+    : [
+        { type: "link" as const, href: "/register", primary: true, label: "Get started free" },
+        { type: "link" as const, href: "/login", primary: false, label: "Sign in" },
+      ];
 
   return (
     <motion.div

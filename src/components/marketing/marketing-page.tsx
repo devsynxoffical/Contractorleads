@@ -78,6 +78,7 @@ import {
 import { MarketingTrialModals } from "./marketing-trial-modal";
 import { MarketingVisitTracker } from "./marketing-visit-tracker";
 import { MarketingPricingSection } from "./marketing-pricing-section";
+import { MarketingAuthActions } from "./marketing-auth-actions";
 import { setMarketingLenis } from "./marketing-scroll";
 import Lenis from "lenis";
 import "lenis/dist/lenis.css";
@@ -285,23 +286,7 @@ function ScrollNav() {
           </Link>
         </motion.div>
         <MarketingNavLinks className="hidden md:flex" />
-        <div className="flex items-center gap-2">
-          <Link
-            href="/login"
-            className="hidden rounded-xl px-3 py-2 text-[13px] font-medium text-slate-500 transition hover:text-slate-900 sm:inline"
-          >
-            Sign in
-          </Link>
-          <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
-            <Link
-              href="/register"
-              className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px] font-semibold text-white shadow-md shadow-fuchsia-500/20"
-              style={{ background: LOGO_GRADIENT }}
-            >
-              Get started free <HiOutlineArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </motion.div>
-        </div>
+        <MarketingAuthActions variant="scroll" />
       </div>
     </motion.header>
   );

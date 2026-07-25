@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { ReactNode } from "react";
 import { SEO } from "@/lib/seo";
+import { MarketingAuthActions } from "@/components/marketing/marketing-auth-actions";
 
 const NAV = [
   { href: "/features", label: "Features" },
@@ -52,20 +53,7 @@ export function MarketingChrome({
               </Link>
             ))}
           </nav>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/login"
-              className="rounded-full px-3 py-1.5 text-[13px] font-semibold text-slate-600 hover:text-slate-900"
-            >
-              Sign in
-            </Link>
-            <Link
-              href="/register"
-              className="rounded-full bg-gradient-to-r from-pink-600 via-fuchsia-600 to-violet-600 px-3.5 py-1.5 text-[13px] font-semibold text-white shadow-sm"
-            >
-              Start free
-            </Link>
-          </div>
+          <MarketingAuthActions variant="chrome" />
         </div>
       </header>
 
