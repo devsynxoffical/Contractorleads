@@ -22,8 +22,13 @@ import {
   HiOutlinePhoneXMark,
   HiOutlineCurrencyDollar,
   HiOutlineLink,
+  HiOutlineLinkSlash,
   HiOutlineChevronDown,
   HiOutlineCheck,
+  HiOutlineNoSymbol,
+  HiOutlineArrowTrendingDown,
+  HiOutlineClipboardDocumentList,
+  HiOutlineEyeSlash,
 } from "react-icons/hi2";
 import { FaLinkedinIn, FaSlack } from "react-icons/fa6";
 import {
@@ -36,8 +41,6 @@ import {
   SiAnthropic,
   SiHubspot,
   SiInstagram,
-  SiStripe,
-  SiZapier,
 } from "react-icons/si";
 import { RiOpenaiFill } from "react-icons/ri";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
@@ -168,46 +171,46 @@ const FEATURES = [
 
 const PAINS = [
   {
-    icon: SiStripe,
+    icon: HiOutlineNoSymbol,
     title: "Buying fake leads",
     body: "Purchased lists go stale before the first dial — disconnected numbers, closed businesses, and duplicate entries that waste a rep's whole morning.",
-    color: "#635BFF",
-    bg: "#eeedff",
+    color: "#F43F5E",
+    bg: "#3f1219",
   },
   {
-    icon: SiGoogleanalytics,
+    icon: HiOutlineArrowTrendingDown,
     title: "Low conversion",
     body: "Cold outreach without context reads like spam. No owner name, no angle, no proof you looked at their business first.",
-    color: "#E37400",
-    bg: "#fef0e0",
+    color: "#FB923C",
+    bg: "#3a2210",
   },
   {
-    icon: FaSlack,
+    icon: HiOutlineClipboardDocumentList,
     title: "Manual follow-up",
     body: "The fortune is in the follow-up, and it's also the first thing that falls apart when a rep is juggling forty open threads in a spreadsheet.",
-    color: "#4A154B",
-    bg: "#f4eaf5",
+    color: "#C084FC",
+    bg: "#2c1838",
   },
   {
-    icon: SiGmail,
+    icon: HiOutlineClock,
     title: "Slow response",
     body: "A lead that goes 24 hours without a reply is a lead that's already talking to a competitor.",
-    color: "#EA4335",
-    bg: "#fce8e6",
+    color: "#F87171",
+    bg: "#3a1515",
   },
   {
-    icon: SiZapier,
+    icon: HiOutlineLinkSlash,
     title: "Disconnected tools",
     body: "Spreadsheet for the list, separate tool for scoring, separate inbox for outreach, separate doc for notes — nothing talks to anything else.",
-    color: "#FF4A00",
-    bg: "#fff0e8",
+    color: "#FDBA74",
+    bg: "#3a2414",
   },
   {
-    icon: SiMeta,
+    icon: HiOutlineEyeSlash,
     title: "Blind ad spend",
     body: "Pitching a contractor on Facebook ads without checking if they're already running them (and how well) is how you lose the meeting in the first thirty seconds.",
-    color: "#0866FF",
-    bg: "#e7f0ff",
+    color: "#60A5FA",
+    bg: "#12233a",
   },
 ];
 
@@ -1110,16 +1113,6 @@ function StickyCta() {
 }
 
 export function MarketingPage() {
-  useEffect(() => {
-    const root = document.documentElement;
-    const prev = root.getAttribute("data-theme");
-    root.setAttribute("data-theme", "light");
-    return () => {
-      if (prev) root.setAttribute("data-theme", prev);
-      else root.removeAttribute("data-theme");
-    };
-  }, []);
-
   useEffect(() => {
     const lenis = new Lenis({
       smoothWheel: true,

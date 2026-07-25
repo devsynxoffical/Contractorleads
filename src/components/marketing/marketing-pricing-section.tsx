@@ -100,7 +100,8 @@ export function MarketingPricingSection() {
                   </span>
                 ) : null}
 
-                <div className="min-h-[4.5rem]">
+                {/* Equal-height top stack so CTAs line up across columns */}
+                <div className="flex min-h-[7.25rem] flex-col">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-[family-name:var(--font-display)] text-[22px] font-semibold tracking-tight text-slate-900">
                       {plan.name}
@@ -111,12 +112,12 @@ export function MarketingPricingSection() {
                       </span>
                     ) : null}
                   </div>
-                  <p className="mt-2 text-[13px] leading-relaxed text-slate-500">
+                  <p className="mt-2 line-clamp-3 text-[13px] leading-relaxed text-slate-500">
                     {plan.blurb}
                   </p>
                 </div>
 
-                <div className="mt-5 border-t border-slate-100 pt-5">
+                <div className="mt-5 flex min-h-[9.75rem] flex-col border-t border-slate-100 pt-5">
                   {price == null ? (
                     <p className="font-[family-name:var(--font-display)] text-[40px] font-semibold leading-none tracking-tight text-slate-900">
                       Custom
@@ -144,31 +145,33 @@ export function MarketingPricingSection() {
                         : "Per month, billed monthly"}
                   </p>
 
-                  {perLead != null ? (
-                    <div className="mt-3 inline-flex items-baseline gap-1.5 rounded-full bg-fuchsia-50 px-3 py-1.5 ring-1 ring-fuchsia-100">
-                      <span className="font-[family-name:var(--font-display)] text-[18px] font-semibold tabular-nums tracking-tight text-fuchsia-700">
-                        {formatPricePerLead(perLead)}
-                      </span>
-                      <span className="text-[12px] font-semibold text-fuchsia-600/90">
-                        / lead
-                      </span>
-                    </div>
-                  ) : plan.custom ? (
-                    <div className="mt-3 inline-flex items-baseline gap-1.5 rounded-full bg-slate-50 px-3 py-1.5 ring-1 ring-slate-200">
-                      <span className="text-[13px] font-semibold text-slate-700">
-                        Custom / lead
-                      </span>
-                    </div>
-                  ) : null}
-                  {perLead != null && plan.leadsIncluded ? (
-                    <p className="mt-1.5 text-[11px] leading-snug text-slate-400">
-                      Based on {plan.leadsIncluded.toLocaleString()} leads /
-                      month included
-                    </p>
-                  ) : null}
+                  <div className="mt-3 min-h-[2.75rem]">
+                    {perLead != null ? (
+                      <div className="inline-flex items-baseline gap-1.5 rounded-full bg-fuchsia-50 px-3 py-1.5 ring-1 ring-fuchsia-100">
+                        <span className="font-[family-name:var(--font-display)] text-[18px] font-semibold tabular-nums tracking-tight text-fuchsia-700">
+                          {formatPricePerLead(perLead)}
+                        </span>
+                        <span className="text-[12px] font-semibold text-fuchsia-600/90">
+                          / lead
+                        </span>
+                      </div>
+                    ) : plan.custom ? (
+                      <div className="inline-flex items-baseline gap-1.5 rounded-full bg-slate-50 px-3 py-1.5 ring-1 ring-slate-200">
+                        <span className="text-[13px] font-semibold text-slate-700">
+                          Custom / lead
+                        </span>
+                      </div>
+                    ) : null}
+                    {perLead != null && plan.leadsIncluded ? (
+                      <p className="mt-1.5 text-[11px] leading-snug text-slate-400">
+                        Based on {plan.leadsIncluded.toLocaleString()} leads /
+                        month included
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
 
-                <div className="mt-4 flex items-start gap-2.5 rounded-xl bg-slate-50 px-3 py-2.5">
+                <div className="mt-4 flex min-h-[4.25rem] items-start gap-2.5 rounded-xl bg-slate-50 px-3 py-2.5">
                   <HiOutlineCreditCard className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
                   <div className="min-w-0 text-[12px] leading-snug">
                     <p className="font-semibold text-slate-800">
@@ -178,7 +181,7 @@ export function MarketingPricingSection() {
                   </div>
                 </div>
 
-                <div className="mt-5 space-y-2">
+                <div className="mt-5 flex min-h-[6.25rem] flex-col gap-2">
                   {plan.ctaHref.startsWith("mailto:") ? (
                     <a
                       href={plan.ctaHref}
@@ -228,15 +231,18 @@ export function MarketingPricingSection() {
                     ) : (
                       <Link
                         href={plan.secondaryCtaHref}
-                        className="inline-flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-[13px] font-semibold text-slate-700 underline-offset-2 transition hover:text-slate-900 hover:underline"
+                        className="inline-flex w-full items-center justify-center rounded-xl border border-transparent px-4 py-2.5 text-[13px] font-semibold text-slate-700 underline-offset-2 transition hover:text-slate-900 hover:underline"
                       >
                         {plan.secondaryCtaLabel}
                       </Link>
                     )
-                  ) : null}
+                  ) : (
+                    /* Reserve secondary-CTA height so primary buttons stay aligned */
+                    <div className="h-[2.625rem]" aria-hidden />
+                  )}
                 </div>
 
-                <div className="mt-6 border-t border-slate-100 pt-5">
+                <div className="mt-6 flex-1 border-t border-slate-100 pt-5">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
                     Includes
                   </p>

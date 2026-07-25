@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
 import { LoginForm } from "./login-form";
 import { RegisterForm } from "./register-form";
@@ -59,16 +59,6 @@ const panelCopy: Record<
 
 export function AuthPage({ initialMode = "login" }: { initialMode?: AuthMode }) {
   const [mode, setMode] = useState<AuthMode>(initialMode);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    const prev = root.getAttribute("data-theme");
-    root.setAttribute("data-theme", "light");
-    return () => {
-      if (prev) root.setAttribute("data-theme", prev);
-      else root.removeAttribute("data-theme");
-    };
-  }, []);
 
   const switchMode = useCallback((newMode: AuthMode) => {
     setMode(newMode);

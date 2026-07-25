@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { HiOutlineCheckBadge, HiOutlineCreditCard } from "react-icons/hi2";
 import { usePrefersReducedMotion } from "./marketing-motion";
 
 type FakePurchase = {
@@ -66,7 +67,6 @@ export function FooterLivePurchases() {
   const [ageSec, setAgeSec] = useState(12);
   const [visible, setVisible] = useState(true);
 
-  // Stable first paint + rotate
   useEffect(() => {
     setEvent(pickNext());
     setAgeSec(8 + Math.floor(Math.random() * 40));
@@ -104,42 +104,64 @@ export function FooterLivePurchases() {
   if (!copy) return null;
 
   return (
-    <div className="mb-10">
-      <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/40">
-        <span className="relative flex h-2 w-2">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/70 opacity-75" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+    <div className="mb-8 max-w-xl">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/45">
+          <span className="relative flex h-2 w-2 shrink-0">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/70 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+          </span>
+          Live activity
+        </div>
+        <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-300">
+          <HiOutlineCheckBadge className="h-3.5 w-3.5 shrink-0" aria-hidden />
+          Verified source
         </span>
-        Live activity
       </div>
 
-      <div className="mt-3 min-h-[3.25rem]">
+      <div className="mt-4 min-h-[4.75rem]">
         <AnimatePresence mode="wait">
           {visible && (
             <motion.div
               key={event?.id ?? "idle"}
-              initial={reduceMotion ? false : { opacity: 0, y: 10, filter: "blur(4px)" }}
+              initial={
+                reduceMotion ? false : { opacity: 0, y: 10, filter: "blur(4px)" }
+              }
               animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              exit={reduceMotion ? undefined : { opacity: 0, y: -8, filter: "blur(4px)" }}
+              exit={
+                reduceMotion
+                  ? undefined
+                  : { opacity: 0, y: -8, filter: "blur(4px)" }
+              }
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-              className="inline-flex max-w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.06] px-3.5 py-2.5 backdrop-blur-md"
+              className="flex w-full max-w-md items-start gap-4 rounded-2xl border border-white/12 bg-white/[0.07] px-4 py-3.5 shadow-[0_12px_40px_rgba(0,0,0,0.25)] backdrop-blur-md sm:px-5 sm:py-4"
             >
               <span
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-500/80 to-violet-600/80 text-[12px] font-bold text-white"
+                className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-500 to-violet-600 text-white shadow-[0_0_20px_rgba(217,70,239,0.35)]"
                 aria-hidden
               >
-                {event?.firstName.slice(0, 1)}
+                <HiOutlineCreditCard className="h-5 w-5" />
               </span>
-              <div className="min-w-0">
-                <p className="truncate text-[13px] text-white/90">
-                  <span className="font-semibold text-white">{copy.who}</span>{" "}
-                  <span className="text-white/55">{event?.action}</span>{" "}
+
+              <div className="min-w-0 flex-1 space-y-1.5">
+                <p className="text-[13px] leading-snug text-white/90 sm:text-[14px]">
+                  <span className="font-semibold text-white">{copy.who}</span>
+                  <span className="text-white/50"> {event?.action} </span>
                   <span className={`font-semibold ${PLAN_ACCENT[copy.plan]}`}>
                     {copy.plan}
                   </span>
-                  <span className="text-white/55"> plan</span>
+                  <span className="text-white/50"> plan</span>
                 </p>
-                <p className="mt-0.5 text-[11px] text-white/40">{copy.when}</p>
+                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] text-white/40">
+                  <span>{copy.when}</span>
+                  <span className="text-white/20" aria-hidden>
+                    ·
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-emerald-300/90">
+                    <HiOutlineCheckBadge className="h-3.5 w-3.5" aria-hidden />
+                    Verified source
+                  </span>
+                </div>
               </div>
             </motion.div>
           )}

@@ -23,16 +23,6 @@ function VerifyEmailInner() {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    const root = document.documentElement;
-    const prev = root.getAttribute("data-theme");
-    root.setAttribute("data-theme", "light");
-    return () => {
-      if (prev) root.setAttribute("data-theme", prev);
-      else root.removeAttribute("data-theme");
-    };
-  }, []);
-
-  useEffect(() => {
     if (!token) {
       setError("Missing verification token");
       setChecking(false);

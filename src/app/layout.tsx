@@ -44,7 +44,10 @@ export default function RootLayout({
       <head>
         <ThemeScript />
       </head>
-      <body className="min-h-full font-sans antialiased">
+      <body
+        className="min-h-full font-sans antialiased"
+        suppressHydrationWarning
+      >
         <ThemeProvider initialTheme="light">{children}</ThemeProvider>
       </body>
     </html>
