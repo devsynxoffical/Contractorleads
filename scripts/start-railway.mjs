@@ -1,53 +1,56 @@
 /**
- * Production start for Railway.
+ * Railway start: sync schema if needed, then boot Next immediately after.
  *
- * 1) Sync schema + seed (needs private network / DATABASE_URL)
- * 2) Boot the Next.js standalone server (required when next.config has
- *    `output: "standalone"` — `next start` is unsupported and can leave
- *    /api/health returning 503 forever).
+ * Primary schema sync is `preDeployCommand` (scripts/pre-deploy-railway.mjs).
+ * This start script still runs a quick db push as a safety net when pre-deploy
+ * is skipped by the platform, then boots the standalone server.
+ *
+ * Healthcheck is disabled in railway.toml so a slow db push cannot fail the
+ * deploy while Postgres is still reachable.
  */
 import { spawn, spawnSync } from "child_process";
-import { cpSync, existsSync, mkdirSync } from "fs";
+import { cpSync, existsSync, mkdirSync, readdirSync } from "fs";
 import { join } from "path";
-
-if (!process.env.DATABASE_URL) {
-  console.error(
-    "DATABASE_URL is not set. Link Postgres and set DATABASE_URL=${{Postgres.DATABASE_URL}}.",
-  );
-  process.exit(1);
-}
-
-console.log("Running prisma db push...");
-const push = spawnSync(
-  "npx",
-  ["prisma", "db", "push", "--skip-generate"],
-  { stdio: "inherit", env: process.env },
-);
-
-if (push.status !== 0) {
-  console.error(
-    "prisma db push failed — check DATABASE_URL and that Postgres is running.",
-  );
-  process.exit(push.status ?? 1);
-}
-
-console.log("Applying baseline config (role templates, referral rewards)...");
-const seed = spawnSync("node", ["prisma/seed.mjs"], {
-  stdio: "inherit",
-  env: process.env,
-});
-if (seed.status !== 0) {
-  console.error("Seed failed — login may not work until seed succeeds.");
-  process.exit(seed.status ?? 1);
-}
 
 const port = process.env.PORT || "3000";
 process.env.PORT = port;
 process.env.HOSTNAME = "0.0.0.0";
 
+if (process.env.DATABASE_URL) {
+  console.log("[start] Ensuring DB schema (prisma db push)...");
+  const push = spawnSync(
+    "npx",
+    ["prisma", "db", "push", "--skip-generate"],
+    { stdio: "inherit", env: process.env, timeout: 120_000 },
+  );
+  if (push.error) {
+    console.error("[start] prisma db push error:", push.error.message);
+  } else if (push.status !== 0) {
+    console.error("[start] prisma db push failed with status", push.status);
+    // Continue — pre-deploy may already have synced; don't brick the site
+  } else {
+    console.log("[start] DB schema ok");
+  }
+} else {
+  console.warn("[start] DATABASE_URL missing — skipping prisma db push");
+}
+
 const root = process.cwd();
 const standaloneDir = join(root, ".next", "standalone");
 const standaloneServer = join(standaloneDir, "server.js");
+
+console.log(`[start] cwd=${root} PORT=${port}`);
+console.log(`[start] standalone exists=${existsSync(standaloneServer)}`);
+try {
+  const nextDir = join(root, ".next");
+  if (existsSync(nextDir)) {
+    console.log(`[start] .next entries: ${readdirSync(nextDir).join(", ")}`);
+  } else {
+    console.error("[start] .next directory missing from image");
+  }
+} catch (err) {
+  console.error("[start] could not list .next", err);
+}
 
 function ensureStandaloneAssets() {
   const staticSrc = join(root, ".next", "static");
@@ -66,7 +69,7 @@ function ensureStandaloneAssets() {
 let child;
 if (existsSync(standaloneServer)) {
   ensureStandaloneAssets();
-  console.log(`Starting Next.js standalone on 0.0.0.0:${port}`);
+  console.log(`[start] Starting standalone server on 0.0.0.0:${port}`);
   child = spawn("node", ["server.js"], {
     cwd: standaloneDir,
     stdio: "inherit",
@@ -74,9 +77,8 @@ if (existsSync(standaloneServer)) {
   });
 } else {
   console.warn(
-    "Standalone server missing — falling back to `next start` (may fail with output: standalone).",
+    "[start] Standalone server missing — falling back to next start",
   );
-  console.log(`Starting Next.js on 0.0.0.0:${port}`);
   child = spawn(
     "npx",
     ["next", "start", "-H", "0.0.0.0", "-p", port],
@@ -85,14 +87,16 @@ if (existsSync(standaloneServer)) {
 }
 
 child.on("exit", (code, signal) => {
-  if (signal) {
-    process.kill(process.pid, signal);
-  }
+  console.error(`[start] Next.js exited code=${code} signal=${signal}`);
+  if (signal) process.kill(process.pid, signal);
   process.exit(code ?? 1);
 });
 
+child.on("error", (err) => {
+  console.error("[start] failed to spawn Next.js", err);
+  process.exit(1);
+});
+
 for (const sig of ["SIGTERM", "SIGINT"]) {
-  process.on(sig, () => {
-    child.kill(sig);
-  });
+  process.on(sig, () => child.kill(sig));
 }

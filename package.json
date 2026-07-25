@@ -9,6 +9,7 @@
     "pack:cpanel": "node scripts/package-cpanel-src.mjs",
     "start": "node scripts/start-railway.mjs",
     "start:next": "next start -H 0.0.0.0",
+    "predeploy": "node scripts/pre-deploy-railway.mjs",
     "start:cpanel": "node app.js",
     "lint": "eslint",
     "db:push": "prisma db push",
