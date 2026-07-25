@@ -9,13 +9,31 @@ import {
   formatPricePerLead,
   pricePerLead,
 } from "@/components/marketing/marketing-plans-data";
-import { normalizePlan, planLabel, featuresForPlan } from "@/lib/plans";
+import {
+  normalizePlan,
+  planLabel,
+  featuresForPlan,
+  PLAN_IDS,
+  type PlanId,
+} from "@/lib/plans";
 import { formatCredits } from "@/lib/utils";
 import { getStripe, isStripeConfigured } from "@/lib/stripe";
 import { notifyCheckoutAbandoned } from "@/lib/billing-stripe";
 import { BillingCheckoutButton } from "@/components/billing/billing-checkout-button";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+
+function planRank(plan: string) {
+  const idx = (PLAN_IDS as readonly string[]).indexOf(plan);
+  return idx < 0 ? 0 : idx;
+}
+
+function changePlanLabel(current: PlanId, target: PlanId, name: string) {
+  const diff = planRank(target) - planRank(current);
+  if (diff > 0) return `Upgrade to ${name}`;
+  if (diff < 0) return `Switch to ${name}`;
+  return `Subscribe to ${name}`;
+}
 
 export default async function BillingPage({
   searchParams,
@@ -74,9 +92,8 @@ export default async function BillingPage({
 
       {params.checkout === "success" ? (
         <p className="mb-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-[13px] text-emerald-800 dark:text-emerald-200">
-          Payment received. Your plan updates when Stripe confirms the
-          subscription (usually a few seconds). Refresh if features still look
-          locked.
+          Plan updated. Your subscription and features are now synced. If
+          anything still looks locked, refresh in a few seconds.
         </p>
       ) : null}
       {params.checkout === "canceled" ? (
@@ -229,7 +246,13 @@ export default async function BillingPage({
                   <BillingCheckoutButton
                     planId={plan.id}
                     label={
-                      stripeReady ? `Subscribe to ${plan.name}` : "Stripe unavailable"
+                      stripeReady
+                        ? changePlanLabel(
+                            current,
+                            plan.id as PlanId,
+                            plan.name,
+                          )
+                        : "Stripe unavailable"
                     }
                     popular={plan.popular}
                     disabled={!stripeReady}

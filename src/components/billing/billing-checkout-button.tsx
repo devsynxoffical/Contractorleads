@@ -33,7 +33,12 @@ export function BillingCheckoutButton({
           body: manage ? undefined : JSON.stringify({ plan: planId }),
         },
       );
-      const data = await res.json().catch(() => ({}));
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        url?: string;
+        updated?: boolean;
+        redirectUrl?: string;
+      };
       if (!res.ok) {
         setError(data.error || "Something went wrong");
         return;
@@ -42,7 +47,13 @@ export function BillingCheckoutButton({
         window.location.href = data.url;
         return;
       }
-      setError("No checkout URL returned");
+      // In-place plan change (upgrade/downgrade) — no Checkout redirect
+      if (data.updated) {
+        window.location.href =
+          data.redirectUrl || "/billing?checkout=success";
+        return;
+      }
+      setError(data.error || "No checkout URL returned");
     } catch {
       setError("Network error");
     } finally {
@@ -64,7 +75,7 @@ export function BillingCheckoutButton({
             : undefined
         }
       >
-        {loading ? "Redirecting…" : label}
+        {loading ? (manage ? "Opening…" : "Updating…") : label}
       </Button>
       {error ? (
         <p className="text-[11px] leading-snug text-red-600">{error}</p>
