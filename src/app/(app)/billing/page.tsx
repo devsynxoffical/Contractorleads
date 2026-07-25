@@ -17,14 +17,21 @@ import {
 import { formatCredits } from "@/lib/utils";
 import {
   getStripe,
+  isMessagingAddonConfigured,
   isStripeConfigured,
   PLAN_MONTHLY_CREDITS,
 } from "@/lib/stripe";
 import {
   fulfillCheckoutSession,
+  fulfillMessagingAddonSession,
   notifyCheckoutAbandoned,
 } from "@/lib/billing-stripe";
+import {
+  hasMessagingAddon,
+  MESSAGING_ADDON_PRICE_USD,
+} from "@/lib/messaging-addon";
 import { BillingCheckoutButton } from "@/components/billing/billing-checkout-button";
+import { MessagingAddonCard } from "@/components/billing/messaging-addon-card";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { HiOutlineCheck, HiOutlineLockClosed } from "react-icons/hi2";
@@ -58,13 +65,30 @@ type CheckoutOutcome = "active" | "pending" | "received";
 export default async function BillingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ checkout?: string; session_id?: string }>;
+  searchParams: Promise<{
+    checkout?: string;
+    session_id?: string;
+    addon?: string;
+  }>;
 }) {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
   const params = await searchParams;
   const stripeReady = await isStripeConfigured();
+
+  // Messaging add-on returned from Checkout — activate then clean the URL.
+  if (params.addon === "active" && params.session_id) {
+    try {
+      await fulfillMessagingAddonSession({
+        sessionId: params.session_id,
+        userId: user.id,
+      });
+    } catch (err) {
+      console.error("messaging addon fulfill", err);
+    }
+    redirect("/billing?addon=done");
+  }
 
   // Stripe hands the session id back on the return URL. Fulfil it, then
   // redirect to a clean URL so the id does not linger in history or referrers.
@@ -119,8 +143,14 @@ export default async function BillingPage({
       creditsRemaining: true,
       subscriptionStatus: true,
       stripeCustomerId: true,
+      role: true,
+      messagingAddonStatus: true,
+      messagingAddonManual: true,
     },
   });
+  const addonActive = dbUser ? hasMessagingAddon(dbUser) : false;
+  const addonComped = Boolean(dbUser?.messagingAddonManual);
+  const addonAvailable = await isMessagingAddonConfigured();
   const current = normalizePlan(dbUser?.plan ?? user.plan);
   const features = featuresForPlan(current);
   const creditsRemaining = dbUser?.creditsRemaining ?? user.creditsRemaining;
@@ -160,6 +190,16 @@ export default async function BillingPage({
       {params.checkout === "canceled" ? (
         <p className="mb-5 rounded-xl border border-border bg-[var(--surface)] px-4 py-3 text-[13px] text-ink-muted">
           Checkout canceled — no charge was made.
+        </p>
+      ) : null}
+      {params.addon === "done" ? (
+        <p className="mb-5 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3 text-[13px] text-emerald-800 dark:text-emerald-200">
+          Messaging add-on active — bulk email and SMS are now unlocked.
+        </p>
+      ) : null}
+      {params.addon === "canceled" ? (
+        <p className="mb-5 rounded-xl border border-border bg-[var(--surface)] px-4 py-3 text-[13px] text-ink-muted">
+          Add-on checkout canceled — no charge was made.
         </p>
       ) : null}
       {!stripeReady ? (
@@ -243,6 +283,17 @@ export default async function BillingPage({
           })}
         </div>
       </section>
+
+      {/* Messaging add-on */}
+      <div className="mt-6">
+        <MessagingAddonCard
+          active={addonActive}
+          comped={addonComped}
+          available={addonAvailable}
+          status={dbUser?.messagingAddonStatus ?? "inactive"}
+          priceUsd={MESSAGING_ADDON_PRICE_USD}
+        />
+      </div>
 
       {/* Plan picker */}
       <div className="mt-8">

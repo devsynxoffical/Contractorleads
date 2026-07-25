@@ -7,6 +7,7 @@ export type StripeBillingSecrets = {
   priceStarter: string;
   priceGrowth: string;
   priceAgency: string;
+  priceMessaging: string;
 };
 
 export type StripeBillingStatus = {
@@ -19,8 +20,11 @@ export type StripeBillingStatus = {
   priceStarter: string;
   priceGrowth: string;
   priceAgency: string;
+  priceMessaging: string;
   /** True when secret + all three price IDs are present (DB or env). */
   checkoutReady: boolean;
+  /** True when secret + messaging price are present. */
+  messagingReady: boolean;
   source: "database" | "environment" | "mixed" | "none";
   updatedAt: string | null;
 };
@@ -40,6 +44,7 @@ function fromEnv(): StripeBillingSecrets {
     priceStarter: process.env.STRIPE_PRICE_STARTER?.trim() || "",
     priceGrowth: process.env.STRIPE_PRICE_GROWTH?.trim() || "",
     priceAgency: process.env.STRIPE_PRICE_AGENCY?.trim() || "",
+    priceMessaging: process.env.STRIPE_PRICE_MESSAGING?.trim() || "",
   };
 }
 
@@ -59,6 +64,7 @@ export async function getStripeBillingSecrets(): Promise<StripeBillingSecrets> {
     priceStarter: row.priceStarter.trim() || env.priceStarter,
     priceGrowth: row.priceGrowth.trim() || env.priceGrowth,
     priceAgency: row.priceAgency.trim() || env.priceAgency,
+    priceMessaging: row.priceMessaging.trim() || env.priceMessaging,
   };
 }
 
@@ -76,7 +82,8 @@ export async function getStripeBillingStatus(): Promise<StripeBillingStatus> {
         row.webhookSecret.trim() ||
         row.priceStarter.trim() ||
         row.priceGrowth.trim() ||
-        row.priceAgency.trim()),
+        row.priceAgency.trim() ||
+        row.priceMessaging.trim()),
   );
   const envHasAny = Boolean(
     env.secretKey ||
@@ -84,7 +91,8 @@ export async function getStripeBillingStatus(): Promise<StripeBillingStatus> {
       env.webhookSecret ||
       env.priceStarter ||
       env.priceGrowth ||
-      env.priceAgency,
+      env.priceAgency ||
+      env.priceMessaging,
   );
 
   let source: StripeBillingStatus["source"] = "none";
@@ -103,12 +111,14 @@ export async function getStripeBillingStatus(): Promise<StripeBillingStatus> {
     priceStarter: effective.priceStarter,
     priceGrowth: effective.priceGrowth,
     priceAgency: effective.priceAgency,
+    priceMessaging: effective.priceMessaging,
     checkoutReady: Boolean(
       effective.secretKey &&
         effective.priceStarter &&
         effective.priceGrowth &&
         effective.priceAgency,
     ),
+    messagingReady: Boolean(effective.secretKey && effective.priceMessaging),
     source,
     updatedAt: row?.updatedAt?.toISOString() ?? null,
   };
@@ -122,6 +132,7 @@ export type StripeBillingSaveInput = {
   priceStarter?: string;
   priceGrowth?: string;
   priceAgency?: string;
+  priceMessaging?: string;
   /** Clear a field explicitly */
   clearSecretKey?: boolean;
   clearPublishableKey?: boolean;
@@ -142,6 +153,7 @@ export async function saveStripeBillingConfig(input: StripeBillingSaveInput) {
     priceStarter: current.priceStarter,
     priceGrowth: current.priceGrowth,
     priceAgency: current.priceAgency,
+    priceMessaging: current.priceMessaging,
   };
 
   if (input.clearSecretKey) next.secretKey = "";
@@ -173,6 +185,9 @@ export async function saveStripeBillingConfig(input: StripeBillingSaveInput) {
   }
   if (typeof input.priceAgency === "string") {
     next.priceAgency = input.priceAgency.trim();
+  }
+  if (typeof input.priceMessaging === "string") {
+    next.priceMessaging = input.priceMessaging.trim();
   }
 
   const row = await prisma.stripeBillingConfig.update({

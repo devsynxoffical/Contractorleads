@@ -43,10 +43,10 @@ const FOOTER_COLUMNS = [
   {
     h: "Legal",
     links: [
-      ["Privacy Policy", "#"],
-      ["Terms of Service", "#"],
-      ["Cookie Notice", "#"],
-      ["Acceptable Use", "#"],
+      ["Privacy Policy", "/privacy"],
+      ["Terms of Service", "/terms"],
+      ["Cookie Notice", "/privacy"],
+      ["Acceptable Use", "/terms"],
     ],
   },
 ] as const;

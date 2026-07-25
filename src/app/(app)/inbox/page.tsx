@@ -1,18 +1,18 @@
 "use client";
 
 import { PageHeader } from "@/components/layout/page-header";
-import { EmailInboxPanel } from "@/components/email/email-inbox-panel";
+import { EmailWorkspace } from "@/components/email/email-workspace";
 import { EmailMetricsDashboard } from "@/components/email/email-metrics-dashboard";
 
 export default function InboxPage() {
   return (
     <div className="page-pad space-y-8">
       <PageHeader
-        title="Email inbox"
-        description="Read replies from leads and respond from your connected SMTP mailbox. Metrics for delivered, received, and failed sends are below."
+        title="Email"
+        description="Compose new emails to your leads, read replies, and respond from your connected SMTP mailbox. Delivery metrics are below."
       />
 
-      <EmailInboxPanel />
+      <EmailWorkspace />
 
       <section className="space-y-3 border-t border-border pt-6">
         <h2 className="text-[17px] font-semibold text-ink">Email activity</h2>

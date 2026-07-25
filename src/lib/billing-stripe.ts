@@ -4,8 +4,10 @@ import { applyReferralCommissionOnPurchase } from "@/lib/referrals";
 import { logActivity } from "@/lib/credits";
 import { sendCheckoutAbandonedEmail, sendPurchaseConfirmationEmail } from "@/lib/email";
 import { normalizePlan, planLabel, type PlanId } from "@/lib/plans";
+import { normalizeAddonStatus } from "@/lib/messaging-addon";
 import {
   getStripe,
+  messagingAddonPriceId,
   PLAN_MONTHLY_CREDITS,
   planFromPriceId,
   type StripeCheckoutPlan,
@@ -175,6 +177,107 @@ export async function syncUserSubscription(opts: {
   );
 
   return updated;
+}
+
+/* ------------------------------------------------------------------ */
+/* Messaging add-on ($30/mo) — separate subscription, gates bulk email + SMS */
+/* ------------------------------------------------------------------ */
+
+type AddonSubscription = {
+  id: string;
+  status: string;
+  metadata?: Record<string, string> | null;
+  customer?: string | { id?: string } | null;
+  cancel_at_period_end?: boolean;
+  items?: { data?: Array<{ price?: { id?: string } | string | null }> };
+};
+
+/** True when a Stripe subscription is the Messaging add-on (by metadata or price). */
+export async function isMessagingAddonSubscription(
+  sub: AddonSubscription,
+): Promise<boolean> {
+  if (sub.metadata?.addon === "messaging") return true;
+  const priceId = extractSubscriptionPriceId(sub);
+  const addonPrice = await messagingAddonPriceId();
+  return Boolean(priceId && addonPrice && priceId === addonPrice);
+}
+
+/** Apply a Messaging add-on subscription's status to the user record. */
+export async function syncMessagingAddonSubscription(opts: {
+  userId: string;
+  subscriptionId: string | null;
+  status: string;
+  canceled?: boolean;
+}) {
+  const status = opts.canceled ? "canceled" : normalizeAddonStatus(opts.status);
+  await prisma.user.update({
+    where: { id: opts.userId },
+    data: {
+      messagingAddonStatus: status,
+      messagingAddonSubId: opts.canceled ? null : opts.subscriptionId,
+    },
+  });
+  await logActivity(
+    opts.userId,
+    "messaging_addon_sync",
+    `Messaging add-on ${status}`,
+    { status, subscriptionId: opts.subscriptionId },
+  );
+  return status;
+}
+
+/**
+ * Fulfill a Messaging add-on Checkout session on the success redirect
+ * (so it activates even when webhooks are delayed).
+ */
+export async function fulfillMessagingAddonSession(opts: {
+  sessionId: string;
+  userId: string;
+}): Promise<{ ok: boolean; reason?: string }> {
+  const sessionId = opts.sessionId.trim();
+  if (!sessionId) return { ok: false, reason: "missing_session" };
+  try {
+    const stripe = await getStripe();
+    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ["subscription"],
+    });
+
+    const sessionUserId =
+      session.metadata?.userId || session.client_reference_id || null;
+    if (!sessionUserId || sessionUserId !== opts.userId) {
+      return { ok: false, reason: "user_mismatch" };
+    }
+    if (session.metadata?.addon !== "messaging") {
+      return { ok: false, reason: "not_messaging_addon" };
+    }
+
+    const subRaw = session.subscription;
+    const subscription =
+      typeof subRaw === "string"
+        ? await stripe.subscriptions.retrieve(subRaw)
+        : subRaw && typeof subRaw === "object"
+          ? subRaw
+          : null;
+
+    const paid =
+      session.status === "complete" ||
+      session.payment_status === "paid" ||
+      session.payment_status === "no_payment_required";
+    if (!paid && !subscription) return { ok: false, reason: "not_paid" };
+
+    await syncMessagingAddonSubscription({
+      userId: opts.userId,
+      subscriptionId: subscription?.id ?? null,
+      status: subscription?.status || "active",
+    });
+    return { ok: true };
+  } catch (err) {
+    console.error("fulfillMessagingAddonSession", err);
+    return {
+      ok: false,
+      reason: err instanceof Error ? err.message : "fulfill_failed",
+    };
+  }
 }
 
 export async function resolveUserIdFromStripeCustomer(

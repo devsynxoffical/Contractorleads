@@ -126,6 +126,130 @@ export async function sendLeadEmail(opts: {
   }
 }
 
+/** Template variables available in bulk email subject/body ({{businessName}} etc.). */
+export function leadTemplateVars(
+  lead: {
+    businessName: string;
+    ownerName?: string | null;
+    city?: string | null;
+    state?: string | null;
+    industry?: string | null;
+    website?: string | null;
+    phone?: string | null;
+  },
+  sender: { ownerName?: string | null; companyName?: string | null; name?: string | null },
+): Record<string, string> {
+  const firstName = (lead.ownerName || "").trim().split(/\s+/)[0] || "there";
+  return {
+    businessName: lead.businessName || "there",
+    ownerName: lead.ownerName || "",
+    firstName,
+    city: lead.city || "",
+    state: lead.state || "",
+    industry: lead.industry || "",
+    website: lead.website || "",
+    phone: lead.phone || "",
+    myName: sender.ownerName || sender.name || "",
+    myCompany: sender.companyName || "",
+  };
+}
+
+function renderTemplate(template: string, vars: Record<string, string>) {
+  return template.replace(/\{\{(\w+)\}\}/g, (_, key: string) => vars[key] ?? "");
+}
+
+export type BulkEmailResult = {
+  leadId: string;
+  businessName: string;
+  status: "sent" | "skipped" | "failed";
+  reason?: string;
+};
+
+/**
+ * Send a personalized one-off email to many leads at once.
+ * Skips leads without an email address. Renders {{variables}} per lead.
+ * Sequential + throttled to stay within SMTP rate limits.
+ */
+export async function sendBulkLeadEmail(opts: {
+  userId: string;
+  leadIds: string[];
+  subject: string;
+  body: string;
+  smtpAccountId?: string | null;
+  /** ms delay between sends (default 400) */
+  throttleMs?: number;
+}): Promise<{ sent: number; skipped: number; failed: number; results: BulkEmailResult[] }> {
+  const subjectTpl = opts.subject.trim();
+  const bodyTpl = opts.body.trim();
+  if (!subjectTpl || !bodyTpl) throw new Error("Subject and body are required");
+
+  const leadIds = [...new Set(opts.leadIds.filter(Boolean))];
+  if (!leadIds.length) throw new Error("Select at least one lead");
+  if (leadIds.length > 200) throw new Error("You can email up to 200 leads at a time");
+
+  const sender = await prisma.user.findUnique({
+    where: { id: opts.userId },
+    select: { ownerName: true, companyName: true, name: true },
+  });
+
+  const throttle = opts.throttleMs ?? 400;
+  const results: BulkEmailResult[] = [];
+  let sent = 0;
+  let skipped = 0;
+  let failed = 0;
+
+  for (const leadId of leadIds) {
+    const lead = await findOwnedLead(opts.userId, leadId);
+    if (!lead) {
+      skipped += 1;
+      results.push({ leadId, businessName: "Unknown", status: "skipped", reason: "Not found" });
+      continue;
+    }
+    if (!lead.email?.trim()) {
+      skipped += 1;
+      results.push({
+        leadId,
+        businessName: lead.businessName,
+        status: "skipped",
+        reason: "No email address",
+      });
+      continue;
+    }
+
+    const vars = leadTemplateVars(lead, sender ?? {});
+    try {
+      await sendLeadEmail({
+        userId: opts.userId,
+        leadId,
+        subject: renderTemplate(subjectTpl, vars),
+        body: renderTemplate(bodyTpl, vars),
+        smtpAccountId: opts.smtpAccountId,
+      });
+      sent += 1;
+      results.push({ leadId, businessName: lead.businessName, status: "sent" });
+    } catch (e) {
+      failed += 1;
+      results.push({
+        leadId,
+        businessName: lead.businessName,
+        status: "failed",
+        reason: e instanceof Error ? e.message : "Send failed",
+      });
+    }
+
+    if (throttle > 0) await new Promise((r) => setTimeout(r, throttle));
+  }
+
+  await logActivity(
+    opts.userId,
+    "bulk_email_sent",
+    `Bulk email to ${sent} lead(s)`,
+    { sent, skipped, failed, total: leadIds.length },
+  );
+
+  return { sent, skipped, failed, results };
+}
+
 /**
  * Reply to an inbound LeadEmail (or any thread message for that lead).
  */

@@ -19,8 +19,11 @@ function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
   const referralCode = (searchParams.get("ref") || "").trim();
   const [error, setError] = useState("");
   const [success, setSuccess] = useState<string | null>(null);
+  const [registeredEmail, setRegisteredEmail] = useState("");
   const [devLink, setDevLink] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [resendBusy, setResendBusy] = useState(false);
+  const [resendMsg, setResendMsg] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -28,9 +31,11 @@ function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
     setError("");
     setSuccess(null);
     setDevLink(null);
+    setResendMsg(null);
 
     const form = new FormData(e.currentTarget);
     const phone = String(form.get("phone") || "").trim();
+    const email = String(form.get("email") || "").trim().toLowerCase();
     if (!phone || phone.replace(/\D/g, "").length < 7) {
       setError("Please enter a valid phone number");
       setLoading(false);
@@ -48,7 +53,7 @@ function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: form.get("name"),
-        email: form.get("email"),
+        email,
         phone,
         referralCode: referralCode || undefined,
       }),
@@ -61,11 +66,37 @@ function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
       return;
     }
 
+    setRegisteredEmail(email);
     setSuccess(
       data.message || "Check your business email for a verification link.",
     );
     if (data.verifyUrl) setDevLink(data.verifyUrl);
     setLoading(false);
+  }
+
+  async function resendVerification() {
+    if (!registeredEmail || resendBusy) return;
+    setResendBusy(true);
+    setResendMsg(null);
+    setError("");
+    try {
+      const res = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: registeredEmail }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Could not resend email");
+      } else {
+        setResendMsg(data.message || "Verification email resent.");
+        if (data.verifyUrl) setDevLink(data.verifyUrl);
+      }
+    } catch {
+      setError("Could not resend email");
+    } finally {
+      setResendBusy(false);
+    }
   }
 
   const fieldClass =
@@ -107,6 +138,11 @@ function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
         <div className="space-y-3 rounded-2xl border border-fuchsia-100 bg-fuchsia-50/60 p-4 text-sm text-slate-600">
           <p className="font-semibold text-fuchsia-700">Check your inbox</p>
           <p>{success}</p>
+          {registeredEmail ? (
+            <p className="text-[12px] text-slate-500">
+              Sent to <span className="font-semibold">{registeredEmail}</span>
+            </p>
+          ) : null}
           {devLink ? (
             <p className="text-[12px] text-slate-500">
               Dev mode (no email provider configured):{" "}
@@ -118,12 +154,32 @@ function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
               </a>
             </p>
           ) : null}
-          <Link
-            href="/login"
-            className="inline-block font-semibold text-fuchsia-600 hover:text-fuchsia-700"
-          >
-            Back to sign in
-          </Link>
+          {resendMsg ? (
+            <p className="rounded-lg bg-emerald-50 px-3 py-2 text-[13px] text-emerald-800">
+              {resendMsg}
+            </p>
+          ) : null}
+          {error ? (
+            <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-600">
+              {error}
+            </p>
+          ) : null}
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            <button
+              type="button"
+              onClick={resendVerification}
+              disabled={resendBusy || !registeredEmail}
+              className="text-[13px] font-semibold text-fuchsia-600 hover:underline disabled:opacity-60"
+            >
+              {resendBusy ? "Resending…" : "Resend verification email"}
+            </button>
+            <Link
+              href="/login"
+              className="text-[13px] font-semibold text-fuchsia-600 hover:text-fuchsia-700"
+            >
+              Back to sign in
+            </Link>
+          </div>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -201,11 +257,11 @@ function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
             />
             <span>
               I agree to the{" "}
-              <Link href="#" className="font-semibold text-fuchsia-600 hover:underline">
+              <Link href="/terms" className="font-semibold text-fuchsia-600 hover:underline">
                 Terms of Service
               </Link>{" "}
               and{" "}
-              <Link href="#" className="font-semibold text-fuchsia-600 hover:underline">
+              <Link href="/privacy" className="font-semibold text-fuchsia-600 hover:underline">
                 Privacy Policy
               </Link>
               .

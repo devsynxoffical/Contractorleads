@@ -21,6 +21,9 @@ function VerifyEmailInner() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
+  const [resendEmail, setResendEmail] = useState("");
+  const [resendBusy, setResendBusy] = useState(false);
+  const [resendMsg, setResendMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) {
@@ -34,6 +37,7 @@ function VerifyEmailInner() {
         if (!res.ok) throw new Error(data.error ?? "Invalid link");
         setEmail(data.email);
         setName(data.name);
+        if (data.email) setResendEmail(data.email);
       })
       .catch((e) =>
         setError(e instanceof Error ? e.message : "Invalid verification link"),
@@ -63,6 +67,34 @@ function VerifyEmailInner() {
       setError(err instanceof Error ? err.message : "Failed");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleResend(e: React.FormEvent) {
+    e.preventDefault();
+    const target = resendEmail.trim().toLowerCase();
+    if (!target) {
+      setResendMsg("Enter the business email you signed up with.");
+      return;
+    }
+    setResendBusy(true);
+    setResendMsg(null);
+    try {
+      const res = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: target }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setResendMsg(data.error || "Could not resend email");
+      } else {
+        setResendMsg(data.message || "Check your inbox for a new link.");
+      }
+    } catch {
+      setResendMsg("Could not resend email");
+    } finally {
+      setResendBusy(false);
     }
   }
 
@@ -99,10 +131,37 @@ function VerifyEmailInner() {
             {checking ? (
               <p className="mt-6 text-sm text-slate-500">Validating…</p>
             ) : error && !email ? (
-              <div className="mt-6 space-y-3">
+              <div className="mt-6 space-y-4">
                 <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[13px] text-red-600">
                   {error}
                 </p>
+                <form onSubmit={handleResend} className="space-y-3">
+                  <p className="text-[13px] text-slate-600">
+                    Need a new link? Enter your business email and we&apos;ll
+                    resend it.
+                  </p>
+                  <input
+                    type="email"
+                    required
+                    value={resendEmail}
+                    onChange={(e) => setResendEmail(e.target.value)}
+                    placeholder="you@yourcompany.com"
+                    className={fieldClass}
+                  />
+                  {resendMsg ? (
+                    <p className="rounded-xl bg-emerald-50 px-3 py-2 text-[13px] text-emerald-800">
+                      {resendMsg}
+                    </p>
+                  ) : null}
+                  <Button
+                    type="submit"
+                    className="h-11 w-full rounded-xl text-[14px] font-semibold text-white"
+                    style={{ background: LOGO_GRADIENT }}
+                    loading={resendBusy}
+                  >
+                    {resendBusy ? "Sending…" : "Resend verification email"}
+                  </Button>
+                </form>
                 <Link
                   href="/register"
                   className="inline-block text-[13px] font-semibold text-fuchsia-600 hover:underline"

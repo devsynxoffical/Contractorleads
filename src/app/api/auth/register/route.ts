@@ -96,8 +96,12 @@ export async function POST(request: Request) {
     });
 
     if (!sent.ok) {
+      console.error("[register] verification email failed", sent.error);
       return NextResponse.json(
-        { error: sent.error || "Could not send verification email" },
+        {
+          error:
+            "We could not send the verification email. Check that transactional email is configured, then try again.",
+        },
         { status: 502 },
       );
     }

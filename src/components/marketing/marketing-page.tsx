@@ -974,8 +974,8 @@ function Footer() {
     {
       h: "Legal",
       links: [
-        ["Privacy Policy", "#"],
-        ["Terms of Service", "#"],
+        ["Privacy Policy", "/privacy"],
+        ["Terms of Service", "/terms"],
         ["Cookie Notice", "#"],
         ["Acceptable Use", "#"],
       ],

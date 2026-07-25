@@ -26,6 +26,12 @@ model User {
   adminNotes          String?
   /// Bumped on password change/reset so previously issued JWTs stop validating
   sessionVersion      Int      @default(0)
+  /// Messaging add-on ($30/mo): unlocks bulk email + SMS. inactive|active|past_due|canceled
+  messagingAddonStatus String  @default("inactive")
+  /// Stripe subscription id for the messaging add-on (separate from the plan sub)
+  messagingAddonSubId String?  @unique
+  /// Admin-granted messaging add-on (comped, bypasses Stripe)
+  messagingAddonManual Boolean @default(false)
   creditsRemaining    Float    @default(13.3)
   onboardingComplete  Boolean  @default(false)
   /// Post-purchase product walkthrough dismissed or finished
@@ -341,6 +347,8 @@ model StripeBillingConfig {
   priceStarter   String   @default("")
   priceGrowth    String   @default("")
   priceAgency    String   @default("")
+  /// $30/mo Messaging add-on (bulk email + SMS)
+  priceMessaging String   @default("")
   updatedAt      DateTime @updatedAt
 }
 

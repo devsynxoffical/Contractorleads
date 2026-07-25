@@ -8,6 +8,8 @@ export function isPublicLightPath(pathname: string | null | undefined): boolean 
     "/forgot-password",
     "/reset-password",
     "/verify-email",
+    "/terms",
+    "/privacy",
     "/onboarding",
     "/auth",
     "/email",

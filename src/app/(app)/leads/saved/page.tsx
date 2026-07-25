@@ -1,27 +1,67 @@
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   PageHeader,
   PrimaryActionLink,
   SecondaryActionLink,
 } from "@/components/layout/page-header";
 import { ExportLeadsButtons } from "@/components/leads/export-leads-buttons";
-import { EnrollEmailSequenceButton } from "@/components/leads/enroll-email-sequence-button";
+import { SavedLeadsManager } from "@/components/leads/saved-leads-manager";
+import {
+  hasMessagingAddon,
+  MESSAGING_ADDON_PRICE_USD,
+} from "@/lib/messaging-addon";
+import {
+  listSmtpAccounts,
+  maskSmtpAccount,
+  migrateLegacySmtpIfNeeded,
+} from "@/lib/user-smtp";
 import { HiOutlineMagnifyingGlass, HiOutlineViewColumns } from "react-icons/hi2";
 
 export default async function SavedLeadsPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
-  const saved = await prisma.savedLead.findMany({
-    where: { userId: user.id },
-    include: { lead: true },
-    orderBy: { updatedAt: "desc" },
-  });
+  const [saved, dbUser] = await Promise.all([
+    prisma.savedLead.findMany({
+      where: { userId: user.id },
+      include: { lead: true },
+      orderBy: { updatedAt: "desc" },
+    }),
+    prisma.user.findUnique({
+      where: { id: user.id },
+      select: {
+        role: true,
+        messagingAddonStatus: true,
+        messagingAddonManual: true,
+      },
+    }),
+  ]);
+
+  await migrateLegacySmtpIfNeeded(user.id);
+  const mailboxes = (await listSmtpAccounts(user.id))
+    .filter((a) => a.enabled)
+    .map(maskSmtpAccount)
+    .map((m) => ({
+      id: m.id,
+      label: m.label,
+      fromEmail: m.fromEmail,
+      isDefault: m.isDefault,
+    }));
+
+  const rows = saved.map((s) => ({
+    id: s.id,
+    status: s.status,
+    favorite: s.favorite,
+    lead: {
+      id: s.lead.id,
+      businessName: s.lead.businessName,
+      address: s.lead.address,
+      email: s.lead.email,
+      leadScore: s.lead.leadScore,
+    },
+  }));
 
   return (
     <div className="page-pad">
@@ -43,44 +83,12 @@ export default async function SavedLeadsPage() {
         }
       />
 
-      <div className="grid gap-3">
-        {saved.map((s) => (
-          <Card
-            key={s.id}
-            className="border-border shadow-[var(--shadow-card)] transition hover:border-brand-200"
-          >
-            <CardContent className="flex flex-wrap items-center justify-between gap-4 py-4">
-              <div className="min-w-0">
-                <Link
-                  href={`/leads/${s.lead.id}?from=saved`}
-                  className="font-semibold text-ink hover:text-brand-600"
-                >
-                  {s.lead.businessName}
-                </Link>
-                <p className="mt-1 text-sm text-ink-muted">{s.lead.address}</p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge>{s.status}</Badge>
-                {s.favorite && <Badge variant="brand">Favorite</Badge>}
-                <span className="text-sm font-semibold tabular-nums text-brand-600">
-                  Score {s.lead.leadScore}
-                </span>
-                <EnrollEmailSequenceButton
-                  savedLeadId={s.id}
-                  hasEmail={Boolean(s.lead.email)}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-        {!saved.length && (
-          <Card className="border-dashed">
-            <CardContent className="py-10 text-center text-sm text-ink-muted">
-              No saved leads yet. Run a search and save your best matches.
-            </CardContent>
-          </Card>
-        )}
-      </div>
+      <SavedLeadsManager
+        leads={rows}
+        hasAddon={dbUser ? hasMessagingAddon(dbUser) : false}
+        addonPriceUsd={MESSAGING_ADDON_PRICE_USD}
+        mailboxes={mailboxes}
+      />
     </div>
   );
 }

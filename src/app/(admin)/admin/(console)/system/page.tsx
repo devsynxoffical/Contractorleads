@@ -19,7 +19,9 @@ type StripeStatus = {
   priceStarter: string;
   priceGrowth: string;
   priceAgency: string;
+  priceMessaging: string;
   checkoutReady: boolean;
+  messagingReady: boolean;
   source: string;
   updatedAt: string | null;
   webhookUrl: string;
@@ -47,6 +49,7 @@ export default function AdminSystemPage() {
   const [priceStarter, setPriceStarter] = useState("");
   const [priceGrowth, setPriceGrowth] = useState("");
   const [priceAgency, setPriceAgency] = useState("");
+  const [priceMessaging, setPriceMessaging] = useState("");
   const [email, setEmail] = useState<EmailStatus | null>(null);
   const [resendApiKey, setResendApiKey] = useState("");
   const [fromEmail, setFromEmail] = useState("");
@@ -70,6 +73,7 @@ export default function AdminSystemPage() {
     setPriceStarter(stripeRes.priceStarter || "");
     setPriceGrowth(stripeRes.priceGrowth || "");
     setPriceAgency(stripeRes.priceAgency || "");
+    setPriceMessaging(stripeRes.priceMessaging || "");
     setEmail(emailRes);
     setFromEmail(emailRes.fromEmail || "");
     setResendApiKey("");
@@ -123,6 +127,7 @@ export default function AdminSystemPage() {
           priceStarter,
           priceGrowth,
           priceAgency,
+          priceMessaging,
         }),
       });
       const json = await res.json();
@@ -398,6 +403,31 @@ export default function AdminSystemPage() {
               />
             </label>
           </div>
+
+          <p className="pt-2 text-[12px] font-semibold text-ink">
+            Messaging add-on price ID ($30/mo — unlocks bulk email + SMS)
+          </p>
+          <label className="block text-[12px] font-medium text-ink-muted">
+            Messaging add-on price ID
+            <input
+              className="saas-input mt-1.5 font-mono text-[13px]"
+              placeholder="price_…"
+              value={priceMessaging}
+              onChange={(e) => setPriceMessaging(e.target.value)}
+            />
+            <span className="mt-1 block text-[11px] text-ink-faint">
+              Create a $30/mo recurring price in Stripe and paste its price ID here.
+              {stripe ? (
+                stripe.messagingReady ? (
+                  <span className="ml-1 font-semibold text-emerald-600">Add-on ready.</span>
+                ) : (
+                  <span className="ml-1 font-semibold text-amber-600">
+                    Add-on not configured yet.
+                  </span>
+                )
+              ) : null}
+            </span>
+          </label>
 
           <div className="flex flex-wrap items-center gap-3 pt-1">
             <Button type="submit" disabled={busy} size="sm">

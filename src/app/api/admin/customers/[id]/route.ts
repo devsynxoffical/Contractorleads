@@ -55,6 +55,8 @@ export async function GET(_request: Request, { params }: Params) {
       ghlWebhookUrl: true,
       ghlEnabled: true,
       emailMarketingOptIn: true,
+      messagingAddonStatus: true,
+      messagingAddonManual: true,
       createdAt: true,
       updatedAt: true,
       isActive: true,
@@ -216,6 +218,7 @@ export async function PATCH(request: Request, { params }: Params) {
     "ghlWebhookUrl",
     "ghlEnabled",
     "emailMarketingOptIn",
+    "messagingAddonManual",
   ] as const) {
     if (body[key] !== undefined) data[key] = body[key];
   }
@@ -364,6 +367,8 @@ export async function PATCH(request: Request, { params }: Params) {
         ghlWebhookUrl: true,
         ghlEnabled: true,
         emailMarketingOptIn: true,
+        messagingAddonStatus: true,
+        messagingAddonManual: true,
         isActive: true,
         adminNotes: true,
         referralCode: true,

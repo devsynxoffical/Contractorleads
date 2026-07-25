@@ -37,8 +37,13 @@ export function LoginForm({ onSwitchToRegister }: LoginFormProps) {
     });
 
     if (!res.ok) {
-      const data = await res.json();
-      setError(data.error || "Login failed");
+      const data = await res.json().catch(() => ({}));
+      setError(
+        data.error ||
+          (res.status === 429
+            ? "Too many attempts. Please wait a moment and try again."
+            : "Login failed"),
+      );
       setLoading(false);
       return;
     }

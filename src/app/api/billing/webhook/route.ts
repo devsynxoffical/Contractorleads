@@ -4,9 +4,12 @@ import { prisma } from "@/lib/prisma";
 import {
   extractSubscriptionPriceId,
   fulfillCheckoutSession,
+  fulfillMessagingAddonSession,
+  isMessagingAddonSubscription,
   notifyCheckoutAbandoned,
   planFromSubscription,
   resolveUserIdFromStripeCustomer,
+  syncMessagingAddonSubscription,
   syncUserSubscription,
 } from "@/lib/billing-stripe";
 import { getStripe, getStripeWebhookSecret, planFromPriceId } from "@/lib/stripe";
@@ -32,6 +35,7 @@ async function sendReceiptForInvoice(
   userId: string,
   invoice: Stripe.Invoice,
   plan: string,
+  displayName?: string,
 ) {
   if (!invoice.id || invoice.amount_paid <= 0) return;
 
@@ -62,7 +66,7 @@ async function sendReceiptForInvoice(
       userId,
       to: user.email,
       name: user.name,
-      planName: planLabel(plan),
+      planName: displayName || planLabel(plan),
       amountLabel: formatMoney(invoice.amount_paid, invoice.currency),
       invoiceNumber: invoice.number || invoice.id,
       paidAtLabel: paidAt.toLocaleString("en-US", {
@@ -98,6 +102,12 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         : session.customer?.id,
     ));
   if (!userId || !session.id) return;
+
+  // Messaging add-on checkout — activate the add-on, not a plan.
+  if (session.metadata?.addon === "messaging") {
+    await fulfillMessagingAddonSession({ sessionId: session.id, userId });
+    return;
+  }
 
   // Same fulfillment path as the billing success redirect (plan + credits).
   await fulfillCheckoutSession({ sessionId: session.id, userId });
@@ -138,6 +148,16 @@ async function handleSubscriptionChange(sub: Stripe.Subscription) {
       typeof sub.customer === "string" ? sub.customer : sub.customer?.id,
     ));
   if (!userId) return;
+
+  // Messaging add-on subscription — track add-on status, not the plan.
+  if (await isMessagingAddonSubscription(sub)) {
+    await syncMessagingAddonSubscription({
+      userId,
+      subscriptionId: sub.id,
+      status: sub.status,
+    });
+    return;
+  }
 
   const priceId = extractSubscriptionPriceId(sub);
   let plan = await planFromSubscription(sub);
@@ -187,6 +207,17 @@ async function handleSubscriptionDeleted(sub: Stripe.Subscription) {
     ));
   if (!userId) return;
 
+  // Messaging add-on cancellation — clear the add-on, leave the plan intact.
+  if (await isMessagingAddonSubscription(sub)) {
+    await syncMessagingAddonSubscription({
+      userId,
+      subscriptionId: null,
+      status: "canceled",
+      canceled: true,
+    });
+    return;
+  }
+
   await syncUserSubscription({
     userId,
     plan: "starter",
@@ -218,6 +249,18 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
   if (subscriptionId) {
     const stripe = await getStripe();
     const sub = await stripe.subscriptions.retrieve(subscriptionId);
+
+    // Messaging add-on invoice — don't touch the plan or grant plan credits.
+    if (await isMessagingAddonSubscription(sub)) {
+      await syncMessagingAddonSubscription({
+        userId,
+        subscriptionId: sub.id,
+        status: sub.status,
+      });
+      await sendReceiptForInvoice(userId, invoice, "starter", "Messaging add-on");
+      return;
+    }
+
     status = sub.status;
     priceId = extractSubscriptionPriceId(sub);
     plan = await planFromSubscription(sub);

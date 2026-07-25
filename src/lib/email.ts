@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { appBaseUrl } from "@/lib/email-brand";
 import {
   checkoutAbandonedEmailContent,
+  passwordResetEmailContent,
   paymentReceiptEmailContent,
   purchaseConfirmationEmailContent,
   renderManagedTemplate,
@@ -223,20 +224,34 @@ export async function sendVerificationEmail(opts: {
   verifyUrl: string;
   name?: string | null;
 }) {
+  // Auth-critical: never silently skip when an admin disables the template.
   const template = await getEmailTemplate("verify");
-  if (!template.enabled) {
-    return { ok: true as const, skipped: true as const };
+  let subject: string;
+  let html: string;
+  let text: string;
+  if (template.enabled) {
+    const rendered = renderManagedTemplate({
+      template,
+      vars: { name: opts.name || "there" },
+      ctaUrl: opts.verifyUrl,
+    });
+    subject = rendered.subject;
+    html = rendered.html;
+    text = rendered.text;
+  } else {
+    const fallback = verificationEmailContent({
+      verifyUrl: opts.verifyUrl,
+      name: opts.name,
+    });
+    subject = "Verify your Contractor Leads email";
+    html = fallback.html;
+    text = fallback.text;
   }
-  const rendered = renderManagedTemplate({
-    template,
-    vars: { name: opts.name || "there" },
-    ctaUrl: opts.verifyUrl,
-  });
   return sendEmail({
     to: opts.to,
-    subject: rendered.subject,
-    html: rendered.html,
-    text: rendered.text,
+    subject,
+    html,
+    text,
     tags: ["verification"],
   });
 }
@@ -273,23 +288,39 @@ export async function sendPasswordResetEmail(opts: {
   resetUrl: string;
   name?: string | null;
 }) {
+  // Auth-critical: always send, even if the admin template toggle is off.
   const template = await getEmailTemplate("reset");
-  if (!template.enabled) {
-    return { ok: true as const, skipped: true as const };
-  }
   const unsub = unsubscribeUrlForUser(opts.userId);
   const prefs = preferencesUrlForUser(opts.userId);
-  const rendered = renderManagedTemplate({
-    template,
-    vars: { name: opts.name || "there" },
-    ctaUrl: opts.resetUrl,
-    links: { unsubscribeUrl: unsub, preferencesUrl: prefs },
-  });
+  let subject: string;
+  let html: string;
+  let text: string;
+  if (template.enabled) {
+    const rendered = renderManagedTemplate({
+      template,
+      vars: { name: opts.name || "there" },
+      ctaUrl: opts.resetUrl,
+      links: { unsubscribeUrl: unsub, preferencesUrl: prefs },
+    });
+    subject = rendered.subject;
+    html = rendered.html;
+    text = rendered.text;
+  } else {
+    const fallback = passwordResetEmailContent({
+      resetUrl: opts.resetUrl,
+      name: opts.name,
+      unsubscribeUrl: unsub,
+      preferencesUrl: prefs,
+    });
+    subject = "Reset your Contractor Leads password";
+    html = fallback.html;
+    text = fallback.text;
+  }
   return sendEmail({
     to: opts.to,
-    subject: rendered.subject,
-    html: rendered.html,
-    text: rendered.text,
+    subject,
+    html,
+    text,
     unsubscribeUrl: unsub,
     tags: ["password-reset"],
   });
