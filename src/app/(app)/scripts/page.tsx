@@ -15,13 +15,21 @@ export default async function ScriptsPage() {
   const scripts = await prisma.script.findMany({
     where: { userId: user.id },
     orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      type: true,
+      title: true,
+      content: true,
+      relatedLeadId: true,
+      createdAt: true,
+    },
   });
 
   return (
     <div className="page-pad">
       <PageHeader
         title="My Scripts"
-        description="Saved outputs from Ask Expert and Outreach Studio."
+        description="Edit, copy, and reuse saved email, SMS, and outreach copy from Ask Expert and lead outreach."
         actions={
           <PrimaryActionLink href="/ask-expert">
             <HiOutlineChatBubbleLeftRight className="h-4 w-4" />
@@ -29,7 +37,12 @@ export default async function ScriptsPage() {
           </PrimaryActionLink>
         }
       />
-      <ScriptsLibrary initialScripts={scripts} />
+      <ScriptsLibrary
+        initialScripts={scripts.map((s) => ({
+          ...s,
+          createdAt: s.createdAt.toISOString(),
+        }))}
+      />
     </div>
   );
 }

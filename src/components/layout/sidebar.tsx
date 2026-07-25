@@ -13,16 +13,12 @@ import {
   HiOutlineCog6Tooth,
   HiOutlineCreditCard,
   HiOutlineCpuChip,
-  HiOutlineEnvelope,
   HiOutlineFire,
   HiOutlineHomeModern,
-  HiOutlineKey,
-  HiOutlineLink,
   HiOutlineMagnifyingGlass,
   HiOutlineMap,
   HiOutlineSquares2X2,
   HiOutlineStar,
-  HiOutlineUsers,
   HiOutlineUserPlus,
   HiOutlineViewColumns,
   HiOutlineWrenchScrewdriver,
@@ -66,9 +62,6 @@ const sections: NavSection[] = [
     title: "Setup",
     items: [
       { href: "/setup", label: "Setup hub", icon: HiOutlineWrenchScrewdriver },
-      { href: "/setup/email", label: "Email & SMTP", icon: HiOutlineEnvelope },
-      { href: "/setup/api", label: "API · MCP · SSO", icon: HiOutlineKey },
-      { href: "/setup/crm", label: "CRM webhooks", icon: HiOutlineLink },
     ],
   },
   {
@@ -77,7 +70,6 @@ const sections: NavSection[] = [
       { href: "/industries", label: "Industries", icon: HiOutlineHomeModern },
       { href: "/analytics", label: "Analytics", icon: HiOutlineArrowTrendingDown },
       { href: "/ai-tools", label: "AI Tools", icon: HiOutlineCpuChip },
-      { href: "/workspaces", label: "Workspaces", icon: HiOutlineUsers },
       { href: "/reports", label: "Client Reports", icon: HiOutlineArrowUpTray },
     ],
   },
@@ -96,7 +88,7 @@ function isActive(pathname: string, href: string) {
     return pathname === "/leads";
   }
   if (href === "/setup") {
-    return pathname === "/setup";
+    return pathname === "/setup" || pathname.startsWith("/setup/");
   }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
