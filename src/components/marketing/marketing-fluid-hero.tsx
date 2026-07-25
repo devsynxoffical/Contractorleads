@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { HiOutlineArrowRight } from "react-icons/hi2";
 import { fluidSimulation } from "./fluid-simulation";
 import { handleMarketingHashClick } from "./marketing-scroll";
 import { usePrefersReducedMotion } from "./marketing-motion";
