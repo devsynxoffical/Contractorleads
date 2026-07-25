@@ -9,9 +9,83 @@ import {
   syncUserSubscription,
 } from "@/lib/billing-stripe";
 import { getStripe, getStripeWebhookSecret, planFromPriceId } from "@/lib/stripe";
-import { normalizePlan } from "@/lib/plans";
+import { normalizePlan, planLabel } from "@/lib/plans";
+import { sendPaymentReceiptEmail } from "@/lib/email";
+import { logActivity } from "@/lib/credits";
 
 export const runtime = "nodejs";
+
+function formatMoney(amountCents: number, currency: string) {
+  const code = (currency || "usd").toUpperCase();
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: code,
+    }).format(amountCents / 100);
+  } catch {
+    return `${(amountCents / 100).toFixed(2)} ${code}`;
+  }
+}
+
+async function sendReceiptForInvoice(
+  userId: string,
+  invoice: Stripe.Invoice,
+  plan: string,
+) {
+  if (!invoice.id || invoice.amount_paid <= 0) return;
+
+  const already = await prisma.activityLog.findFirst({
+    where: {
+      userId,
+      type: "payment_receipt_email",
+      message: { contains: invoice.id },
+    },
+    select: { id: true },
+  });
+  if (already) return;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true, name: true },
+  });
+  if (!user?.email) return;
+
+  const paidAt = invoice.status_transitions?.paid_at
+    ? new Date(invoice.status_transitions.paid_at * 1000)
+    : invoice.created
+      ? new Date(invoice.created * 1000)
+      : new Date();
+
+  try {
+    const result = await sendPaymentReceiptEmail({
+      userId,
+      to: user.email,
+      name: user.name,
+      planName: planLabel(plan),
+      amountLabel: formatMoney(invoice.amount_paid, invoice.currency),
+      invoiceNumber: invoice.number || invoice.id,
+      paidAtLabel: paidAt.toLocaleString("en-US", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      }),
+      invoiceUrl: invoice.hosted_invoice_url,
+      pdfUrl: invoice.invoice_pdf,
+    });
+    await logActivity(
+      userId,
+      "payment_receipt_email",
+      `Payment receipt emailed for invoice ${invoice.id}`,
+      {
+        invoiceId: invoice.id,
+        amountPaid: invoice.amount_paid,
+        currency: invoice.currency,
+        emailOk: result.ok,
+      },
+    );
+  } catch (err) {
+    console.error("payment receipt email failed", err);
+  }
+}
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const userId =
@@ -209,6 +283,8 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
     grantMonthlyCredits: true,
     invoiceId: invoice.id,
   });
+
+  await sendReceiptForInvoice(userId, invoice, plan);
 }
 
 export async function POST(request: Request) {

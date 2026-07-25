@@ -580,7 +580,7 @@ export function purchaseConfirmationEmailContent(opts: {
       ${ctaButton("Go to dashboard", dash)}
     </div>
     <p style="margin:16px 0 0;font-size:12px;line-height:1.5;color:${EMAIL_BRAND.faint};">
-      A receipt for this payment is emailed separately by our payment processor (Stripe).
+      A detailed payment receipt is also emailed to you for your records.
     </p>`;
 
   return renderEmailShell({
@@ -596,6 +596,82 @@ export function purchaseConfirmationEmailContent(opts: {
         Reply to this email or contact ${esc(EMAIL_BRAND.supportEmail)} and we'll help.
       </p>
       ${ctaButton("Manage billing", billing)}`,
+    links: {
+      unsubscribeUrl: opts.unsubscribeUrl,
+      preferencesUrl: opts.preferencesUrl,
+    },
+  });
+}
+
+export function paymentReceiptEmailContent(opts: {
+  name?: string | null;
+  planName: string;
+  amountLabel: string;
+  invoiceNumber?: string | null;
+  paidAtLabel: string;
+  invoiceUrl?: string | null;
+  pdfUrl?: string | null;
+  billingUrl?: string;
+  unsubscribeUrl?: string;
+  preferencesUrl?: string;
+}) {
+  const base = appBaseUrl();
+  const billing = opts.billingUrl || `${base}/billing`;
+  const greeting = opts.name ? `Hi ${opts.name},` : "Hi,";
+  const invoiceCta = opts.invoiceUrl || opts.pdfUrl || billing;
+
+  const bodyHtml = `
+    <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:${EMAIL_BRAND.muted};">
+      ${esc(greeting)} Here is your receipt for Contractor Leads.
+    </p>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 22px;border:1px solid ${EMAIL_BRAND.border};border-radius:12px;border-collapse:separate;overflow:hidden;background:${EMAIL_BRAND.softBg};">
+      <tr>
+        <td style="padding:14px 16px;border-bottom:1px solid ${EMAIL_BRAND.border};">
+          <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:${EMAIL_BRAND.faint};">Plan</p>
+          <p style="margin:4px 0 0;font-size:15px;font-weight:600;color:${EMAIL_BRAND.ink};">${esc(opts.planName)}</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:14px 16px;border-bottom:1px solid ${EMAIL_BRAND.border};">
+          <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:${EMAIL_BRAND.faint};">Amount paid</p>
+          <p style="margin:4px 0 0;font-size:15px;font-weight:600;color:${EMAIL_BRAND.ink};">${esc(opts.amountLabel)}</p>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:14px 16px;border-bottom:1px solid ${EMAIL_BRAND.border};">
+          <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:${EMAIL_BRAND.faint};">Paid on</p>
+          <p style="margin:4px 0 0;font-size:15px;font-weight:600;color:${EMAIL_BRAND.ink};">${esc(opts.paidAtLabel)}</p>
+        </td>
+      </tr>
+      ${
+        opts.invoiceNumber
+          ? `<tr>
+        <td style="padding:14px 16px;">
+          <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:${EMAIL_BRAND.faint};">Invoice</p>
+          <p style="margin:4px 0 0;font-size:15px;font-weight:600;color:${EMAIL_BRAND.ink};">${esc(opts.invoiceNumber)}</p>
+        </td>
+      </tr>`
+          : ""
+      }
+    </table>
+    <div style="margin:8px 0 8px;">
+      ${ctaButton(opts.invoiceUrl || opts.pdfUrl ? "View invoice / receipt" : "Manage billing", invoiceCta)}
+    </div>
+    <p style="margin:16px 0 0;font-size:12px;line-height:1.5;color:${EMAIL_BRAND.faint};">
+      Keep this email for your records. You can also download invoices anytime under Plans &amp; Billing.
+    </p>`;
+
+  return renderEmailShell({
+    preheader: `Receipt: ${opts.amountLabel} for ${opts.planName}`,
+    heroTitle: "Payment receipt",
+    heroSubtitle: `Thank you — we received ${opts.amountLabel} for your ${opts.planName} plan.`,
+    bodyHtml,
+    secondaryHtml: `
+      <p style="margin:0 0 6px;font-family:${EMAIL_FONT};font-size:13px;font-weight:600;color:${EMAIL_BRAND.ink};">Need help?</p>
+      <p style="margin:0 0 12px;font-size:13px;line-height:1.5;color:${EMAIL_BRAND.muted};">
+        Contact ${esc(EMAIL_BRAND.supportEmail)}.
+      </p>
+      ${ctaButton("Open billing", billing)}`,
     links: {
       unsubscribeUrl: opts.unsubscribeUrl,
       preferencesUrl: opts.preferencesUrl,

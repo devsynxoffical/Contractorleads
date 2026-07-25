@@ -128,6 +128,12 @@ export async function POST(request: Request) {
       });
     }
 
+    // Keep Stripe customer email in sync so invoices / receipts reach the user
+    await stripe.customers.update(customerId, {
+      email: dbUser.email,
+      name: dbUser.name || dbUser.companyName || undefined,
+    });
+
     // Existing paid subscriber → change price on the current subscription
     // (new Checkout would fail or create a second subscription).
     let subscriptionId =

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { appBaseUrl } from "@/lib/email-brand";
 import {
   checkoutAbandonedEmailContent,
+  paymentReceiptEmailContent,
   purchaseConfirmationEmailContent,
   renderManagedTemplate,
   verificationEmailContent,
@@ -384,6 +385,45 @@ export async function sendPurchaseConfirmationEmail(opts: {
     text: content.text,
     unsubscribeUrl: unsub,
     tags: ["purchase-confirmation"],
+  });
+}
+
+/**
+ * Payment receipt for every successful Stripe invoice (first charge + renewals).
+ * Transactional — always sent (not gated by marketing opt-in).
+ */
+export async function sendPaymentReceiptEmail(opts: {
+  userId: string;
+  to: string;
+  name?: string | null;
+  planName: string;
+  amountLabel: string;
+  invoiceNumber?: string | null;
+  paidAtLabel: string;
+  invoiceUrl?: string | null;
+  pdfUrl?: string | null;
+}) {
+  const unsub = unsubscribeUrlForUser(opts.userId);
+  const prefs = preferencesUrlForUser(opts.userId);
+  const content = paymentReceiptEmailContent({
+    name: opts.name,
+    planName: opts.planName,
+    amountLabel: opts.amountLabel,
+    invoiceNumber: opts.invoiceNumber,
+    paidAtLabel: opts.paidAtLabel,
+    invoiceUrl: opts.invoiceUrl,
+    pdfUrl: opts.pdfUrl,
+    billingUrl: `${appBaseUrl()}/billing`,
+    unsubscribeUrl: unsub,
+    preferencesUrl: prefs,
+  });
+  return sendEmail({
+    to: opts.to,
+    subject: `Receipt: ${opts.amountLabel} — ${opts.planName} · Contractor Leads`,
+    html: content.html,
+    text: content.text,
+    unsubscribeUrl: unsub,
+    tags: ["payment-receipt"],
   });
 }
 
