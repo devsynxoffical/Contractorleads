@@ -98,6 +98,32 @@ function addMember(members: PublicTeamMember[], candidate: PublicTeamMember) {
   }
 }
 
+/**
+ * Cloudflare "email protection" replaces addresses with a hex blob
+ * (data-cfemail / #email-protection). First byte is the XOR key.
+ */
+function decodeCfEmail(hex: string): string | null {
+  const clean = hex.trim().toLowerCase();
+  if (!/^[0-9a-f]{4,}$/.test(clean) || clean.length % 2 !== 0) return null;
+  try {
+    const key = parseInt(clean.slice(0, 2), 16);
+    let out = "";
+    for (let i = 2; i < clean.length; i += 2) {
+      out += String.fromCharCode(parseInt(clean.slice(i, i + 2), 16) ^ key);
+    }
+    return out;
+  } catch {
+    return null;
+  }
+}
+
+/** Turn "info (at) acme (dot) com" into a real address. Bracketed forms only. */
+function deobfuscate(text: string): string {
+  return text
+    .replace(/\s*[([{]\s*at\s*[)\]}]\s*/gi, "@")
+    .replace(/\s*[([{]\s*dot\s*[)\]}]\s*/gi, ".");
+}
+
 function isPlausibleEmail(raw: string): boolean {
   const email = raw.trim().toLowerCase();
   if (!email || email.length > 120) return false;
@@ -197,6 +223,22 @@ function extractFromHtml(html: string, sourceUrl: string) {
     }
   });
 
+  // Cloudflare-protected addresses (very common on contractor sites)
+  $("[data-cfemail], .__cf_email__").each((_, element) => {
+    const hex = $(element).attr("data-cfemail");
+    const decoded = hex ? decodeCfEmail(hex) : null;
+    if (decoded && isPlausibleEmail(decoded)) {
+      emails.add(decoded.toLowerCase().trim());
+    }
+  });
+  $('a[href*="/cdn-cgi/l/email-protection#"]').each((_, element) => {
+    const hex = $(element).attr("href")?.split("#")[1];
+    const decoded = hex ? decodeCfEmail(hex) : null;
+    if (decoded && isPlausibleEmail(decoded)) {
+      emails.add(decoded.toLowerCase().trim());
+    }
+  });
+
   $('script[type="application/ld+json"]').each((_, element) => {
     try {
       walkJsonLd(JSON.parse($(element).text()), sourceUrl, members, emails);
@@ -249,7 +291,7 @@ function extractFromHtml(html: string, sourceUrl: string) {
   }
 
   // Plaintext emails — most contractor sites never use mailto:
-  for (const match of bodyText.matchAll(EMAIL_RE)) {
+  for (const match of deobfuscate(bodyText).matchAll(EMAIL_RE)) {
     if (isPlausibleEmail(match[0])) emails.add(match[0].toLowerCase());
   }
   for (const match of html.slice(0, 400_000).matchAll(EMAIL_RE)) {
@@ -282,14 +324,18 @@ function extractFromHtml(html: string, sourceUrl: string) {
   };
 }
 
-async function fetchHtml(url: string): Promise<string | null> {
+async function fetchHtml(
+  url: string,
+  timeoutMs = 6_000,
+): Promise<string | null> {
+  if (timeoutMs <= 0) return null;
   try {
     const response = await safeFetch(
       url,
       {
         headers: { "User-Agent": USER_AGENT, Accept: "text/html" },
         // Keep per-page fetches snappy so we can check contact pages too
-        timeoutMs: 6_000,
+        timeoutMs,
       },
       { allowHttp: true },
     );
@@ -316,9 +362,16 @@ function contactFallbacks(homepage: string): string[] {
 
 export async function extractWebsitePeople(
   website: string,
+  options: { budgetMs?: number } = {},
 ): Promise<WebsitePeopleResult> {
+  // Self-limit so callers that race us with a timeout still get partial data
+  // (homepage email) instead of an empty result.
+  const budgetMs = options.budgetMs ?? 8_000;
+  const startedAt = Date.now();
+  const remaining = () => budgetMs - (Date.now() - startedAt);
+
   const homepage = website.startsWith("http") ? website : `https://${website}`;
-  const homeHtml = await fetchHtml(homepage);
+  const homeHtml = await fetchHtml(homepage, Math.min(5_000, remaining()));
   if (!homeHtml) {
     return {
       owner: null,
@@ -342,14 +395,20 @@ export async function extractWebsitePeople(
   let email = home.email;
   let emailSourceUrl = home.email ? homepage : null;
 
-  const extraPages = await Promise.all(
-    pages.slice(1).map(async (url) => {
-      // Skip if it's the same as homepage (normalized)
-      if (url.replace(/\/$/, "") === homepage.replace(/\/$/, "")) return null;
-      const html = await fetchHtml(url);
-      return html ? { url, parsed: extractFromHtml(html, url) } : null;
-    }),
-  );
+  // Only chase extra pages while there is time left in the budget.
+  const followBudget = remaining();
+  const extraPages =
+    followBudget < 1_200
+      ? []
+      : await Promise.all(
+          pages.slice(1).map(async (url) => {
+            if (url.replace(/\/$/, "") === homepage.replace(/\/$/, "")) {
+              return null;
+            }
+            const html = await fetchHtml(url, Math.min(5_000, followBudget));
+            return html ? { url, parsed: extractFromHtml(html, url) } : null;
+          }),
+        );
 
   for (const page of extraPages) {
     if (!page) continue;
