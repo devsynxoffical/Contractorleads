@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 
 export type StripeBillingSecrets = {
   secretKey: string;
+  publishableKey: string;
   webhookSecret: string;
   priceStarter: string;
   priceGrowth: string;
@@ -11,6 +12,8 @@ export type StripeBillingSecrets = {
 export type StripeBillingStatus = {
   secretKeyConfigured: boolean;
   secretKeyHint: string | null;
+  publishableKeyConfigured: boolean;
+  publishableKeyHint: string | null;
   webhookSecretConfigured: boolean;
   webhookSecretHint: string | null;
   priceStarter: string;
@@ -32,6 +35,7 @@ function maskHint(value: string | undefined | null): string | null {
 function fromEnv(): StripeBillingSecrets {
   return {
     secretKey: process.env.STRIPE_SECRET_KEY?.trim() || "",
+    publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() || "",
     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET?.trim() || "",
     priceStarter: process.env.STRIPE_PRICE_STARTER?.trim() || "",
     priceGrowth: process.env.STRIPE_PRICE_GROWTH?.trim() || "",
@@ -50,6 +54,7 @@ export async function getStripeBillingSecrets(): Promise<StripeBillingSecrets> {
 
   return {
     secretKey: row.secretKey.trim() || env.secretKey,
+    publishableKey: row.publishableKey.trim() || env.publishableKey,
     webhookSecret: row.webhookSecret.trim() || env.webhookSecret,
     priceStarter: row.priceStarter.trim() || env.priceStarter,
     priceGrowth: row.priceGrowth.trim() || env.priceGrowth,
@@ -67,6 +72,7 @@ export async function getStripeBillingStatus(): Promise<StripeBillingStatus> {
   const dbHasAny = Boolean(
     row &&
       (row.secretKey.trim() ||
+        row.publishableKey.trim() ||
         row.webhookSecret.trim() ||
         row.priceStarter.trim() ||
         row.priceGrowth.trim() ||
@@ -74,6 +80,7 @@ export async function getStripeBillingStatus(): Promise<StripeBillingStatus> {
   );
   const envHasAny = Boolean(
     env.secretKey ||
+      env.publishableKey ||
       env.webhookSecret ||
       env.priceStarter ||
       env.priceGrowth ||
@@ -88,6 +95,8 @@ export async function getStripeBillingStatus(): Promise<StripeBillingStatus> {
   return {
     secretKeyConfigured: Boolean(effective.secretKey),
     secretKeyHint: maskHint(effective.secretKey),
+    publishableKeyConfigured: Boolean(effective.publishableKey),
+    publishableKeyHint: maskHint(effective.publishableKey),
     webhookSecretConfigured: Boolean(effective.webhookSecret),
     webhookSecretHint: maskHint(effective.webhookSecret),
     // Price IDs are not highly sensitive — show stored/effective values for editing
@@ -108,12 +117,14 @@ export async function getStripeBillingStatus(): Promise<StripeBillingStatus> {
 export type StripeBillingSaveInput = {
   /** Pass new secret, or omit/empty to keep existing */
   secretKey?: string;
+  publishableKey?: string;
   webhookSecret?: string;
   priceStarter?: string;
   priceGrowth?: string;
   priceAgency?: string;
   /** Clear a field explicitly */
   clearSecretKey?: boolean;
+  clearPublishableKey?: boolean;
   clearWebhookSecret?: boolean;
 };
 
@@ -126,6 +137,7 @@ export async function saveStripeBillingConfig(input: StripeBillingSaveInput) {
 
   const next = {
     secretKey: current.secretKey,
+    publishableKey: current.publishableKey,
     webhookSecret: current.webhookSecret,
     priceStarter: current.priceStarter,
     priceGrowth: current.priceGrowth,
@@ -135,6 +147,14 @@ export async function saveStripeBillingConfig(input: StripeBillingSaveInput) {
   if (input.clearSecretKey) next.secretKey = "";
   else if (typeof input.secretKey === "string" && input.secretKey.trim()) {
     next.secretKey = input.secretKey.trim();
+  }
+
+  if (input.clearPublishableKey) next.publishableKey = "";
+  else if (
+    typeof input.publishableKey === "string" &&
+    input.publishableKey.trim()
+  ) {
+    next.publishableKey = input.publishableKey.trim();
   }
 
   if (input.clearWebhookSecret) next.webhookSecret = "";

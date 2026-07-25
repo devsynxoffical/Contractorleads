@@ -12,11 +12,10 @@ import {
 type StripeStatus = {
   secretKeyConfigured: boolean;
   secretKeyHint: string | null;
+  publishableKeyConfigured: boolean;
+  publishableKeyHint: string | null;
   webhookSecretConfigured: boolean;
   webhookSecretHint: string | null;
-  priceStarter: string;
-  priceGrowth: string;
-  priceAgency: string;
   checkoutReady: boolean;
   source: string;
   updatedAt: string | null;
@@ -28,10 +27,8 @@ export default function AdminSystemPage() {
   const [note, setNote] = useState("");
   const [stripe, setStripe] = useState<StripeStatus | null>(null);
   const [secretKey, setSecretKey] = useState("");
+  const [publishableKey, setPublishableKey] = useState("");
   const [webhookSecret, setWebhookSecret] = useState("");
-  const [priceStarter, setPriceStarter] = useState("");
-  const [priceGrowth, setPriceGrowth] = useState("");
-  const [priceAgency, setPriceAgency] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -43,10 +40,8 @@ export default function AdminSystemPage() {
     setKeys(sys.keys ?? []);
     setNote(sys.note ?? "");
     setStripe(stripeRes);
-    setPriceStarter(stripeRes.priceStarter || "");
-    setPriceGrowth(stripeRes.priceGrowth || "");
-    setPriceAgency(stripeRes.priceAgency || "");
     setSecretKey("");
+    setPublishableKey("");
     setWebhookSecret("");
   }
 
@@ -65,10 +60,8 @@ export default function AdminSystemPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           secretKey: secretKey.trim() || undefined,
+          publishableKey: publishableKey.trim() || undefined,
           webhookSecret: webhookSecret.trim() || undefined,
-          priceStarter,
-          priceGrowth,
-          priceAgency,
         }),
       });
       const json = await res.json();
@@ -76,7 +69,7 @@ export default function AdminSystemPage() {
       setMessage(
         json.checkoutReady
           ? "Stripe settings saved. Checkout is ready."
-          : "Stripe settings saved. Add secret key + all three price IDs to enable Checkout.",
+          : "Stripe keys saved. Existing checkout configuration is incomplete.",
       );
       await load();
     } catch (err) {
@@ -87,18 +80,20 @@ export default function AdminSystemPage() {
     }
   }
 
-  async function clearSecret( which: "secretKey" | "webhookSecret") {
+  async function clearSecret(
+    which: "secretKey" | "publishableKey" | "webhookSecret",
+  ) {
     setBusy(true);
     setMessage(null);
     try {
       const res = await fetch("/api/admin/stripe", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
-          which === "secretKey"
-            ? { clearSecretKey: true }
-            : { clearWebhookSecret: true },
-        ),
+        body: JSON.stringify({
+          clearSecretKey: which === "secretKey",
+          clearPublishableKey: which === "publishableKey",
+          clearWebhookSecret: which === "webhookSecret",
+        }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Clear failed");
@@ -125,9 +120,8 @@ export default function AdminSystemPage() {
           <div>
             <h2 className="text-sm font-semibold text-ink">Stripe Billing</h2>
             <p className="mt-1 max-w-2xl text-[13px] text-ink-muted">
-              Paste your Stripe secret key, webhook signing secret, and monthly
-              Price IDs for Starter / Growth / Agency. Values saved here override
-              environment variables.
+              Add your Stripe API keys below. The webhook signing secret is
+              optional. Existing products and plan price settings stay unchanged.
             </p>
           </div>
           {stripe ? (
@@ -157,7 +151,7 @@ export default function AdminSystemPage() {
 
         <form onSubmit={saveStripe} className="mt-4 space-y-3">
           <label className="block text-[12px] font-medium text-ink-muted">
-            Secret key (sk_live_… / sk_test_…)
+            Secret API key (sk_live_… / sk_test_…)
             <input
               type="password"
               autoComplete="off"
@@ -183,7 +177,33 @@ export default function AdminSystemPage() {
           ) : null}
 
           <label className="block text-[12px] font-medium text-ink-muted">
-            Webhook signing secret (whsec_…)
+            Publishable key (pk_live_… / pk_test_…)
+            <input
+              type="password"
+              autoComplete="off"
+              className="saas-input mt-1.5 font-mono text-[13px]"
+              placeholder={
+                stripe?.publishableKeyConfigured
+                  ? `Configured ${stripe.publishableKeyHint || ""} — paste to replace`
+                  : "pk_…"
+              }
+              value={publishableKey}
+              onChange={(e) => setPublishableKey(e.target.value)}
+            />
+          </label>
+          {stripe?.publishableKeyConfigured ? (
+            <button
+              type="button"
+              className="text-[12px] font-semibold text-brand-600 hover:underline"
+              onClick={() => void clearSecret("publishableKey")}
+              disabled={busy}
+            >
+              Clear saved publishable key
+            </button>
+          ) : null}
+
+          <label className="block text-[12px] font-medium text-ink-muted">
+            Webhook signing secret (optional)
             <input
               type="password"
               autoComplete="off"
@@ -207,36 +227,6 @@ export default function AdminSystemPage() {
               Clear saved webhook secret
             </button>
           ) : null}
-
-          <div className="grid gap-3 sm:grid-cols-3">
-            <label className="block text-[12px] font-medium text-ink-muted">
-              Starter price ID
-              <input
-                className="saas-input mt-1.5 font-mono text-[13px]"
-                placeholder="price_…"
-                value={priceStarter}
-                onChange={(e) => setPriceStarter(e.target.value)}
-              />
-            </label>
-            <label className="block text-[12px] font-medium text-ink-muted">
-              Growth price ID
-              <input
-                className="saas-input mt-1.5 font-mono text-[13px]"
-                placeholder="price_…"
-                value={priceGrowth}
-                onChange={(e) => setPriceGrowth(e.target.value)}
-              />
-            </label>
-            <label className="block text-[12px] font-medium text-ink-muted">
-              Agency price ID
-              <input
-                className="saas-input mt-1.5 font-mono text-[13px]"
-                placeholder="price_…"
-                value={priceAgency}
-                onChange={(e) => setPriceAgency(e.target.value)}
-              />
-            </label>
-          </div>
 
           <div className="flex flex-wrap items-center gap-3 pt-1">
             <Button type="submit" disabled={busy} size="sm">

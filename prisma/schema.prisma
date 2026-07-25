@@ -333,6 +333,7 @@ model PlanPricingConfig {
 model StripeBillingConfig {
   id             String   @id @default("default")
   secretKey      String   @default("")
+  publishableKey String   @default("")
   webhookSecret  String   @default("")
   priceStarter   String   @default("")
   priceGrowth    String   @default("")
