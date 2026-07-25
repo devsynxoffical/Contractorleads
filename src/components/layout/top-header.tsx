@@ -3,7 +3,6 @@
 import { useState } from "react";
 import {
   HiOutlineBars3,
-  HiOutlineBell,
   HiOutlineChevronDoubleLeft,
   HiOutlineChevronDoubleRight,
   HiOutlineMagnifyingGlass,
@@ -13,8 +12,6 @@ import { cn } from "@/lib/utils";
 import { GlobalSearch } from "@/components/layout/global-search";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { WorkspaceSettingsMenu } from "@/components/layout/workspace-settings-menu";
-
-const LOGO_GRADIENT = "var(--logo-gradient)";
 
 export function TopHeader({
   user,
@@ -79,21 +76,6 @@ export function TopHeader({
 
         <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
           <ThemeToggle compact />
-
-          <button
-            type="button"
-            className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-transparent text-ink-muted transition hover:border-border hover:bg-brand-50 hover:text-brand-500"
-            aria-label="Notifications"
-          >
-            <HiOutlineBell className="h-5 w-5" />
-            <span
-              className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white shadow-sm"
-              style={{ background: LOGO_GRADIENT }}
-            >
-              4
-            </span>
-          </button>
-
           <WorkspaceSettingsMenu user={user} variant="header" />
         </div>
       </div>
