@@ -95,6 +95,7 @@ type Customer = {
     activities: number;
     scripts: number;
     leadEmails: number;
+    leadSms: number;
     exports: number;
     teamMembers: number;
   };
@@ -780,7 +781,8 @@ export default function AdminCustomerDetailPage() {
         <h2 className="text-sm font-semibold text-ink">
           Usage snapshot · {customer._count.searches} searches ·{" "}
           {customer._count.savedLeads} saved · {customer._count.leadEmails} emails ·{" "}
-          {customer._count.exports} exports · {customer._count.scripts} scripts
+          {customer._count.leadSms} SMS · {customer._count.exports} exports ·{" "}
+          {customer._count.scripts} scripts
         </h2>
         <ul className="mt-3 space-y-2 text-[13px]">
           {customer.searches.map((s) => (

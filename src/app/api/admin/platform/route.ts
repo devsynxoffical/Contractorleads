@@ -25,6 +25,7 @@ export async function GET() {
     smtpAccounts,
     sequencesEnabled,
     leadEmails,
+    leadSms,
     referrals,
     crmConnected,
     slackConnected,
@@ -46,6 +47,7 @@ export async function GET() {
     prisma.smtpAccount.count(),
     prisma.emailSequence.count({ where: { enabled: true } }),
     prisma.leadEmail.count(),
+    prisma.leadSms.count(),
     prisma.referral.count(),
     prisma.user.count({
       where: { ...staffFilter, crmWebhookEnabled: true, crmWebhookUrl: { not: null } },
@@ -158,6 +160,14 @@ export async function GET() {
       status: "ready",
     },
     {
+      id: "sms",
+      title: "SMS dashboard",
+      description: "Twilio sent / received / failed, Messaging add-on usage",
+      href: "/admin/sms",
+      metric: `${leadSms} texts`,
+      status: "ready",
+    },
+    {
       id: "templates",
       title: "Transactional templates",
       description: "Verify, welcome, reset, scrape email copy",
@@ -245,6 +255,7 @@ export async function GET() {
       smtpAccounts,
       sequencesEnabled,
       leadEmails,
+      leadSms,
       referrals,
       crmConnected,
       slackConnected,

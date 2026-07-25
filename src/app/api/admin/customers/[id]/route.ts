@@ -130,6 +130,7 @@ export async function GET(_request: Request, { params }: Params) {
           activities: true,
           scripts: true,
           leadEmails: true,
+          leadSms: true,
           exports: true,
           teamMembers: true,
         },

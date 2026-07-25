@@ -46,12 +46,20 @@ export default function AdminCommunicationsPage() {
         title="Email dashboard"
         description="Delivered sends, inbound replies, failures, nurture enrollments, and mailbox activity across all agencies."
         actions={
-          <Link
-            href="/admin/email-preview"
-            className="rounded-xl border border-border bg-[var(--surface)] px-3 py-2 text-[12px] font-semibold text-ink"
-          >
-            Transactional templates →
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/admin/sms"
+              className="rounded-xl border border-border bg-[var(--surface)] px-3 py-2 text-[12px] font-semibold text-ink"
+            >
+              SMS dashboard →
+            </Link>
+            <Link
+              href="/admin/email-preview"
+              className="rounded-xl border border-border bg-[var(--surface)] px-3 py-2 text-[12px] font-semibold text-ink"
+            >
+              Transactional templates →
+            </Link>
+          </div>
         }
       />
 

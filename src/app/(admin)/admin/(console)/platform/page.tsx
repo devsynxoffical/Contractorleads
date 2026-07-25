@@ -19,6 +19,7 @@ type PlatformPayload = {
     smtpAccounts: number;
     sequencesEnabled: number;
     leadEmails: number;
+    leadSms: number;
     referrals: number;
     crmConnected: number;
     slackConnected: number;
@@ -88,8 +89,8 @@ export default function AdminPlatformPage() {
             />
             <AdminStatCard
               label="Outreach"
-              value={s!.leadEmails}
-              hint={`${s!.smtpAccounts} SMTP · ${s!.sequencesEnabled} sequences`}
+              value={s!.leadEmails + s!.leadSms}
+              hint={`${s!.leadEmails} emails · ${s!.leadSms} SMS · ${s!.smtpAccounts} SMTP`}
             />
             <AdminStatCard
               label="Integrations"
