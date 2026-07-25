@@ -3,6 +3,7 @@ import { requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isMetaConfigured } from "@/lib/services/facebook";
 import { getSystemKeyStatuses } from "@/lib/admin";
+import { getEmailProviderStatus } from "@/lib/email-config";
 
 export async function GET() {
   const admin = await requirePermission("health");
@@ -26,6 +27,7 @@ export async function GET() {
 
   const keys = getSystemKeyStatuses();
   const byKey = Object.fromEntries(keys.map((k) => [k.key, k]));
+  const emailStatus = await getEmailProviderStatus().catch(() => null);
 
   const checks = [
     {
@@ -77,16 +79,12 @@ export async function GET() {
     },
     {
       name: "Transactional email",
-      status:
-        byKey.RESEND_API_KEY?.configured || byKey.SENDGRID_API_KEY?.configured
-          ? "ok"
-          : "warn",
-      detail:
-        byKey.RESEND_API_KEY?.configured
-          ? "Resend configured (signup verification)"
-          : byKey.SENDGRID_API_KEY?.configured
-            ? "SendGrid configured (signup verification)"
-            : "RESEND_API_KEY or SENDGRID_API_KEY missing — verification emails are mocked in logs",
+      status: emailStatus?.liveReady ? "ok" : "warn",
+      detail: emailStatus?.resendConfigured
+        ? `Resend configured (${emailStatus.source}) — live sending active`
+        : emailStatus?.sendgridConfigured
+          ? `SendGrid configured (${emailStatus.source}) — live sending active`
+          : "No provider key — add one under Admin → System & API Keys. Live signups will fail until then.",
     },
     {
       name: "Places Autocomplete",

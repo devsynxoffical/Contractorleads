@@ -341,6 +341,15 @@ model StripeBillingConfig {
   updatedAt      DateTime @updatedAt
 }
 
+/// Admin-editable transactional email provider keys (overrides env when set).
+model EmailProviderConfig {
+  id             String   @id @default("default")
+  resendApiKey   String   @default("")
+  sendgridApiKey String   @default("")
+  fromEmail      String   @default("")
+  updatedAt      DateTime @updatedAt
+}
+
 /// One signup attributed to a referrer. Commission pays on first paid plan purchase.
 model Referral {
   id                String    @id @default(cuid())

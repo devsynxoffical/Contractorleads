@@ -8,11 +8,18 @@ import {
   verificationEmailContent,
 } from "@/lib/email-templates";
 import { getEmailTemplate } from "@/lib/email-template-store";
+import {
+  DEFAULT_FROM_EMAIL,
+  getEmailProviderSecrets,
+} from "@/lib/email-config";
 import type { EmailTemplateKey } from "@/lib/email-template-defaults";
 
 /**
  * Send transactional email via Resend (preferred) or SendGrid.
- * Without a provider key, logs the payload (dev) and returns { ok: true, mocked: true }.
+ * Keys come from admin settings (DB) first, then env.
+ *
+ * In production a missing provider key is a hard error — never a silent mock —
+ * so live signups can't hand out verification links in the browser.
  *
  * Deliverability helpers:
  * - plain-text alternative
@@ -26,16 +33,14 @@ export async function sendEmail(params: {
   unsubscribeUrl?: string;
   tags?: string[];
 }): Promise<{ ok: boolean; mocked?: boolean; error?: string }> {
-  const from =
-    process.env.EMAIL_FROM ||
-    process.env.RESEND_FROM ||
-    "Contractor Leads <onboarding@resend.dev>";
+  const config = await getEmailProviderSecrets().catch(() => null);
+  const from = config?.fromEmail || DEFAULT_FROM_EMAIL;
 
   const listUnsub = params.unsubscribeUrl
     ? `<${params.unsubscribeUrl}>`
     : undefined;
 
-  const resendKey = process.env.RESEND_API_KEY;
+  const resendKey = config?.resendApiKey;
   if (resendKey) {
     try {
       const payload: Record<string, unknown> = {
@@ -74,7 +79,7 @@ export async function sendEmail(params: {
     }
   }
 
-  const sendgridKey = process.env.SENDGRID_API_KEY;
+  const sendgridKey = config?.sendgridApiKey;
   if (sendgridKey) {
     try {
       const fromEmail = from.includes("<")
@@ -116,6 +121,14 @@ export async function sendEmail(params: {
         error: e instanceof Error ? e.message : "SendGrid failed",
       };
     }
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    return {
+      ok: false,
+      error:
+        "No email provider configured. Add a Resend or SendGrid API key under Admin → System & API Keys.",
+    };
   }
 
   console.info(

@@ -22,6 +22,18 @@ type StripeStatus = {
   webhookUrl: string;
 };
 
+type EmailStatus = {
+  resendConfigured: boolean;
+  resendHint: string | null;
+  sendgridConfigured: boolean;
+  sendgridHint: string | null;
+  fromEmail: string;
+  liveReady: boolean;
+  provider: string;
+  source: string;
+  updatedAt: string | null;
+};
+
 export default function AdminSystemPage() {
   const [keys, setKeys] = useState<EnvKeyStatus[]>([]);
   const [note, setNote] = useState("");
@@ -29,13 +41,19 @@ export default function AdminSystemPage() {
   const [secretKey, setSecretKey] = useState("");
   const [publishableKey, setPublishableKey] = useState("");
   const [webhookSecret, setWebhookSecret] = useState("");
+  const [email, setEmail] = useState<EmailStatus | null>(null);
+  const [resendApiKey, setResendApiKey] = useState("");
+  const [fromEmail, setFromEmail] = useState("");
+  const [emailBusy, setEmailBusy] = useState(false);
+  const [emailMessage, setEmailMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   async function load() {
-    const [sys, stripeRes] = await Promise.all([
+    const [sys, stripeRes, emailRes] = await Promise.all([
       fetch("/api/admin/system").then((r) => r.json()),
       fetch("/api/admin/stripe").then((r) => r.json()),
+      fetch("/api/admin/email-provider").then((r) => r.json()),
     ]);
     setKeys(sys.keys ?? []);
     setNote(sys.note ?? "");
@@ -43,6 +61,37 @@ export default function AdminSystemPage() {
     setSecretKey("");
     setPublishableKey("");
     setWebhookSecret("");
+    setEmail(emailRes);
+    setFromEmail(emailRes.fromEmail || "");
+    setResendApiKey("");
+  }
+
+  async function saveEmail(e: React.FormEvent) {
+    e.preventDefault();
+    setEmailBusy(true);
+    setEmailMessage(null);
+    try {
+      const res = await fetch("/api/admin/email-provider", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          resendApiKey: resendApiKey.trim() || undefined,
+          fromEmail,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Save failed");
+      setEmailMessage(
+        json.liveReady
+          ? "Email settings saved. Live sending is active."
+          : "Saved, but no provider key yet — emails cannot be sent.",
+      );
+      await load();
+    } catch (err) {
+      setEmailMessage(err instanceof Error ? err.message : "Save failed");
+    } finally {
+      setEmailBusy(false);
+    }
   }
 
   useEffect(() => {
@@ -112,8 +161,80 @@ export default function AdminSystemPage() {
     <div>
       <AdminPageHeader
         title="System & API Keys"
-        description="Manage Stripe Billing keys here. Other platform secrets stay in host env (Railway / .env)."
+        description="Manage Stripe Billing and email provider keys here. Other platform secrets stay in host env (Railway / .env)."
       />
+
+      <section className="mb-6 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)] dark:bg-[var(--surface)]">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-ink">
+              Transactional email
+            </h2>
+            <p className="mt-1 max-w-2xl text-[13px] text-ink-muted">
+              Powers signup verification, password resets, and purchase
+              confirmations. Without a key, live signups fail instead of showing
+              a dev link.
+            </p>
+          </div>
+          {email ? (
+            <span
+              className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${
+                email.liveReady
+                  ? "bg-emerald-500/15 text-emerald-700"
+                  : "bg-amber-500/15 text-amber-800"
+              }`}
+            >
+              {email.liveReady ? "Live" : "Not configured"}
+            </span>
+          ) : null}
+        </div>
+
+        {email ? (
+          <p className="mt-3 text-[12px] text-ink-faint">
+            Provider: {email.provider} · Source: {email.source}
+            {email.updatedAt
+              ? ` · Updated ${new Date(email.updatedAt).toLocaleString()}`
+              : ""}
+          </p>
+        ) : null}
+
+        <form onSubmit={saveEmail} className="mt-4 space-y-3">
+          <label className="block text-[12px] font-medium text-ink-muted">
+            Resend API key (re_…)
+            <input
+              type="password"
+              autoComplete="off"
+              className="saas-input mt-1.5 font-mono text-[13px]"
+              placeholder={
+                email?.resendConfigured
+                  ? `Configured ${email.resendHint || ""} — paste to replace`
+                  : "re_…"
+              }
+              value={resendApiKey}
+              onChange={(e) => setResendApiKey(e.target.value)}
+            />
+          </label>
+
+          <label className="block text-[12px] font-medium text-ink-muted">
+            From address (must use a domain verified in Resend)
+            <input
+              className="saas-input mt-1.5 font-mono text-[13px]"
+              placeholder="Contractor Leads <noreply@contractorleads.us>"
+              value={fromEmail}
+              onChange={(e) => setFromEmail(e.target.value)}
+            />
+          </label>
+
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            <Button type="submit" disabled={emailBusy} size="sm">
+              {emailBusy ? "Saving…" : "Save email settings"}
+            </Button>
+            {emailMessage ? (
+              <p className="text-[13px] text-ink-muted">{emailMessage}</p>
+            ) : null}
+          </div>
+        </form>
+      </section>
 
       <section className="mb-6 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)] dark:bg-[var(--surface)]">
         <div className="flex flex-wrap items-start justify-between gap-3">
