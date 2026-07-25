@@ -301,7 +301,7 @@ async function enrichAndPersistPlace(opts: {
         ? withTimeout(searchFacebookPage(place.name), 2500, null)
         : Promise.resolve(null),
       website
-        ? withTimeout(extractWebsitePeople(website), 3500, EMPTY_PEOPLE)
+        ? withTimeout(extractWebsitePeople(website), 9000, EMPTY_PEOPLE)
         : Promise.resolve(EMPTY_PEOPLE),
       withTimeout(matchYelpBusiness(place.name, location), 2500, null),
     ]);
