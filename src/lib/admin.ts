@@ -100,6 +100,21 @@ export function getSystemKeyStatuses(): EnvKeyStatus[] {
       env: process.env.INBOUND_EMAIL_SECRET,
     },
     {
+      key: "TWILIO_ACCOUNT_SID",
+      group: "SMS",
+      env: process.env.TWILIO_ACCOUNT_SID,
+    },
+    {
+      key: "TWILIO_AUTH_TOKEN",
+      group: "SMS",
+      env: process.env.TWILIO_AUTH_TOKEN,
+    },
+    {
+      key: "TWILIO_FROM_NUMBER",
+      group: "SMS",
+      env: process.env.TWILIO_FROM_NUMBER,
+    },
+    {
       key: "SECRET_ENCRYPTION_KEY",
       group: "Security",
       env: process.env.SECRET_ENCRYPTION_KEY || process.env.CREDENTIALS_SECRET,

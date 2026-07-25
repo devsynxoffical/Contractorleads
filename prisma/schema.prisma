@@ -86,6 +86,7 @@ model User {
   smtpSettings    UserSmtpSettings?
   smtpAccounts    SmtpAccount[]
   leadEmails      LeadEmail[]
+  leadSms         LeadSms[]
   emailSequence   EmailSequence?
   emailEnrollments EmailEnrollment[]
   passwordResets  PasswordResetToken[]
@@ -200,6 +201,7 @@ model Lead {
 
   savedBy SavedLead[]
   emails  LeadEmail[]
+  sms     LeadSms[]
   unlocks LeadUnlock[]
 
   @@index([industry])
@@ -252,6 +254,7 @@ model SavedLead {
   notes     LeadNote[]
   emailEnrollments EmailEnrollment[]
   emails    LeadEmail[]
+  sms       LeadSms[]
 
   @@unique([userId, leadId])
 }
@@ -359,6 +362,47 @@ model EmailProviderConfig {
   sendgridApiKey String   @default("")
   fromEmail      String   @default("")
   updatedAt      DateTime @updatedAt
+}
+
+/// Platform Twilio credentials for SMS (Messaging add-on). Admin-editable; env fallback.
+model TwilioConfig {
+  id                   String   @id @default("default")
+  accountSid           String   @default("")
+  authToken            String   @default("")
+  /// E.164 Twilio number used as the From address, e.g. +15551234567
+  fromNumber           String   @default("")
+  /// Optional Messaging Service SID (MG…) — preferred over fromNumber when set
+  messagingServiceSid  String   @default("")
+  updatedAt            DateTime @updatedAt
+}
+
+/// Outbound and inbound SMS tied to a lead (Twilio).
+model LeadSms {
+  id          String     @id @default(cuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leadId      String
+  lead        Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  savedLeadId String?
+  savedLead   SavedLead? @relation(fields: [savedLeadId], references: [id], onDelete: SetNull)
+  /// outbound | inbound
+  direction   String
+  fromPhone   String
+  toPhone     String
+  body        String
+  /// queued | sent | delivered | failed | received
+  status      String
+  error       String?
+  /// Twilio Message SID (SM… / MM…)
+  twilioSid   String?    @unique
+  readAt      DateTime?
+  createdAt   DateTime   @default(now())
+
+  @@index([userId, leadId, createdAt])
+  @@index([userId, createdAt])
+  @@index([userId, direction, createdAt])
+  @@index([fromPhone])
+  @@index([toPhone])
 }
 
 /// One signup attributed to a referrer. Commission pays on first paid plan purchase.

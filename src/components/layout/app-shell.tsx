@@ -21,6 +21,7 @@ import {
   HiOutlineCog6Tooth,
   HiOutlineCreditCard,
   HiOutlineCpuChip,
+  HiOutlineDevicePhoneMobile,
   HiOutlineFire,
   HiOutlineHome,
   HiOutlineHomeModern,
@@ -94,6 +95,7 @@ function buildSections(user: SessionUser): NavSection[] {
       items: [
         { href: "/setup", label: "Setup hub", icon: HiOutlineWrenchScrewdriver },
         { href: "/inbox", label: "Email inbox", icon: HiOutlineInbox },
+        { href: "/sms", label: "SMS", icon: HiOutlineDevicePhoneMobile },
       ],
     },
     {

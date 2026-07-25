@@ -2,7 +2,7 @@ import { ADMIN_STAFF_ROLES } from "@/lib/roles";
 
 /**
  * The "Messaging" add-on is a separate $30/mo subscription that unlocks
- * bulk email sending and (soon) SMS/text messaging. It is independent of the
+ * bulk email sending and SMS/text messaging via Twilio. It is independent of the
  * base plan — any paying or trialing user can add it.
  */
 export const MESSAGING_ADDON_PRICE_USD = 30;

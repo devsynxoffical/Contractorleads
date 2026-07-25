@@ -39,6 +39,19 @@ type EmailStatus = {
   updatedAt: string | null;
 };
 
+type TwilioStatus = {
+  accountSidConfigured: boolean;
+  accountSidHint: string | null;
+  authTokenConfigured: boolean;
+  authTokenHint: string | null;
+  fromNumber: string;
+  messagingServiceSid: string;
+  liveReady: boolean;
+  source: string;
+  updatedAt: string | null;
+  webhookUrl: string;
+};
+
 export default function AdminSystemPage() {
   const [keys, setKeys] = useState<EnvKeyStatus[]>([]);
   const [note, setNote] = useState("");
@@ -55,14 +68,22 @@ export default function AdminSystemPage() {
   const [fromEmail, setFromEmail] = useState("");
   const [emailBusy, setEmailBusy] = useState(false);
   const [emailMessage, setEmailMessage] = useState<string | null>(null);
+  const [twilio, setTwilio] = useState<TwilioStatus | null>(null);
+  const [twilioAccountSid, setTwilioAccountSid] = useState("");
+  const [twilioAuthToken, setTwilioAuthToken] = useState("");
+  const [twilioFromNumber, setTwilioFromNumber] = useState("");
+  const [twilioMessagingSid, setTwilioMessagingSid] = useState("");
+  const [twilioBusy, setTwilioBusy] = useState(false);
+  const [twilioMessage, setTwilioMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   async function load() {
-    const [sys, stripeRes, emailRes] = await Promise.all([
+    const [sys, stripeRes, emailRes, twilioRes] = await Promise.all([
       fetch("/api/admin/system").then((r) => r.json()),
       fetch("/api/admin/stripe").then((r) => r.json()),
       fetch("/api/admin/email-provider").then((r) => r.json()),
+      fetch("/api/admin/twilio").then((r) => r.json()),
     ]);
     setKeys(sys.keys ?? []);
     setNote(sys.note ?? "");
@@ -77,6 +98,11 @@ export default function AdminSystemPage() {
     setEmail(emailRes);
     setFromEmail(emailRes.fromEmail || "");
     setResendApiKey("");
+    setTwilio(twilioRes);
+    setTwilioFromNumber(twilioRes.fromNumber || "");
+    setTwilioMessagingSid(twilioRes.messagingServiceSid || "");
+    setTwilioAccountSid("");
+    setTwilioAuthToken("");
   }
 
   async function saveEmail(e: React.FormEvent) {
@@ -99,11 +125,46 @@ export default function AdminSystemPage() {
           ? "Email settings saved. Live sending is active."
           : "Saved, but no provider key yet — emails cannot be sent.",
       );
-      await load();
+      setEmail(json);
+      setResendApiKey("");
     } catch (err) {
       setEmailMessage(err instanceof Error ? err.message : "Save failed");
     } finally {
       setEmailBusy(false);
+    }
+  }
+
+  async function saveTwilio(e: React.FormEvent) {
+    e.preventDefault();
+    setTwilioBusy(true);
+    setTwilioMessage(null);
+    try {
+      const res = await fetch("/api/admin/twilio", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          accountSid: twilioAccountSid.trim() || undefined,
+          authToken: twilioAuthToken.trim() || undefined,
+          fromNumber: twilioFromNumber,
+          messagingServiceSid: twilioMessagingSid,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Save failed");
+      setTwilioMessage(
+        json.liveReady
+          ? "Twilio saved. SMS sending is ready."
+          : "Saved, but SID/token/from number still incomplete.",
+      );
+      setTwilio(json);
+      setTwilioAccountSid("");
+      setTwilioAuthToken("");
+      setTwilioFromNumber(json.fromNumber || "");
+      setTwilioMessagingSid(json.messagingServiceSid || "");
+    } catch (err) {
+      setTwilioMessage(err instanceof Error ? err.message : "Save failed");
+    } finally {
+      setTwilioBusy(false);
     }
   }
 
@@ -253,6 +314,112 @@ export default function AdminSystemPage() {
             </Button>
             {emailMessage ? (
               <p className="text-[13px] text-ink-muted">{emailMessage}</p>
+            ) : null}
+          </div>
+        </form>
+      </section>
+
+      <section className="mb-6 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)] dark:bg-[var(--surface)]">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-ink">Twilio SMS</h2>
+            <p className="mt-1 max-w-2xl text-[13px] text-ink-muted">
+              Powers text messaging for users with the Messaging add-on. Buy a
+              US number in Twilio, then paste credentials here (or set env
+              vars).
+            </p>
+          </div>
+          {twilio ? (
+            <span
+              className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${
+                twilio.liveReady
+                  ? "bg-emerald-500/15 text-emerald-700"
+                  : "bg-amber-500/15 text-amber-800"
+              }`}
+            >
+              {twilio.liveReady ? "Live" : "Not configured"}
+            </span>
+          ) : null}
+        </div>
+
+        {twilio ? (
+          <p className="mt-3 text-[12px] text-ink-faint">
+            Source: {twilio.source}
+            {twilio.updatedAt
+              ? ` · Updated ${new Date(twilio.updatedAt).toLocaleString()}`
+              : ""}
+          </p>
+        ) : null}
+
+        <form onSubmit={saveTwilio} className="mt-4 space-y-3">
+          <label className="block text-[12px] font-medium text-ink-muted">
+            Account SID (AC…)
+            <input
+              type="password"
+              autoComplete="off"
+              className="saas-input mt-1.5 font-mono text-[13px]"
+              placeholder={
+                twilio?.accountSidConfigured
+                  ? `Configured ${twilio.accountSidHint || ""} — paste to replace`
+                  : "AC…"
+              }
+              value={twilioAccountSid}
+              onChange={(e) => setTwilioAccountSid(e.target.value)}
+            />
+          </label>
+
+          <label className="block text-[12px] font-medium text-ink-muted">
+            Auth Token
+            <input
+              type="password"
+              autoComplete="off"
+              className="saas-input mt-1.5 font-mono text-[13px]"
+              placeholder={
+                twilio?.authTokenConfigured
+                  ? `Configured ${twilio.authTokenHint || ""} — paste to replace`
+                  : "Auth token from Twilio Console"
+              }
+              value={twilioAuthToken}
+              onChange={(e) => setTwilioAuthToken(e.target.value)}
+            />
+          </label>
+
+          <label className="block text-[12px] font-medium text-ink-muted">
+            From number (E.164)
+            <input
+              className="saas-input mt-1.5 font-mono text-[13px]"
+              placeholder="+15551234567"
+              value={twilioFromNumber}
+              onChange={(e) => setTwilioFromNumber(e.target.value)}
+            />
+          </label>
+
+          <label className="block text-[12px] font-medium text-ink-muted">
+            Messaging Service SID (optional, MG…)
+            <input
+              className="saas-input mt-1.5 font-mono text-[13px]"
+              placeholder="MG… — preferred over From number when set"
+              value={twilioMessagingSid}
+              onChange={(e) => setTwilioMessagingSid(e.target.value)}
+            />
+          </label>
+
+          {twilio?.webhookUrl ? (
+            <p className="rounded-lg bg-[#faf8fc] px-3 py-2 text-[12px] text-ink-muted dark:bg-[var(--input-bg)]">
+              Inbound webhook (paste in Twilio → Phone Number → Messaging):
+              <br />
+              <span className="font-mono text-[11px] text-ink">
+                {twilio.webhookUrl}
+              </span>
+            </p>
+          ) : null}
+
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            <Button type="submit" disabled={twilioBusy} size="sm">
+              {twilioBusy ? "Saving…" : "Save Twilio settings"}
+            </Button>
+            {twilioMessage ? (
+              <p className="text-[13px] text-ink-muted">{twilioMessage}</p>
             ) : null}
           </div>
         </form>
