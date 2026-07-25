@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Label, Textarea } from "@/components/ui/input";
@@ -47,7 +47,7 @@ export function LeadSendEmailCard({
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
-  async function load() {
+  const load = useCallback(async () => {
     const res = await fetch(`/api/leads/${leadId}/send-email`);
     const data = await res.json();
     if (!res.ok) return;
@@ -57,11 +57,18 @@ export function LeadSendEmailCard({
       (data.accounts as SmtpAccount[] | undefined)?.find((a) => a.isDefault) ||
       data.accounts?.[0];
     if (def) setSmtpAccountId(def.id);
-  }
+  }, [leadId]);
 
   useEffect(() => {
-    void load();
-  }, [leadId]);
+    let cancelled = false;
+    const run = async () => {
+      if (!cancelled) await load();
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [load]);
 
   async function send() {
     if (!leadEmail) {

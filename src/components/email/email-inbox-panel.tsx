@@ -65,11 +65,22 @@ export function EmailInboxPanel() {
   }, []);
 
   useEffect(() => {
-    loadInbox()
-      .catch((e) =>
-        setError(e instanceof Error ? e.message : "Failed to load inbox"),
-      )
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    const run = async () => {
+      try {
+        await loadInbox();
+      } catch (e) {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : "Failed to load inbox");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
   }, [loadInbox]);
 
   async function openEmail(id: string) {

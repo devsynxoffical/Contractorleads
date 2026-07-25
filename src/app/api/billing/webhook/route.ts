@@ -160,7 +160,7 @@ async function handleSubscriptionChange(sub: Stripe.Subscription) {
   }
 
   const priceId = extractSubscriptionPriceId(sub);
-  let plan = await planFromSubscription(sub);
+  const plan = await planFromSubscription(sub);
 
   if (sub.status === "canceled" || sub.status === "unpaid") {
     await syncUserSubscription({

@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     where: {
       userId: user.id,
       lead: {
-        email: { not: null },
+        AND: [{ email: { not: null } }, { email: { not: "" } }],
         ...(q
           ? {
               OR: [

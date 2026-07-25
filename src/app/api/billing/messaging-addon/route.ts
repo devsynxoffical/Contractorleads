@@ -12,8 +12,6 @@ import {
   hasMessagingAddon,
 } from "@/lib/messaging-addon";
 
-const ACTIVE_SUB_STATUSES = new Set(["active", "trialing", "past_due"]);
-
 function isNoSuchCustomer(err: unknown): boolean {
   const msg =
     err && typeof err === "object" && "message" in err
