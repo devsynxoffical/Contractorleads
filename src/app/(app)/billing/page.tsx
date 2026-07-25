@@ -175,7 +175,7 @@ export default async function BillingPage({
                 {planLabel(current)}
               </h2>
               {status ? (
-                <span className="rounded-full bg-brand-500/10 px-2.5 py-0.5 text-[11px] font-semibold capitalize text-brand-700 dark:text-brand-300">
+                <span className="rounded-full bg-brand-500/10 px-2.5 py-0.5 text-[11px] font-semibold capitalize text-brand-700">
                   {status}
                 </span>
               ) : null}
@@ -222,7 +222,7 @@ export default async function BillingPage({
                 key={row.key}
                 className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${
                   on
-                    ? "bg-emerald-500/10 text-emerald-800 dark:text-emerald-300"
+                    ? "bg-emerald-500/10 text-emerald-800 dark:text-emerald-200"
                     : "bg-[var(--input-bg)] text-ink-faint"
                 }`}
               >
@@ -267,12 +267,12 @@ export default async function BillingPage({
               >
                 <div className="mb-3 flex min-h-[1.25rem] items-center gap-2">
                   {active ? (
-                    <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+                    <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-200">
                       Current
                     </span>
                   ) : null}
                   {plan.popular && !active ? (
-                    <span className="rounded-full bg-brand-500/12 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-brand-700 dark:text-brand-300">
+                    <span className="rounded-full bg-brand-500/12 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-brand-700">
                       Popular
                     </span>
                   ) : null}
