@@ -940,25 +940,24 @@ function Footer() {
     {
       h: "Product",
       links: [
-        ["Features", "#features"],
-        ["Technology", "#integrations"],
+        ["Features", "/features"],
+        ["Pricing", "/pricing"],
+        ["Trades", "/trades"],
         ["Lead Finder", "/register"],
-        ["AI Assistant", "#features"],
-        ["Pricing", "#pricing"],
-        ["Integrations", "#features"],
-        ["FAQ", "#faq"],
+        ["FAQ", "/#faq"],
         ["Get started free", "/register"],
       ],
     },
     {
       h: "Company",
       links: [
-        ["About", "#"],
+        ["About", "/about"],
         ["Sign in", "/login"],
         ["Register", "/register"],
-        ["Help", "#faq"],
+        ["Help", "/#faq"],
         ["Contact", "mailto:hello@contractorleads.us"],
-        ["Security", "#"],
+        ["Privacy", "/privacy"],
+        ["Terms", "/terms"],
       ],
     },
     {

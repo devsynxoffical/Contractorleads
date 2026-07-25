@@ -1,6 +1,8 @@
+import type { Metadata } from "next";
 import { Outfit, Plus_Jakarta_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { ThemeScript } from "@/components/theme/theme-script";
+import { SEO, seoBaseUrl } from "@/lib/seo";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -13,12 +15,42 @@ const outfit = Outfit({
   variable: "--font-outfit",
 });
 
-export const metadata = {
-  title: "Contractor Leads | Verified contractor leads for agencies",
-  description:
-    "Find verified, AI-scored contractor leads in seconds. Built for agencies selling to home-service businesses — real contact data, no fake lists.",
+export const metadata: Metadata = {
+  metadataBase: new URL(seoBaseUrl()),
+  title: {
+    default: SEO.defaultTitle,
+    template: SEO.titleTemplate,
+  },
+  description: SEO.defaultDescription,
+  keywords: [...SEO.keywords],
+  applicationName: SEO.siteName,
+  authors: [{ name: SEO.siteName, url: seoBaseUrl() }],
+  creator: SEO.siteName,
+  publisher: SEO.siteName,
+  category: "business software",
   icons: {
     icon: "/logo.png",
+    apple: "/logo.png",
+  },
+  openGraph: {
+    type: "website",
+    locale: SEO.locale,
+    url: seoBaseUrl(),
+    siteName: SEO.siteName,
+    title: SEO.defaultTitle,
+    description: SEO.defaultDescription,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SEO.defaultTitle,
+    description: SEO.defaultDescription,
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  alternates: {
+    canonical: seoBaseUrl(),
   },
 };
 
@@ -27,6 +59,10 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 5,
   viewportFit: "cover" as const,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#faf8fc" },
+    { media: "(prefers-color-scheme: dark)", color: "#0c0820" },
+  ],
 };
 
 export default function RootLayout({

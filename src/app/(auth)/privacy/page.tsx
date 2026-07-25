@@ -1,5 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { AuthSiteFooter, AuthSiteHeader } from "@/components/auth/auth-chrome";
+import { buildMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildMetadata({
+  title: "Privacy Policy",
+  description:
+    "Privacy Policy for Contractor Leads — how we collect, use, and protect agency account and usage data.",
+  path: "/privacy",
+});
 
 export default function PrivacyPage() {
   return (

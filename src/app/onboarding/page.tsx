@@ -1,7 +1,12 @@
 import Image from "next/image";
+import type { Metadata } from "next";
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 import { getSessionUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default async function OnboardingPage() {
   const user = await getSessionUser();

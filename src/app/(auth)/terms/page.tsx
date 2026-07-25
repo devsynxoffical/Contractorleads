@@ -1,5 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { AuthSiteFooter, AuthSiteHeader } from "@/components/auth/auth-chrome";
+import { buildMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildMetadata({
+  title: "Terms of Service",
+  description:
+    "Terms of Service for Contractor Leads — the agency platform for verified contractor lead generation.",
+  path: "/terms",
+});
 
 export default function TermsPage() {
   return (
