@@ -17,8 +17,11 @@ import {
   type PlanId,
 } from "@/lib/plans";
 import { formatCredits } from "@/lib/utils";
-import { getStripe, isStripeConfigured } from "@/lib/stripe";
-import { notifyCheckoutAbandoned } from "@/lib/billing-stripe";
+import { getStripe, isStripeConfigured, PLAN_MONTHLY_CREDITS } from "@/lib/stripe";
+import {
+  fulfillCheckoutSession,
+  notifyCheckoutAbandoned,
+} from "@/lib/billing-stripe";
 import { BillingCheckoutButton } from "@/components/billing/billing-checkout-button";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
@@ -44,9 +47,40 @@ export default async function BillingPage({
   if (!user) redirect("/login");
 
   const params = await searchParams;
-  const current = normalizePlan(user.plan);
-  const features = featuresForPlan(user.plan);
   const stripeReady = await isStripeConfigured();
+
+  let fulfillMessage: string | null = null;
+
+  // Paid Checkout return — sync plan/credits/features immediately (don't wait on webhooks).
+  if (params.checkout === "success" && params.session_id && stripeReady) {
+    try {
+      const result = await fulfillCheckoutSession({
+        sessionId: params.session_id,
+        userId: user.id,
+      });
+      if (result.ok && result.plan) {
+        const credits =
+          PLAN_MONTHLY_CREDITS[
+            result.plan as keyof typeof PLAN_MONTHLY_CREDITS
+          ];
+        fulfillMessage = `You're now on ${planLabel(result.plan)}${
+          credits != null
+            ? ` with ${credits.toLocaleString()} monthly credits`
+            : ""
+        }. Features for this plan are unlocked.`;
+      } else if (result.reason === "not_paid") {
+        fulfillMessage =
+          "Payment is still processing. Refresh in a few seconds if your plan has not updated.";
+      } else {
+        fulfillMessage =
+          "Payment received. If your plan has not updated yet, refresh in a few seconds.";
+      }
+    } catch (err) {
+      console.error("billing success fulfill", err);
+      fulfillMessage =
+        "Payment received. If your plan has not updated yet, refresh in a few seconds.";
+    }
+  }
 
   // User clicked "back" / canceled on Stripe Checkout — send follow-up email.
   if (params.checkout === "canceled" && params.session_id && stripeReady) {
@@ -76,10 +110,19 @@ export default async function BillingPage({
     }
   }
 
+  // Always re-read after possible fulfillment so UI shows the new plan.
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { stripeCustomerId: true, subscriptionStatus: true },
+    select: {
+      plan: true,
+      creditsRemaining: true,
+      subscriptionStatus: true,
+      stripeCustomerId: true,
+    },
   });
+  const current = normalizePlan(dbUser?.plan ?? user.plan);
+  const features = featuresForPlan(current);
+  const creditsRemaining = dbUser?.creditsRemaining ?? user.creditsRemaining;
   const hasStripeCustomer = Boolean(dbUser?.stripeCustomerId);
   const status = dbUser?.subscriptionStatus || user.subscriptionStatus || "—";
 
@@ -92,8 +135,8 @@ export default async function BillingPage({
 
       {params.checkout === "success" ? (
         <p className="mb-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-[13px] text-emerald-800 dark:text-emerald-200">
-          Plan updated. Your subscription and features are now synced. If
-          anything still looks locked, refresh in a few seconds.
+          {fulfillMessage ||
+            "Plan updated. Your subscription and features are now synced."}
         </p>
       ) : null}
       {params.checkout === "canceled" ? (
@@ -118,10 +161,10 @@ export default async function BillingPage({
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-lg font-semibold text-ink">
-                {planLabel(user.plan)}
+                {planLabel(current)}
               </p>
               <p className="mt-1 text-sm text-ink-muted">
-                {formatCredits(user.creditsRemaining)} credits remaining
+                {formatCredits(creditsRemaining)} credits remaining
               </p>
             </div>
             <Badge variant="brand">{status}</Badge>

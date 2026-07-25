@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import {
   extractSubscriptionPriceId,
+  fulfillCheckoutSession,
   notifyCheckoutAbandoned,
   planFromSubscription,
   resolveUserIdFromStripeCustomer,
@@ -96,43 +97,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         ? session.customer
         : session.customer?.id,
     ));
-  if (!userId) return;
+  if (!userId || !session.id) return;
 
-  const subscriptionId =
-    typeof session.subscription === "string"
-      ? session.subscription
-      : session.subscription?.id;
-
-  let plan = session.metadata?.plan
-    ? normalizePlan(session.metadata.plan)
-    : null;
-  let priceId: string | null = null;
-  let status = "active";
-
-  if (subscriptionId) {
-    const stripe = await getStripe();
-    const sub = await stripe.subscriptions.retrieve(subscriptionId);
-    status = sub.status;
-    priceId = extractSubscriptionPriceId(sub);
-    plan = (await planFromSubscription(sub)) || plan;
-  }
-
-  if (!plan || plan === "enterprise") {
-    plan = normalizePlan(session.metadata?.plan || "starter");
-  }
-
-  await syncUserSubscription({
-    userId,
-    plan,
-    subscriptionStatus: status,
-    stripeCustomerId:
-      typeof session.customer === "string"
-        ? session.customer
-        : session.customer?.id,
-    stripeSubscriptionId: subscriptionId,
-    stripePriceId: priceId,
-    grantMonthlyCredits: false,
-  });
+  // Same fulfillment path as the billing success redirect (plan + credits).
+  await fulfillCheckoutSession({ sessionId: session.id, userId });
 }
 
 /** User started Checkout but never paid (left or session timed out). */

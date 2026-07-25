@@ -5,6 +5,7 @@ import { logActivity } from "@/lib/credits";
 import { sendCheckoutAbandonedEmail, sendPurchaseConfirmationEmail } from "@/lib/email";
 import { normalizePlan, planLabel, type PlanId } from "@/lib/plans";
 import {
+  getStripe,
   PLAN_MONTHLY_CREDITS,
   planFromPriceId,
   type StripeCheckoutPlan,
@@ -206,6 +207,109 @@ export async function planFromSubscription(subscription: {
     if (n === "starter" || n === "growth" || n === "agency") return n;
   }
   return planFromPriceId(extractSubscriptionPriceId(subscription));
+}
+
+/**
+ * Apply a completed Stripe Checkout session to the user immediately
+ * (plan + features + monthly credits). Used on the billing success redirect
+ * so upgrades work even when webhooks are delayed or not configured yet.
+ */
+export async function fulfillCheckoutSession(opts: {
+  sessionId: string;
+  userId: string;
+}): Promise<{
+  ok: boolean;
+  plan?: PlanId;
+  reason?: string;
+}> {
+  const sessionId = opts.sessionId.trim();
+  if (!sessionId) return { ok: false, reason: "missing_session" };
+
+  try {
+    const stripe = await getStripe();
+    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ["subscription", "subscription.latest_invoice", "invoice"],
+    });
+
+    const sessionUserId =
+      session.metadata?.userId || session.client_reference_id || null;
+    if (!sessionUserId || sessionUserId !== opts.userId) {
+      return { ok: false, reason: "user_mismatch" };
+    }
+
+    const paid =
+      session.status === "complete" ||
+      session.payment_status === "paid" ||
+      session.payment_status === "no_payment_required";
+    if (!paid) return { ok: false, reason: "not_paid" };
+
+    let plan: PlanId | null = session.metadata?.plan
+      ? normalizePlan(session.metadata.plan)
+      : null;
+    if (plan === "enterprise") plan = null;
+
+    const subRaw = session.subscription;
+    const subscription =
+      typeof subRaw === "string"
+        ? await stripe.subscriptions.retrieve(subRaw)
+        : subRaw && typeof subRaw === "object"
+          ? subRaw
+          : null;
+
+    let priceId: string | null = null;
+    let status = "active";
+    let invoiceId: string | null =
+      typeof session.invoice === "string"
+        ? session.invoice
+        : session.invoice && typeof session.invoice === "object"
+          ? session.invoice.id
+          : null;
+
+    if (subscription) {
+      status = subscription.status;
+      priceId = extractSubscriptionPriceId(subscription);
+      plan = (await planFromSubscription(subscription)) || plan;
+
+      const latest = (
+        subscription as {
+          latest_invoice?: string | { id?: string } | null;
+        }
+      ).latest_invoice;
+      if (!invoiceId && latest) {
+        invoiceId = typeof latest === "string" ? latest : latest.id ?? null;
+      }
+    }
+
+    if (!plan || (plan !== "starter" && plan !== "growth" && plan !== "agency")) {
+      return { ok: false, reason: "unknown_plan" };
+    }
+
+    const customerId =
+      typeof session.customer === "string"
+        ? session.customer
+        : session.customer?.id ?? null;
+
+    await syncUserSubscription({
+      userId: opts.userId,
+      plan,
+      subscriptionStatus: status,
+      stripeCustomerId: customerId,
+      stripeSubscriptionId: subscription?.id ?? null,
+      stripePriceId: priceId,
+      // Grant plan credits now — webhook invoice.paid uses the same invoice id
+      // so the ledger dedupes and will not double-grant.
+      grantMonthlyCredits: true,
+      invoiceId: invoiceId || `checkout:${session.id}`,
+    });
+
+    return { ok: true, plan };
+  } catch (err) {
+    console.error("fulfillCheckoutSession", err);
+    return {
+      ok: false,
+      reason: err instanceof Error ? err.message : "fulfill_failed",
+    };
+  }
 }
 
 /**
