@@ -89,10 +89,14 @@ function IntegrationCard({
         <span
           className={cn(
             "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-            status === "ready" && "bg-emerald-500/15 text-emerald-300",
-            status === "setup" && "bg-amber-500/15 text-amber-200",
-            status === "partial" && "bg-violet-500/15 text-violet-200",
-            status === "roadmap" && "bg-white/5 text-ink-faint",
+            status === "ready" &&
+              "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200/80 dark:bg-emerald-500/20 dark:text-emerald-300 dark:ring-emerald-400/30",
+            status === "setup" &&
+              "bg-amber-100 text-amber-900 ring-1 ring-amber-300/80 dark:bg-amber-500/20 dark:text-amber-200 dark:ring-amber-400/30",
+            status === "partial" &&
+              "bg-violet-100 text-violet-900 ring-1 ring-violet-200/80 dark:bg-violet-500/20 dark:text-violet-200 dark:ring-violet-400/30",
+            status === "roadmap" &&
+              "bg-slate-100 text-slate-600 ring-1 ring-slate-200 dark:bg-white/5 dark:text-ink-faint dark:ring-white/10",
           )}
         >
           <StatusDot
@@ -104,7 +108,7 @@ function IntegrationCard({
       </div>
       <p className="mt-3 text-[14px] font-semibold text-ink">{title}</p>
       <p className="mt-1 flex-1 text-[12px] leading-relaxed text-ink-muted">{body}</p>
-      <span className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-brand-400 group-hover:text-brand-300">
+      <span className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-brand-600 group-hover:text-brand-500 dark:text-brand-400 dark:group-hover:text-brand-300">
         Open <HiOutlineArrowRight className="h-3.5 w-3.5" />
       </span>
     </Link>
@@ -305,24 +309,25 @@ export function DashboardCrmIntegrations({
           />
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-brand-500/15 bg-brand-500/[0.04] px-4 py-3 text-[12px] text-ink-muted">
+        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-border bg-[var(--surface)] px-4 py-3 text-[12px] text-ink-muted shadow-sm dark:border-brand-500/15 dark:bg-brand-500/[0.04]">
           {webhookReady ? (
-            <span className="inline-flex items-center gap-1.5 text-emerald-300">
+            <span className="inline-flex items-center gap-1.5 font-medium text-emerald-700 dark:text-emerald-300">
               <HiOutlineCheckCircle className="h-4 w-4" /> CRM webhook live
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 text-amber-200">
-              <HiOutlineExclamationCircle className="h-4 w-4" /> Connect CRM webhook to auto-push leads
+            <span className="inline-flex items-center gap-1.5 font-semibold text-amber-800 dark:text-amber-200">
+              <HiOutlineExclamationCircle className="h-4 w-4 shrink-0" />{" "}
+              Connect CRM webhook to auto-push leads
             </span>
           )}
           <span className="text-ink-faint">·</span>
-          <span className="inline-flex items-center gap-1.5">
+          <span className="inline-flex items-center gap-1.5 text-ink">
             <FaLinkedinIn className="h-3.5 w-3.5 text-[#0A66C2]" />
             LinkedIn: verified ≥95% or “Not Available”
           </span>
           <Link
             href="/setup"
-            className="ml-auto inline-flex items-center gap-1 font-semibold text-brand-400 hover:text-brand-300"
+            className="ml-auto inline-flex items-center gap-1 font-semibold text-brand-600 hover:text-brand-500 dark:text-brand-400 dark:hover:text-brand-300"
           >
             <HiOutlineArrowPath className="h-3.5 w-3.5" />
             Setup hub
