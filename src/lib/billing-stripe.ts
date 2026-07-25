@@ -262,7 +262,7 @@ export async function fulfillCheckoutSession(opts: {
       typeof session.invoice === "string"
         ? session.invoice
         : session.invoice && typeof session.invoice === "object"
-          ? session.invoice.id
+          ? session.invoice.id ?? null
           : null;
 
     if (subscription) {
