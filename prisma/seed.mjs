@@ -3,7 +3,58 @@ import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
-async function main() {
+const SEED_DEMO = process.env.SEED_DEMO === "true";
+
+/**
+ * Creates the first super admin from env vars. Only ever creates — never
+ * rewrites the password of an account that already exists, so a deploy can't
+ * reset live admin credentials.
+ */
+async function bootstrapAdmin() {
+  const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  const password = process.env.ADMIN_PASSWORD;
+  if (!email || !password) return;
+
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) {
+    if (existing.role !== "SUPER_ADMIN") {
+      await prisma.user.update({
+        where: { email },
+        data: { role: "SUPER_ADMIN" },
+      });
+      console.log(`Promoted existing user to SUPER_ADMIN: ${email}`);
+    }
+    return;
+  }
+
+  if (password.length < 12) {
+    console.error("ADMIN_PASSWORD must be at least 12 characters. Skipping admin bootstrap.");
+    return;
+  }
+
+  await prisma.user.create({
+    data: {
+      email,
+      name: process.env.ADMIN_NAME?.trim() || "Super Admin",
+      passwordHash: await bcrypt.hash(password, 12),
+      emailVerifiedAt: new Date(),
+      role: "SUPER_ADMIN",
+      plan: "agency",
+      subscriptionStatus: "active",
+      creditsRemaining: 9999,
+      onboardingComplete: true,
+      companyName: "Contractor Leads Ops",
+      businessDescription: "Platform super administrator",
+      services: "Platform operations",
+      idealCustomer: "Internal",
+      serviceAreas: "Global",
+      mainGoal: "Operate the lead platform",
+    },
+  });
+  console.log(`Created super admin: ${email}`);
+}
+
+async function seedDemoAccounts() {
   const demoHash = await bcrypt.hash("demo12345", 12);
   const adminHash = await bcrypt.hash("admin12345", 12);
 
@@ -60,6 +111,19 @@ async function main() {
       mainGoal: "Operate the lead platform",
     },
   });
+}
+
+async function main() {
+  if (SEED_DEMO) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "Refusing to seed demo accounts with published passwords while NODE_ENV=production. Unset SEED_DEMO.",
+      );
+    }
+    await seedDemoAccounts();
+  }
+
+  await bootstrapAdmin();
 
   const managerPerms = [
     "overview",
@@ -123,8 +187,12 @@ async function main() {
   });
 
   console.log("Seed complete:");
-  console.log("  demo@leadflow.us / demo12345");
-  console.log("  admin@leadflow.us / admin12345 (SUPER_ADMIN)");
+  if (SEED_DEMO) {
+    console.log("  demo@leadflow.us / demo12345");
+    console.log("  admin@leadflow.us / admin12345 (SUPER_ADMIN)");
+  } else {
+    console.log("  Demo accounts skipped (set SEED_DEMO=true for local dev)");
+  }
   console.log("  Role templates: MANAGER, SUB_ADMIN");
   console.log("  Referral rewards config seeded");
 }

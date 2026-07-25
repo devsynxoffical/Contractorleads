@@ -6,6 +6,7 @@ import { CREDIT_COSTS } from "@/lib/constants";
 import { deductCredits, logActivity } from "@/lib/credits";
 import { getOpenAIApiKey } from "@/lib/openai-config";
 import { prisma } from "@/lib/prisma";
+import { findOwnedLead } from "@/lib/lead-ownership";
 
 const typePrompts: Record<string, string> = {
   email: "Write a concise cold email",
@@ -25,6 +26,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 
+  // Resolve the lead before charging so an unowned id can't burn credits.
+  const lead = await findOwnedLead(user.id, leadId);
+  if (!lead) {
+    return NextResponse.json({ error: "Lead not found" }, { status: 404 });
+  }
+
   try {
     await deductCredits(user.id, CREDIT_COSTS.outreach, "outreach");
   } catch (err) {
@@ -33,11 +40,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Insufficient credits" }, { status: 402 });
     }
     return NextResponse.json({ error: "Credit error" }, { status: 500 });
-  }
-
-  const lead = await prisma.lead.findUnique({ where: { id: leadId } });
-  if (!lead) {
-    return NextResponse.json({ error: "Lead not found" }, { status: 404 });
   }
 
   const businessContext = buildBusinessContext(user);

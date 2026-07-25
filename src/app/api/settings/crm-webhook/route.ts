@@ -3,6 +3,7 @@ import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { dispatchCrmWebhook } from "@/lib/crm-webhook";
 import { assertPlanFeatureApi } from "@/lib/plan-access-server";
+import { assertPublicUrl, BlockedUrlError } from "@/lib/safe-fetch";
 
 export async function GET() {
   const user = await getSessionUser();
@@ -57,23 +58,19 @@ export async function PUT(request: Request) {
   const ghlUrl = String(body.ghlUrl || "").trim();
   const ghlEnabled = Boolean(body.ghlEnabled);
 
-  if (url && !/^https?:\/\//i.test(url)) {
-    return NextResponse.json(
-      { error: "Webhook URL must start with http:// or https://" },
-      { status: 400 },
-    );
-  }
-  if (slackUrl && !/^https?:\/\//i.test(slackUrl)) {
-    return NextResponse.json(
-      { error: "Slack webhook URL must start with http:// or https://" },
-      { status: 400 },
-    );
-  }
-  if (ghlUrl && !/^https?:\/\//i.test(ghlUrl)) {
-    return NextResponse.json(
-      { error: "GoHighLevel webhook URL must start with http:// or https://" },
-      { status: 400 },
-    );
+  for (const [label, candidate] of [
+    ["Webhook URL", url],
+    ["Slack webhook URL", slackUrl],
+    ["GoHighLevel webhook URL", ghlUrl],
+  ] as const) {
+    if (!candidate) continue;
+    try {
+      await assertPublicUrl(candidate);
+    } catch (e) {
+      const reason =
+        e instanceof BlockedUrlError ? e.message : "Enter a valid https:// URL.";
+      return NextResponse.json({ error: `${label}: ${reason}` }, { status: 400 });
+    }
   }
 
   await prisma.user.update({

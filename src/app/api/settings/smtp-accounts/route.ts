@@ -10,6 +10,7 @@ import {
   migrateLegacySmtpIfNeeded,
   upsertSmtpAccount,
 } from "@/lib/user-smtp";
+import { assertPublicSmtpHost } from "@/lib/safe-fetch";
 
 export async function GET() {
   const user = await getSessionUser();
@@ -36,6 +37,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Save SMTP settings first" }, { status: 400 });
     }
     try {
+      await assertPublicSmtpHost(cfg.host);
       const transport = createSmtpTransport(cfg);
       await transport.verify();
       if (cfg.id) {

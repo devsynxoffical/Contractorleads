@@ -53,6 +53,8 @@ const FEATURE_ROWS: Array<{
   { label: "Client reports", key: "reports" },
 ];
 
+type CheckoutOutcome = "active" | "pending" | "received";
+
 export default async function BillingPage({
   searchParams,
 }: {
@@ -64,36 +66,24 @@ export default async function BillingPage({
   const params = await searchParams;
   const stripeReady = await isStripeConfigured();
 
-  let fulfillMessage: string | null = null;
-
+  // Stripe hands the session id back on the return URL. Fulfil it, then
+  // redirect to a clean URL so the id does not linger in history or referrers.
   if (params.checkout === "success" && params.session_id && stripeReady) {
+    let outcome: CheckoutOutcome = "received";
     try {
       const result = await fulfillCheckoutSession({
         sessionId: params.session_id,
         userId: user.id,
       });
       if (result.ok && result.plan) {
-        const credits =
-          PLAN_MONTHLY_CREDITS[
-            result.plan as keyof typeof PLAN_MONTHLY_CREDITS
-          ];
-        fulfillMessage = `You're now on ${planLabel(result.plan)}${
-          credits != null
-            ? ` with ${credits.toLocaleString()} monthly credits`
-            : ""
-        }.`;
+        outcome = "active";
       } else if (result.reason === "not_paid") {
-        fulfillMessage =
-          "Payment is still processing. Refresh in a few seconds if your plan has not updated.";
-      } else {
-        fulfillMessage =
-          "Payment received. If your plan has not updated yet, refresh in a few seconds.";
+        outcome = "pending";
       }
     } catch (err) {
       console.error("billing success fulfill", err);
-      fulfillMessage =
-        "Payment received. If your plan has not updated yet, refresh in a few seconds.";
     }
+    redirect(`/billing?checkout=${outcome}`);
   }
 
   if (params.checkout === "canceled" && params.session_id && stripeReady) {
@@ -119,6 +109,7 @@ export default async function BillingPage({
     } catch (err) {
       console.error("billing cancel abandoned email", err);
     }
+    redirect("/billing?checkout=canceled");
   }
 
   const dbUser = await prisma.user.findUnique({
@@ -139,6 +130,21 @@ export default async function BillingPage({
     .toLowerCase();
   const includedCount = FEATURE_ROWS.filter((f) => features[f.key]).length;
 
+  const monthlyCredits =
+    PLAN_MONTHLY_CREDITS[current as keyof typeof PLAN_MONTHLY_CREDITS];
+  const checkoutMessage =
+    params.checkout === "active"
+      ? `You're now on ${planLabel(current)}${
+          monthlyCredits != null
+            ? ` with ${monthlyCredits.toLocaleString()} monthly credits`
+            : ""
+        }.`
+      : params.checkout === "pending"
+        ? "Payment is still processing. Refresh in a few seconds if your plan has not updated."
+        : params.checkout === "received"
+          ? "Payment received. If your plan has not updated yet, refresh in a few seconds."
+          : null;
+
   return (
     <div className="page-pad mx-auto max-w-6xl">
       <PageHeader
@@ -146,9 +152,9 @@ export default async function BillingPage({
         description="Your subscription, credits, and plan features — upgrade anytime."
       />
 
-      {params.checkout === "success" ? (
+      {checkoutMessage ? (
         <p className="mb-5 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3 text-[13px] text-emerald-800 dark:text-emerald-200">
-          {fulfillMessage || "Plan updated successfully."}
+          {checkoutMessage}
         </p>
       ) : null}
       {params.checkout === "canceled" ? (

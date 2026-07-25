@@ -1,11 +1,8 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "crypto";
+import { requireEncryptionSecret } from "@/lib/server-secrets";
 
 function keyBytes() {
-  const secret =
-    process.env.SMTP_SECRET ||
-    process.env.JWT_SECRET ||
-    "contractorleads-dev-smtp-secret";
-  return createHash("sha256").update(secret).digest();
+  return createHash("sha256").update(requireEncryptionSecret()).digest();
 }
 
 /** Encrypt SMTP password for DB storage */

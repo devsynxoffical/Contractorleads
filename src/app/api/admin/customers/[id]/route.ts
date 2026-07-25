@@ -155,6 +155,25 @@ export async function PATCH(request: Request, { params }: Params) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  const actorIsSuperAdmin = isSuperAdmin(admin);
+
+  // Editing a staff account (or handing out a staff role) is a privilege
+  // change, so it stays super-admin-only. Otherwise anyone holding the
+  // "customers" permission could reset a super admin's password or promote
+  // themselves and take over the console.
+  if (isAdminStaff(existing) && !actorIsSuperAdmin) {
+    return NextResponse.json(
+      { error: "Only a super admin can modify staff accounts" },
+      { status: 403 },
+    );
+  }
+  if (body.role !== undefined && !actorIsSuperAdmin) {
+    return NextResponse.json(
+      { error: "Only a super admin can change a role" },
+      { status: 403 },
+    );
+  }
+
   if (
     isSuperAdmin(existing) &&
     body.role &&
@@ -237,11 +256,16 @@ export async function PATCH(request: Request, { params }: Params) {
   if (typeof body.adminNotes === "string") {
     data.adminNotes = body.adminNotes;
   }
-  if (body.role === "USER" || body.role === "SUPER_ADMIN") {
+  if (
+    actorIsSuperAdmin &&
+    (body.role === "USER" || body.role === "SUPER_ADMIN")
+  ) {
     data.role = body.role;
   }
   if (typeof body.password === "string" && body.password.length >= 8) {
     data.passwordHash = await hashPassword(body.password);
+    // An admin-forced password change must also drop the user's live sessions.
+    data.sessionVersion = { increment: 1 };
   }
 
   if (body.referredByCode !== undefined || body.referredByUserId !== undefined) {

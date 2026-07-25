@@ -3,6 +3,7 @@ import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/credits";
 import { dispatchCrmWebhook } from "@/lib/crm-webhook";
+import { userOwnsLead } from "@/lib/lead-ownership";
 
 export async function POST(
   _request: Request,
@@ -14,6 +15,10 @@ export async function POST(
   }
 
   const { id } = await params;
+
+  if (!(await userOwnsLead(user.id, id))) {
+    return NextResponse.json({ error: "Lead not found" }, { status: 404 });
+  }
 
   const existing = await prisma.savedLead.findUnique({
     where: { userId_leadId: { userId: user.id, leadId: id } },

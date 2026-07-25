@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { searchFacebookAdsLibrary } from "@/lib/services/facebook";
+import { findOwnedLead } from "@/lib/lead-ownership";
 
 export async function POST(
   _request: Request,
@@ -13,7 +14,7 @@ export async function POST(
   }
 
   const { id } = await params;
-  const lead = await prisma.lead.findUnique({ where: { id } });
+  const lead = await findOwnedLead(user.id, id);
   if (!lead) {
     return NextResponse.json({ error: "Lead not found" }, { status: 404 });
   }

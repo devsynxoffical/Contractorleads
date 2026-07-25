@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { hashPassword } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { hashOpaqueToken } from "@/lib/token-hash";
 
 /** Validate reset token (GET) or set new password (POST). */
 export async function GET(request: Request) {
@@ -8,7 +9,9 @@ export async function GET(request: Request) {
   if (!token) {
     return NextResponse.json({ error: "Missing token" }, { status: 400 });
   }
-  const row = await prisma.passwordResetToken.findUnique({ where: { token } });
+  const row = await prisma.passwordResetToken.findUnique({
+    where: { token: hashOpaqueToken(token) },
+  });
   if (!row || row.usedAt || row.expiresAt < new Date()) {
     return NextResponse.json(
       { error: "Reset link expired or invalid" },
@@ -33,7 +36,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const row = await prisma.passwordResetToken.findUnique({ where: { token } });
+    const row = await prisma.passwordResetToken.findUnique({
+      where: { token: hashOpaqueToken(token) },
+    });
     if (!row || row.usedAt || row.expiresAt < new Date()) {
       return NextResponse.json(
         { error: "Reset link expired or invalid" },
@@ -44,7 +49,11 @@ export async function POST(request: Request) {
     await prisma.$transaction([
       prisma.user.update({
         where: { id: row.userId },
-        data: { passwordHash: await hashPassword(password) },
+        data: {
+          passwordHash: await hashPassword(password),
+          // Kills any session issued before the reset.
+          sessionVersion: { increment: 1 },
+        },
       }),
       prisma.passwordResetToken.update({
         where: { id: row.id },

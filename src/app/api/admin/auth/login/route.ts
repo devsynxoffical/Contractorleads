@@ -7,6 +7,7 @@ import {
   stopImpersonation,
   verifyPassword,
 } from "@/lib/auth";
+import { guardAuthRoute, resetRateLimit } from "@/lib/rate-limit";
 
 /**
  * Dedicated admin login — SUPER_ADMIN, MANAGER, and SUB_ADMIN only.
@@ -22,8 +23,17 @@ export async function POST(request: Request) {
       );
     }
 
+    const normalizedEmail = String(email).trim().toLowerCase();
+
+    const { blocked, keys } = guardAuthRoute(request, "admin-login", {
+      limit: 5,
+      windowMs: 15 * 60 * 1000,
+      identifier: normalizedEmail,
+    });
+    if (blocked) return blocked;
+
     const user = await prisma.user.findUnique({
-      where: { email: String(email).trim().toLowerCase() },
+      where: { email: normalizedEmail },
     });
 
     if (!user || !(await verifyPassword(password, user.passwordHash))) {
@@ -49,6 +59,8 @@ export async function POST(request: Request) {
         { status: 403 },
       );
     }
+
+    keys.forEach(resetRateLimit);
 
     await stopImpersonation();
     const token = await createSessionToken(user.id);

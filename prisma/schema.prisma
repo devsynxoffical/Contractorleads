@@ -24,6 +24,8 @@ model User {
   stripePriceId       String?
   isActive            Boolean  @default(true)
   adminNotes          String?
+  /// Bumped on password change/reset so previously issued JWTs stop validating
+  sessionVersion      Int      @default(0)
   creditsRemaining    Float    @default(13.3)
   onboardingComplete  Boolean  @default(false)
   /// Post-purchase product walkthrough dismissed or finished
@@ -314,6 +316,7 @@ model EmailVerification {
   name         String?
   /// Optional referral code captured at signup start
   referralCode String?
+  /// SHA-256 of the opaque token emailed to the user (never store the raw token)
   token        String   @unique
   expiresAt    DateTime
   createdAt    DateTime @default(now())
@@ -424,6 +427,7 @@ model PasswordResetToken {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// SHA-256 of the opaque token emailed to the user (never store the raw token)
   token     String   @unique
   expiresAt DateTime
   usedAt    DateTime?

@@ -14,6 +14,7 @@ import {
   getEmailProviderSecrets,
 } from "@/lib/email-config";
 import type { EmailTemplateKey } from "@/lib/email-template-defaults";
+import { requireSessionSecret } from "@/lib/server-secrets";
 
 /** Strip HTML for a reliable plain-text alternative (Resend deliverability). */
 function htmlToPlainText(html: string): string {
@@ -160,20 +161,18 @@ export async function sendEmail(params: {
   return { ok: true, mocked: true };
 }
 
-function unsubscribeSecret() {
-  return process.env.JWT_SECRET || "leadflow-dev-secret-change-in-production";
+function signEmailAction(payload: string) {
+  return crypto
+    .createHmac("sha256", requireSessionSecret())
+    .update(payload)
+    .digest("hex");
 }
 
 /** Signed token so users can unsubscribe without logging in. */
 export function createEmailActionToken(userId: string, purpose: "unsub" | "prefs") {
   const exp = Date.now() + 1000 * 60 * 60 * 24 * 90;
   const payload = `${purpose}.${userId}.${exp}`;
-  const sig = crypto
-    .createHmac("sha256", unsubscribeSecret())
-    .update(payload)
-    .digest("hex")
-    .slice(0, 32);
-  return Buffer.from(`${payload}.${sig}`).toString("base64url");
+  return Buffer.from(`${payload}.${signEmailAction(payload)}`).toString("base64url");
 }
 
 export function verifyEmailActionToken(
@@ -189,13 +188,15 @@ export function verifyEmailActionToken(
     if (Number(expStr) < Date.now()) {
       return { ok: false, error: "Token expired" };
     }
-    const payload = `${p}.${userId}.${expStr}`;
-    const expected = crypto
-      .createHmac("sha256", unsubscribeSecret())
-      .update(payload)
-      .digest("hex")
-      .slice(0, 32);
-    if (expected !== sig) return { ok: false, error: "Invalid signature" };
+    const expected = signEmailAction(`${p}.${userId}.${expStr}`);
+    const expectedBuf = Buffer.from(expected, "utf8");
+    const sigBuf = Buffer.from(sig, "utf8");
+    if (
+      expectedBuf.length !== sigBuf.length ||
+      !crypto.timingSafeEqual(expectedBuf, sigBuf)
+    ) {
+      return { ok: false, error: "Invalid signature" };
+    }
     return { ok: true, userId };
   } catch {
     return { ok: false, error: "Invalid token" };

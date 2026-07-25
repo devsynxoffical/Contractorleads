@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/credits";
 import { dispatchCrmWebhook } from "@/lib/crm-webhook";
 import { sendViaUserSmtp } from "@/lib/user-smtp";
+import { findOwnedLead } from "@/lib/lead-ownership";
 
 /**
  * Send a one-off email to a lead from the agency SMTP mailbox.
@@ -23,7 +24,7 @@ export async function sendLeadEmail(opts: {
     throw new Error("Subject and body are required");
   }
 
-  const lead = await prisma.lead.findUnique({ where: { id: opts.leadId } });
+  const lead = await findOwnedLead(opts.userId, opts.leadId);
   if (!lead) throw new Error("Lead not found");
   const to = lead.email?.trim();
   if (!to) throw new Error("This lead has no email address");

@@ -51,7 +51,7 @@ export function BillingCheckoutButton({
       }
       if (data.updated) {
         window.location.href =
-          data.redirectUrl || "/billing?checkout=success";
+          data.redirectUrl || "/billing?checkout=active";
         return;
       }
       setError(data.error || "No checkout URL returned");

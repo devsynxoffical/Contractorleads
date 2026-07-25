@@ -21,7 +21,7 @@ if (push.status !== 0) {
   process.exit(push.status ?? 1);
 }
 
-console.log("Seeding demo user (upsert)...");
+console.log("Applying baseline config (role templates, referral rewards)...");
 const seed = spawnSync("node", ["prisma/seed.mjs"], {
   stdio: "inherit",
   env: process.env,

@@ -12,6 +12,7 @@ import {
   applyReferralOnSignup,
   ensureReferralCode,
 } from "@/lib/referrals";
+import { hashOpaqueToken } from "@/lib/token-hash";
 /**
  * Step 2: after email verification link — create account with password and log in.
  */
@@ -35,7 +36,7 @@ export async function POST(request: Request) {
     }
 
     const pending = await prisma.emailVerification.findUnique({
-      where: { token: tokenStr },
+      where: { token: hashOpaqueToken(tokenStr) },
     });
     if (!pending || pending.expiresAt < new Date()) {
       return NextResponse.json(

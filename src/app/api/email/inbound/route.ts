@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { ingestInboundEmail } from "@/lib/lead-email";
+import { bearerToken, secretsMatch } from "@/lib/rate-limit";
 
 /**
  * Inbound email webhook — point a mail provider (Resend/SendGrid/Mailgun inbound,
  * or a forwarder) here so replies land on the lead timeline and pause sequences.
  *
- * Auth: Authorization: Bearer <INBOUND_EMAIL_SECRET> or ?secret=
+ * Auth: Authorization: Bearer <INBOUND_EMAIL_SECRET>
  * Body JSON: { fromEmail, toEmail, subject, body, messageId?, inReplyTo?, userId? }
  */
 export async function POST(request: Request) {
@@ -17,13 +18,8 @@ export async function POST(request: Request) {
     );
   }
 
-  const url = new URL(request.url);
-  const auth = request.headers.get("authorization") || "";
-  const bearer = auth.toLowerCase().startsWith("bearer ")
-    ? auth.slice(7).trim()
-    : "";
-  const qs = url.searchParams.get("secret") || "";
-  if (bearer !== secret && qs !== secret) {
+  // Header only: a `?secret=` would end up in access logs and Referer headers.
+  if (!secretsMatch(bearerToken(request), secret)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

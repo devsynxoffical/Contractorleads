@@ -88,51 +88,70 @@ function isLocalUrl(url: string) {
   return /localhost|127\.0\.0\.1/i.test(url);
 }
 
+/** Origins we are willing to send a paying customer back to. */
+function allowedOrigins(): string[] {
+  const configured = [
+    process.env.NEXT_PUBLIC_APP_URL,
+    process.env.APP_URL,
+    SITE_URL,
+  ];
+
+  const origins: string[] = [];
+  for (const entry of configured) {
+    const trimmed = entry?.trim().replace(/\/$/, "");
+    if (!trimmed) continue;
+    if (process.env.NODE_ENV === "production" && isLocalUrl(trimmed)) continue;
+    try {
+      origins.push(new URL(trimmed).origin);
+    } catch {
+      /* ignore malformed config */
+    }
+  }
+  return origins;
+}
+
+function configuredBaseUrl(): string {
+  const [first] = allowedOrigins();
+  if (first) return first;
+  if (process.env.NODE_ENV === "production") return SITE_URL;
+  return "http://localhost:3000";
+}
+
 /**
  * Public site URL for Stripe redirects (success / cancel / portal).
- * Never returns localhost in production — that caused Checkout to send
- * users to localhost:3000 after paying on contractorleads.us.
+ *
+ * The request host is only honoured when it matches a configured origin.
+ * `X-Forwarded-Host` is attacker-controlled unless the edge rewrites it, and
+ * trusting it blindly would let someone craft a Checkout session that returns
+ * the payer to their own domain.
  */
 export function appBaseUrl(request?: Request) {
-  // Prefer the host the user actually hit (works behind Railway / proxies)
-  if (request) {
-    const forwardedHost = request.headers
-      .get("x-forwarded-host")
-      ?.split(",")[0]
-      ?.trim();
-    const forwardedProto =
-      request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() ||
-      "https";
-    if (forwardedHost && !isLocalUrl(forwardedHost)) {
-      return `${forwardedProto}://${forwardedHost}`.replace(/\/$/, "");
-    }
+  if (!request) return configuredBaseUrl();
+
+  const allowed = allowedOrigins();
+  if (!allowed.length) return configuredBaseUrl();
+
+  const candidates: string[] = [];
+
+  const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+  if (forwardedHost) {
+    const proto =
+      request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() || "https";
+    candidates.push(`${proto}://${forwardedHost}`);
+  }
+
+  const originHeader = request.headers.get("origin")?.trim();
+  if (originHeader) candidates.push(originHeader);
+  candidates.push(request.url);
+
+  for (const candidate of candidates) {
     try {
-      const origin = new URL(request.url).origin;
-      if (origin && !isLocalUrl(origin)) {
-        return origin.replace(/\/$/, "");
-      }
+      const { origin } = new URL(candidate);
+      if (allowed.includes(origin)) return origin;
     } catch {
-      /* ignore */
+      /* ignore unparseable candidate */
     }
   }
 
-  const fromEnv = (
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.APP_URL ||
-    ""
-  )
-    .trim()
-    .replace(/\/$/, "");
-
-  if (fromEnv) {
-    if (process.env.NODE_ENV === "production" && isLocalUrl(fromEnv)) {
-      return SITE_URL;
-    }
-    return fromEnv;
-  }
-
-  if (process.env.NODE_ENV === "production") {
-    return SITE_URL;
-  }
-  return "http://localhost:3000";
+  return configuredBaseUrl();
 }

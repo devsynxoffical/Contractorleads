@@ -7,13 +7,22 @@ import {
   verifyPassword,
 } from "@/lib/auth";
 import { linkMarketingVisitorToUser } from "@/lib/marketing-session";
+import { guardAuthRoute, resetRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
     const { email, password } = await request.json();
+    const normalizedEmail = String(email ?? "").trim().toLowerCase();
+
+    const { blocked, keys } = guardAuthRoute(request, "login", {
+      limit: 10,
+      windowMs: 15 * 60 * 1000,
+      identifier: normalizedEmail,
+    });
+    if (blocked) return blocked;
 
     const user = await prisma.user.findUnique({
-      where: { email: String(email ?? "").trim().toLowerCase() },
+      where: { email: normalizedEmail },
     });
     if (!user || !(await verifyPassword(password, user.passwordHash))) {
       return NextResponse.json(
@@ -49,6 +58,8 @@ export async function POST(request: Request) {
         data: { emailVerifiedAt: user.createdAt },
       });
     }
+
+    keys.forEach(resetRateLimit);
 
     const token = await createSessionToken(user.id);
     await setSessionCookie(token);

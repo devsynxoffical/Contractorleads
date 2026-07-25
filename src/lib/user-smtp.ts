@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import { prisma } from "@/lib/prisma";
 import { decryptSecret, encryptSecret } from "@/lib/crypto-secret";
+import { assertPublicSmtpHost, BlockedUrlError } from "@/lib/safe-fetch";
 
 export type SmtpPayload = {
   id?: string;
@@ -151,6 +152,14 @@ export async function upsertSmtpAccount(opts: {
   isDefault?: boolean;
 }) {
   await migrateLegacySmtpIfNeeded(opts.userId);
+
+  try {
+    await assertPublicSmtpHost(opts.host);
+  } catch (e) {
+    throw new Error(
+      e instanceof BlockedUrlError ? e.message : "Invalid SMTP host",
+    );
+  }
 
   if (opts.id) {
     const existing = await prisma.smtpAccount.findFirst({

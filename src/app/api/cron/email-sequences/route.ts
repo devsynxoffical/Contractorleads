@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { processDueEnrollments } from "@/lib/email-automation";
+import { bearerToken, secretsMatch } from "@/lib/rate-limit";
 
 /**
  * Process due Day 2/3 sequence emails for all users.
- * Secure with CRON_SECRET (Authorization: Bearer <secret> or ?secret=).
+ * Secure with CRON_SECRET (Authorization: Bearer <secret>).
  * Call hourly from Railway cron, cron-job.org, or similar.
  */
 export async function GET(request: Request) {
@@ -15,14 +16,8 @@ export async function GET(request: Request) {
     );
   }
 
-  const auth = request.headers.get("authorization") ?? "";
-  const url = new URL(request.url);
-  const token =
-    (auth.startsWith("Bearer ") ? auth.slice(7) : "") ||
-    url.searchParams.get("secret") ||
-    "";
-
-  if (token !== secret) {
+  // Header only: a `?secret=` would end up in access logs and Referer headers.
+  if (!secretsMatch(bearerToken(request), secret)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

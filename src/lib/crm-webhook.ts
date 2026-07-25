@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { BlockedUrlError, safeFetch } from "@/lib/safe-fetch";
 
 export type CrmWebhookEvent =
   | "leadflow.test"
@@ -37,14 +38,17 @@ async function postJson(
   headers?: Record<string, string>,
 ): Promise<{ delivered: boolean; status?: number; error?: string }> {
   try {
-    const res = await fetch(url, {
+    const res = await safeFetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...(headers ?? {}) },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(12_000),
+      timeoutMs: 12_000,
     });
     return { delivered: res.ok, status: res.status };
   } catch (e) {
+    if (e instanceof BlockedUrlError) {
+      return { delivered: false, error: e.message };
+    }
     return { delivered: false, error: e instanceof Error ? e.message : "Request failed" };
   }
 }

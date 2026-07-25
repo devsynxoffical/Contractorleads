@@ -13,6 +13,7 @@ import {
   userHasPermission,
   type AdminPermissionKey,
 } from "@/lib/admin-permissions";
+import { requireSessionSecret } from "@/lib/server-secrets";
 
 export {
   SUPER_ADMIN_ROLE,
@@ -25,9 +26,15 @@ export type { SessionUser } from "@/lib/session-user";
 import type { SessionUser } from "@/lib/session-user";
 export { buildBusinessContext } from "@/lib/ai-user-context";
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "leadflow-dev-secret-change-in-production",
-);
+let cachedJwtKey: Uint8Array | null = null;
+
+/** Resolved lazily so a misconfigured secret fails the request, not the boot. */
+function jwtKey(): Uint8Array {
+  if (!cachedJwtKey) {
+    cachedJwtKey = new TextEncoder().encode(requireSessionSecret());
+  }
+  return cachedJwtKey;
+}
 
 const COOKIE_NAME = "leadflow_session";
 const IMPERSONATE_COOKIE = "leadflow_impersonate";
@@ -111,11 +118,28 @@ export async function verifyPassword(password: string, hash: string) {
 }
 
 export async function createSessionToken(userId: string) {
-  return new SignJWT({ sub: userId })
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { sessionVersion: true },
+  });
+
+  return new SignJWT({ sub: userId, sv: user?.sessionVersion ?? 0 })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(SESSION_DURATION)
-    .sign(JWT_SECRET);
+    .sign(jwtKey());
+}
+
+/**
+ * Invalidates every existing session for a user by bumping the version stamped
+ * into their JWTs. Call after any password change so a stolen cookie dies with
+ * the old password.
+ */
+export async function revokeUserSessions(userId: string) {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { sessionVersion: { increment: 1 } },
+  });
 }
 
 export async function setSessionCookie(token: string) {
@@ -141,13 +165,17 @@ export async function getRealSessionUser(): Promise<SessionUser | null> {
   if (!token) return null;
 
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const { payload } = await jwtVerify(token, jwtKey());
     const userId = payload.sub;
     if (!userId) return null;
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return null;
     if (user.isActive === false) return null;
+
+    // Tokens minted before the last password change are no longer valid.
+    const tokenVersion = typeof payload.sv === "number" ? payload.sv : 0;
+    if (tokenVersion !== user.sessionVersion) return null;
 
     const permissions = isAdminStaff(user)
       ? await getRolePermissions(user.role)

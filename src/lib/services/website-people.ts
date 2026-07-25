@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio";
+import { safeFetch } from "@/lib/safe-fetch";
 
 export type PublicTeamMember = {
   name: string;
@@ -185,11 +186,14 @@ function extractFromHtml(html: string, sourceUrl: string) {
 
 async function fetchHtml(url: string): Promise<string | null> {
   try {
-    const response = await fetch(url, {
-      redirect: "follow",
-      headers: { "User-Agent": USER_AGENT, Accept: "text/html" },
-      signal: AbortSignal.timeout(10_000),
-    });
+    const response = await safeFetch(
+      url,
+      {
+        headers: { "User-Agent": USER_AGENT, Accept: "text/html" },
+        timeoutMs: 10_000,
+      },
+      { allowHttp: true },
+    );
     if (
       !response.ok ||
       !response.headers.get("content-type")?.includes("text/html")

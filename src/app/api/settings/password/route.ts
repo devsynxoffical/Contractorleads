@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser, hashPassword, verifyPassword } from "@/lib/auth";
+import {
+  createSessionToken,
+  getSessionUser,
+  hashPassword,
+  setSessionCookie,
+  verifyPassword,
+} from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
@@ -36,8 +42,14 @@ export async function POST(request: NextRequest) {
 
   await prisma.user.update({
     where: { id: user.id },
-    data: { passwordHash: await hashPassword(password) },
+    data: {
+      passwordHash: await hashPassword(password),
+      sessionVersion: { increment: 1 },
+    },
   });
+
+  // Keep the caller signed in on this device; other sessions are now invalid.
+  await setSessionCookie(await createSessionToken(user.id));
 
   return NextResponse.json({ ok: true });
 }

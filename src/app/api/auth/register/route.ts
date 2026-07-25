@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { randomBytes } from "crypto";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { businessEmailError } from "@/lib/business-email";
@@ -7,6 +6,8 @@ import { sendVerificationEmail } from "@/lib/email";
 import { captureMarketingEmail } from "@/lib/marketing-session";
 import { appBaseUrl } from "@/lib/email-brand";
 import { REFERRAL_COOKIE } from "@/lib/referrals";
+import { guardAuthRoute } from "@/lib/rate-limit";
+import { generateOpaqueToken, hashOpaqueToken } from "@/lib/token-hash";
 
 function normalizePhone(raw: unknown): string {
   return String(raw ?? "")
@@ -45,6 +46,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: emailErr }, { status: 400 });
     }
 
+    const { blocked } = guardAuthRoute(request, "register", {
+      limit: 5,
+      windowMs: 60 * 60 * 1000,
+      identifier: normalizedEmail,
+    });
+    if (blocked) return blocked;
+
     if (!normalizedPhone || !isValidPhone(normalizedPhone)) {
       return NextResponse.json(
         { error: "A valid phone number is required" },
@@ -62,7 +70,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const token = randomBytes(32).toString("hex");
+    const token = generateOpaqueToken();
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     await prisma.emailVerification.deleteMany({
@@ -74,7 +82,7 @@ export async function POST(request: Request) {
         phone: normalizedPhone,
         name: displayName,
         referralCode,
-        token,
+        token: hashOpaqueToken(token),
         expiresAt,
       },
     });
@@ -105,12 +113,15 @@ export async function POST(request: Request) {
     }
 
     const mocked = "mocked" in sent ? Boolean(sent.mocked) : false;
+    // The verify link is a bearer credential — only surface it in local dev,
+    // never in a production response body.
+    const exposeVerifyUrl = mocked && process.env.NODE_ENV !== "production";
     return NextResponse.json({
       ok: true,
       message:
         "Check your business email for a verification link. After verifying, you will set your password.",
       mocked,
-      ...(mocked ? { verifyUrl } : {}),
+      ...(exposeVerifyUrl ? { verifyUrl } : {}),
     });
   } catch {
     return NextResponse.json({ error: "Registration failed" }, { status: 500 });

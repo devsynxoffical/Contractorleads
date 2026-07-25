@@ -203,7 +203,7 @@ export async function POST(request: Request) {
         return NextResponse.json({
           updated: true,
           plan,
-          redirectUrl: `${appBaseUrl(request)}/billing?checkout=success`,
+          redirectUrl: `${appBaseUrl(request)}/billing?checkout=active`,
         });
       }
     }

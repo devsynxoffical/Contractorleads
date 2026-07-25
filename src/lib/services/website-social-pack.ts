@@ -1,4 +1,5 @@
 import * as cheerio from "cheerio";
+import { safeFetch } from "@/lib/safe-fetch";
 import {
   normalizeLinkedInCompanyUrl,
   normalizeLinkedInProfileUrl,
@@ -32,14 +33,17 @@ const EMPTY: WebsiteSocialPack = {
 
 async function fetchHtml(url: string): Promise<string | null> {
   try {
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": USER_AGENT,
-        Accept: "text/html,application/xhtml+xml",
+    const response = await safeFetch(
+      url,
+      {
+        headers: {
+          "User-Agent": USER_AGENT,
+          Accept: "text/html,application/xhtml+xml",
+        },
+        timeoutMs: 5000,
       },
-      signal: AbortSignal.timeout(5000),
-      redirect: "follow",
-    });
+      { allowHttp: true },
+    );
     if (!response.ok) return null;
     const type = response.headers.get("content-type") || "";
     if (type && !type.includes("text/html") && !type.includes("text/plain")) {

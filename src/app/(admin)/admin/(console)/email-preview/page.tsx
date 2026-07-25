@@ -387,6 +387,7 @@ export default function AdminEmailTemplatesPage() {
               <iframe
                 title="Email preview"
                 className="h-[min(780px,80vh)] w-full bg-[#ebe6df]"
+                sandbox=""
                 srcDoc={html}
               />
             )}

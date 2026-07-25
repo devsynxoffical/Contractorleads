@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { isMetaConfigured } from "@/lib/services/facebook";
 import { getSystemKeyStatuses } from "@/lib/admin";
 import { getEmailProviderStatus } from "@/lib/email-config";
+import { requireSessionSecret } from "@/lib/server-secrets";
 
 export async function GET() {
   const admin = await requirePermission("health");
@@ -28,6 +29,16 @@ export async function GET() {
   const keys = getSystemKeyStatuses();
   const byKey = Object.fromEntries(keys.map((k) => [k.key, k]));
   const emailStatus = await getEmailProviderStatus().catch(() => null);
+
+  // requireSessionSecret throws when the secret is missing, weak, or a
+  // published default, which is exactly the condition we want to surface.
+  let jwtSecretHealthy = true;
+  try {
+    requireSessionSecret();
+    jwtSecretHealthy = Boolean(byKey.JWT_SECRET?.configured);
+  } catch {
+    jwtSecretHealthy = false;
+  }
 
   const checks = [
     {
@@ -95,10 +106,10 @@ export async function GET() {
     },
     {
       name: "JWT secret",
-      status: byKey.JWT_SECRET?.configured ? "ok" : "warn",
-      detail: byKey.JWT_SECRET?.configured
-        ? "Configured"
-        : "Using fallback secret — set JWT_SECRET in production",
+      status: jwtSecretHealthy ? "ok" : "missing",
+      detail: jwtSecretHealthy
+        ? "Configured with a strong secret"
+        : "JWT_SECRET is missing, too short, or a published default — sign-in is disabled until it is replaced. Generate one with: openssl rand -base64 48",
     },
     {
       name: "App URL",
