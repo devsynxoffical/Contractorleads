@@ -197,13 +197,13 @@ export async function POST(request: Request) {
         return NextResponse.json({
           updated: true,
           plan,
-          redirectUrl: `${appBaseUrl()}/billing?checkout=success`,
+          redirectUrl: `${appBaseUrl(request)}/billing?checkout=success`,
         });
       }
     }
 
     // No active subscription → Stripe Checkout for a new subscription
-    const base = appBaseUrl();
+    const base = appBaseUrl(request);
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: customerId,

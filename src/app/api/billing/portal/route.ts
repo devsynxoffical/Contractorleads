@@ -3,7 +3,7 @@ import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { appBaseUrl, getStripe, isStripeConfigured } from "@/lib/stripe";
 
-export async function POST() {
+export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -32,7 +32,7 @@ export async function POST() {
     const stripe = await getStripe();
     const session = await stripe.billingPortal.sessions.create({
       customer: dbUser.stripeCustomerId,
-      return_url: `${appBaseUrl()}/billing`,
+      return_url: `${appBaseUrl(request)}/billing`,
     });
     return NextResponse.json({ url: session.url });
   } catch (err) {
