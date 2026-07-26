@@ -96,6 +96,7 @@ model User {
   referralEarnings    ReferralEarningLedger[]
   teamMembers     TeamMember[]
   leadUnlocks     LeadUnlock[]
+  couponRedemptions CouponRedemption[]
 }
 
 /// Agency+ seat invites managed by the account owner.
@@ -637,6 +638,55 @@ model EmailEnrollment {
 
   @@unique([userId, savedLeadId])
   @@index([status, createdAt])
+}
+
+/// Discount coupons created in admin and synced to Stripe Promotion Codes.
+model Coupon {
+  id                    String   @id @default(cuid())
+  /// Uppercase code customers enter (e.g. SAVE20)
+  code                  String   @unique
+  name                  String
+  description           String?
+  /// percent | amount
+  discountType          String   @default("percent")
+  /// 1–100 when discountType = percent
+  percentOff            Float?
+  /// USD cents when discountType = amount (e.g. 1000 = $10)
+  amountOffCents        Int?
+  /// once | repeating | forever
+  duration              String   @default("once")
+  /// Required when duration = repeating
+  durationInMonths      Int?
+  maxRedemptions        Int?
+  redemptionCount       Int      @default(0)
+  /// One redemption per customer account
+  oncePerCustomer       Boolean  @default(true)
+  expiresAt             DateTime?
+  /// JSON string array of plan ids, or empty / null = all checkout plans
+  applicablePlansJson   String   @default("[]")
+  active                Boolean  @default(true)
+  stripeCouponId        String?
+  stripePromotionCodeId String?
+  createdByEmail        String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  redemptions           CouponRedemption[]
+
+  @@index([active, expiresAt])
+}
+
+model CouponRedemption {
+  id                String   @id @default(cuid())
+  couponId          String
+  coupon            Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan              String?
+  checkoutSessionId String?
+  createdAt         DateTime @default(now())
+
+  @@unique([couponId, userId])
+  @@index([userId, createdAt])
 }
 
 /// Anonymous marketing site visitors (cookie `cl_mkt_vid`) for outreach lists.

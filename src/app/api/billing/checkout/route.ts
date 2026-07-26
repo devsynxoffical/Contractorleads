@@ -13,6 +13,11 @@ import {
   priceIdForPlan,
   type StripeCheckoutPlan,
 } from "@/lib/stripe";
+import {
+  recordCouponRedemption,
+  validateCouponForCheckout,
+} from "@/lib/coupons";
+import type Stripe from "stripe";
 const ACTIVE_SUB_STATUSES = new Set([
   "active",
   "trialing",
@@ -68,11 +73,29 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => ({}));
   const plan = String(body.plan || "").toLowerCase().trim();
+  const couponCode = String(body.couponCode || "").trim();
   if (!isStripeCheckoutPlan(plan)) {
     return NextResponse.json(
       { error: "Choose starter, growth, or agency." },
       { status: 400 },
     );
+  }
+
+  let appliedCoupon: Awaited<
+    ReturnType<typeof validateCouponForCheckout>
+  > | null = null;
+  if (couponCode) {
+    appliedCoupon = await validateCouponForCheckout({
+      code: couponCode,
+      userId: user.id,
+      plan,
+    });
+    if (!appliedCoupon.ok) {
+      return NextResponse.json(
+        { error: appliedCoupon.error },
+        { status: 400 },
+      );
+    }
   }
 
   const priceId = await priceIdForPlan(plan as StripeCheckoutPlan);
@@ -178,16 +201,38 @@ export async function POST(request: Request) {
           );
         }
 
-        const updated = await stripe.subscriptions.update(existing.id, {
+        const updateParams: Stripe.SubscriptionUpdateParams = {
           items: [{ id: item.id, price: priceId }],
           proration_behavior: "create_prorations",
           metadata: {
             ...(existing.metadata || {}),
             userId: dbUser.id,
             plan,
+            ...(appliedCoupon?.ok
+              ? { couponCode: appliedCoupon.coupon.code }
+              : {}),
           },
           cancel_at_period_end: false,
-        });
+        };
+
+        if (appliedCoupon?.ok) {
+          if (appliedCoupon.coupon.stripePromotionCodeId) {
+            updateParams.discounts = [
+              {
+                promotion_code: appliedCoupon.coupon.stripePromotionCodeId,
+              },
+            ];
+          } else if (appliedCoupon.coupon.stripeCouponId) {
+            updateParams.discounts = [
+              { coupon: appliedCoupon.coupon.stripeCouponId },
+            ];
+          }
+        }
+
+        const updated = await stripe.subscriptions.update(
+          existing.id,
+          updateParams,
+        );
 
         await syncUserSubscription({
           userId: dbUser.id,
@@ -200,9 +245,20 @@ export async function POST(request: Request) {
           grantMonthlyCredits: false,
         });
 
+        if (appliedCoupon?.ok) {
+          await recordCouponRedemption({
+            couponId: appliedCoupon.coupon.id,
+            userId: dbUser.id,
+            plan,
+          });
+        }
+
         return NextResponse.json({
           updated: true,
           plan,
+          coupon: appliedCoupon?.ok
+            ? appliedCoupon.coupon.discountLabel
+            : undefined,
           redirectUrl: `${appBaseUrl(request)}/billing?checkout=active`,
         });
       }
@@ -210,25 +266,66 @@ export async function POST(request: Request) {
 
     // No active subscription → Stripe Checkout for a new subscription
     const base = appBaseUrl(request);
-    const session = await stripe.checkout.sessions.create({
+
+    // If a coupon was validated but never synced to Stripe, try once more.
+    if (
+      appliedCoupon?.ok &&
+      !appliedCoupon.coupon.stripePromotionCodeId &&
+      !appliedCoupon.coupon.stripeCouponId
+    ) {
+      try {
+        const { syncCouponToStripe } = await import("@/lib/coupons");
+        const synced = await syncCouponToStripe(appliedCoupon.coupon.id);
+        appliedCoupon.coupon.stripePromotionCodeId =
+          synced.stripePromotionCodeId;
+        appliedCoupon.coupon.stripeCouponId = synced.stripeCouponId;
+      } catch (err) {
+        console.error("[billing/checkout] late coupon sync", err);
+      }
+    }
+
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: "subscription",
       customer: customerId,
       client_reference_id: dbUser.id,
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${base}/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${base}/billing?checkout=canceled&session_id={CHECKOUT_SESSION_ID}`,
-      allow_promotion_codes: true,
       metadata: {
         userId: dbUser.id,
         plan,
+        ...(appliedCoupon?.ok
+          ? {
+              couponId: appliedCoupon.coupon.id,
+              couponCode: appliedCoupon.coupon.code,
+            }
+          : {}),
       },
       subscription_data: {
         metadata: {
           userId: dbUser.id,
           plan,
+          ...(appliedCoupon?.ok
+            ? { couponCode: appliedCoupon.coupon.code }
+            : {}),
         },
       },
-    });
+    };
+
+    if (appliedCoupon?.ok && appliedCoupon.coupon.stripePromotionCodeId) {
+      sessionParams.discounts = [
+        { promotion_code: appliedCoupon.coupon.stripePromotionCodeId },
+      ];
+    } else if (appliedCoupon?.ok && appliedCoupon.coupon.stripeCouponId) {
+      sessionParams.discounts = [
+        { coupon: appliedCoupon.coupon.stripeCouponId },
+      ];
+    } else {
+      // Let the customer still type a Stripe promo code at Checkout.
+      sessionParams.allow_promotion_codes = true;
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
     if (!session.url) {
       return NextResponse.json(
@@ -237,7 +334,13 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ url: session.url, sessionId: session.id });
+    return NextResponse.json({
+      url: session.url,
+      sessionId: session.id,
+      coupon: appliedCoupon?.ok
+        ? appliedCoupon.coupon.discountLabel
+        : undefined,
+    });
   } catch (err) {
     console.error("[billing/checkout]", err);
     return NextResponse.json(

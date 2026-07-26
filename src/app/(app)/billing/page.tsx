@@ -31,6 +31,7 @@ import {
   MESSAGING_ADDON_PRICE_USD,
 } from "@/lib/messaging-addon";
 import { BillingCheckoutButton } from "@/components/billing/billing-checkout-button";
+import { BillingCouponField } from "@/components/billing/billing-coupon-field";
 import { MessagingAddonCard } from "@/components/billing/messaging-addon-card";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
@@ -293,6 +294,10 @@ export default async function BillingPage({
           status={dbUser?.messagingAddonStatus ?? "inactive"}
           priceUsd={MESSAGING_ADDON_PRICE_USD}
         />
+      </div>
+
+      <div className="mt-6">
+        <BillingCouponField />
       </div>
 
       {/* Plan picker */}

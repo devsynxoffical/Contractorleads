@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
+import { readBillingCouponCode } from "@/components/billing/billing-coupon-field";
 
 export function BillingCheckoutButton({
   planId,
@@ -27,12 +28,18 @@ export function BillingCheckoutButton({
     setLoading(true);
     setError(null);
     try {
+      const couponCode = manage ? "" : readBillingCouponCode();
       const res = await fetch(
         manage ? "/api/billing/portal" : "/api/billing/checkout",
         {
           method: "POST",
           headers: manage ? undefined : { "Content-Type": "application/json" },
-          body: manage ? undefined : JSON.stringify({ plan: planId }),
+          body: manage
+            ? undefined
+            : JSON.stringify({
+                plan: planId,
+                ...(couponCode ? { couponCode } : {}),
+              }),
         },
       );
       const data = (await res.json().catch(() => ({}))) as {

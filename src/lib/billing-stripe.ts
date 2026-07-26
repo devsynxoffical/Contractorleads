@@ -405,6 +405,17 @@ export async function fulfillCheckoutSession(opts: {
       invoiceId: invoiceId || `checkout:${session.id}`,
     });
 
+    const couponId = session.metadata?.couponId?.trim();
+    if (couponId) {
+      const { recordCouponRedemption } = await import("@/lib/coupons");
+      await recordCouponRedemption({
+        couponId,
+        userId: opts.userId,
+        plan,
+        checkoutSessionId: session.id,
+      });
+    }
+
     return { ok: true, plan };
   } catch (err) {
     console.error("fulfillCheckoutSession", err);

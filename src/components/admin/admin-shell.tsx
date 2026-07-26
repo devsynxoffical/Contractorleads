@@ -72,6 +72,7 @@ const NAV_SECTIONS: NavSection[] = [
       { href: "/admin/site-leads", label: "Site Leads", icon: HiOutlineGlobeAlt, permission: "customers" },
       { href: "/admin/plans", label: "Plans & Entitlements", icon: HiOutlineCreditCard, permission: "plans" },
       { href: "/admin/revenue", label: "Revenue & Subscriptions", icon: HiOutlineBanknotes, permission: "revenue" },
+      { href: "/admin/coupons", label: "Coupons", icon: HiOutlineCreditCard, permission: "revenue" },
       { href: "/admin/referrals", label: "Referrals & Affiliates", icon: HiOutlineUserPlus, permission: "referrals" },
     ],
   },
