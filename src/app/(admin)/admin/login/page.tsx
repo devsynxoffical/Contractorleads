@@ -70,7 +70,7 @@ export default function AdminLoginPage() {
                 className="saas-input w-full !pl-10"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@contractorleads.us"
+                placeholder="hello@contractorleads.us"
               />
             </div>
           </label>

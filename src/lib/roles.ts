@@ -12,4 +12,4 @@ export const ADMIN_STAFF_ROLES = [
 ] as const;
 
 /** The platform owner account — auto-promoted to OWNER on admin login. */
-export const OWNER_EMAIL = "admin@contractorleads.us";
+export const OWNER_EMAIL = "hello@contractorleads.us";
