@@ -88,3 +88,38 @@ export function loadFinderSearchCache(): FinderSearchCache | null {
 export function saveFinderSearchCache(cache: Omit<FinderSearchCache, "savedAt">) {
   writeJson(FINDER_KEY, { ...cache, savedAt: Date.now() });
 }
+
+const ADMIN_SCRAPE_KEY = "contractorleads:admin-scrape";
+
+export type AdminScrapeCache = {
+  /** Same card shape as finder results; fields may be sparse from scrape API. */
+  leads: Array<Partial<SearchSessionLead> & { id: string; businessName: string; createdAt?: string }>;
+  leadsTotal: number;
+  leadsIndustry: string | null;
+  resultMessage: string | null;
+  industrySelect: string;
+  customIndustry: string;
+  country: string;
+  locationScope: "local" | "country";
+  state: string;
+  city: string;
+  zip: string;
+  radius: number;
+  targetLeadCount: number;
+  customLeadCount: string;
+  requireSocialPresence: boolean;
+  savedAt: number;
+};
+
+export function loadAdminScrapeCache(): AdminScrapeCache | null {
+  return readJson<AdminScrapeCache>(ADMIN_SCRAPE_KEY);
+}
+
+export function saveAdminScrapeCache(cache: Omit<AdminScrapeCache, "savedAt">) {
+  writeJson(ADMIN_SCRAPE_KEY, { ...cache, savedAt: Date.now() });
+}
+
+/** Ordered lead ids from the last scrape batch (for prev/next on admin detail). */
+export function adminScrapeLeadIds(): string[] {
+  return loadAdminScrapeCache()?.leads.map((l) => l.id) ?? [];
+}

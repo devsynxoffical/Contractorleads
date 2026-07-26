@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { computeVerificationScore } from "@/lib/services/social-enrichment";
-import { findOwnedLead } from "@/lib/lead-ownership";
+import { findAccessibleLead } from "@/lib/lead-ownership";
 
 export async function POST(
   _request: Request,
@@ -13,7 +13,7 @@ export async function POST(
   }
 
   const { id } = await params;
-  const lead = await findOwnedLead(user.id, id);
+  const lead = await findAccessibleLead(user, id);
   if (!lead) {
     return NextResponse.json({ error: "Lead not found" }, { status: 404 });
   }

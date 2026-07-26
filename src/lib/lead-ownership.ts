@@ -28,3 +28,34 @@ export async function userOwnsLead(userId: string, leadId: string) {
   });
   return Boolean(found);
 }
+
+type AccessUser = {
+  id: string;
+  role?: string | null;
+  permissions?: string[] | null;
+};
+
+/**
+ * Owned leads, or any lead for admin staff with leads/scrape access.
+ * Used by lead-detail actions so the admin scrape console can use the
+ * same profile UI as the agency app.
+ */
+export async function findAccessibleLead(user: AccessUser, leadId: string) {
+  const owned = await findOwnedLead(user.id, leadId);
+  if (owned) return owned;
+
+  const role = (user.role || "").toUpperCase();
+  const isOwnerOrSuper = role === "OWNER" || role === "SUPER_ADMIN";
+  const isStaff =
+    isOwnerOrSuper || role === "MANAGER" || role === "SUB_ADMIN";
+  if (!isStaff) return null;
+
+  const perms = user.permissions ?? [];
+  const allowed =
+    isOwnerOrSuper ||
+    perms.includes("leads") ||
+    perms.includes("scrape");
+  if (!allowed) return null;
+
+  return prisma.lead.findUnique({ where: { id: leadId } });
+}

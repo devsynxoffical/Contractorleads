@@ -26,10 +26,50 @@ import {
   LeadResultsList,
   type LeadResult,
 } from "@/components/leads/lead-result-card";
+import {
+  loadAdminScrapeCache,
+  saveAdminScrapeCache,
+} from "@/lib/client/search-session";
 
 type ScrapeLead = LeadResult & { createdAt?: string };
 
 type NicheRow = { name: string; count: number };
+
+function persistScrape(snapshot: {
+  leads: ScrapeLead[];
+  leadsTotal: number;
+  leadsIndustry: string | null;
+  resultMessage: string | null;
+  industrySelect: string;
+  customIndustry: string;
+  country: string;
+  locationScope: "local" | "country";
+  state: string;
+  city: string;
+  zip: string;
+  radius: number;
+  targetLeadCount: number;
+  customLeadCount: string;
+  requireSocialPresence: boolean;
+}) {
+  saveAdminScrapeCache({
+    leads: snapshot.leads,
+    leadsTotal: snapshot.leadsTotal,
+    leadsIndustry: snapshot.leadsIndustry,
+    resultMessage: snapshot.resultMessage,
+    industrySelect: snapshot.industrySelect,
+    customIndustry: snapshot.customIndustry,
+    country: snapshot.country,
+    locationScope: snapshot.locationScope,
+    state: snapshot.state,
+    city: snapshot.city,
+    zip: snapshot.zip,
+    radius: snapshot.radius,
+    targetLeadCount: snapshot.targetLeadCount,
+    customLeadCount: snapshot.customLeadCount,
+    requireSocialPresence: snapshot.requireSocialPresence,
+  });
+}
 
 export default function AdminScrapePage() {
   const [industrySelect, setIndustrySelect] = useState<string>(INDUSTRIES[0]);
@@ -54,6 +94,7 @@ export default function AdminScrapePage() {
   const [leadsTotal, setLeadsTotal] = useState(0);
   const [leadsIndustry, setLeadsIndustry] = useState<string | null>(null);
   const [nicheFilter, setNicheFilter] = useState("");
+  const [restored, setRestored] = useState(false);
 
   const countryMeta = getTierOneCountry(country);
 
@@ -123,6 +164,68 @@ export default function AdminScrapePage() {
   useEffect(() => {
     void loadNiches();
   }, [loadNiches]);
+
+  // Restore last scrape batch after navigation (e.g. open lead → back).
+  useEffect(() => {
+    const cached = loadAdminScrapeCache();
+    if (cached) {
+      setIndustrySelect(cached.industrySelect || INDUSTRIES[0]);
+      setCustomIndustry(cached.customIndustry || "");
+      setCountry(cached.country || "US");
+      setLocationScope(cached.locationScope || "local");
+      setState(cached.state || "");
+      setCity(cached.city || "");
+      setZip(cached.zip || "");
+      setRadius(cached.radius ?? 25);
+      setTargetLeadCount(cached.targetLeadCount ?? 50);
+      setCustomLeadCount(cached.customLeadCount || "");
+      setRequireSocialPresence(cached.requireSocialPresence ?? true);
+      setResult(cached.resultMessage);
+      setLeads((cached.leads as ScrapeLead[]) ?? []);
+      setLeadsTotal(cached.leadsTotal ?? 0);
+      setLeadsIndustry(cached.leadsIndustry);
+    }
+    setRestored(true);
+  }, []);
+
+  // Persist whenever the right-side results (or form context) change.
+  useEffect(() => {
+    if (!restored) return;
+    persistScrape({
+      leads,
+      leadsTotal,
+      leadsIndustry,
+      resultMessage: result,
+      industrySelect,
+      customIndustry,
+      country,
+      locationScope,
+      state,
+      city,
+      zip,
+      radius,
+      targetLeadCount,
+      customLeadCount,
+      requireSocialPresence,
+    });
+  }, [
+    restored,
+    leads,
+    leadsTotal,
+    leadsIndustry,
+    result,
+    industrySelect,
+    customIndustry,
+    country,
+    locationScope,
+    state,
+    city,
+    zip,
+    radius,
+    targetLeadCount,
+    customLeadCount,
+    requireSocialPresence,
+  ]);
 
   function selectNiche(name: string) {
     const presets = new Set<string>(INDUSTRIES);
@@ -527,7 +630,9 @@ export default function AdminScrapePage() {
               <LeadResultsList
                 leads={leads}
                 showPipeline={false}
-                profileHrefFor={(lead) => `/admin/leads/${lead.id}`}
+                profileHrefFor={(lead) =>
+                  `/admin/leads/${lead.id}?from=scrape`
+                }
               />
             </div>
           ) : (

@@ -31,6 +31,8 @@ import { OutreachStudio } from "@/components/leads/outreach-studio";
 import { EnrollEmailSequenceButton } from "@/components/leads/enroll-email-sequence-button";
 import { LeadSendEmailCard } from "@/components/leads/lead-send-email-card";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
+import { adminScrapeLeadIds } from "@/lib/client/search-session";
+import { useRouter } from "next/navigation";
 
 type FacebookAdsResult = {
   ads: Array<{
@@ -98,15 +100,22 @@ type Lead = {
   state: string | null;
   city: string | null;
   unlocked?: boolean;
+  search?: {
+    user?: {
+      email: string;
+      companyName: string | null;
+    } | null;
+  } | null;
   savedBy?: Array<{
     id: string;
     status: string;
     favorite: boolean;
     notes: Array<{ id: string; content: string; createdAt: string }>;
+    user?: { email: string; companyName: string | null };
   }>;
 };
 
-type LeadFrom = "all" | "hot" | "saved";
+type LeadFrom = "all" | "hot" | "saved" | "scrape";
 
 type LeadNavigation = {
   from: LeadFrom;
@@ -120,12 +129,14 @@ const BACK_HREF: Record<LeadFrom, string> = {
   all: "/leads",
   hot: "/leads/hot",
   saved: "/leads/saved",
+  scrape: "/admin/scrape",
 };
 
 const BACK_LABEL: Record<LeadFrom, string> = {
   all: "Back to all leads",
   hot: "Back to hot leads",
   saved: "Back to saved leads",
+  scrape: "Back to scrape results",
 };
 
 type TeamMember = {
@@ -325,10 +336,19 @@ function PlatformTag({ href, label }: { href?: string | null; label: string }) {
 export function LeadDetailView({
   leadId,
   from = "all",
+  variant = "app",
+  backHref,
+  backLabel,
 }: {
   leadId: string;
   from?: LeadFrom;
+  /** Admin console uses the same profile UI with admin APIs. */
+  variant?: "app" | "admin";
+  backHref?: string;
+  backLabel?: string;
 }) {
+  const isAdmin = variant === "admin";
+  const router = useRouter();
   const [lead, setLead] = useState<Lead | null>(null);
   const [navigation, setNavigation] = useState<LeadNavigation | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -346,16 +366,85 @@ export function LeadDetailView({
 
   const [crmBusy, setCrmBusy] = useState(false);
   const [noteBusy, setNoteBusy] = useState(false);
+  const [adminEnriching, setAdminEnriching] = useState(false);
+  const [adminDeleting, setAdminDeleting] = useState(false);
+  const [adminMessage, setAdminMessage] = useState<string | null>(null);
 
   function mergeLead(updated: Lead) {
     setLead((prev) => ({
       ...updated,
       savedBy: updated.savedBy ?? prev?.savedBy ?? [],
+      unlocked: true,
     }));
+  }
+
+  function navFromScrapeCache(): LeadNavigation | null {
+    const ids = adminScrapeLeadIds();
+    if (!ids.length) return null;
+    const idx = ids.indexOf(leadId);
+    if (idx < 0) return null;
+    return {
+      from: "scrape",
+      prevId: idx > 0 ? ids[idx - 1] : null,
+      nextId: idx < ids.length - 1 ? ids[idx + 1] : null,
+      position: idx + 1,
+      total: ids.length,
+    };
   }
 
   async function load() {
     setLoadError(null);
+    if (isAdmin) {
+      const res = await fetch(`/api/admin/leads/${leadId}`);
+      const data = await res.json();
+      if (!res.ok || !data.lead) {
+        setLead(null);
+        setNavigation(null);
+        setLoadError(data.error ?? "Lead not found");
+        return;
+      }
+      setLead({
+        ...data.lead,
+        unlocked: true,
+        savedBy: Array.isArray(data.lead.savedBy)
+          ? data.lead.savedBy.map(
+              (s: {
+                id?: string;
+                status?: string;
+                favorite?: boolean;
+                notes?: Array<{ id: string; content: string; createdAt: string }>;
+                user?: { email: string; companyName: string | null };
+              }) => ({
+                id: s.id ?? "",
+                status: s.status ?? "new",
+                favorite: Boolean(s.favorite),
+                notes: s.notes ?? [],
+                user: s.user,
+              }),
+            )
+          : [],
+      });
+      setNavigation(
+        from === "scrape"
+          ? navFromScrapeCache()
+          : {
+              from: "all",
+              prevId: null,
+              nextId: null,
+              position: null,
+              total: 0,
+            },
+      );
+      if (data.lead?.facebookAdsData) {
+        try {
+          setAdsResult(JSON.parse(data.lead.facebookAdsData));
+        } catch {
+          setAdsResult(null);
+        }
+      }
+      return;
+    }
+
     const res = await fetch(`/api/leads/${leadId}?from=${from}`);
     const data = await res.json();
     if (!res.ok || !data.lead) {
@@ -382,7 +471,7 @@ export function LeadDetailView({
     setPopup(null);
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when lead or list scope changes
-  }, [leadId, from]);
+  }, [leadId, from, isAdmin]);
 
   useEffect(() => {
     if (lead && verificationScore === null) {
@@ -394,6 +483,7 @@ export function LeadDetailView({
   }, [lead, leadId, verificationScore]);
 
   async function saveLead() {
+    if (isAdmin) return;
     setSaving(true);
     try {
       const res = await fetch(`/api/leads/${leadId}/save`, { method: "POST" });
@@ -595,14 +685,28 @@ export function LeadDetailView({
   }
 
   if (loadError) {
+    const errBackHref =
+      backHref ||
+      (isAdmin
+        ? from === "scrape"
+          ? "/admin/scrape"
+          : "/admin/leads"
+        : BACK_HREF[from === "scrape" ? "all" : from]);
+    const errBackLabel =
+      backLabel ||
+      (isAdmin
+        ? from === "scrape"
+          ? "Back to scrape results"
+          : "Back to all leads"
+        : BACK_LABEL[from === "scrape" ? "all" : from]);
     return (
-      <div className="page-pad">
+      <div className={isAdmin ? "" : "page-pad"}>
         <Link
-          href={BACK_HREF[from]}
+          href={errBackHref}
           className="mb-4 inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-muted transition hover:text-brand-700"
         >
           <HiOutlineArrowLeft className="h-4 w-4" />
-          {BACK_LABEL[from]}
+          {errBackLabel}
         </Link>
         <div className="saas-card p-8 text-sm text-ink-muted">
           {loadError}
@@ -613,7 +717,7 @@ export function LeadDetailView({
 
   if (!lead) {
     return (
-      <div className="page-pad">
+      <div className={isAdmin ? "" : "page-pad"}>
         <div className="saas-card animate-pulse p-8 text-sm text-ink-muted">
           Loading lead profile…
         </div>
@@ -641,17 +745,80 @@ export function LeadDetailView({
         : "nurture";
   const linkedinSearchUrl = `https://www.linkedin.com/search/results/companies/?keywords=${encodeURIComponent(lead.businessName)}`;
   const navFrom = navigation?.from ?? from;
-  const detailHref = (id: string) => `/leads/${id}?from=${navFrom}`;
+  const appFrom: LeadFrom = navFrom === "scrape" ? "all" : navFrom;
+  const detailHref = (id: string) =>
+    isAdmin
+      ? `/admin/leads/${id}?from=${navFrom === "scrape" ? "scrape" : "all"}`
+      : `/leads/${id}?from=${appFrom}`;
+  const resolvedBackHref =
+    backHref ||
+    (isAdmin
+      ? navFrom === "scrape"
+        ? "/admin/scrape"
+        : "/admin/leads"
+      : BACK_HREF[appFrom]);
+  const resolvedBackLabel =
+    backLabel ||
+    (isAdmin
+      ? navFrom === "scrape"
+        ? "Back to scrape results"
+        : "Back to all leads"
+      : BACK_LABEL[appFrom]);
+
+  async function adminEnrich() {
+    setAdminEnriching(true);
+    setAdminMessage(null);
+    try {
+      const res = await fetch(`/api/admin/leads/${leadId}/enrich`, {
+        method: "POST",
+        signal: AbortSignal.timeout(90000),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Enrich failed");
+      await load();
+      const found = Object.entries(data.found ?? {})
+        .filter(([, v]) => v)
+        .map(([k]) => k);
+      setAdminMessage(
+        found.length
+          ? `Enriched: ${found.join(", ")}`
+          : "Enrichment finished — nothing new found",
+      );
+    } catch (e) {
+      setAdminMessage(e instanceof Error ? e.message : "Enrich failed");
+    } finally {
+      setAdminEnriching(false);
+    }
+  }
+
+  async function adminDelete() {
+    if (!confirm("Delete this lead permanently?")) return;
+    setAdminDeleting(true);
+    setAdminMessage(null);
+    try {
+      const res = await fetch(`/api/admin/leads/${leadId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Delete failed");
+      }
+      router.push(navFrom === "scrape" ? "/admin/scrape" : "/admin/leads");
+    } catch (e) {
+      setAdminMessage(e instanceof Error ? e.message : "Delete failed");
+      setAdminDeleting(false);
+    }
+  }
 
   return (
-    <div className="page-pad page-enter">
+    <div className={isAdmin ? "page-enter" : "page-pad page-enter"}>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <Link
-          href={BACK_HREF[navFrom]}
+          href={resolvedBackHref}
           className="inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-muted transition hover:text-brand-700"
         >
           <HiOutlineArrowLeft className="h-4 w-4" />
-          {BACK_LABEL[navFrom]}
+          {resolvedBackLabel}
         </Link>
 
         <div className="flex items-center gap-2">
@@ -747,14 +914,23 @@ export function LeadDetailView({
                 {lead.leadScore}
               </p>
             </div>
-            <Button onClick={saveLead} loading={saving}>
-              {!saving && <HiOutlineBookmark className="h-4 w-4" />}
-              {saving
-                ? "Adding…"
-                : saved
-                  ? "In pipeline"
-                  : "Add to pipeline"}
-            </Button>
+            {isAdmin ? (
+              <Link
+                href={`/admin/leads/${leadId}?edit=1${navFrom === "scrape" ? "&from=scrape" : ""}`}
+                className="inline-flex h-10 items-center rounded-xl border border-border bg-white px-4 text-[13px] font-semibold text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
+              >
+                Edit raw fields
+              </Link>
+            ) : (
+              <Button onClick={saveLead} loading={saving}>
+                {!saving && <HiOutlineBookmark className="h-4 w-4" />}
+                {saving
+                  ? "Adding…"
+                  : saved
+                    ? "In pipeline"
+                    : "Add to pipeline"}
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -1273,122 +1449,192 @@ export function LeadDetailView({
         </div>
 
         <div className="space-y-5">
-          <Card>
-            <CardHeader>
-              <CardTitle>Pipeline status</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <select
-                className="saas-input"
-                value={saved?.status ?? "new"}
-                disabled={crmBusy || saving}
-                onChange={(e) => updateSaved("status", e.target.value)}
-              >
-                {LEAD_STATUSES.map((s) => (
-                  <option key={s.value} value={s.value}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
-              <label className="flex items-center gap-2 rounded-xl border border-border bg-[#faf8fc] px-3 py-2.5 text-sm">
-                <input
-                  type="checkbox"
-                  checked={saved?.favorite ?? false}
-                  disabled={crmBusy || saving}
-                  onChange={(e) => updateSaved("favorite", e.target.checked)}
-                />
-                {crmBusy ? "Updating…" : "Mark as favorite"}
-              </label>
-              {saved && lead.email ? (
-                <EnrollEmailSequenceButton
-                  savedLeadId={saved.id}
-                  hasEmail={Boolean(lead.email)}
-                />
-              ) : null}
-              {saved ? (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  disabled={crmBusy}
-                  onClick={async () => {
-                    if (!confirm("Remove this lead from your pipeline?")) return;
-                    setCrmBusy(true);
-                    try {
-                      await fetch(`/api/leads/saved/${saved.id}`, {
-                        method: "DELETE",
-                      });
-                      await load();
-                    } finally {
-                      setCrmBusy(false);
-                    }
-                  }}
-                >
-                  Remove from pipeline
-                </Button>
-              ) : null}
-            </CardContent>
-          </Card>
-
-          <LeadSendEmailCard
-            leadId={lead.id}
-            leadEmail={lead.email}
-            businessName={lead.businessName}
-            ownerName={lead.ownerName}
-            onSent={(status) => {
-              if (lead.savedBy?.[0]) {
-                setLead({
-                  ...lead,
-                  savedBy: [
-                    {
-                      ...lead.savedBy[0],
-                      status,
-                    },
-                  ],
-                });
-              }
-              void load();
-            }}
-          />
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Notes</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {!saved && (
-                <p className="text-[12px] text-ink-faint">
-                  Save this lead first to add notes.
-                </p>
-              )}
-              <Textarea
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="Call notes, follow-up, objections…"
-                className="min-h-[100px]"
-              />
-              <Button
-                size="sm"
-                onClick={addNote}
-                loading={noteBusy}
-                disabled={!saved || !note.trim()}
-              >
-                {noteBusy ? "Adding…" : "Add note"}
-              </Button>
-              <ul className="space-y-2">
-                {saved?.notes.map((n) => (
-                  <li
-                    key={n.id}
-                    className="rounded-xl border border-border bg-[#faf8fc] px-3 py-2.5 text-sm"
-                  >
-                    <p className="text-ink">{n.content}</p>
-                    <p className="mt-1 text-[11px] text-ink-faint">
-                      {new Date(n.createdAt).toLocaleString()}
+          {isAdmin ? (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Admin actions</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {adminMessage && (
+                    <p className="rounded-xl bg-brand-50 px-3 py-2 text-[12px] text-brand-800">
+                      {adminMessage}
                     </p>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
+                  )}
+                  <p className="text-[12px] text-ink-muted">
+                    Source agency:{" "}
+                    <span className="font-medium text-ink">
+                      {lead.search?.user?.companyName ||
+                        lead.search?.user?.email ||
+                        "Pool / scrape"}
+                    </span>
+                  </p>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    loading={adminEnriching}
+                    disabled={adminDeleting}
+                    onClick={adminEnrich}
+                  >
+                    {adminEnriching ? "Enriching…" : "Enrich public data"}
+                  </Button>
+                  <Link
+                    href={`/leads/${leadId}`}
+                    className="inline-flex h-9 w-full items-center justify-center rounded-xl border border-border bg-white px-3 text-[13px] font-semibold text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
+                  >
+                    Open in app
+                  </Link>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    loading={adminDeleting}
+                    disabled={adminEnriching}
+                    onClick={adminDelete}
+                  >
+                    {adminDeleting ? "Deleting…" : "Delete lead"}
+                  </Button>
+                </CardContent>
+              </Card>
+              {lead.savedBy && lead.savedBy.some((s) => s.user) && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Saved by agencies</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-1 text-[13px] text-ink-muted">
+                      {lead.savedBy.map((s, i) =>
+                        s.user ? (
+                          <li key={s.id || i}>
+                            {s.user.companyName || s.user.email}
+                          </li>
+                        ) : null,
+                      )}
+                    </ul>
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          ) : (
+            <>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Pipeline status</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <select
+                    className="saas-input"
+                    value={saved?.status ?? "new"}
+                    disabled={crmBusy || saving}
+                    onChange={(e) => updateSaved("status", e.target.value)}
+                  >
+                    {LEAD_STATUSES.map((s) => (
+                      <option key={s.value} value={s.value}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
+                  <label className="flex items-center gap-2 rounded-xl border border-border bg-[#faf8fc] px-3 py-2.5 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={saved?.favorite ?? false}
+                      disabled={crmBusy || saving}
+                      onChange={(e) => updateSaved("favorite", e.target.checked)}
+                    />
+                    {crmBusy ? "Updating…" : "Mark as favorite"}
+                  </label>
+                  {saved && lead.email ? (
+                    <EnrollEmailSequenceButton
+                      savedLeadId={saved.id}
+                      hasEmail={Boolean(lead.email)}
+                    />
+                  ) : null}
+                  {saved ? (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      disabled={crmBusy}
+                      onClick={async () => {
+                        if (!confirm("Remove this lead from your pipeline?"))
+                          return;
+                        setCrmBusy(true);
+                        try {
+                          await fetch(`/api/leads/saved/${saved.id}`, {
+                            method: "DELETE",
+                          });
+                          await load();
+                        } finally {
+                          setCrmBusy(false);
+                        }
+                      }}
+                    >
+                      Remove from pipeline
+                    </Button>
+                  ) : null}
+                </CardContent>
+              </Card>
+
+              <LeadSendEmailCard
+                leadId={lead.id}
+                leadEmail={lead.email}
+                businessName={lead.businessName}
+                ownerName={lead.ownerName}
+                onSent={(status) => {
+                  if (lead.savedBy?.[0]) {
+                    setLead({
+                      ...lead,
+                      savedBy: [
+                        {
+                          ...lead.savedBy[0],
+                          status,
+                        },
+                      ],
+                    });
+                  }
+                  void load();
+                }}
+              />
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Notes</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {!saved && (
+                    <p className="text-[12px] text-ink-faint">
+                      Save this lead first to add notes.
+                    </p>
+                  )}
+                  <Textarea
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    placeholder="Call notes, follow-up, objections…"
+                    className="min-h-[100px]"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={addNote}
+                    loading={noteBusy}
+                    disabled={!saved || !note.trim()}
+                  >
+                    {noteBusy ? "Adding…" : "Add note"}
+                  </Button>
+                  <ul className="space-y-2">
+                    {saved?.notes.map((n) => (
+                      <li
+                        key={n.id}
+                        className="rounded-xl border border-border bg-[#faf8fc] px-3 py-2.5 text-sm"
+                      >
+                        <p className="text-ink">{n.content}</p>
+                        <p className="mt-1 text-[11px] text-ink-faint">
+                          {new Date(n.createdAt).toLocaleString()}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            </>
+          )}
         </div>
       </div>
 

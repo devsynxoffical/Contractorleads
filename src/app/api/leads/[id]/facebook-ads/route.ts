@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { searchFacebookAdsLibrary } from "@/lib/services/facebook";
-import { findOwnedLead } from "@/lib/lead-ownership";
+import { findAccessibleLead } from "@/lib/lead-ownership";
 import { resolveMetaAccessTokenForUser } from "@/lib/facebook-oauth";
 
 export async function POST(
@@ -15,7 +15,7 @@ export async function POST(
   }
 
   const { id } = await params;
-  const lead = await findOwnedLead(user.id, id);
+  const lead = await findAccessibleLead(user, id);
   if (!lead) {
     return NextResponse.json({ error: "Lead not found" }, { status: 404 });
   }

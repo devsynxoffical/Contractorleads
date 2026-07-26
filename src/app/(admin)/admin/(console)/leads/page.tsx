@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AdminPageHeader } from "@/components/admin/admin-shell";
@@ -77,13 +77,17 @@ export default function AdminLeadsPage() {
   const [userId, setUserId] = useState("");
   const [sort, setSort] = useState("newest");
   const [filterIndustrySelect, setFilterIndustrySelect] = useState("");
+  const [filterCustomIndustryDraft, setFilterCustomIndustryDraft] =
+    useState("");
   const [filterCustomIndustry, setFilterCustomIndustry] = useState("");
   const [country, setCountry] = useState("");
+  const [qDraft, setQDraft] = useState("");
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState<Busy>("load");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [showCreate, setShowCreate] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const selectAllRef = useRef<HTMLInputElement>(null);
   const [createIndustrySelect, setCreateIndustrySelect] = useState<string>(
     INDUSTRIES[0],
   );
@@ -129,6 +133,8 @@ export default function AdminLeadsPage() {
     sort,
   ]);
 
+  const filterKey = filterParams.toString();
+
   async function load(override?: URLSearchParams) {
     setBusy("load");
     startNavigationProgress();
@@ -147,10 +153,25 @@ export default function AdminLeadsPage() {
     }
   }
 
+  // Debounce free-text filters so typing doesn't hammer the API.
   useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const t = window.setTimeout(() => setQ(qDraft.trim()), 350);
+    return () => window.clearTimeout(t);
+  }, [qDraft]);
+
+  useEffect(() => {
+    const t = window.setTimeout(
+      () => setFilterCustomIndustry(filterCustomIndustryDraft.trim()),
+      350,
+    );
+    return () => window.clearTimeout(t);
+  }, [filterCustomIndustryDraft]);
+
+  // Apply filters immediately when any filter changes (Today, tier, etc.).
+  useEffect(() => {
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload from filterKey
+  }, [filterKey]);
 
   function clearFilters() {
     setWhen("all");
@@ -159,11 +180,11 @@ export default function AdminLeadsPage() {
     setUserId("");
     setSort("newest");
     setFilterIndustrySelect("");
+    setFilterCustomIndustryDraft("");
     setFilterCustomIndustry("");
     setCountry("");
+    setQDraft("");
     setQ("");
-    const params = new URLSearchParams({ pageSize: "50" });
-    void load(params);
   }
 
   function toggle(id: string) {
@@ -174,6 +195,24 @@ export default function AdminLeadsPage() {
       return next;
     });
   }
+
+  const allOnPageSelected =
+    leads.length > 0 && leads.every((l) => selected.has(l.id));
+  const someOnPageSelected = leads.some((l) => selected.has(l.id));
+
+  function toggleSelectAllOnPage() {
+    if (allOnPageSelected) {
+      setSelected(new Set());
+      return;
+    }
+    setSelected(new Set(leads.map((l) => l.id)));
+  }
+
+  useEffect(() => {
+    if (!selectAllRef.current) return;
+    selectAllRef.current.indeterminate =
+      someOnPageSelected && !allOnPageSelected;
+  }, [someOnPageSelected, allOnPageSelected]);
 
   async function downloadExport(key: Busy, url: string, filename: string) {
     if (busy) return;
@@ -345,7 +384,7 @@ export default function AdminLeadsPage() {
             <Button
               variant="secondary"
               loading={busy === "export-csv"}
-              disabled={!!busy}
+              disabled={!!busy || total === 0}
               onClick={() =>
                 downloadExport(
                   "export-csv",
@@ -353,13 +392,16 @@ export default function AdminLeadsPage() {
                   "leads-export.csv",
                 )
               }
+              title="Export every lead matching the current filters (up to 5,000)"
             >
-              {busy === "export-csv" ? "Exporting…" : "Export CSV"}
+              {busy === "export-csv"
+                ? "Exporting…"
+                : `Export all CSV${total ? ` (${total})` : ""}`}
             </Button>
             <Button
               variant="secondary"
               loading={busy === "export-xlsx"}
-              disabled={!!busy}
+              disabled={!!busy || total === 0}
               onClick={() =>
                 downloadExport(
                   "export-xlsx",
@@ -367,8 +409,11 @@ export default function AdminLeadsPage() {
                   "leads-export.xlsx",
                 )
               }
+              title="Export every lead matching the current filters (up to 5,000)"
             >
-              {busy === "export-xlsx" ? "Exporting…" : "Export Excel"}
+              {busy === "export-xlsx"
+                ? "Exporting…"
+                : `Export all Excel${total ? ` (${total})` : ""}`}
             </Button>
             {selected.size > 0 && (
               <>
@@ -566,10 +611,14 @@ export default function AdminLeadsPage() {
                 const v = e.target.value;
                 if (v === "all") {
                   setFilterIndustrySelect("");
+                  setFilterCustomIndustryDraft("");
                   setFilterCustomIndustry("");
                 } else {
                   setFilterIndustrySelect(v);
-                  if (v !== CUSTOM_INDUSTRY_VALUE) setFilterCustomIndustry("");
+                  if (v !== CUSTOM_INDUSTRY_VALUE) {
+                    setFilterCustomIndustryDraft("");
+                    setFilterCustomIndustry("");
+                  }
                 }
               }}
               disabled={!!busy}
@@ -589,8 +638,8 @@ export default function AdminLeadsPage() {
               Custom industry
               <input
                 className="saas-input mt-1"
-                value={filterCustomIndustry}
-                onChange={(e) => setFilterCustomIndustry(e.target.value)}
+                value={filterCustomIndustryDraft}
+                onChange={(e) => setFilterCustomIndustryDraft(e.target.value)}
                 placeholder="e.g. Window tinting"
                 disabled={!!busy}
               />
@@ -633,24 +682,19 @@ export default function AdminLeadsPage() {
             <input
               className="saas-input mt-1"
               placeholder="Business, owner, email, phone, city…"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && load()}
+              value={qDraft}
+              onChange={(e) => setQDraft(e.target.value)}
               disabled={!!busy}
             />
           </label>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            size="sm"
-            loading={busy === "load"}
-            disabled={!!busy && busy !== "load"}
-            onClick={() => load()}
-          >
-            {busy === "load" ? "Loading…" : "Apply filters"}
-          </Button>
+          {loading && (
+            <span className="text-[12px] font-medium text-ink-muted">
+              Updating…
+            </span>
+          )}
           {hasActiveFilters && (
             <button
               type="button"
@@ -663,7 +707,22 @@ export default function AdminLeadsPage() {
           )}
           <span className="text-[12px] text-ink-faint">
             {total} lead{total === 1 ? "" : "s"} match
+            {leads.length < total
+              ? ` · showing ${leads.length}`
+              : ""}
           </span>
+          {leads.length > 0 && (
+            <button
+              type="button"
+              onClick={toggleSelectAllOnPage}
+              disabled={!!busy}
+              className="text-[12px] font-semibold text-brand-600 hover:underline"
+            >
+              {allOnPageSelected
+                ? "Clear selection"
+                : `Select all ${leads.length} on page`}
+            </button>
+          )}
         </div>
       </div>
 
@@ -671,7 +730,17 @@ export default function AdminLeadsPage() {
         <table className="w-full min-w-[860px] text-left text-[13px]">
           <thead className="border-b border-border bg-[#faf8fc] text-[11px] uppercase tracking-wide text-ink-faint">
             <tr>
-              <th className="w-10 px-4 py-3" />
+              <th className="w-10 px-4 py-3">
+                <input
+                  ref={selectAllRef}
+                  type="checkbox"
+                  checked={allOnPageSelected}
+                  onChange={toggleSelectAllOnPage}
+                  disabled={!leads.length || !!busy}
+                  aria-label="Select all leads on this page"
+                  title="Select all on this page"
+                />
+              </th>
               <th className="px-4 py-3">Business</th>
               <th className="px-4 py-3">Service</th>
               <th className="px-4 py-3">Location</th>
