@@ -147,7 +147,7 @@ export function SavedLeadsManager({
               className="inline-flex items-center gap-1.5 rounded-lg border border-brand-200 bg-brand-50 px-3 py-1.5 text-[13px] font-semibold text-brand-700 hover:bg-brand-100"
             >
               <HiOutlineLockClosed className="h-4 w-4" />
-              Unlock bulk email · ${addonPriceUsd}/mo
+              Unlock bulk email · ${addonPriceUsd.toFixed(2)}/mo
             </Link>
           )}
         </div>

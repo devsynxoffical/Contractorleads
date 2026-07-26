@@ -136,7 +136,7 @@ export function SmsComposePanel({
               href="/billing?addon=messaging"
               className="font-semibold text-brand-600 underline"
             >
-              Messaging add-on ($30/mo)
+              Messaging add-on ($15.50/mo)
             </Link>
             .
           </p>

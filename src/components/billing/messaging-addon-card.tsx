@@ -79,7 +79,7 @@ export function MessagingAddonCard({
                 Messaging add-on
               </h3>
               <p className="text-[12px] text-ink-muted">
-                Bulk email &amp; SMS outreach · ${priceUsd}/mo
+                Bulk email &amp; SMS outreach · ${priceUsd.toFixed(2)}/mo
               </p>
             </div>
             {active ? (
@@ -126,7 +126,7 @@ export function MessagingAddonCard({
             )
           ) : available ? (
             <Button size="sm" onClick={subscribe} loading={busy}>
-              Add for ${priceUsd}/mo
+              Add for ${priceUsd.toFixed(2)}/mo
             </Button>
           ) : (
             <p className="max-w-[12rem] text-right text-[12px] text-ink-faint">

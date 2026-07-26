@@ -572,7 +572,7 @@ export default function AdminSystemPage() {
           </div>
 
           <p className="pt-2 text-[12px] font-semibold text-ink">
-            Messaging add-on price ID ($30/mo — unlocks bulk email + SMS)
+            Messaging add-on price ID ($15.50/mo — unlocks bulk email + SMS)
           </p>
           <label className="block text-[12px] font-medium text-ink-muted">
             Messaging add-on price ID
@@ -583,7 +583,7 @@ export default function AdminSystemPage() {
               onChange={(e) => setPriceMessaging(e.target.value)}
             />
             <span className="mt-1 block text-[11px] text-ink-faint">
-              Create a $30/mo recurring price in Stripe and paste its price ID here.
+              Create a $15.50/mo recurring price in Stripe and paste its price ID here.
               {stripe ? (
                 stripe.messagingReady ? (
                   <span className="ml-1 font-semibold text-emerald-600">Add-on ready.</span>

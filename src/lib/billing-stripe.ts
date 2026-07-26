@@ -180,7 +180,7 @@ export async function syncUserSubscription(opts: {
 }
 
 /* ------------------------------------------------------------------ */
-/* Messaging add-on ($30/mo) — separate subscription, gates bulk email + SMS */
+/* Messaging add-on ($15.50/mo) — separate subscription, gates bulk email + SMS */
 /* ------------------------------------------------------------------ */
 
 type AddonSubscription = {

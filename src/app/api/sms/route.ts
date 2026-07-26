@@ -79,7 +79,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "SMS requires the Messaging add-on ($30/mo). Upgrade under Plans & Billing.",
+          "SMS requires the Messaging add-on ($15.50/mo). Upgrade under Plans & Billing.",
         code: "messaging_addon_required",
       },
       { status: 402 },

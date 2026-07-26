@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Bulk email requires the Messaging add-on ($30/mo). Add it on the Billing page.",
+          "Bulk email requires the Messaging add-on ($15.50/mo). Add it on the Billing page.",
         locked: true,
         addon: "messaging",
       },

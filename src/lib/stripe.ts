@@ -79,7 +79,7 @@ export async function planFromPriceId(
   return null;
 }
 
-/** Stripe price id for the $30/mo Messaging add-on (bulk email + SMS). */
+/** Stripe price id for the $15.50/mo Messaging add-on (bulk email + SMS). */
 export async function messagingAddonPriceId(): Promise<string | null> {
   const cfg = await getStripeBillingSecrets();
   return cfg.priceMessaging?.trim() || null;
