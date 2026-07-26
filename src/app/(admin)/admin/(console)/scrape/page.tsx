@@ -21,22 +21,13 @@ import {
   startNavigationProgress,
   stopNavigationProgress,
 } from "@/components/layout/navigation-progress";
+import {
+  LeadResultsHeader,
+  LeadResultsList,
+  type LeadResult,
+} from "@/components/leads/lead-result-card";
 
-type ScrapeLead = {
-  id: string;
-  businessName: string;
-  ownerName: string | null;
-  phone: string | null;
-  email: string | null;
-  website: string | null;
-  city: string | null;
-  state: string | null;
-  country: string;
-  industry: string | null;
-  leadScore: number;
-  qualityTier: string | null;
-  createdAt: string;
-};
+type ScrapeLead = LeadResult & { createdAt?: string };
 
 type NicheRow = { name: string; count: number };
 
@@ -53,6 +44,7 @@ export default function AdminScrapePage() {
   const [radius, setRadius] = useState(25);
   const [targetLeadCount, setTargetLeadCount] = useState(50);
   const [customLeadCount, setCustomLeadCount] = useState("");
+  const [requireSocialPresence, setRequireSocialPresence] = useState(true);
   const [loading, setLoading] = useState(false);
   const [loadingLeads, setLoadingLeads] = useState(false);
   const [result, setResult] = useState<string | null>(null);
@@ -169,6 +161,7 @@ export default function AdminScrapePage() {
           city: locationScope === "local" ? city : undefined,
           zip: locationScope === "local" ? zip : undefined,
           radius: locationScope === "local" ? radius : undefined,
+          requireSocialPresence,
           targetLeadCount: resolvedLeadCount,
         }),
         signal: AbortSignal.timeout(180000),
@@ -372,6 +365,25 @@ export default function AdminScrapePage() {
             </label>
           )}
 
+          <label className="flex items-start gap-3 rounded-xl border border-brand-500/20 bg-brand-50/40 px-4 py-3">
+            <input
+              type="checkbox"
+              checked={requireSocialPresence}
+              onChange={(e) => setRequireSocialPresence(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-brand-500/40 bg-transparent text-brand-500 focus:ring-brand-500"
+            />
+            <span className="text-[13px] leading-snug text-ink">
+              <span className="font-semibold text-brand-600">
+                LinkedIn + social required (on by default)
+              </span>
+              <span className="mt-0.5 block text-ink-muted">
+                Every scrape automatically finds LinkedIn, Facebook/Instagram,
+                owner, and Yelp. With this on, only leads that have LinkedIn +
+                a social profile are kept.
+              </span>
+            </span>
+          </label>
+
           <Button onClick={runScrape} loading={loading}>
             {loading ? "Scraping…" : `Run scrape (${resolvedLeadCount})`}
           </Button>
@@ -461,114 +473,49 @@ export default function AdminScrapePage() {
             )}
           </div>
 
-          <div className="overflow-hidden rounded-2xl border border-border/80 bg-white shadow-[var(--shadow-card)]">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-3.5">
-              <div>
-                <h2 className="text-[14px] font-semibold text-ink">
-                  Scraped leads
-                  {leadsIndustry ? (
-                    <span className="font-normal text-ink-muted">
-                      {" "}
-                      · {leadsIndustry}
-                    </span>
-                  ) : null}
-                </h2>
-                <p className="mt-0.5 text-[12px] text-ink-muted">
-                  {loadingLeads
-                    ? "Loading…"
-                    : leadsIndustry
-                      ? `Showing ${leads.length} of ${leadsTotal} in pool`
-                      : "Pick a niche or run a scrape to see leads here"}
-                </p>
-              </div>
+          {leads.length > 0 ? (
+            <div>
+              <LeadResultsHeader
+                count={leads.length}
+                hotCount={leads.filter((l) => l.qualityTier === "hot").length}
+                avgScore={
+                  leads.length > 0
+                    ? Math.round(
+                        leads.reduce((s, l) => s + l.leadScore, 0) /
+                          leads.length,
+                      )
+                    : 0
+                }
+                actions={
+                  leadsIndustry ? (
+                    <Link
+                      href={`/admin/leads?industry=${encodeURIComponent(leadsIndustry)}`}
+                      className="inline-flex h-9 items-center rounded-xl border border-border bg-white px-3 text-[12px] font-semibold text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
+                    >
+                      Open in All Leads →
+                    </Link>
+                  ) : undefined
+                }
+              />
               {leadsIndustry && (
-                <Link
-                  href={`/admin/leads?industry=${encodeURIComponent(leadsIndustry)}`}
-                  className="text-[12px] font-semibold text-brand-600 hover:underline"
-                >
-                  Open in All Leads →
-                </Link>
+                <p className="mb-3 text-[12px] text-ink-muted">
+                  {leadsIndustry} · showing {leads.length} of {leadsTotal} in
+                  the pool
+                </p>
               )}
+              <LeadResultsList
+                leads={leads}
+                showPipeline={false}
+                profileHrefFor={(lead) => `/admin/leads/${lead.id}`}
+              />
             </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[640px] text-left text-[13px]">
-                <thead>
-                  <tr className="border-b border-border bg-[#faf8fc] text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">
-                    <th className="px-4 py-2.5">Business</th>
-                    <th className="px-4 py-2.5">Owner</th>
-                    <th className="px-4 py-2.5">Location</th>
-                    <th className="px-4 py-2.5">Contact</th>
-                    <th className="px-4 py-2.5">Score</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {leads.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={5}
-                        className="px-4 py-10 text-center text-ink-muted"
-                      >
-                        {loadingLeads
-                          ? "Loading leads…"
-                          : "No leads to show yet."}
-                      </td>
-                    </tr>
-                  ) : (
-                    leads.map((lead) => (
-                      <tr
-                        key={lead.id}
-                        className="border-b border-border/70 hover:bg-[#faf8fc]/60"
-                      >
-                        <td className="px-4 py-2.5">
-                          <Link
-                            href={`/admin/leads/${lead.id}`}
-                            className="font-semibold text-ink hover:text-brand-600"
-                          >
-                            {lead.businessName}
-                          </Link>
-                          {lead.website && (
-                            <p className="mt-0.5 truncate text-[11px] text-ink-faint">
-                              {lead.website.replace(/^https?:\/\//, "")}
-                            </p>
-                          )}
-                        </td>
-                        <td className="px-4 py-2.5 text-ink-muted">
-                          {lead.ownerName || "—"}
-                        </td>
-                        <td className="px-4 py-2.5 text-ink-muted">
-                          {[lead.city, lead.state, lead.country]
-                            .filter(Boolean)
-                            .join(", ") || "—"}
-                        </td>
-                        <td className="px-4 py-2.5 text-ink-muted">
-                          <div className="space-y-0.5">
-                            {lead.phone && <p>{lead.phone}</p>}
-                            {lead.email && (
-                              <p className="truncate text-[12px]">
-                                {lead.email}
-                              </p>
-                            )}
-                            {!lead.phone && !lead.email && "—"}
-                          </div>
-                        </td>
-                        <td className="px-4 py-2.5">
-                          <span className="tabular-nums font-semibold text-ink">
-                            {lead.leadScore}
-                          </span>
-                          {lead.qualityTier && (
-                            <span className="ml-1.5 text-[10px] uppercase tracking-wide text-ink-faint">
-                              {lead.qualityTier}
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+          ) : (
+            <div className="rounded-2xl border border-border/80 bg-white p-10 text-center text-[13px] text-ink-muted shadow-[var(--shadow-card)]">
+              {loadingLeads
+                ? "Loading leads…"
+                : "Pick a niche or run a scrape to see leads here."}
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

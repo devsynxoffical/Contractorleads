@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import {
   hashPassword,
   isAdminStaff,
-  isSuperAdmin,
+  isOwner,
   requireSuperAdmin,
   SUPER_ADMIN_ROLE,
 } from "@/lib/auth";
@@ -21,6 +21,25 @@ export async function PATCH(request: Request, { params }: Params) {
   const target = await prisma.user.findUnique({ where: { id } });
   if (!target || !isAdminStaff(target)) {
     return NextResponse.json({ error: "Staff member not found" }, { status: 404 });
+  }
+
+  // Owner accounts can only be edited by the owner themself, and their role
+  // never changes. Super Admin accounts are managed exclusively by the Owner.
+  if (isOwner(target) && target.id !== admin.id) {
+    return NextResponse.json(
+      { error: "The Owner account can only be managed by the Owner" },
+      { status: 403 },
+    );
+  }
+  if (
+    target.role === SUPER_ADMIN_ROLE &&
+    target.id !== admin.id &&
+    !isOwner(admin)
+  ) {
+    return NextResponse.json(
+      { error: "Only the Owner can manage Super Admin accounts" },
+      { status: 403 },
+    );
   }
 
   if (target.id === admin.id && request.headers.get("x-self-lock") === "1") {
@@ -46,9 +65,31 @@ export async function PATCH(request: Request, { params }: Params) {
     if (!isTemplateRole(role) && role !== SUPER_ADMIN_ROLE) {
       return NextResponse.json({ error: "Invalid role" }, { status: 400 });
     }
-    if (target.id === admin.id && role !== SUPER_ADMIN_ROLE) {
+    if (isOwner(target)) {
       return NextResponse.json(
-        { error: "You cannot remove your own Super Admin role" },
+        { error: "The Owner role cannot be changed" },
+        { status: 400 },
+      );
+    }
+    if (role === SUPER_ADMIN_ROLE && !isOwner(admin)) {
+      return NextResponse.json(
+        { error: "Only the Owner can grant the Super Admin role" },
+        { status: 403 },
+      );
+    }
+    if (
+      target.role === SUPER_ADMIN_ROLE &&
+      role !== SUPER_ADMIN_ROLE &&
+      !isOwner(admin)
+    ) {
+      return NextResponse.json(
+        { error: "Only the Owner can revoke the Super Admin role" },
+        { status: 403 },
+      );
+    }
+    if (target.id === admin.id && role !== target.role) {
+      return NextResponse.json(
+        { error: "You cannot change your own role" },
         { status: 400 },
       );
     }
@@ -110,16 +151,18 @@ export async function DELETE(_request: Request, { params }: Params) {
     );
   }
 
-  if (isSuperAdmin(target)) {
-    const superCount = await prisma.user.count({
-      where: { role: SUPER_ADMIN_ROLE, isActive: true },
-    });
-    if (superCount <= 1) {
-      return NextResponse.json(
-        { error: "Cannot delete the last Super Admin" },
-        { status: 400 },
-      );
-    }
+  if (isOwner(target)) {
+    return NextResponse.json(
+      { error: "The Owner account cannot be deleted" },
+      { status: 400 },
+    );
+  }
+
+  if (target.role === SUPER_ADMIN_ROLE && !isOwner(admin)) {
+    return NextResponse.json(
+      { error: "Only the Owner can delete Super Admin accounts" },
+      { status: 403 },
+    );
   }
 
   await prisma.user.delete({ where: { id } });

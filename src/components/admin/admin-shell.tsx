@@ -32,7 +32,7 @@ import {
 } from "react-icons/hi2";
 import { cn } from "@/lib/utils";
 import type { SessionUser } from "@/lib/session-user";
-import { SUPER_ADMIN_ROLE } from "@/lib/roles";
+import { OWNER_ROLE, SUPER_ADMIN_ROLE } from "@/lib/roles";
 import {
   firstAllowedAdminPath,
   permissionForPath,
@@ -129,7 +129,7 @@ function canAccess(
   user: SessionUser,
   permission: AdminPermissionKey | "staff"
 ) {
-  if (user.role === SUPER_ADMIN_ROLE) return true;
+  if (user.role === SUPER_ADMIN_ROLE || user.role === OWNER_ROLE) return true;
   if (permission === "staff") return false;
   return (user.permissions ?? []).includes(permission);
 }
@@ -144,7 +144,8 @@ function AdminRouteGuard({
   const pathname = usePathname();
   const router = useRouter();
   const permissions = (user.permissions ?? []) as AdminPermissionKey[];
-  const isSuper = user.role === SUPER_ADMIN_ROLE;
+  const isSuper =
+    user.role === SUPER_ADMIN_ROLE || user.role === OWNER_ROLE;
 
   useEffect(() => {
     const needed = permissionForPath(pathname);
@@ -179,13 +180,15 @@ export function AdminShell({
   const flatNav = visibleSections.flatMap((s) => s.items);
 
   const roleLabel =
-    user.role === SUPER_ADMIN_ROLE
-      ? "Super Admin"
-      : user.role === "MANAGER"
-        ? "Manager"
-        : user.role === "SUB_ADMIN"
-          ? "Sub Admin"
-          : "Admin";
+    user.role === OWNER_ROLE
+      ? "Owner"
+      : user.role === SUPER_ADMIN_ROLE
+        ? "Super Admin"
+        : user.role === "MANAGER"
+          ? "Manager"
+          : user.role === "SUB_ADMIN"
+            ? "Sub Admin"
+            : "Admin";
 
   return (
     <div className="admin-shell--hud app-shell--hud flex min-h-[100dvh]">
@@ -241,7 +244,7 @@ export function AdminShell({
           ))}
         </nav>
         <div className="space-y-1 border-t border-brand-500/15 p-3">
-          {user.role === SUPER_ADMIN_ROLE && (
+          {(user.role === SUPER_ADMIN_ROLE || user.role === OWNER_ROLE) && (
             <Link
               href="/home"
               className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-[13px] font-medium text-ink-muted transition hover:bg-brand-50 hover:text-ink"

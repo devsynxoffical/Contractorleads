@@ -5,19 +5,34 @@ import { logActivity } from "@/lib/credits";
 import { runLeadPipeline } from "@/lib/services/lead-pipeline";
 import { resolveSearchCriteria } from "@/lib/search-criteria";
 
+// Mirrors what the agency-side Lead Finder cards render so admin scrape
+// results can use the exact same result cards.
 const leadSelect = {
   id: true,
   businessName: true,
   ownerName: true,
+  ownerTitle: true,
+  teamMembersJson: true,
+  peopleEnrichedAt: true,
   phone: true,
   email: true,
   website: true,
+  address: true,
   city: true,
   state: true,
+  zip: true,
   country: true,
   industry: true,
+  serviceCategory: true,
   leadScore: true,
   qualityTier: true,
+  googleRating: true,
+  reviewCount: true,
+  yelpRating: true,
+  yelpUrl: true,
+  googleMapsLink: true,
+  outreachAngle: true,
+  revenueRangeEstimate: true,
   createdAt: true,
 } as const;
 

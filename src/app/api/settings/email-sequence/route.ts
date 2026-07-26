@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import {
+  normalizeSteps,
+  parseSequenceSteps,
+  parseSentTimes,
+} from "@/lib/email-automation";
 
 const DEFAULTS = {
   name: "Lead nurture",
@@ -46,7 +51,16 @@ export async function GET() {
     },
   });
 
-  return NextResponse.json({ sequence, enrollments });
+  const steps = parseSequenceSteps(sequence);
+  return NextResponse.json({
+    sequence,
+    steps,
+    enrollments: enrollments.map((en) => ({
+      ...en,
+      sentCount: parseSentTimes(en).length,
+      totalSteps: steps.length,
+    })),
+  });
 }
 
 export async function PUT(request: Request) {
@@ -54,9 +68,10 @@ export async function PUT(request: Request) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const data = {
-    name: String(body.name || DEFAULTS.name).slice(0, 80),
-    enabled: body.enabled !== false,
+
+  // New multi-day payload: { steps: [{day, subject, body}, …] }
+  const steps = normalizeSteps(body.steps);
+  const legacyFromBody = {
     day1Subject: String(body.day1Subject || "").slice(0, 200),
     day1Body: String(body.day1Body || ""),
     day2Subject: String(body.day2Subject || "").slice(0, 200),
@@ -65,11 +80,36 @@ export async function PUT(request: Request) {
     day3Body: String(body.day3Body || ""),
   };
 
+  if (Array.isArray(body.steps) && steps.length === 0) {
+    return NextResponse.json(
+      { error: "Add at least one step with a subject or body" },
+      { status: 400 },
+    );
+  }
+
+  const data = {
+    name: String(body.name || DEFAULTS.name).slice(0, 80),
+    enabled: body.enabled !== false,
+    ...(steps.length
+      ? {
+          stepsJson: JSON.stringify(steps),
+          // Mirror the first three steps into legacy columns so anything
+          // still reading them shows the current copy.
+          day1Subject: steps[0]?.subject ?? DEFAULTS.day1Subject,
+          day1Body: steps[0]?.body ?? DEFAULTS.day1Body,
+          day2Subject: steps[1]?.subject ?? "",
+          day2Body: steps[1]?.body ?? "",
+          day3Subject: steps[2]?.subject ?? "",
+          day3Body: steps[2]?.body ?? "",
+        }
+      : legacyFromBody),
+  };
+
   const sequence = await prisma.emailSequence.upsert({
     where: { userId: user.id },
     create: { userId: user.id, ...data },
     update: data,
   });
 
-  return NextResponse.json({ sequence });
+  return NextResponse.json({ sequence, steps: parseSequenceSteps(sequence) });
 }

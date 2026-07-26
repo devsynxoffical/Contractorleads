@@ -20,15 +20,15 @@ type SmtpAccount = {
   lastTestedAt: string | null;
 };
 
+type SequenceStep = {
+  day: number;
+  subject: string;
+  body: string;
+};
+
 type SequenceForm = {
   name: string;
   enabled: boolean;
-  day1Subject: string;
-  day1Body: string;
-  day2Subject: string;
-  day2Body: string;
-  day3Subject: string;
-  day3Body: string;
 };
 
 const emptyAccount = (): Omit<SmtpAccount, "id" | "hasPassword" | "lastTestedAt" | "isDefault"> & {
@@ -56,13 +56,13 @@ export function EmailAutomationSettings() {
     null,
   );
   const [sequence, setSequence] = useState<SequenceForm | null>(null);
+  const [steps, setSteps] = useState<SequenceStep[]>([]);
   const [enrollments, setEnrollments] = useState<
     Array<{
       id: string;
       status: string;
-      day1SentAt: string | null;
-      day2SentAt: string | null;
-      day3SentAt: string | null;
+      sentCount?: number;
+      totalSteps?: number;
       lastError: string | null;
       savedLead?: { lead?: { businessName?: string } };
     }>
@@ -76,7 +76,13 @@ export function EmailAutomationSettings() {
       fetch("/api/settings/email-sequence").then((r) => r.json()),
     ]);
     setAccounts(smtpData.accounts ?? []);
-    if (seqData.sequence) setSequence(seqData.sequence);
+    if (seqData.sequence) {
+      setSequence({
+        name: seqData.sequence.name,
+        enabled: seqData.sequence.enabled,
+      });
+    }
+    setSteps(seqData.steps ?? []);
     setEnrollments(seqData.enrollments ?? []);
   }
 
@@ -159,7 +165,7 @@ export function EmailAutomationSettings() {
     const res = await fetch("/api/settings/email-sequence", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(sequence),
+      body: JSON.stringify({ ...sequence, steps }),
     });
     const data = await res.json();
     setBusy(false);
@@ -167,8 +173,34 @@ export function EmailAutomationSettings() {
       setMsg(data.error || "Failed to save sequence");
       return;
     }
-    setSequence(data.sequence);
-    setMsg("Day 1 / 2 / 3 sequence saved");
+    setSequence({ name: data.sequence.name, enabled: data.sequence.enabled });
+    setSteps(data.steps ?? steps);
+    setMsg(`Nurture sequence saved — ${data.steps?.length ?? steps.length} step(s)`);
+  }
+
+  function updateStep(index: number, patch: Partial<SequenceStep>) {
+    setSteps((prev) =>
+      prev.map((s, i) => (i === index ? { ...s, ...patch } : s)),
+    );
+  }
+
+  function addStep() {
+    setSteps((prev) => {
+      if (prev.length >= 15) return prev;
+      const lastDay = prev.length ? prev[prev.length - 1].day : 0;
+      return [
+        ...prev,
+        {
+          day: Math.min(120, lastDay + 2),
+          subject: "",
+          body: "",
+        },
+      ];
+    });
+  }
+
+  function removeStep(index: number) {
+    setSteps((prev) => prev.filter((_, i) => i !== index));
   }
 
   async function processDue() {
@@ -443,11 +475,13 @@ export function EmailAutomationSettings() {
       {sequence ? (
         <Card className="border-border shadow-[var(--shadow-card)]">
           <CardHeader>
-            <CardTitle>Day 1 · 2 · 3 email automation</CardTitle>
+            <CardTitle>Nurture sequence</CardTitle>
             <p className="text-[13px] text-ink-muted">
-              Templates for nurture. Use {"{{ownerName}}"}, {"{{businessName}}"},{" "}
-              {"{{fromName}}"}. Day 1 sends on enroll; Days 2–3 send when you use
-              the app (or via cron).
+              A multi-day follow-up flow for enrolled leads. The Day 1 email
+              sends the moment you enroll a lead; every later step sends
+              automatically once its day arrives. Add as many days as you need
+              (up to 15 steps). Use {"{{ownerName}}"}, {"{{businessName}}"},
+              and {"{{fromName}}"} in any subject or body.
             </p>
           </CardHeader>
           <CardContent>
@@ -462,43 +496,81 @@ export function EmailAutomationSettings() {
                 />
                 Sequence enabled
               </label>
-              {([1, 2, 3] as const).map((day) => {
-                const subKey = `day${day}Subject` as keyof SequenceForm;
-                const bodyKey = `day${day}Body` as keyof SequenceForm;
-                return (
-                  <div
-                    key={day}
-                    className="space-y-2 rounded-xl border border-border/80 p-3"
-                  >
-                    <p className="text-[12px] font-semibold uppercase tracking-wide text-brand-600">
-                      Day {day}
-                    </p>
-                    <div className="space-y-1.5">
-                      <Label>Subject</Label>
+
+              {steps.map((step, index) => (
+                <div
+                  key={index}
+                  className="space-y-2 rounded-xl border border-border/80 p-3"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-50 text-[11px] font-bold text-brand-700">
+                        {index + 1}
+                      </span>
+                      <p className="text-[12px] font-semibold uppercase tracking-wide text-brand-600">
+                        Step {index + 1} · sends on day
+                      </p>
                       <Input
-                        value={String(sequence[subKey])}
+                        type="number"
+                        min={index === 0 ? 1 : steps[index - 1].day + 1}
+                        max={120}
+                        className="h-8 w-20"
+                        value={step.day}
                         onChange={(e) =>
-                          setSequence({ ...sequence, [subKey]: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>Body</Label>
-                      <Textarea
-                        className="min-h-[100px]"
-                        value={String(sequence[bodyKey])}
-                        onChange={(e) =>
-                          setSequence({
-                            ...sequence,
-                            [bodyKey]: e.target.value,
+                          updateStep(index, {
+                            day: Math.max(1, Number(e.target.value) || 1),
                           })
                         }
                       />
                     </div>
+                    {steps.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeStep(index)}
+                        className="text-[12px] font-semibold text-red-600 hover:underline"
+                      >
+                        Remove step
+                      </button>
+                    )}
                   </div>
-                );
-              })}
+                  <p className="text-[11px] text-ink-faint">
+                    {index === 0
+                      ? "Sends immediately when a lead is enrolled."
+                      : `Sends ${step.day - steps[index - 1].day <= 1 ? "1 day" : `${step.day - steps[index - 1].day} days`} after step ${index}.`}
+                  </p>
+                  <div className="space-y-1.5">
+                    <Label>Subject</Label>
+                    <Input
+                      value={step.subject}
+                      onChange={(e) =>
+                        updateStep(index, { subject: e.target.value })
+                      }
+                      placeholder="e.g. Quick intro"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Body</Label>
+                    <Textarea
+                      className="min-h-[100px]"
+                      value={step.body}
+                      onChange={(e) =>
+                        updateStep(index, { body: e.target.value })
+                      }
+                      placeholder={"Hi {{ownerName}}, …"}
+                    />
+                  </div>
+                </div>
+              ))}
+
               <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={busy || steps.length >= 15}
+                  onClick={addStep}
+                >
+                  + Add another day
+                </Button>
                 <Button type="submit" disabled={busy}>
                   Save sequence
                 </Button>
@@ -508,7 +580,7 @@ export function EmailAutomationSettings() {
                   disabled={busy}
                   onClick={processDue}
                 >
-                  Send due Day 2 / 3 emails
+                  Send due follow-ups now
                 </Button>
               </div>
             </form>
@@ -522,6 +594,10 @@ export function EmailAutomationSettings() {
                   {enrollments.map((en) => (
                     <li key={en.id}>
                       {en.savedLead?.lead?.businessName || "Lead"} · {en.status}
+                      {typeof en.sentCount === "number" &&
+                      typeof en.totalSteps === "number"
+                        ? ` · ${en.sentCount}/${en.totalSteps} emails sent`
+                        : ""}
                       {en.lastError ? ` · ${en.lastError}` : ""}
                     </li>
                   ))}

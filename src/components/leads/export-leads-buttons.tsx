@@ -66,7 +66,7 @@ export function ExportLeadsButtons({
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `leadflow-export.${format === "xlsx" ? "xlsx" : "csv"}`;
+      a.download = `contractor-leads-export.${format === "xlsx" ? "xlsx" : "csv"}`;
       a.click();
       URL.revokeObjectURL(url);
 

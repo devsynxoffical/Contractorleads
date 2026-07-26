@@ -288,10 +288,16 @@ export async function GET() {
       searchesWeek,
       creditsOutstanding: creditsAgg._sum.creditsRemaining ?? 0,
       creditsSpentWeek: Math.abs(creditsSpentWeek._sum.amount ?? 0),
-      planMix: planGroups.map((g) => ({
-        plan: g.plan,
-        count: g._count._all,
-      })),
+      // Fold legacy plan values ("trial", "pro") into canonical plans so the
+      // mix never lists the same plan twice.
+      planMix: (() => {
+        const counts = new Map<string, number>();
+        for (const g of planGroups) {
+          const id = normalizePlan(g.plan);
+          counts.set(id, (counts.get(id) ?? 0) + g._count._all);
+        }
+        return [...counts.entries()].map(([plan, count]) => ({ plan, count }));
+      })(),
       statusMix: statusGroups.map((g) => ({
         status: g.subscriptionStatus,
         count: g._count._all,

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   hashPassword,
   isAdminStaff,
+  isOwner,
   isSuperAdmin,
   requirePermission,
 } from "@/lib/auth";
@@ -170,6 +171,23 @@ export async function PATCH(request: Request, { params }: Params) {
       { status: 403 },
     );
   }
+  // Owner and Super Admin accounts are managed exclusively by the Owner.
+  if (isOwner(existing) && existing.id !== admin.id) {
+    return NextResponse.json(
+      { error: "The Owner account can only be managed by the Owner" },
+      { status: 403 },
+    );
+  }
+  if (
+    existing.role === "SUPER_ADMIN" &&
+    existing.id !== admin.id &&
+    !isOwner(admin)
+  ) {
+    return NextResponse.json(
+      { error: "Only the Owner can manage Super Admin accounts" },
+      { status: 403 },
+    );
+  }
   if (body.role !== undefined && !actorIsSuperAdmin) {
     return NextResponse.json(
       { error: "Only a super admin can change a role" },
@@ -264,6 +282,12 @@ export async function PATCH(request: Request, { params }: Params) {
     actorIsSuperAdmin &&
     (body.role === "USER" || body.role === "SUPER_ADMIN")
   ) {
+    if (body.role === "SUPER_ADMIN" && !isOwner(admin)) {
+      return NextResponse.json(
+        { error: "Only the Owner can grant the Super Admin role" },
+        { status: 403 },
+      );
+    }
     data.role = body.role;
   }
   if (typeof body.password === "string" && body.password.length >= 8) {

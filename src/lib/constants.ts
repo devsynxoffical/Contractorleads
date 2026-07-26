@@ -216,7 +216,7 @@ export const CREDIT_COSTS = {
   outreach: 0.5,
 } as const;
 
-export const SUPPORT_BOT_SYSTEM_PROMPT = `You are the friendly in-app support assistant for Contractor Leads (LeadFlow).
+export const SUPPORT_BOT_SYSTEM_PROMPT = `You are the friendly in-app support assistant for Contractor Leads.
 
 You ONLY help users with using the app and resolving issues. Be concise, warm, and practical.
 
@@ -239,7 +239,7 @@ Troubleshooting tips you can give:
 
 For routine how-to questions (Lead Finder, credits, SMTP, referrals, integrations), point users to Academy (/academy) first. If a question is clearly about marketing strategy rather than app help, suggest the Ask Expert page. If you cannot resolve an issue, suggest contacting the team with a screenshot.`;
 
-export const ASK_EXPERT_SYSTEM_PROMPT = `You are the in-app growth expert for LeadFlow USA — a senior direct-response
+export const ASK_EXPERT_SYSTEM_PROMPT = `You are the in-app growth expert for Contractor Leads — a senior direct-response
 
 marketer, media buyer, funnel strategist, offer creator, and copywriter with
 

@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import {
   MANAGER_ROLE,
+  OWNER_ROLE,
   SUB_ADMIN_ROLE,
   SUPER_ADMIN_ROLE,
   ADMIN_STAFF_ROLES,
@@ -16,6 +17,7 @@ import {
 import { requireSessionSecret } from "@/lib/server-secrets";
 
 export {
+  OWNER_ROLE,
   SUPER_ADMIN_ROLE,
   MANAGER_ROLE,
   SUB_ADMIN_ROLE,
@@ -94,8 +96,13 @@ function toSessionUser(
   };
 }
 
+export function isOwner(user: { role: string } | null | undefined) {
+  return user?.role === OWNER_ROLE;
+}
+
+/** Owner has every super-admin power, so it passes this check too. */
 export function isSuperAdmin(user: { role: string } | null | undefined) {
-  return user?.role === SUPER_ADMIN_ROLE;
+  return user?.role === SUPER_ADMIN_ROLE || user?.role === OWNER_ROLE;
 }
 
 export function isAdminStaff(user: { role: string } | null | undefined) {
@@ -227,6 +234,12 @@ export async function requireUser() {
 export async function requireSuperAdmin(): Promise<SessionUser | null> {
   const real = await getRealSessionUser();
   if (!real || !isSuperAdmin(real)) return null;
+  return real;
+}
+
+export async function requireOwner(): Promise<SessionUser | null> {
+  const real = await getRealSessionUser();
+  if (!real || !isOwner(real)) return null;
   return real;
 }
 

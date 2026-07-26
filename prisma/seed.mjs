@@ -5,6 +5,9 @@ const prisma = new PrismaClient();
 
 const SEED_DEMO = process.env.SEED_DEMO === "true";
 
+/** The platform owner account gets the OWNER role (above SUPER_ADMIN). */
+const OWNER_EMAIL = "admin@contractorleads.us";
+
 /**
  * Creates the first super admin from env vars. Only ever creates — never
  * rewrites the password of an account that already exists, so a deploy can't
@@ -15,14 +18,16 @@ async function bootstrapAdmin() {
   const password = process.env.ADMIN_PASSWORD;
   if (!email || !password) return;
 
+  const targetRole = email === OWNER_EMAIL ? "OWNER" : "SUPER_ADMIN";
+
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
-    if (existing.role !== "SUPER_ADMIN") {
+    if (existing.role !== targetRole) {
       await prisma.user.update({
         where: { email },
-        data: { role: "SUPER_ADMIN" },
+        data: { role: targetRole },
       });
-      console.log(`Promoted existing user to SUPER_ADMIN: ${email}`);
+      console.log(`Promoted existing user to ${targetRole}: ${email}`);
     }
     return;
   }
@@ -38,7 +43,7 @@ async function bootstrapAdmin() {
       name: process.env.ADMIN_NAME?.trim() || "Super Admin",
       passwordHash: await bcrypt.hash(password, 12),
       emailVerifiedAt: new Date(),
-      role: "SUPER_ADMIN",
+      role: targetRole,
       plan: "agency",
       subscriptionStatus: "active",
       creditsRemaining: 9999,
@@ -51,7 +56,7 @@ async function bootstrapAdmin() {
       mainGoal: "Operate the lead platform",
     },
   });
-  console.log(`Created super admin: ${email}`);
+  console.log(`Created ${targetRole === "OWNER" ? "owner" : "super admin"}: ${email}`);
 }
 
 async function seedDemoAccounts() {
@@ -59,13 +64,13 @@ async function seedDemoAccounts() {
   const adminHash = await bcrypt.hash("admin12345", 12);
 
   await prisma.user.upsert({
-    where: { email: "demo@leadflow.us" },
+    where: { email: "demo@contractorleads.us" },
     update: {
       emailVerifiedAt: new Date(),
       passwordHash: demoHash,
     },
     create: {
-      email: "demo@leadflow.us",
+      email: "demo@contractorleads.us",
       name: "Vaishali",
       passwordHash: demoHash,
       emailVerifiedAt: new Date(),
@@ -85,20 +90,20 @@ async function seedDemoAccounts() {
   });
 
   await prisma.user.upsert({
-    where: { email: "admin@leadflow.us" },
+    where: { email: "admin@contractorleads.us" },
     update: {
-      role: "SUPER_ADMIN",
+      role: "OWNER",
       passwordHash: adminHash,
       emailVerifiedAt: new Date(),
       creditsRemaining: 9999,
       onboardingComplete: true,
     },
     create: {
-      email: "admin@leadflow.us",
-      name: "Super Admin",
+      email: "admin@contractorleads.us",
+      name: "Owner",
       passwordHash: adminHash,
       emailVerifiedAt: new Date(),
-      role: "SUPER_ADMIN",
+      role: "OWNER",
       plan: "agency",
       subscriptionStatus: "active",
       creditsRemaining: 9999,
@@ -188,8 +193,8 @@ async function main() {
 
   console.log("Seed complete:");
   if (SEED_DEMO) {
-    console.log("  demo@leadflow.us / demo12345");
-    console.log("  admin@leadflow.us / admin12345 (SUPER_ADMIN)");
+    console.log("  demo@contractorleads.us / demo12345");
+    console.log("  admin@contractorleads.us / admin12345 (OWNER)");
   } else {
     console.log("  Demo accounts skipped (set SEED_DEMO=true for local dev)");
   }

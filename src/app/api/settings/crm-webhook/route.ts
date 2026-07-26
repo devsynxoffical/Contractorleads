@@ -120,7 +120,7 @@ export async function POST(request: Request) {
 
   const result = await dispatchCrmWebhook(
     user.id,
-    "leadflow.test",
+    "contractorleads.test",
     {
       businessName: "Acme Roofing Co",
       phone: "+1 555 0100",

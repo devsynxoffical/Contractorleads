@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { BlockedUrlError, safeFetch } from "@/lib/safe-fetch";
 
 export type CrmWebhookEvent =
-  | "leadflow.test"
+  | "contractorleads.test"
   | "lead.saved"
   | "lead.status_changed";
 
@@ -29,7 +29,7 @@ type DestinationResult = {
 function mapEventLabel(event: CrmWebhookEvent) {
   if (event === "lead.saved") return "Lead saved";
   if (event === "lead.status_changed") return "Lead moved in pipeline";
-  return "LeadFlow test";
+  return "Contractor Leads test";
 }
 
 async function postJson(
@@ -103,7 +103,11 @@ export async function dispatchCrmWebhook(
         row.crmWebhookUrl,
         payload,
         row.crmWebhookSecret
-          ? { "X-LeadFlow-Secret": row.crmWebhookSecret }
+          ? {
+              "X-ContractorLeads-Secret": row.crmWebhookSecret,
+              // Legacy header kept so existing integrations keep verifying.
+              "X-LeadFlow-Secret": row.crmWebhookSecret,
+            }
           : undefined,
       );
       results.push({ name: "webhook", ...out });
@@ -142,7 +146,7 @@ export async function dispatchCrmWebhook(
       (!opts?.target || opts.target === "ghl")
     ) {
       const out = await postJson(row.ghlWebhookUrl, {
-        source: "leadflow",
+        source: "contractorleads",
         event,
         sentAt: new Date().toISOString(),
         agency: row.companyName || row.email,

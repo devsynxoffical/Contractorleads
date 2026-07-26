@@ -30,7 +30,11 @@ export function EnrollEmailSequenceButton({
       setMsg(data.error || "Failed");
       return;
     }
-    setMsg(data.enrolled ? "Day 1 sent · Days 2–3 queued" : "No leads enrolled");
+    setMsg(
+      data.enrolled
+        ? "Day 1 sent · follow-up days queued"
+        : "No leads enrolled",
+    );
   }
 
   return (
@@ -41,7 +45,7 @@ export function EnrollEmailSequenceButton({
         onClick={enroll}
         className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-1.5 text-[12px] font-semibold text-brand-700 transition hover:bg-brand-100 disabled:opacity-50"
       >
-        {busy ? "Enrolling…" : "Email Day 1–3"}
+        {busy ? "Enrolling…" : "Enroll in nurture"}
       </button>
       {msg ? <span className="text-[11px] text-ink-faint">{msg}</span> : null}
     </div>

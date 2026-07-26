@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 const LOGO_GRADIENT = "var(--logo-gradient)";
 
 export function PageHeader({
-  eyebrow = "LeadFlow USA",
+  eyebrow = "Contractor Leads",
   title,
   description,
   actions,

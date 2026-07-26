@@ -594,13 +594,16 @@ model LeadEmail {
   @@index([toEmail])
 }
 
-/// Day 1 / 2 / 3 email automation templates for scraped/saved leads.
+/// Multi-day email automation templates for scraped/saved leads.
+/// Steps live in stepsJson ([{day, subject, body}, …]); the legacy day1–3
+/// columns remain as the fallback for sequences saved before multi-day.
 model EmailSequence {
   id          String   @id @default(cuid())
   userId      String   @unique
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   name        String   @default("Lead nurture")
   enabled     Boolean  @default(true)
+  stepsJson   String?
   day1Subject String   @default("Quick intro")
   day1Body    String   @default("Hi {{ownerName}},\n\nI noticed {{businessName}} and thought we could help with more booked jobs.\n\nWorth a quick chat?\n\n{{fromName}}")
   day2Subject String   @default("Following up")
@@ -612,22 +615,25 @@ model EmailSequence {
   enrollments EmailEnrollment[]
 }
 
-/// Tracks Day 1/2/3 sends for a saved lead.
+/// Tracks per-step sends for a saved lead. stepsSentJson is an array of ISO
+/// timestamps aligned with the sequence steps; day1–3 columns mirror the
+/// first three sends for older dashboards.
 model EmailEnrollment {
-  id          String        @id @default(cuid())
-  userId      String
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sequenceId  String
-  sequence    EmailSequence @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
-  savedLeadId String
-  savedLead   SavedLead     @relation(fields: [savedLeadId], references: [id], onDelete: Cascade)
-  status      String        @default("active") // active | completed | paused | failed
-  day1SentAt  DateTime?
-  day2SentAt  DateTime?
-  day3SentAt  DateTime?
-  lastError   String?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id            String        @id @default(cuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sequenceId    String
+  sequence      EmailSequence @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+  savedLeadId   String
+  savedLead     SavedLead     @relation(fields: [savedLeadId], references: [id], onDelete: Cascade)
+  status        String        @default("active") // active | completed | paused | failed
+  stepsSentJson String?
+  day1SentAt    DateTime?
+  day2SentAt    DateTime?
+  day3SentAt    DateTime?
+  lastError     String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   @@unique([userId, savedLeadId])
   @@index([status, createdAt])

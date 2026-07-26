@@ -31,7 +31,7 @@ export function FloatingDashboard() {
                   style={{ background: LOGO_GRADIENT }}
                 />
                 <span className="text-[12px] font-semibold text-white">
-                  LeadFlow Console
+                  Contractor Leads Console
                 </span>
               </div>
               <div className="flex gap-1.5">

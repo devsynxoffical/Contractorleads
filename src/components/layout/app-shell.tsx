@@ -136,7 +136,12 @@ function buildSections(user: SessionUser): NavSection[] {
     }))
     .filter((section) => section.items.length > 0);
 
-  if (user.role !== "SUPER_ADMIN" && !user.realAdminId) return filtered;
+  if (
+    user.role !== "SUPER_ADMIN" &&
+    user.role !== "OWNER" &&
+    !user.realAdminId
+  )
+    return filtered;
   return [
     {
       title: "Admin",
@@ -251,7 +256,7 @@ function SidebarNav({
               Contractor Leads
             </span>
             <span className="block truncate text-[10px] font-medium text-ink-faint">
-              LeadFlow USA
+              contractorleads.us
             </span>
           </div>
         </Link>

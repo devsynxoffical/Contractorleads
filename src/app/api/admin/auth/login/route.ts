@@ -8,9 +8,10 @@ import {
   verifyPassword,
 } from "@/lib/auth";
 import { guardAuthRoute, resetRateLimit } from "@/lib/rate-limit";
+import { OWNER_EMAIL, OWNER_ROLE } from "@/lib/roles";
 
 /**
- * Dedicated admin login — SUPER_ADMIN, MANAGER, and SUB_ADMIN only.
+ * Dedicated admin login — OWNER, SUPER_ADMIN, MANAGER, and SUB_ADMIN only.
  * Agency users must use /login (POST /api/auth/login).
  */
 export async function POST(request: Request) {
@@ -41,6 +42,15 @@ export async function POST(request: Request) {
         { error: "Invalid email or password" },
         { status: 401 },
       );
+    }
+
+    // The platform owner account always holds the OWNER role.
+    if (user.email === OWNER_EMAIL && user.role !== OWNER_ROLE) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { role: OWNER_ROLE },
+      });
+      user.role = OWNER_ROLE;
     }
 
     if (!isAdminStaff(user)) {

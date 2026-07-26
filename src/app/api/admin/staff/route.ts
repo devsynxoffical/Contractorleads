@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   ADMIN_STAFF_ROLES,
   hashPassword,
+  isOwner,
   requireSuperAdmin,
   SUPER_ADMIN_ROLE,
 } from "@/lib/auth";
@@ -28,7 +29,7 @@ export async function GET() {
     },
   });
 
-  return NextResponse.json({ staff });
+  return NextResponse.json({ staff, viewerRole: admin.role });
 }
 
 export async function POST(request: Request) {
@@ -58,6 +59,12 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: "Role must be MANAGER, SUB_ADMIN, or SUPER_ADMIN" },
       { status: 400 },
+    );
+  }
+  if (role === SUPER_ADMIN_ROLE && !isOwner(admin)) {
+    return NextResponse.json(
+      { error: "Only the Owner can create Super Admin accounts" },
+      { status: 403 },
     );
   }
 

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { ADMIN_PLANS, featuresForPlan, planLabel } from "@/lib/plans";
+import { ADMIN_PLANS, normalizePlan, type PlanId } from "@/lib/plans";
 import { ADMIN_STAFF_ROLES } from "@/lib/roles";
 
 export async function GET() {
@@ -263,12 +263,24 @@ export async function GET() {
       apiKeyed,
       marketingOptOut,
     },
-    planMix: planGroups.map((g) => ({
-      plan: g.plan,
-      label: planLabel(g.plan),
-      count: g._count._all,
-      features: featuresForPlan(g.plan),
-    })),
+    // Legacy plan values ("trial", "pro") fold into their canonical plan so
+    // the mix never shows duplicate rows like two "Starter" entries.
+    planMix: (() => {
+      const counts = new Map<PlanId, number>();
+      for (const g of planGroups) {
+        const id = normalizePlan(g.plan);
+        counts.set(id, (counts.get(id) ?? 0) + g._count._all);
+      }
+      const total = [...counts.values()].reduce((s, n) => s + n, 0);
+      return ADMIN_PLANS.map((p) => ({
+        plan: p.value,
+        label: p.label,
+        count: counts.get(p.value) ?? 0,
+        share: total > 0 ? Math.round(((counts.get(p.value) ?? 0) / total) * 100) : 0,
+        priceMonthly: p.priceMonthly,
+        total,
+      }));
+    })(),
     modules,
     recentActivity: recentActivity.map((a) => ({
       id: a.id,

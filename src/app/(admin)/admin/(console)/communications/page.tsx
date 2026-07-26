@@ -104,7 +104,7 @@ export default function AdminCommunicationsPage() {
           )}
         </HudPanel>
 
-        <HudPanel title="Nurture sequences" subtitle="Day 1 / 2 / 3 automation">
+        <HudPanel title="Nurture sequences" subtitle="Multi-day follow-up automation">
           {!side ? (
             <p className="animate-pulse text-sm text-ink-muted">Loading…</p>
           ) : (

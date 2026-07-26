@@ -31,6 +31,9 @@ type PlatformPayload = {
     plan: string;
     label: string;
     count: number;
+    share: number;
+    priceMonthly: number;
+    total: number;
   }>;
   modules: Array<{
     id: string;
@@ -127,28 +130,50 @@ export default function AdminPlatformPage() {
             </HudPanel>
 
             <div className="space-y-5">
-              <HudPanel title="Plan mix" subtitle="Live agency distribution">
-                <ul className="space-y-2">
-                  {data.planMix.length === 0 && (
-                    <li className="text-sm text-ink-muted">No customers yet.</li>
-                  )}
-                  {data.planMix.map((p) => (
-                    <li
-                      key={p.plan}
-                      className="flex items-center justify-between rounded-lg border border-brand-500/10 px-3 py-2 text-sm"
-                    >
-                      <span className="text-ink-muted">{p.label}</span>
-                      <span className="font-semibold tabular-nums text-brand-500">
-                        {p.count}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+              <HudPanel
+                title="Customers by plan"
+                subtitle={`How your ${data.planMix[0]?.total ?? 0} customer${(data.planMix[0]?.total ?? 0) === 1 ? "" : "s"} split across plans`}
+              >
+                {(data.planMix[0]?.total ?? 0) === 0 ? (
+                  <p className="text-sm text-ink-muted">No customers yet.</p>
+                ) : (
+                  <ul className="space-y-3">
+                    {data.planMix.map((p) => (
+                      <li key={p.plan}>
+                        <div className="flex items-baseline justify-between text-[13px]">
+                          <span className="font-medium text-ink">
+                            {p.label}
+                            <span className="ml-1.5 text-[11px] font-normal text-ink-faint">
+                              {p.priceMonthly > 0
+                                ? `$${p.priceMonthly}/mo`
+                                : p.plan === "enterprise"
+                                  ? "custom"
+                                  : ""}
+                            </span>
+                          </span>
+                          <span className="tabular-nums text-ink-muted">
+                            <span className="font-semibold text-ink">
+                              {p.count}
+                            </span>{" "}
+                            {p.count === 1 ? "customer" : "customers"} ·{" "}
+                            {p.share}%
+                          </span>
+                        </div>
+                        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-brand-500/10">
+                          <div
+                            className="h-full rounded-full bg-brand-500"
+                            style={{ width: `${Math.max(p.share, p.count > 0 ? 4 : 0)}%` }}
+                          />
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
                 <Link
                   href="/admin/plans"
-                  className="mt-3 inline-block text-[12px] font-semibold text-brand-500 hover:underline"
+                  className="mt-4 inline-block text-[12px] font-semibold text-brand-500 hover:underline"
                 >
-                  Manage entitlements →
+                  Edit plan features & pricing →
                 </Link>
               </HudPanel>
 

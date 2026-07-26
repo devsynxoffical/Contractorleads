@@ -49,6 +49,7 @@ async function ensurePlanFlagsEnabled(user: NonNullable<Awaited<ReturnType<typeo
 
   // Staff always get integrations on + a usable monthly ceiling
   if (
+    user.role === "OWNER" ||
     user.role === "SUPER_ADMIN" ||
     user.role === "MANAGER" ||
     user.role === "SUB_ADMIN"
@@ -96,6 +97,7 @@ export async function GET() {
   fresh = await ensurePlanFlagsEnabled(fresh);
 
   const isStaff =
+    fresh.role === "OWNER" ||
     fresh.role === "SUPER_ADMIN" ||
     fresh.role === "MANAGER" ||
     fresh.role === "SUB_ADMIN";
@@ -132,6 +134,7 @@ export async function POST() {
   fresh = await ensurePlanFlagsEnabled(fresh);
 
   const isStaff =
+    fresh.role === "OWNER" ||
     fresh.role === "SUPER_ADMIN" ||
     fresh.role === "MANAGER" ||
     fresh.role === "SUB_ADMIN";

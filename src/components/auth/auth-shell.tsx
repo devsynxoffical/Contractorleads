@@ -53,7 +53,7 @@ export function AuthShell({
             </div>
 
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-500">
-              LeadFlow HUD
+              Contractor Leads HUD
             </p>
             <h1 className="mt-3 text-3xl font-bold leading-tight tracking-tight text-white sm:text-4xl lg:text-[2.75rem]">
               {headline}

@@ -66,7 +66,7 @@ function exportResponse(
           headers: {
             "Content-Type":
               "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            "Content-Disposition": `attachment; filename="leadflow-export.xlsx"`,
+            "Content-Disposition": `attachment; filename="contractor-leads-export.xlsx"`,
             ...headers,
           },
         }),
@@ -78,7 +78,7 @@ function exportResponse(
     new NextResponse(csv, {
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
-        "Content-Disposition": `attachment; filename="leadflow-export.csv"`,
+        "Content-Disposition": `attachment; filename="contractor-leads-export.csv"`,
         ...headers,
       },
     }),

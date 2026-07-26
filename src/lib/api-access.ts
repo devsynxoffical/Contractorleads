@@ -85,6 +85,7 @@ export async function assertIntegrationEnabledForUser(userId: string, kind: Inte
   }
 
   const isStaff =
+    user.role === "OWNER" ||
     user.role === "SUPER_ADMIN" ||
     user.role === "MANAGER" ||
     user.role === "SUB_ADMIN";

@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import {
   MANAGER_ROLE,
+  OWNER_ROLE,
   SUB_ADMIN_ROLE,
   SUPER_ADMIN_ROLE,
 } from "@/lib/roles";
 
-export { MANAGER_ROLE, SUB_ADMIN_ROLE, SUPER_ADMIN_ROLE };
+export { MANAGER_ROLE, OWNER_ROLE, SUB_ADMIN_ROLE, SUPER_ADMIN_ROLE };
 
 export const ADMIN_PERMISSIONS = [
   { key: "overview", label: "Business Overview", href: "/admin" },
@@ -139,7 +140,7 @@ export async function ensureRoleTemplates() {
 export async function getRolePermissions(
   role: string
 ): Promise<AdminPermissionKey[]> {
-  if (role === SUPER_ADMIN_ROLE) {
+  if (role === SUPER_ADMIN_ROLE || role === OWNER_ROLE) {
     return ADMIN_PERMISSIONS.map((p) => p.key);
   }
   if (!isTemplateRole(role)) return [];
@@ -157,7 +158,7 @@ export async function userHasPermission(
   permission: AdminPermissionKey
 ): Promise<boolean> {
   if (!user) return false;
-  if (user.role === SUPER_ADMIN_ROLE) return true;
+  if (user.role === SUPER_ADMIN_ROLE || user.role === OWNER_ROLE) return true;
   const perms = await getRolePermissions(user.role);
   return perms.includes(permission);
 }

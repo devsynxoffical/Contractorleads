@@ -3,7 +3,7 @@ import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { processDueEnrollments, processEnrollment } from "@/lib/email-automation";
 
-/** Enroll saved leads into Day 1/2/3 automation */
+/** Enroll saved leads into the multi-day nurture automation */
 export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -60,6 +60,7 @@ export async function POST(request: Request) {
       },
       update: {
         status: "active",
+        stepsSentJson: null,
         day1SentAt: null,
         day2SentAt: null,
         day3SentAt: null,

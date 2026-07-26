@@ -96,9 +96,14 @@ function ScoreRing({ score, id }: { score: number; id: string }) {
 export function LeadResultCard({
   lead,
   index = 0,
+  profileHref,
+  showPipeline = true,
 }: {
   lead: LeadResult;
   index?: number;
+  /** Override the "View full profile" destination (e.g. admin lead detail). */
+  profileHref?: string;
+  showPipeline?: boolean;
 }) {
   const [pipelineBusy, setPipelineBusy] = useState(false);
   const [inPipeline, setInPipeline] = useState(false);
@@ -243,25 +248,27 @@ export function LeadResultCard({
 
           <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border/70 pt-3">
             <Link
-              href={`/leads/${lead.id}?from=all`}
+              href={profileHref ?? `/leads/${lead.id}?from=all`}
               className="inline-flex h-9 items-center rounded-xl px-4 text-[12px] font-semibold text-white shadow-sm transition hover:opacity-95"
               style={{ background: LOGO_GRADIENT }}
             >
               View full profile
             </Link>
-            <button
-              type="button"
-              onClick={() => void addToPipeline()}
-              disabled={pipelineBusy || inPipeline}
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-brand-500/30 bg-brand-50 px-3 text-[12px] font-semibold text-brand-700 transition hover:border-brand-500/50 disabled:opacity-60"
-            >
-              <HiOutlineViewColumns className="h-3.5 w-3.5" />
-              {pipelineBusy
-                ? "Adding…"
-                : inPipeline
-                  ? "In pipeline"
-                  : "Add to pipeline"}
-            </button>
+            {showPipeline && (
+              <button
+                type="button"
+                onClick={() => void addToPipeline()}
+                disabled={pipelineBusy || inPipeline}
+                className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-brand-500/30 bg-brand-50 px-3 text-[12px] font-semibold text-brand-700 transition hover:border-brand-500/50 disabled:opacity-60"
+              >
+                <HiOutlineViewColumns className="h-3.5 w-3.5" />
+                {pipelineBusy
+                  ? "Adding…"
+                  : inPipeline
+                    ? "In pipeline"
+                    : "Add to pipeline"}
+              </button>
+            )}
             {lead.phone && (
               <a
                 href={`tel:${lead.phone}`}
@@ -348,12 +355,26 @@ export function LeadResultsHeader({
   );
 }
 
-export function LeadResultsList({ leads }: { leads: LeadResult[] }) {
+export function LeadResultsList({
+  leads,
+  profileHrefFor,
+  showPipeline = true,
+}: {
+  leads: LeadResult[];
+  profileHrefFor?: (lead: LeadResult) => string;
+  showPipeline?: boolean;
+}) {
   if (!leads.length) return null;
   return (
     <div className="space-y-3">
       {leads.map((lead, i) => (
-        <LeadResultCard key={lead.id} lead={lead} index={i} />
+        <LeadResultCard
+          key={lead.id}
+          lead={lead}
+          index={i}
+          profileHref={profileHrefFor?.(lead)}
+          showPipeline={showPipeline}
+        />
       ))}
     </div>
   );

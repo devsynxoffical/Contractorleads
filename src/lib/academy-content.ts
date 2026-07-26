@@ -103,7 +103,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
     sections: [
       {
         heading: "Who this is for",
-        body: "Contractor Leads (LeadFlow USA) is built for marketing agencies, media buyers, appointment setters, and sales teams who sell services to home-service contractors — roofing, HVAC, plumbing, electrical, landscaping, and related trades. You use it to find real businesses, score them, outreach, and track deals.",
+        body: "Contractor Leads is built for marketing agencies, media buyers, appointment setters, and sales teams who sell services to home-service contractors — roofing, HVAC, plumbing, electrical, landscaping, and related trades. You use it to find real businesses, score them, outreach, and track deals.",
         bullets: [
           "Agencies selling SEO, ads, websites, or CRM to contractors",
           "In-house growth teams building local contractor pipelines",

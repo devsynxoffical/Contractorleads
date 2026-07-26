@@ -271,7 +271,7 @@ export function DashboardCrmIntegrations({
           <IntegrationCard
             href="/setup/crm"
             title="GoHighLevel (GHL)"
-            body="Send LeadFlow events to your GHL webhook/workflow endpoint in real time."
+            body="Send Contractor Leads events to your GHL webhook/workflow endpoint in real time."
             status={i?.ghl?.connected ? "ready" : i?.ghl?.hasUrl ? "partial" : "setup"}
             statusLabel={i?.ghl?.connected ? "Live" : i?.ghl?.hasUrl ? "Paused" : "Setup"}
             icon={HiOutlineLink}

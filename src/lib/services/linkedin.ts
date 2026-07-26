@@ -126,7 +126,7 @@ async function fetchWebsiteHtml(website: string): Promise<string | null> {
     const response = await fetch(url, {
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (compatible; LeadFlowUSA/1.0; +https://leadflowusa.com)",
+          "Mozilla/5.0 (compatible; ContractorLeads/1.0; +https://www.contractorleads.us)",
       },
       signal: AbortSignal.timeout(10000),
       redirect: "follow",
@@ -153,7 +153,7 @@ export async function verifyLinkedInUrl(url: string): Promise<{
       redirect: "follow",
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (compatible; LeadFlowVerifier/1.0; +https://leadflowusa.com)",
+          "Mozilla/5.0 (compatible; ContractorLeadsVerifier/1.0; +https://www.contractorleads.us)",
       },
       signal: AbortSignal.timeout(8000),
     });

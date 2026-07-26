@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   ADMIN_PERMISSIONS,
   MANAGER_ROLE,
+  OWNER_ROLE,
   SUB_ADMIN_ROLE,
   SUPER_ADMIN_ROLE,
   type AdminPermissionKey,
@@ -30,6 +31,7 @@ type StaffRow = {
 export default function AdminTeamPage() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [staff, setStaff] = useState<StaffRow[]>([]);
+  const [viewerRole, setViewerRole] = useState<string>("");
   const [activeRole, setActiveRole] = useState<string>(MANAGER_ROLE);
   const [draftPerms, setDraftPerms] = useState<Set<AdminPermissionKey>>(
     new Set()
@@ -56,6 +58,7 @@ export default function AdminTeamPage() {
     const staffData = await staffRes.json();
     setTemplates(rolesData.templates ?? []);
     setStaff(staffData.staff ?? []);
+    setViewerRole(staffData.viewerRole ?? "");
     const current =
       (rolesData.templates as Template[] | undefined)?.find(
         (t) => t.role === activeRole
@@ -181,7 +184,7 @@ export default function AdminTeamPage() {
     <div>
       <AdminPageHeader
         title="Team & Roles"
-        description="Edit Manager / Sub Admin permission templates and create staff accounts that can only access /admin."
+        description="Edit Manager / Sub Admin permission templates and create staff accounts that can only access /admin. Super Admin accounts are managed by the Owner."
       />
 
       {message && (
@@ -297,7 +300,9 @@ export default function AdminTeamPage() {
             >
               <option value={MANAGER_ROLE}>Manager</option>
               <option value={SUB_ADMIN_ROLE}>Sub Admin</option>
-              <option value={SUPER_ADMIN_ROLE}>Super Admin</option>
+              {viewerRole === OWNER_ROLE && (
+                <option value={SUPER_ADMIN_ROLE}>Super Admin</option>
+              )}
             </select>
           </label>
           <div className="sm:col-span-2 lg:col-span-4">
@@ -319,73 +324,96 @@ export default function AdminTeamPage() {
             </tr>
           </thead>
           <tbody>
-            {staff.map((row) => (
-              <tr key={row.id} className="border-t border-border/60">
-                <td className="px-4 py-3">
-                  <p className="font-semibold text-ink">
-                    {row.name || row.email}
-                  </p>
-                  <p className="text-[12px] text-ink-muted">{row.email}</p>
-                </td>
-                <td className="px-4 py-3">
-                  <select
-                    className="saas-input max-w-[160px]"
-                    value={row.role}
-                    disabled={busy === row.id}
-                    onChange={(e) =>
-                      updateStaff(row.id, { role: e.target.value })
-                    }
-                  >
-                    <option value={SUPER_ADMIN_ROLE}>Super Admin</option>
-                    <option value={MANAGER_ROLE}>Manager</option>
-                    <option value={SUB_ADMIN_ROLE}>Sub Admin</option>
-                  </select>
-                </td>
-                <td className="px-4 py-3">
-                  <span
-                    className={
-                      row.isActive ? "text-emerald-700" : "text-red-600"
-                    }
-                  >
-                    {row.isActive ? "Active" : "Suspended"}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-right space-x-2">
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    loading={busy === row.id}
-                    onClick={() =>
-                      updateStaff(row.id, { isActive: !row.isActive })
-                    }
-                  >
-                    {row.isActive ? "Suspend" : "Activate"}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    disabled={busy === row.id}
-                    onClick={() => {
-                      const password = prompt(
-                        "New password (min 8 characters):"
-                      );
-                      if (!password) return;
-                      updateStaff(row.id, { password });
-                    }}
-                  >
-                    Reset password
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="danger"
-                    disabled={busy === row.id}
-                    onClick={() => deleteStaff(row.id, row.email)}
-                  >
-                    Delete
-                  </Button>
-                </td>
-              </tr>
-            ))}
+            {staff.map((row) => {
+              const isOwnerRow = row.role === OWNER_ROLE;
+              const lockedSuperRow =
+                row.role === SUPER_ADMIN_ROLE && viewerRole !== OWNER_ROLE;
+              const canAct = !isOwnerRow && !lockedSuperRow;
+              return (
+                <tr key={row.id} className="border-t border-border/60">
+                  <td className="px-4 py-3">
+                    <p className="font-semibold text-ink">
+                      {row.name || row.email}
+                    </p>
+                    <p className="text-[12px] text-ink-muted">{row.email}</p>
+                  </td>
+                  <td className="px-4 py-3">
+                    {isOwnerRow ? (
+                      <span className="inline-flex items-center rounded-full bg-brand-50 px-3 py-1 text-[12px] font-semibold text-brand-700">
+                        Owner
+                      </span>
+                    ) : (
+                      <select
+                        className="saas-input max-w-[160px]"
+                        value={row.role}
+                        disabled={busy === row.id || lockedSuperRow}
+                        onChange={(e) =>
+                          updateStaff(row.id, { role: e.target.value })
+                        }
+                      >
+                        {(viewerRole === OWNER_ROLE ||
+                          row.role === SUPER_ADMIN_ROLE) && (
+                          <option value={SUPER_ADMIN_ROLE}>Super Admin</option>
+                        )}
+                        <option value={MANAGER_ROLE}>Manager</option>
+                        <option value={SUB_ADMIN_ROLE}>Sub Admin</option>
+                      </select>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={
+                        row.isActive ? "text-emerald-700" : "text-red-600"
+                      }
+                    >
+                      {row.isActive ? "Active" : "Suspended"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right space-x-2">
+                    {canAct ? (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          loading={busy === row.id}
+                          onClick={() =>
+                            updateStaff(row.id, { isActive: !row.isActive })
+                          }
+                        >
+                          {row.isActive ? "Suspend" : "Activate"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          disabled={busy === row.id}
+                          onClick={() => {
+                            const password = prompt(
+                              "New password (min 8 characters):"
+                            );
+                            if (!password) return;
+                            updateStaff(row.id, { password });
+                          }}
+                        >
+                          Reset password
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          disabled={busy === row.id}
+                          onClick={() => deleteStaff(row.id, row.email)}
+                        >
+                          Delete
+                        </Button>
+                      </>
+                    ) : (
+                      <span className="text-[12px] text-ink-faint">
+                        {isOwnerRow ? "Platform owner" : "Owner-managed"}
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
             {staff.length === 0 && (
               <tr>
                 <td colSpan={4} className="px-4 py-8 text-ink-muted">

@@ -3,7 +3,7 @@ import { processDueEnrollments } from "@/lib/email-automation";
 import { bearerToken, secretsMatch } from "@/lib/rate-limit";
 
 /**
- * Process due Day 2/3 sequence emails for all users.
+ * Process due nurture-sequence follow-up emails for all users.
  * Secure with CRON_SECRET (Authorization: Bearer <secret>).
  * Call hourly from Railway cron, cron-job.org, or similar.
  */

@@ -89,7 +89,7 @@ export function CrmWebhooksForm() {
           <CardTitle>Outbound webhook</CardTitle>
           <p className="mt-1 text-sm text-ink-muted">
             We POST JSON with header{" "}
-            <code className="text-[12px]">X-LeadFlow-Secret</code> when a secret
+            <code className="text-[12px]">X-ContractorLeads-Secret</code> when a secret
             is set. Use the test ping to verify delivery.
           </p>
         </CardHeader>
@@ -227,7 +227,7 @@ export function CrmWebhooksForm() {
         <CardContent>
           <pre className="overflow-x-auto rounded-xl border border-border bg-[var(--input-bg)] p-4 text-[12px] text-ink">
 {`{
-  "event": "leadflow.test",
+  "event": "contractorleads.test",
   "sentAt": "2026-07-19T10:00:00.000Z",
   "agency": "Your Agency",
   "lead": {
