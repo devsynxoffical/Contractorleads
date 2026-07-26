@@ -760,12 +760,29 @@ export default function AdminLeadsPage() {
             )}
             {!loading &&
               leads.map((lead) => (
-                <tr key={lead.id} className="border-t border-border/60">
-                  <td className="px-4 py-3">
+                <tr
+                  key={lead.id}
+                  role="link"
+                  tabIndex={0}
+                  onClick={() => router.push(`/admin/leads/${lead.id}`)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      router.push(`/admin/leads/${lead.id}`);
+                    }
+                  }}
+                  className="cursor-pointer border-t border-border/60 transition hover:bg-brand-50/50"
+                >
+                  <td
+                    className="px-4 py-3"
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
+                  >
                     <input
                       type="checkbox"
                       checked={selected.has(lead.id)}
                       onChange={() => toggle(lead.id)}
+                      aria-label={`Select ${lead.businessName}`}
                     />
                   </td>
                   <td className="px-4 py-3">
@@ -798,13 +815,8 @@ export default function AdminLeadsPage() {
                       lead.search?.user?.email ||
                       "—"}
                   </td>
-                  <td className="space-x-3 px-4 py-3 text-right">
-                    <Link
-                      href={`/admin/leads/${lead.id}`}
-                      className="font-semibold text-brand-600 hover:underline"
-                    >
-                      Edit
-                    </Link>
+                  <td className="px-4 py-3 text-right">
+                    <span className="font-semibold text-brand-600">View</span>
                   </td>
                 </tr>
               ))}
