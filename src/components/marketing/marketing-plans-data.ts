@@ -1,3 +1,10 @@
+import { CREDIT_COSTS } from "@/lib/constants";
+import {
+  PLAN_MONTHLY_CREDITS,
+  STARTER_FREE_CREDITS,
+  STARTER_FREE_LEADS,
+} from "@/lib/plans";
+
 export type PlanColumnId = "starter" | "growth" | "agency" | "enterprise";
 
 export type PlanMatrixRow = Record<PlanColumnId, string> & { feature: string };
@@ -208,18 +215,18 @@ export const MARKETING_PLANS: MarketingPlanCard[] = [
   {
     id: "starter",
     name: "Starter",
-    blurb: "Start free with 10 leads, then subscribe when you're ready to scale.",
+    blurb: `Start free with ${STARTER_FREE_LEADS} leads, then subscribe when you're ready to scale.`,
     priceMonthly: 19.99,
     priceAnnualMonthly: 15.99,
-    leadsIncluded: 500,
-    creditsLabel: "500 credits / mo (500 leads)",
-    creditsDetail: "1 credit per lead · 10 free leads included to start — pay after you use them",
+    leadsIncluded: PLAN_MONTHLY_CREDITS.starter,
+    creditsLabel: `${PLAN_MONTHLY_CREDITS.starter.toLocaleString()} credits / mo (${PLAN_MONTHLY_CREDITS.starter.toLocaleString()} leads)`,
+    creditsDetail: `${CREDIT_COSTS.lead} credit per lead · ${STARTER_FREE_CREDITS} free leads included to start — pay after you use them`,
     ctaLabel: "Get started free",
     ctaHref: "/register",
     trialOffer: true,
     features: [
-      "500 leads / month included",
-      "10 free leads on signup to try",
+      `${PLAN_MONTHLY_CREDITS.starter.toLocaleString()} leads / month included`,
+      `${STARTER_FREE_LEADS} free leads on signup to try`,
       "Lead Finder + live search",
       "AI scoring + owner enrichment",
       "Pipeline CRM + saved leads",
@@ -234,9 +241,9 @@ export const MARKETING_PLANS: MarketingPlanCard[] = [
     blurb: "Essential maps, Meta intel, and webhooks for agencies closing every week.",
     priceMonthly: 49,
     priceAnnualMonthly: 39,
-    leadsIncluded: 2000,
-    creditsLabel: "2,000 credits / mo (2,000 leads)",
-    creditsDetail: "1 credit per lead · best for daily outreach",
+    leadsIncluded: PLAN_MONTHLY_CREDITS.growth,
+    creditsLabel: `${PLAN_MONTHLY_CREDITS.growth.toLocaleString()} credits / mo (${PLAN_MONTHLY_CREDITS.growth.toLocaleString()} leads)`,
+    creditsDetail: `${CREDIT_COSTS.lead} credit per lead · best for daily outreach`,
     ctaLabel: "Buy now",
     ctaHref: "/register",
     secondaryCtaLabel: "Get started free",
@@ -244,7 +251,7 @@ export const MARKETING_PLANS: MarketingPlanCard[] = [
     popular: true,
     features: [
       "Everything in Starter",
-      "2,000 leads / month included",
+      `${PLAN_MONTHLY_CREDITS.growth.toLocaleString()} leads / month included`,
       "Lead Map + social filters",
       "Meta Ads intel",
       "Dashboard & analytics",
@@ -259,16 +266,16 @@ export const MARKETING_PLANS: MarketingPlanCard[] = [
     blurb: "For teams running multiple clients who need seats, reports, and priority support.",
     priceMonthly: 99,
     priceAnnualMonthly: 79,
-    leadsIncluded: 5000,
-    creditsLabel: "5,000 credits / mo (5,000 leads)",
-    creditsDetail: "1 credit per lead · shared team pool",
+    leadsIncluded: PLAN_MONTHLY_CREDITS.agency,
+    creditsLabel: `${PLAN_MONTHLY_CREDITS.agency.toLocaleString()} credits / mo (${PLAN_MONTHLY_CREDITS.agency.toLocaleString()} leads)`,
+    creditsDetail: `${CREDIT_COSTS.lead} credit per lead · shared team pool`,
     ctaLabel: "Buy now",
     ctaHref: "/register",
     secondaryCtaLabel: "Talk to sales",
     secondaryCtaHref: "mailto:hello@contractorleads.us",
     features: [
       "Everything in Growth",
-      "5,000 leads / month included",
+      `${PLAN_MONTHLY_CREDITS.agency.toLocaleString()} leads / month included`,
       "Client reports",
       "Multi-tenant workspaces",
       "Team seats",

@@ -12,14 +12,15 @@ import {
   planLabel,
   featuresForPlan,
   PLAN_IDS,
+  monthlyCreditsForPlan,
   type PlanId,
 } from "@/lib/plans";
 import { formatCredits } from "@/lib/utils";
+import { CREDIT_COSTS } from "@/lib/constants";
 import {
   getStripe,
   isMessagingAddonConfigured,
   isStripeConfigured,
-  PLAN_MONTHLY_CREDITS,
 } from "@/lib/stripe";
 import {
   fulfillCheckoutSession,
@@ -161,13 +162,12 @@ export default async function BillingPage({
     .toLowerCase();
   const includedCount = FEATURE_ROWS.filter((f) => features[f.key]).length;
 
-  const monthlyCredits =
-    PLAN_MONTHLY_CREDITS[current as keyof typeof PLAN_MONTHLY_CREDITS];
+  const monthlyCredits = monthlyCreditsForPlan(current);
   const checkoutMessage =
     params.checkout === "active"
       ? `You're now on ${planLabel(current)}${
           monthlyCredits != null
-            ? ` with ${monthlyCredits.toLocaleString()} monthly credits`
+            ? ` with ${monthlyCredits.toLocaleString()} monthly credits (${CREDIT_COSTS.lead} credit per lead)`
             : ""
         }.`
       : params.checkout === "pending"
@@ -232,6 +232,14 @@ export default async function BillingPage({
                 {formatCredits(creditsRemaining)}
               </span>{" "}
               credits remaining
+              {monthlyCredits != null ? (
+                <>
+                  <span className="text-ink-faint"> · </span>
+                  {monthlyCredits.toLocaleString()} / mo allotment
+                </>
+              ) : null}
+              <span className="text-ink-faint"> · </span>
+              {CREDIT_COSTS.lead} credit per lead
               <span className="text-ink-faint"> · </span>
               {includedCount} of {FEATURE_ROWS.length} premium features unlocked
             </p>
@@ -305,7 +313,8 @@ export default async function BillingPage({
         <div className="mb-4">
           <h3 className="text-sm font-semibold text-ink">Change plan</h3>
           <p className="mt-1 text-[13px] text-ink-muted">
-            Compare tiers and upgrade or switch in one click.
+            Compare tiers — each plan shows monthly credits at {CREDIT_COSTS.lead}{" "}
+            credit per lead.
           </p>
         </div>
 

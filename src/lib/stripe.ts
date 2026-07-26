@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import type { PlanId } from "@/lib/plans";
+import { PLAN_MONTHLY_CREDITS as PLAN_CREDITS_BY_ID } from "@/lib/plans";
 import { SITE_URL } from "@/lib/email-brand";
 import { getStripeBillingSecrets } from "@/lib/stripe-config";
 
@@ -43,11 +44,11 @@ export function isStripeCheckoutPlan(
   return (STRIPE_CHECKOUT_PLANS as readonly string[]).includes(plan);
 }
 
-/** Monthly credit allotment = leads included (1 credit per lead). */
+/** Monthly credit allotment for Stripe checkout plans (from plans.ts). */
 export const PLAN_MONTHLY_CREDITS: Record<StripeCheckoutPlan, number> = {
-  starter: 500,
-  growth: 2000,
-  agency: 5000,
+  starter: PLAN_CREDITS_BY_ID.starter,
+  growth: PLAN_CREDITS_BY_ID.growth,
+  agency: PLAN_CREDITS_BY_ID.agency,
 };
 
 export async function priceIdForPlan(

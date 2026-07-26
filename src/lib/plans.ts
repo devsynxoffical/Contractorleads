@@ -35,6 +35,19 @@ export const ADMIN_PLANS = [
 export const STARTER_FREE_LEADS = 10;
 export const STARTER_FREE_CREDITS = 10;
 
+/**
+ * Monthly credit allotment per paid checkout plan.
+ * 1 credit = 1 lead. Enterprise is custom / unlimited.
+ */
+export const PLAN_MONTHLY_CREDITS: Record<
+  Exclude<PlanId, "enterprise">,
+  number
+> = {
+  starter: 500,
+  growth: 2000,
+  agency: 5000,
+};
+
 export const PLAN_API_LIMITS: Record<PlanId, number> = {
   starter: 100,
   growth: 1500,
@@ -100,6 +113,20 @@ export function normalizePlan(plan: string | null | undefined): PlanId {
   if (p === "free" || p === "trial" || p === "trialing") return "starter";
   if ((PLAN_IDS as readonly string[]).includes(p)) return p as PlanId;
   return "starter";
+}
+
+export function monthlyCreditsForPlan(
+  plan: string | null | undefined,
+): number | null {
+  const id = normalizePlan(plan);
+  if (id === "enterprise") return null;
+  return PLAN_MONTHLY_CREDITS[id] ?? null;
+}
+
+export function monthlyLeadsForPlan(
+  plan: string | null | undefined,
+): number | null {
+  return monthlyCreditsForPlan(plan);
 }
 
 export function planLabel(plan: string | null | undefined) {

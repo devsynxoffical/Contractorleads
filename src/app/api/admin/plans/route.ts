@@ -6,13 +6,17 @@ import {
   ADMIN_PLANS,
   PLAN_API_LIMITS,
   PLAN_FEATURES,
+  PLAN_MONTHLY_CREDITS,
+  STARTER_FREE_CREDITS,
   TEAM_SEAT_LIMITS,
   featuresForPlan,
   getPlanPriceMap,
+  monthlyCreditsForPlan,
   normalizePlan,
   planLabel,
   savePlanPriceMap,
 } from "@/lib/plans";
+import { CREDIT_COSTS } from "@/lib/constants";
 
 export async function GET() {
   const admin = await requirePermission("plans");
@@ -43,6 +47,8 @@ export async function GET() {
       priceMonthly: prices[p.value] ?? p.priceMonthly,
       customers: row?._count._all ?? 0,
       creditsOutstanding: row?._sum.creditsRemaining ?? 0,
+      monthlyCredits: monthlyCreditsForPlan(p.value),
+      monthlyLeads: monthlyCreditsForPlan(p.value),
       apiMonthlyLimit: PLAN_API_LIMITS[p.value],
       teamSeats: TEAM_SEAT_LIMITS[p.value],
       features: PLAN_FEATURES[p.value],
@@ -58,6 +64,13 @@ export async function GET() {
   return NextResponse.json({
     plans,
     prices,
+    creditCosts: {
+      lead: CREDIT_COSTS.lead,
+      assistant: CREDIT_COSTS.assistant,
+      outreach: CREDIT_COSTS.outreach,
+      starterFreeCredits: STARTER_FREE_CREDITS,
+    },
+    planMonthlyCredits: PLAN_MONTHLY_CREDITS,
     featureKeys: Object.keys(PLAN_FEATURES.agency) as Array<
       keyof ReturnType<typeof featuresForPlan>
     >,

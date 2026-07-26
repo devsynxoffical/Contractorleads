@@ -570,7 +570,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
         body: "Credits power search and AI. Typical costs:",
         bullets: [
           "Lead Finder: capped by credit lead limit; 1 credit per lead returned",
-          "Ask Expert / AI assistant: about 1.59 credits per use",
+          "Ask Expert / AI assistant: 2 credits per use",
         ],
         tip: "Product how-tos in Academy and the support bot do not replace Ask Expert for strategy — and they do not burn Ask Expert credits the same way.",
       },
@@ -1122,7 +1122,7 @@ export const ACADEMY_FAQS: AcademyFaq[] = [
     category: "ai",
     question: "Does Ask Expert use credits?",
     answer:
-      "Yes (~1.59 per use). Use Academy or the support bot for product how-tos. Use Ask Expert for marketing strategy and copy, then save winners to My Scripts.",
+      "Yes (2 credits per use). Use Academy or the support bot for product how-tos. Use Ask Expert for marketing strategy and copy, then save winners to My Scripts.",
     relatedSlugs: ["ask-expert-vs-support", "ask-expert-playbook"],
   },
   {

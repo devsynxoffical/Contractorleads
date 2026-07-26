@@ -16,9 +16,18 @@ type PlanRow = {
   priceMonthly: number;
   customers: number;
   creditsOutstanding: number;
+  monthlyCredits: number | null;
+  monthlyLeads: number | null;
   apiMonthlyLimit: number;
   teamSeats: number;
   features: Record<string, boolean>;
+};
+
+type CreditCosts = {
+  lead: number;
+  assistant: number;
+  outreach: number;
+  starterFreeCredits: number;
 };
 
 const FEATURE_LABELS: Record<string, string> = {
@@ -35,6 +44,7 @@ const FEATURE_LABELS: Record<string, string> = {
 export default function AdminPlansPage() {
   const [plans, setPlans] = useState<PlanRow[]>([]);
   const [prices, setPrices] = useState<Record<string, number>>({});
+  const [creditCosts, setCreditCosts] = useState<CreditCosts | null>(null);
   const [featureKeys, setFeatureKeys] = useState<string[]>([]);
   const [legacy, setLegacy] = useState<
     Array<{ plan: string; label: string; count: number }>
@@ -46,6 +56,7 @@ export default function AdminPlansPage() {
     const d = await fetch("/api/admin/plans").then((r) => r.json());
     setPlans(d.plans ?? []);
     setPrices(d.prices ?? {});
+    setCreditCosts(d.creditCosts ?? null);
     setFeatureKeys(d.featureKeys ?? []);
     setLegacy(d.legacy ?? []);
   }
@@ -81,7 +92,7 @@ export default function AdminPlansPage() {
     <div>
       <AdminPageHeader
         title="Plans & Entitlements"
-        description="Edit monthly list prices (referral commission is a % of these). Assign plans on each customer; API/MCP/SSO flags sync when the plan changes."
+        description="Monthly prices, credit allotments (1 credit = 1 lead), and feature entitlements. Same numbers power Billing for customers."
         actions={
           <div className="flex flex-wrap gap-2">
             <Button onClick={savePrices} loading={busy} disabled={busy}>
@@ -107,6 +118,53 @@ export default function AdminPlansPage() {
         <p className="mb-4 rounded-xl bg-brand-50 px-3 py-2 text-[13px] text-brand-800">
           {message}
         </p>
+      ) : null}
+
+      {creditCosts ? (
+        <HudPanel
+          title="Credit costs"
+          subtitle="Shared with Lead Finder, Billing, and marketing pages"
+          className="mb-6"
+        >
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-xl border border-border/70 bg-[var(--surface)] px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
+                Per lead
+              </p>
+              <p className="mt-1 text-xl font-semibold tabular-nums text-ink">
+                {creditCosts.lead}
+              </p>
+              <p className="text-[11px] text-ink-muted">credit = 1 lead</p>
+            </div>
+            <div className="rounded-xl border border-border/70 bg-[var(--surface)] px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
+                Ask Expert
+              </p>
+              <p className="mt-1 text-xl font-semibold tabular-nums text-ink">
+                {creditCosts.assistant}
+              </p>
+              <p className="text-[11px] text-ink-muted">credits / message</p>
+            </div>
+            <div className="rounded-xl border border-border/70 bg-[var(--surface)] px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
+                Outreach Studio
+              </p>
+              <p className="mt-1 text-xl font-semibold tabular-nums text-ink">
+                {creditCosts.outreach}
+              </p>
+              <p className="text-[11px] text-ink-muted">credits / generation</p>
+            </div>
+            <div className="rounded-xl border border-border/70 bg-[var(--surface)] px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
+                Free trial
+              </p>
+              <p className="mt-1 text-xl font-semibold tabular-nums text-ink">
+                {creditCosts.starterFreeCredits}
+              </p>
+              <p className="text-[11px] text-ink-muted">credits on signup</p>
+            </div>
+          </div>
+        </HudPanel>
       ) : null}
 
       <HudPanel
@@ -161,11 +219,21 @@ export default function AdminPlansPage() {
                     : "Free"}
               </p>
               <p className="mt-2 text-[12px] text-ink-muted">
-                {p.customers} customers · {Math.round(p.creditsOutstanding)}{" "}
-                credits
+                {p.monthlyCredits != null
+                  ? `${p.monthlyCredits.toLocaleString()} credits / mo`
+                  : "Custom credits"}
+                {" · "}
+                {p.customers} customers
               </p>
               <p className="mt-1 text-[11px] text-ink-faint">
+                {p.monthlyLeads != null
+                  ? `${p.monthlyLeads.toLocaleString()} leads · `
+                  : ""}
                 API {p.apiMonthlyLimit}/mo · {p.teamSeats} seats
+              </p>
+              <p className="mt-1 text-[11px] text-ink-faint">
+                {Math.round(p.creditsOutstanding).toLocaleString()} credits in
+                customer balances
               </p>
             </div>
           );
@@ -207,6 +275,21 @@ export default function AdminPlansPage() {
                   ))}
                 </tr>
               ))}
+              <tr className="border-b border-border/70">
+                <td className="px-3 py-2.5 font-medium text-ink">
+                  Monthly credits (leads)
+                </td>
+                {plans.map((p) => (
+                  <td
+                    key={p.id}
+                    className="px-3 py-2.5 tabular-nums text-ink-muted"
+                  >
+                    {p.monthlyCredits != null
+                      ? p.monthlyCredits.toLocaleString()
+                      : "Custom"}
+                  </td>
+                ))}
+              </tr>
               <tr className="border-b border-border/70">
                 <td className="px-3 py-2.5 font-medium text-ink">
                   API monthly calls

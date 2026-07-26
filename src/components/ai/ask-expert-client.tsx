@@ -7,6 +7,7 @@ import {
 } from "@/components/layout/page-header";
 import { SectionLabel } from "@/components/ui/section";
 import { AiAssistantWorkspace } from "@/components/ai/ai-assistant-workspace";
+import { CREDIT_COSTS } from "@/lib/constants";
 import {
   HiOutlineDocumentText,
   HiOutlineSparkles,
@@ -70,7 +71,7 @@ export function AskExpertClient({
             className="inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold text-white"
             style={{ background: LOGO_GRADIENT }}
           >
-            1.59 credits / message
+            {CREDIT_COSTS.assistant} credits / message
           </span>
         </p>
       </div>
