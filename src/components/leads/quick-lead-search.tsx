@@ -31,6 +31,7 @@ import {
   startNavigationProgress,
   stopNavigationProgress,
 } from "@/components/layout/navigation-progress";
+import { notifyCreditsChanged } from "@/lib/client/credits-sync";
 import { LocationAutocomplete } from "@/components/leads/location-autocomplete";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
 
@@ -153,6 +154,11 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
 
       const found = (data.leads ?? []) as Lead[];
       setLeads(found);
+      if (typeof data.creditsRemaining === "number") {
+        notifyCreditsChanged(data.creditsRemaining);
+      } else if (typeof data.capacity?.balance === "number") {
+        notifyCreditsChanged(data.capacity.balance);
+      }
       setMessages((m) => [
         ...m,
         {

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { notifyCreditsChanged } from "@/lib/client/credits-sync";
 
 const types = [
   { key: "email", label: "Cold Email" },
@@ -37,6 +38,9 @@ export function OutreachStudio({
       return;
     }
     setContent(data.script.content);
+    if (typeof data.creditsRemaining === "number") {
+      notifyCreditsChanged(data.creditsRemaining);
+    }
     setLoading(null);
   }
 

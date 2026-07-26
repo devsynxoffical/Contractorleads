@@ -36,6 +36,7 @@ import {
   startNavigationProgress,
   stopNavigationProgress,
 } from "@/components/layout/navigation-progress";
+import { notifyCreditsChanged } from "@/lib/client/credits-sync";
 import {
   PromptCard,
   SectionHeading,
@@ -337,6 +338,11 @@ export function LeadSearchForm() {
       setSelected(new Set(data.leads.map((l: Lead) => l.id)));
       if (typeof data.capacity?.available === "number") {
         setLeadCapacity(data.capacity.available);
+      }
+      if (typeof data.creditsRemaining === "number") {
+        notifyCreditsChanged(data.creditsRemaining);
+      } else if (typeof data.capacity?.balance === "number") {
+        notifyCreditsChanged(data.capacity.balance);
       }
       setStage(4);
       const billed = data.meta?.billing?.searchCharged;

@@ -45,6 +45,10 @@ import { WorkspaceSettingsMenu } from "@/components/layout/workspace-settings-me
 import { userHasPlanFeature } from "@/lib/plan-access";
 import { ADMIN_STAFF_ROLES } from "@/lib/roles";
 import { ProductTourWalkthrough } from "@/components/onboarding/product-tour-walkthrough";
+import {
+  CREDITS_CHANGED_EVENT,
+  type CreditsChangedDetail,
+} from "@/lib/client/credits-sync";
 
 type NavItem = {
   href: string;
@@ -386,12 +390,35 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [creditsRemaining, setCreditsRemaining] = useState(
+    user.creditsRemaining,
+  );
   const [tourDone, setTourDone] = useState(
     Boolean(user.productTourCompleted),
   );
   const [forceTour, setForceTour] = useState(false);
+
+  useEffect(() => {
+    setCreditsRemaining(user.creditsRemaining);
+  }, [user.creditsRemaining]);
+
+  useEffect(() => {
+    function onCreditsChanged(event: Event) {
+      const detail = (event as CustomEvent<CreditsChangedDetail>).detail;
+      if (typeof detail?.creditsRemaining === "number") {
+        setCreditsRemaining(detail.creditsRemaining);
+      }
+      // Keep server-rendered shell/session fields in sync after charges.
+      router.refresh();
+    }
+    window.addEventListener(CREDITS_CHANGED_EVENT, onCreditsChanged);
+    return () => {
+      window.removeEventListener(CREDITS_CHANGED_EVENT, onCreditsChanged);
+    };
+  }, [router]);
 
   useEffect(() => {
     function onReplay() {
@@ -403,6 +430,8 @@ export function AppShell({
       window.removeEventListener("leadflow:replay-product-tour", onReplay);
     };
   }, []);
+
+  const shellUser = { ...user, creditsRemaining };
 
   const showProductTour =
     (forceTour || !tourDone) &&
@@ -478,7 +507,7 @@ export function AppShell({
       >
         <div className="flex h-full w-[268px] flex-col">
           <Suspense fallback={null}>
-            <SidebarNav user={user} onCollapse={toggleSidebar} hud={hudMode} />
+            <SidebarNav user={shellUser} onCollapse={toggleSidebar} hud={hudMode} />
           </Suspense>
         </div>
       </aside>
@@ -502,7 +531,7 @@ export function AppShell({
           >
             <Suspense fallback={null}>
               <SidebarNav
-                user={user}
+                user={shellUser}
                 showClose
                 onClose={() => setMobileOpen(false)}
                 onNavigate={() => setMobileOpen(false)}
@@ -520,7 +549,7 @@ export function AppShell({
         )}
       >
         <TopHeader
-          user={user}
+          user={shellUser}
           onMenuClick={() => setMobileOpen((v) => !v)}
           sidebarCollapsed={sidebarCollapsed}
           onToggleSidebar={toggleSidebar}
@@ -536,7 +565,7 @@ export function AppShell({
         </footer>
       </div>
 
-      <SupportChatWidget user={user} />
+      <SupportChatWidget user={shellUser} />
       <ProductTourWalkthrough
         open={showProductTour}
         onCompleted={() => {

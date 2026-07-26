@@ -7,6 +7,7 @@ import {
   startNavigationProgress,
   stopNavigationProgress,
 } from "@/components/layout/navigation-progress";
+import { notifyCreditsChanged } from "@/lib/client/credits-sync";
 import { cn } from "@/lib/utils";
 
 type Scope = "all" | "saved" | "hot";
@@ -74,6 +75,10 @@ export function ExportLeadsButtons({
         alert(
           `Exported ${exported} of ${requested} leads. ${skipped} skipped because you need more credits (1.33 per lead). Purchase more on Billing to export the rest.`,
         );
+      }
+      const charged = Number(res.headers.get("X-Export-Charged") || 0);
+      if (charged > 0) {
+        notifyCreditsChanged();
       }
     } finally {
       setBusy(null);
