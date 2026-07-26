@@ -105,7 +105,7 @@ export default function AdminScrapePage() {
     try {
       const params = new URLSearchParams({
         industry,
-        take: "100",
+        take: "50",
       });
       const res = await fetch(`/api/admin/scrape?${params}`);
       const data = await res.json();
@@ -169,9 +169,18 @@ export default function AdminScrapePage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Scrape failed");
 
-      const scraped: ScrapeLead[] = data.leads ?? [];
+      const scraped: ScrapeLead[] = (data.leads ?? []).slice().sort((a, b) => {
+        const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return tb - ta;
+      });
+      // Keep this scrape's batch on the right — newest first, not the full niche pool.
       setLeads(scraped);
-      setLeadsTotal(scraped.length);
+      setLeadsTotal(
+        typeof data.meta?.poolTotal === "number"
+          ? data.meta.poolTotal
+          : scraped.length,
+      );
       setLeadsIndustry(industry);
       setResult(
         `Created/reused ${scraped.length} of ${resolvedLeadCount} requested leads for ${industry}.`,
@@ -184,8 +193,18 @@ export default function AdminScrapePage() {
       }
 
       await loadNiches();
-      // Refresh full pool for this niche (may include older rows)
-      void loadLeadsForIndustry(industry);
+      // Pull niche total so the header can say "latest N of total" without
+      // replacing the just-scraped cards with older pool rows.
+      try {
+        const params = new URLSearchParams({ industry, take: "1" });
+        const poolRes = await fetch(`/api/admin/scrape?${params}`);
+        const poolData = await poolRes.json();
+        if (poolRes.ok && typeof poolData.total === "number") {
+          setLeadsTotal(poolData.total);
+        }
+      } catch {
+        /* keep scraped.length as total */
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Scrape failed");
     } finally {
@@ -499,8 +518,10 @@ export default function AdminScrapePage() {
               />
               {leadsIndustry && (
                 <p className="mb-3 text-[12px] text-ink-muted">
-                  {leadsIndustry} · showing {leads.length} of {leadsTotal} in
-                  the pool
+                  {leadsIndustry} · latest {leads.length}
+                  {leadsTotal > leads.length
+                    ? ` of ${leadsTotal} in the pool`
+                    : " from this scrape"}
                 </p>
               )}
               <LeadResultsList

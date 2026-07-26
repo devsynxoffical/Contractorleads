@@ -47,7 +47,7 @@ export async function GET(request: Request) {
   const industry = searchParams.get("industry")?.trim() ?? "";
   const take = Math.min(
     200,
-    Math.max(1, Number(searchParams.get("take") ?? 100) || 100),
+    Math.max(1, Number(searchParams.get("take") ?? 50) || 50),
   );
 
   if (industry) {
