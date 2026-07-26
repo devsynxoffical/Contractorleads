@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 const SEED_DEMO = process.env.SEED_DEMO === "true";
 
 /** The platform owner account gets the OWNER role (above SUPER_ADMIN). */
-const OWNER_EMAIL = "admin@contractorleads.us";
+const OWNER_EMAIL = "hello@contractorleads.us";
 
 /**
  * Creates the first super admin from env vars. Only ever creates — never
@@ -89,33 +89,54 @@ async function seedDemoAccounts() {
     },
   });
 
-  await prisma.user.upsert({
+  const legacyOwner = await prisma.user.findUnique({
     where: { email: "admin@contractorleads.us" },
-    update: {
-      role: "OWNER",
-      passwordHash: adminHash,
-      emailVerifiedAt: new Date(),
-      creditsRemaining: 9999,
-      onboardingComplete: true,
-    },
-    create: {
-      email: "admin@contractorleads.us",
-      name: "Owner",
-      passwordHash: adminHash,
-      emailVerifiedAt: new Date(),
-      role: "OWNER",
-      plan: "agency",
-      subscriptionStatus: "active",
-      creditsRemaining: 9999,
-      onboardingComplete: true,
-      companyName: "Contractor Leads Ops",
-      businessDescription: "Platform super administrator",
-      services: "Platform operations",
-      idealCustomer: "Internal",
-      serviceAreas: "Global",
-      mainGoal: "Operate the lead platform",
-    },
   });
+  const helloOwner = await prisma.user.findUnique({
+    where: { email: "hello@contractorleads.us" },
+  });
+
+  if (legacyOwner && !helloOwner) {
+    await prisma.user.update({
+      where: { email: "admin@contractorleads.us" },
+      data: {
+        email: "hello@contractorleads.us",
+        role: "OWNER",
+        passwordHash: adminHash,
+        emailVerifiedAt: new Date(),
+        creditsRemaining: 9999,
+        onboardingComplete: true,
+      },
+    });
+  } else {
+    await prisma.user.upsert({
+      where: { email: "hello@contractorleads.us" },
+      update: {
+        role: "OWNER",
+        passwordHash: adminHash,
+        emailVerifiedAt: new Date(),
+        creditsRemaining: 9999,
+        onboardingComplete: true,
+      },
+      create: {
+        email: "hello@contractorleads.us",
+        name: "Owner",
+        passwordHash: adminHash,
+        emailVerifiedAt: new Date(),
+        role: "OWNER",
+        plan: "agency",
+        subscriptionStatus: "active",
+        creditsRemaining: 9999,
+        onboardingComplete: true,
+        companyName: "Contractor Leads Ops",
+        businessDescription: "Platform super administrator",
+        services: "Platform operations",
+        idealCustomer: "Internal",
+        serviceAreas: "Global",
+        mainGoal: "Operate the lead platform",
+      },
+    });
+  }
 }
 
 async function main() {
@@ -194,7 +215,7 @@ async function main() {
   console.log("Seed complete:");
   if (SEED_DEMO) {
     console.log("  demo@contractorleads.us / demo12345");
-    console.log("  admin@contractorleads.us / admin12345 (OWNER)");
+    console.log("  hello@contractorleads.us / admin12345 (OWNER)");
   } else {
     console.log("  Demo accounts skipped (set SEED_DEMO=true for local dev)");
   }
