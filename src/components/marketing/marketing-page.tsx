@@ -226,7 +226,7 @@ const FAQS = [
   },
   {
     q: "How do credits work?",
-    a: "Each lead costs 1.33 credits when you run Lead Finder (for example, 10 leads = 13.3 credits). Asking the AI assistant and generating outreach also use credits. The in-app support chat is always free and never touches your credit balance.",
+    a: "Each lead costs 1 credit when you run Lead Finder (for example, 10 leads = 10 credits). Asking the AI assistant and generating outreach also use credits. The in-app support chat is always free and never touches your credit balance.",
   },
   {
     q: "Can I filter for LinkedIn + social presence?",

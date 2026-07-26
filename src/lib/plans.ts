@@ -31,9 +31,9 @@ export const ADMIN_PLANS = [
   { value: "enterprise", label: "Enterprise", priceMonthly: 0 },
 ] as const;
 
-/** Free leads included on signup / unpaid Starter (credits ÷ 1.33). */
+/** Free leads included on signup / unpaid Starter (1 credit = 1 lead). */
 export const STARTER_FREE_LEADS = 10;
-export const STARTER_FREE_CREDITS = 13.3;
+export const STARTER_FREE_CREDITS = 10;
 
 export const PLAN_API_LIMITS: Record<PlanId, number> = {
   starter: 100,

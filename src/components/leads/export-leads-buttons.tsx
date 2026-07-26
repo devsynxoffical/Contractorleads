@@ -73,7 +73,7 @@ export function ExportLeadsButtons({
 
       if (skipped > 0 && exported > 0) {
         alert(
-          `Exported ${exported} of ${requested} leads. ${skipped} skipped because you need more credits (1.33 per lead). Purchase more on Billing to export the rest.`,
+          `Exported ${exported} of ${requested} leads. ${skipped} skipped because you need more credits (1 per lead). Purchase more on Billing to export the rest.`,
         );
       }
       const charged = Number(res.headers.get("X-Export-Charged") || 0);

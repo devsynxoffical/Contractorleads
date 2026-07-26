@@ -479,7 +479,7 @@ export function LeadSearchForm() {
         <div className="stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatChip label="Coverage" value="Tier 1" hint="US · CA · UK · AU · NZ" />
           <StatChip label="Industries" value="12" hint="Roofing → GCs" />
-          <StatChip label="Per lead" value="1.33 credits" hint="Only leads returned" />
+          <StatChip label="Per lead" value="1 credit" hint="Only leads returned" />
           <StatChip label="Re-export" value="Free" hint="Already billed leads" />
         </div>
       </div>
@@ -723,7 +723,7 @@ export function LeadSearchForm() {
                 </Select>
                 <p className="text-[11px] text-ink-muted">
                   {leadCapacity == null
-                    ? "Limited by your remaining credits (1.33 credits per lead returned)."
+                    ? "Limited by your remaining credits (1 credit per lead returned)."
                     : leadCapacity <= 0
                       ? "Lead limit reached — export existing leads or purchase credits on Billing."
                       : `You can generate up to ${leadCapacity} more lead${leadCapacity === 1 ? "" : "s"}. You are only charged for leads actually returned.`}

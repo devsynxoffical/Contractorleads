@@ -5,6 +5,7 @@ import { matchHouzzBusiness } from "./houzz";
 import { matchNextdoorBusiness } from "./nextdoor";
 import { matchYelpBusiness } from "./yelp";
 import { extractWebsitePeople } from "./website-people";
+import { auditWebsite, emptyWebsiteAudit } from "./website-audit";
 
 type LeadRecord = {
   id: string;
@@ -36,6 +37,7 @@ export async function enrichLeadSocial(lead: LeadRecord) {
     yelp,
     houzz,
     nextdoor,
+    websiteAudit,
   ] = await Promise.all([
     resolveLinkedInProfiles(
       lead.businessName,
@@ -67,6 +69,7 @@ export async function enrichLeadSocial(lead: LeadRecord) {
     matchYelpBusiness(lead.businessName, location),
     matchHouzzBusiness(lead.businessName, location),
     matchNextdoorBusiness(lead.businessName, location),
+    lead.website ? auditWebsite(lead.website) : Promise.resolve(emptyWebsiteAudit()),
   ]);
 
   const companyLinkedIn =
@@ -74,6 +77,28 @@ export async function enrichLeadSocial(lead: LeadRecord) {
   const ownerLinkedIn =
     linkedin.owner.confidence >= 90 ? linkedin.owner.url : null;
   const primaryLinkedIn = companyLinkedIn ?? ownerLinkedIn;
+
+  const facebook =
+    lead.facebook ?? websiteSocial.facebook ?? facebookPage ?? null;
+  const instagram = lead.instagram ?? websiteSocial.instagram ?? null;
+  const youtube = lead.youtube ?? websiteSocial.youtube ?? null;
+  const tiktok = lead.tiktok ?? websiteSocial.tiktok ?? null;
+
+  const auditScores = lead.website
+    ? {
+        websiteQualityScore: websiteAudit.websiteQualityScore,
+        seoOpportunityScore: websiteAudit.seoOpportunityScore,
+        marketingOpportunityScore: websiteAudit.marketingOpportunityScore,
+        ppcOpportunityScore: websiteAudit.ppcOpportunityScore,
+        outreachAngle: websiteAudit.outreachAngle,
+      }
+    : {
+        websiteQualityScore: 18,
+        seoOpportunityScore: 88,
+        marketingOpportunityScore: 82,
+        ppcOpportunityScore: 78,
+        outreachAngle: emptyWebsiteAudit().outreachAngle,
+      };
 
   const updated = await prisma.lead.update({
     where: { id: lead.id },
@@ -99,10 +124,10 @@ export async function enrichLeadSocial(lead: LeadRecord) {
       peopleEnrichedAt: lead.website ? new Date() : undefined,
       email: lead.email ?? websitePeople.email ?? undefined,
       emailSourceUrl: websitePeople.emailSourceUrl ?? undefined,
-      facebook: lead.facebook ?? websiteSocial.facebook ?? facebookPage,
-      instagram: lead.instagram ?? websiteSocial.instagram,
-      youtube: lead.youtube ?? websiteSocial.youtube,
-      tiktok: lead.tiktok ?? websiteSocial.tiktok,
+      facebook,
+      instagram,
+      youtube,
+      tiktok,
       yelpUrl: yelp?.url ?? undefined,
       yelpRating: yelp?.rating ?? undefined,
       yelpReviews: yelp?.reviewCount ?? undefined,
@@ -111,6 +136,7 @@ export async function enrichLeadSocial(lead: LeadRecord) {
       houzzReviews: houzz?.reviewCount ?? undefined,
       nextdoor: nextdoor?.url ?? undefined,
       socialEnrichedAt: new Date(),
+      ...auditScores,
     },
   });
 

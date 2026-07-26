@@ -3,6 +3,8 @@ import { generateObject } from "ai";
 import { z } from "zod";
 import { getOpenAIApiKey } from "@/lib/openai-config";
 import type { PlaceResult } from "./google-places";
+import type { WebsiteAudit } from "./website-audit";
+import { emptyWebsiteAudit } from "./website-audit";
 
 const qualificationSchema = z.object({
   serviceCategory: z.string(),
@@ -195,24 +197,94 @@ function ruleBasedQualification(
   };
 }
 
+/** Overlay live homepage audit onto qualification (replaces guessed SEO/site scores). */
+export function applyLiveWebsiteAudit(
+  base: QualificationResult,
+  audit: WebsiteAudit | null | undefined,
+  hasWebsite: boolean,
+): QualificationResult {
+  if (!hasWebsite) {
+    const empty = emptyWebsiteAudit();
+    return {
+      ...base,
+      websiteQualityScore: empty.websiteQualityScore,
+      seoOpportunityScore: empty.seoOpportunityScore,
+      marketingOpportunityScore: empty.marketingOpportunityScore,
+      ppcOpportunityScore: empty.ppcOpportunityScore,
+      outreachAngle: empty.outreachAngle,
+    };
+  }
+  if (!audit?.reachable) {
+    return {
+      ...base,
+      websiteQualityScore: 22,
+      seoOpportunityScore: 86,
+      marketingOpportunityScore: Math.max(base.marketingOpportunityScore, 78),
+      ppcOpportunityScore: Math.max(base.ppcOpportunityScore, 72),
+      outreachAngle:
+        "Website URL is listed but the live page did not load — pitch a rebuild or hosting fix before ads.",
+    };
+  }
+  return {
+    ...base,
+    websiteQualityScore: audit.websiteQualityScore,
+    seoOpportunityScore: audit.seoOpportunityScore,
+    marketingOpportunityScore: audit.marketingOpportunityScore,
+    ppcOpportunityScore: audit.ppcOpportunityScore,
+    outreachAngle: audit.outreachAngle || base.outreachAngle,
+  };
+}
+
 export async function qualifyLead(
   place: PlaceResult,
   industry: string,
   hasWebsite: boolean,
-  opts?: { preferRules?: boolean; timeoutMs?: number },
+  opts?: {
+    preferRules?: boolean;
+    timeoutMs?: number;
+    /** Live homepage audit — drives website/SEO opportunity scores. */
+    websiteAudit?: WebsiteAudit | null;
+  },
 ): Promise<QualificationResult> {
+  const withAudit = (result: QualificationResult) =>
+    applyLiveWebsiteAudit(result, opts?.websiteAudit, hasWebsite);
+
   if (opts?.preferRules) {
-    return ruleBasedQualification(place, industry, hasWebsite);
+    return withAudit(ruleBasedQualification(place, industry, hasWebsite));
   }
 
   const apiKey = getOpenAIApiKey();
   if (!apiKey) {
-    return ruleBasedQualification(place, industry, hasWebsite);
+    return withAudit(ruleBasedQualification(place, industry, hasWebsite));
   }
 
   const timeoutMs = opts?.timeoutMs ?? 8000;
   try {
     const openai = createOpenAI({ apiKey });
+    const audit = opts?.websiteAudit;
+    const liveBlock =
+      hasWebsite && audit?.reachable
+        ? `
+LIVE WEBSITE AUDIT (use these — do not invent site quality):
+- HTTPS: ${audit.https}
+- Title: ${audit.title ?? "missing"}
+- Meta description: ${audit.metaDescription ? "present" : "missing"}
+- H1 count: ${audit.h1Count}
+- Word count: ${audit.wordCount}
+- Viewport: ${audit.hasViewport}
+- Canonical: ${audit.hasCanonical}
+- Open Graph: ${audit.hasOpenGraph}
+- JSON-LD / LocalBusiness: ${audit.hasJsonLd} / ${audit.hasLocalBusinessSchema}
+- Phone on page: ${audit.hasPhoneOnPage}
+- Contact form: ${audit.hasContactForm}
+- Blog/news hint: ${audit.hasBlogHint}
+- Measured websiteQualityScore: ${audit.websiteQualityScore}
+- Measured seoOpportunityScore: ${audit.seoOpportunityScore}
+`
+        : hasWebsite
+          ? "LIVE WEBSITE AUDIT: URL listed but page did not load."
+          : "LIVE WEBSITE AUDIT: no website listed.";
+
     const work = generateObject({
       model: openai("gpt-4o-mini"),
       schema: qualificationSchema,
@@ -225,6 +297,7 @@ Google rating: ${place.rating ?? "unknown"}
 Google review count: ${place.reviewCount ?? 0}
 Website URL: ${place.website ?? "none"}
 Has website listed: ${hasWebsite}
+${liveBlock}
 
 Rules for revenueRangeEstimate (OPTIONAL — omit when uncertain):
 - Only include when you can reasonably infer annual revenue for THIS trade + market size (reviews, rating, website).
@@ -235,16 +308,15 @@ Rules for revenueRangeEstimate (OPTIONAL — omit when uncertain):
 - Never invent exact dollar figures; ranges only. Be conservative.
 
 Scores (0–100):
-- websiteQualityScore: presence + likely sophistication from URL/name (no site ≈ 15–35).
-- marketingOpportunityScore: how much they need agency help (weaker marketing online = higher).
-- ppcOpportunityScore: paid ads upside for this trade/geo.
-- seoOpportunityScore: organic / local SEO upside.
+- websiteQualityScore / seoOpportunityScore / marketingOpportunityScore / ppcOpportunityScore:
+  When a LIVE WEBSITE AUDIT is present, COPY the measured websiteQualityScore and seoOpportunityScore exactly.
+  Only invent those when no live audit exists.
 - leadScore: BASE outreach priority from Google signals ONLY (rating, reviews, website listed).
   Cap leadScore at 70 here. Do NOT give 90–100 — final score is computed later from
   LinkedIn + social + owner + email completeness. A strong 4.8★ / 200-review business with a site ≈ 60–70.
 - qualityTier: provisional from your leadScore (hot 75+, warm 50–74, nurture <50).
 
-outreachAngle: one concrete, specific sentence an SDR could use (no fluff).
+outreachAngle: one concrete, specific sentence an SDR could use; prefer citing live audit gaps when present.
 serviceCategory: normalize to the trade (e.g. "HVAC", "Roofing").`,
     });
 
@@ -254,23 +326,25 @@ serviceCategory: normalize to the trade (e.g. "HVAC", "Roofing").`,
         setTimeout(() => resolve({ ok: false }), timeoutMs),
       ),
     ]);
-    if (!raced.ok) return ruleBasedQualification(place, industry, hasWebsite);
+    if (!raced.ok) {
+      return withAudit(ruleBasedQualification(place, industry, hasWebsite));
+    }
     const revenue = raced.object.revenueRangeEstimate?.trim() || null;
     // AI must not invent perfect scores before enrichment
     const cappedBase = Math.min(70, Math.round(raced.object.leadScore));
-    return {
+    return withAudit({
       ...raced.object,
       leadScore: cappedBase,
       qualityTier: tierFromScore(cappedBase),
       revenueRangeEstimate: revenue,
       source: "ai",
-    };
+    });
   } catch (err) {
     console.error(
       "[qualifyLead] OpenAI failed — falling back to rules:",
       err instanceof Error ? err.message : err,
     );
-    return ruleBasedQualification(place, industry, hasWebsite);
+    return withAudit(ruleBasedQualification(place, industry, hasWebsite));
   }
 }
 

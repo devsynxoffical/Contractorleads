@@ -12,6 +12,7 @@ import {
   planFromPriceId,
   type StripeCheckoutPlan,
 } from "@/lib/stripe";
+import { CREDIT_COSTS } from "@/lib/constants";
 
 const ACTIVE_STATUSES = new Set(["active", "trialing"]);
 const ABANDONED_EMAIL_TYPE = "checkout_abandoned_email";
@@ -148,7 +149,9 @@ export async function syncUserSubscription(opts: {
     const monthlyCredits =
       PLAN_MONTHLY_CREDITS[plan as StripeCheckoutPlan] ?? null;
     const monthlyLeads =
-      monthlyCredits != null ? Math.round(monthlyCredits / 1.33) : null;
+      monthlyCredits != null
+        ? Math.round(monthlyCredits / CREDIT_COSTS.lead)
+        : null;
     try {
       await sendPurchaseConfirmationEmail({
         userId: opts.userId,

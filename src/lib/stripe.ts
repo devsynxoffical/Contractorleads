@@ -43,11 +43,11 @@ export function isStripeCheckoutPlan(
   return (STRIPE_CHECKOUT_PLANS as readonly string[]).includes(plan);
 }
 
-/** Monthly credit allotment = marketing leads × 1.33 */
+/** Monthly credit allotment = leads included (1 credit per lead). */
 export const PLAN_MONTHLY_CREDITS: Record<StripeCheckoutPlan, number> = {
-  starter: 1330,
-  growth: 9975,
-  agency: 26600,
+  starter: 500,
+  growth: 2000,
+  agency: 5000,
 };
 
 export async function priceIdForPlan(

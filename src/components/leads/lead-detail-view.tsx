@@ -1414,6 +1414,10 @@ export function LeadDetailView({
           <Card>
             <CardHeader>
               <CardTitle>AI qualification engine</CardTitle>
+              <p className="text-[12px] text-ink-muted">
+                Website &amp; SEO scores come from a live homepage audit (title,
+                meta, schema, content, forms) — not guesses from review count.
+              </p>
             </CardHeader>
             <CardContent className="space-y-4">
               {lead.outreachAngle && (

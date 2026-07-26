@@ -8,6 +8,7 @@ import {
 } from "./website-people";
 import { searchFacebookPage } from "./facebook";
 import { scrapeWebsiteSocialPack } from "./website-social-pack";
+import { emptyWebsiteAudit } from "./website-audit";
 import { matchYelpBusiness } from "./yelp";
 import { mapPool } from "@/lib/utils/async-pool";
 import type { PlaceResult } from "./google-places";
@@ -223,6 +224,7 @@ async function enrichAndPersistPlace(opts: {
     youtube: null as string | null,
     tiktok: null as string | null,
     pagesChecked: [] as string[],
+    audit: emptyWebsiteAudit(),
   };
 
   const { discoverSocialProfiles } = await import("./web-search");
@@ -295,7 +297,8 @@ async function enrichAndPersistPlace(opts: {
           ),
       qualifyLead({ ...place, website }, params.industry, Boolean(website), {
         preferRules,
-        timeoutMs: 1,
+        timeoutMs: preferRules ? 1 : 8000,
+        websiteAudit: pack.audit,
       }),
       !(pack.facebook || fromWeb.facebook)
         ? withTimeout(searchFacebookPage(place.name), 2500, null)
@@ -328,9 +331,7 @@ async function enrichAndPersistPlace(opts: {
 
   if (qualification.leadScore < 25) return "skipped-score";
 
-  const websiteQualityScore = website
-    ? Math.min(100, Math.round(qualification.websiteQualityScore ?? 40))
-    : qualification.websiteQualityScore;
+  const websiteQualityScore = qualification.websiteQualityScore;
 
   const existingLead = place.mapsUrl
     ? await prisma.lead.findFirst({

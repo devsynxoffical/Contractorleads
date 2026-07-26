@@ -43,7 +43,7 @@ export default function AdminCustomersPage() {
     ownerEmail: "",
     ownerPhone: "",
     plan: "starter",
-    creditsRemaining: 13.3,
+    creditsRemaining: 10,
   });
   const [message, setMessage] = useState<string | null>(null);
 
@@ -111,7 +111,7 @@ export default function AdminCustomersPage() {
       ownerEmail: "",
       ownerPhone: "",
       plan: "starter",
-      creditsRemaining: 13.3,
+      creditsRemaining: 10,
     });
     setMessage(`Created ${data.customer.email}`);
     load();

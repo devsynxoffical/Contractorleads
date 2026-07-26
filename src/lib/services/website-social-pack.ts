@@ -4,6 +4,11 @@ import {
   normalizeLinkedInCompanyUrl,
   normalizeLinkedInProfileUrl,
 } from "./linkedin";
+import {
+  auditHomepageHtml,
+  emptyWebsiteAudit,
+  type WebsiteAudit,
+} from "./website-audit";
 
 export type WebsiteSocialPack = {
   linkedinCompany: string | null;
@@ -13,6 +18,8 @@ export type WebsiteSocialPack = {
   youtube: string | null;
   tiktok: string | null;
   pagesChecked: string[];
+  /** Live homepage audit used for qualification scores. */
+  audit: WebsiteAudit;
 };
 
 const USER_AGENT =
@@ -29,6 +36,7 @@ const EMPTY: WebsiteSocialPack = {
   youtube: null,
   tiktok: null,
   pagesChecked: [],
+  audit: emptyWebsiteAudit(),
 };
 
 async function fetchHtml(url: string): Promise<string | null> {
@@ -241,7 +249,8 @@ export async function scrapeWebsiteSocialPack(
   if (!homeHtml) return { ...EMPTY, pagesChecked: [homepage] };
 
   const home = extractFromHtml(homeHtml, homepage);
-  const pack = {
+  const audit = auditHomepageHtml(homeHtml, homepage);
+  const pack: WebsiteSocialPack = {
     linkedinCompany: home.linkedinCompany[0] ?? null,
     linkedinOwner: home.linkedinOwner[0] ?? null,
     facebook: home.facebook[0] ?? null,
@@ -249,6 +258,7 @@ export async function scrapeWebsiteSocialPack(
     youtube: home.youtube[0] ?? null,
     tiktok: home.tiktok[0] ?? null,
     pagesChecked: [homepage],
+    audit,
   };
 
   const hasLi = Boolean(pack.linkedinCompany || pack.linkedinOwner);

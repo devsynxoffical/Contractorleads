@@ -256,7 +256,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
       },
       {
         heading: "Step 4 — Result size and credits",
-        body: "You can only generate as many leads as your credit balance allows (1.33 credits ≈ 1 lead slot). Unexported leads also count against that limit. Viewing is free; export spends credits. Example: 100 credits ≈ 75 leads — you cannot generate 200 until you export or buy more.",
+        body: "You can only generate as many leads as your credit balance allows (1 credit ≈ 1 lead). Unexported leads also count against that limit. Viewing is free; export spends credits. Example: 100 credits ≈ 100 leads.",
         bullets: [
           "Credits are spent on returned leads, not on empty curiosity clicks",
           "Re-running the same search again spends credits again — save keepers instead",
@@ -569,7 +569,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
         heading: "Credit costs",
         body: "Credits power search and AI. Typical costs:",
         bullets: [
-          "Lead Finder: capped by credit lead limit; export 1.33 credits per lead",
+          "Lead Finder: capped by credit lead limit; 1 credit per lead returned",
           "Ask Expert / AI assistant: about 1.59 credits per use",
         ],
         tip: "Product how-tos in Academy and the support bot do not replace Ask Expert for strategy — and they do not burn Ask Expert credits the same way.",
@@ -965,7 +965,7 @@ export const ACADEMY_FAQS: AcademyFaq[] = [
     category: "billing",
     question: "How many credits does a search cost?",
     answer:
-      "Lead Finder generation is capped by your remaining credits (and unexported leads already in your account). Viewing is free. Export costs 1.33 credits per lead. Ask Expert uses about 1.59 credits per request. Check Plans & Billing for your balance.",
+      "Lead Finder generation is capped by your remaining credits (and unexported leads already in your account). Viewing is free. Generation/export costs 1 credit per lead. Ask Expert uses about 2 credits per request. Check Plans & Billing for your balance.",
     relatedSlugs: ["plans-credits-billing", "five-mistakes-that-waste-credits"],
   },
   {
