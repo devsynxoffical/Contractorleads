@@ -13,7 +13,7 @@ import {
   assertSearchRateLimit,
   getLeadGenerationCapacity,
   leadLimitPayload,
-  redactLeadsForUser,
+  unlockLeads,
 } from "@/lib/lead-access";
 import { CREDIT_COSTS } from "@/lib/constants";
 
@@ -242,38 +242,101 @@ export async function handlePublicSearch(
       targetLeadCount,
     });
 
+    let billed = {
+      charged: 0,
+      creditsRemaining: null as number | null,
+      unlockedIds: [] as string[],
+      newlyUnlocked: [] as string[],
+      skippedForCredits: 0,
+    };
+    if (result.leads.length > 0) {
+      try {
+        billed = await unlockLeads({
+          userId: integration.user.id,
+          leadIds: result.leads.map((l) => l.id),
+          action: "lead_generate",
+          allowPartial: true,
+        });
+        if (
+          billed.newlyUnlocked.length === 0 &&
+          billed.charged === 0 &&
+          billed.unlockedIds.length === 0
+        ) {
+          return jsonWithCors(
+            {
+              error:
+                "Not enough credits to bill the leads that were found. Purchase more on Billing.",
+              code: "INSUFFICIENT_CREDITS",
+              search: result.search,
+              leadsFound: result.leads.length,
+            },
+            { status: 402 },
+          );
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "";
+        if (msg === "INSUFFICIENT_CREDITS") {
+          return jsonWithCors(
+            {
+              error:
+                "Not enough credits to bill the leads that were found. Purchase more on Billing.",
+              code: "INSUFFICIENT_CREDITS",
+              search: result.search,
+              leadsFound: result.leads.length,
+            },
+            { status: 402 },
+          );
+        }
+        throw err;
+      }
+    }
+
+    const unlockedSet = new Set(billed.unlockedIds);
+    const leadsBilled = billed.newlyUnlocked.length;
+
     await logActivity(
       integration.user.id,
       "api_search",
-      `${kind.toUpperCase()} search generated ${result.leads.length} leads`,
+      `${kind.toUpperCase()} search generated ${result.leads.length} leads${
+        billed.charged > 0 ? ` (${billed.charged} credits)` : ""
+      }`,
       {
         searchId: result.search.id,
         kind,
         apiUsed: quota.used,
         apiLimit: quota.limit,
+        charged: billed.charged,
+        leadsReturned: result.leads.length,
+        leadsBilled,
+        skippedForCredits: billed.skippedForCredits,
       },
     );
 
-    const redacted = await redactLeadsForUser(
-      integration.user.id,
-      result.leads,
-    );
+    const unlocked = result.leads.map((lead) => ({
+      ...lead,
+      unlocked: unlockedSet.has(lead.id),
+    }));
 
     return jsonWithCors({
       ok: true,
       kind,
       search: result.search,
-      leads: redacted,
+      leads: unlocked,
+      creditsRemaining: billed.creditsRemaining,
       capacity: await getLeadGenerationCapacity(integration.user.id),
       meta: {
         ...result.meta,
         requestedLeadCount: resolved.criteria.targetLeadCount,
         targetLeadCount,
+        leadsReturned: result.leads.length,
+        leadsBilled,
+        skippedForCredits: billed.skippedForCredits,
         cappedByLeadLimit: targetLeadCount < resolved.criteria.targetLeadCount,
         billing: {
-          searchCharged: 0,
-          exportCostPerLead: CREDIT_COSTS.lead,
-          note: "Generation is capped by remaining lead capacity. Export spends 1.33 credits per lead.",
+          searchCharged: billed.charged,
+          leadsBilled,
+          costPerLead: CREDIT_COSTS.lead,
+          note: `Charged for ${leadsBilled} lead${leadsBilled === 1 ? "" : "s"} returned (${CREDIT_COSTS.lead} credits each). Re-export is free.`,
         },
       },
       quota: { used: quota.used, limit: quota.limit },

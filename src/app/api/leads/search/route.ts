@@ -9,6 +9,7 @@ import {
   assertSearchRateLimit,
   getLeadGenerationCapacity,
   leadLimitPayload,
+  unlockLeads,
 } from "@/lib/lead-access";
 import { CREDIT_COSTS } from "@/lib/constants";
 
@@ -88,6 +89,64 @@ export async function POST(request: Request) {
       targetLeadCount,
     });
 
+    // Bill only for leads actually returned (e.g. request 50 → get 48 → charge 48).
+    // allowPartial covers rare concurrent races without double-billing.
+    let billedCharged = 0;
+    let billedCreditsRemaining: number | null = null;
+    let unlockedIds = new Set<string>();
+    let leadsBilled = 0;
+    let skippedForCredits = 0;
+    if (result.leads.length > 0) {
+      try {
+        const billed = await unlockLeads({
+          userId: user.id,
+          leadIds: result.leads.map((l) => l.id),
+          action: "lead_generate",
+          allowPartial: true,
+        });
+        billedCharged = billed.charged;
+        billedCreditsRemaining = billed.creditsRemaining;
+        unlockedIds = new Set(billed.unlockedIds);
+        leadsBilled = billed.newlyUnlocked.length;
+        skippedForCredits = billed.skippedForCredits;
+
+        // Zero affordable slots (balance race) — unlockLeads throws; if it
+        // returned empty newlyUnlocked with no prior unlocks, treat as fail.
+        if (
+          billed.newlyUnlocked.length === 0 &&
+          billed.unlockedIds.length === 0
+        ) {
+          return NextResponse.json(
+            {
+              error:
+                "Not enough credits to bill the leads that were found. Purchase more on Billing, then export them.",
+              code: "INSUFFICIENT_CREDITS",
+              search: result.search,
+              leadsFound: result.leads.length,
+              upgradeUrl: "/billing",
+            },
+            { status: 402 },
+          );
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "";
+        if (msg === "INSUFFICIENT_CREDITS") {
+          return NextResponse.json(
+            {
+              error:
+                "Not enough credits to bill the leads that were found. Purchase more on Billing, then export them.",
+              code: "INSUFFICIENT_CREDITS",
+              search: result.search,
+              leadsFound: result.leads.length,
+              upgradeUrl: "/billing",
+            },
+            { status: 402 },
+          );
+        }
+        throw err;
+      }
+    }
+
     const filterNote =
       result.meta.requireSocialPresence && result.meta.skippedNoSocial > 0
         ? ` (${result.meta.skippedNoSocial} skipped — missing LinkedIn, social, or owner)`
@@ -95,14 +154,25 @@ export async function POST(request: Request) {
     const capNote = capped
       ? ` (capped to ${targetLeadCount} by lead limit)`
       : "";
+    const billNote =
+      billedCharged > 0
+        ? ` · ${billedCharged} credits for ${leadsBilled} lead${leadsBilled === 1 ? "" : "s"}`
+        : "";
 
     await logActivity(
       user.id,
       "search",
       `Found ${result.leads.length} leads for ${industry} in ${
         locationScope === "country" ? country : state || city || country
-      }${filterNote}${capNote}`,
-      { searchId: result.search.id },
+      }${filterNote}${capNote}${billNote}`,
+      {
+        searchId: result.search.id,
+        charged: billedCharged,
+        leadsReturned: result.leads.length,
+        leadsBilled,
+        skippedForCredits,
+        requestedLeadCount: requestedCount,
+      },
     );
 
     const hotCount = result.leads.filter((l) => l.qualityTier === "hot").length;
@@ -133,23 +203,27 @@ export async function POST(request: Request) {
 
     const redacted = result.leads.map((lead) => ({
       ...lead,
-      unlocked: true,
+      unlocked: unlockedIds.has(lead.id),
     }));
 
     return NextResponse.json({
       search: result.search,
       leads: redacted,
-      creditsRemaining: freshCapacity.balance,
+      creditsRemaining: billedCreditsRemaining ?? freshCapacity.balance,
       capacity: freshCapacity,
       meta: {
         ...result.meta,
         requestedLeadCount: requestedCount,
         targetLeadCount,
+        leadsReturned: result.leads.length,
+        leadsBilled,
+        skippedForCredits,
         cappedByLeadLimit: capped,
         billing: {
-          searchCharged: 0,
-          exportCostPerLead: CREDIT_COSTS.lead,
-          note: "You can generate up to your remaining lead limit. Viewing is free; export spends 1.33 credits per lead.",
+          searchCharged: billedCharged,
+          leadsBilled,
+          costPerLead: CREDIT_COSTS.lead,
+          note: `Charged for ${leadsBilled} lead${leadsBilled === 1 ? "" : "s"} returned (${CREDIT_COSTS.lead} credits each). Re-export is free.`,
         },
       },
     });

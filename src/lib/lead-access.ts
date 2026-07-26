@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { CREDIT_COSTS } from "@/lib/constants";
-import { deductCredits, logActivity } from "@/lib/credits";
+import { roundCredits } from "@/lib/credits";
 
 const LOCKED = "••••";
 
@@ -79,7 +79,6 @@ export function redactLead<T extends Record<string, unknown>>(
     linkedinOwnerUrl: null,
     youtube: null,
     facebookAdsData: null,
-    // Keep scores / city / business name for browsing
   } as T & { unlocked: boolean };
 }
 
@@ -96,15 +95,32 @@ export async function redactLeadsForUser<T extends { id: string }>(
   );
 }
 
+/**
+ * Charge + unlock leads in one atomic transaction.
+ * - Locks the user row so concurrent generate/export cannot double-bill.
+ * - Re-checks already-unlocked leads inside the lock.
+ * - Bills only the leads that still need unlocking (actual count).
+ * - With allowPartial, unlocks as many as the balance covers instead of failing.
+ */
 export async function unlockLeads(opts: {
   userId: string;
   leadIds: string[];
   /** Require ownership via search or saved */
   assertOwned?: boolean;
+  /** Ledger / activity action — default lead_export */
+  action?: "lead_export" | "lead_generate";
+  /** Unlock as many as balance allows (used by Lead Finder generate) */
+  allowPartial?: boolean;
 }) {
   const uniqueIds = [...new Set(opts.leadIds.filter(Boolean))];
   if (!uniqueIds.length) {
-    return { unlockedIds: [] as string[], charged: 0, creditsRemaining: null as number | null };
+    return {
+      unlockedIds: [] as string[],
+      charged: 0,
+      newlyUnlocked: [] as string[],
+      skippedForCredits: 0,
+      creditsRemaining: null as number | null,
+    };
   }
 
   let ownedIds = uniqueIds;
@@ -126,58 +142,111 @@ export async function unlockLeads(opts: {
     throw new Error("LEAD_NOT_FOUND");
   }
 
-  const already = await getUnlockedLeadIds(opts.userId, ownedIds);
-  const toUnlock = ownedIds.filter((id) => !already.has(id));
+  const action = opts.action ?? "lead_export";
+  const allowPartial = Boolean(opts.allowPartial);
 
-  if (!toUnlock.length) {
-    const user = await prisma.user.findUnique({
+  return prisma.$transaction(async (tx) => {
+    // Serialize all credit mutations for this user
+    await tx.$executeRaw`SELECT id FROM "User" WHERE id = ${opts.userId} FOR UPDATE`;
+
+    const user = await tx.user.findUnique({
       where: { id: opts.userId },
       select: { creditsRemaining: true },
     });
+    if (!user) throw new Error("USER_NOT_FOUND");
+
+    const alreadyRows = await tx.leadUnlock.findMany({
+      where: { userId: opts.userId, leadId: { in: ownedIds } },
+      select: { leadId: true },
+    });
+    const already = new Set(alreadyRows.map((r) => r.leadId));
+    let toUnlock = ownedIds.filter((id) => !already.has(id));
+
+    if (!toUnlock.length) {
+      return {
+        unlockedIds: ownedIds,
+        charged: 0,
+        newlyUnlocked: [] as string[],
+        skippedForCredits: 0,
+        creditsRemaining: roundCredits(user.creditsRemaining),
+      };
+    }
+
+    const maxAffordable = Math.max(
+      0,
+      Math.floor(user.creditsRemaining / CREDIT_COSTS.lead + 1e-9),
+    );
+
+    let skippedForCredits = 0;
+    if (toUnlock.length > maxAffordable) {
+      if (!allowPartial || maxAffordable <= 0) {
+        throw new Error("INSUFFICIENT_CREDITS");
+      }
+      skippedForCredits = toUnlock.length - maxAffordable;
+      toUnlock = toUnlock.slice(0, maxAffordable);
+    }
+
+    const cost = roundCredits(CREDIT_COSTS.lead * toUnlock.length);
+
+    const updated = await tx.user.updateMany({
+      where: {
+        id: opts.userId,
+        creditsRemaining: { gte: cost },
+      },
+      data: { creditsRemaining: { decrement: cost } },
+    });
+    if (updated.count !== 1) {
+      throw new Error("INSUFFICIENT_CREDITS");
+    }
+
+    await tx.leadUnlock.createMany({
+      data: toUnlock.map((leadId) => ({
+        userId: opts.userId,
+        leadId,
+        credits: CREDIT_COSTS.lead,
+      })),
+      skipDuplicates: true,
+    });
+
+    await tx.creditLedger.create({
+      data: {
+        userId: opts.userId,
+        amount: -cost,
+        action,
+        reference:
+          toUnlock.length === 1 ? toUnlock[0] : `${toUnlock.length}_leads`,
+      },
+    });
+
+    const fresh = await tx.user.findUnique({
+      where: { id: opts.userId },
+      select: { creditsRemaining: true },
+    });
+
+    await tx.activityLog.create({
+      data: {
+        userId: opts.userId,
+        type: action,
+        message:
+          action === "lead_generate"
+            ? `Generated ${toUnlock.length} lead${toUnlock.length === 1 ? "" : "s"} (${cost} credits)`
+            : `Exported / billed ${toUnlock.length} lead${toUnlock.length === 1 ? "" : "s"} (${cost} credits)`,
+        metadata: JSON.stringify({
+          leadIds: toUnlock,
+          cost,
+          skippedForCredits,
+        }),
+      },
+    });
+
     return {
-      unlockedIds: ownedIds,
-      charged: 0,
-      creditsRemaining: user?.creditsRemaining ?? null,
+      unlockedIds: [...already, ...toUnlock],
+      charged: cost,
+      newlyUnlocked: toUnlock,
+      skippedForCredits,
+      creditsRemaining: roundCredits(fresh?.creditsRemaining ?? 0),
     };
-  }
-
-  const cost =
-    Math.round(CREDIT_COSTS.lead * toUnlock.length * 100) / 100;
-
-  await deductCredits(
-    opts.userId,
-    cost,
-    "lead_export",
-    toUnlock.length === 1 ? toUnlock[0] : `${toUnlock.length}_leads`,
-  );
-
-  await prisma.leadUnlock.createMany({
-    data: toUnlock.map((leadId) => ({
-      userId: opts.userId,
-      leadId,
-      credits: CREDIT_COSTS.lead,
-    })),
-    skipDuplicates: true,
   });
-
-  await logActivity(
-    opts.userId,
-    "lead_export",
-    `Exported / billed ${toUnlock.length} lead${toUnlock.length === 1 ? "" : "s"} (${cost} credits)`,
-    { leadIds: toUnlock, cost },
-  );
-
-  const user = await prisma.user.findUnique({
-    where: { id: opts.userId },
-    select: { creditsRemaining: true },
-  });
-
-  return {
-    unlockedIds: [...already, ...toUnlock],
-    charged: cost,
-    newlyUnlocked: toUnlock,
-    creditsRemaining: user?.creditsRemaining ?? null,
-  };
 }
 
 /** Soft anti-scrape: limit how often a user can run Lead Finder. */
@@ -202,29 +271,29 @@ export function lockedContactPlaceholder() {
 
 export function insufficientCreditsPayload(needed: number, balance: number) {
   return {
-    error: `Insufficient credits to export. Export costs ${needed.toFixed(2)} credits (you have ${balance.toFixed(2)}). Purchase or upgrade a plan on Billing.`,
+    error: `Insufficient credits. Need ${roundCredits(needed).toFixed(2)} credits (you have ${roundCredits(balance).toFixed(2)}). Purchase or upgrade a plan on Billing.`,
     code: "INSUFFICIENT_CREDITS",
-    needed,
-    balance,
+    needed: roundCredits(needed),
+    balance: roundCredits(balance),
     upgradeUrl: "/billing",
   };
 }
 
-/** How many unpaid leads the user can still export with current balance. */
+/** How many unpaid leads the user can still generate/export with current balance. */
 export function maxExportableFromBalance(balance: number) {
   return Math.max(0, Math.floor(balance / CREDIT_COSTS.lead + 1e-9));
 }
 
 /**
- * Lead generation capacity: credit slots minus owned leads not yet exported/paid.
- * Prevents generating more inventory than the user can export with current credits.
+ * Lead generation capacity: credit slots minus owned leads not yet billed.
+ * Prevents generating more inventory than the user can pay for.
  */
 export async function getLeadGenerationCapacity(userId: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { creditsRemaining: true },
   });
-  const balance = user?.creditsRemaining ?? 0;
+  const balance = roundCredits(user?.creditsRemaining ?? 0);
   const creditSlots = maxExportableFromBalance(balance);
 
   const unpaidOwned = await prisma.lead.count({
@@ -255,7 +324,7 @@ export function leadLimitPayload(capacity: {
     error:
       capacity.available <= 0
         ? capacity.unpaidOwned > 0
-          ? `Lead limit reached. You have ${capacity.unpaidOwned} lead${capacity.unpaidOwned === 1 ? "" : "s"} waiting to export and ${capacity.balance.toFixed(2)} credits (~${capacity.creditSlots} export slots). Export existing leads or purchase more credits on Billing.`
+          ? `Lead limit reached. You have ${capacity.unpaidOwned} lead${capacity.unpaidOwned === 1 ? "" : "s"} waiting to be billed and ${capacity.balance.toFixed(2)} credits (~${capacity.creditSlots} slots). Export those leads or purchase more credits on Billing.`
           : `No lead capacity left. You have ${capacity.balance.toFixed(2)} credits. Purchase a plan on Billing to generate more leads.`
         : `You can generate at most ${capacity.available} more lead${capacity.available === 1 ? "" : "s"} with your current credits.`,
     code: "LEAD_LIMIT",

@@ -126,7 +126,7 @@ async function billAndSelectForExport<T extends { id: string }>(
           ...insufficientCreditsPayload(needed, balance),
           lockedCount: unpaid.length,
           maxExportable: 0,
-          tip: "Purchase credits on Billing, then export. Search and viewing stay free.",
+          tip: "Purchase credits on Billing, then export. Already-billed leads re-export free.",
         },
         { status: 402 },
       ),

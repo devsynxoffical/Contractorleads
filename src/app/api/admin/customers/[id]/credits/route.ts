@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { logActivity } from "@/lib/credits";
+import { adjustCredits, logActivity } from "@/lib/credits";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -28,31 +28,24 @@ export async function POST(request: Request, { params }: Params) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const next = Math.max(0, user.creditsRemaining + amount);
-  const updated = await prisma.$transaction(async (tx) => {
-    const u = await tx.user.update({
-      where: { id },
-      data: { creditsRemaining: next },
-    });
-    await tx.creditLedger.create({
-      data: {
-        userId: id,
-        amount,
-        action: reason,
-        reference: `admin:${admin.id}`,
-      },
-    });
-    return u;
-  });
+  try {
+    const creditsRemaining = await adjustCredits(
+      id,
+      amount,
+      reason,
+      `admin:${admin.id}`,
+    );
 
-  await logActivity(
-    admin.id,
-    "admin_credits",
-    `Adjusted credits for ${user.email} by ${amount}`,
-    { targetUserId: id, amount, reason },
-  );
+    await logActivity(
+      admin.id,
+      "admin_credits",
+      `Adjusted credits for ${user.email} by ${amount}`,
+      { targetUserId: id, amount, reason, creditsRemaining },
+    );
 
-  return NextResponse.json({
-    creditsRemaining: updated.creditsRemaining,
-  });
+    return NextResponse.json({ creditsRemaining });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Credit update failed";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
 }

@@ -339,7 +339,19 @@ export function LeadSearchForm() {
         setLeadCapacity(data.capacity.available);
       }
       setStage(4);
-      if (data.meta?.cappedByLeadLimit) {
+      const billed = data.meta?.billing?.searchCharged;
+      const returned = data.meta?.leadsReturned ?? data.leads?.length ?? 0;
+      const billedCount = data.meta?.leadsBilled ?? returned;
+      const requested = data.meta?.requestedLeadCount;
+      if (typeof billed === "number" && billed > 0) {
+        const shortfall =
+          typeof requested === "number" && requested > billedCount
+            ? ` Requested ${requested}, billed ${billedCount}.`
+            : "";
+        setFilterNote(
+          `Charged ${billed} credits for ${billedCount} lead${billedCount === 1 ? "" : "s"} (${data.meta.billing.costPerLead} each).${shortfall}`,
+        );
+      } else if (data.meta?.cappedByLeadLimit) {
         setFilterNote(
           `Requested ${data.meta.requestedLeadCount} leads — capped to ${data.meta.targetLeadCount} by your remaining lead limit. Export existing leads or buy credits to raise the cap.`,
         );
@@ -461,8 +473,8 @@ export function LeadSearchForm() {
         <div className="stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatChip label="Coverage" value="Tier 1" hint="US · CA · UK · AU · NZ" />
           <StatChip label="Industries" value="12" hint="Roofing → GCs" />
-          <StatChip label="Find" value="Free" hint="Up to your lead limit" />
-          <StatChip label="Export" value="1.33 credits" hint="Per lead downloaded" />
+          <StatChip label="Per lead" value="1.33 credits" hint="Only leads returned" />
+          <StatChip label="Re-export" value="Free" hint="Already billed leads" />
         </div>
       </div>
 
@@ -705,10 +717,10 @@ export function LeadSearchForm() {
                 </Select>
                 <p className="text-[11px] text-ink-muted">
                   {leadCapacity == null
-                    ? "Limited by your remaining credits (1.33 credits ≈ 1 exportable lead)."
+                    ? "Limited by your remaining credits (1.33 credits per lead returned)."
                     : leadCapacity <= 0
                       ? "Lead limit reached — export existing leads or purchase credits on Billing."
-                      : `You can generate up to ${leadCapacity} more lead${leadCapacity === 1 ? "" : "s"} with your current credits. Viewing is free; export spends credits.`}
+                      : `You can generate up to ${leadCapacity} more lead${leadCapacity === 1 ? "" : "s"}. You are only charged for leads actually returned.`}
                 </p>
               </div>
 

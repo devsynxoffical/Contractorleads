@@ -192,13 +192,13 @@ export function AdminShell({
             : "Admin";
 
   return (
-    <div className="admin-shell--hud app-shell--hud flex min-h-[100dvh]">
+    <div className="admin-shell--hud app-shell--hud flex h-[100dvh] overflow-hidden">
       <Suspense fallback={null}>
         <NavigationProgress />
       </Suspense>
 
-      <aside className="hud-shell-aside hidden w-[268px] shrink-0 flex-col lg:flex">
-        <div className="border-b border-brand-500/15 px-5 py-4">
+      <aside className="hud-shell-aside hidden h-full w-[268px] shrink-0 flex-col lg:flex">
+        <div className="shrink-0 border-b border-brand-500/15 px-5 py-4">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-500">
@@ -214,7 +214,7 @@ export function AdminShell({
             <ThemeToggle compact />
           </div>
         </div>
-        <nav className="flex-1 space-y-5 overflow-y-auto p-3">
+        <nav className="min-h-0 flex-1 space-y-5 overflow-y-auto p-3">
           {visibleSections.map((section) => (
             <div key={section.title}>
               <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-faint">
@@ -244,7 +244,7 @@ export function AdminShell({
             </div>
           ))}
         </nav>
-        <div className="space-y-1 border-t border-brand-500/15 p-3">
+        <div className="shrink-0 space-y-1 border-t border-brand-500/15 p-3">
           {(user.role === SUPER_ADMIN_ROLE || user.role === OWNER_ROLE) && (
             <Link
               href="/home"
@@ -269,19 +269,31 @@ export function AdminShell({
         </div>
       </aside>
 
-      <div className="relative flex min-w-0 flex-1 flex-col">
+      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
         <div className="hud-viewport-bg pointer-events-none absolute inset-0" />
 
-        <header className="hud-shell-header relative z-[1] flex items-center gap-3 px-4 py-3 lg:hidden">
+        <header className="hud-shell-header relative z-[1] flex shrink-0 items-center gap-3 px-4 py-3 lg:hidden">
           <HiOutlineClipboardDocumentList className="h-5 w-5 text-brand-500" />
           <div className="min-w-0 flex-1">
             <p className="text-[13px] font-semibold text-ink">{roleLabel}</p>
             <p className="truncate text-[11px] text-ink-muted">{user.email}</p>
           </div>
           <ThemeToggle compact />
+          <button
+            type="button"
+            onClick={async () => {
+              startNavigationProgress();
+              await fetch("/api/admin/auth/logout", { method: "POST" });
+              router.push("/admin/login");
+              router.refresh();
+            }}
+            className="rounded-lg px-2 py-1.5 text-[11px] font-semibold text-ink-muted hover:bg-brand-50 hover:text-ink"
+          >
+            Sign out
+          </button>
         </header>
 
-        <div className="scrollbar-thin relative z-[1] flex gap-2 overflow-x-auto border-b border-brand-500/10 bg-[var(--surface)] px-3 py-2 lg:hidden">
+        <div className="scrollbar-thin relative z-[1] flex shrink-0 gap-2 overflow-x-auto border-b border-brand-500/10 bg-[var(--surface)] px-3 py-2 lg:hidden">
           {flatNav.map((item) => (
             <Link
               key={item.href}
@@ -298,7 +310,7 @@ export function AdminShell({
           ))}
         </div>
 
-        <main className="hud-shell-main scrollbar-thin relative z-[1] flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <main className="hud-shell-main scrollbar-thin relative z-[1] min-h-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           <AdminRouteGuard user={user}>{children}</AdminRouteGuard>
         </main>
       </div>
