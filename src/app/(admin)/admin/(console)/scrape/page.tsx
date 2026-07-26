@@ -169,7 +169,7 @@ export default function AdminScrapePage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Scrape failed");
 
-      const scraped: ScrapeLead[] = (data.leads ?? []).slice().sort((a, b) => {
+      const scraped = ((data.leads ?? []) as ScrapeLead[]).slice().sort((a, b) => {
         const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
         return tb - ta;
