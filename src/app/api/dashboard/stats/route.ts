@@ -113,6 +113,7 @@ export async function GET() {
         mcpEnabled: true,
         ssoEnabled: true,
         apiKeyLast4: true,
+        facebookUserId: true,
       },
     }),
     prisma.savedLead.groupBy({
@@ -171,8 +172,11 @@ export async function GET() {
   }
 
   const facebookConfigured = Boolean(
-    process.env.FACEBOOK_ACCESS_TOKEN || process.env.META_ACCESS_TOKEN,
+    process.env.FACEBOOK_ACCESS_TOKEN ||
+      process.env.META_ACCESS_TOKEN ||
+      freshUser?.facebookUserId,
   );
+  const facebookConnected = Boolean(freshUser?.facebookUserId);
   const placesConfigured = Boolean(process.env.GOOGLE_PLACES_API_KEY);
   const yelpConfigured = Boolean(process.env.YELP_FUSION_API_KEY);
   const linkedinConfigured = Boolean(
@@ -271,6 +275,7 @@ export async function GET() {
       },
       facebook: {
         configured: facebookConfigured,
+        connected: facebookConnected,
         customAudience: false,
       },
       dataSources: {

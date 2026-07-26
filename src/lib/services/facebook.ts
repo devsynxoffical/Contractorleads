@@ -19,7 +19,9 @@ export type FacebookAdsResult = {
 };
 
 function getMetaAccessToken(): string | null {
-  const token = process.env.META_ACCESS_TOKEN;
+  const token =
+    process.env.META_ACCESS_TOKEN?.trim() ||
+    process.env.FACEBOOK_ACCESS_TOKEN?.trim();
   if (token) return token;
 
   const appId = process.env.META_APP_ID || process.env.FACEBOOK_APP_ID;
@@ -27,6 +29,24 @@ function getMetaAccessToken(): string | null {
     process.env.META_APP_SECRET || process.env.FACEBOOK_APP_SECRET;
   if (appId && appSecret) return `${appId}|${appSecret}`;
   return null;
+}
+
+/** True when publisher platforms include Stories placements. */
+export function adHasStoryPlacement(platforms: string[] | null | undefined): boolean {
+  if (!platforms?.length) return false;
+  return platforms.some((p) => /stor/i.test(String(p)));
+}
+
+export function classifyAdPlacements(platforms: string[] | null | undefined) {
+  const list = Array.isArray(platforms) ? platforms.map((p) => String(p)) : [];
+  const normalized = list.map((p) => p.toLowerCase());
+  return {
+    hasStory: adHasStoryPlacement(list),
+    hasFeed: normalized.some((p) =>
+      /facebook|instagram|messenger|audience/.test(p),
+    ),
+    labels: list,
+  };
 }
 
 export function buildAdsLibraryUrl(businessName: string, country = "US") {
@@ -86,10 +106,11 @@ export async function searchFacebookPage(
 
 export async function searchFacebookAdsLibrary(
   businessName: string,
-  country = "US"
+  country = "US",
+  opts?: { accessToken?: string | null },
 ): Promise<FacebookAdsResult> {
   const searchUrl = buildAdsLibraryUrl(businessName, country);
-  const token = getMetaAccessToken();
+  const token = opts?.accessToken?.trim() || getMetaAccessToken();
 
   if (!token) {
     return {
@@ -98,7 +119,7 @@ export async function searchFacebookAdsLibrary(
       searchUrl,
       source: "link",
       message:
-        "Add META_APP_ID and META_APP_SECRET to .env for live ad data. Open the link below to browse the public Ads Library.",
+        "Connect your Facebook profile in the FB section, or add META_APP_ID / META_APP_SECRET for live ad data. You can still open the public Ads Library link below.",
     };
   }
 

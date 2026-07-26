@@ -16,6 +16,7 @@ import {
 } from "react-icons/hi2";
 import { SiZapier } from "react-icons/si";
 import { FaLinkedinIn } from "react-icons/fa6";
+import { FaFacebook } from "react-icons/fa";
 import { cn } from "@/lib/utils";
 import { HudPanel } from "@/components/dashboard/hud-panel";
 
@@ -37,7 +38,7 @@ export type DashboardIntegrations = {
     ssoEnabled: boolean;
     hasKey: boolean;
   };
-  facebook: { configured: boolean; customAudience: boolean };
+  facebook: { configured: boolean; connected?: boolean; customAudience: boolean };
   dataSources: { googlePlaces: boolean; yelp: boolean; linkedin: boolean };
   exports: { csv: boolean; excel: boolean; pdf: boolean };
   onboardingComplete: boolean;
@@ -275,6 +276,27 @@ export function DashboardCrmIntegrations({
             status={i?.ghl?.connected ? "ready" : i?.ghl?.hasUrl ? "partial" : "setup"}
             statusLabel={i?.ghl?.connected ? "Live" : i?.ghl?.hasUrl ? "Paused" : "Setup"}
             icon={HiOutlineLink}
+          />
+          <IntegrationCard
+            href="/facebook"
+            title="Facebook sync"
+            body="Connect your profile and review lead Meta ads + Stories placements in one place."
+            status={
+              i?.facebook?.connected
+                ? "ready"
+                : i?.facebook?.configured
+                  ? "partial"
+                  : "setup"
+            }
+            statusLabel={
+              i?.facebook?.connected
+                ? "Connected"
+                : i?.facebook?.configured
+                  ? "Platform ready"
+                  : "Connect"
+            }
+            icon={FaFacebook}
+            brand="#1877F2"
           />
           <IntegrationCard
             href="/leads"

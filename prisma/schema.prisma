@@ -63,6 +63,13 @@ model User {
   apiUsageResetAt     DateTime?
   apiKeyHash          String?
   apiKeyLast4         String?
+  /// Facebook profile sync (OAuth) for Ads / FB hub
+  facebookUserId      String?
+  facebookName        String?
+  facebookPictureUrl  String?
+  facebookAccessTokenEnc String?
+  facebookTokenExpiresAt DateTime?
+  facebookConnectedAt DateTime?
   /// Product / scrape notification emails (CAN-SPAM opt-in)
   emailMarketingOptIn Boolean  @default(true)
   /// Unique shareable referral / affiliate code

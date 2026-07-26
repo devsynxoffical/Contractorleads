@@ -36,6 +36,7 @@ import {
   HiOutlineWrenchScrewdriver,
   HiOutlineXMark,
 } from "react-icons/hi2";
+import { FaFacebook } from "react-icons/fa";
 import { cn, formatCredits } from "@/lib/utils";
 import type { SessionUser } from "@/lib/session-user";
 import { TopHeader } from "@/components/layout/top-header";
@@ -94,6 +95,7 @@ function buildSections(user: SessionUser): NavSection[] {
       title: "Setup",
       items: [
         { href: "/setup", label: "Setup hub", icon: HiOutlineWrenchScrewdriver },
+        { href: "/facebook", label: "Facebook", icon: FaFacebook },
         { href: "/inbox", label: "Email inbox", icon: HiOutlineInbox },
         { href: "/sms", label: "SMS", icon: HiOutlineDevicePhoneMobile },
       ],
