@@ -102,7 +102,12 @@ function resolveCtas(
   };
 }
 
-export function MarketingPricingSection() {
+export function MarketingPricingSection({
+  plans = MARKETING_PLANS as MarketingPlanCard[],
+}: {
+  /** Live prices from admin Plans & Entitlements (defaults to catalog). */
+  plans?: MarketingPlanCard[];
+}) {
   const [billing, setBilling] = useState<"monthly" | "annual">("annual");
   const [session, setSession] = useState<SessionState>({ status: "loading" });
 
@@ -128,7 +133,7 @@ export function MarketingPricingSection() {
 
   const currentPlanLabel =
     session.status === "authed"
-      ? MARKETING_PLANS.find((p) => p.id === session.plan)?.name ?? session.plan
+      ? plans.find((p) => p.id === session.plan)?.name ?? session.plan
       : null;
 
   return (
@@ -195,7 +200,7 @@ export function MarketingPricingSection() {
       </Reveal>
 
       <div className="mt-12 grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-4 xl:gap-3">
-        {MARKETING_PLANS.map((plan, i) => {
+        {plans.map((plan, i) => {
           const price =
             plan.priceMonthly == null
               ? null

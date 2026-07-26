@@ -308,3 +308,40 @@ export const MARKETING_PLANS: MarketingPlanCard[] = [
     ],
   },
 ] as const;
+
+const ANNUAL_DISCOUNT = 0.8;
+
+/** Overlay admin Plan Pricing onto marketing cards (homepage + /pricing). */
+export function withLivePlanPrices(
+  plans: readonly MarketingPlanCard[],
+  prices: Partial<Record<string, number>>,
+): MarketingPlanCard[] {
+  return plans.map((plan) => {
+    if (plan.custom || plan.id === "enterprise" || plan.priceMonthly == null) {
+      return { ...plan };
+    }
+    const live = prices[plan.id];
+    if (live == null || !Number.isFinite(live) || live < 0) {
+      return { ...plan };
+    }
+    const monthly = Math.round(live * 100) / 100;
+    const catalogMonthly = plan.priceMonthly;
+    const catalogAnnual = plan.priceAnnualMonthly;
+    const annual =
+      catalogAnnual != null && catalogMonthly > 0
+        ? Math.round(monthly * (catalogAnnual / catalogMonthly) * 100) / 100
+        : Math.round(monthly * ANNUAL_DISCOUNT * 100) / 100;
+    return {
+      ...plan,
+      priceMonthly: monthly,
+      priceAnnualMonthly: annual,
+    };
+  });
+}
+
+/** Server helper — same prices Super Admin edits under Plans & Entitlements. */
+export async function getMarketingPlansLive(): Promise<MarketingPlanCard[]> {
+  const { getPlanPriceMap } = await import("@/lib/plans");
+  const prices = await getPlanPriceMap();
+  return withLivePlanPrices(MARKETING_PLANS, prices);
+}

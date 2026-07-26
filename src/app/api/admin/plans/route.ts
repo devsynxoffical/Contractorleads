@@ -99,5 +99,11 @@ export async function PATCH(request: Request) {
   }
 
   const next = await savePlanPriceMap(prices as Record<string, number>);
+
+  const { revalidatePath } = await import("next/cache");
+  revalidatePath("/");
+  revalidatePath("/pricing");
+  revalidatePath("/billing");
+
   return NextResponse.json({ prices: next });
 }

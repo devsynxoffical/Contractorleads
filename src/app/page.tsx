@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { MarketingPage } from "@/components/marketing/marketing-page";
+import { getMarketingPlansLive } from "@/components/marketing/marketing-plans-data";
 import {
   JsonLd,
   faqPageJsonLd,
@@ -16,6 +17,7 @@ export const metadata: Metadata = buildMetadata({
 });
 
 export default async function RootPage() {
+  const plans = await getMarketingPlansLive();
   // Logged-in users can still visit the marketing homepage; header shows Dashboard.
   return (
     <>
@@ -23,7 +25,7 @@ export default async function RootPage() {
       <JsonLd data={websiteJsonLd()} />
       <JsonLd data={softwareApplicationJsonLd()} />
       <JsonLd data={faqPageJsonLd()} />
-      <MarketingPage />
+      <MarketingPage plans={plans} />
     </>
   );
 }

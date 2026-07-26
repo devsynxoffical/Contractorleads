@@ -78,7 +78,9 @@ export default function AdminPlansPage() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Save failed");
       setPrices(json.prices ?? prices);
-      setMessage("Plan prices saved. Referral commissions use these amounts.");
+      setMessage(
+        "Plan prices saved. Homepage, /pricing, Billing, and referral commissions now use these amounts.",
+      );
       await load();
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Save failed");
@@ -92,7 +94,7 @@ export default function AdminPlansPage() {
     <div>
       <AdminPageHeader
         title="Plans & Entitlements"
-        description="Monthly prices, credit allotments (1 credit = 1 lead), and feature entitlements. Same numbers power Billing for customers."
+        description="Monthly prices sync to the homepage, /pricing, and Billing. Credit allotments (1 credit = 1 lead) are shared with customers."
         actions={
           <div className="flex flex-wrap gap-2">
             <Button onClick={savePrices} loading={busy} disabled={busy}>
@@ -169,7 +171,7 @@ export default function AdminPlansPage() {
 
       <HudPanel
         title="Monthly pricing"
-        subtitle="These prices are the base for referral cash commissions"
+        subtitle="These prices appear on the homepage, /pricing, Billing, and referral commissions"
         className="mb-6"
       >
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">

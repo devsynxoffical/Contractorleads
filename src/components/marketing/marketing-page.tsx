@@ -78,6 +78,7 @@ import {
 import { MarketingTrialModals } from "./marketing-trial-modal";
 import { MarketingVisitTracker } from "./marketing-visit-tracker";
 import { MarketingPricingSection } from "./marketing-pricing-section";
+import type { MarketingPlanCard } from "./marketing-plans-data";
 import { MarketingAuthActions } from "./marketing-auth-actions";
 import { setMarketingLenis } from "./marketing-scroll";
 import Lenis from "lenis";
@@ -782,7 +783,7 @@ function AiSection() {
   );
 }
 
-function Pricing() {
+function Pricing({ plans }: { plans: MarketingPlanCard[] }) {
   return (
     <section
       id="pricing"
@@ -801,7 +802,7 @@ function Pricing() {
             calls and signing retainers — not before.
           </p>
         </Reveal>
-        <MarketingPricingSection />
+        <MarketingPricingSection plans={plans} />
       </div>
     </section>
   );
@@ -1093,7 +1094,11 @@ function StickyCta() {
   return <MarketingStickyCta />;
 }
 
-export function MarketingPage() {
+export function MarketingPage({
+  plans,
+}: {
+  plans: MarketingPlanCard[];
+}) {
   useEffect(() => {
     const lenis = new Lenis({
       smoothWheel: true,
@@ -1134,7 +1139,7 @@ export function MarketingPage() {
       <MarketingAutomationShowcase />
       <Integrations />
       <AiSection />
-      <Pricing />
+      <Pricing plans={plans} />
       <Faq />
       <FinalCta />
       <Footer />

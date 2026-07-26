@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { MarketingChrome, MarketingHero } from "@/components/marketing/marketing-chrome";
 import { MarketingPricingSection } from "@/components/marketing/marketing-pricing-section";
+import { getMarketingPlansLive } from "@/components/marketing/marketing-plans-data";
 import {
   JsonLd,
   breadcrumbJsonLd,
@@ -22,7 +23,9 @@ export const metadata: Metadata = buildMetadata({
   ],
 });
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const plans = await getMarketingPlansLive();
+
   return (
     <MarketingChrome>
       <JsonLd
@@ -49,7 +52,7 @@ export default function PricingPage() {
       </MarketingHero>
 
       <section className="mx-auto max-w-6xl px-5 pb-16 sm:px-8">
-        <MarketingPricingSection />
+        <MarketingPricingSection plans={plans} />
       </section>
     </MarketingChrome>
   );

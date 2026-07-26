@@ -2,7 +2,7 @@ import { getSessionUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import {
-  MARKETING_PLANS,
+  getMarketingPlansLive,
   formatPlanPrice,
   formatPricePerLead,
   pricePerLead,
@@ -163,6 +163,7 @@ export default async function BillingPage({
   const includedCount = FEATURE_ROWS.filter((f) => features[f.key]).length;
 
   const monthlyCredits = monthlyCreditsForPlan(current);
+  const plans = await getMarketingPlansLive();
   const checkoutMessage =
     params.checkout === "active"
       ? `You're now on ${planLabel(current)}${
@@ -319,7 +320,7 @@ export default async function BillingPage({
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {MARKETING_PLANS.map((plan) => {
+          {plans.map((plan) => {
             const active = plan.id === current;
             const perLead = pricePerLead(plan.priceMonthly, plan.leadsIncluded);
             const isEnterprise = plan.custom || plan.id === "enterprise";
