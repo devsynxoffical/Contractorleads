@@ -721,3 +721,36 @@ model MarketingVisitor {
   @@index([emailOptIn, lastSeenAt])
   @@index([convertedUserId])
 }
+
+/// Enterprise plan call bookings (pricing / billing “Book a call”).
+model EnterpriseBooking {
+  id          String   @id @default(cuid())
+  name        String
+  email       String
+  company     String?
+  phone       String?
+  message     String?
+  scheduledAt DateTime
+  timezone    String   @default("America/New_York")
+  status      String   @default("new")
+  source      String?
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  adminNotes  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([email])
+  @@index([status, scheduledAt])
+  @@index([scheduledAt])
+  @@index([createdAt])
+}
+
+/// Admin settings for enterprise booking notifications.
+model EnterpriseBookingConfig {
+  id          String   @id @default("default")
+  notifyEmail String   @default("hello@contractorleads.us")
+  enabled     Boolean  @default(true)
+  updatedAt   DateTime @updatedAt
+}

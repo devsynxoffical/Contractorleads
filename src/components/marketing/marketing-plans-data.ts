@@ -290,8 +290,8 @@ export const MARKETING_PLANS: MarketingPlanCard[] = [
     leadsIncluded: null,
     creditsLabel: "Unlimited leads",
     creditsDetail: "No lead cap · custom SLA & volume terms",
-    ctaLabel: "Talk to sales",
-    ctaHref: "mailto:hello@contractorleads.us",
+    ctaLabel: "Book a call",
+    ctaHref: "/enterprise/book",
     custom: true,
     features: [
       "Everything in Agency",

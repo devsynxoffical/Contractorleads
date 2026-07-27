@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { appBaseUrl } from "@/lib/email-brand";
 import {
   checkoutAbandonedEmailContent,
+  enterpriseBookingConfirmationEmail,
+  enterpriseBookingNotifyEmail,
   passwordResetEmailContent,
   paymentReceiptEmailContent,
   purchaseConfirmationEmailContent,
@@ -486,6 +488,57 @@ export async function sendCheckoutAbandonedEmail(opts: {
     unsubscribeUrl: unsub,
     tags: ["checkout-abandoned"],
   });
+}
+
+/** Confirmation to the prospect + internal alert to sales inbox. */
+export async function sendEnterpriseBookingEmails(opts: {
+  to: string;
+  notifyTo: string;
+  name: string;
+  company?: string | null;
+  phone?: string | null;
+  message?: string | null;
+  whenLabel: string;
+  source?: string | null;
+}) {
+  const confirm = enterpriseBookingConfirmationEmail({
+    name: opts.name,
+    whenLabel: opts.whenLabel,
+    company: opts.company,
+  });
+  const internal = enterpriseBookingNotifyEmail({
+    name: opts.name,
+    email: opts.to,
+    company: opts.company,
+    phone: opts.phone,
+    message: opts.message,
+    whenLabel: opts.whenLabel,
+    source: opts.source,
+  });
+
+  const [clientRes, teamRes] = await Promise.all([
+    sendEmail({
+      to: opts.to,
+      subject: `Enterprise call confirmed — ${opts.whenLabel}`,
+      html: confirm.html,
+      text: confirm.text,
+      tags: ["enterprise-booking-confirm"],
+    }),
+    sendEmail({
+      to: opts.notifyTo,
+      subject: `New Enterprise booking: ${opts.name} · ${opts.whenLabel}`,
+      html: internal.html,
+      text: internal.text,
+      tags: ["enterprise-booking-notify"],
+    }),
+  ]);
+
+  return {
+    clientOk: clientRes.ok,
+    teamOk: teamRes.ok,
+    clientError: clientRes.error,
+    teamError: teamRes.error,
+  };
 }
 
 export type { EmailTemplateKey };

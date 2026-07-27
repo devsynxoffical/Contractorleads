@@ -824,3 +824,91 @@ export function renderManagedTemplate(opts: {
     ].join("\n"),
   };
 }
+
+function detailRow(label: string, value: string) {
+  return `<tr>
+    <td style="padding:8px 0;font-family:${EMAIL_FONT};font-size:13px;color:${EMAIL_BRAND.faint};width:120px;vertical-align:top;">${esc(label)}</td>
+    <td style="padding:8px 0;font-family:${EMAIL_FONT};font-size:13px;color:${EMAIL_BRAND.ink};font-weight:600;">${esc(value)}</td>
+  </tr>`;
+}
+
+export function enterpriseBookingConfirmationEmail(opts: {
+  name: string;
+  whenLabel: string;
+  company?: string | null;
+}) {
+  const greeting = opts.name ? `Hi ${opts.name},` : "Hi,";
+  const bodyHtml = `
+    <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:${EMAIL_BRAND.muted};">
+      ${esc(greeting)} Your Enterprise strategy call with Contractor Leads is booked. We&apos;ll walk through your team size, volume, and how white-label or API access could fit.
+    </p>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:separate;border-radius:14px;border:1px solid ${EMAIL_BRAND.border};background:${EMAIL_BRAND.softBg};">
+      <tr><td style="padding:18px 20px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+          ${detailRow("When", opts.whenLabel)}
+          ${opts.company ? detailRow("Company", opts.company) : ""}
+        </table>
+      </td></tr>
+    </table>
+    <p style="margin:18px 0 0;font-size:13px;line-height:1.55;color:${EMAIL_BRAND.muted};">
+      Need to reschedule? Reply to this email or contact ${esc(EMAIL_BRAND.contactEmail)}.
+    </p>`;
+
+  return renderEmailShell({
+    preheader: `Your Enterprise call is booked for ${opts.whenLabel}.`,
+    heroTitle: "You're booked",
+    heroSubtitle: "Enterprise plan · strategy call confirmed",
+    bodyHtml,
+    secondaryHtml: `
+      <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:${EMAIL_BRAND.ink};">While you wait</p>
+      <p style="margin:0;font-size:13px;line-height:1.5;color:${EMAIL_BRAND.muted};">
+        Explore features and pricing on our site, or create a free account to see lead scoring in action.
+      </p>
+      ${ctaButton("View pricing", `${appBaseUrl()}/pricing`, { fullWidth: true })}`,
+  });
+}
+
+export function enterpriseBookingNotifyEmail(opts: {
+  name: string;
+  email: string;
+  company?: string | null;
+  phone?: string | null;
+  message?: string | null;
+  whenLabel: string;
+  source?: string | null;
+}) {
+  const bodyHtml = `
+    <p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:${EMAIL_BRAND.muted};">
+      A prospect booked an Enterprise strategy call from the marketing site.
+    </p>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:separate;border-radius:14px;border:1px solid ${EMAIL_BRAND.border};background:${EMAIL_BRAND.softBg};">
+      <tr><td style="padding:18px 20px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+          ${detailRow("Name", opts.name)}
+          ${detailRow("Email", opts.email)}
+          ${opts.company ? detailRow("Company", opts.company) : ""}
+          ${opts.phone ? detailRow("Phone", opts.phone) : ""}
+          ${detailRow("When", opts.whenLabel)}
+          ${opts.source ? detailRow("Source", opts.source) : ""}
+        </table>
+      </td></tr>
+    </table>
+    ${
+      opts.message
+        ? `<p style="margin:16px 0 0;font-size:13px;line-height:1.55;color:${EMAIL_BRAND.muted};"><strong style="color:${EMAIL_BRAND.ink};">Notes:</strong><br/>${esc(opts.message)}</p>`
+        : ""
+    }
+    <p style="margin:18px 0 0;font-size:13px;color:${EMAIL_BRAND.muted};">
+      Manage bookings in Admin → Site Leads → Enterprise bookings.
+    </p>`;
+
+  return renderEmailShell({
+    preheader: `New Enterprise booking: ${opts.name} · ${opts.whenLabel}`,
+    heroTitle: "New Enterprise booking",
+    heroSubtitle: opts.whenLabel,
+    bodyHtml,
+    secondaryHtml: ctaButton("Open admin", `${appBaseUrl()}/admin/site-leads`, {
+      fullWidth: true,
+    }),
+  });
+}

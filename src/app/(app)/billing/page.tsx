@@ -450,12 +450,12 @@ export default async function BillingPage({
 
                 <div className="mt-5">
                   {isEnterprise ? (
-                    <a
-                      href="mailto:hello@contractorleads.us"
+                    <Link
+                      href="/enterprise/book"
                       className="inline-flex h-9 w-full items-center justify-center rounded-lg border border-border bg-[var(--input-bg)] px-3 text-xs font-semibold text-ink hover:border-brand-200"
                     >
-                      Talk to sales
-                    </a>
+                      Book a call
+                    </Link>
                   ) : active ? (
                     <div className="flex h-9 w-full items-center justify-center rounded-lg border border-border/60 bg-[var(--input-bg)] text-xs font-semibold text-ink-muted">
                       Your current plan
