@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { HiOutlineCheckBadge, HiOutlineCreditCard } from "react-icons/hi2";
+import { HiOutlineCreditCard } from "react-icons/hi2";
 import { cn } from "@/lib/utils";
 import { usePrefersReducedMotion } from "./marketing-motion";
 
@@ -43,6 +43,10 @@ const PLAN_ACCENT: Record<FakePurchase["plan"], string> = {
   Enterprise: "text-amber-300",
 };
 
+/** Visible for 3s, then hidden ~10s before the next one. */
+const SHOW_MS = 3000;
+const GAP_MS = 10000;
+
 function pickNext(excludeId?: string): FakePurchase {
   const candidates = excludeId
     ? POOL.filter((_, i) => `p-${i}` !== excludeId)
@@ -51,12 +55,6 @@ function pickNext(excludeId?: string): FakePurchase {
   const row = candidates[idx] ?? POOL[0];
   const poolIndex = POOL.indexOf(row);
   return { ...row, id: `p-${poolIndex}-${Date.now()}` };
-}
-
-function relativeLabel(secondsAgo: number) {
-  if (secondsAgo < 45) return "Just now";
-  if (secondsAgo < 120) return "1 min ago";
-  return `${Math.floor(secondsAgo / 60)} min ago`;
 }
 
 /**
@@ -70,51 +68,37 @@ export function FooterLivePurchases({
 }) {
   const reduceMotion = usePrefersReducedMotion();
   const [event, setEvent] = useState<FakePurchase | null>(null);
-  const [ageSec, setAgeSec] = useState(12);
   const [visible, setVisible] = useState(true);
 
   const textCard = floating ? "text-slate-700/90" : "text-white/90";
   const whoText = floating ? "text-slate-900" : "text-white";
   const metaText = floating ? "text-slate-500/70" : "text-white/40";
-  const metaDim = floating ? "text-slate-500/30" : "text-white/20";
-  const verifiedText = floating
-    ? "text-emerald-700/90"
-    : "text-emerald-300/90";
   const actionText = floating ? "text-slate-500/60" : "text-white/50";
-  const livePillText = floating ? "text-slate-500" : "text-white/45";
 
   useEffect(() => {
-    setEvent(pickNext());
-    setAgeSec(8 + Math.floor(Math.random() * 40));
-
     if (reduceMotion) {
+      setEvent(pickNext());
       setVisible(true);
       return;
     }
 
-    // Show for a few seconds, then fully disappear until the next activity.
-    // This avoids the "stuck badge" feeling in the floating overlay.
-    const SHOW_MS = 4200;
-    const HIDE_MS = 1200;
-    const fadeMs = 320;
-    const intervalMs = SHOW_MS + HIDE_MS;
+    let hideTimer: number | undefined;
+    let gapTimer: number | undefined;
 
-    const rotate = window.setInterval(() => {
-      setVisible(false);
-      window.setTimeout(() => {
-        setEvent((prev) => pickNext(prev?.id));
-        setAgeSec(5 + Math.floor(Math.random() * 55));
-        setVisible(true);
-      }, fadeMs);
-    }, intervalMs);
+    function showNext() {
+      setEvent((prev) => pickNext(prev?.id));
+      setVisible(true);
+      hideTimer = window.setTimeout(() => {
+        setVisible(false);
+        gapTimer = window.setTimeout(showNext, GAP_MS);
+      }, SHOW_MS);
+    }
 
-    const ageTick = window.setInterval(() => {
-      setAgeSec((s) => s + 1);
-    }, 1000);
+    showNext();
 
     return () => {
-      window.clearInterval(rotate);
-      window.clearInterval(ageTick);
+      if (hideTimer) window.clearTimeout(hideTimer);
+      if (gapTimer) window.clearTimeout(gapTimer);
     };
   }, [reduceMotion]);
 
@@ -123,12 +107,10 @@ export function FooterLivePurchases({
     return {
       who: `${event.firstName} in ${event.city}, ${event.state}`,
       plan: event.plan,
-      when: relativeLabel(ageSec),
     };
-  }, [event, ageSec]);
+  }, [event]);
 
   if (!copy) return null;
-  // In floating mode, do not reserve space when hidden.
   if (floating && !visible) return null;
 
   return (
@@ -140,33 +122,7 @@ export function FooterLivePurchases({
           : "mb-8",
       )}
     >
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <div
-          className={cn(
-            "flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em]",
-            livePillText,
-          )}
-        >
-          <span className="relative flex h-2 w-2 shrink-0">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/70 opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-          </span>
-          Live activity
-        </div>
-        <span
-          className={cn(
-            "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold",
-            floating
-              ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-800"
-              : "border-emerald-400/25 bg-emerald-400/10 text-emerald-300",
-          )}
-        >
-          <HiOutlineCheckBadge className="h-3.5 w-3.5 shrink-0" aria-hidden />
-          Verified source
-        </span>
-      </div>
-
-      <div className="mt-4 min-h-[4.75rem]">
+      <div className="min-h-[4.75rem]">
         <AnimatePresence mode="wait">
           {visible && (
             <motion.div
@@ -204,23 +160,7 @@ export function FooterLivePurchases({
                   </span>
                   <span className={cn(actionText)}> plan</span>
                 </p>
-                <div
-                  className={cn(
-                    "flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px]",
-                    metaText,
-                  )}
-                >
-                  <span>{copy.when}</span>
-                  <span className={cn(metaDim)} aria-hidden>
-                    ·
-                  </span>
-                  <span
-                    className={cn("inline-flex items-center gap-1", verifiedText)}
-                  >
-                    <HiOutlineCheckBadge className="h-3.5 w-3.5" aria-hidden />
-                    Verified source
-                  </span>
-                </div>
+                <p className={cn("text-[11px]", metaText)}>Just now</p>
               </div>
             </motion.div>
           )}

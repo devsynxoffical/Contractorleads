@@ -67,6 +67,7 @@ import {
   usePrefersReducedMotion,
 } from "./marketing-motion";
 import { FooterLivePurchases } from "./footer-live-purchases";
+import { FooterFounderCard } from "./footer-founder-card";
 import { MarketingFluidHero } from "./marketing-fluid-hero";
 import { MarketingInteractiveDemo } from "./marketing-interactive-demo";
 import { MarketingAutomationShowcase } from "./marketing-automation-showcase";
@@ -966,7 +967,6 @@ function Footer() {
 
   return (
     <footer className="marketing-gamma-footer relative isolate overflow-hidden">
-      {/* Starry / noise gradient canvas */}
       <div
         className="absolute inset-0 -z-20"
         style={{
@@ -992,7 +992,6 @@ function Footer() {
         aria-hidden
       />
 
-      {/* Soft aurora drip above watermark */}
       <div
         className="pointer-events-none absolute left-1/2 top-0 h-40 w-[min(90%,720px)] -translate-x-1/2 opacity-60 blur-3xl"
         style={{
@@ -1002,7 +1001,6 @@ function Footer() {
         aria-hidden
       />
 
-      {/* Giant CONTRACTOR LEADS watermark */}
       <div className="relative mx-auto max-w-[100vw] overflow-hidden pt-16 sm:pt-20">
         <FooterReveal>
           <motion.p
@@ -1019,63 +1017,67 @@ function Footer() {
       </div>
 
       <div className="relative mx-auto max-w-6xl border-t border-white/10 px-5 pb-10 pt-12 sm:px-8 sm:pb-14 sm:pt-14">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
-          {/* Brand / get started column */}
+        <div className="grid grid-cols-2 gap-x-8 gap-y-8 sm:grid-cols-3 lg:grid-cols-5 lg:items-start">
           <FooterReveal delay={0.05}>
-            <div className="lg:col-span-1">
-            <p className="text-[13px] font-semibold text-white">Get started</p>
-            <div className="mt-4 flex flex-col gap-2.5">
-              <Link
-                href="/register"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-[#ffffff] px-4 py-2.5 text-[12px] font-semibold text-neutral-900 transition hover:bg-fuchsia-50"
-              >
-                Get started free
-                <HiOutlineArrowRight className="h-3.5 w-3.5" />
-              </Link>
-              <Link
-                href="/login"
-                className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/5 px-4 py-2.5 text-[12px] font-semibold text-white/90 backdrop-blur transition hover:bg-white/10"
-              >
-                Sign in
-              </Link>
-            </div>
-            <div className="mt-6 flex items-center gap-2">
-              <Image
-                src="/logo.png"
-                alt=""
-                width={28}
-                height={28}
-                className="rounded-full"
-              />
-              <span className="text-[12px] font-medium text-white/55">
-                Contractor Leads
-              </span>
-            </div>
+            <div>
+              <p className="text-[13px] font-semibold text-white">Get started</p>
+              <div className="mt-4 flex flex-col gap-2.5">
+                <Link
+                  href="/register"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[#ffffff] px-4 py-2.5 text-[12px] font-semibold text-neutral-900 transition hover:bg-fuchsia-50"
+                >
+                  Get started free
+                  <HiOutlineArrowRight className="h-3.5 w-3.5" />
+                </Link>
+                <Link
+                  href="/login"
+                  className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/5 px-4 py-2.5 text-[12px] font-semibold text-white/90 backdrop-blur transition hover:bg-white/10"
+                >
+                  Sign in
+                </Link>
+              </div>
+              <div className="mt-6 flex items-center gap-2">
+                <Image
+                  src="/logo.png"
+                  alt=""
+                  width={28}
+                  height={28}
+                  className="rounded-full"
+                />
+                <span className="text-[12px] font-medium text-white/55">
+                  Contractor Leads
+                </span>
+              </div>
             </div>
           </FooterReveal>
 
           {columns.map((col, ci) => (
             <FooterReveal key={col.h} delay={0.08 + ci * 0.05}>
               <div>
-              <p className="text-[13px] font-semibold text-white">{col.h}</p>
-              <ul className="mt-4 space-y-2.5">
-                {col.links.map(([label, href]) => (
-                  <li key={label}>
-                    <a
-                      href={href}
-                      className="text-[13px] text-white/55 transition hover:text-white"
-                    >
-                      {label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
+                <p className="text-[13px] font-semibold text-white">{col.h}</p>
+                <ul className="mt-4 space-y-2.5">
+                  {col.links.map(([label, href]) => (
+                    <li key={label}>
+                      <a
+                        href={href}
+                        className="text-[13px] text-white/55 transition hover:text-white"
+                      >
+                        {label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </FooterReveal>
           ))}
+
+          {/* Under Social + Legal only (cols 4–5) — no empty stretch */}
+          <FooterReveal delay={0.2} className="col-span-2 sm:col-span-3 lg:col-span-2 lg:col-start-4">
+            <FooterFounderCard />
+          </FooterReveal>
         </div>
 
-        <div className="mt-4 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-6 text-[12px] text-white/40 sm:flex-row">
+        <div className="mt-8 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-6 text-[12px] text-white/40 sm:flex-row">
           <p>© {new Date().getFullYear()} Contractor Leads. All rights reserved.</p>
           <p className="text-white/30">Built for agencies that sell to contractors.</p>
         </div>

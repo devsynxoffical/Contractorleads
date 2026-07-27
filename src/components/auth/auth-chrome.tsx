@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { HiOutlineArrowRight } from "react-icons/hi2";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
+import { FooterFounderCard } from "@/components/marketing/footer-founder-card";
 
 const FOOTER_COLUMNS = [
   {
@@ -154,8 +155,8 @@ export function AuthSiteFooter() {
       </div>
 
       <div className="relative mx-auto max-w-6xl border-t border-white/10 px-5 pb-10 pt-12 sm:px-8 sm:pb-14 sm:pt-14">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-5">
-          <div className="lg:col-span-1">
+        <div className="grid grid-cols-2 gap-x-8 gap-y-8 sm:grid-cols-3 lg:grid-cols-5 lg:items-start">
+          <div>
             <p className="text-[13px] font-semibold text-white">Get started</p>
             <div className="mt-4 flex flex-col gap-2.5">
               <Link
@@ -203,9 +204,13 @@ export function AuthSiteFooter() {
               </ul>
             </div>
           ))}
+
+          <div className="col-span-2 sm:col-span-3 lg:col-span-2 lg:col-start-4">
+            <FooterFounderCard />
+          </div>
         </div>
 
-        <div className="mt-14 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-6 text-[12px] text-white/40 sm:flex-row">
+        <div className="mt-8 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-6 text-[12px] text-white/40 sm:flex-row">
           <p>© {new Date().getFullYear()} Contractor Leads. All rights reserved.</p>
           <p className="text-white/30">Built for agencies that sell to contractors.</p>
         </div>
