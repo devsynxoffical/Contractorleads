@@ -53,6 +53,69 @@ export function rateLimit(
   };
 }
 
+/** Read-only check — does not increment the counter. */
+export function peekRateLimit(
+  key: string,
+  opts: { limit: number; windowMs: number },
+): RateLimitResult {
+  const now = Date.now();
+  const existing = buckets.get(key);
+  if (!existing || existing.resetAt <= now) {
+    return { ok: true, remaining: opts.limit, retryAfterSeconds: 0 };
+  }
+
+  const retryAfterSeconds = Math.max(1, Math.ceil((existing.resetAt - now) / 1000));
+  if (existing.count >= opts.limit) {
+    return { ok: false, remaining: 0, retryAfterSeconds };
+  }
+  return {
+    ok: true,
+    remaining: Math.max(0, opts.limit - existing.count),
+    retryAfterSeconds,
+  };
+}
+
+export function authRateLimitKeys(
+  request: Request,
+  scope: string,
+  identifier?: string,
+): string[] {
+  const keys = [`${scope}:ip:${clientIp(request)}`];
+  if (identifier) {
+    keys.push(`${scope}:id:${identifier.trim().toLowerCase()}`);
+  }
+  return keys;
+}
+
+/** Block only when a prior failure already exhausted the budget. */
+export function checkAuthRateLimit(
+  request: Request,
+  scope: string,
+  opts: { limit: number; windowMs: number; identifier?: string },
+): { blocked: NextResponse | null; keys: string[] } {
+  const keys = authRateLimitKeys(request, scope, opts.identifier);
+
+  for (const key of keys) {
+    const result = peekRateLimit(key, { limit: opts.limit, windowMs: opts.windowMs });
+    if (!result.ok) {
+      return { blocked: tooManyRequests(result.retryAfterSeconds), keys };
+    }
+  }
+
+  return { blocked: null, keys };
+}
+
+/** Count one failed credential check toward the limit. */
+export function recordAuthRateLimitFailure(
+  request: Request,
+  scope: string,
+  opts: { limit: number; windowMs: number; identifier?: string },
+) {
+  for (const key of authRateLimitKeys(request, scope, opts.identifier)) {
+    rateLimit(key, { limit: opts.limit, windowMs: opts.windowMs });
+  }
+}
+
 /** Clears the counter, e.g. after a successful login. */
 export function resetRateLimit(key: string) {
   buckets.delete(key);

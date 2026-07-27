@@ -25,8 +25,18 @@ export default function AdminLoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Login failed");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const retryAfter = Number(res.headers.get("Retry-After") || 0);
+        const message =
+          data.error ??
+          (res.status === 429
+            ? retryAfter > 0
+              ? `Too many failed attempts. Try again in about ${Math.ceil(retryAfter / 60) || 1} minute(s).`
+              : "Too many failed attempts. Please wait a moment before trying again."
+            : "Login failed");
+        throw new Error(message);
+      }
       router.push(data.redirectTo || "/admin");
       router.refresh();
     } catch (err) {

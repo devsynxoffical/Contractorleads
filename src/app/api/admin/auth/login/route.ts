@@ -7,8 +7,14 @@ import {
   stopImpersonation,
   verifyPassword,
 } from "@/lib/auth";
-import { guardAuthRoute, resetRateLimit } from "@/lib/rate-limit";
+import {
+  checkAuthRateLimit,
+  recordAuthRateLimitFailure,
+  resetRateLimit,
+} from "@/lib/rate-limit";
 import { OWNER_EMAIL, OWNER_ROLE } from "@/lib/roles";
+
+const AUTH_LIMIT = { limit: 15, windowMs: 15 * 60 * 1000 };
 
 /**
  * Dedicated admin login — OWNER, SUPER_ADMIN, MANAGER, and SUB_ADMIN only.
@@ -26,9 +32,8 @@ export async function POST(request: Request) {
 
     const normalizedEmail = String(email).trim().toLowerCase();
 
-    const { blocked, keys } = guardAuthRoute(request, "admin-login", {
-      limit: 5,
-      windowMs: 15 * 60 * 1000,
+    const { blocked, keys } = checkAuthRateLimit(request, "admin-login", {
+      ...AUTH_LIMIT,
       identifier: normalizedEmail,
     });
     if (blocked) return blocked;
@@ -38,6 +43,10 @@ export async function POST(request: Request) {
     });
 
     if (!user || !(await verifyPassword(password, user.passwordHash))) {
+      recordAuthRateLimitFailure(request, "admin-login", {
+        ...AUTH_LIMIT,
+        identifier: normalizedEmail,
+      });
       return NextResponse.json(
         { error: "Invalid email or password" },
         { status: 401 },

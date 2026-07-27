@@ -7,16 +7,21 @@ import {
   verifyPassword,
 } from "@/lib/auth";
 import { linkMarketingVisitorToUser } from "@/lib/marketing-session";
-import { guardAuthRoute, resetRateLimit } from "@/lib/rate-limit";
+import {
+  checkAuthRateLimit,
+  recordAuthRateLimitFailure,
+  resetRateLimit,
+} from "@/lib/rate-limit";
+
+const AUTH_LIMIT = { limit: 15, windowMs: 15 * 60 * 1000 };
 
 export async function POST(request: Request) {
   try {
     const { email, password } = await request.json();
     const normalizedEmail = String(email ?? "").trim().toLowerCase();
 
-    const { blocked, keys } = guardAuthRoute(request, "login", {
-      limit: 10,
-      windowMs: 15 * 60 * 1000,
+    const { blocked, keys } = checkAuthRateLimit(request, "login", {
+      ...AUTH_LIMIT,
       identifier: normalizedEmail,
     });
     if (blocked) return blocked;
@@ -25,6 +30,10 @@ export async function POST(request: Request) {
       where: { email: normalizedEmail },
     });
     if (!user || !(await verifyPassword(password, user.passwordHash))) {
+      recordAuthRateLimitFailure(request, "login", {
+        ...AUTH_LIMIT,
+        identifier: normalizedEmail,
+      });
       return NextResponse.json(
         { error: "Invalid email or password" },
         { status: 401 },
