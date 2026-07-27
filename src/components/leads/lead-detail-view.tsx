@@ -10,6 +10,7 @@ import {
   HiOutlineArrowTopRightOnSquare,
   HiOutlineBookmark,
   HiOutlineCheckBadge,
+  HiOutlineChevronDown,
   HiOutlineEnvelope,
   HiOutlineExclamationTriangle,
   HiOutlineInformationCircle,
@@ -32,6 +33,10 @@ import { EnrollEmailSequenceButton } from "@/components/leads/enroll-email-seque
 import { LeadSendEmailCard } from "@/components/leads/lead-send-email-card";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
 import { adminScrapeLeadIds } from "@/lib/client/search-session";
+import type {
+  QualificationBreakdown,
+  ScoreBreakdown,
+} from "@/lib/services/qualification-breakdown";
 import { useRouter } from "next/navigation";
 
 type FacebookAdsResult = {
@@ -156,29 +161,103 @@ function parseTeamMembers(raw: string | null): TeamMember[] {
   }
 }
 
-function ScoreBar({
+type QualificationScoreKey =
+  | "websiteQuality"
+  | "marketingOpportunity"
+  | "ppcOpportunity"
+  | "seoOpportunity";
+
+function statusDot(status: "pass" | "warn" | "fail" | "info") {
+  if (status === "pass") return "bg-emerald-500";
+  if (status === "warn") return "bg-amber-500";
+  if (status === "fail") return "bg-rose-500";
+  return "bg-slate-400";
+}
+
+function QualificationScoreBar({
+  scoreKey,
   label,
   value,
+  expanded,
+  loading,
+  breakdown,
+  onToggle,
 }: {
+  scoreKey: QualificationScoreKey;
   label: string;
   value: number | null | undefined;
+  expanded: boolean;
+  loading: boolean;
+  breakdown: ScoreBreakdown | null;
+  onToggle: (key: QualificationScoreKey) => void;
 }) {
   const v = value ?? 0;
   return (
-    <div>
-      <div className="mb-1.5 flex items-center justify-between text-[12px]">
-        <span className="font-medium text-ink-muted">{label}</span>
-        <span className="font-semibold tabular-nums text-ink">{v}</span>
-      </div>
-      <div className="h-2 overflow-hidden rounded-full bg-[#f0ebf5]">
-        <div
-          className="h-full rounded-full transition-all"
-          style={{
-            width: `${Math.min(100, v)}%`,
-            background: LOGO_GRADIENT,
-          }}
+    <div className="rounded-xl border border-border/70 bg-[#faf8fc]">
+      <button
+        type="button"
+        onClick={() => onToggle(scoreKey)}
+        className="flex w-full items-start gap-2 px-3 py-3 text-left transition hover:bg-brand-50/50"
+        aria-expanded={expanded}
+      >
+        <HiOutlineChevronDown
+          className={`mt-0.5 h-4 w-4 shrink-0 text-ink-faint transition ${
+            expanded ? "rotate-180" : ""
+          }`}
         />
-      </div>
+        <div className="min-w-0 flex-1">
+          <div className="mb-1.5 flex items-center justify-between gap-2 text-[12px]">
+            <span className="font-medium text-ink">{label}</span>
+            <span className="font-semibold tabular-nums text-ink">{v}</span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-[#f0ebf5]">
+            <div
+              className="h-full rounded-full transition-all"
+              style={{
+                width: `${Math.min(100, v)}%`,
+                background: LOGO_GRADIENT,
+              }}
+            />
+          </div>
+          <p className="mt-1.5 text-[11px] text-ink-faint">
+            Click for scoring basis
+          </p>
+        </div>
+      </button>
+      {expanded ? (
+        <div className="border-t border-border/70 px-3 py-3">
+          {loading ? (
+            <p className="text-[12px] text-ink-muted">Loading live audit details…</p>
+          ) : breakdown ? (
+            <div className="space-y-3">
+              <p className="text-[12px] leading-relaxed text-ink-muted">
+                {breakdown.headline}
+              </p>
+              <ul className="space-y-2">
+                {breakdown.signals.map((signal) => (
+                  <li
+                    key={`${signal.label}-${signal.detail}`}
+                    className="flex gap-2 text-[12px] leading-snug"
+                  >
+                    <span
+                      className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${statusDot(signal.status)}`}
+                      aria-hidden
+                    />
+                    <div>
+                      <p className="font-semibold text-ink">{signal.label}</p>
+                      <p className="text-ink-muted">{signal.detail}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="text-[12px] text-ink-muted">
+              Could not load scoring details. Try again in a moment.
+            </p>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -369,6 +448,11 @@ export function LeadDetailView({
   const [adminEnriching, setAdminEnriching] = useState(false);
   const [adminDeleting, setAdminDeleting] = useState(false);
   const [adminMessage, setAdminMessage] = useState<string | null>(null);
+  const [qualificationExpanded, setQualificationExpanded] =
+    useState<QualificationScoreKey | null>(null);
+  const [qualificationBreakdown, setQualificationBreakdown] =
+    useState<QualificationBreakdown | null>(null);
+  const [qualificationLoading, setQualificationLoading] = useState(false);
 
   function mergeLead(updated: Lead) {
     setLead((prev) => ({
@@ -376,6 +460,26 @@ export function LeadDetailView({
       savedBy: updated.savedBy ?? prev?.savedBy ?? [],
       unlocked: true,
     }));
+  }
+
+  async function toggleQualificationScore(key: QualificationScoreKey) {
+    if (qualificationExpanded === key) {
+      setQualificationExpanded(null);
+      return;
+    }
+    setQualificationExpanded(key);
+    if (qualificationBreakdown) return;
+
+    setQualificationLoading(true);
+    try {
+      const res = await fetch(`/api/leads/${leadId}/qualification-breakdown`);
+      const data = (await res.json()) as QualificationBreakdown & {
+        error?: string;
+      };
+      if (res.ok) setQualificationBreakdown(data);
+    } finally {
+      setQualificationLoading(false);
+    }
   }
 
   function navFromScrapeCache(): LeadNavigation | null {
@@ -469,6 +573,9 @@ export function LeadDetailView({
     setVerificationScore(null);
     setAdsResult(null);
     setPopup(null);
+    setQualificationExpanded(null);
+    setQualificationBreakdown(null);
+    setQualificationLoading(false);
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when lead or list scope changes
   }, [leadId, from, isAdmin]);
@@ -1428,22 +1535,66 @@ export function LeadDetailView({
                   <p className="mt-1">{lead.outreachAngle}</p>
                 </div>
               )}
-              <div className="grid gap-4 sm:grid-cols-2">
-                <ScoreBar
+              {qualificationBreakdown ? (
+                <p className="rounded-lg bg-[#faf8fc] px-3 py-2 text-[11px] text-ink-muted">
+                  Scoring source:{" "}
+                  <span className="font-semibold text-ink">
+                    {qualificationBreakdown.source === "live_audit"
+                      ? "Live homepage crawl"
+                      : "Google Places estimate (no live crawl)"}
+                  </span>
+                  {qualificationBreakdown.websiteUrl ? (
+                    <>
+                      {" "}
+                      ·{" "}
+                      <a
+                        href={qualificationBreakdown.websiteUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-brand-600 hover:underline"
+                      >
+                        {qualificationBreakdown.websiteUrl.replace(/^https?:\/\//, "")}
+                      </a>
+                    </>
+                  ) : null}
+                </p>
+              ) : null}
+              <div className="grid gap-3 sm:grid-cols-2">
+                <QualificationScoreBar
+                  scoreKey="websiteQuality"
                   label="Website quality"
                   value={lead.websiteQualityScore}
+                  expanded={qualificationExpanded === "websiteQuality"}
+                  loading={qualificationLoading}
+                  breakdown={qualificationBreakdown?.websiteQuality ?? null}
+                  onToggle={toggleQualificationScore}
                 />
-                <ScoreBar
+                <QualificationScoreBar
+                  scoreKey="marketingOpportunity"
                   label="Marketing opportunity"
                   value={lead.marketingOpportunityScore}
+                  expanded={qualificationExpanded === "marketingOpportunity"}
+                  loading={qualificationLoading}
+                  breakdown={qualificationBreakdown?.marketingOpportunity ?? null}
+                  onToggle={toggleQualificationScore}
                 />
-                <ScoreBar
+                <QualificationScoreBar
+                  scoreKey="ppcOpportunity"
                   label="PPC opportunity"
                   value={lead.ppcOpportunityScore}
+                  expanded={qualificationExpanded === "ppcOpportunity"}
+                  loading={qualificationLoading}
+                  breakdown={qualificationBreakdown?.ppcOpportunity ?? null}
+                  onToggle={toggleQualificationScore}
                 />
-                <ScoreBar
+                <QualificationScoreBar
+                  scoreKey="seoOpportunity"
                   label="SEO opportunity"
                   value={lead.seoOpportunityScore}
+                  expanded={qualificationExpanded === "seoOpportunity"}
+                  loading={qualificationLoading}
+                  breakdown={qualificationBreakdown?.seoOpportunity ?? null}
+                  onToggle={toggleQualificationScore}
                 />
               </div>
             </CardContent>

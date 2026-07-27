@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { LEAD_STATUSES } from "@/lib/constants";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -28,6 +29,7 @@ type Column = {
 
 export function PipelineBoard({ initialColumns }: { initialColumns: Column[] }) {
   const [columns, setColumns] = useState(initialColumns);
+  const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
@@ -294,22 +296,18 @@ export function PipelineBoard({ initialColumns }: { initialColumns: Column[] }) 
                     setDraggingId(null);
                     setDropTarget(null);
                   }}
+                  onClick={() => {
+                    if (dragMovedRef.current) return;
+                    router.push(`/leads/${s.lead.id}?from=saved`);
+                  }}
                   className={cn(
-                    "cursor-grab border-border shadow-sm transition hover:border-brand-200 active:cursor-grabbing",
+                    "cursor-pointer border-border shadow-sm transition hover:border-brand-200 hover:bg-brand-50/40 active:cursor-grabbing",
                     busyId === s.id && "opacity-60",
                     draggingId === s.id && "opacity-60 ring-2 ring-brand-300",
                   )}
                 >
                   <CardContent className="py-3">
-                    <Link
-                      href={`/leads/${s.lead.id}?from=saved`}
-                      className="font-semibold text-ink hover:text-brand-600"
-                      onClick={(e) => {
-                        if (dragMovedRef.current) e.preventDefault();
-                      }}
-                    >
-                      {s.lead.businessName}
-                    </Link>
+                    <p className="font-semibold text-ink">{s.lead.businessName}</p>
                     <p className="mt-1 line-clamp-2 text-xs text-ink-muted">
                       {s.lead.address}
                     </p>
@@ -320,7 +318,11 @@ export function PipelineBoard({ initialColumns }: { initialColumns: Column[] }) 
                         : ""}
                       {s.favorite ? " · ★" : ""}
                     </p>
-                    <label className="mt-2 block">
+                    <label
+                      className="mt-2 block"
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => e.stopPropagation()}
+                    >
                       <span className="sr-only">Move status</span>
                       <select
                         value={
@@ -347,7 +349,10 @@ export function PipelineBoard({ initialColumns }: { initialColumns: Column[] }) 
                       type="button"
                       className="mt-2 text-[11px] font-medium text-red-600 hover:underline"
                       disabled={busyId === s.id}
-                      onClick={() => void removeLead(s.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void removeLead(s.id);
+                      }}
                     >
                       Remove
                     </button>

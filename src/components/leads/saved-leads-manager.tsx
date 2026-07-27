@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,7 @@ export function SavedLeadsManager({
     failed: number;
     results: SendResult[];
   } | null>(null);
+  const router = useRouter();
 
   const selectableIds = useMemo(
     () => leads.filter((l) => l.lead.email).map((l) => l.lead.id),
@@ -160,8 +162,17 @@ export function SavedLeadsManager({
           return (
             <Card
               key={s.id}
+              role="link"
+              tabIndex={0}
+              onClick={() => router.push(`/leads/${s.lead.id}?from=saved`)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  router.push(`/leads/${s.lead.id}?from=saved`);
+                }
+              }}
               className={cn(
-                "border-border shadow-[var(--shadow-card)] transition hover:border-brand-200",
+                "cursor-pointer border-border shadow-[var(--shadow-card)] transition hover:border-brand-200 hover:bg-brand-50/40",
                 checked && "border-brand-300 ring-1 ring-brand-200",
               )}
             >
@@ -171,21 +182,21 @@ export function SavedLeadsManager({
                     type="checkbox"
                     className="h-4 w-4 shrink-0 accent-brand-600 disabled:opacity-40"
                     checked={checked}
+                    onClick={(e) => e.stopPropagation()}
                     onChange={() => toggle(s.lead.id)}
                     disabled={!emailable}
                     title={emailable ? "Select for bulk email" : "No email address"}
                   />
                   <div className="min-w-0">
-                    <Link
-                      href={`/leads/${s.lead.id}?from=saved`}
-                      className="font-semibold text-ink hover:text-brand-600"
-                    >
-                      {s.lead.businessName}
-                    </Link>
+                    <p className="font-semibold text-ink">{s.lead.businessName}</p>
                     <p className="mt-1 text-sm text-ink-muted">{s.lead.address}</p>
                   </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
+                <div
+                  className="flex flex-wrap items-center gap-2"
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
+                >
                   <Badge>{s.status}</Badge>
                   {s.favorite && <Badge variant="brand">Favorite</Badge>}
                   <span className="text-sm font-semibold tabular-nums text-brand-600">

@@ -575,14 +575,10 @@ export function LeadGeoMapInner({
       {!compact && leads.length > 0 && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filteredCards.map((lead) => (
-            <button
+            <Link
               key={lead.id}
-              type="button"
-              onClick={() => {
-                setActiveLeadId(lead.id);
-                setActiveCountry((lead.country || "US").toUpperCase());
-              }}
-              className={`hud-panel w-full text-left transition hover:brightness-110 ${
+              href={leadHref(leadDetailBase, lead.id)}
+              className={`hud-panel block w-full transition hover:brightness-110 ${
                 activeLeadId === lead.id ? "ring-1 ring-brand-500/40" : ""
               }`}
             >
@@ -595,7 +591,7 @@ export function LeadGeoMapInner({
               <p className="mt-2 text-[10px] uppercase tracking-wide text-brand-400">
                 {lead.qualityTier ?? "nurture"}
               </p>
-            </button>
+            </Link>
           ))}
         </div>
       )}

@@ -42,32 +42,30 @@ export default async function HotLeadsPage() {
 
       <div className="grid gap-3">
         {leads.map((lead) => (
-          <Card
+          <Link
             key={lead.id}
-            className="border-border shadow-[var(--shadow-card)] transition hover:border-brand-200"
+            href={`/leads/${lead.id}?from=hot`}
+            className="block rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
           >
-            <CardContent className="flex flex-wrap items-center justify-between gap-4 py-4">
-              <div className="min-w-0">
-                <Link
-                  href={`/leads/${lead.id}?from=hot`}
-                  className="font-semibold text-ink hover:text-brand-600"
-                >
-                  {lead.businessName}
-                </Link>
-                <p className="mt-1 text-sm text-ink-muted">
-                  {lead.address ||
-                    [lead.city, lead.state].filter(Boolean).join(", ") ||
-                    "Location pending"}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="hot">Hot</Badge>
-                <span className="text-sm font-semibold tabular-nums text-brand-600">
-                  Score {lead.leadScore}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+            <Card className="border-border shadow-[var(--shadow-card)] transition hover:border-brand-200 hover:bg-brand-50/40">
+              <CardContent className="flex flex-wrap items-center justify-between gap-4 py-4">
+                <div className="min-w-0">
+                  <p className="font-semibold text-ink">{lead.businessName}</p>
+                  <p className="mt-1 text-sm text-ink-muted">
+                    {lead.address ||
+                      [lead.city, lead.state].filter(Boolean).join(", ") ||
+                      "Location pending"}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="hot">Hot</Badge>
+                  <span className="text-sm font-semibold tabular-nums text-brand-600">
+                    Score {lead.leadScore}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
         ))}
         {!leads.length && (
           <Card className="border-dashed">

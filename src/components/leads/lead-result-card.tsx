@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   HiOutlineCheckBadge,
   HiOutlineEnvelope,
@@ -108,6 +109,8 @@ export function LeadResultCard({
   const [pipelineBusy, setPipelineBusy] = useState(false);
   const [inPipeline, setInPipeline] = useState(false);
   const [pipelineError, setPipelineError] = useState<string | null>(null);
+  const router = useRouter();
+  const detailHref = profileHref ?? `/leads/${lead.id}?from=all`;
 
   const location =
     [lead.city, lead.state, lead.zip].filter(Boolean).join(", ") ||
@@ -145,7 +148,16 @@ export function LeadResultCard({
 
   return (
     <article
-      className="hover-lift animate-fade-up group overflow-hidden rounded-2xl border border-brand-500/15 bg-[var(--panel-solid)] shadow-[var(--shadow-card)]"
+      role="link"
+      tabIndex={0}
+      onClick={() => router.push(detailHref)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          router.push(detailHref);
+        }
+      }}
+      className="hover-lift animate-fade-up group cursor-pointer overflow-hidden rounded-2xl border border-brand-500/15 bg-[var(--panel-solid)] shadow-[var(--shadow-card)]"
       style={{ animationDelay: `${Math.min(index, 12) * 0.04}s` }}
     >
       <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start sm:p-5">
@@ -246,9 +258,13 @@ export function LeadResultCard({
             </p>
           )}
 
-          <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border/70 pt-3">
+          <div
+            className="mt-4 flex flex-wrap items-center gap-2 border-t border-border/70 pt-3"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+          >
             <Link
-              href={profileHref ?? `/leads/${lead.id}?from=all`}
+              href={detailHref}
               className="inline-flex h-9 items-center rounded-xl px-4 text-[12px] font-semibold text-white shadow-sm transition hover:opacity-95"
               style={{ background: LOGO_GRADIENT }}
             >

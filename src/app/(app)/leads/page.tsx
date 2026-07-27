@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import type { Prisma } from "@prisma/client";
-import { Badge } from "@/components/ui/badge";
 import {
   PageHeader,
   PrimaryActionLink,
@@ -12,6 +11,7 @@ import {
 } from "@/components/layout/page-header";
 import { ExportLeadsButtons } from "@/components/leads/export-leads-buttons";
 import { AllLeadsFilters } from "@/components/leads/all-leads-filters";
+import { AllLeadsTableBody } from "@/components/leads/all-leads-table-body";
 import { HiOutlineFire, HiOutlineMagnifyingGlass } from "react-icons/hi2";
 
 function startOfToday() {
@@ -178,48 +178,16 @@ export default async function AllLeadsPage({
               <th className="px-4 py-3 font-medium" />
             </tr>
           </thead>
-          <tbody>
-            {leads.map((lead) => (
-              <tr
-                key={lead.id}
-                className="border-b border-border last:border-0 hover:bg-brand-50/40"
-              >
-                <td className="px-4 py-3.5 font-medium text-ink">
-                  {lead.businessName}
-                </td>
-                <td className="px-4 py-3.5 text-ink-muted">
-                  {lead.industry ?? "—"}
-                </td>
-                <td className="px-4 py-3.5 tabular-nums font-medium">
-                  {lead.leadScore}
-                </td>
-                <td className="px-4 py-3.5">
-                  <Badge
-                    variant={
-                      lead.qualityTier === "hot"
-                        ? "hot"
-                        : lead.qualityTier === "warm"
-                          ? "warm"
-                          : "nurture"
-                    }
-                  >
-                    {lead.qualityTier ?? "nurture"}
-                  </Badge>
-                </td>
-                <td className="px-4 py-3.5 text-[12px] tabular-nums text-ink-muted">
-                  {(lead.search?.createdAt ?? lead.createdAt).toLocaleDateString()}
-                </td>
-                <td className="px-4 py-3.5 text-right">
-                  <Link
-                    href={`/leads/${lead.id}?from=all`}
-                    className="font-semibold text-brand-600 hover:underline"
-                  >
-                    View
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
+          <AllLeadsTableBody
+            leads={leads.map((lead) => ({
+              id: lead.id,
+              businessName: lead.businessName,
+              industry: lead.industry,
+              leadScore: lead.leadScore,
+              qualityTier: lead.qualityTier,
+              foundAt: lead.search?.createdAt ?? lead.createdAt,
+            }))}
+          />
         </table>
         {!leads.length && (
           <p className="px-4 py-10 text-center text-sm text-ink-muted">
