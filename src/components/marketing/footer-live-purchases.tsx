@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { HiOutlineCheckBadge, HiOutlineCreditCard } from "react-icons/hi2";
+import { cn } from "@/lib/utils";
 import { usePrefersReducedMotion } from "./marketing-motion";
 
 type FakePurchase = {
@@ -59,9 +60,14 @@ function relativeLabel(secondsAgo: number) {
 }
 
 /**
- * Live-feeling purchase feed for the marketing footer (simulated social proof).
+ * Live-feeling purchase feed for marketing (simulated social proof).
  */
-export function FooterLivePurchases() {
+export function FooterLivePurchases({
+  floating = false,
+}: {
+  /** When true, show as a persistent site overlay instead of footer block. */
+  floating?: boolean;
+}) {
   const reduceMotion = usePrefersReducedMotion();
   const [event, setEvent] = useState<FakePurchase | null>(null);
   const [ageSec, setAgeSec] = useState(12);
@@ -71,7 +77,17 @@ export function FooterLivePurchases() {
     setEvent(pickNext());
     setAgeSec(8 + Math.floor(Math.random() * 40));
 
-    if (reduceMotion) return;
+    if (reduceMotion) {
+      setVisible(true);
+      return;
+    }
+
+    // Show for a few seconds, then fully disappear until the next activity.
+    // This avoids the "stuck badge" feeling in the floating overlay.
+    const SHOW_MS = 4200;
+    const HIDE_MS = 1200;
+    const fadeMs = 320;
+    const intervalMs = SHOW_MS + HIDE_MS;
 
     const rotate = window.setInterval(() => {
       setVisible(false);
@@ -79,8 +95,8 @@ export function FooterLivePurchases() {
         setEvent((prev) => pickNext(prev?.id));
         setAgeSec(5 + Math.floor(Math.random() * 55));
         setVisible(true);
-      }, 320);
-    }, 4800);
+      }, fadeMs);
+    }, intervalMs);
 
     const ageTick = window.setInterval(() => {
       setAgeSec((s) => s + 1);
@@ -102,11 +118,25 @@ export function FooterLivePurchases() {
   }, [event, ageSec]);
 
   if (!copy) return null;
+  // In floating mode, do not reserve space when hidden.
+  if (floating && !visible) return null;
 
   return (
-    <div className="mb-8 max-w-xl">
+    <div
+      className={cn(
+        "max-w-xl",
+        floating
+          ? "pointer-events-none fixed bottom-4 left-3 z-50 mb-0 w-[calc(100vw-1.5rem)] sm:bottom-5 sm:left-5 sm:w-auto"
+          : "mb-8",
+      )}
+    >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/45">
+        <div
+          className={cn(
+            "flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em]",
+            floating ? "text-slate-300" : "text-white/45",
+          )}
+        >
           <span className="relative flex h-2 w-2 shrink-0">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/70 opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
@@ -134,7 +164,12 @@ export function FooterLivePurchases() {
                   : { opacity: 0, y: -8, filter: "blur(4px)" }
               }
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-              className="flex w-full max-w-md items-start gap-4 rounded-2xl border border-white/12 bg-white/[0.07] px-4 py-3.5 shadow-[0_12px_40px_rgba(0,0,0,0.25)] backdrop-blur-md sm:px-5 sm:py-4"
+              className={cn(
+                "flex w-full max-w-md items-start gap-4 rounded-2xl px-4 py-3.5 backdrop-blur-md sm:px-5 sm:py-4",
+                floating
+                  ? "border border-slate-800/40 bg-slate-950/80 shadow-[0_12px_40px_rgba(2,6,23,0.4)]"
+                  : "border border-white/12 bg-white/[0.07] shadow-[0_12px_40px_rgba(0,0,0,0.25)]",
+              )}
             >
               <span
                 className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-500 to-violet-600 text-white shadow-[0_0_20px_rgba(217,70,239,0.35)]"
