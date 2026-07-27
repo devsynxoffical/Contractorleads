@@ -103,7 +103,7 @@ export default async function AllLeadsPage({
         ? [{ search: { createdAt: "asc" } }, { createdAt: "asc" }]
         : [{ search: { createdAt: "desc" } }, { leadScore: "desc" }];
 
-  const [leads, total, categoryRows] = await Promise.all([
+  const [leads, total, categoryRows, savedRows] = await Promise.all([
     prisma.lead.findMany({
       where,
       orderBy,
@@ -120,7 +120,13 @@ export default async function AllLeadsPage({
       orderBy: { industry: "asc" },
       take: 100,
     }),
+    prisma.savedLead.findMany({
+      where: { userId: user.id },
+      select: { leadId: true },
+    }),
   ]);
+
+  const pipelineLeadIds = savedRows.map((s) => s.leadId);
 
   const categories = categoryRows
     .map((r) => r.industry)
@@ -167,28 +173,17 @@ export default async function AllLeadsPage({
       </Suspense>
 
       <div className="overflow-x-auto rounded-xl border border-border bg-white shadow-[var(--shadow-card)]">
-        <table className="w-full min-w-[640px] text-left text-sm">
-          <thead className="border-b border-border bg-[#faf8fb] text-xs uppercase tracking-wide text-ink-muted">
-            <tr>
-              <th className="px-4 py-3 font-medium">Business</th>
-              <th className="px-4 py-3 font-medium">Industry</th>
-              <th className="px-4 py-3 font-medium">Score</th>
-              <th className="px-4 py-3 font-medium">Tier</th>
-              <th className="px-4 py-3 font-medium">Found</th>
-              <th className="px-4 py-3 font-medium" />
-            </tr>
-          </thead>
-          <AllLeadsTableBody
-            leads={leads.map((lead) => ({
-              id: lead.id,
-              businessName: lead.businessName,
-              industry: lead.industry,
-              leadScore: lead.leadScore,
-              qualityTier: lead.qualityTier,
-              foundAt: lead.search?.createdAt ?? lead.createdAt,
-            }))}
-          />
-        </table>
+        <AllLeadsTableBody
+          pipelineLeadIds={pipelineLeadIds}
+          leads={leads.map((lead) => ({
+            id: lead.id,
+            businessName: lead.businessName,
+            industry: lead.industry,
+            leadScore: lead.leadScore,
+            qualityTier: lead.qualityTier,
+            foundAt: lead.search?.createdAt ?? lead.createdAt,
+          }))}
+        />
         {!leads.length && (
           <p className="px-4 py-10 text-center text-sm text-ink-muted">
             {filtersActive ? (

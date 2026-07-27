@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,7 @@ type SavedLeadRow = {
     businessName: string;
     address: string | null;
     email: string | null;
+    industry: string | null;
     leadScore: number;
   };
 };
@@ -37,16 +38,19 @@ const VARS = ["businessName", "firstName", "city", "industry", "myName", "myComp
 
 export function SavedLeadsManager({
   leads,
+  categories,
   hasAddon,
   addonPriceUsd,
   mailboxes,
 }: {
   leads: SavedLeadRow[];
+  categories: string[];
   hasAddon: boolean;
   addonPriceUsd: number;
   mailboxes: Mailbox[];
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [industryFilter, setIndustryFilter] = useState("all");
   const [composeOpen, setComposeOpen] = useState(false);
   const [subject, setSubject] = useState("");
   const [bodyText, setBodyText] = useState("");
@@ -63,9 +67,28 @@ export function SavedLeadsManager({
   } | null>(null);
   const router = useRouter();
 
+  useEffect(() => {
+    if (!mailboxes.length) {
+      setSmtpAccountId("");
+      return;
+    }
+    setSmtpAccountId((current) => {
+      if (current && mailboxes.some((m) => m.id === current)) return current;
+      return mailboxes.find((m) => m.isDefault)?.id || mailboxes[0].id;
+    });
+  }, [mailboxes]);
+
+  const filteredLeads = useMemo(() => {
+    if (industryFilter === "all") return leads;
+    return leads.filter(
+      (l) =>
+        l.lead.industry?.toLowerCase() === industryFilter.toLowerCase(),
+    );
+  }, [leads, industryFilter]);
+
   const selectableIds = useMemo(
-    () => leads.filter((l) => l.lead.email).map((l) => l.lead.id),
-    [leads],
+    () => filteredLeads.filter((l) => l.lead.email).map((l) => l.lead.id),
+    [filteredLeads],
   );
   const allSelected =
     selectableIds.length > 0 && selectableIds.every((id) => selected.has(id));
@@ -119,44 +142,84 @@ export function SavedLeadsManager({
   return (
     <div className="space-y-3">
       {leads.length > 0 ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-[var(--surface)] px-4 py-3">
-          <label className="flex items-center gap-2 text-[13px] font-medium text-ink">
-            <input
-              type="checkbox"
-              className="h-4 w-4 accent-brand-600"
-              checked={allSelected}
-              onChange={toggleAll}
-              disabled={!selectableIds.length}
-            />
-            {selectedCount > 0 ? `${selectedCount} selected` : "Select all with email"}
-          </label>
-          {hasAddon ? (
-            <Button
-              size="sm"
-              disabled={selectedCount === 0}
-              onClick={() => {
-                setResults(null);
-                setError(null);
-                setComposeOpen(true);
-              }}
-            >
-              <HiOutlineEnvelope className="h-4 w-4" />
-              Email {selectedCount || ""} lead{selectedCount === 1 ? "" : "s"}
-            </Button>
-          ) : (
-            <Link
-              href="/billing?addon=messaging"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-brand-200 bg-brand-50 px-3 py-1.5 text-[13px] font-semibold text-brand-700 hover:bg-brand-100"
-            >
-              <HiOutlineLockClosed className="h-4 w-4" />
-              Unlock bulk email · ${addonPriceUsd.toFixed(2)}/mo
-            </Link>
-          )}
+        <div className="space-y-3 rounded-xl border border-border bg-[var(--surface)] px-4 py-3">
+          {categories.length > 0 ? (
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+              <label className="block min-w-[200px] text-[12px]">
+                <span className="font-medium text-ink-muted">Filter by service</span>
+                <select
+                  className="saas-input mt-1"
+                  value={industryFilter}
+                  onChange={(e) => {
+                    setIndustryFilter(e.target.value);
+                    setSelected(new Set());
+                  }}
+                >
+                  <option value="all">All services ({leads.length})</option>
+                  {categories.map((c) => {
+                    const count = leads.filter(
+                      (l) => l.lead.industry?.toLowerCase() === c.toLowerCase(),
+                    ).length;
+                    return (
+                      <option key={c} value={c}>
+                        {c} ({count})
+                      </option>
+                    );
+                  })}
+                </select>
+              </label>
+              {industryFilter !== "all" ? (
+                <p className="text-[12px] text-ink-muted">
+                  Showing {filteredLeads.length} {industryFilter} lead
+                  {filteredLeads.length === 1 ? "" : "s"}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <label className="flex items-center gap-2 text-[13px] font-medium text-ink">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-brand-600"
+                checked={allSelected}
+                onChange={toggleAll}
+                disabled={!selectableIds.length}
+              />
+              {selectedCount > 0
+                ? `${selectedCount} selected`
+                : industryFilter === "all"
+                  ? "Select all with email"
+                  : `Select all ${industryFilter} with email`}
+            </label>
+            {hasAddon ? (
+              <Button
+                size="sm"
+                disabled={selectedCount === 0}
+                onClick={() => {
+                  setResults(null);
+                  setError(null);
+                  setComposeOpen(true);
+                }}
+              >
+                <HiOutlineEnvelope className="h-4 w-4" />
+                Email {selectedCount || ""} lead{selectedCount === 1 ? "" : "s"}
+              </Button>
+            ) : (
+              <Link
+                href="/billing?addon=messaging"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-brand-200 bg-brand-50 px-3 py-1.5 text-[13px] font-semibold text-brand-700 hover:bg-brand-100"
+              >
+                <HiOutlineLockClosed className="h-4 w-4" />
+                Unlock bulk email · ${addonPriceUsd.toFixed(2)}/mo
+              </Link>
+            )}
+          </div>
         </div>
       ) : null}
 
       <div className="grid gap-3">
-        {leads.map((s) => {
+        {filteredLeads.map((s) => {
           const checked = selected.has(s.lead.id);
           const emailable = Boolean(s.lead.email);
           return (
@@ -189,7 +252,10 @@ export function SavedLeadsManager({
                   />
                   <div className="min-w-0">
                     <p className="font-semibold text-ink">{s.lead.businessName}</p>
-                    <p className="mt-1 text-sm text-ink-muted">{s.lead.address}</p>
+                    <p className="mt-1 text-sm text-ink-muted">
+                      {[s.lead.industry, s.lead.address].filter(Boolean).join(" · ") ||
+                        "—"}
+                    </p>
                   </div>
                 </div>
                 <div
@@ -211,6 +277,20 @@ export function SavedLeadsManager({
             </Card>
           );
         })}
+        {!filteredLeads.length && leads.length > 0 ? (
+          <Card className="border-dashed">
+            <CardContent className="py-10 text-center text-sm text-ink-muted">
+              No saved leads match this service filter.{" "}
+              <button
+                type="button"
+                onClick={() => setIndustryFilter("all")}
+                className="font-semibold text-brand-600 hover:underline"
+              >
+                Show all
+              </button>
+            </CardContent>
+          </Card>
+        ) : null}
         {!leads.length && (
           <Card className="border-dashed">
             <CardContent className="py-10 text-center text-sm text-ink-muted">
@@ -261,7 +341,11 @@ export function SavedLeadsManager({
                 </label>
               ) : (
                 <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
-                  Add an SMTP mailbox under Email &amp; SMTP settings to send.
+                  Add an SMTP mailbox under{" "}
+                  <Link href="/setup/email" className="font-semibold underline">
+                    Setup → Email &amp; SMTP
+                  </Link>{" "}
+                  to send.
                 </p>
               )}
 

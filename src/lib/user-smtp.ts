@@ -258,7 +258,7 @@ export async function sendViaUserSmtp(opts: {
   const cfg = await getUserSmtpConfig(opts.userId, opts.accountId);
   if (!cfg) {
     throw new Error(
-      "SMTP is not configured. Add a mailbox under Settings → Email automation.",
+      "SMTP is not configured. Add a mailbox under Setup → Email & SMTP.",
     );
   }
   const transport = createSmtpTransport(cfg);

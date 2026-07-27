@@ -59,9 +59,18 @@ export default async function SavedLeadsPage() {
       businessName: s.lead.businessName,
       address: s.lead.address,
       email: s.lead.email,
+      industry: s.lead.industry,
       leadScore: s.lead.leadScore,
     },
   }));
+
+  const categories = [
+    ...new Set(
+      saved
+        .map((s) => s.lead.industry)
+        .filter((v): v is string => Boolean(v?.trim())),
+    ),
+  ].sort((a, b) => a.localeCompare(b));
 
   return (
     <div className="page-pad">
@@ -85,6 +94,7 @@ export default async function SavedLeadsPage() {
 
       <SavedLeadsManager
         leads={rows}
+        categories={categories}
         hasAddon={dbUser ? hasMessagingAddon(dbUser) : false}
         addonPriceUsd={MESSAGING_ADDON_PRICE_USD}
         mailboxes={mailboxes}
