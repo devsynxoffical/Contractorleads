@@ -304,12 +304,6 @@ export function MarketingPricingSection({
                         </span>
                       </div>
                     ) : null}
-                    {perLead != null && plan.leadsIncluded ? (
-                      <p className="mt-1.5 text-[11px] leading-snug text-slate-400">
-                        Based on {plan.leadsIncluded.toLocaleString()} leads /
-                        month included
-                      </p>
-                    ) : null}
                   </div>
                 </div>
 

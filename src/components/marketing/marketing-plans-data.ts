@@ -225,7 +225,6 @@ export const MARKETING_PLANS: MarketingPlanCard[] = [
     ctaHref: "/register",
     trialOffer: true,
     features: [
-      `${PLAN_MONTHLY_CREDITS.starter.toLocaleString()} leads / month included`,
       `${STARTER_FREE_LEADS} free leads on signup to try`,
       "Lead Finder + live search",
       "AI scoring + owner enrichment",
@@ -251,7 +250,6 @@ export const MARKETING_PLANS: MarketingPlanCard[] = [
     popular: true,
     features: [
       "Everything in Starter",
-      `${PLAN_MONTHLY_CREDITS.growth.toLocaleString()} leads / month included`,
       "Lead Map + social filters",
       "Meta Ads intel",
       "Dashboard & analytics",
@@ -275,7 +273,6 @@ export const MARKETING_PLANS: MarketingPlanCard[] = [
     secondaryCtaHref: "mailto:hello@contractorleads.us",
     features: [
       "Everything in Growth",
-      `${PLAN_MONTHLY_CREDITS.agency.toLocaleString()} leads / month included`,
       "Client reports",
       "Multi-tenant workspaces",
       "Team seats",
