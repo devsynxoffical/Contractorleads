@@ -20,7 +20,7 @@ export function FilterChipRow({
   return (
     <div className="space-y-1.5">
       <p className="text-[11px] font-medium text-ink-muted">{label}</p>
-      <div className="flex flex-wrap gap-1.5">
+      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
         {options.map((opt) => {
           const active = value === opt.value;
           const tierClass =
@@ -42,7 +42,7 @@ export function FilterChipRow({
               type="button"
               onClick={() => onChange(opt.value)}
               className={cn(
-                "rounded-full px-3 py-1.5 text-[12px] font-semibold transition",
+                "inline-flex min-h-10 shrink-0 items-center rounded-full px-3.5 py-2 text-[13px] font-semibold transition",
                 tierClass,
               )}
             >

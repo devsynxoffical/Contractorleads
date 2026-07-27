@@ -3,6 +3,7 @@ import { getSessionUser } from "@/lib/auth";
 import {
   computeVerificationScore,
   enrichLeadSocial,
+  verificationScoreMessage,
 } from "@/lib/services/social-enrichment";
 import { findAccessibleLead } from "@/lib/lead-ownership";
 
@@ -29,6 +30,7 @@ export async function POST(
       lead: result.lead,
       found: result.found,
       verificationScore,
+      message: verificationScoreMessage(verificationScore),
     });
   } catch (e) {
     console.error("[enrich-social]", e);

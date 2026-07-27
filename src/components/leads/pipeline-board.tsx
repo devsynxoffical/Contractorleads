@@ -336,7 +336,7 @@ export function PipelineBoard({ initialColumns }: { initialColumns: Column[] }) 
                         onChange={(e) =>
                           void moveLead(s.id, s.status, e.target.value)
                         }
-                        className="mt-1 h-8 w-full rounded-lg border border-border bg-white px-2 text-[11px] text-ink outline-none focus:border-brand-400"
+                        className="mt-1 min-h-10 w-full rounded-lg border border-border bg-white px-2 text-[13px] text-ink outline-none focus:border-brand-400"
                       >
                         {LEAD_STATUSES.map((status) => (
                           <option key={status.value} value={status.value}>
@@ -347,7 +347,7 @@ export function PipelineBoard({ initialColumns }: { initialColumns: Column[] }) 
                     </label>
                     <button
                       type="button"
-                      className="mt-2 text-[11px] font-medium text-red-600 hover:underline"
+                      className="mt-2 inline-flex min-h-10 w-full items-center justify-center rounded-lg border border-red-200 bg-red-50 px-2 text-[13px] font-medium text-red-700 hover:bg-red-100"
                       disabled={busyId === s.id}
                       onClick={(e) => {
                         e.stopPropagation();

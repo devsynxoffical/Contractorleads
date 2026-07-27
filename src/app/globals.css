@@ -1742,7 +1742,7 @@ html[data-theme="dark"] .marketing-site .bg-\[\#f8f5ff\] {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
-@media (min-width: 640px) {
+@media (min-width: 1024px) {
   .mkt-flow-links {
     display: flex;
   }
@@ -1807,12 +1807,14 @@ html[data-theme="dark"] .marketing-site .bg-\[\#f8f5ff\] {
 }
 @media (max-width: 479px) {
   .mkt-flow-pill--login {
-    padding: 0 0.9em;
-    font-size: 0.85em;
+    display: none;
   }
   .mkt-flow-nav-actions .mkt-flow-pill:not(.mkt-flow-pill--login) {
     padding: 0 0.95em;
     font-size: 0.85em;
+  }
+  .mkt-flow-brand-text {
+    display: none;
   }
 }
 .mkt-flow-center {

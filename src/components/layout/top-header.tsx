@@ -41,7 +41,7 @@ export function TopHeader({
         <button
           type="button"
           onClick={onMenuClick}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-ink-muted transition hover:bg-brand-50 hover:text-brand-500 lg:hidden"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-ink-muted transition hover:bg-brand-50 hover:text-brand-500 lg:hidden"
           aria-label="Open menu"
         >
           <HiOutlineBars3 className="h-5 w-5" />

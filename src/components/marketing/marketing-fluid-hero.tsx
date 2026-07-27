@@ -182,7 +182,7 @@ export function MarketingFluidHero() {
             className="mkt-flow-brand-logo"
             priority
           />
-          Contractor Leads
+          <span className="mkt-flow-brand-text">Contractor Leads</span>
         </Link>
 
         <nav className="mkt-flow-links" aria-label="Primary">

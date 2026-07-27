@@ -39,21 +39,6 @@ import type {
 } from "@/lib/services/qualification-breakdown";
 import { useRouter } from "next/navigation";
 
-type FacebookAdsResult = {
-  ads: Array<{
-    id: string;
-    pageName: string;
-    adCreativeBodies: string[];
-    adSnapshotUrl: string;
-    publisherPlatforms: string[];
-    adDeliveryStartTime?: string;
-  }>;
-  totalCount: number;
-  searchUrl: string;
-  source: "api" | "link";
-  message?: string;
-};
-
 type Lead = {
   id: string;
   businessName: string;
@@ -435,12 +420,13 @@ export function LeadDetailView({
   const [saving, setSaving] = useState(false);
   const [fetchingSocial, setFetchingSocial] = useState(false);
   const [findingLinkedin, setFindingLinkedin] = useState(false);
-  const [checkingAds, setCheckingAds] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [verificationScore, setVerificationScore] = useState<number | null>(
     null,
   );
-  const [adsResult, setAdsResult] = useState<FacebookAdsResult | null>(null);
+  const [verificationMessage, setVerificationMessage] = useState<string | null>(
+    null,
+  );
   const [popup, setPopup] = useState<PopupState | null>(null);
 
   const [crmBusy, setCrmBusy] = useState(false);
@@ -539,13 +525,6 @@ export function LeadDetailView({
               total: 0,
             },
       );
-      if (data.lead?.facebookAdsData) {
-        try {
-          setAdsResult(JSON.parse(data.lead.facebookAdsData));
-        } catch {
-          setAdsResult(null);
-        }
-      }
       return;
     }
 
@@ -559,19 +538,12 @@ export function LeadDetailView({
     }
     setLead(data.lead);
     setNavigation(data.navigation ?? null);
-    if (data.lead?.facebookAdsData) {
-      try {
-        setAdsResult(JSON.parse(data.lead.facebookAdsData));
-      } catch {
-        setAdsResult(null);
-      }
-    }
   }
 
   useEffect(() => {
     setLead(null);
     setVerificationScore(null);
-    setAdsResult(null);
+    setVerificationMessage(null);
     setPopup(null);
     setQualificationExpanded(null);
     setQualificationBreakdown(null);
@@ -584,8 +556,14 @@ export function LeadDetailView({
     if (lead && verificationScore === null) {
       fetch(`/api/leads/${leadId}/verify`, { method: "POST" })
         .then((r) => r.json())
-        .then((d) => setVerificationScore(d.verificationScore ?? null))
-        .catch(() => setVerificationScore(null));
+        .then((d) => {
+          setVerificationScore(d.verificationScore ?? null);
+          setVerificationMessage(d.message ?? null);
+        })
+        .catch(() => {
+          setVerificationScore(null);
+          setVerificationMessage(null);
+        });
     }
   }, [lead, leadId, verificationScore]);
 
@@ -665,6 +643,7 @@ export function LeadDetailView({
       // Enrich APIs omit savedBy — merge so the page doesn't crash.
       mergeLead(data.lead);
       setVerificationScore(data.verificationScore ?? null);
+      setVerificationMessage(data.message ?? null);
       const found = Object.entries(data.found ?? {})
         .filter(([, v]) => v)
         .map(([k]) => k.replace(/([A-Z])/g, " $1").toLowerCase());
@@ -753,31 +732,6 @@ export function LeadDetailView({
     }
   }
 
-  async function checkAds() {
-    setCheckingAds(true);
-    try {
-      const res = await fetch(`/api/leads/${leadId}/facebook-ads`, {
-        method: "POST",
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Check failed");
-      setAdsResult(data.ads);
-      await load();
-    } catch (e) {
-      setAdsResult(null);
-      setPopup({
-        kind: "error",
-        title: "Ads check failed",
-        message:
-          e instanceof Error
-            ? e.message
-            : "Could not reach the Meta Ads Library. Please try again.",
-      });
-    } finally {
-      setCheckingAds(false);
-    }
-  }
-
   async function reVerify() {
     setVerifying(true);
     try {
@@ -786,6 +740,7 @@ export function LeadDetailView({
       });
       const data = await res.json();
       setVerificationScore(data.verificationScore ?? null);
+      setVerificationMessage(data.message ?? null);
     } finally {
       setVerifying(false);
     }
@@ -1407,85 +1362,29 @@ export function LeadDetailView({
                 <CardTitle className="flex items-center gap-2">
                   <HiOutlineMegaphone className="h-5 w-5 text-brand-600" />
                   Facebook Ads Library
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
+                    Coming soon
+                  </span>
                 </CardTitle>
                 <p className="mt-1 text-[12px] text-ink-muted">
                   Check if this business is running Meta ads — and where the
                   marketing opportunity lies.
                 </p>
               </div>
-              <Button size="sm" onClick={checkAds} loading={checkingAds}>
-                {checkingAds ? "Checking…" : "Check ads"}
+              <Button size="sm" disabled title="Coming soon">
+                Check ads
               </Button>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {adsResult?.message && (
-                <p className="rounded-lg bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
-                  {adsResult.message}
+            <CardContent>
+              <div className="rounded-xl border border-dashed border-amber-200 bg-amber-50/80 px-4 py-5 text-center">
+                <p className="text-[14px] font-semibold text-amber-950">
+                  Coming soon
                 </p>
-              )}
-              {adsResult && adsResult.ads.length > 0 ? (
-                <ul className="space-y-3">
-                  {adsResult.ads.map((ad) => (
-                    <li
-                      key={ad.id}
-                      className="rounded-xl border border-border bg-[#faf8fc] p-3"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="text-[13px] font-semibold text-ink">
-                            {ad.pageName}
-                          </p>
-                          {ad.adCreativeBodies[0] && (
-                            <p className="mt-1 line-clamp-2 text-[12px] text-ink-muted">
-                              {ad.adCreativeBodies[0]}
-                            </p>
-                          )}
-                          <p className="mt-1 text-[11px] text-ink-faint">
-                            {ad.publisherPlatforms.join(", ")}
-                            {ad.adDeliveryStartTime &&
-                              ` · since ${new Date(ad.adDeliveryStartTime).toLocaleDateString()}`}
-                          </p>
-                        </div>
-                        {ad.adSnapshotUrl && (
-                          <a
-                            href={ad.adSnapshotUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="shrink-0 text-[12px] font-medium text-brand-600 hover:underline"
-                          >
-                            View ad
-                          </a>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              ) : adsResult ? (
-                <p className="text-[13px] text-ink-muted">
-                  No active ads found for this business.
+                <p className="mx-auto mt-1 max-w-md text-[13px] text-amber-900/80">
+                  Meta Ads Library checks are temporarily unavailable while we
+                  finish this feature for agencies and admins.
                 </p>
-              ) : (
-                <p className="text-[13px] text-ink-faint">
-                  Click &quot;Check ads&quot; to search the Meta Ads Library.
-                </p>
-              )}
-              {adsResult?.searchUrl && (
-                <a
-                  href={adsResult.searchUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-[13px] font-medium text-brand-600 hover:underline"
-                >
-                  Open full Ads Library search
-                  <HiOutlineArrowTopRightOnSquare className="h-3.5 w-3.5" />
-                </a>
-              )}
-              {lead.facebookAdsCheckedAt && (
-                <p className="text-[11px] text-ink-faint">
-                  Last checked{" "}
-                  {new Date(lead.facebookAdsCheckedAt).toLocaleString()}
-                </p>
-              )}
+              </div>
             </CardContent>
           </Card>
 
@@ -1504,15 +1403,19 @@ export function LeadDetailView({
             <CardContent>
               <div className="flex items-center gap-4">
                 <div
-                  className="flex h-16 w-16 items-center justify-center rounded-2xl text-xl font-bold text-white"
+                  className="flex h-16 w-16 flex-col items-center justify-center rounded-2xl text-white"
                   style={{ background: LOGO_GRADIENT }}
                 >
-                  {verificationScore ?? "—"}
-                  <span className="text-sm font-normal opacity-80">/100</span>
+                  <span className="text-xl font-bold leading-none">
+                    {verificationScore ?? "—"}
+                  </span>
+                  <span className="text-[11px] font-normal opacity-80">
+                    /100
+                  </span>
                 </div>
                 <p className="text-sm text-ink-muted">
-                  Contact and social details cross-referenced. Run Fetch on
-                  social profiles to improve this score.
+                  {verificationMessage ??
+                    "Contact and social details are scored from what we can verify on this lead."}
                 </p>
               </div>
             </CardContent>

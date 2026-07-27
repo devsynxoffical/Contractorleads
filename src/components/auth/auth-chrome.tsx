@@ -155,7 +155,7 @@ export function AuthSiteFooter() {
       </div>
 
       <div className="relative mx-auto max-w-6xl border-t border-white/10 px-5 pb-10 pt-12 sm:px-8 sm:pb-14 sm:pt-14">
-        <div className="grid grid-cols-2 gap-x-8 gap-y-8 sm:grid-cols-3 lg:grid-cols-5 lg:items-start">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 sm:gap-x-8 lg:grid-cols-5 lg:items-start">
           <div>
             <p className="text-[13px] font-semibold text-white">Get started</p>
             <div className="mt-4 flex flex-col gap-2.5">

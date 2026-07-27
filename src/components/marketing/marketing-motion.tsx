@@ -69,7 +69,7 @@ export function MarketingStickyCta() {
 
   return (
     <motion.div
-      className="fixed bottom-4 left-1/2 z-40 hidden -translate-x-1/2 sm:block"
+      className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-50 -translate-x-1/2"
       initial={false}
       animate={
         visible
@@ -84,7 +84,7 @@ export function MarketingStickyCta() {
     >
       <Link
         href={loggedIn ? "/dashboard" : "/register"}
-        className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-[#ffffff]/95 px-5 py-2.5 text-[13px] font-semibold text-slate-800 shadow-[0_12px_40px_rgba(80,40,120,0.18)] backdrop-blur-xl transition hover:shadow-[0_16px_48px_rgba(217,70,239,0.22)]"
+        className="inline-flex min-h-11 items-center gap-2 rounded-full border border-slate-200 bg-[#ffffff]/95 px-4 py-2.5 text-[13px] font-semibold text-slate-800 shadow-[0_12px_40px_rgba(80,40,120,0.18)] backdrop-blur-xl transition hover:shadow-[0_16px_48px_rgba(217,70,239,0.22)] sm:px-5"
       >
         <motion.span
           className="h-2 w-2 rounded-full"
@@ -92,7 +92,10 @@ export function MarketingStickyCta() {
           animate={reduced ? undefined : { scale: [1, 1.35, 1] }}
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
         />
-        {loggedIn ? "Open Dashboard" : "Start free — 10 leads included"}
+        <span className="sm:hidden">{loggedIn ? "Dashboard" : "Start free"}</span>
+        <span className="hidden sm:inline">
+          {loggedIn ? "Open Dashboard" : "Start free — 10 leads included"}
+        </span>
         <span
           className="rounded-full px-2 py-0.5 text-[11px] text-white"
           style={{ background: LOGO_GRADIENT }}

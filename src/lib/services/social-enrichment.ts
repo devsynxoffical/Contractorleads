@@ -161,26 +161,63 @@ export async function enrichLeadSocial(lead: LeadRecord) {
   };
 }
 
+/**
+ * AI verification score based on how complete contact + social signals are.
+ * Missing common fields keep the score well below 100 so "100/100" is rare
+ * and only happens when contact + multiple social channels are present.
+ */
 export function computeVerificationScore(lead: {
   phone: string | null;
   email: string | null;
   website: string | null;
   googleRating: number | null;
+  reviewCount?: number | null;
   linkedinCompanyUrl: string | null;
   linkedinOwnerUrl: string | null;
   facebook: string | null;
   instagram: string | null;
   yelpUrl: string | null;
+  youtube?: string | null;
+  tiktok?: string | null;
 }): number {
-  let score = 40;
-  if (lead.phone) score += 15;
-  if (lead.email) score += 10;
-  if (lead.website) score += 10;
-  if (lead.googleRating && lead.googleRating >= 4) score += 10;
-  if (lead.linkedinCompanyUrl) score += 8;
-  if (lead.linkedinOwnerUrl) score += 5;
-  if (lead.facebook) score += 5;
-  if (lead.instagram) score += 4;
-  if (lead.yelpUrl) score += 3;
-  return Math.min(100, score);
+  let score = 0;
+
+  // Contact (max 42)
+  if (lead.phone?.trim()) score += 14;
+  if (lead.email?.trim()) score += 14;
+  if (lead.website?.trim()) score += 14;
+
+  // Trust signals (max 18)
+  const rating = lead.googleRating ?? 0;
+  if (rating >= 4.5) score += 10;
+  else if (rating >= 4) score += 7;
+  else if (rating >= 3) score += 3;
+  const reviews = lead.reviewCount ?? 0;
+  if (reviews >= 50) score += 8;
+  else if (reviews >= 15) score += 5;
+  else if (reviews >= 5) score += 2;
+
+  // Social verification (max 40) — high scores need real social presence
+  if (lead.linkedinCompanyUrl?.trim()) score += 9;
+  if (lead.linkedinOwnerUrl?.trim()) score += 9;
+  if (lead.facebook?.trim()) score += 7;
+  if (lead.instagram?.trim()) score += 6;
+  if (lead.yelpUrl?.trim()) score += 4;
+  if (lead.youtube?.trim()) score += 3;
+  if (lead.tiktok?.trim()) score += 2;
+
+  return Math.max(0, Math.min(100, score));
+}
+
+export function verificationScoreMessage(score: number): string {
+  if (score >= 90) {
+    return "Strong verification — contact and multiple social profiles are present.";
+  }
+  if (score >= 70) {
+    return "Solid contact data. Fetch more social profiles to push this higher.";
+  }
+  if (score >= 45) {
+    return "Partial verification — some contact fields are present. Run Fetch on social profiles to improve this score.";
+  }
+  return "Limited signals so far. Add or fetch phone, email, website, and social profiles to raise this score.";
 }

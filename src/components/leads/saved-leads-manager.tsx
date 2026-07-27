@@ -300,7 +300,7 @@ export function SavedLeadsManager({
             <label className="flex items-center gap-2 text-[13px] font-medium text-ink">
               <input
                 type="checkbox"
-                className="h-4 w-4 accent-brand-600"
+                className="h-5 w-5 accent-brand-600"
                 checked={allSelected}
                 onChange={toggleAll}
                 disabled={!selectableIds.length}
@@ -362,7 +362,7 @@ export function SavedLeadsManager({
                 <div className="flex min-w-0 items-center gap-3">
                   <input
                     type="checkbox"
-                    className="h-4 w-4 shrink-0 accent-brand-600 disabled:opacity-40"
+                    className="h-5 w-5 shrink-0 accent-brand-600 disabled:opacity-40"
                     checked={checked}
                     onClick={(e) => e.stopPropagation()}
                     onChange={() => toggle(s.lead.id)}

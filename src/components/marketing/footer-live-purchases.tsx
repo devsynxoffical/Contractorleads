@@ -118,7 +118,7 @@ export function FooterLivePurchases({
       className={cn(
         "max-w-xl",
         floating
-          ? "pointer-events-none fixed bottom-4 left-3 z-50 mb-0 w-[calc(100vw-1.5rem)] sm:bottom-5 sm:left-5 sm:w-auto"
+          ? "pointer-events-none fixed bottom-[max(5.5rem,calc(env(safe-area-inset-bottom)+4.5rem))] left-3 z-40 mb-0 w-[calc(100vw-1.5rem)] sm:bottom-[max(5.5rem,calc(env(safe-area-inset-bottom)+4.5rem))] sm:left-5 sm:w-auto"
           : "mb-8",
       )}
     >

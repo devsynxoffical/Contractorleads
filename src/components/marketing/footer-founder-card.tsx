@@ -86,7 +86,7 @@ export function FooterFounderCard({
               target="_blank"
               rel="noopener noreferrer"
               aria-label={label}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/[0.04] text-white/70 transition hover:border-white/30 hover:bg-white/10 hover:text-white"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/[0.04] text-white/70 transition hover:border-white/30 hover:bg-white/10 hover:text-white"
             >
               <Icon className="h-3.5 w-3.5" />
             </a>

@@ -93,7 +93,7 @@ export function AllLeadsTableBody({
           <label className="flex items-center gap-2 text-[13px] font-medium text-ink">
             <input
               type="checkbox"
-              className="h-4 w-4 accent-brand-600"
+              className="h-5 w-5 accent-brand-600"
               checked={allSelected}
               onChange={toggleAll}
               disabled={!addableIds.length}
@@ -156,7 +156,7 @@ export function AllLeadsTableBody({
                 <td className="px-4 py-3.5">
                   <input
                     type="checkbox"
-                    className="h-4 w-4 accent-brand-600 disabled:opacity-40"
+                    className="h-5 w-5 accent-brand-600 disabled:opacity-40"
                     checked={checked}
                     onClick={(e) => e.stopPropagation()}
                     onChange={() => toggle(lead.id)}

@@ -68,6 +68,7 @@ import {
 } from "./marketing-motion";
 import { FooterLivePurchases } from "./footer-live-purchases";
 import { FooterFounderCard } from "./footer-founder-card";
+import { MarketingMobileNav } from "./marketing-mobile-nav";
 import { MarketingFluidHero } from "./marketing-fluid-hero";
 import { MarketingInteractiveDemo } from "./marketing-interactive-demo";
 import { MarketingAutomationShowcase } from "./marketing-automation-showcase";
@@ -274,21 +275,25 @@ function ScrollNav() {
       }
       transition={{ type: "spring", stiffness: 420, damping: 36 }}
     >
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-8">
+      <div className="relative mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-5 sm:px-8">
         <motion.div
           initial={{ opacity: 0, x: -8 }}
           animate={shown ? { opacity: 1, x: 0 } : { opacity: 0, x: -8 }}
           transition={{ duration: 0.35 }}
+          className="min-w-0"
         >
-          <Link href="/" className="flex items-center gap-2.5">
-            <Image src="/logo.png" alt="" width={36} height={36} className="rounded-full" priority />
-            <span className="font-[family-name:var(--font-display)] text-[15px] font-semibold tracking-tight text-slate-900">
+          <Link href="/" className="flex min-w-0 items-center gap-2.5">
+            <Image src="/logo.png" alt="" width={36} height={36} className="shrink-0 rounded-full" priority />
+            <span className="truncate font-[family-name:var(--font-display)] text-[15px] font-semibold tracking-tight text-slate-900 max-[360px]:hidden">
               Contractor <span className="gradient-text">Leads</span>
             </span>
           </Link>
         </motion.div>
         <MarketingNavLinks className="hidden md:flex" />
-        <MarketingAuthActions variant="scroll" />
+        <div className="flex items-center gap-2">
+          <MarketingAuthActions variant="scroll" />
+          <MarketingMobileNav />
+        </div>
       </div>
     </motion.header>
   );
@@ -1017,7 +1022,7 @@ function Footer() {
       </div>
 
       <div className="relative mx-auto max-w-6xl border-t border-white/10 px-5 pb-10 pt-12 sm:px-8 sm:pb-14 sm:pt-14">
-        <div className="grid grid-cols-2 gap-x-8 gap-y-8 sm:grid-cols-3 lg:grid-cols-5 lg:items-start">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 sm:gap-x-8 lg:grid-cols-5 lg:items-start">
           <FooterReveal delay={0.05}>
             <div>
               <p className="text-[13px] font-semibold text-white">Get started</p>

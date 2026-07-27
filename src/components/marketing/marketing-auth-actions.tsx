@@ -40,7 +40,8 @@ export function MarketingHeroPrimaryCta() {
   }
   return (
     <Link href="/register" className="mkt-flow-pill mkt-flow-pill--primary">
-      Start closing leads free
+      <span className="sm:hidden">Start free</span>
+      <span className="hidden sm:inline">Start closing leads free</span>
       <HiOutlineArrowRight className="h-4 w-4" aria-hidden />
     </Link>
   );
@@ -75,7 +76,8 @@ export function MarketingAuthActions({
           Log in
         </Link>
         <Link href="/register" className="mkt-flow-pill">
-          Get started free
+          <span className="sm:hidden">Start free</span>
+          <span className="hidden sm:inline">Get started free</span>
         </Link>
       </div>
     );
@@ -108,13 +110,15 @@ export function MarketingAuthActions({
         </Link>
         <Link
           href="/register"
-          className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px] font-semibold text-white shadow-md shadow-fuchsia-500/20"
+          className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2.5 text-[13px] font-semibold text-white shadow-md shadow-fuchsia-500/20 sm:px-4"
           style={{
             background:
               "linear-gradient(135deg,#db2777 0%,#c026d3 45%,#9333ea 75%,#7c3aed 100%)",
           }}
         >
-          Get started free <HiOutlineArrowRight className="h-3.5 w-3.5" />
+          <span className="sm:hidden">Start free</span>
+          <span className="hidden sm:inline">Get started free</span>{" "}
+          <HiOutlineArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>
     );
@@ -137,13 +141,13 @@ export function MarketingAuthActions({
     <div className={cn("flex items-center gap-2", className)}>
       <Link
         href="/login"
-        className="rounded-full px-3 py-1.5 text-[13px] font-semibold text-slate-600 hover:text-slate-900"
+        className="hidden rounded-full px-3 py-2 text-[13px] font-semibold text-slate-600 hover:text-slate-900 sm:inline"
       >
         Sign in
       </Link>
       <Link
         href="/register"
-        className="rounded-full bg-gradient-to-r from-pink-600 via-fuchsia-600 to-violet-600 px-3.5 py-1.5 text-[13px] font-semibold text-white shadow-sm"
+        className="inline-flex min-h-10 items-center rounded-full bg-gradient-to-r from-pink-600 via-fuchsia-600 to-violet-600 px-3.5 py-2 text-[13px] font-semibold text-white shadow-sm"
       >
         Start free
       </Link>

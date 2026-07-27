@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { SEO } from "@/lib/seo";
 import { MarketingAuthActions } from "@/components/marketing/marketing-auth-actions";
 import { FooterFounderCard } from "@/components/marketing/footer-founder-card";
+import { MarketingMobileNav } from "@/components/marketing/marketing-mobile-nav";
 
 const NAV = [
   { href: "/features", label: "Features" },
@@ -30,16 +31,16 @@ export function MarketingChrome({
   return (
     <div className="min-h-screen bg-[#faf8fc] text-slate-900">
       <header className="sticky top-0 z-40 border-b border-violet-100/80 bg-white/90 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-5 sm:px-8">
-          <Link href="/" className="flex items-center gap-2.5">
+        <div className="relative mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-5 sm:px-8">
+          <Link href="/" className="flex min-w-0 items-center gap-2.5">
             <Image
               src="/logo.png"
               alt="Contractor Leads"
               width={32}
               height={32}
-              className="h-8 w-8 rounded-lg"
+              className="h-8 w-8 shrink-0 rounded-lg"
             />
-            <span className="font-[family-name:var(--font-display)] text-[15px] font-bold tracking-tight text-slate-900">
+            <span className="truncate font-[family-name:var(--font-display)] text-[15px] font-bold tracking-tight text-slate-900 max-[360px]:hidden">
               Contractor Leads
             </span>
           </Link>
@@ -54,7 +55,10 @@ export function MarketingChrome({
               </Link>
             ))}
           </nav>
-          <MarketingAuthActions variant="chrome" />
+          <div className="flex items-center gap-2">
+            <MarketingAuthActions variant="chrome" />
+            <MarketingMobileNav />
+          </div>
         </div>
       </header>
 
@@ -62,7 +66,7 @@ export function MarketingChrome({
 
       {!bare ? (
         <footer className="border-t border-violet-100 bg-[#0c0820] text-white">
-          <div className="mx-auto grid max-w-6xl grid-cols-2 gap-x-8 gap-y-8 px-5 py-14 sm:px-8 md:grid-cols-4 md:items-start">
+          <div className="mx-auto grid max-w-6xl grid-cols-2 gap-x-4 gap-y-8 px-5 py-14 sm:gap-x-8 sm:px-8 md:grid-cols-4 md:items-start">
             <div className="col-span-2 md:col-span-1">
               <p className="font-[family-name:var(--font-display)] text-lg font-bold">
                 Contractor Leads
