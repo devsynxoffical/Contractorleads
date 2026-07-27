@@ -73,6 +73,16 @@ export function FooterLivePurchases({
   const [ageSec, setAgeSec] = useState(12);
   const [visible, setVisible] = useState(true);
 
+  const textCard = floating ? "text-slate-700/90" : "text-white/90";
+  const whoText = floating ? "text-slate-900" : "text-white";
+  const metaText = floating ? "text-slate-500/70" : "text-white/40";
+  const metaDim = floating ? "text-slate-500/30" : "text-white/20";
+  const verifiedText = floating
+    ? "text-emerald-700/90"
+    : "text-emerald-300/90";
+  const actionText = floating ? "text-slate-500/60" : "text-white/50";
+  const livePillText = floating ? "text-slate-500" : "text-white/45";
+
   useEffect(() => {
     setEvent(pickNext());
     setAgeSec(8 + Math.floor(Math.random() * 40));
@@ -134,7 +144,7 @@ export function FooterLivePurchases({
         <div
           className={cn(
             "flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em]",
-            floating ? "text-slate-300" : "text-white/45",
+            livePillText,
           )}
         >
           <span className="relative flex h-2 w-2 shrink-0">
@@ -143,7 +153,14 @@ export function FooterLivePurchases({
           </span>
           Live activity
         </div>
-        <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-300">
+        <span
+          className={cn(
+            "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold",
+            floating
+              ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-800"
+              : "border-emerald-400/25 bg-emerald-400/10 text-emerald-300",
+          )}
+        >
           <HiOutlineCheckBadge className="h-3.5 w-3.5 shrink-0" aria-hidden />
           Verified source
         </span>
@@ -167,7 +184,7 @@ export function FooterLivePurchases({
               className={cn(
                 "flex w-full max-w-md items-start gap-4 rounded-2xl px-4 py-3.5 backdrop-blur-md sm:px-5 sm:py-4",
                 floating
-                  ? "border border-slate-800/40 bg-slate-950/80 shadow-[0_12px_40px_rgba(2,6,23,0.4)]"
+                  ? "border border-slate-200/70 bg-white/85 shadow-[0_12px_40px_rgba(2,6,23,0.12)]"
                   : "border border-white/12 bg-white/[0.07] shadow-[0_12px_40px_rgba(0,0,0,0.25)]",
               )}
             >
@@ -179,20 +196,27 @@ export function FooterLivePurchases({
               </span>
 
               <div className="min-w-0 flex-1 space-y-1.5">
-                <p className="text-[13px] leading-snug text-white/90 sm:text-[14px]">
-                  <span className="font-semibold text-white">{copy.who}</span>
-                  <span className="text-white/50"> {event?.action} </span>
+                <p className={cn("text-[13px] leading-snug sm:text-[14px]", textCard)}>
+                  <span className={cn("font-semibold", whoText)}>{copy.who}</span>
+                  <span className={cn(actionText)}> {event?.action} </span>
                   <span className={`font-semibold ${PLAN_ACCENT[copy.plan]}`}>
                     {copy.plan}
                   </span>
-                  <span className="text-white/50"> plan</span>
+                  <span className={cn(actionText)}> plan</span>
                 </p>
-                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] text-white/40">
+                <div
+                  className={cn(
+                    "flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px]",
+                    metaText,
+                  )}
+                >
                   <span>{copy.when}</span>
-                  <span className="text-white/20" aria-hidden>
+                  <span className={cn(metaDim)} aria-hidden>
                     ·
                   </span>
-                  <span className="inline-flex items-center gap-1 text-emerald-300/90">
+                  <span
+                    className={cn("inline-flex items-center gap-1", verifiedText)}
+                  >
                     <HiOutlineCheckBadge className="h-3.5 w-3.5" aria-hidden />
                     Verified source
                   </span>
