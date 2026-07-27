@@ -83,6 +83,7 @@ import { MarketingPricingSection } from "./marketing-pricing-section";
 import type { MarketingPlanCard } from "./marketing-plans-data";
 import { MarketingAuthActions } from "./marketing-auth-actions";
 import { setMarketingLenis } from "./marketing-scroll";
+import { EMAIL_BRAND } from "@/lib/email-brand";
 import Lenis from "lenis";
 import "lenis/dist/lenis.css";
 
@@ -1083,7 +1084,10 @@ function Footer() {
         </div>
 
         <div className="mt-8 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-6 text-[12px] text-white/40 sm:flex-row">
-          <p>© {new Date().getFullYear()} Contractor Leads. All rights reserved.</p>
+          <div className="space-y-1 text-center sm:text-left">
+            <p>© {new Date().getFullYear()} Contractor Leads. All rights reserved.</p>
+            <p className="text-white/30">{EMAIL_BRAND.address}</p>
+          </div>
           <p className="text-white/30">Built for agencies that sell to contractors.</p>
         </div>
       </div>

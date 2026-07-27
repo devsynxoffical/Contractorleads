@@ -20,6 +20,14 @@ export function organizationJsonLd() {
     email: EMAIL_BRAND.contactEmail,
     description: SEO.defaultDescription,
     sameAs: seoSameAs(),
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: "30 N Gould St # 58138",
+      addressLocality: "Sheridan",
+      addressRegion: "WY",
+      postalCode: "82801",
+      addressCountry: "US",
+    },
   };
 }
 

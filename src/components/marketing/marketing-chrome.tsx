@@ -5,6 +5,7 @@ import { SEO } from "@/lib/seo";
 import { MarketingAuthActions } from "@/components/marketing/marketing-auth-actions";
 import { FooterFounderCard } from "@/components/marketing/footer-founder-card";
 import { MarketingMobileNav } from "@/components/marketing/marketing-mobile-nav";
+import { EMAIL_BRAND } from "@/lib/email-brand";
 
 const NAV = [
   { href: "/features", label: "Features" },
@@ -147,7 +148,8 @@ export function MarketingChrome({
             </div>
           </div>
           <div className="mx-auto max-w-6xl border-t border-white/10 px-5 py-4 text-center text-[12px] text-white/40 sm:px-8">
-            © {new Date().getFullYear()} Contractor Leads. All rights reserved.
+            <p>© {new Date().getFullYear()} Contractor Leads. All rights reserved.</p>
+            <p className="mt-1 text-white/30">{EMAIL_BRAND.address}</p>
           </div>
         </footer>
       ) : null}

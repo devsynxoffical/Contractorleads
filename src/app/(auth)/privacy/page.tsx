@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AuthSiteFooter, AuthSiteHeader } from "@/components/auth/auth-chrome";
+import { EMAIL_BRAND } from "@/lib/email-brand";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
@@ -86,6 +87,7 @@ export default function PrivacyPage() {
             </Link>
             .
           </p>
+          <p className="text-slate-500">{EMAIL_BRAND.address}</p>
         </div>
       </main>
       <AuthSiteFooter />

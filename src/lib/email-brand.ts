@@ -39,7 +39,7 @@ export const EMAIL_BRAND = {
   /** Physical address for CAN-SPAM / deliverability */
   address:
     process.env.EMAIL_COMPANY_ADDRESS ||
-    "Contractor Leads · United States",
+    "30 N Gould St # 58138, Sheridan, WY 82801, USA",
   supportEmail: process.env.EMAIL_SUPPORT || "support@contractorleads.us",
   contactEmail: "hello@contractorleads.us",
   /** Absolute logo URL for email clients */

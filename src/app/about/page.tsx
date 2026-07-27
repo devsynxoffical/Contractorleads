@@ -63,6 +63,7 @@ export default function AboutPage() {
               {EMAIL_BRAND.contactEmail}
             </a>
           </p>
+          <p className="mt-3 text-slate-500">{EMAIL_BRAND.address}</p>
         </div>
         <Link
           href="/register"
