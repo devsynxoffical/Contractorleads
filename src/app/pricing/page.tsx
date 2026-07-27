@@ -23,6 +23,9 @@ export const metadata: Metadata = buildMetadata({
   ],
 });
 
+/** Live admin prices — do not prerender at build (DB not available on Railway). */
+export const dynamic = "force-dynamic";
+
 export default async function PricingPage() {
   const plans = await getMarketingPlansLive();
 

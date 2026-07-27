@@ -16,6 +16,9 @@ export const metadata: Metadata = buildMetadata({
   path: "/",
 });
 
+/** Live admin prices — do not prerender at build (DB not available on Railway). */
+export const dynamic = "force-dynamic";
+
 export default async function RootPage() {
   const plans = await getMarketingPlansLive();
   // Logged-in users can still visit the marketing homepage; header shows Dashboard.

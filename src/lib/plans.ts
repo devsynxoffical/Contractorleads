@@ -186,17 +186,18 @@ function parsePriceMap(raw: string | null | undefined): PlanPriceMap {
   }
 }
 
+/** Read-only price map — safe when DB is unavailable (e.g. Railway build). */
 export async function getPlanPriceMap(): Promise<PlanPriceMap> {
-  const { prisma } = await import("@/lib/prisma");
-  const row = await prisma.planPricingConfig.upsert({
-    where: { id: "default" },
-    update: {},
-    create: {
-      id: "default",
-      pricesJson: JSON.stringify(defaultPriceMap()),
-    },
-  });
-  return parsePriceMap(row.pricesJson);
+  try {
+    const { prisma } = await import("@/lib/prisma");
+    const row = await prisma.planPricingConfig.findUnique({
+      where: { id: "default" },
+    });
+    if (row) return parsePriceMap(row.pricesJson);
+  } catch (err) {
+    console.warn("getPlanPriceMap: using catalog defaults", err);
+  }
+  return defaultPriceMap();
 }
 
 export async function savePlanPriceMap(
