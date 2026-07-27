@@ -15,6 +15,11 @@ export function organizationJsonLd() {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: SEO.siteName,
+    alternateName: [
+      "ContractorLeads",
+      "contractorleads.us",
+      "www.contractorleads.us",
+    ],
     url: seoBaseUrl(),
     logo: absoluteUrl("/logo.png"),
     email: EMAIL_BRAND.contactEmail,
@@ -60,8 +65,14 @@ export function websiteJsonLd() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: SEO.siteName,
+    alternateName: ["contractorleads.us", "www.contractorleads.us"],
     url: seoBaseUrl(),
     description: SEO.defaultDescription,
+    publisher: {
+      "@type": "Organization",
+      name: SEO.siteName,
+      url: seoBaseUrl(),
+    },
     potentialAction: {
       "@type": "SearchAction",
       target: `${absoluteUrl("/register")}?ref=search`,

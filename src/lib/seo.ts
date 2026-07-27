@@ -1,14 +1,13 @@
 import type { Metadata } from "next";
-import { SITE_URL, appBaseUrl } from "@/lib/email-brand";
+import { SITE_URL } from "@/lib/email-brand";
 import { INDUSTRIES, US_STATES } from "@/lib/constants";
 
-/** Canonical marketing origin for metadata, sitemap, and JSON-LD. */
+/**
+ * Canonical marketing origin for metadata, sitemap, robots, and JSON-LD.
+ * Always www — never Railway preview or apex — so Google indexes one host.
+ */
 export function seoBaseUrl() {
-  const base = appBaseUrl().replace(/\/$/, "");
-  if (base.includes("localhost") || base.includes("127.0.0.1")) {
-    return SITE_URL;
-  }
-  return base;
+  return SITE_URL.replace(/\/$/, "");
 }
 
 export const SEO = {
@@ -16,8 +15,11 @@ export const SEO = {
   defaultTitle: "Contractor Leads | Verified contractor leads for agencies",
   titleTemplate: "%s | Contractor Leads",
   defaultDescription:
-    "Find verified, AI-scored contractor leads in seconds. Built for agencies selling to home-service businesses — real contact data, no fake lists.",
+    "Contractor Leads (contractorleads.us) helps agencies find verified, AI-scored contractor leads in seconds — real contact data, no fake lists.",
   keywords: [
+    "contractorleads.us",
+    "www.contractorleads.us",
+    "Contractor Leads",
     "contractor leads",
     "verified contractor leads",
     "AI lead scoring",
@@ -259,6 +261,8 @@ export function buildMetadata(input: BuildMetadataInput): Metadata {
     },
     twitter: {
       card: "summary_large_image",
+      site: SEO.twitterHandle,
+      creator: SEO.twitterHandle,
       title: input.title,
       description: input.description,
       images: [ogImage],
