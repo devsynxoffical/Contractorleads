@@ -1,8 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { FaFacebookF, FaYoutube } from "react-icons/fa6";
-import { HiOutlineLink } from "react-icons/hi2";
-import { SEO } from "@/lib/seo";
+import { FaFacebookF, FaLinkedinIn } from "react-icons/fa6";
 
 export const FOUNDER = {
   name: "Vaishali Kapoor",
@@ -10,6 +8,8 @@ export const FOUNDER = {
   bio: "I'm building Contractor Leads to help agencies and operators find better local contractor leads without spending hours on manual research.",
   imageSrc: "/marketing/founder.jpg",
   imageAlt: "Vaishali Kapoor, Founder of Contractor Leads",
+  facebook: "https://www.facebook.com/vaishali.joshi.658637",
+  linkedin: "https://www.linkedin.com/in/vaishali-joshi-milliondollarmedia/",
 } as const;
 
 /**
@@ -27,19 +27,14 @@ export function FooterFounderCard({
 }) {
   const social = [
     {
-      href: SEO.social.instagram,
-      label: "Instagram",
+      href: FOUNDER.facebook,
+      label: "Facebook",
       Icon: FaFacebookF,
     },
     {
-      href: SEO.social.tiktok,
-      label: "TikTok",
-      Icon: FaYoutube,
-    },
-    {
-      href: SEO.social.linkedin,
+      href: FOUNDER.linkedin,
       label: "LinkedIn",
-      Icon: HiOutlineLink,
+      Icon: FaLinkedinIn,
     },
   ];
 
