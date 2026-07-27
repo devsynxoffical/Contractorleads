@@ -6,7 +6,7 @@ import { HiOutlineChartBarSquare, HiOutlineCheckCircle } from "react-icons/hi2";
 
 type LatestReport = {
   id: string;
-  title: string;
+  title: string | null;
   content: string;
   createdAt: string;
 } | null;
@@ -110,7 +110,7 @@ export function SeoReportAddonCard({
         {latestReport ? (
           <div className="rounded-xl border border-border/80 bg-[var(--input-bg)] p-3">
             <p className="text-[12px] font-semibold text-ink">
-              Latest report: {latestReport.title}
+              Latest report: {latestReport.title || "Website SEO report"}
             </p>
             <p className="mt-0.5 text-[11px] text-ink-faint">
               Generated {new Date(latestReport.createdAt).toLocaleString()}
