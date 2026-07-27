@@ -54,12 +54,14 @@ export default async function SavedLeadsPage() {
     id: s.id,
     status: s.status,
     favorite: s.favorite,
+    savedAt: s.updatedAt.toISOString(),
     lead: {
       id: s.lead.id,
       businessName: s.lead.businessName,
       address: s.lead.address,
       email: s.lead.email,
       industry: s.lead.industry,
+      qualityTier: s.lead.qualityTier,
       leadScore: s.lead.leadScore,
     },
   }));

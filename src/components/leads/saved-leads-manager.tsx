@@ -8,19 +8,31 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
 import { EnrollEmailSequenceButton } from "@/components/leads/enroll-email-sequence-button";
+import { FilterChipRow } from "@/components/leads/filter-chip-row";
 import { cn } from "@/lib/utils";
+import { LEAD_STATUSES } from "@/lib/constants";
+import {
+  LEAD_STRENGTH_FILTERS,
+  LEAD_TIER_FILTERS,
+  LEAD_WHEN_FILTERS,
+  matchesStrengthFilter,
+  matchesTierFilter,
+  matchesWhenFilter,
+} from "@/lib/lead-date-filters";
 import { HiOutlineEnvelope, HiOutlineLockClosed, HiXMark } from "react-icons/hi2";
 
 type SavedLeadRow = {
   id: string;
   status: string;
   favorite: boolean;
+  savedAt: string;
   lead: {
     id: string;
     businessName: string;
     address: string | null;
     email: string | null;
     industry: string | null;
+    qualityTier: string | null;
     leadScore: number;
   };
 };
@@ -51,6 +63,11 @@ export function SavedLeadsManager({
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [industryFilter, setIndustryFilter] = useState("all");
+  const [whenFilter, setWhenFilter] = useState("all");
+  const [tierFilter, setTierFilter] = useState("all");
+  const [strengthFilter, setStrengthFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [emailFilter, setEmailFilter] = useState("all");
   const [composeOpen, setComposeOpen] = useState(false);
   const [subject, setSubject] = useState("");
   const [bodyText, setBodyText] = useState("");
@@ -78,13 +95,49 @@ export function SavedLeadsManager({
     });
   }, [mailboxes]);
 
+  function clearFilters() {
+    setIndustryFilter("all");
+    setWhenFilter("all");
+    setTierFilter("all");
+    setStrengthFilter("all");
+    setStatusFilter("all");
+    setEmailFilter("all");
+    setSelected(new Set());
+  }
+
   const filteredLeads = useMemo(() => {
-    if (industryFilter === "all") return leads;
-    return leads.filter(
-      (l) =>
-        l.lead.industry?.toLowerCase() === industryFilter.toLowerCase(),
-    );
-  }, [leads, industryFilter]);
+    return leads.filter((s) => {
+      if (
+        industryFilter !== "all" &&
+        s.lead.industry?.toLowerCase() !== industryFilter.toLowerCase()
+      ) {
+        return false;
+      }
+      if (!matchesWhenFilter(s.savedAt, whenFilter)) return false;
+      if (!matchesTierFilter(s.lead.qualityTier, tierFilter)) return false;
+      if (!matchesStrengthFilter(s.lead.leadScore, strengthFilter)) return false;
+      if (statusFilter !== "all" && s.status !== statusFilter) return false;
+      if (emailFilter === "has" && !s.lead.email) return false;
+      if (emailFilter === "missing" && s.lead.email) return false;
+      return true;
+    });
+  }, [
+    leads,
+    industryFilter,
+    whenFilter,
+    tierFilter,
+    strengthFilter,
+    statusFilter,
+    emailFilter,
+  ]);
+
+  const filtersActive =
+    industryFilter !== "all" ||
+    whenFilter !== "all" ||
+    tierFilter !== "all" ||
+    strengthFilter !== "all" ||
+    statusFilter !== "all" ||
+    emailFilter !== "all";
 
   const selectableIds = useMemo(
     () => filteredLeads.filter((l) => l.lead.email).map((l) => l.lead.id),
@@ -142,42 +195,108 @@ export function SavedLeadsManager({
   return (
     <div className="space-y-3">
       {leads.length > 0 ? (
-        <div className="space-y-3 rounded-xl border border-border bg-[var(--surface)] px-4 py-3">
+        <div className="space-y-4 rounded-xl border border-border bg-[var(--surface)] px-4 py-3">
+          <FilterChipRow
+            label="Saved"
+            options={LEAD_WHEN_FILTERS}
+            value={whenFilter}
+            onChange={(value) => {
+              setWhenFilter(value);
+              setSelected(new Set());
+            }}
+          />
+
+          <FilterChipRow
+            label="Quality tier"
+            options={LEAD_TIER_FILTERS}
+            value={tierFilter}
+            onChange={(value) => {
+              setTierFilter(value);
+              setSelected(new Set());
+            }}
+            tone="tier"
+          />
+
+          <FilterChipRow
+            label="Lead score"
+            options={LEAD_STRENGTH_FILTERS}
+            value={strengthFilter}
+            onChange={(value) => {
+              setStrengthFilter(value);
+              setSelected(new Set());
+            }}
+          />
+
+          <FilterChipRow
+            label="Pipeline status"
+            options={[
+              { value: "all", label: "All statuses" },
+              ...LEAD_STATUSES.map((s) => ({ value: s.value, label: s.label })),
+            ]}
+            value={statusFilter}
+            onChange={(value) => {
+              setStatusFilter(value);
+              setSelected(new Set());
+            }}
+          />
+
+          <FilterChipRow
+            label="Email"
+            options={[
+              { value: "all", label: "All leads" },
+              { value: "has", label: "Has email" },
+              { value: "missing", label: "No email" },
+            ]}
+            value={emailFilter}
+            onChange={(value) => {
+              setEmailFilter(value);
+              setSelected(new Set());
+            }}
+          />
+
           {categories.length > 0 ? (
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-              <label className="block min-w-[200px] text-[12px]">
-                <span className="font-medium text-ink-muted">Filter by service</span>
-                <select
-                  className="saas-input mt-1"
-                  value={industryFilter}
-                  onChange={(e) => {
-                    setIndustryFilter(e.target.value);
-                    setSelected(new Set());
-                  }}
-                >
-                  <option value="all">All services ({leads.length})</option>
-                  {categories.map((c) => {
-                    const count = leads.filter(
-                      (l) => l.lead.industry?.toLowerCase() === c.toLowerCase(),
-                    ).length;
-                    return (
-                      <option key={c} value={c}>
-                        {c} ({count})
-                      </option>
-                    );
-                  })}
-                </select>
-              </label>
-              {industryFilter !== "all" ? (
-                <p className="text-[12px] text-ink-muted">
-                  Showing {filteredLeads.length} {industryFilter} lead
-                  {filteredLeads.length === 1 ? "" : "s"}
-                </p>
-              ) : null}
+            <label className="block text-[12px]">
+              <span className="font-medium text-ink-muted">Service / industry</span>
+              <select
+                className="saas-input mt-1"
+                value={industryFilter}
+                onChange={(e) => {
+                  setIndustryFilter(e.target.value);
+                  setSelected(new Set());
+                }}
+              >
+                <option value="all">All services ({leads.length})</option>
+                {categories.map((c) => {
+                  const count = leads.filter(
+                    (l) => l.lead.industry?.toLowerCase() === c.toLowerCase(),
+                  ).length;
+                  return (
+                    <option key={c} value={c}>
+                      {c} ({count})
+                    </option>
+                  );
+                })}
+              </select>
+            </label>
+          ) : null}
+
+          {filtersActive ? (
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
+              <p className="text-[12px] text-ink-muted">
+                Showing {filteredLeads.length} of {leads.length} saved lead
+                {leads.length === 1 ? "" : "s"}
+              </p>
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="text-[12px] font-semibold text-brand-600 hover:underline"
+              >
+                Clear filters
+              </button>
             </div>
           ) : null}
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
             <label className="flex items-center gap-2 text-[13px] font-medium text-ink">
               <input
                 type="checkbox"
@@ -188,9 +307,9 @@ export function SavedLeadsManager({
               />
               {selectedCount > 0
                 ? `${selectedCount} selected`
-                : industryFilter === "all"
-                  ? "Select all with email"
-                  : `Select all ${industryFilter} with email`}
+                : emailFilter === "has" || filtersActive
+                  ? "Select all with email (filtered)"
+                  : "Select all with email"}
             </label>
             {hasAddon ? (
               <Button
@@ -280,13 +399,13 @@ export function SavedLeadsManager({
         {!filteredLeads.length && leads.length > 0 ? (
           <Card className="border-dashed">
             <CardContent className="py-10 text-center text-sm text-ink-muted">
-              No saved leads match this service filter.{" "}
+              No saved leads match these filters.{" "}
               <button
                 type="button"
-                onClick={() => setIndustryFilter("all")}
+                onClick={clearFilters}
                 className="font-semibold text-brand-600 hover:underline"
               >
-                Show all
+                Clear filters
               </button>
             </CardContent>
           </Card>

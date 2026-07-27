@@ -13,18 +13,7 @@ import { ExportLeadsButtons } from "@/components/leads/export-leads-buttons";
 import { AllLeadsFilters } from "@/components/leads/all-leads-filters";
 import { AllLeadsTableBody } from "@/components/leads/all-leads-table-body";
 import { HiOutlineFire, HiOutlineMagnifyingGlass } from "react-icons/hi2";
-
-function startOfToday() {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-function startOfDaysAgo(days: number) {
-  const d = startOfToday();
-  d.setDate(d.getDate() - days);
-  return d;
-}
+import { startOfDaysAgo, startOfToday } from "@/lib/lead-date-filters";
 
 export default async function AllLeadsPage({
   searchParams,
@@ -55,10 +44,14 @@ export default async function AllLeadsPage({
 
   if (when === "today") {
     searchFilter.createdAt = { gte: startOfToday() };
+  } else if (when === "yesterday") {
+    searchFilter.createdAt = { gte: startOfDaysAgo(1), lt: startOfToday() };
   } else if (when === "week") {
     searchFilter.createdAt = { gte: startOfDaysAgo(7) };
   } else if (when === "month") {
     searchFilter.createdAt = { gte: startOfDaysAgo(30) };
+  } else if (when === "90days") {
+    searchFilter.createdAt = { gte: startOfDaysAgo(90) };
   }
 
   // Date filters use the search run date — reused pool leads keep an older
