@@ -1503,7 +1503,22 @@ export function LeadDetailView({
             </CardContent>
           </Card>
 
-          <OutreachStudio leadId={lead.id} businessName={lead.businessName} />
+          <OutreachStudio
+            leadId={lead.id}
+            businessName={lead.businessName}
+            leadEmail={lead.email}
+            leadPhone={lead.phone}
+            canSend={!isAdmin}
+            onSent={(_channel, status) => {
+              if (status && lead.savedBy?.[0]) {
+                setLead({
+                  ...lead,
+                  savedBy: [{ ...lead.savedBy[0], status }],
+                });
+              }
+              void load();
+            }}
+          />
         </div>
 
         <div className="space-y-5">

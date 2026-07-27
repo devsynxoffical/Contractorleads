@@ -9,9 +9,11 @@ import { prisma } from "@/lib/prisma";
 import { findOwnedLead } from "@/lib/lead-ownership";
 
 const typePrompts: Record<string, string> = {
-  email: "Write a concise cold email",
-  sms: "Write a short cold SMS under 300 characters",
-  followup: "Write a follow-up message for a lead who didn't respond",
+  email:
+    "Write a concise cold email. First line must be exactly 'Subject: <subject>', then a blank line, then the email body only (no Body: label).",
+  sms: "Write a short cold SMS under 300 characters. Plain text only — no Subject line.",
+  followup:
+    "Write a follow-up email for a lead who didn't respond. First line must be exactly 'Subject: <subject>', then a blank line, then the body only.",
   sales_script: "Write a full phone sales script with objection handling",
 };
 
@@ -58,13 +60,13 @@ Outreach Angle: ${lead.outreachAngle ?? "n/a"}
   let content: string;
 
   if (!apiKey) {
-    content = `${typePrompts[type]} for ${lead.businessName}.
-
-Hi — I work with ${user.companyName || "agencies"} helping ${lead.industry} contractors in ${lead.state} book more estimates. Noticed ${lead.businessName} has solid reviews but may be leaving demand on the table in paid search.
-
-${user.mainGoal || "We help you get more booked jobs."}
-
-Open to a quick 15-min call this week?`;
+    if (type === "sms") {
+      content = `Hi — quick note from ${user.companyName || "our team"}. Noticed ${lead.businessName} and thought we could help book more estimates. Open to a short chat?`;
+    } else if (type === "sales_script") {
+      content = `Phone script for ${lead.businessName}\n\nOpener: Hi, I work with ${user.companyName || "agencies"} helping ${lead.industry} contractors book more estimates...\n\nValue: ${user.mainGoal || "We help you get more booked jobs."}\n\nClose: Open to a quick 15-min call this week?`;
+    } else {
+      content = `Subject: Quick idea for ${lead.businessName}\n\nHi — I work with ${user.companyName || "agencies"} helping ${lead.industry} contractors in ${lead.state} book more estimates. Noticed ${lead.businessName} has solid reviews but may be leaving demand on the table in paid search.\n\n${user.mainGoal || "We help you get more booked jobs."}\n\nOpen to a quick 15-min call this week?`;
+    }
   } else {
     const openai = createOpenAI({ apiKey });
     const { text } = await generateText({
