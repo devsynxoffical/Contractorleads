@@ -6,7 +6,7 @@ export const FOUNDER = {
   name: "Vaishali Kapoor",
   title: "Founder",
   bio: "I'm building Contractor Leads to help agencies and operators find better local contractor leads without spending hours on manual research.",
-  imageSrc: "/marketing/founder.jpg",
+  imageSrc: "/marketing/founder-new.png",
   imageAlt: "Vaishali Kapoor, Founder of Contractor Leads",
   facebook: "https://www.facebook.com/vaishali.joshi.658637",
   linkedin: "https://www.linkedin.com/in/vaishali-joshi-milliondollarmedia/",
@@ -52,13 +52,13 @@ export function FooterFounderCard({
 
       <div className="relative">
         <div className="flex items-center gap-3.5">
-          <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-white/15 bg-white/5 shadow-[0_8px_24px_rgba(0,0,0,0.35)] sm:h-[4.5rem] sm:w-[4.5rem]">
+          <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-white/15 bg-[#3D1078] shadow-[0_8px_24px_rgba(0,0,0,0.35)] sm:h-[4.5rem] sm:w-[4.5rem]">
             <Image
               src={FOUNDER.imageSrc}
               alt={FOUNDER.imageAlt}
               fill
               sizes="72px"
-              className="object-cover object-[center_30%]"
+              className="object-cover object-[center_22%]"
             />
           </div>
           <div className="min-w-0">
