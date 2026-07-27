@@ -5,6 +5,7 @@ import {
   extractSubscriptionPriceId,
   fulfillCheckoutSession,
   fulfillMessagingAddonSession,
+  fulfillSeoReportSession,
   isMessagingAddonSubscription,
   notifyCheckoutAbandoned,
   planFromSubscription,
@@ -106,6 +107,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   // Messaging add-on checkout — activate the add-on, not a plan.
   if (session.metadata?.addon === "messaging") {
     await fulfillMessagingAddonSession({ sessionId: session.id, userId });
+    return;
+  }
+  if (session.metadata?.addon === "seo_report") {
+    await fulfillSeoReportSession({ sessionId: session.id, userId });
     return;
   }
 

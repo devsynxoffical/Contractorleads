@@ -91,6 +91,17 @@ export async function isMessagingAddonConfigured() {
   return Boolean(cfg.secretKey && cfg.priceMessaging?.trim());
 }
 
+/** Stripe price id for the $15 AI website + SEO report add-on (one-time). */
+export async function seoReportAddonPriceId(): Promise<string | null> {
+  const cfg = await getStripeBillingSecrets();
+  return cfg.priceSeoReport?.trim() || null;
+}
+
+export async function isSeoReportAddonConfigured() {
+  const cfg = await getStripeBillingSecrets();
+  return Boolean(cfg.secretKey && cfg.priceSeoReport?.trim());
+}
+
 export async function getStripeWebhookSecret() {
   const { webhookSecret } = await getStripeBillingSecrets();
   return webhookSecret || null;

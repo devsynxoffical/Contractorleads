@@ -20,8 +20,10 @@ type StripeStatus = {
   priceGrowth: string;
   priceAgency: string;
   priceMessaging: string;
+  priceSeoReport: string;
   checkoutReady: boolean;
   messagingReady: boolean;
+  seoReportReady: boolean;
   source: string;
   updatedAt: string | null;
   webhookUrl: string;
@@ -63,6 +65,7 @@ export default function AdminSystemPage() {
   const [priceGrowth, setPriceGrowth] = useState("");
   const [priceAgency, setPriceAgency] = useState("");
   const [priceMessaging, setPriceMessaging] = useState("");
+  const [priceSeoReport, setPriceSeoReport] = useState("");
   const [email, setEmail] = useState<EmailStatus | null>(null);
   const [resendApiKey, setResendApiKey] = useState("");
   const [fromEmail, setFromEmail] = useState("");
@@ -95,6 +98,7 @@ export default function AdminSystemPage() {
     setPriceGrowth(stripeRes.priceGrowth || "");
     setPriceAgency(stripeRes.priceAgency || "");
     setPriceMessaging(stripeRes.priceMessaging || "");
+    setPriceSeoReport(stripeRes.priceSeoReport || "");
     setEmail(emailRes);
     setFromEmail(emailRes.fromEmail || "");
     setResendApiKey("");
@@ -189,6 +193,7 @@ export default function AdminSystemPage() {
           priceGrowth,
           priceAgency,
           priceMessaging,
+          priceSeoReport,
         }),
       });
       const json = await res.json();
@@ -586,6 +591,31 @@ export default function AdminSystemPage() {
               Create a $15.50/mo recurring price in Stripe and paste its price ID here.
               {stripe ? (
                 stripe.messagingReady ? (
+                  <span className="ml-1 font-semibold text-emerald-600">Add-on ready.</span>
+                ) : (
+                  <span className="ml-1 font-semibold text-amber-600">
+                    Add-on not configured yet.
+                  </span>
+                )
+              ) : null}
+            </span>
+          </label>
+
+          <p className="pt-2 text-[12px] font-semibold text-ink">
+            AI Website + SEO report add-on price ID ($15 one-time checkout)
+          </p>
+          <label className="block text-[12px] font-medium text-ink-muted">
+            SEO report add-on price ID
+            <input
+              className="saas-input mt-1.5 font-mono text-[13px]"
+              placeholder="price_…"
+              value={priceSeoReport}
+              onChange={(e) => setPriceSeoReport(e.target.value)}
+            />
+            <span className="mt-1 block text-[11px] text-ink-faint">
+              Create a $15 one-time price in Stripe and paste its price ID here.
+              {stripe ? (
+                stripe.seoReportReady ? (
                   <span className="ml-1 font-semibold text-emerald-600">Add-on ready.</span>
                 ) : (
                   <span className="ml-1 font-semibold text-amber-600">

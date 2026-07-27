@@ -8,6 +8,7 @@ export type StripeBillingSecrets = {
   priceGrowth: string;
   priceAgency: string;
   priceMessaging: string;
+  priceSeoReport: string;
 };
 
 export type StripeBillingStatus = {
@@ -21,10 +22,13 @@ export type StripeBillingStatus = {
   priceGrowth: string;
   priceAgency: string;
   priceMessaging: string;
+  priceSeoReport: string;
   /** True when secret + all three price IDs are present (DB or env). */
   checkoutReady: boolean;
   /** True when secret + messaging price are present. */
   messagingReady: boolean;
+  /** True when secret + AI SEO report add-on price are present. */
+  seoReportReady: boolean;
   source: "database" | "environment" | "mixed" | "none";
   updatedAt: string | null;
 };
@@ -45,6 +49,7 @@ function fromEnv(): StripeBillingSecrets {
     priceGrowth: process.env.STRIPE_PRICE_GROWTH?.trim() || "",
     priceAgency: process.env.STRIPE_PRICE_AGENCY?.trim() || "",
     priceMessaging: process.env.STRIPE_PRICE_MESSAGING?.trim() || "",
+    priceSeoReport: process.env.STRIPE_PRICE_SEO_REPORT?.trim() || "",
   };
 }
 
@@ -65,6 +70,7 @@ export async function getStripeBillingSecrets(): Promise<StripeBillingSecrets> {
     priceGrowth: row.priceGrowth.trim() || env.priceGrowth,
     priceAgency: row.priceAgency.trim() || env.priceAgency,
     priceMessaging: row.priceMessaging.trim() || env.priceMessaging,
+    priceSeoReport: row.priceSeoReport.trim() || env.priceSeoReport,
   };
 }
 
@@ -83,7 +89,8 @@ export async function getStripeBillingStatus(): Promise<StripeBillingStatus> {
         row.priceStarter.trim() ||
         row.priceGrowth.trim() ||
         row.priceAgency.trim() ||
-        row.priceMessaging.trim()),
+        row.priceMessaging.trim() ||
+        row.priceSeoReport.trim()),
   );
   const envHasAny = Boolean(
     env.secretKey ||
@@ -92,7 +99,8 @@ export async function getStripeBillingStatus(): Promise<StripeBillingStatus> {
       env.priceStarter ||
       env.priceGrowth ||
       env.priceAgency ||
-      env.priceMessaging,
+      env.priceMessaging ||
+      env.priceSeoReport,
   );
 
   let source: StripeBillingStatus["source"] = "none";
@@ -112,6 +120,7 @@ export async function getStripeBillingStatus(): Promise<StripeBillingStatus> {
     priceGrowth: effective.priceGrowth,
     priceAgency: effective.priceAgency,
     priceMessaging: effective.priceMessaging,
+    priceSeoReport: effective.priceSeoReport,
     checkoutReady: Boolean(
       effective.secretKey &&
         effective.priceStarter &&
@@ -119,6 +128,7 @@ export async function getStripeBillingStatus(): Promise<StripeBillingStatus> {
         effective.priceAgency,
     ),
     messagingReady: Boolean(effective.secretKey && effective.priceMessaging),
+    seoReportReady: Boolean(effective.secretKey && effective.priceSeoReport),
     source,
     updatedAt: row?.updatedAt?.toISOString() ?? null,
   };
@@ -133,6 +143,7 @@ export type StripeBillingSaveInput = {
   priceGrowth?: string;
   priceAgency?: string;
   priceMessaging?: string;
+  priceSeoReport?: string;
   /** Clear a field explicitly */
   clearSecretKey?: boolean;
   clearPublishableKey?: boolean;
@@ -154,6 +165,7 @@ export async function saveStripeBillingConfig(input: StripeBillingSaveInput) {
     priceGrowth: current.priceGrowth,
     priceAgency: current.priceAgency,
     priceMessaging: current.priceMessaging,
+    priceSeoReport: current.priceSeoReport,
   };
 
   if (input.clearSecretKey) next.secretKey = "";
@@ -188,6 +200,9 @@ export async function saveStripeBillingConfig(input: StripeBillingSaveInput) {
   }
   if (typeof input.priceMessaging === "string") {
     next.priceMessaging = input.priceMessaging.trim();
+  }
+  if (typeof input.priceSeoReport === "string") {
+    next.priceSeoReport = input.priceSeoReport.trim();
   }
 
   const row = await prisma.stripeBillingConfig.update({

@@ -20,11 +20,13 @@ import { CREDIT_COSTS } from "@/lib/constants";
 import {
   getStripe,
   isMessagingAddonConfigured,
+  isSeoReportAddonConfigured,
   isStripeConfigured,
 } from "@/lib/stripe";
 import {
   fulfillCheckoutSession,
   fulfillMessagingAddonSession,
+  fulfillSeoReportSession,
   notifyCheckoutAbandoned,
 } from "@/lib/billing-stripe";
 import {
@@ -34,9 +36,11 @@ import {
 import { BillingCheckoutButton } from "@/components/billing/billing-checkout-button";
 import { BillingCouponField } from "@/components/billing/billing-coupon-field";
 import { MessagingAddonCard } from "@/components/billing/messaging-addon-card";
+import { SeoReportAddonCard } from "@/components/billing/seo-report-addon-card";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { HiOutlineCheck, HiOutlineLockClosed } from "react-icons/hi2";
+import { SEO_REPORT_ADDON_PRICE_USD } from "@/lib/seo-report-addon";
 
 function planRank(plan: string) {
   const idx = (PLAN_IDS as readonly string[]).indexOf(plan);
@@ -71,6 +75,7 @@ export default async function BillingPage({
     checkout?: string;
     session_id?: string;
     addon?: string;
+    seo?: string;
   }>;
 }) {
   const user = await getSessionUser();
@@ -90,6 +95,17 @@ export default async function BillingPage({
       console.error("messaging addon fulfill", err);
     }
     redirect("/billing?addon=done");
+  }
+  if (params.seo === "active" && params.session_id) {
+    try {
+      await fulfillSeoReportSession({
+        sessionId: params.session_id,
+        userId: user.id,
+      });
+    } catch (err) {
+      console.error("seo report fulfill", err);
+    }
+    redirect("/billing?seo=done");
   }
 
   // Stripe hands the session id back on the return URL. Fulfil it, then
@@ -153,6 +169,12 @@ export default async function BillingPage({
   const addonActive = dbUser ? hasMessagingAddon(dbUser) : false;
   const addonComped = Boolean(dbUser?.messagingAddonManual);
   const addonAvailable = await isMessagingAddonConfigured();
+  const seoReportAvailable = await isSeoReportAddonConfigured();
+  const latestSeoReport = await prisma.script.findFirst({
+    where: { userId: user.id, type: "seo_website_report" },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, title: true, content: true, createdAt: true },
+  });
   const current = normalizePlan(dbUser?.plan ?? user.plan);
   const features = featuresForPlan(current);
   const creditsRemaining = dbUser?.creditsRemaining ?? user.creditsRemaining;
@@ -202,6 +224,16 @@ export default async function BillingPage({
       {params.addon === "canceled" ? (
         <p className="mb-5 rounded-xl border border-border bg-[var(--surface)] px-4 py-3 text-[13px] text-ink-muted">
           Add-on checkout canceled — no charge was made.
+        </p>
+      ) : null}
+      {params.seo === "done" ? (
+        <p className="mb-5 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-3 text-[13px] text-emerald-800 dark:text-emerald-200">
+          AI Website + SEO report generated and saved to your account.
+        </p>
+      ) : null}
+      {params.seo === "canceled" ? (
+        <p className="mb-5 rounded-xl border border-border bg-[var(--surface)] px-4 py-3 text-[13px] text-ink-muted">
+          SEO report checkout canceled — no charge was made.
         </p>
       ) : null}
       {!stripeReady ? (
@@ -302,6 +334,21 @@ export default async function BillingPage({
           available={addonAvailable}
           status={dbUser?.messagingAddonStatus ?? "inactive"}
           priceUsd={MESSAGING_ADDON_PRICE_USD}
+        />
+      </div>
+
+      <div className="mt-6">
+        <SeoReportAddonCard
+          available={seoReportAvailable}
+          priceUsd={SEO_REPORT_ADDON_PRICE_USD}
+          latestReport={
+            latestSeoReport
+              ? {
+                  ...latestSeoReport,
+                  createdAt: latestSeoReport.createdAt.toISOString(),
+                }
+              : null
+          }
         />
       </div>
 

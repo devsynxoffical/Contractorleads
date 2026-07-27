@@ -78,6 +78,8 @@ export async function PUT(request: Request) {
       typeof body.priceAgency === "string" ? body.priceAgency : undefined,
     priceMessaging:
       typeof body.priceMessaging === "string" ? body.priceMessaging : undefined,
+    priceSeoReport:
+      typeof body.priceSeoReport === "string" ? body.priceSeoReport : undefined,
     clearSecretKey: body.clearSecretKey === true,
     clearPublishableKey: body.clearPublishableKey === true,
     clearWebhookSecret: body.clearWebhookSecret === true,

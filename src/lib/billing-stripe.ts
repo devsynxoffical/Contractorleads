@@ -6,6 +6,10 @@ import { sendCheckoutAbandonedEmail, sendPurchaseConfirmationEmail } from "@/lib
 import { normalizePlan, planLabel, type PlanId } from "@/lib/plans";
 import { normalizeAddonStatus } from "@/lib/messaging-addon";
 import {
+  generateSeoAnalysisReport,
+  normalizeWebsiteInput,
+} from "@/lib/seo-report-addon";
+import {
   getStripe,
   messagingAddonPriceId,
   PLAN_MONTHLY_CREDITS,
@@ -276,6 +280,73 @@ export async function fulfillMessagingAddonSession(opts: {
     return { ok: true };
   } catch (err) {
     console.error("fulfillMessagingAddonSession", err);
+    return {
+      ok: false,
+      reason: err instanceof Error ? err.message : "fulfill_failed",
+    };
+  }
+}
+
+/**
+ * Fulfill AI website + SEO report checkout by generating and saving a report.
+ * Deduped by Checkout session id so webhook + redirect cannot double-generate.
+ */
+export async function fulfillSeoReportSession(opts: {
+  sessionId: string;
+  userId: string;
+}): Promise<{ ok: boolean; reason?: string }> {
+  const sessionId = opts.sessionId.trim();
+  if (!sessionId) return { ok: false, reason: "missing_session" };
+  try {
+    const existing = await prisma.activityLog.findFirst({
+      where: {
+        userId: opts.userId,
+        type: "seo_report_purchase",
+        message: { contains: sessionId },
+      },
+      select: { id: true },
+    });
+    if (existing) return { ok: true, reason: "already_fulfilled" };
+
+    const stripe = await getStripe();
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const sessionUserId =
+      session.metadata?.userId || session.client_reference_id || null;
+    if (!sessionUserId || sessionUserId !== opts.userId) {
+      return { ok: false, reason: "user_mismatch" };
+    }
+    if (session.metadata?.addon !== "seo_report") {
+      return { ok: false, reason: "not_seo_report_addon" };
+    }
+
+    const paid =
+      session.status === "complete" ||
+      session.payment_status === "paid" ||
+      session.payment_status === "no_payment_required";
+    if (!paid) return { ok: false, reason: "not_paid" };
+
+    const website = normalizeWebsiteInput(session.metadata?.website || "");
+    if (!website) return { ok: false, reason: "missing_website" };
+
+    const report = await generateSeoAnalysisReport(website);
+    await prisma.script.create({
+      data: {
+        userId: opts.userId,
+        type: "seo_website_report",
+        title: `SEO report - ${new URL(website).hostname}`,
+        content: report,
+      },
+    });
+
+    await logActivity(
+      opts.userId,
+      "seo_report_purchase",
+      `SEO report generated from checkout ${sessionId}`,
+      { sessionId, website },
+    );
+    return { ok: true };
+  } catch (err) {
+    console.error("fulfillSeoReportSession", err);
     return {
       ok: false,
       reason: err instanceof Error ? err.message : "fulfill_failed",
