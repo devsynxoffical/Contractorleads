@@ -19,16 +19,12 @@ import {
   HiOutlineCpuChip,
   HiOutlineShieldCheck,
   HiOutlineClock,
-  HiOutlinePhoneXMark,
-  HiOutlineCurrencyDollar,
-  HiOutlineLink,
-  HiOutlineLinkSlash,
   HiOutlineChevronDown,
   HiOutlineCheck,
-  HiOutlineNoSymbol,
-  HiOutlineArrowTrendingDown,
-  HiOutlineClipboardDocumentList,
+  HiOutlineQueueList,
+  HiOutlinePuzzlePiece,
   HiOutlineEyeSlash,
+  HiOutlineDocumentMagnifyingGlass,
 } from "react-icons/hi2";
 import { FaLinkedinIn, FaSlack } from "react-icons/fa6";
 import {
@@ -176,46 +172,34 @@ const FEATURES = [
 
 const PAINS = [
   {
-    icon: HiOutlineNoSymbol,
+    icon: HiOutlineDocumentMagnifyingGlass,
     title: "Buying fake leads",
     body: "Purchased lists go stale before the first dial — disconnected numbers, closed businesses, and duplicate entries that waste a rep's whole morning.",
-    color: "#F43F5E",
-    bg: "#3f1219",
   },
   {
-    icon: HiOutlineArrowTrendingDown,
+    icon: HiOutlineChartBar,
     title: "Low conversion",
     body: "Cold outreach without context reads like spam. No owner name, no angle, no proof you looked at their business first.",
-    color: "#FB923C",
-    bg: "#3a2210",
   },
   {
-    icon: HiOutlineClipboardDocumentList,
+    icon: HiOutlineQueueList,
     title: "Manual follow-up",
     body: "The fortune is in the follow-up, and it's also the first thing that falls apart when a rep is juggling forty open threads in a spreadsheet.",
-    color: "#C084FC",
-    bg: "#2c1838",
   },
   {
     icon: HiOutlineClock,
     title: "Slow response",
     body: "A lead that goes 24 hours without a reply is a lead that's already talking to a competitor.",
-    color: "#F87171",
-    bg: "#3a1515",
   },
   {
-    icon: HiOutlineLinkSlash,
+    icon: HiOutlinePuzzlePiece,
     title: "Disconnected tools",
     body: "Spreadsheet for the list, separate tool for scoring, separate inbox for outreach, separate doc for notes — nothing talks to anything else.",
-    color: "#FDBA74",
-    bg: "#3a2414",
   },
   {
     icon: HiOutlineEyeSlash,
     title: "Blind ad spend",
     body: "Pitching a contractor on Facebook ads without checking if they're already running them (and how well) is how you lose the meeting in the first thirty seconds.",
-    color: "#60A5FA",
-    bg: "#12233a",
   },
 ];
 
@@ -385,32 +369,29 @@ function ProblemSection() {
           </p>
         </Reveal>
 
-        <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-12 grid auto-rows-fr gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {PAINS.map((p, i) => {
             const Icon = p.icon;
             return (
-              <Reveal key={p.title} delay={i * 0.05}>
-                <TiltCard intensity={7}>
+              <Reveal key={p.title} delay={i * 0.05} className="h-full">
+                <TiltCard intensity={7} className="h-full">
                   <motion.div
                     whileHover={{ y: -5 }}
-                    className="group relative h-full overflow-hidden rounded-[28px] border border-white/12 bg-white/[0.07] p-6 backdrop-blur-md"
+                    className="group relative flex h-full min-h-[15.5rem] flex-col overflow-hidden rounded-[28px] border border-white/12 bg-white/[0.07] p-6 backdrop-blur-md"
                   >
                     <div className="absolute -right-10 -top-10 h-36 w-36 rounded-full bg-fuchsia-500/20 blur-3xl transition group-hover:bg-fuchsia-400/30" />
-                    <div className="flex items-center gap-2.5">
-                      <span
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl ring-1 ring-white/10"
-                        style={{ background: p.bg, color: p.color }}
-                      >
-                        <Icon className="h-5 w-5" />
+                    <div className="relative flex items-center gap-3">
+                      <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-gradient-to-br from-white/20 to-white/[0.06] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]">
+                        <Icon className="h-6 w-6" aria-hidden />
                       </span>
                       <span className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-white/85">
                         Failure {i + 1}
                       </span>
                     </div>
-                    <h3 className="mt-4 font-[family-name:var(--font-display)] text-[22px] font-semibold text-white">
+                    <h3 className="relative mt-5 font-[family-name:var(--font-display)] text-[22px] font-semibold leading-snug text-white">
                       {p.title}
                     </h3>
-                    <p className="mt-2 text-[14px] leading-relaxed text-white/65">
+                    <p className="relative mt-2 flex-1 text-[14px] leading-relaxed text-white/65">
                       {p.body}
                     </p>
                   </motion.div>
