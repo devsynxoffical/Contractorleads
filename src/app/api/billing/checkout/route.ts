@@ -8,6 +8,7 @@ import {
 import {
   appBaseUrl,
   getStripe,
+  type StripeBillingPeriod,
   isStripeCheckoutPlan,
   isStripeConfigured,
   priceIdForPlan,
@@ -73,6 +74,7 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => ({}));
   const plan = String(body.plan || "").toLowerCase().trim();
+  const billingPeriod = body.billingPeriod === "annual" ? "annual" : "monthly";
   const couponCode = String(body.couponCode || "").trim();
   if (!isStripeCheckoutPlan(plan)) {
     return NextResponse.json(
@@ -98,10 +100,15 @@ export async function POST(request: Request) {
     }
   }
 
-  const priceId = await priceIdForPlan(plan as StripeCheckoutPlan);
+  const priceId = await priceIdForPlan(
+    plan as StripeCheckoutPlan,
+    billingPeriod as StripeBillingPeriod,
+  );
   if (!priceId) {
     return NextResponse.json(
-      { error: `Missing Stripe price for ${plan}. Add it under Admin → System & API Keys.` },
+      {
+        error: `Missing Stripe ${billingPeriod} price for ${plan}. Add it under Admin → System & API Keys.`,
+      },
       { status: 503 },
     );
   }
@@ -211,6 +218,7 @@ export async function POST(request: Request) {
             ...(appliedCoupon?.ok
               ? { couponCode: appliedCoupon.coupon.code }
               : {}),
+            billingPeriod,
           },
           cancel_at_period_end: false,
         };
@@ -300,11 +308,13 @@ export async function POST(request: Request) {
               couponCode: appliedCoupon.coupon.code,
             }
           : {}),
+          billingPeriod,
       },
       subscription_data: {
         metadata: {
           userId: dbUser.id,
           plan,
+          billingPeriod,
           ...(appliedCoupon?.ok
             ? { couponCode: appliedCoupon.coupon.code }
             : {}),

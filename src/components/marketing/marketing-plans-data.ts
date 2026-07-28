@@ -217,7 +217,7 @@ export const MARKETING_PLANS: MarketingPlanCard[] = [
     name: "Starter",
     blurb: `Start free with ${STARTER_FREE_LEADS} leads, then subscribe when you're ready to scale.`,
     priceMonthly: 19.99,
-    priceAnnualMonthly: 15.99,
+    priceAnnualMonthly: 15,
     leadsIncluded: PLAN_MONTHLY_CREDITS.starter,
     creditsLabel: `${PLAN_MONTHLY_CREDITS.starter.toLocaleString()} credits / mo (${PLAN_MONTHLY_CREDITS.starter.toLocaleString()} leads)`,
     creditsDetail: `${CREDIT_COSTS.lead} credit per lead · ${STARTER_FREE_CREDITS} free leads included to start — pay after you use them`,
@@ -326,8 +326,8 @@ export function withLivePlanPrices(
     const catalogAnnual = plan.priceAnnualMonthly;
     const annual =
       catalogAnnual != null && catalogMonthly > 0
-        ? Math.round(monthly * (catalogAnnual / catalogMonthly) * 100) / 100
-        : Math.round(monthly * ANNUAL_DISCOUNT * 100) / 100;
+        ? Math.floor(monthly * (catalogAnnual / catalogMonthly))
+        : Math.floor(monthly * ANNUAL_DISCOUNT);
     return {
       ...plan,
       priceMonthly: monthly,

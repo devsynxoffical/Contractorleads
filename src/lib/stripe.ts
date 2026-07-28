@@ -30,13 +30,20 @@ export async function getStripe(): Promise<Stripe> {
 export async function isStripeConfigured() {
   const cfg = await getStripeBillingSecrets();
   return Boolean(
-    cfg.secretKey && cfg.priceStarter && cfg.priceGrowth && cfg.priceAgency,
+    cfg.secretKey &&
+      cfg.priceStarter &&
+      cfg.priceStarterAnnual &&
+      cfg.priceGrowth &&
+      cfg.priceGrowthAnnual &&
+      cfg.priceAgency &&
+      cfg.priceAgencyAnnual,
   );
 }
 
 /** Self-serve paid plans available via Checkout. */
 export const STRIPE_CHECKOUT_PLANS = ["starter", "growth", "agency"] as const;
 export type StripeCheckoutPlan = (typeof STRIPE_CHECKOUT_PLANS)[number];
+export type StripeBillingPeriod = "monthly" | "annual";
 
 export function isStripeCheckoutPlan(
   plan: string,
@@ -53,14 +60,24 @@ export const PLAN_MONTHLY_CREDITS: Record<StripeCheckoutPlan, number> = {
 
 export async function priceIdForPlan(
   plan: StripeCheckoutPlan,
+  billingPeriod: StripeBillingPeriod = "monthly",
 ): Promise<string | null> {
   const cfg = await getStripeBillingSecrets();
-  const map: Record<StripeCheckoutPlan, string> = {
-    starter: cfg.priceStarter,
-    growth: cfg.priceGrowth,
-    agency: cfg.priceAgency,
+  const map: Record<StripeCheckoutPlan, Record<StripeBillingPeriod, string>> = {
+    starter: {
+      monthly: cfg.priceStarter,
+      annual: cfg.priceStarterAnnual,
+    },
+    growth: {
+      monthly: cfg.priceGrowth,
+      annual: cfg.priceGrowthAnnual,
+    },
+    agency: {
+      monthly: cfg.priceAgency,
+      annual: cfg.priceAgencyAnnual,
+    },
   };
-  const id = map[plan]?.trim();
+  const id = map[plan]?.[billingPeriod]?.trim();
   return id || null;
 }
 
@@ -71,8 +88,11 @@ export async function planFromPriceId(
   const cfg = await getStripeBillingSecrets();
   const entries: Array<[StripeCheckoutPlan, string]> = [
     ["starter", cfg.priceStarter],
+    ["starter", cfg.priceStarterAnnual],
     ["growth", cfg.priceGrowth],
+    ["growth", cfg.priceGrowthAnnual],
     ["agency", cfg.priceAgency],
+    ["agency", cfg.priceAgencyAnnual],
   ];
   for (const [plan, id] of entries) {
     if (id.trim() && id.trim() === priceId) return plan;

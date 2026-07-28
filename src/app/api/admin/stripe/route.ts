@@ -72,10 +72,22 @@ export async function PUT(request: Request) {
     webhookSecret: webhookSecret || undefined,
     priceStarter:
       typeof body.priceStarter === "string" ? body.priceStarter : undefined,
+    priceStarterAnnual:
+      typeof body.priceStarterAnnual === "string"
+        ? body.priceStarterAnnual
+        : undefined,
     priceGrowth:
       typeof body.priceGrowth === "string" ? body.priceGrowth : undefined,
+    priceGrowthAnnual:
+      typeof body.priceGrowthAnnual === "string"
+        ? body.priceGrowthAnnual
+        : undefined,
     priceAgency:
       typeof body.priceAgency === "string" ? body.priceAgency : undefined,
+    priceAgencyAnnual:
+      typeof body.priceAgencyAnnual === "string"
+        ? body.priceAgencyAnnual
+        : undefined,
     priceMessaging:
       typeof body.priceMessaging === "string" ? body.priceMessaging : undefined,
     priceSeoReport:

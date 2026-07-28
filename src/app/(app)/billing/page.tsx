@@ -76,6 +76,7 @@ export default async function BillingPage({
     session_id?: string;
     addon?: string;
     seo?: string;
+    billing?: string;
   }>;
 }) {
   const user = await getSessionUser();
@@ -176,6 +177,7 @@ export default async function BillingPage({
     select: { id: true, title: true, content: true, createdAt: true },
   });
   const current = normalizePlan(dbUser?.plan ?? user.plan);
+  const billingPeriod = params.billing === "annual" ? "annual" : "monthly";
   const features = featuresForPlan(current);
   const creditsRemaining = dbUser?.creditsRemaining ?? user.creditsRemaining;
   const hasStripeCustomer = Boolean(dbUser?.stripeCustomerId);
@@ -364,12 +366,38 @@ export default async function BillingPage({
             Compare tiers — each plan shows monthly credits at {CREDIT_COSTS.lead}{" "}
             credit per lead.
           </p>
+          <div className="mt-3 inline-flex rounded-full border border-border bg-[var(--surface)] p-1 text-[12px] font-semibold">
+            <Link
+              href="/billing?billing=monthly"
+              className={`rounded-full px-3 py-1 ${
+                billingPeriod === "monthly"
+                  ? "bg-ink text-white"
+                  : "text-ink-muted hover:text-ink"
+              }`}
+            >
+              Pay monthly
+            </Link>
+            <Link
+              href="/billing?billing=annual"
+              className={`rounded-full px-3 py-1 ${
+                billingPeriod === "annual"
+                  ? "bg-ink text-white"
+                  : "text-ink-muted hover:text-ink"
+              }`}
+            >
+              Pay annually
+            </Link>
+          </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {plans.map((plan) => {
             const active = plan.id === current;
-            const perLead = pricePerLead(plan.priceMonthly, plan.leadsIncluded);
+            const selectedPrice =
+              billingPeriod === "annual"
+                ? (plan.priceAnnualMonthly ?? plan.priceMonthly)
+                : plan.priceMonthly;
+            const perLead = pricePerLead(selectedPrice, plan.leadsIncluded);
             const isEnterprise = plan.custom || plan.id === "enterprise";
             const planFeatures = featuresForPlan(plan.id);
 
@@ -399,15 +427,28 @@ export default async function BillingPage({
 
                 <p className="text-[15px] font-semibold text-ink">{plan.name}</p>
                 <p className="mt-2 flex items-baseline gap-1">
+                  {billingPeriod === "annual" &&
+                  plan.priceMonthly != null &&
+                  plan.priceAnnualMonthly != null &&
+                  plan.priceAnnualMonthly < plan.priceMonthly ? (
+                    <span className="text-[16px] font-semibold text-ink-faint line-through">
+                      ${formatPlanPrice(plan.priceMonthly)}
+                    </span>
+                  ) : null}
                   <span className="text-[28px] font-semibold tracking-tight text-ink">
-                    {plan.priceMonthly == null
+                    {selectedPrice == null
                       ? "Custom"
-                      : `$${formatPlanPrice(plan.priceMonthly)}`}
+                      : `$${formatPlanPrice(selectedPrice)}`}
                   </span>
-                  {plan.priceMonthly != null ? (
+                  {selectedPrice != null ? (
                     <span className="text-[13px] text-ink-faint">/mo</span>
                   ) : null}
                 </p>
+                {selectedPrice != null && billingPeriod === "annual" ? (
+                  <p className="mt-0.5 text-[11px] text-ink-faint">
+                    Billed annually
+                  </p>
+                ) : null}
                 <p className="mt-1 text-[12px] text-ink-muted">
                   {plan.creditsLabel}
                 </p>
@@ -463,6 +504,7 @@ export default async function BillingPage({
                   ) : (
                     <BillingCheckoutButton
                       planId={plan.id}
+                      billingPeriod={billingPeriod}
                       label={
                         stripeReady
                           ? changePlanLabel(

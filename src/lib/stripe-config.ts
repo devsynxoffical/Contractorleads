@@ -5,8 +5,11 @@ export type StripeBillingSecrets = {
   publishableKey: string;
   webhookSecret: string;
   priceStarter: string;
+  priceStarterAnnual: string;
   priceGrowth: string;
+  priceGrowthAnnual: string;
   priceAgency: string;
+  priceAgencyAnnual: string;
   priceMessaging: string;
   priceSeoReport: string;
 };
@@ -19,11 +22,14 @@ export type StripeBillingStatus = {
   webhookSecretConfigured: boolean;
   webhookSecretHint: string | null;
   priceStarter: string;
+  priceStarterAnnual: string;
   priceGrowth: string;
+  priceGrowthAnnual: string;
   priceAgency: string;
+  priceAgencyAnnual: string;
   priceMessaging: string;
   priceSeoReport: string;
-  /** True when secret + all three price IDs are present (DB or env). */
+  /** True when secret + monthly/annual IDs for three plans are present. */
   checkoutReady: boolean;
   /** True when secret + messaging price are present. */
   messagingReady: boolean;
@@ -46,8 +52,11 @@ function fromEnv(): StripeBillingSecrets {
     publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() || "",
     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET?.trim() || "",
     priceStarter: process.env.STRIPE_PRICE_STARTER?.trim() || "",
+    priceStarterAnnual: process.env.STRIPE_PRICE_STARTER_ANNUAL?.trim() || "",
     priceGrowth: process.env.STRIPE_PRICE_GROWTH?.trim() || "",
+    priceGrowthAnnual: process.env.STRIPE_PRICE_GROWTH_ANNUAL?.trim() || "",
     priceAgency: process.env.STRIPE_PRICE_AGENCY?.trim() || "",
+    priceAgencyAnnual: process.env.STRIPE_PRICE_AGENCY_ANNUAL?.trim() || "",
     priceMessaging: process.env.STRIPE_PRICE_MESSAGING?.trim() || "",
     priceSeoReport: process.env.STRIPE_PRICE_SEO_REPORT?.trim() || "",
   };
@@ -67,8 +76,11 @@ export async function getStripeBillingSecrets(): Promise<StripeBillingSecrets> {
     publishableKey: row.publishableKey.trim() || env.publishableKey,
     webhookSecret: row.webhookSecret.trim() || env.webhookSecret,
     priceStarter: row.priceStarter.trim() || env.priceStarter,
+    priceStarterAnnual: row.priceStarterAnnual.trim() || env.priceStarterAnnual,
     priceGrowth: row.priceGrowth.trim() || env.priceGrowth,
+    priceGrowthAnnual: row.priceGrowthAnnual.trim() || env.priceGrowthAnnual,
     priceAgency: row.priceAgency.trim() || env.priceAgency,
+    priceAgencyAnnual: row.priceAgencyAnnual.trim() || env.priceAgencyAnnual,
     priceMessaging: row.priceMessaging.trim() || env.priceMessaging,
     priceSeoReport: row.priceSeoReport.trim() || env.priceSeoReport,
   };
@@ -87,8 +99,11 @@ export async function getStripeBillingStatus(): Promise<StripeBillingStatus> {
         row.publishableKey.trim() ||
         row.webhookSecret.trim() ||
         row.priceStarter.trim() ||
+        row.priceStarterAnnual.trim() ||
         row.priceGrowth.trim() ||
+        row.priceGrowthAnnual.trim() ||
         row.priceAgency.trim() ||
+        row.priceAgencyAnnual.trim() ||
         row.priceMessaging.trim() ||
         row.priceSeoReport.trim()),
   );
@@ -97,8 +112,11 @@ export async function getStripeBillingStatus(): Promise<StripeBillingStatus> {
       env.publishableKey ||
       env.webhookSecret ||
       env.priceStarter ||
+      env.priceStarterAnnual ||
       env.priceGrowth ||
+      env.priceGrowthAnnual ||
       env.priceAgency ||
+      env.priceAgencyAnnual ||
       env.priceMessaging ||
       env.priceSeoReport,
   );
@@ -117,15 +135,21 @@ export async function getStripeBillingStatus(): Promise<StripeBillingStatus> {
     webhookSecretHint: maskHint(effective.webhookSecret),
     // Price IDs are not highly sensitive — show stored/effective values for editing
     priceStarter: effective.priceStarter,
+    priceStarterAnnual: effective.priceStarterAnnual,
     priceGrowth: effective.priceGrowth,
+    priceGrowthAnnual: effective.priceGrowthAnnual,
     priceAgency: effective.priceAgency,
+    priceAgencyAnnual: effective.priceAgencyAnnual,
     priceMessaging: effective.priceMessaging,
     priceSeoReport: effective.priceSeoReport,
     checkoutReady: Boolean(
       effective.secretKey &&
         effective.priceStarter &&
+        effective.priceStarterAnnual &&
         effective.priceGrowth &&
-        effective.priceAgency,
+        effective.priceGrowthAnnual &&
+        effective.priceAgency &&
+        effective.priceAgencyAnnual,
     ),
     messagingReady: Boolean(effective.secretKey && effective.priceMessaging),
     seoReportReady: Boolean(effective.secretKey && effective.priceSeoReport),
@@ -140,8 +164,11 @@ export type StripeBillingSaveInput = {
   publishableKey?: string;
   webhookSecret?: string;
   priceStarter?: string;
+  priceStarterAnnual?: string;
   priceGrowth?: string;
+  priceGrowthAnnual?: string;
   priceAgency?: string;
+  priceAgencyAnnual?: string;
   priceMessaging?: string;
   priceSeoReport?: string;
   /** Clear a field explicitly */
@@ -162,8 +189,11 @@ export async function saveStripeBillingConfig(input: StripeBillingSaveInput) {
     publishableKey: current.publishableKey,
     webhookSecret: current.webhookSecret,
     priceStarter: current.priceStarter,
+    priceStarterAnnual: current.priceStarterAnnual,
     priceGrowth: current.priceGrowth,
+    priceGrowthAnnual: current.priceGrowthAnnual,
     priceAgency: current.priceAgency,
+    priceAgencyAnnual: current.priceAgencyAnnual,
     priceMessaging: current.priceMessaging,
     priceSeoReport: current.priceSeoReport,
   };
@@ -192,11 +222,20 @@ export async function saveStripeBillingConfig(input: StripeBillingSaveInput) {
   if (typeof input.priceStarter === "string") {
     next.priceStarter = input.priceStarter.trim();
   }
+  if (typeof input.priceStarterAnnual === "string") {
+    next.priceStarterAnnual = input.priceStarterAnnual.trim();
+  }
   if (typeof input.priceGrowth === "string") {
     next.priceGrowth = input.priceGrowth.trim();
   }
+  if (typeof input.priceGrowthAnnual === "string") {
+    next.priceGrowthAnnual = input.priceGrowthAnnual.trim();
+  }
   if (typeof input.priceAgency === "string") {
     next.priceAgency = input.priceAgency.trim();
+  }
+  if (typeof input.priceAgencyAnnual === "string") {
+    next.priceAgencyAnnual = input.priceAgencyAnnual.trim();
   }
   if (typeof input.priceMessaging === "string") {
     next.priceMessaging = input.priceMessaging.trim();

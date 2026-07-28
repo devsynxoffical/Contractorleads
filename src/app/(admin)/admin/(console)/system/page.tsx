@@ -17,8 +17,11 @@ type StripeStatus = {
   webhookSecretConfigured: boolean;
   webhookSecretHint: string | null;
   priceStarter: string;
+  priceStarterAnnual: string;
   priceGrowth: string;
+  priceGrowthAnnual: string;
   priceAgency: string;
+  priceAgencyAnnual: string;
   priceMessaging: string;
   priceSeoReport: string;
   checkoutReady: boolean;
@@ -62,8 +65,11 @@ export default function AdminSystemPage() {
   const [publishableKey, setPublishableKey] = useState("");
   const [webhookSecret, setWebhookSecret] = useState("");
   const [priceStarter, setPriceStarter] = useState("");
+  const [priceStarterAnnual, setPriceStarterAnnual] = useState("");
   const [priceGrowth, setPriceGrowth] = useState("");
+  const [priceGrowthAnnual, setPriceGrowthAnnual] = useState("");
   const [priceAgency, setPriceAgency] = useState("");
+  const [priceAgencyAnnual, setPriceAgencyAnnual] = useState("");
   const [priceMessaging, setPriceMessaging] = useState("");
   const [priceSeoReport, setPriceSeoReport] = useState("");
   const [email, setEmail] = useState<EmailStatus | null>(null);
@@ -95,8 +101,11 @@ export default function AdminSystemPage() {
     setPublishableKey("");
     setWebhookSecret("");
     setPriceStarter(stripeRes.priceStarter || "");
+    setPriceStarterAnnual(stripeRes.priceStarterAnnual || "");
     setPriceGrowth(stripeRes.priceGrowth || "");
+    setPriceGrowthAnnual(stripeRes.priceGrowthAnnual || "");
     setPriceAgency(stripeRes.priceAgency || "");
+    setPriceAgencyAnnual(stripeRes.priceAgencyAnnual || "");
     setPriceMessaging(stripeRes.priceMessaging || "");
     setPriceSeoReport(stripeRes.priceSeoReport || "");
     setEmail(emailRes);
@@ -190,8 +199,11 @@ export default function AdminSystemPage() {
           publishableKey: publishableKey.trim() || undefined,
           webhookSecret: webhookSecret.trim() || undefined,
           priceStarter,
+          priceStarterAnnual,
           priceGrowth,
+          priceGrowthAnnual,
           priceAgency,
+          priceAgencyAnnual,
           priceMessaging,
           priceSeoReport,
         }),
@@ -201,7 +213,7 @@ export default function AdminSystemPage() {
       setMessage(
         json.checkoutReady
           ? "Stripe settings saved. Checkout is ready."
-          : "Saved. Add secret key + all three live price IDs to enable Checkout.",
+          : "Saved. Add secret key + monthly/annual price IDs for Starter, Growth, and Agency to enable Checkout.",
       );
       await load();
     } catch (err) {
@@ -546,9 +558,9 @@ export default function AdminSystemPage() {
           <p className="pt-2 text-[12px] font-semibold text-ink">
             Plan price IDs (from Stripe → Products, Live mode)
           </p>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             <label className="block text-[12px] font-medium text-ink-muted">
-              Starter price ID
+              Starter monthly price ID
               <input
                 className="saas-input mt-1.5 font-mono text-[13px]"
                 placeholder="price_…"
@@ -557,7 +569,16 @@ export default function AdminSystemPage() {
               />
             </label>
             <label className="block text-[12px] font-medium text-ink-muted">
-              Growth price ID
+              Starter annual price ID
+              <input
+                className="saas-input mt-1.5 font-mono text-[13px]"
+                placeholder="price_…"
+                value={priceStarterAnnual}
+                onChange={(e) => setPriceStarterAnnual(e.target.value)}
+              />
+            </label>
+            <label className="block text-[12px] font-medium text-ink-muted">
+              Growth monthly price ID
               <input
                 className="saas-input mt-1.5 font-mono text-[13px]"
                 placeholder="price_…"
@@ -566,12 +587,30 @@ export default function AdminSystemPage() {
               />
             </label>
             <label className="block text-[12px] font-medium text-ink-muted">
-              Agency price ID
+              Growth annual price ID
+              <input
+                className="saas-input mt-1.5 font-mono text-[13px]"
+                placeholder="price_…"
+                value={priceGrowthAnnual}
+                onChange={(e) => setPriceGrowthAnnual(e.target.value)}
+              />
+            </label>
+            <label className="block text-[12px] font-medium text-ink-muted">
+              Agency monthly price ID
               <input
                 className="saas-input mt-1.5 font-mono text-[13px]"
                 placeholder="price_…"
                 value={priceAgency}
                 onChange={(e) => setPriceAgency(e.target.value)}
+              />
+            </label>
+            <label className="block text-[12px] font-medium text-ink-muted">
+              Agency annual price ID
+              <input
+                className="saas-input mt-1.5 font-mono text-[13px]"
+                placeholder="price_…"
+                value={priceAgencyAnnual}
+                onChange={(e) => setPriceAgencyAnnual(e.target.value)}
               />
             </label>
           </div>

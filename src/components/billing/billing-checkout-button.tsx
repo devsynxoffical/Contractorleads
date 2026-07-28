@@ -8,6 +8,7 @@ import { readBillingCouponCode } from "@/components/billing/billing-coupon-field
 export function BillingCheckoutButton({
   planId,
   label,
+  billingPeriod = "monthly",
   popular,
   disabled,
   manage,
@@ -15,6 +16,7 @@ export function BillingCheckoutButton({
 }: {
   planId: string;
   label: string;
+  billingPeriod?: "monthly" | "annual";
   popular?: boolean;
   disabled?: boolean;
   /** Open Stripe Customer Portal instead of Checkout */
@@ -38,6 +40,7 @@ export function BillingCheckoutButton({
             ? undefined
             : JSON.stringify({
                 plan: planId,
+              billingPeriod,
                 ...(couponCode ? { couponCode } : {}),
               }),
         },
