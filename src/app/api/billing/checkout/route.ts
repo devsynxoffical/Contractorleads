@@ -45,7 +45,30 @@ function stripeErrorMessage(err: unknown): string {
   if (/similar object exists in (live|test) mode/i.test(raw)) {
     return "Your Stripe keys and price IDs are from different modes (test vs live). Make sure they all come from the same Stripe mode.";
   }
+  if (/at least one recurring price in subscription mode/i.test(raw)) {
+    return "The selected Stripe price is one-time, but this checkout is a subscription. Use recurring monthly/yearly price IDs in Admin → System & API Keys.";
+  }
   return raw;
+}
+
+async function assertRecurringPriceForPeriod(opts: {
+  stripe: Stripe;
+  priceId: string;
+  plan: string;
+  billingPeriod: "monthly" | "annual";
+}): Promise<string | null> {
+  const price = await opts.stripe.prices.retrieve(opts.priceId);
+  if (!price || typeof price !== "object" || (price as { deleted?: boolean }).deleted) {
+    return `Stripe price not found for ${opts.plan} (${opts.billingPeriod}): ${opts.priceId}`;
+  }
+  if (price.type !== "recurring" || !price.recurring) {
+    return `Stripe price ${opts.priceId} for ${opts.plan} (${opts.billingPeriod}) is one-time. Create a recurring ${opts.billingPeriod === "annual" ? "yearly" : "monthly"} price.`;
+  }
+  const expected = opts.billingPeriod === "annual" ? "year" : "month";
+  if (price.recurring.interval !== expected) {
+    return `Stripe price ${opts.priceId} for ${opts.plan} (${opts.billingPeriod}) has interval '${price.recurring.interval}', expected '${expected}'.`;
+  }
+  return null;
 }
 
 function isNoSuchCustomer(err: unknown): boolean {
@@ -132,6 +155,15 @@ export async function POST(request: Request) {
 
   try {
     const stripe = await getStripe();
+    const recurringError = await assertRecurringPriceForPeriod({
+      stripe,
+      priceId,
+      plan,
+      billingPeriod,
+    });
+    if (recurringError) {
+      return NextResponse.json({ error: recurringError }, { status: 400 });
+    }
 
     // Validate the stored customer — a stale ID (e.g. created with test keys,
     // now running live keys) breaks every Stripe call after it.
@@ -308,7 +340,7 @@ export async function POST(request: Request) {
               couponCode: appliedCoupon.coupon.code,
             }
           : {}),
-          billingPeriod,
+        billingPeriod,
       },
       subscription_data: {
         metadata: {
