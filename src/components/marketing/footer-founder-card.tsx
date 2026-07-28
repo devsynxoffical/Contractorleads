@@ -1,5 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { FaFacebookF, FaLinkedinIn } from "react-icons/fa6";
 
 export const FOUNDER = {
@@ -25,6 +28,7 @@ export function FooterFounderCard({
   title?: string;
   bio?: string;
 }) {
+  const pathname = usePathname();
   const social = [
     {
       href: FOUNDER.facebook,
@@ -86,12 +90,14 @@ export function FooterFounderCard({
               <Icon className="h-3.5 w-3.5" />
             </a>
           ))}
-          <Link
-            href="/about"
-            className="ml-1 text-[12px] font-medium text-white/40 transition hover:text-white/70"
-          >
-            About →
-          </Link>
+          {pathname !== "/about" ? (
+            <Link
+              href="/about"
+              className="ml-1 text-[12px] font-medium text-white/40 transition hover:text-white/70"
+            >
+              About →
+            </Link>
+          ) : null}
         </div>
       </div>
     </div>
