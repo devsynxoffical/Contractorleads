@@ -52,16 +52,26 @@ function htmlToPlainText(html: string): string {
  * - plain-text alternative (always included)
  * - List-Unsubscribe headers when unsubscribeUrl is provided
  */
+function platformFromAddress(baseFrom: string, displayName?: string | null): string {
+  const match = baseFrom.match(/<([^>]+)>/);
+  const email = match?.[1] || baseFrom.trim();
+  if (!displayName?.trim()) return baseFrom;
+  return `${displayName.trim()} via Contractor Leads <${email}>`;
+}
+
 export async function sendEmail(params: {
   to: string;
   subject: string;
   html: string;
   text?: string;
+  replyTo?: string;
+  fromName?: string | null;
   unsubscribeUrl?: string;
   tags?: string[];
-}): Promise<{ ok: boolean; mocked?: boolean; error?: string }> {
+}): Promise<{ ok: boolean; mocked?: boolean; messageId?: string; error?: string }> {
   const config = await getEmailProviderSecrets().catch(() => null);
-  const from = config?.fromEmail || DEFAULT_FROM_EMAIL;
+  const fromAddress = config?.fromEmail || DEFAULT_FROM_EMAIL;
+  const from = platformFromAddress(fromAddress, params.fromName);
   const text =
     (params.text && params.text.trim()) || htmlToPlainText(params.html);
 
@@ -78,6 +88,7 @@ export async function sendEmail(params: {
         subject: params.subject,
         html: params.html,
         text,
+        reply_to: params.replyTo,
         headers: listUnsub
           ? {
               "List-Unsubscribe": listUnsub,
@@ -99,7 +110,8 @@ export async function sendEmail(params: {
         const body = await res.text();
         return { ok: false, error: body || `Resend HTTP ${res.status}` };
       }
-      return { ok: true };
+      const data = (await res.json().catch(() => null)) as { id?: string } | null;
+      return { ok: true, messageId: data?.id };
     } catch (e) {
       return {
         ok: false,
@@ -121,7 +133,12 @@ export async function sendEmail(params: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          personalizations: [{ to: [{ email: params.to }] }],
+          personalizations: [
+            {
+              to: [{ email: params.to }],
+              ...(params.replyTo ? { reply_to: { email: params.replyTo } } : {}),
+            },
+          ],
           from: { email: fromEmail, name: "Contractor Leads" },
           subject: params.subject,
           content: [
@@ -162,6 +179,123 @@ export async function sendEmail(params: {
     `[email:mock] to=${params.to} subject=${params.subject}\n${params.text ?? params.html}`,
   );
   return { ok: true, mocked: true };
+}
+
+/** True when admin has configured Resend or SendGrid for platform delivery. */
+export async function platformEmailReady(): Promise<boolean> {
+  const config = await getEmailProviderSecrets().catch(() => null);
+  return Boolean(config?.resendApiKey || config?.sendgridApiKey);
+}
+
+/** Send lead/outreach email via the user's own Resend API key (not the admin key). */
+export async function sendUserResendEmail(params: {
+  apiKey: string;
+  fromEmail: string;
+  fromName?: string | null;
+  to: string;
+  subject: string;
+  text: string;
+  replyTo?: string;
+  tags?: string[];
+}): Promise<{ ok: boolean; messageId?: string; error?: string }> {
+  const email = params.fromEmail.trim();
+  if (!email) {
+    return { ok: false, error: "From email is required" };
+  }
+  const from = params.fromName?.trim()
+    ? `${params.fromName.trim()} <${email}>`
+    : email;
+  const html = params.text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\n/g, "<br>");
+
+  try {
+    const payload: Record<string, unknown> = {
+      from,
+      to: [params.to],
+      subject: params.subject,
+      html,
+      text: params.text,
+      reply_to: params.replyTo,
+      tags: params.tags?.map((name) => ({ name })),
+    };
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${params.apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      let message = body || `Resend HTTP ${res.status}`;
+      if (body.includes("domain") || body.includes("not verified")) {
+        message =
+          "From address must use a domain verified in your Resend account.";
+      }
+      return { ok: false, error: message };
+    }
+    const data = (await res.json().catch(() => null)) as { id?: string } | null;
+    return { ok: true, messageId: data?.id };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "Resend failed",
+    };
+  }
+}
+
+/** Check that a Resend API key is valid (does not send mail). */
+export async function verifyResendApiKey(
+  apiKey: string,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch("https://api.resend.com/domains", {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (res.status === 401 || res.status === 403) {
+      return { ok: false, error: "Invalid Resend API key" };
+    }
+    if (!res.ok) {
+      return { ok: false, error: `Resend HTTP ${res.status}` };
+    }
+    return { ok: true };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "Could not reach Resend",
+    };
+  }
+}
+
+/** Plain-text email via admin platform API (signups, receipts — not lead outreach). */
+export async function sendPlainEmail(params: {
+  to: string;
+  subject: string;
+  text: string;
+  replyTo?: string;
+  fromName?: string | null;
+  tags?: string[];
+}): Promise<{ ok: boolean; messageId?: string; error?: string }> {
+  const html = params.text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\n/g, "<br>");
+  return sendEmail({
+    to: params.to,
+    subject: params.subject,
+    html,
+    text: params.text,
+    replyTo: params.replyTo,
+    fromName: params.fromName,
+    tags: params.tags,
+  });
 }
 
 function signEmailAction(payload: string) {

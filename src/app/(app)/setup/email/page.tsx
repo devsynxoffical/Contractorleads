@@ -28,8 +28,8 @@ export default function SetupEmailPage() {
 
   return (
     <SetupShell
-      title="Email & SMTP"
-      description="Connect mailboxes, read lead replies in your inbox, and run Day 1–3 nurture sequences."
+      title="Email & outreach"
+      description="Set your sender identity, read lead replies in your inbox, and run nurture sequences."
       statuses={{ "/setup/email": ready }}
       steps={[
         {
@@ -37,8 +37,8 @@ export default function SetupEmailPage() {
           body: "View and reply to received lead emails anytime.",
         },
         {
-          title: "Add an SMTP mailbox",
-          body: "Gmail app password, Outlook, or any SMTP host.",
+          title: "Add your email sender",
+          body: "Resend API key + from address on your verified domain.",
         },
         {
           title: "Send from lead detail",

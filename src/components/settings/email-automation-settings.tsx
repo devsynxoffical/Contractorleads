@@ -17,7 +17,19 @@ type SmtpAccount = {
   enabled: boolean;
   isDefault: boolean;
   hasPassword: boolean;
+  hasResendKey?: boolean;
   lastTestedAt: string | null;
+  deliveryMode: "platform" | "smtp";
+};
+
+type EditingAccount = Omit<SmtpAccount, "id" | "hasPassword" | "hasResendKey" | "lastTestedAt" | "isDefault"> & {
+  id?: string;
+  password: string;
+  resendApiKey: string;
+  isDefault: boolean;
+  hasPassword: boolean;
+  hasResendKey: boolean;
+  deliveryMode: "platform" | "smtp";
 };
 
 type SequenceStep = {
@@ -31,30 +43,26 @@ type SequenceForm = {
   enabled: boolean;
 };
 
-const emptyAccount = (): Omit<SmtpAccount, "id" | "hasPassword" | "lastTestedAt" | "isDefault"> & {
-  id?: string;
-  password: string;
-  isDefault: boolean;
-  hasPassword: boolean;
-} => ({
-  label: "Mailbox",
+const emptyAccount = (): EditingAccount => ({
+  label: "Primary sender",
   host: "",
   port: 587,
   secure: false,
   username: "",
   password: "",
+  resendApiKey: "",
   fromEmail: "",
   fromName: null,
   enabled: true,
   isDefault: false,
   hasPassword: false,
+  hasResendKey: false,
+  deliveryMode: "platform",
 });
 
 export function EmailAutomationSettings() {
   const [accounts, setAccounts] = useState<SmtpAccount[]>([]);
-  const [editing, setEditing] = useState<ReturnType<typeof emptyAccount> | null>(
-    null,
-  );
+  const [editing, setEditing] = useState<EditingAccount | null>(null);
   const [sequence, setSequence] = useState<SequenceForm | null>(null);
   const [steps, setSteps] = useState<SequenceStep[]>([]);
   const [enrollments, setEnrollments] = useState<
@@ -75,7 +83,19 @@ export function EmailAutomationSettings() {
       fetch("/api/settings/smtp-accounts").then((r) => r.json()),
       fetch("/api/settings/email-sequence").then((r) => r.json()),
     ]);
-    setAccounts(smtpData.accounts ?? []);
+    setAccounts(
+      (smtpData.accounts ?? []).map(
+        (a: SmtpAccount & { deliveryMode?: string }) => ({
+          ...a,
+          deliveryMode:
+            a.deliveryMode === "smtp" || a.deliveryMode === "platform"
+              ? a.deliveryMode
+              : a.host?.trim()
+                ? "smtp"
+                : "platform",
+        }),
+      ),
+    );
     if (seqData.sequence) {
       setSequence({
         name: seqData.sequence.name,
@@ -108,7 +128,7 @@ export function EmailAutomationSettings() {
       return;
     }
     setEditing(null);
-    setMsg("Mailbox saved");
+    setMsg("Sender saved");
     await load();
   }
 
@@ -233,10 +253,11 @@ export function EmailAutomationSettings() {
 
       <Card className="border-border shadow-[var(--shadow-card)]">
         <CardHeader>
-          <CardTitle>SMTP mailboxes</CardTitle>
+          <CardTitle>Email senders</CardTitle>
           <p className="text-[13px] text-ink-muted">
-            Add multiple Gmail, Outlook, or custom SMTP accounts. Pick which
-            mailbox to send from when emailing a lead.
+            Connect your own Resend account to email leads from your domain.
+            Each user adds their own API key — the site admin key is only for
+            signup and system emails.
           </p>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -256,7 +277,10 @@ export function EmailAutomationSettings() {
                     ) : null}
                   </p>
                   <p className="text-[11px] text-ink-muted">
-                    {a.fromEmail} · {a.host}:{a.port}
+                    {a.fromEmail}
+                    {a.deliveryMode === "platform"
+                      ? " · Resend API"
+                      : ` · SMTP ${a.host}:${a.port}`}
                     {!a.enabled ? " · disabled" : ""}
                   </p>
                 </div>
@@ -292,11 +316,14 @@ export function EmailAutomationSettings() {
                         secure: a.secure,
                         username: a.username,
                         password: "",
+                        resendApiKey: "",
                         fromEmail: a.fromEmail,
                         fromName: a.fromName,
                         enabled: a.enabled,
                         isDefault: a.isDefault,
                         hasPassword: a.hasPassword,
+                        hasResendKey: Boolean(a.hasResendKey),
+                        deliveryMode: a.deliveryMode,
                       })
                     }
                   >
@@ -315,7 +342,7 @@ export function EmailAutomationSettings() {
             ))}
             {!accounts.length && (
               <li className="text-[13px] text-ink-muted">
-                No mailboxes yet. Add your first SMTP account below.
+                No senders yet. Add your name and reply-to email below.
               </li>
             )}
           </ul>
@@ -330,7 +357,7 @@ export function EmailAutomationSettings() {
                 })
               }
             >
-              Add SMTP mailbox
+              Add email sender
             </Button>
           ) : (
             <form
@@ -338,8 +365,52 @@ export function EmailAutomationSettings() {
               className="space-y-3 rounded-xl border border-border p-3"
             >
               <p className="text-[13px] font-semibold text-ink">
-                {editing.id ? "Edit mailbox" : "New mailbox"}
+                {editing.id ? "Edit sender" : "New sender"}
               </p>
+              <div className="space-y-2 rounded-lg border border-border/80 bg-[#faf8fc] p-3">
+                <p className="text-[12px] font-medium text-ink">Delivery method</p>
+                <label className="flex items-start gap-2 text-[13px] text-ink-muted">
+                  <input
+                    type="radio"
+                    name="deliveryMode"
+                    checked={editing.deliveryMode === "platform"}
+                    onChange={() =>
+                      setEditing({ ...editing, deliveryMode: "platform" })
+                    }
+                    className="mt-0.5"
+                  />
+                  <span>
+                    <span className="font-medium text-ink">Resend API</span>
+                    {" "}(recommended) — your own Resend key and verified domain.
+                    Get a key at{" "}
+                    <a
+                      href="https://resend.com/api-keys"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-brand-600 underline"
+                    >
+                      resend.com
+                    </a>
+                    .
+                  </span>
+                </label>
+                <label className="flex items-start gap-2 text-[13px] text-ink-muted">
+                  <input
+                    type="radio"
+                    name="deliveryMode"
+                    checked={editing.deliveryMode === "smtp"}
+                    onChange={() =>
+                      setEditing({ ...editing, deliveryMode: "smtp" })
+                    }
+                    className="mt-0.5"
+                  />
+                  <span>
+                    <span className="font-medium text-ink">Your own SMTP server</span>
+                    {" "}(advanced) — Gmail, Outlook, or cPanel. May not work on all cloud
+                    hosts.
+                  </span>
+                </label>
+              </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5 sm:col-span-2">
                   <Label>Label</Label>
@@ -348,10 +419,57 @@ export function EmailAutomationSettings() {
                     onChange={(e) =>
                       setEditing({ ...editing, label: e.target.value })
                     }
-                    placeholder="Sales Gmail"
+                    placeholder="Sales inbox"
                     required
                   />
                 </div>
+                <div className="space-y-1.5">
+                  <Label>From email</Label>
+                  <Input
+                    type="email"
+                    value={editing.fromEmail}
+                    onChange={(e) =>
+                      setEditing({ ...editing, fromEmail: e.target.value })
+                    }
+                    placeholder="you@yourdomain.com"
+                    required
+                  />
+                  <p className="text-[11px] text-ink-faint">
+                    Must be on a domain verified in your Resend account.
+                  </p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>From name</Label>
+                  <Input
+                    value={editing.fromName ?? ""}
+                    onChange={(e) =>
+                      setEditing({ ...editing, fromName: e.target.value })
+                    }
+                    placeholder="Jane Smith"
+                  />
+                </div>
+              </div>
+              {editing.deliveryMode === "platform" ? (
+                <div className="space-y-1.5">
+                  <Label>
+                    Resend API key{" "}
+                    {editing.hasResendKey ? (
+                      <span className="font-normal text-ink-faint">(saved)</span>
+                    ) : null}
+                  </Label>
+                  <Input
+                    type="password"
+                    value={editing.resendApiKey}
+                    onChange={(e) =>
+                      setEditing({ ...editing, resendApiKey: e.target.value })
+                    }
+                    placeholder={editing.hasResendKey ? "Leave blank to keep" : "re_…"}
+                    autoComplete="off"
+                  />
+                </div>
+              ) : null}
+              {editing.deliveryMode === "smtp" ? (
+              <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5 sm:col-span-2">
                   <Label>SMTP host</Label>
                   <Input
@@ -414,27 +532,8 @@ export function EmailAutomationSettings() {
                     }
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label>From email</Label>
-                  <Input
-                    type="email"
-                    value={editing.fromEmail}
-                    onChange={(e) =>
-                      setEditing({ ...editing, fromEmail: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>From name</Label>
-                  <Input
-                    value={editing.fromName ?? ""}
-                    onChange={(e) =>
-                      setEditing({ ...editing, fromName: e.target.value })
-                    }
-                  />
-                </div>
               </div>
+              ) : null}
               <label className="flex items-center gap-2 text-[13px] text-ink-muted">
                 <input
                   type="checkbox"
@@ -453,11 +552,11 @@ export function EmailAutomationSettings() {
                     setEditing({ ...editing, isDefault: e.target.checked })
                   }
                 />
-                Set as default mailbox
+                Set as default sender
               </label>
               <div className="flex flex-wrap gap-2">
                 <Button type="submit" disabled={busy}>
-                  Save mailbox
+                  Save sender
                 </Button>
                 <Button
                   type="button"

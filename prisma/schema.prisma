@@ -557,8 +557,12 @@ model SmtpAccount {
   secure       Boolean     @default(false)
   username     String
   passwordEnc  String
+  /// AES-encrypted Resend API key (re_…) for lead/outreach email
+  resendApiKeyEnc String @default("")
   fromEmail    String
   fromName     String?
+  /// platform = user's own Resend API key; smtp = user's SMTP server
+  deliveryMode String      @default("platform")
   enabled      Boolean     @default(true)
   isDefault    Boolean     @default(false)
   lastTestedAt DateTime?

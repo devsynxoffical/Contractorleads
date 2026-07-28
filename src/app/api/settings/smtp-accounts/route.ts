@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { verifyResendApiKey } from "@/lib/email";
 import {
   createSmtpTransport,
   ensureSingleDefault,
+  formatSmtpError,
+  getUserSenderConfig,
   getUserSmtpConfig,
   listSmtpAccounts,
   maskSmtpAccount,
@@ -32,9 +35,33 @@ export async function POST(request: Request) {
 
   if (action === "test") {
     const accountId = body.id ? String(body.id) : null;
-    const cfg = await getUserSmtpConfig(user.id, accountId);
+    const sender = await getUserSenderConfig(user.id, accountId);
+    if (!sender) {
+      return NextResponse.json({ error: "Save sender settings first" }, { status: 400 });
+    }
+    if (sender.deliveryMode === "platform") {
+      const key = sender.resendApiKey;
+      if (!key) {
+        return NextResponse.json({ error: "Save your Resend API key first" }, { status: 400 });
+      }
+      const check = await verifyResendApiKey(key);
+      if (!check.ok) {
+        return NextResponse.json({ error: check.error || "Invalid Resend key" }, { status: 400 });
+      }
+      if (sender.id) {
+        await prisma.smtpAccount.update({
+          where: { id: sender.id },
+          data: { lastTestedAt: new Date() },
+        });
+      }
+      return NextResponse.json({
+        ok: true,
+        message: "Resend API key verified",
+      });
+    }
+    const cfg = sender.smtp;
     if (!cfg) {
-      return NextResponse.json({ error: "Save SMTP settings first" }, { status: 400 });
+      return NextResponse.json({ error: "Custom SMTP is not fully configured" }, { status: 400 });
     }
     try {
       await assertPublicSmtpHost(cfg.host);
@@ -49,7 +76,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, message: "SMTP connection verified" });
     } catch (e) {
       return NextResponse.json(
-        { error: e instanceof Error ? e.message : "SMTP test failed" },
+        { error: formatSmtpError(e) },
         { status: 400 },
       );
     }
@@ -79,6 +106,9 @@ export async function POST(request: Request) {
       fromName: String(body.fromName || "").trim() || null,
       enabled: body.enabled !== false,
       isDefault: Boolean(body.isDefault),
+      deliveryMode: body.deliveryMode === "smtp" ? "smtp" : "platform",
+      resendApiKey:
+        typeof body.resendApiKey === "string" ? body.resendApiKey.trim() : undefined,
     });
     return NextResponse.json({ ok: true, account: maskSmtpAccount(row) });
   } catch (e) {
@@ -111,6 +141,9 @@ export async function PUT(request: Request) {
       fromName: String(body.fromName || "").trim() || null,
       enabled: body.enabled !== false,
       isDefault: Boolean(body.isDefault),
+      deliveryMode: body.deliveryMode === "smtp" ? "smtp" : "platform",
+      resendApiKey:
+        typeof body.resendApiKey === "string" ? body.resendApiKey.trim() : undefined,
     });
     return NextResponse.json({ ok: true, account: maskSmtpAccount(row) });
   } catch (e) {

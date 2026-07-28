@@ -255,8 +255,8 @@ export default function AdminSystemPage() {
             </h2>
             <p className="mt-1 max-w-2xl text-[13px] text-ink-muted">
               Powers signup verification, password resets, and purchase
-              confirmations. Without a key, live signups fail instead of showing
-              a dev link.
+              confirmations. Lead outreach uses each user&apos;s own Resend key
+              under Setup → Email — not this admin key.
             </p>
           </div>
           {email ? (

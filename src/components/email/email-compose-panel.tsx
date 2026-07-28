@@ -173,7 +173,7 @@ export function EmailComposePanel() {
               </label>
             ) : (
               <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
-                Add an SMTP mailbox under Email &amp; SMTP settings to send.
+                Add your Resend sender under Setup → Email (API key + from address).
               </p>
             )}
 

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { renderSequenceTemplate, sendViaUserSmtp } from "@/lib/user-smtp";
+import { renderSequenceTemplate, sendOutboundEmail } from "@/lib/user-smtp";
 
 export type SequenceStep = {
   /** Day offset from enrollment (1 = immediately on enroll). */
@@ -172,7 +172,7 @@ export async function processEnrollment(enrollmentId: string) {
   const text = renderSequenceTemplate(step.body, vars);
 
   try {
-    const sentMail = await sendViaUserSmtp({
+    const sentMail = await sendOutboundEmail({
       userId: enrollment.userId,
       to,
       subject,

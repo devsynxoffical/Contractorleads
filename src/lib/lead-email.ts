@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/credits";
 import { dispatchCrmWebhook } from "@/lib/crm-webhook";
-import { sendViaUserSmtp } from "@/lib/user-smtp";
+import { sendOutboundEmail, formatSmtpError } from "@/lib/user-smtp";
 import { findOwnedLead } from "@/lib/lead-ownership";
 
 /**
@@ -41,7 +41,7 @@ export async function sendLeadEmail(opts: {
   }
 
   try {
-    const sent = await sendViaUserSmtp({
+    const sent = await sendOutboundEmail({
       userId: opts.userId,
       to,
       subject,
@@ -105,7 +105,7 @@ export async function sendLeadEmail(opts: {
       status: saved.status === "new" ? "contacted" : saved.status,
     };
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Send failed";
+    const msg = formatSmtpError(e);
     await prisma.leadEmail.create({
       data: {
         userId: opts.userId,
@@ -122,7 +122,7 @@ export async function sendLeadEmail(opts: {
         inReplyTo: opts.inReplyToMessageId || null,
       },
     });
-    throw e;
+    throw new Error(msg);
   }
 }
 
