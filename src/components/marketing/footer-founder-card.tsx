@@ -9,7 +9,7 @@ export const FOUNDER = {
   name: "Vaishali Kapoor",
   title: "Founder",
   bio: "I'm building Contractor Leads to help agencies and operators find better local contractor leads without spending hours on manual research.",
-  imageSrc: "/marketing/founder-new.png",
+  imageSrc: "/marketing/founder-new.jpg",
   imageAlt: "Vaishali Kapoor, Founder of Contractor Leads",
   facebook: "https://www.facebook.com/vaishali.joshi.658637",
   linkedin: "https://www.linkedin.com/in/vaishali-joshi-milliondollarmedia/",
