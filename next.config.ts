@@ -35,9 +35,19 @@ const securityHeaders = [
   },
 ];
 
+// Must resolve to the same value at build time and at runtime, or the client
+// and server deployment IDs never match. Railway sets this in both phases.
+const deploymentId =
+  process.env.NEXT_DEPLOYMENT_ID?.trim() ||
+  process.env.RAILWAY_GIT_COMMIT_SHA?.trim() ||
+  undefined;
+
 const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
+  // Without this, a tab holding assets from an older build navigates against the
+  // new server and fails instead of reloading.
+  deploymentId,
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
