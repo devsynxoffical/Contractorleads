@@ -8,7 +8,6 @@ import {
   HiOutlineExclamationCircle,
   HiOutlineLink,
   HiOutlineEnvelope,
-  HiOutlineViewColumns,
   HiOutlineArrowDownTray,
   HiOutlineSparkles,
   HiOutlineKey,
@@ -170,18 +169,6 @@ export function DashboardCrmIntegrations({
               </Link>
             );
           })}
-        </div>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Link href="/leads/pipeline" className="hud-btn-primary">
-            <HiOutlineViewColumns className="h-4 w-4" />
-            Manage pipeline
-          </Link>
-          <Link href="/leads/saved" className="hud-btn-ghost">
-            Saved leads
-          </Link>
-          <Link href="/leads/hot" className="hud-btn-ghost">
-            Hot queue
-          </Link>
         </div>
       </HudPanel>
 

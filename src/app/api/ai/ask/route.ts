@@ -113,9 +113,11 @@ ${businessContext}
 ${workspaceContext}
 
 Rules for personalization:
-- Use the user's real name / owner name — never leave blank spots like "Hi ," or "[Name]".
-- Ground every answer in their company, services, ICP, markets, and current lead data above.
-- If profile fields are missing, say what to fill in Settings, then still give useful generic advice.`;
+- Use the user's real name when available — never leave blank spots like "Hi ," or "[Name]".
+- Ground product answers in their company, services, ICP, markets, and live lead stats when helpful.
+- Never claim you "know everything" about them — be helpful, not invasive.
+- If profile fields are missing, mention Settings once, then give full in-app steps with action links anyway.
+- Every how-to answer must include at least one [Label](/path) action button for the relevant screen.`;
 
   const headers = new Headers({
     "X-Conversation-Id": chatId,

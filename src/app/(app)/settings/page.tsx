@@ -13,7 +13,7 @@ export default async function SettingsPage() {
     <div className="page-pad space-y-6">
       <PageHeader
         title="All settings"
-        description="Business profile for outreach. Use Workspace settings for team, billing, security, and integrations."
+        description="Business profile powers outreach and your AI Assistant. Use the links below for team, billing, security, and integrations."
       />
       <div className="flex flex-wrap gap-2 text-[13px]">
         <Link

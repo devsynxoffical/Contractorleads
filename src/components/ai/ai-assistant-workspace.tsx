@@ -12,6 +12,7 @@ import {
   HiOutlineTrash,
 } from "react-icons/hi2";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
+import { AiAssistantMessage } from "@/components/ai/ai-assistant-message";
 import { cn } from "@/lib/utils";
 
 type ChatMsg = {
@@ -28,18 +29,30 @@ type ChatSummary = {
 };
 
 const QUICK_PROMPTS = [
-  { label: "Prospecting", prompt: "How do I get more HVAC clients this month?" },
-  { label: "Cold email", prompt: "Write a cold email for roofing owners" },
-  { label: "Ads", prompt: "What should my Facebook ad hook be?" },
-  { label: "Product help", prompt: "How do credits and Lead Finder work?" },
+  {
+    label: "Find pool leads",
+    prompt: "How do I find pool service contractor leads in the US?",
+  },
+  {
+    label: "Lead Finder steps",
+    prompt: "Walk me through Lead Finder step by step.",
+  },
+  {
+    label: "Cold email",
+    prompt: "Write a cold email for roofing owners I found in Lead Finder.",
+  },
+  {
+    label: "Credits & billing",
+    prompt: "How do credits work and where do I upgrade?",
+  },
 ];
 
 function welcomeText(userName?: string | null) {
   const first = userName?.trim().split(/\s+/)[0];
   if (first && first.length > 0) {
-    return `I'm your AI Assistant. I already know your account details — ready when you are, ${first}.`;
+    return `Hi ${first} — I'm your AI Assistant for Contractor Leads.`;
   }
-  return "I'm your AI Assistant. I use your Settings profile and live lead data — fill Settings if anything looks generic.";
+  return "Hi — I'm your AI Assistant for Contractor Leads.";
 }
 
 export function AiAssistantWorkspace({
@@ -283,7 +296,7 @@ export function AiAssistantWorkspace({
             New chat
           </button>
           <Link
-            href="/ask-expert"
+            href="/settings"
             className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-[12px] font-medium text-ink-muted transition hover:bg-brand-50 hover:text-ink"
           >
             <HiOutlineCog6Tooth className="h-3.5 w-3.5" />
@@ -383,8 +396,9 @@ export function AiAssistantWorkspace({
                 {welcomeText(userName)}
               </p>
               <p className="mt-2 max-w-sm text-[13px] text-ink-muted">
-                Ask about offers, ads, outreach, or how to use Contractor Leads.
-                Past chats stay in the sidebar so you can pick up anytime.
+                Ask how to find leads, run searches, write outreach, or use any
+                part of the platform. I&apos;ll give step-by-step answers with
+                direct links.
               </p>
             </div>
           ) : (
@@ -395,9 +409,9 @@ export function AiAssistantWorkspace({
                   className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-[92%] whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed sm:text-[14px] ${
+                    className={`max-w-[92%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed sm:text-[14px] ${
                       msg.role === "user"
-                        ? "rounded-br-md text-white shadow-sm"
+                        ? "rounded-br-md whitespace-pre-wrap text-white shadow-sm"
                         : "rounded-bl-md border border-border bg-[var(--input-bg)] text-ink"
                     }`}
                     style={
@@ -406,7 +420,11 @@ export function AiAssistantWorkspace({
                         : undefined
                     }
                   >
-                    {msg.text || (loading ? "…" : "")}
+                    {msg.role === "assistant" ? (
+                      <AiAssistantMessage text={msg.text || (loading ? "…" : "")} />
+                    ) : (
+                      msg.text
+                    )}
                   </div>
                 </div>
               ))}

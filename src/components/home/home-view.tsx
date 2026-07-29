@@ -4,12 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   HiOutlineBolt,
-  HiOutlineFire,
-  HiOutlineMagnifyingGlass,
-  HiOutlineBookmark,
-  HiOutlineCreditCard,
-  HiOutlineSparkles,
-  HiOutlineMap,
   HiOutlineSun,
 } from "react-icons/hi2";
 import { AiAssistantWorkspace } from "@/components/ai/ai-assistant-workspace";
@@ -72,51 +66,6 @@ export function HomeView({ userName }: { userName?: string | null }) {
       cancelled = true;
     };
   }, []);
-
-  const quickLinks = [
-    {
-      href: "/digest",
-      label: "Morning digest",
-      desc: "Top 5 leads to email today",
-      icon: HiOutlineSun,
-    },
-    {
-      href: "/leads/search",
-      label: "Lead Finder",
-      desc: "Search Tier‑1 markets",
-      icon: HiOutlineMagnifyingGlass,
-    },
-    {
-      href: "/leads/hot",
-      label: "Hot leads",
-      desc: "Highest scores first",
-      icon: HiOutlineFire,
-    },
-    {
-      href: "/leads/saved",
-      label: "Saved CRM",
-      desc: "Pipeline & notes",
-      icon: HiOutlineBookmark,
-    },
-    {
-      href: "/leads/map",
-      label: "Lead map",
-      desc: "Geo density view",
-      icon: HiOutlineMap,
-    },
-    {
-      href: "/ask-expert",
-      label: "Ask Expert",
-      desc: "Full AI workspace",
-      icon: HiOutlineSparkles,
-    },
-    {
-      href: "/billing",
-      label: "Credits",
-      desc: "Plans & top-ups",
-      icon: HiOutlineCreditCard,
-    },
-  ];
 
   return (
     <div className="page-pad page-enter">
@@ -192,23 +141,28 @@ export function HomeView({ userName }: { userName?: string | null }) {
             {
               label: "Credits left",
               value: stats ? String(Math.round(stats.creditsRemaining * 10) / 10) : "—",
+              href: "/billing",
             },
             {
               label: "Leads this week",
               value: stats ? String(stats.weekLeads) : "—",
+              href: "/leads?when=week",
             },
             {
               label: "Saved leads",
               value: stats ? String(stats.savedCount) : "—",
+              href: "/leads/saved",
             },
             {
               label: "Hot in pipeline",
               value: stats ? String(stats.hotCount) : "—",
+              href: "/leads/hot",
             },
           ].map((card) => (
-            <div
+            <Link
               key={card.label}
-              className="rounded-2xl border border-border bg-white/90 px-4 py-3.5 shadow-[var(--shadow-card)]"
+              href={card.href}
+              className="group rounded-2xl border border-border bg-white/90 px-4 py-3.5 shadow-[var(--shadow-card)] transition hover:border-brand-200 hover:shadow-md"
             >
               <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
                 {card.label}
@@ -216,32 +170,14 @@ export function HomeView({ userName }: { userName?: string | null }) {
               <p className="mt-1 font-[family-name:var(--font-display)] text-[26px] font-semibold tabular-nums text-ink">
                 {card.value}
               </p>
-            </div>
+              <p className="mt-1 text-[11px] font-medium text-brand-600 opacity-0 transition group-hover:opacity-100">
+                View →
+              </p>
+            </Link>
           ))}
         </div>
 
         <AiAssistantWorkspace userName={userName} compact />
-
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {quickLinks.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="group flex items-start gap-3 rounded-2xl border border-border bg-white/90 p-4 shadow-[var(--shadow-card)] transition hover:border-brand-200 hover:shadow-md"
-              >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600 transition group-hover:scale-105">
-                  <Icon className="h-5 w-5" />
-                </span>
-                <div>
-                  <p className="text-[14px] font-semibold text-ink">{item.label}</p>
-                  <p className="mt-0.5 text-[12px] text-ink-muted">{item.desc}</p>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
       </div>
     </div>
   );

@@ -8,17 +8,12 @@ import {
   HiOutlineArrowTrendingDown,
   HiOutlineArrowTrendingUp,
   HiOutlineChartBar,
-  HiOutlineChatBubbleLeftRight,
   HiOutlineFire,
   HiOutlineMagnifyingGlass,
   HiOutlineMap,
-  HiOutlineSparkles,
-  HiOutlineStar,
   HiOutlineTrophy,
   HiOutlineUserGroup,
   HiOutlineWallet,
-  HiOutlineViewColumns,
-  HiOutlineCog6Tooth,
 } from "react-icons/hi2";
 import { formatCredits, formatNumber } from "@/lib/utils";
 import type { SessionUser } from "@/lib/session-user";
@@ -259,20 +254,10 @@ export function DashboardView({ user }: { user: SessionUser }) {
               Verified leads, AI scores, and pipeline signal across your markets.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Link href="/leads/search" className="hud-btn-primary">
-              <HiOutlineMagnifyingGlass className="h-4 w-4" />
-              Generate leads
-            </Link>
-            <Link href="/ask-expert" className="hud-btn-ghost">
-              <HiOutlineChatBubbleLeftRight className="h-4 w-4" />
-              Ask AI
-            </Link>
-            <Link href="/leads/saved" className="hud-btn-ghost">
-              <HiOutlineStar className="h-4 w-4" />
-              Saved
-            </Link>
-          </div>
+          <Link href="/leads/search" className="hud-btn-primary">
+            <HiOutlineMagnifyingGlass className="h-4 w-4" />
+            Generate leads
+          </Link>
         </div>
 
         {!ready && (
@@ -322,76 +307,6 @@ export function DashboardView({ user }: { user: SessionUser }) {
             href="/leads/search"
             spark={[5, 4, 6, 5, 8, 7, 9]}
           />
-        </div>
-
-        {/* Quick actions */}
-        <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {[
-            {
-              href: "/leads/search",
-              label: "Generate leads",
-              desc: "Preset or custom area",
-              icon: HiOutlineSparkles,
-            },
-            {
-              href: "/leads/hot",
-              label: "Hot leads",
-              desc: "Highest AI scores",
-              icon: HiOutlineFire,
-            },
-            {
-              href: "/leads/map",
-              label: "Lead map",
-              desc: "Geo plot coverage",
-              icon: HiOutlineMap,
-            },
-            {
-              href: "/leads/pipeline",
-              label: "Pipeline CRM",
-              desc: "New → closed",
-              icon: HiOutlineViewColumns,
-            },
-            ...(userHasPlanFeature(user, "teams")
-              ? [
-                  {
-                    href: "/team",
-                    label: "Users & teams",
-                    desc: "Invite Agency seats",
-                    icon: HiOutlineUserGroup,
-                  },
-                ]
-              : [
-                  {
-                    href: "/billing",
-                    label: "Upgrade for teams",
-                    desc: "Agency unlocks seats",
-                    icon: HiOutlineUserGroup,
-                  },
-                ]),
-            {
-              href: "/setup",
-              label: "Workspace setup",
-              desc: "Email · API · CRM",
-              icon: HiOutlineCog6Tooth,
-            },
-          ].map((a) => {
-            const Icon = a.icon;
-            return (
-              <Link key={a.href} href={a.href} className="block">
-                <HudPanel className="flex items-center gap-3 transition hover:brightness-110">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center border border-brand-500/35 bg-brand-500/10 text-brand-500">
-                    <Icon className="h-5 w-5" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-[13px] font-semibold text-ink">
-                      {a.label}
-                    </p>
-                    <p className="text-[11px] text-ink-muted">{a.desc}</p>
-                  </div>
-                </HudPanel>
-              </Link>
-            );
-          })}
         </div>
 
         <div className="mb-5">
@@ -531,23 +446,6 @@ export function DashboardView({ user }: { user: SessionUser }) {
                 week. Only AI-verified, quality-scored records surface here —
                 verified or blank, never fabricated.
               </p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Link href="/leads/search" className="hud-btn-primary">
-                  Generate
-                </Link>
-                <Link href="/leads/hot" className="hud-btn-ghost">
-                  Hot leads
-                </Link>
-                <button
-                  type="button"
-                  onClick={() =>
-                    window.dispatchEvent(new CustomEvent("leadflow:open-bot"))
-                  }
-                  className="hud-btn-ghost"
-                >
-                  Support
-                </button>
-              </div>
             </HudPanel>
 
             <HudPanel title="Quality split" subtitle="Hot / Warm / Nurture">
@@ -768,13 +666,10 @@ export function DashboardView({ user }: { user: SessionUser }) {
                 style={{ width: `${creditPct}%` }}
               />
             </div>
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-4">
               <Link href="/billing" className="hud-btn-primary">
                 <HiOutlineTrophy className="h-4 w-4" />
                 View plan
-              </Link>
-              <Link href="/leads/pipeline" className="hud-btn-ghost">
-                Pipeline
               </Link>
             </div>
           </HudPanel>

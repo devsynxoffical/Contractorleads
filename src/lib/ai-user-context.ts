@@ -29,11 +29,11 @@ export function buildBusinessContext(user: SessionUser) {
 
   if (lines.length <= 4) {
     lines.push(
-      "Profile is incomplete — ask the user to fill Settings (company, services, ICP, goal) so advice can be personalized. Do not invent a company name or leave blank placeholders like [Name].",
+      "Profile is incomplete — mention Settings (/settings) once if relevant, then still give full in-app steps with action links.",
     );
   } else {
     lines.push(
-      "Always address the user by their account name or owner name when known. Never leave empty name placeholders. Use their company, services, ICP, and goal in every recommendation.",
+      "Use company, services, ICP, and goal when it improves the answer. Address the user by name when known.",
     );
   }
 
