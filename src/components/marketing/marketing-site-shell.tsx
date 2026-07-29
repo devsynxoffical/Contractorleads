@@ -11,7 +11,7 @@ import { MarketingSiteFooter } from "./marketing-site-footer";
 const NAV = [
   { href: "/features", label: "Features" },
   { href: "/pricing", label: "Pricing" },
-  { href: "/trades", label: "Industries" },
+  { href: "/industries", label: "Industries" },
   { href: "/blog", label: "Blog" },
   { href: "/about", label: "About" },
 ];

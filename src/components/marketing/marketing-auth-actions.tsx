@@ -32,7 +32,7 @@ export function MarketingHeroPrimaryCta() {
   const isAuthed = useMarketingSession();
   if (isAuthed) {
     return (
-      <Link href="/dashboard" className="mkt-flow-pill mkt-flow-pill--primary">
+      <Link href="/home" className="mkt-flow-pill mkt-flow-pill--primary">
         Go to Dashboard
         <HiOutlineArrowRight className="h-4 w-4" aria-hidden />
       </Link>
@@ -64,7 +64,7 @@ export function MarketingAuthActions({
     if (isAuthed) {
       return (
         <div className={cn("mkt-flow-nav-actions", className)}>
-          <Link href="/dashboard" className="mkt-flow-pill mkt-flow-pill--primary">
+          <Link href="/home" className="mkt-flow-pill mkt-flow-pill--primary">
             Dashboard
           </Link>
         </div>
@@ -88,7 +88,7 @@ export function MarketingAuthActions({
       return (
         <div className={cn("flex items-center gap-2", className)}>
           <Link
-            href="/dashboard"
+            href="/home"
             className="inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px] font-semibold text-white shadow-md shadow-fuchsia-500/20"
             style={{
               background:
@@ -128,7 +128,7 @@ export function MarketingAuthActions({
     return (
       <div className={cn("flex items-center gap-2", className)}>
         <Link
-          href="/dashboard"
+          href="/home"
           className="rounded-full bg-gradient-to-r from-pink-600 via-fuchsia-600 to-violet-600 px-3.5 py-1.5 text-[13px] font-semibold text-white shadow-sm"
         >
           Dashboard

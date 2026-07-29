@@ -13,7 +13,7 @@ export default function robots(): MetadataRoute.Robots {
           "/enterprise/book",
           "/features",
           "/about",
-          "/trades",
+          "/industries",
           "/blog",
           "/login",
           "/register",

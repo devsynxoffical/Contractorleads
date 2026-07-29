@@ -188,7 +188,7 @@ export function MarketingFluidHero() {
         <nav className="mkt-flow-links" aria-label="Primary">
           <a href="/features">Features</a>
           <a href="/pricing">Pricing</a>
-          <a href="/trades">Industries</a>
+          <a href="/industries">Industries</a>
           <a href="/blog">Blog</a>
           <a href="/#faq">FAQ</a>
         </nav>

@@ -15,7 +15,7 @@ const columns = [
     links: [
       ["Features", "/features"],
       ["Pricing", "/pricing"],
-      ["Industries", "/trades"],
+      ["Industries", "/industries"],
       ["Blog", "/blog"],
       ["FAQs", "/#faq"],
     ],

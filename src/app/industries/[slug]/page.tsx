@@ -48,7 +48,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   return buildMetadata({
     title: trade.headline,
     description: trade.description,
-    path: `/trades/${trade.slug}`,
+    path: `/industries/${trade.slug}`,
     keywords: trade.keywords,
   });
 }
@@ -95,8 +95,8 @@ export default async function TradePage({ params }: Params) {
       <JsonLd
         data={breadcrumbJsonLd([
           { name: "Home", path: "/" },
-          { name: "Industries", path: "/trades" },
-          { name: trade.name, path: `/trades/${trade.slug}` },
+          { name: "Industries", path: "/industries" },
+          { name: trade.name, path: `/industries/${trade.slug}` },
         ])}
       />
 
@@ -229,7 +229,7 @@ export default async function TradePage({ params }: Params) {
         <Reveal>
           <SubpageLinkGrid
             items={SEO_REGIONS.map((r) => ({
-              href: `/trades/${trade.slug}/${r.slug}`,
+              href: `/industries/${trade.slug}/${r.slug}`,
               label: r.name,
             }))}
           />
@@ -245,7 +245,7 @@ export default async function TradePage({ params }: Params) {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {related.map((t, i) => (
             <Reveal key={t.slug} delay={0.05 * i}>
-              <Link href={`/trades/${t.slug}`} className="group block h-full">
+              <Link href={`/industries/${t.slug}`} className="group block h-full">
                 <article className="flex h-full flex-col rounded-2xl border border-violet-100 bg-white p-5 shadow-sm transition group-hover:border-fuchsia-300 group-hover:shadow-md">
                   <h3 className="font-[family-name:var(--font-display)] text-[17px] font-semibold text-slate-900">
                     {t.name}

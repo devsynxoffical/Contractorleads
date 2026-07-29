@@ -48,6 +48,17 @@ const nextConfig: NextConfig = {
   // Without this, a tab holding assets from an older build navigates against the
   // new server and fails instead of reloading.
   deploymentId,
+  async redirects() {
+    return [
+      { source: "/trades", destination: "/industries", permanent: true },
+      { source: "/trades/:slug", destination: "/industries/:slug", permanent: true },
+      {
+        source: "/trades/:slug/:region",
+        destination: "/industries/:slug/:region",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

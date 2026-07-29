@@ -8,7 +8,7 @@ function publicCta(href?: string, label?: string) {
   const isAppPath =
     href.startsWith("/") &&
     !href.startsWith("/blog") &&
-    !href.startsWith("/trades") &&
+    !href.startsWith("/industries") &&
     !href.startsWith("/pricing") &&
     !href.startsWith("/features") &&
     !href.startsWith("/about") &&

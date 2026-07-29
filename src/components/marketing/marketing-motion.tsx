@@ -69,12 +69,15 @@ export function MarketingStickyCta() {
 
   return (
     <motion.div
-      className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-50 -translate-x-1/2"
+      className={cn(
+        "fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-50 -translate-x-1/2",
+        !visible && "pointer-events-none",
+      )}
       initial={false}
       animate={
         visible
           ? { y: 0, opacity: 1, scale: 1 }
-          : { y: 24, opacity: 0, scale: 0.96, pointerEvents: "none" }
+          : { y: 24, opacity: 0, scale: 0.96 }
       }
       transition={
         reduced
@@ -83,7 +86,7 @@ export function MarketingStickyCta() {
       }
     >
       <Link
-        href={loggedIn ? "/dashboard" : "/register"}
+        href={loggedIn ? "/home" : "/register"}
         className="inline-flex min-h-11 items-center gap-2 rounded-full border border-slate-200 bg-[#ffffff]/95 px-4 py-2.5 text-[13px] font-semibold text-slate-800 shadow-[0_12px_40px_rgba(80,40,120,0.18)] backdrop-blur-xl transition hover:shadow-[0_16px_48px_rgba(217,70,239,0.22)] sm:px-5"
       >
         <motion.span
@@ -160,7 +163,7 @@ export function FinalCtaActions() {
   }, []);
 
   const items = loggedIn
-    ? [{ type: "link" as const, href: "/dashboard", primary: true, label: "Go to Dashboard" }]
+    ? [{ type: "link" as const, href: "/home", primary: true, label: "Go to Dashboard" }]
     : [
         { type: "link" as const, href: "/register", primary: true, label: "Get started free" },
         { type: "link" as const, href: "/login", primary: false, label: "Sign in" },

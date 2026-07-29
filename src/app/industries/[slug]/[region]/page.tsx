@@ -55,7 +55,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   return buildMetadata({
     title: `${title} for agencies`,
     description: `Find verified ${trade.name.toLowerCase()} contractors in ${region.name}. AI-scored leads with phones, owners, and outreach scripts for agencies.`,
-    path: `/trades/${trade.slug}/${region.slug}`,
+    path: `/industries/${trade.slug}/${region.slug}`,
     keywords: [
       `${trade.name.toLowerCase()} contractor leads ${region.name}`,
       `${region.name} ${trade.name.toLowerCase()} contractors`,
@@ -108,11 +108,11 @@ export default async function TradeRegionPage({ params }: Params) {
       <JsonLd
         data={breadcrumbJsonLd([
           { name: "Home", path: "/" },
-          { name: "Industries", path: "/trades" },
-          { name: trade.name, path: `/trades/${trade.slug}` },
+          { name: "Industries", path: "/industries" },
+          { name: trade.name, path: `/industries/${trade.slug}` },
           {
             name: region.name,
-            path: `/trades/${trade.slug}/${region.slug}`,
+            path: `/industries/${trade.slug}/${region.slug}`,
           },
         ])}
       />
@@ -131,7 +131,7 @@ export default async function TradeRegionPage({ params }: Params) {
             <HiOutlineArrowRight className="h-4 w-4" />
           </Link>
           <Link
-            href={`/trades/${trade.slug}`}
+            href={`/industries/${trade.slug}`}
             className="inline-flex rounded-full border border-white/25 bg-white/10 px-5 py-2.5 text-[14px] font-semibold text-white backdrop-blur transition hover:bg-white/20"
           >
             All {trade.name} markets
@@ -243,14 +243,14 @@ export default async function TradeRegionPage({ params }: Params) {
         <Reveal>
           <SubpageLinkGrid
             items={nearbyRegions.map((r) => ({
-              href: `/trades/${trade.slug}/${r.slug}`,
+              href: `/industries/${trade.slug}/${r.slug}`,
               label: r.name,
             }))}
           />
         </Reveal>
         <Reveal delay={0.1}>
           <Link
-            href={`/trades/${trade.slug}`}
+            href={`/industries/${trade.slug}`}
             className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-fuchsia-200 bg-fuchsia-50 px-4 py-2 text-[13px] font-semibold text-fuchsia-800 transition hover:border-fuchsia-300"
           >
             All {SEO_REGIONS.length} {trade.name} states
@@ -269,7 +269,7 @@ export default async function TradeRegionPage({ params }: Params) {
           <SubpageLinkGrid
             columns={4}
             items={otherTrades.map((t) => ({
-              href: `/trades/${t.slug}/${region.slug}`,
+              href: `/industries/${t.slug}/${region.slug}`,
               label: t.name,
             }))}
           />

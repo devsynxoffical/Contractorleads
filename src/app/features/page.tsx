@@ -493,7 +493,7 @@ export default function FeaturesPage() {
             {TRADE_PAGES.map((t) => (
               <li key={t.slug}>
                 <Link
-                  href={`/trades/${t.slug}`}
+                  href={`/industries/${t.slug}`}
                   className="inline-flex rounded-full border border-violet-100 bg-white px-3.5 py-1.5 text-[13px] font-semibold text-slate-700 transition hover:border-fuchsia-300 hover:text-fuchsia-700"
                 >
                   {t.name}

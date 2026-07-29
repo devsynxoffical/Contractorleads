@@ -19,7 +19,7 @@ export const metadata: Metadata = buildMetadata({
   title: "Contractor leads by trade — roofing, HVAC, plumbing & more",
   description:
     "Browse verified contractor lead verticals for agencies: roofing, HVAC, plumbing, electrical, solar, landscaping, remodeling, and more home-service trades.",
-  path: "/trades",
+  path: "/industries",
   keywords: [
     "contractor leads by industry",
     "roofing contractor leads",
@@ -35,7 +35,7 @@ export default function TradesIndexPage() {
       <JsonLd
         data={breadcrumbJsonLd([
           { name: "Home", path: "/" },
-          { name: "Trades", path: "/trades" },
+          { name: "Industries", path: "/industries" },
         ])}
       />
       <MarketingSubpageHero
@@ -83,7 +83,7 @@ export default function TradesIndexPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {TRADE_PAGES.map((t, i) => (
             <Reveal key={t.slug} delay={0.04 * i}>
-              <Link href={`/trades/${t.slug}`} className="group block h-full">
+              <Link href={`/industries/${t.slug}`} className="group block h-full">
                 <article className="flex h-full flex-col rounded-2xl border border-violet-100 bg-white p-5 shadow-sm transition group-hover:border-fuchsia-300 group-hover:shadow-md">
                   <h2 className="font-[family-name:var(--font-display)] text-[17px] font-semibold text-slate-900">
                     {t.name}

@@ -285,7 +285,7 @@ function regionSlug(name: string) {
     .replace(/^-|-$/g, "");
 }
 
-/** All US states as SEO region landers (e.g. /trades/roofing/texas). */
+/** All US states as SEO region landers (e.g. /industries/roofing/texas). */
 export const SEO_REGIONS: SeoRegion[] = US_STATES.map((s) => ({
   slug: regionSlug(s.name),
   name: s.name,

@@ -14,7 +14,7 @@ const FOOTER_COLUMNS = [
     links: [
       ["Features", "/features"],
       ["Pricing", "/pricing"],
-      ["Industries", "/trades"],
+      ["Industries", "/industries"],
       ["Blog", "/blog"],
       ["FAQs", "/#faq"],
     ],
