@@ -1,4 +1,5 @@
 import { LeadDetailView } from "@/components/leads/lead-detail-view";
+import { parseLeadFrom } from "@/lib/nav-context";
 
 export default async function LeadDetailPage({
   params,
@@ -9,10 +10,6 @@ export default async function LeadDetailPage({
 }) {
   const { id } = await params;
   const { from } = await searchParams;
-  const source =
-    from === "hot" || from === "saved" || from === "all" || from === "digest"
-      ? from
-      : "all";
 
-  return <LeadDetailView leadId={id} from={source} />;
+  return <LeadDetailView leadId={id} from={parseLeadFrom(from)} />;
 }

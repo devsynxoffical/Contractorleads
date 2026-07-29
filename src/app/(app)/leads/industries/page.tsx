@@ -5,7 +5,7 @@ import {
   PageHeader,
   PrimaryActionLink,
 } from "@/components/layout/page-header";
-import { SectionHeading, SectionLabel } from "@/components/ui/section";
+import { SectionHeading } from "@/components/ui/section";
 import {
   HiOutlineCheckBadge,
   HiOutlineMagnifyingGlass,
@@ -35,6 +35,13 @@ export default function IndustriesPage() {
         <PageHeader
           title="Industries"
           description="12 home-service verticals across Tier 1 countries — pick one and jump into Lead Finder."
+          backHref="/leads/search"
+          backLabel="Back to Lead Finder"
+          crumbs={[
+            { label: "Home", href: "/home" },
+            { label: "Lead Finder", href: "/leads/search" },
+            { label: "Industries" },
+          ]}
           actions={
             <PrimaryActionLink href="/leads/search">
               <HiOutlineMagnifyingGlass className="h-4 w-4" />
@@ -42,21 +49,6 @@ export default function IndustriesPage() {
             </PrimaryActionLink>
           }
         />
-
-        <div className="stagger grid gap-3 sm:grid-cols-3">
-          <div className="rounded-xl border border-border bg-white/90 px-4 py-3 shadow-sm">
-            <SectionLabel>Coverage</SectionLabel>
-            <p className="mt-1 text-lg font-semibold">Tier 1 countries</p>
-          </div>
-          <div className="rounded-xl border border-border bg-white/90 px-4 py-3 shadow-sm">
-            <SectionLabel>Source</SectionLabel>
-            <p className="mt-1 text-lg font-semibold">Google Places + AI</p>
-          </div>
-          <div className="rounded-xl border border-border bg-white/90 px-4 py-3 shadow-sm">
-            <SectionLabel>Export</SectionLabel>
-            <p className="mt-1 text-lg font-semibold">CSV · Excel</p>
-          </div>
-        </div>
       </div>
 
       <SectionHeading

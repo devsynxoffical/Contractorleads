@@ -10,6 +10,13 @@ export default function InboxPage() {
       <PageHeader
         title="Email"
         description="Compose new emails to your leads, read replies, and respond from your connected SMTP mailbox. Delivery metrics are below."
+        backHref="/setup/email"
+        backLabel="Back to email setup"
+        crumbs={[
+          { label: "Home", href: "/home" },
+          { label: "Setup", href: "/setup" },
+          { label: "Email" },
+        ]}
       />
 
       <EmailWorkspace />

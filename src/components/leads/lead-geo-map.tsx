@@ -13,8 +13,10 @@ const LeadGeoMapInner = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="hud-panel flex h-[420px] items-center justify-center sm:h-[520px]">
-        <p className="text-[13px] text-ink-muted">Loading global map…</p>
+      <div className="flex h-[300px] items-center justify-center rounded-xl border border-border bg-[var(--input-bg)] sm:h-[380px]">
+        <p className="font-[family-name:var(--font-jakarta)] text-[13px] text-ink-muted">
+          Loading map…
+        </p>
       </div>
     ),
   }
@@ -26,12 +28,15 @@ export function LeadGeoMap({
   title,
   subtitle,
   leadDetailBase,
+  leadFrom,
 }: {
   leads: GeoLead[];
   compact?: boolean;
   title?: string;
   subtitle?: string;
   leadDetailBase?: string;
+  /** Query `from` stamped on lead detail links (default map). */
+  leadFrom?: string;
 }) {
   return (
     <LeadGeoMapInner
@@ -40,6 +45,7 @@ export function LeadGeoMap({
       title={title}
       subtitle={subtitle}
       leadDetailBase={leadDetailBase}
+      leadFrom={leadFrom}
     />
   );
 }

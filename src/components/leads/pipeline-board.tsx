@@ -298,7 +298,7 @@ export function PipelineBoard({ initialColumns }: { initialColumns: Column[] }) 
                   }}
                   onClick={() => {
                     if (dragMovedRef.current) return;
-                    router.push(`/leads/${s.lead.id}?from=saved`);
+                    router.push(`/leads/${s.lead.id}?from=pipeline`);
                   }}
                   className={cn(
                     "cursor-pointer border-border shadow-sm transition hover:border-brand-200 hover:bg-brand-50/40 active:cursor-grabbing",

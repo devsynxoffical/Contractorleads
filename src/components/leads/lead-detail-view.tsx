@@ -10,10 +10,12 @@ import {
   HiOutlineArrowTopRightOnSquare,
   HiOutlineBookmark,
   HiOutlineCheckBadge,
+  HiOutlineCursorArrowRays,
   HiOutlineEnvelope,
   HiOutlineExclamationTriangle,
   HiOutlineInformationCircle,
   HiOutlineGlobeAlt,
+  HiOutlineMagnifyingGlass,
   HiOutlineMapPin,
   HiOutlineMegaphone,
   HiOutlinePhone,
@@ -29,10 +31,19 @@ import { Textarea } from "@/components/ui/input";
 import { LEAD_STATUSES } from "@/lib/constants";
 import { OutreachStudio } from "@/components/leads/outreach-studio";
 import { LeadIntelligenceReportCard } from "@/components/leads/lead-intelligence-report";
+import { LeadActivityPanel } from "@/components/leads/lead-activity-panel";
 import { EnrollEmailSequenceButton } from "@/components/leads/enroll-email-sequence-button";
 import { LeadSendEmailCard } from "@/components/leads/lead-send-email-card";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
+import { BackLink, PageCrumbs } from "@/components/layout/back-nav";
 import { adminScrapeLeadIds } from "@/lib/client/search-session";
+import {
+  LEAD_FROM_CRUMB,
+  LEAD_FROM_HREF,
+  LEAD_FROM_LABEL,
+  type AppLeadFrom,
+  type LeadFrom,
+} from "@/lib/nav-context";
 import { useRouter } from "next/navigation";
 
 type Lead = {
@@ -101,8 +112,6 @@ type Lead = {
   }>;
 };
 
-type LeadFrom = "all" | "hot" | "saved" | "scrape" | "digest";
-
 type LeadNavigation = {
   from: LeadFrom;
   prevId: string | null;
@@ -112,19 +121,13 @@ type LeadNavigation = {
 };
 
 const BACK_HREF: Record<LeadFrom, string> = {
-  all: "/leads",
-  hot: "/leads/hot",
-  saved: "/leads/saved",
+  ...LEAD_FROM_HREF,
   scrape: "/admin/scrape",
-  digest: "/digest",
 };
 
 const BACK_LABEL: Record<LeadFrom, string> = {
-  all: "Back to all leads",
-  hot: "Back to hot leads",
-  saved: "Back to saved leads",
+  ...LEAD_FROM_LABEL,
   scrape: "Back to scrape results",
-  digest: "Back to morning digest",
 };
 
 type TeamMember = {
@@ -144,37 +147,72 @@ function parseTeamMembers(raw: string | null): TeamMember[] {
   }
 }
 
+function scoreTone(value: number) {
+  if (value >= 70) {
+    return {
+      text: "text-emerald-700",
+      bar: "bg-emerald-500",
+      ring: "ring-emerald-500/20",
+      bg: "bg-emerald-50/80",
+    };
+  }
+  if (value >= 45) {
+    return {
+      text: "text-amber-700",
+      bar: "bg-amber-500",
+      ring: "ring-amber-500/20",
+      bg: "bg-amber-50/70",
+    };
+  }
+  return {
+    text: "text-rose-700",
+    bar: "bg-rose-500",
+    ring: "ring-rose-500/20",
+    bg: "bg-rose-50/70",
+  };
+}
+
 function QualificationScoreCard({
   href,
   label,
   value,
-  hint,
+  icon: Icon,
 }: {
   href: string;
   label: string;
   value: number | null | undefined;
-  hint: string;
+  icon: React.ComponentType<{ className?: string }>;
 }) {
   const v = value ?? 0;
+  const tone = scoreTone(v);
   return (
     <Link
       href={href}
-      className="block rounded-xl border border-border/70 bg-[#faf8fc] px-3 py-3 text-left transition hover:border-brand-200 hover:bg-brand-50/50"
+      className="group flex flex-col rounded-2xl border border-border bg-white p-4 shadow-[var(--shadow-soft)] transition hover:border-brand-200 hover:shadow-[var(--shadow-elevated)]"
     >
-      <div className="mb-1.5 flex items-center justify-between gap-2 text-[12px]">
-        <span className="font-medium text-ink">{label}</span>
-        <span className="font-semibold tabular-nums text-ink">{v}</span>
+      <div className="flex items-start justify-between gap-3">
+        <span
+          className={`flex h-9 w-9 items-center justify-center rounded-xl ring-1 ${tone.bg} ${tone.ring} ${tone.text}`}
+        >
+          <Icon className="h-4 w-4" />
+        </span>
+        <span
+          className={`font-[family-name:var(--font-display)] text-2xl font-semibold tabular-nums leading-none ${tone.text}`}
+        >
+          {v}
+        </span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-[#f0ebf5]">
+      <p className="mt-3 text-[13px] font-semibold text-ink">{label}</p>
+      <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-slate-100">
         <div
-          className="h-full rounded-full transition-all"
-          style={{
-            width: `${Math.min(100, v)}%`,
-            background: LOGO_GRADIENT,
-          }}
+          className={`h-full rounded-full transition-all ${tone.bar}`}
+          style={{ width: `${Math.min(100, Math.max(v, 0))}%` }}
         />
       </div>
-      <p className="mt-1.5 text-[11px] text-brand-600">{hint}</p>
+      <span className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-brand-700 transition group-hover:gap-1.5">
+        View detailed report
+        <HiOutlineArrowRight className="h-3.5 w-3.5" />
+      </span>
     </Link>
   );
 }
@@ -359,6 +397,7 @@ export function LeadDetailView({
   const [verificationMessage, setVerificationMessage] = useState<string | null>(
     null,
   );
+  const [activityRefresh, setActivityRefresh] = useState(0);
   const [popup, setPopup] = useState<PopupState | null>(null);
 
   const [crmBusy, setCrmBusy] = useState(false);
@@ -767,11 +806,15 @@ export function LeadDetailView({
         : "nurture";
   const linkedinSearchUrl = `https://www.linkedin.com/search/results/companies/?keywords=${encodeURIComponent(lead.businessName)}`;
   const navFrom = navigation?.from ?? from;
-  const appFrom: LeadFrom = navFrom === "scrape" ? "all" : navFrom;
+  const appFrom: AppLeadFrom = navFrom === "scrape" ? "all" : navFrom;
   const detailHref = (id: string) =>
     isAdmin
       ? `/admin/leads/${id}?from=${navFrom === "scrape" ? "scrape" : "all"}`
       : `/leads/${id}?from=${appFrom}`;
+  const qualHref = (scoreKey: string) =>
+    isAdmin
+      ? `/admin/leads/${leadId}/qualification/${scoreKey}`
+      : `/leads/${leadId}/qualification/${scoreKey}?from=${appFrom}`;
   const resolvedBackHref =
     backHref ||
     (isAdmin
@@ -835,13 +878,21 @@ export function LeadDetailView({
   return (
     <div className={isAdmin ? "page-enter" : "page-pad page-enter"}>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <Link
-          href={resolvedBackHref}
-          className="inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-muted transition hover:text-brand-700"
-        >
-          <HiOutlineArrowLeft className="h-4 w-4" />
-          {resolvedBackLabel}
-        </Link>
+        <div className="space-y-1.5">
+          <BackLink href={resolvedBackHref} label={resolvedBackLabel} />
+          {!isAdmin && (
+            <PageCrumbs
+              items={[
+                { label: "Home", href: "/home" },
+                {
+                  label: LEAD_FROM_CRUMB[appFrom],
+                  href: resolvedBackHref,
+                },
+                { label: lead.businessName },
+              ]}
+            />
+          )}
+        </div>
 
         <div className="flex items-center gap-2">
           {navigation && navigation.position != null && navigation.total > 0 && (
@@ -956,6 +1007,12 @@ export function LeadDetailView({
           </div>
         </div>
       </div>
+
+      {!isAdmin ? (
+        <div className="mt-5">
+          <LeadActivityPanel leadId={lead.id} refreshKey={activityRefresh} />
+        </div>
+      ) : null}
 
       <div className="mt-6 grid gap-5 lg:grid-cols-3">
         <div className="space-y-5 lg:col-span-2">
@@ -1381,14 +1438,15 @@ export function LeadDetailView({
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+          <Card className="overflow-hidden border-border shadow-[var(--shadow-soft)]">
+            <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 border-b border-border/70 bg-[#faf8fc]/60 pb-4">
               <div>
-                <CardTitle>Website &amp; opportunity scores</CardTitle>
-                <p className="mt-1 text-[12px] text-ink-muted">
-                  Click any score for a GPT detailed problem report (what&apos;s
-                  wrong, why it matters, how to pitch). Refresh re-audits the
-                  live homepage.
+                <CardTitle className="text-[16px]">
+                  Website &amp; opportunity scores
+                </CardTitle>
+                <p className="mt-1 max-w-xl text-[13px] leading-relaxed text-ink-muted">
+                  Each score opens a detailed breakdown — what&apos;s weak, why it
+                  matters, and how to pitch. Refresh re-audits the live site.
                 </p>
               </div>
               <Button
@@ -1397,60 +1455,47 @@ export function LeadDetailView({
                 loading={qualificationRefreshing}
                 disabled={qualificationRefreshing || !lead.website}
                 onClick={() => void refreshQualification()}
+                className="shrink-0"
               >
                 <HiOutlineArrowPath className="mr-1.5 h-3.5 w-3.5" />
                 {lead.website ? "Refresh audit" : "No website"}
               </Button>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-5 pt-5">
               {lead.outreachAngle && (
-                <div className="rounded-xl border border-brand-100 bg-gradient-to-r from-brand-50/90 to-white px-4 py-3 text-sm leading-relaxed text-ink">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-brand-600">
+                <div className="relative overflow-hidden rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 via-white to-white px-4 py-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-600">
                     Recommended outreach angle
                   </p>
-                  <p className="mt-1">{lead.outreachAngle}</p>
+                  <p className="mt-1.5 text-[14px] leading-relaxed text-ink">
+                    {lead.outreachAngle}
+                  </p>
                 </div>
               )}
               <div className="grid gap-3 sm:grid-cols-2">
                 <QualificationScoreCard
-                  href={
-                    isAdmin
-                      ? `/admin/leads/${lead.id}/qualification/websiteQuality`
-                      : `/leads/${lead.id}/qualification/websiteQuality`
-                  }
+                  href={qualHref("websiteQuality")}
                   label="Website quality"
                   value={lead.websiteQualityScore}
-                  hint="Open detailed GPT report →"
+                  icon={HiOutlineGlobeAlt}
                 />
                 <QualificationScoreCard
-                  href={
-                    isAdmin
-                      ? `/admin/leads/${lead.id}/qualification/marketingOpportunity`
-                      : `/leads/${lead.id}/qualification/marketingOpportunity`
-                  }
+                  href={qualHref("marketingOpportunity")}
                   label="Marketing opportunity"
                   value={lead.marketingOpportunityScore}
-                  hint="Open detailed GPT report →"
+                  icon={HiOutlineMegaphone}
                 />
                 <QualificationScoreCard
-                  href={
-                    isAdmin
-                      ? `/admin/leads/${lead.id}/qualification/ppcOpportunity`
-                      : `/leads/${lead.id}/qualification/ppcOpportunity`
-                  }
+                  href={qualHref("ppcOpportunity")}
                   label="PPC opportunity"
                   value={lead.ppcOpportunityScore}
-                  hint="Open detailed GPT report →"
+                  icon={HiOutlineCursorArrowRays}
                 />
                 <QualificationScoreCard
-                  href={
-                    isAdmin
-                      ? `/admin/leads/${lead.id}/qualification/seoOpportunity`
-                      : `/leads/${lead.id}/qualification/seoOpportunity`
-                  }
+                  href={qualHref("seoOpportunity")}
                   label="SEO opportunity"
                   value={lead.seoOpportunityScore}
-                  hint="Open detailed GPT report →"
+                  icon={HiOutlineMagnifyingGlass}
                 />
               </div>
             </CardContent>
@@ -1459,6 +1504,7 @@ export function LeadDetailView({
           <LeadIntelligenceReportCard
             leadId={lead.id}
             businessName={lead.businessName}
+            onReportsChange={() => setActivityRefresh((n) => n + 1)}
           />
 
           <OutreachStudio
@@ -1474,6 +1520,7 @@ export function LeadDetailView({
                   savedBy: [{ ...lead.savedBy[0], status }],
                 });
               }
+              setActivityRefresh((n) => n + 1);
               void load();
             }}
           />
@@ -1621,6 +1668,7 @@ export function LeadDetailView({
                       ],
                     });
                   }
+                  setActivityRefresh((n) => n + 1);
                   void load();
                 }}
               />

@@ -296,7 +296,7 @@ export function AiAssistantWorkspace({
             New chat
           </button>
           <Link
-            href="/settings"
+            href="/ask-expert/settings"
             className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-[12px] font-medium text-ink-muted transition hover:bg-brand-50 hover:text-ink"
           >
             <HiOutlineCog6Tooth className="h-3.5 w-3.5" />

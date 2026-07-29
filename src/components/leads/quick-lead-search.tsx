@@ -34,6 +34,7 @@ import {
 import { notifyCreditsChanged } from "@/lib/client/credits-sync";
 import { LocationAutocomplete } from "@/components/leads/location-autocomplete";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
+import { cn } from "@/lib/utils";
 
 type Lead = {
   id: string;
@@ -241,30 +242,40 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
     await runSearch({});
   }
 
+  const fieldClass = cn(
+    "h-10 w-full rounded-xl border px-3 font-[family-name:var(--font-jakarta)] text-[13px] outline-none transition",
+    embedded
+      ? "border-brand-500/20 bg-[var(--panel-solid)] text-ink placeholder:text-ink-faint focus:border-brand-500/50"
+      : "border-border bg-white text-ink placeholder:text-ink-faint focus:border-brand-400",
+  );
+
   const panel = (
     <div
-      className={
+      className={cn(
+        "font-[family-name:var(--font-jakarta)] text-ink",
         embedded
-          ? "overflow-hidden rounded-xl border border-border bg-white shadow-[var(--shadow-card)]"
-          : "relative flex h-[min(640px,92dvh)] w-full max-w-lg flex-col rounded-t-2xl border border-border bg-white shadow-2xl sm:rounded-2xl"
-      }
+          ? "overflow-hidden"
+          : "relative flex h-[min(640px,92dvh)] w-full max-w-lg flex-col rounded-t-2xl border border-border bg-white shadow-2xl sm:rounded-2xl",
+      )}
     >
-      <div className="flex items-center justify-between border-b border-border px-4 py-3 sm:px-5">
-        <div className="flex items-center gap-2.5">
-          <span
-            className="flex h-9 w-9 items-center justify-center rounded-xl text-white"
-            style={{ background: LOGO_GRADIENT }}
-          >
-            <HiOutlineChatBubbleLeftEllipsis className="h-5 w-5" />
-          </span>
-          <div>
-            <p className="text-sm font-semibold text-ink">Search Leads</p>
-            <p className="text-[11px] text-ink-faint">
-              Chat or filters — preset or custom service & area
-            </p>
+      {!embedded && (
+        <div className="flex items-center justify-between border-b border-border px-4 py-3 sm:px-5">
+          <div className="flex items-center gap-2.5">
+            <span
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-white"
+              style={{ background: LOGO_GRADIENT }}
+            >
+              <HiOutlineChatBubbleLeftEllipsis className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="font-[family-name:var(--font-display)] text-sm font-semibold tracking-tight text-ink">
+                Search Leads
+              </p>
+              <p className="text-[11px] text-ink-faint">
+                Chat or filters — preset or custom service & area
+              </p>
+            </div>
           </div>
-        </div>
-        {!embedded && (
           <button
             type="button"
             onClick={() => setOpen(false)}
@@ -273,13 +284,14 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
           >
             <HiOutlineXMark className="h-5 w-5" />
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       <div
-        className={`space-y-3 overflow-y-auto px-4 py-4 sm:px-5 ${
-          embedded ? "max-h-[280px]" : "flex-1"
-        }`}
+        className={cn(
+          "space-y-3 overflow-y-auto",
+          embedded ? "max-h-[300px] px-0.5 py-1" : "flex-1 px-4 py-4 sm:px-5",
+        )}
       >
         {messages.map((msg) => (
           <div
@@ -287,11 +299,14 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
             className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
           >
             <div
-              className={`max-w-[90%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed ${
+              className={cn(
+                "max-w-[92%] rounded-2xl px-3.5 py-2.5 font-[family-name:var(--font-jakarta)] text-[13px] leading-relaxed",
                 msg.role === "user"
                   ? "rounded-br-md text-white"
-                  : "rounded-bl-md bg-[#faf8fb] text-ink"
-              }`}
+                  : embedded
+                    ? "rounded-bl-md border border-brand-500/15 bg-brand-500/[0.06] text-ink"
+                    : "rounded-bl-md bg-[#faf8fb] text-ink",
+              )}
               style={
                 msg.role === "user" ? { background: LOGO_GRADIENT } : undefined
               }
@@ -319,7 +334,12 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
                     void runSearch(parsed);
                   }
                 }}
-                className="rounded-full border border-border bg-white px-3 py-1.5 text-[12px] font-medium text-ink-muted transition hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700"
+                className={cn(
+                  "rounded-full border px-3 py-1.5 font-[family-name:var(--font-jakarta)] text-[12px] font-medium transition",
+                  embedded
+                    ? "border-brand-500/20 bg-[var(--panel-solid)] text-ink-muted hover:border-brand-500/40 hover:text-brand-600"
+                    : "border-border bg-white text-ink-muted hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700",
+                )}
               >
                 {p}
               </button>
@@ -328,7 +348,7 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
         )}
 
         {loading && (
-          <p className="flex items-center gap-2 text-[13px] text-ink-muted">
+          <p className="flex items-center gap-2 font-[family-name:var(--font-jakarta)] text-[13px] text-ink-muted">
             <HiOutlineArrowPath className="h-4 w-4 animate-spin" />
             Searching verified leads…
           </p>
@@ -339,11 +359,16 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
             {leads.slice(0, embedded ? 5 : 8).map((lead) => (
               <Link
                 key={lead.id}
-                href={`/leads/${lead.id}`}
-                className="flex items-start justify-between gap-3 rounded-xl border border-border bg-white px-3 py-3 transition hover:border-brand-200 hover:bg-brand-50/40"
+                href={`/leads/${lead.id}?from=search`}
+                className={cn(
+                  "flex items-start justify-between gap-3 rounded-xl border px-3 py-3 transition",
+                  embedded
+                    ? "border-brand-500/15 bg-[var(--panel-solid)] hover:border-brand-500/35"
+                    : "border-border bg-white hover:border-brand-200 hover:bg-brand-50/40",
+                )}
               >
                 <div className="min-w-0">
-                  <p className="truncate text-[13px] font-semibold text-ink">
+                  <p className="truncate font-[family-name:var(--font-display)] text-[14px] font-semibold tracking-tight text-ink">
                     {lead.businessName}
                   </p>
                   <p className="mt-0.5 flex items-center gap-1 text-[11px] text-ink-faint">
@@ -389,9 +414,16 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
         )}
       </div>
 
-      <div className="border-t border-border bg-[#faf8fb] px-4 py-3 sm:px-5">
-        <form onSubmit={handleFilterSearch} className="mb-3 space-y-2">
-          <div className="grid gap-2 sm:grid-cols-4">
+      <div
+        className={cn(
+          "border-t",
+          embedded
+            ? "mt-3 border-brand-500/15 pt-3"
+            : "border-border bg-[#faf8fb] px-4 py-3 sm:px-5",
+        )}
+      >
+        <form onSubmit={handleFilterSearch} className="mb-3 space-y-2.5">
+          <div className="grid gap-2 sm:grid-cols-3">
             <select
               value={
                 industryMode === "custom"
@@ -406,7 +438,8 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
                 setIndustryMode("preset");
                 setSelectedIndustry(e.target.value);
               }}
-              className="h-9 rounded-lg border border-border bg-white px-2 text-[12px] text-ink outline-none focus:border-brand-400"
+              className={fieldClass}
+              aria-label="Service"
             >
               {INDUSTRIES.map((i) => (
                 <option key={i} value={i}>
@@ -421,7 +454,7 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
                 onChange={(e) => setCustomIndustry(e.target.value)}
                 placeholder="Custom service"
                 required
-                className="h-9 rounded-lg border border-border bg-white px-2 text-[12px] text-ink outline-none focus:border-brand-400"
+                className={fieldClass}
               />
             )}
             <select
@@ -432,7 +465,8 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
                 setCity("");
                 setCustomLocation("");
               }}
-              className="h-9 rounded-lg border border-border bg-white px-2 text-[12px] text-ink outline-none focus:border-brand-400"
+              className={fieldClass}
+              aria-label="Country"
             >
               {TIER_ONE_COUNTRIES.map((item) => (
                 <option key={item.code} value={item.code}>
@@ -445,36 +479,72 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
               onChange={(e) =>
                 setLocationScope(e.target.value as "local" | "country")
               }
-              className="h-9 rounded-lg border border-border bg-white px-2 text-[12px] text-ink outline-none focus:border-brand-400"
+              className={fieldClass}
+              aria-label="Search scope"
             >
               <option value="local">Specific area</option>
               <option value="country">Entire country</option>
             </select>
           </div>
+
           {locationScope === "local" && (
-            <select
-              value={locationMode}
-              onChange={(e) =>
-                setLocationMode(e.target.value as "standard" | "custom")
-              }
-              className="h-9 w-full rounded-lg border border-border bg-white px-2 text-[12px] text-ink outline-none focus:border-brand-400"
+            <div
+              className={cn(
+                "inline-flex rounded-xl border p-0.5",
+                embedded
+                  ? "border-brand-500/20 bg-[var(--panel-solid)]"
+                  : "border-border bg-white",
+              )}
+              role="group"
+              aria-label="Location type"
             >
-              <option value="standard">Region + city</option>
-              <option value="custom">Custom area…</option>
-            </select>
+              <button
+                type="button"
+                onClick={() => setLocationMode("standard")}
+                className={cn(
+                  "rounded-[10px] px-3 py-1.5 font-[family-name:var(--font-jakarta)] text-[12px] font-semibold transition",
+                  locationMode === "standard"
+                    ? "bg-brand-500 text-white shadow-sm"
+                    : "text-ink-muted hover:text-ink",
+                )}
+              >
+                Region + city
+              </button>
+              <button
+                type="button"
+                onClick={() => setLocationMode("custom")}
+                className={cn(
+                  "rounded-[10px] px-3 py-1.5 font-[family-name:var(--font-jakarta)] text-[12px] font-semibold transition",
+                  locationMode === "custom"
+                    ? "bg-brand-500 text-white shadow-sm"
+                    : "text-ink-muted hover:text-ink",
+                )}
+              >
+                Custom area
+              </button>
+            </div>
           )}
-          <div className="grid gap-2 sm:grid-cols-4">
+
+          <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
             {locationScope === "country" ? (
-              <p className="flex min-h-9 items-center rounded-lg border border-brand-100 bg-brand-50/60 px-3 text-[12px] text-ink-muted sm:col-span-3">
+              <p
+                className={cn(
+                  "flex min-h-10 items-center rounded-xl border px-3 text-[12px] text-ink-muted",
+                  embedded
+                    ? "border-brand-500/20 bg-brand-500/[0.06]"
+                    : "border-brand-100 bg-brand-50/60",
+                )}
+              >
                 Searching across {getTierOneCountry(country).name}
               </p>
             ) : locationMode === "standard" ? (
-              <>
+              <div className="grid gap-2 sm:grid-cols-2">
                 {getRegionsForCountry(country).length > 0 ? (
                   <select
                     value={state}
                     onChange={(e) => setState(e.target.value)}
-                    className="h-9 rounded-lg border border-border bg-white px-2 text-[12px] text-ink outline-none focus:border-brand-400 sm:col-span-2"
+                    className={fieldClass}
+                    aria-label="Region"
                   >
                     <option value="">{getRegionAnyLabel(country)}</option>
                     {getRegionsForCountry(country).map((s) => (
@@ -488,31 +558,33 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
                     value={state}
                     onChange={(e) => setState(e.target.value)}
                     placeholder={getTierOneCountry(country).regionLabel}
-                    className="h-9 rounded-lg border border-border bg-white px-2 text-[12px] text-ink outline-none focus:border-brand-400 sm:col-span-2"
+                    className={fieldClass}
                   />
                 )}
                 <input
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
                   placeholder="City (optional)"
-                  className="h-9 rounded-lg border border-border bg-white px-2 text-[12px] text-ink outline-none focus:border-brand-400 sm:col-span-2"
-                />
-              </>
-            ) : (
-              <div className="sm:col-span-3">
-                <LocationAutocomplete
-                  value={customLocation}
-                  onChange={(v) => setCustomLocation(v)}
-                  country={country}
-                  placeholder={`Custom area in ${getTierOneCountry(country).name}`}
-                  inputClassName="h-9 rounded-lg border border-border bg-white px-2 pl-9 text-[12px]"
+                  className={fieldClass}
                 />
               </div>
+            ) : (
+              <LocationAutocomplete
+                value={customLocation}
+                onChange={(v) => setCustomLocation(v)}
+                country={country}
+                placeholder={`City, county, or region in ${getTierOneCountry(country).name}`}
+                inputClassName={cn(
+                  fieldClass,
+                  "!pl-9",
+                  embedded && "!bg-[var(--panel-solid)]",
+                )}
+              />
             )}
             <button
               type="submit"
               disabled={loading}
-              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg text-[12px] font-semibold text-white transition hover:opacity-95 disabled:opacity-60 sm:col-span-1"
+              className="inline-flex h-10 min-w-[7.5rem] items-center justify-center gap-1.5 rounded-xl font-[family-name:var(--font-jakarta)] text-[13px] font-semibold text-white transition hover:opacity-95 disabled:opacity-60"
               style={{ background: LOGO_GRADIENT }}
             >
               <HiOutlineMagnifyingGlass className="h-3.5 w-3.5" />
@@ -527,9 +599,9 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder='Chat: "Window tinting in Brooklyn NY"'
+              placeholder='Try "Roofing in Austin TX"'
               disabled={loading}
-              className="h-10 w-full rounded-xl border border-border bg-white pl-9 pr-3 text-[13px] text-ink outline-none placeholder:text-ink-faint focus:border-brand-400"
+              className={cn(fieldClass, "pl-9 pr-3")}
             />
           </div>
           <button

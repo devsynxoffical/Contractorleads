@@ -27,6 +27,13 @@ export default async function SmsPage() {
       <PageHeader
         title="SMS"
         description="Text lead phone numbers via Twilio. Requires the Messaging add-on. Replies show up here when the Twilio webhook is connected."
+        backHref="/dashboard"
+        backLabel="Back to dashboard"
+        crumbs={[
+          { label: "Home", href: "/home" },
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "SMS" },
+        ]}
       />
 
       <SmsWorkspace hasAddon={hasAddon} twilioReady={twilioReady} />

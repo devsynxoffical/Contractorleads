@@ -29,6 +29,13 @@ export default async function HotLeadsPage() {
       <PageHeader
         title="Hot Leads"
         description="Highest-scoring verified leads from your searches. Viewing is free — credits are used only when you export."
+        backHref="/dashboard"
+        backLabel="Back to dashboard"
+        crumbs={[
+          { label: "Home", href: "/home" },
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Hot leads" },
+        ]}
         actions={
           <>
             <ExportLeadsButtons scope="hot" disabled={!leads.length} />

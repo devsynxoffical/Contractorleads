@@ -1,9 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSessionUser, isAdminStaff } from "@/lib/auth";
 import { QualificationDetailView } from "@/components/leads/qualification-detail-view";
-import {
-  isQualificationScoreKey,
-} from "@/lib/services/qualification-detail-report";
+import { isQualificationScoreKey } from "@/lib/services/qualification-detail-report-meta";
 
 export default async function AdminLeadQualificationDetailPage({
   params,

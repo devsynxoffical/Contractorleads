@@ -55,6 +55,13 @@ export default function AiToolsPage() {
       <PageHeader
         title="AI Tools"
         description="Every AI surface in Contractor Leads — connected to your agency profile and live lead data."
+        backHref="/dashboard"
+        backLabel="Back to dashboard"
+        crumbs={[
+          { label: "Home", href: "/home" },
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "AI Tools" },
+        ]}
       />
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {TOOLS.map((t) => {

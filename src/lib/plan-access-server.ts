@@ -1,11 +1,13 @@
 import { redirect } from "next/navigation";
 import { NextResponse } from "next/server";
-import {
-  userHasPlanFeature,
-} from "@/lib/plan-access";
+import { userHasPlanFeature } from "@/lib/plan-access";
 import type { PlanFeatures } from "@/lib/plans";
 
-/** Server pages — redirect to billing when locked. */
+/**
+ * @deprecated Prefer PlanFeatureGate on pages — do not hard-redirect to billing.
+ * Kept for any remaining call sites; now a no-op when entitled, throws when used
+ * incorrectly. Use userHasPlanFeature + PlanFeatureGate instead.
+ */
 export function requirePlanFeatureOrRedirect(
   user: {
     plan?: string | null;
@@ -15,7 +17,9 @@ export function requirePlanFeatureOrRedirect(
   feature: keyof PlanFeatures,
 ) {
   if (!userHasPlanFeature(user, feature)) {
-    redirect("/billing");
+    // Soft-fail path for legacy callers: send to the feature's home with a
+    // query flag rather than dumping users on Billing.
+    redirect(`/billing?upgrade=${encodeURIComponent(feature)}`);
   }
 }
 
@@ -26,6 +30,7 @@ export function planFeatureForbiddenResponse(feature: keyof PlanFeatures) {
       error: `This feature (${feature}) is not included in your plan. Upgrade on Billing.`,
       locked: true,
       feature,
+      upgradeRequired: true,
     },
     { status: 403 },
   );

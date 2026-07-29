@@ -49,7 +49,12 @@ export async function PATCH(
       user.id,
       "pipeline",
       `Moved ${saved.lead.businessName} to ${nextStatus}`,
-      { savedLeadId: id, from: saved.status, to: nextStatus }
+      {
+        savedLeadId: id,
+        leadId: saved.leadId,
+        from: saved.status,
+        to: nextStatus,
+      },
     );
     void dispatchCrmWebhook(
       user.id,

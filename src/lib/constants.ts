@@ -216,7 +216,7 @@ export const CREDIT_COSTS = {
   outreach: 2,
   /** Per-lead intelligence report (SEO / ads / marketing / full). */
   leadReport: 2,
-  /** GPT detail page for one qualification score card. */
+  /** Detail page for one qualification score card. */
   qualificationDetail: 1,
 } as const;
 

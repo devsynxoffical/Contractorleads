@@ -56,6 +56,7 @@ const sections: NavSection[] = [
     items: [
       { href: "/ask-expert", label: "Ask Contractor Leads", icon: HiOutlineChatBubbleLeftRight },
       { href: "/scripts", label: "My Scripts", icon: HiOutlineBookOpen },
+      { href: "/ask-expert/settings", label: "AI settings", icon: HiOutlineCog6Tooth },
     ],
   },
   {
@@ -69,7 +70,7 @@ const sections: NavSection[] = [
     items: [
       { href: "/leads/industries", label: "Industries", icon: HiOutlineHomeModern },
       { href: "/analytics", label: "Analytics", icon: HiOutlineArrowTrendingDown },
-      { href: "/ai-tools", label: "AI Tools", icon: HiOutlineCpuChip },
+
       { href: "/reports", label: "Client Reports", icon: HiOutlineArrowUpTray },
     ],
   },
@@ -86,6 +87,9 @@ const sections: NavSection[] = [
 function isActive(pathname: string, href: string) {
   if (href === "/leads") {
     return pathname === "/leads";
+  }
+  if (href === "/ask-expert") {
+    return pathname === "/ask-expert";
   }
   if (href === "/setup") {
     return pathname === "/setup" || pathname.startsWith("/setup/");

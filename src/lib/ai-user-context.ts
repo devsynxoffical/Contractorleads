@@ -29,7 +29,7 @@ export function buildBusinessContext(user: SessionUser) {
 
   if (lines.length <= 4) {
     lines.push(
-      "Profile is incomplete — mention Settings (/settings) once if relevant, then still give full in-app steps with action links.",
+      "Profile is incomplete — mention AI Assistant settings (/ask-expert/settings) once if relevant, then still give full in-app steps with action links.",
     );
   } else {
     lines.push(

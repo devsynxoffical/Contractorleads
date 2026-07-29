@@ -147,7 +147,7 @@ export async function POST(request: Request, { params }: Params) {
   }
 
   const audit = lead.website?.trim()
-    ? await auditWebsite(lead.website, { timeoutMs: 12000 })
+    ? await auditWebsite(lead.website, { timeoutMs: 16000 })
     : emptyWebsiteAudit();
 
   // Persist measured scores so the lead stays in sync
@@ -180,6 +180,8 @@ export async function POST(request: Request, { params }: Params) {
     state: lead.state,
     googleRating: lead.googleRating,
     reviewCount: lead.reviewCount,
+    instagram: lead.instagram,
+    facebook: lead.facebook,
     audit,
     score,
   });

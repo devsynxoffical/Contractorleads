@@ -6,8 +6,16 @@ import {
   isFacebookOAuthConfigured,
 } from "@/lib/facebook-oauth";
 
-export async function GET() {
-  const base = appBaseUrl();
+function requestBase(request: Request) {
+  try {
+    return new URL(request.url).origin;
+  } catch {
+    return appBaseUrl();
+  }
+}
+
+export async function GET(request: Request) {
+  const base = requestBase(request);
   const user = await getSessionUser();
   if (!user) {
     const login = new URL("/login", base);
@@ -17,12 +25,12 @@ export async function GET() {
 
   if (!isFacebookOAuthConfigured()) {
     return NextResponse.redirect(
-      new URL("/facebook?error=oauth_not_configured", base),
+      new URL("/facebook?error=connect_unavailable", base),
     );
   }
 
   try {
-    const url = buildFacebookOAuthUrl({ userId: user.id });
+    const url = buildFacebookOAuthUrl({ userId: user.id, baseUrl: base });
     return NextResponse.redirect(url);
   } catch (err) {
     const message =

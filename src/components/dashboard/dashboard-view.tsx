@@ -10,7 +10,6 @@ import {
   HiOutlineChartBar,
   HiOutlineFire,
   HiOutlineMagnifyingGlass,
-  HiOutlineMap,
   HiOutlineUserGroup,
   HiOutlineWallet,
 } from "react-icons/hi2";
@@ -24,8 +23,11 @@ import {
   type DashboardIntegrations,
   type DashboardPipeline,
 } from "@/components/dashboard/dashboard-crm-integrations";
-import { userHasPlanFeature } from "@/lib/plan-access";
 import { LeadGeoMap, type GeoLead } from "@/components/leads/lead-geo-map";
+import {
+  CREDITS_CHANGED_EVENT,
+  type CreditsChangedDetail,
+} from "@/lib/client/credits-sync";
 
 type DashboardData = {
   stats: {
@@ -162,20 +164,6 @@ function HudStat({
   return <HudPanel className="h-full">{inner}</HudPanel>;
 }
 
-function RingStat({ label, pct }: { label: string; pct: number }) {
-  const clamped = Math.max(0, Math.min(100, pct));
-  return (
-    <div className="flex flex-col items-center gap-2">
-      <div className="hud-ring" style={{ ["--p" as string]: clamped }}>
-        <span>{clamped}%</span>
-      </div>
-      <p className="text-[11px] uppercase tracking-[0.1em] text-ink-muted">
-        {label}
-      </p>
-    </div>
-  );
-}
-
 export function DashboardView({ user }: { user: SessionUser }) {
   const [data, setData] = useState<DashboardData | null>(null);
   const [ready, setReady] = useState(false);
@@ -185,7 +173,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
     let cancelled = false;
     async function load() {
       try {
-        const res = await fetch("/api/dashboard/stats");
+        const res = await fetch("/api/dashboard/stats", { cache: "no-store" });
         const d = await res.json();
         if (cancelled) return;
         if (!res.ok) {
@@ -204,8 +192,32 @@ export function DashboardView({ user }: { user: SessionUser }) {
       }
     }
     void load();
+    function onCreditsChanged(event: Event) {
+      const detail = (event as CustomEvent<CreditsChangedDetail>).detail;
+      if (typeof detail?.creditsRemaining === "number") {
+        setData((prev) =>
+          prev
+            ? {
+                ...prev,
+                stats: {
+                  ...prev.stats,
+                  creditsRemaining: detail.creditsRemaining!,
+                },
+              }
+            : prev,
+        );
+      }
+      void load();
+    }
+    function onVisibility() {
+      if (document.visibilityState === "visible") void load();
+    }
+    window.addEventListener(CREDITS_CHANGED_EVENT, onCreditsChanged);
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
       cancelled = true;
+      window.removeEventListener(CREDITS_CHANGED_EVENT, onCreditsChanged);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
 
@@ -229,7 +241,8 @@ export function DashboardView({ user }: { user: SessionUser }) {
   const hotPct = qs?.hot ?? 0;
   const warmPct = qs?.warm ?? 0;
   const nurturePct = qs?.nurture ?? 0;
-  const creditPct = Math.min(100, Math.round((credits / 100) * 100));
+  const scoredTotal =
+    (qs?.hotCount ?? 0) + (qs?.warmCount ?? 0) + (qs?.nurtureCount ?? 0);
 
   return (
     <div className="hud-dashboard">
@@ -256,7 +269,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
               Dashboard
             </h1>
             <p className="mt-1.5 max-w-xl text-[13px] text-ink-muted sm:text-sm">
-              Verified leads, AI scores, and pipeline signal across your markets.
+              Your leads, scores, and pipeline at a glance.
             </p>
           </div>
           <Link href="/leads/search" className="hud-btn-primary">
@@ -281,7 +294,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
         {/* Top KPI row — HUD Admin style */}
         <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <HudStat
-            label="Site leads"
+            label="Total leads"
             value={formatNumber(totalLeads)}
             hint={`+${weekLeads} this week`}
             icon={HiOutlineChartBar}
@@ -289,7 +302,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
             spark={data?.dailyLeads.map((d) => d.count + 1)}
           />
           <HudStat
-            label="Credits"
+            label="Credits left"
             value={formatCredits(creditsAnim)}
             hint="Live balance"
             icon={HiOutlineWallet}
@@ -299,7 +312,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
           <HudStat
             label="Saved / closed"
             value={`${formatNumber(savedAnim)} / ${formatNumber(closedAnim)}`}
-            hint="Workspace · pipeline"
+            hint="Saved · won deals"
             icon={HiOutlineUserGroup}
             href="/leads/saved"
             spark={[2, 4, 3, 6, 5, 7, 8]}
@@ -307,7 +320,7 @@ export function DashboardView({ user }: { user: SessionUser }) {
           <HudStat
             label="Searches / exports"
             value={`${formatNumber(searchAnim)} / ${formatNumber(exportAnim)}`}
-            hint="Lifetime ops"
+            hint="All time"
             icon={HiOutlineArrowDownTray}
             href="/leads/search"
             spark={[5, 4, 6, 5, 8, 7, 9]}
@@ -315,101 +328,81 @@ export function DashboardView({ user }: { user: SessionUser }) {
         </div>
 
         <div className="mb-5">
-          <HudPanel title="Quick lead search" subtitle="Run a scoped find without leaving HUD">
-            <div className="hud-quick-search [&_.saas-input]:border-brand-500/25 [&_.saas-input]:bg-[var(--panel-solid)] [&_.saas-input]:text-ink [&_label]:text-ink-muted">
-              <QuickLeadSearch embedded />
-            </div>
+          <HudPanel
+            title="Quick lead search"
+            subtitle="Type a service + city, or use the filters"
+          >
+            <QuickLeadSearch embedded />
           </HudPanel>
         </div>
 
         <div className="mb-5">
-          {userHasPlanFeature(user, "map") ? (
-            <HudPanel
-              title="Lead map"
-              subtitle={
-                data?.map?.leads?.length
-                  ? `${data.map.leads.length} pin${data.map.leads.length === 1 ? "" : "s"}`
-                  : "Leads with coordinates appear here"
-              }
-              actions={
-                <Link href="/leads/map" className="hud-btn-ghost text-[12px]">
-                  Full map
-                </Link>
-              }
-            >
-              <LeadGeoMap
-                leads={data?.map?.leads ?? []}
-                compact
-                title="Territory"
-                subtitle="Lead pins"
-                leadDetailBase="/leads"
-              />
-            </HudPanel>
-          ) : (
-            <HudPanel
-              title="Lead map"
-              subtitle="Growth+ unlocks territory pins on your dashboard"
-              actions={
-                <Link href="/billing" className="hud-btn-primary text-[12px]">
-                  Upgrade
-                </Link>
-              }
-            >
-              <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-[var(--canvas)]/40 px-4 py-8 text-center">
-                <HiOutlineMap className="h-8 w-8 text-brand-500" />
-                <p className="max-w-sm text-[13px] text-ink-muted">
-                  Map your Hot leads by city once you upgrade to Growth or
-                  higher.
-                </p>
-                <Link href="/billing" className="text-[13px] font-semibold text-brand-600 hover:underline">
-                  View plans →
-                </Link>
-              </div>
-            </HudPanel>
-          )}
+          <HudPanel
+            title="Lead map"
+            subtitle={
+              data?.map?.leads?.length
+                ? `${data.map.leads.length} pin${data.map.leads.length === 1 ? "" : "s"}`
+                : "Leads with coordinates appear here"
+            }
+            actions={
+              <Link href="/leads/map" className="hud-btn-ghost text-[12px]">
+                Full map
+              </Link>
+            }
+          >
+            <LeadGeoMap
+              leads={data?.map?.leads ?? []}
+              compact
+              title="Territory"
+              subtitle="Lead pins"
+              leadDetailBase="/leads"
+              leadFrom="dashboard"
+            />
+          </HudPanel>
         </div>
 
         <div className="mb-5">
           <DashboardCrmIntegrations
             pipeline={data?.pipeline}
             integrations={data?.integrations}
+            plan={user.plan}
+            subscriptionStatus={user.subscriptionStatus}
+            role={user.role}
           />
         </div>
 
-        <div className="grid gap-5 xl:grid-cols-[1.4fr_1fr]">
-          {/* Server-style stats: trend + rings */}
+        <div className="grid gap-5 xl:grid-cols-[1.35fr_1fr]">
           <HudPanel
-            title="Lead generation trend"
-            subtitle="Daily volume · this week (Sun–Sat)"
-            actions={
-              <span className="hud-pill">
-                {weekLeads} new
-              </span>
-            }
+            title="Leads this week"
+            subtitle={`${weekLeads} new · Sun–Sat`}
           >
-            <div className="relative flex h-[200px] items-end gap-2 sm:gap-3">
+            <div className="relative flex h-[180px] items-end gap-2 sm:gap-3">
               <div className="pointer-events-none absolute inset-0 flex flex-col justify-between opacity-40">
-                {[...Array(5)].map((_, i) => (
+                {[...Array(4)].map((_, i) => (
                   <div
                     key={i}
-                    className="w-full border-t border-dashed border-brand-500/20"
+                    className="w-full border-t border-dashed border-brand-500/15"
                   />
                 ))}
               </div>
               {(
                 data?.dailyLeads ??
                 ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
-                  (day) => ({ day, count: 0 })
+                  (day) => ({ day, count: 0 }),
                 )
               ).map((d, idx) => {
-                const h = Math.max((d.count / maxDaily) * 100, 8);
+                const h =
+                  d.count > 0 ? Math.max((d.count / maxDaily) * 100, 12) : 6;
                 return (
                   <div
                     key={d.day}
-                    className="group relative z-10 flex h-full flex-1 flex-col items-center justify-end gap-2"
+                    className="relative z-10 flex h-full flex-1 flex-col items-center justify-end gap-1.5"
                   >
+                    <span className="text-[11px] font-semibold tabular-nums text-ink">
+                      {d.count}
+                    </span>
                     <div
-                      className="animate-bar-grow w-full max-w-[36px]"
+                      className="animate-bar-grow w-full max-w-[36px] rounded-t-sm"
                       style={{
                         height: `${h}%`,
                         animationDelay: `${idx * 0.06}s`,
@@ -417,103 +410,123 @@ export function DashboardView({ user }: { user: SessionUser }) {
                           d.count > 0
                             ? "linear-gradient(180deg, #ec4899 0%, #7c3aed 100%)"
                             : "rgba(168,85,247,0.12)",
-                        boxShadow:
-                          d.count > 0
-                            ? "0 0 12px rgba(168,85,247,0.35)"
-                            : "none",
                       }}
                     />
                     <span className="text-[10px] font-medium uppercase tracking-wider text-ink-muted">
                       {d.day}
                     </span>
-                    <div className="pointer-events-none absolute bottom-[calc(100%+6px)] border border-brand-500/40 bg-[var(--panel-solid)] px-2 py-1 text-[11px] text-ink opacity-0 transition group-hover:opacity-100">
-                      {d.count} leads
-                    </div>
                   </div>
                 );
               })}
             </div>
-
-            <div className="mt-5 flex flex-wrap justify-around gap-4 border-t border-brand-500/15 pt-5">
-              <RingStat label="Hot" pct={hotPct} />
-              <RingStat label="Warm" pct={warmPct} />
-              <RingStat label="Nurture" pct={nurturePct} />
-              <RingStat label="Credits" pct={creditPct} />
-            </div>
           </HudPanel>
 
-          {/* Quality + welcome */}
-          <div className="space-y-5">
-            <HudPanel title="Signal" subtitle={`Welcome back, ${user.name || firstName}`}>
-              <p className="text-[13px] leading-relaxed text-ink">
-                You generated{" "}
-                <strong className="text-ink">{weekLeads} new leads</strong> this
-                week. Only AI-verified, quality-scored records surface here —
-                verified or blank, never fabricated.
-              </p>
-            </HudPanel>
-
-            <HudPanel title="Quality split" subtitle="Hot / Warm / Nurture">
-              <div className="space-y-3">
-                {[
-                  {
-                    label: "Hot",
-                    pct: hotPct,
-                    count: qs?.hotCount ?? 0,
-                    color: "#a855f7",
-                    icon: HiOutlineFire,
-                    href: "/leads/hot",
-                  },
-                  {
-                    label: "Warm",
-                    pct: warmPct,
-                    count: qs?.warmCount ?? 0,
-                    color: "#7dffb3",
-                    icon: HiOutlineArrowTrendingUp,
-                    href: "/leads",
-                  },
-                  {
-                    label: "Nurture",
-                    pct: nurturePct,
-                    count: qs?.nurtureCount ?? 0,
-                    color: "#8b9aab",
-                    icon: HiOutlineArrowTrendingDown,
-                    href: "/leads",
-                  },
-                ].map((q) => {
-                  const Icon = q.icon;
-                  return (
-                    <Link key={q.label} href={q.href} className="block">
-                      <div className="mb-1 flex items-center justify-between text-[12px]">
-                        <span className="flex items-center gap-2 text-ink">
-                          <Icon className="h-4 w-4" style={{ color: q.color }} />
-                          {q.label}
-                          <span className="text-ink-faint">({q.count})</span>
-                        </span>
-                        <span className="font-bold" style={{ color: q.color }}>
-                          {q.pct}%
-                        </span>
-                      </div>
-                      <div className="h-1.5 overflow-hidden bg-[var(--input-bg)]">
-                        <div
-                          className="animate-progress-fill h-full"
-                          style={{
-                            width: `${q.pct}%`,
-                            backgroundColor: q.color,
-                            boxShadow: `0 0 8px ${q.color}`,
-                          }}
-                        />
-                      </div>
+          <HudPanel
+            title="Lead quality"
+            subtitle={
+              scoredTotal > 0
+                ? `${scoredTotal} scored lead${scoredTotal === 1 ? "" : "s"}`
+                : "Scores appear after you generate leads"
+            }
+          >
+            {scoredTotal > 0 ? (
+              <div className="space-y-4">
+                {qh ? (
+                  <div className="flex items-baseline justify-between gap-3 rounded-xl border border-border bg-[var(--input-bg)]/40 px-3.5 py-3">
+                    <div>
+                      <p className="text-[11px] uppercase tracking-wide text-ink-faint">
+                        Average score
+                      </p>
+                      <p className="mt-0.5 text-2xl font-bold tabular-nums text-ink">
+                        {qh.avgLeadScore}
+                      </p>
+                    </div>
+                    <Link
+                      href="/leads?sort=score"
+                      className="text-[12px] font-semibold text-brand-600 hover:underline"
+                    >
+                      View by score →
                     </Link>
-                  );
-                })}
+                  </div>
+                ) : null}
+
+                <div className="space-y-3">
+                  {[
+                    {
+                      label: "Hot",
+                      pct: hotPct,
+                      count: qs?.hotCount ?? 0,
+                      color: "#a855f7",
+                      icon: HiOutlineFire,
+                      href: "/leads/hot",
+                    },
+                    {
+                      label: "Warm",
+                      pct: warmPct,
+                      count: qs?.warmCount ?? 0,
+                      color: "#0f766e",
+                      icon: HiOutlineArrowTrendingUp,
+                      href: "/leads",
+                    },
+                    {
+                      label: "Nurture",
+                      pct: nurturePct,
+                      count: qs?.nurtureCount ?? 0,
+                      color: "#64748b",
+                      icon: HiOutlineArrowTrendingDown,
+                      href: "/leads",
+                    },
+                  ].map((q) => {
+                    const Icon = q.icon;
+                    return (
+                      <Link key={q.label} href={q.href} className="block">
+                        <div className="mb-1 flex items-center justify-between text-[12px]">
+                          <span className="flex items-center gap-2 text-ink">
+                            <Icon
+                              className="h-4 w-4"
+                              style={{ color: q.color }}
+                            />
+                            {q.label}
+                            <span className="text-ink-faint">({q.count})</span>
+                          </span>
+                          <span
+                            className="font-bold tabular-nums"
+                            style={{ color: q.color }}
+                          >
+                            {q.pct}%
+                          </span>
+                        </div>
+                        <div className="h-1.5 overflow-hidden rounded-full bg-[var(--input-bg)]">
+                          <div
+                            className="animate-progress-fill h-full rounded-full"
+                            style={{
+                              width: `${q.pct}%`,
+                              backgroundColor: q.color,
+                            }}
+                          />
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
-            </HudPanel>
-          </div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-border px-4 py-8 text-center">
+                <p className="text-[13px] text-ink-muted">
+                  Generate leads to see Hot / Warm / Nurture mix.
+                </p>
+                <Link
+                  href="/leads/search"
+                  className="mt-3 inline-flex hud-btn-primary text-[12px]"
+                >
+                  Open Lead Finder
+                </Link>
+              </div>
+            )}
+          </HudPanel>
         </div>
 
         <DashboardInsights
-          qualityHealth={qh}
           topIndustries={data?.topIndustries ?? []}
           recentSearches={data?.recentSearches ?? []}
           activities={data?.activities ?? []}

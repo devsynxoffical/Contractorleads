@@ -206,6 +206,13 @@ export default async function BillingPage({
       <PageHeader
         title="Plans & Billing"
         description="Your subscription, credits, and plan features — upgrade anytime."
+        backHref="/dashboard"
+        backLabel="Back to dashboard"
+        crumbs={[
+          { label: "Home", href: "/home" },
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Billing" },
+        ]}
       />
 
       {checkoutMessage ? (

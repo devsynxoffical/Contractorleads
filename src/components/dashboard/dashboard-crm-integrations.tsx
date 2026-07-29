@@ -12,12 +12,16 @@ import {
   HiOutlineSparkles,
   HiOutlineKey,
   HiOutlineWrenchScrewdriver,
+  HiOutlineLockClosed,
 } from "react-icons/hi2";
 import { SiZapier } from "react-icons/si";
 import { FaLinkedinIn } from "react-icons/fa6";
 import { FaFacebook } from "react-icons/fa";
 import { cn } from "@/lib/utils";
 import { HudPanel } from "@/components/dashboard/hud-panel";
+import { userHasPlanFeature } from "@/lib/plan-access";
+import { openUpgradePlanModal } from "@/lib/client/upgrade-plan";
+import type { PlanFeatures } from "@/lib/plans";
 
 export type DashboardPipeline = {
   new: number;
@@ -65,20 +69,22 @@ function IntegrationCard({
   statusLabel,
   icon: Icon,
   brand,
+  lockedFeature,
 }: {
   href: string;
   title: string;
   body: string;
-  status: "ready" | "setup" | "partial" | "roadmap";
+  status: "ready" | "setup" | "partial" | "roadmap" | "locked";
   statusLabel: string;
   icon: React.ComponentType<{ className?: string }>;
   brand?: string;
+  lockedFeature?: keyof PlanFeatures;
 }) {
-  return (
-    <Link
-      href={href}
-      className="group flex h-full flex-col rounded-xl border border-brand-500/20 bg-[var(--panel-solid)] p-4 transition hover:border-brand-500/45 hover:bg-brand-500/[0.06]"
-    >
+  const className =
+    "group flex h-full flex-col rounded-xl border border-brand-500/20 bg-[var(--panel-solid)] p-4 text-left transition hover:border-brand-500/45 hover:bg-brand-500/[0.06]";
+
+  const inner = (
+    <>
       <div className="flex items-start justify-between gap-2">
         <span
           className="flex h-10 w-10 items-center justify-center rounded-xl border border-brand-500/25 bg-brand-500/10"
@@ -97,20 +103,56 @@ function IntegrationCard({
               "bg-violet-100 text-violet-900 ring-1 ring-violet-200/80 dark:bg-violet-500/20 dark:text-violet-200 dark:ring-violet-400/30",
             status === "roadmap" &&
               "bg-slate-100 text-slate-600 ring-1 ring-slate-200 dark:bg-white/5 dark:text-ink-faint dark:ring-white/10",
+            status === "locked" &&
+              "bg-brand-500/10 text-brand-700 ring-1 ring-brand-500/25 dark:text-brand-300",
           )}
         >
-          <StatusDot
-            ok={status === "ready"}
-            warn={status === "setup" || status === "partial"}
-          />
+          {status === "locked" ? (
+            <HiOutlineLockClosed className="h-3 w-3" />
+          ) : (
+            <StatusDot
+              ok={status === "ready"}
+              warn={status === "setup" || status === "partial"}
+            />
+          )}
           {statusLabel}
         </span>
       </div>
-      <p className="mt-3 text-[14px] font-semibold text-ink">{title}</p>
-      <p className="mt-1 flex-1 text-[12px] leading-relaxed text-ink-muted">{body}</p>
+      <p className="mt-3 font-[family-name:var(--font-jakarta)] text-[14px] font-semibold tracking-tight text-ink">
+        {title}
+      </p>
+      <p className="mt-1 flex-1 font-[family-name:var(--font-jakarta)] text-[12px] leading-relaxed text-ink-muted">
+        {body}
+      </p>
       <span className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-brand-600 group-hover:text-brand-500 dark:text-brand-400 dark:group-hover:text-brand-300">
-        Open <HiOutlineArrowRight className="h-3.5 w-3.5" />
+        {lockedFeature ? (
+          <>
+            Upgrade to unlock <HiOutlineLockClosed className="h-3.5 w-3.5" />
+          </>
+        ) : (
+          <>
+            Open <HiOutlineArrowRight className="h-3.5 w-3.5" />
+          </>
+        )}
       </span>
+    </>
+  );
+
+  if (lockedFeature) {
+    return (
+      <button
+        type="button"
+        className={className}
+        onClick={() => openUpgradePlanModal(lockedFeature)}
+      >
+        {inner}
+      </button>
+    );
+  }
+
+  return (
+    <Link href={href} className={className}>
+      {inner}
     </Link>
   );
 }
@@ -118,10 +160,20 @@ function IntegrationCard({
 export function DashboardCrmIntegrations({
   pipeline,
   integrations,
+  plan,
+  subscriptionStatus,
+  role,
 }: {
   pipeline?: DashboardPipeline | null;
   integrations?: DashboardIntegrations | null;
+  plan?: string | null;
+  subscriptionStatus?: string | null;
+  role?: string;
 }) {
+  const accessUser = { plan, subscriptionStatus, role };
+  const canApi = userHasPlanFeature(accessUser, "api");
+  const canCrm = userHasPlanFeature(accessUser, "crm");
+
   const p = pipeline ?? { new: 0, contacted: 0, qualified: 0, closed: 0 };
   const total = p.new + p.contacted + p.qualified + p.closed;
   const stages = [
@@ -187,14 +239,36 @@ export function DashboardCrmIntegrations({
             <HiOutlineEnvelope className="h-4 w-4" />
             Email & SMTP
           </Link>
-          <Link href="/setup/api" className="hud-btn-ghost">
-            <HiOutlineKey className="h-4 w-4" />
-            API · MCP · SSO
-          </Link>
-          <Link href="/setup/crm" className="hud-btn-ghost">
-            <HiOutlineLink className="h-4 w-4" />
-            CRM webhooks
-          </Link>
+          {canApi ? (
+            <Link href="/setup/api" className="hud-btn-ghost">
+              <HiOutlineKey className="h-4 w-4" />
+              API · MCP · SSO
+            </Link>
+          ) : (
+            <button
+              type="button"
+              className="hud-btn-ghost"
+              onClick={() => openUpgradePlanModal("api")}
+            >
+              <HiOutlineLockClosed className="h-4 w-4" />
+              API · MCP · SSO
+            </button>
+          )}
+          {canCrm ? (
+            <Link href="/setup/crm" className="hud-btn-ghost">
+              <HiOutlineLink className="h-4 w-4" />
+              CRM webhooks
+            </Link>
+          ) : (
+            <button
+              type="button"
+              className="hud-btn-ghost"
+              onClick={() => openUpgradePlanModal("crm")}
+            >
+              <HiOutlineLockClosed className="h-4 w-4" />
+              CRM webhooks
+            </button>
+          )}
           <Link href="/settings" className="hud-btn-ghost">
             Business profile
           </Link>
@@ -225,44 +299,100 @@ export function DashboardCrmIntegrations({
             title="API · MCP · SSO"
             body="Generate your live key and call public search endpoints from your stack."
             status={
-              i?.apiAccess?.hasKey
-                ? "ready"
-                : i?.apiAccess?.apiEnabled
-                  ? "partial"
-                  : "setup"
+              !canApi
+                ? "locked"
+                : i?.apiAccess?.hasKey
+                  ? "ready"
+                  : i?.apiAccess?.apiEnabled
+                    ? "partial"
+                    : "setup"
             }
             statusLabel={
-              i?.apiAccess?.hasKey
-                ? "Key live"
-                : i?.apiAccess?.apiEnabled
-                  ? "Enabled"
-                  : "Setup"
+              !canApi
+                ? "Growth+"
+                : i?.apiAccess?.hasKey
+                  ? "Key live"
+                  : i?.apiAccess?.apiEnabled
+                    ? "Enabled"
+                    : "Setup"
             }
             icon={HiOutlineKey}
+            lockedFeature={canApi ? undefined : "api"}
           />
           <IntegrationCard
             href="/setup/crm"
             title="CRM webhooks"
             body="Push lead events to Zapier, Make, HubSpot, or a custom endpoint the moment status changes."
-            status={webhookReady ? "ready" : i?.crmWebhook.hasUrl ? "partial" : "setup"}
-            statusLabel={webhookReady ? "Connected" : i?.crmWebhook.hasUrl ? "Paused" : "Setup"}
+            status={
+              !canCrm
+                ? "locked"
+                : webhookReady
+                  ? "ready"
+                  : i?.crmWebhook.hasUrl
+                    ? "partial"
+                    : "setup"
+            }
+            statusLabel={
+              !canCrm
+                ? "Growth+"
+                : webhookReady
+                  ? "Connected"
+                  : i?.crmWebhook.hasUrl
+                    ? "Paused"
+                    : "Setup"
+            }
             icon={HiOutlineLink}
+            lockedFeature={canCrm ? undefined : "crm"}
           />
           <IntegrationCard
             href="/setup/crm"
             title="Slack CRM alerts"
             body="Send lead-saved and pipeline stage events into your Slack channel via incoming webhook."
-            status={i?.slack?.connected ? "ready" : i?.slack?.hasUrl ? "partial" : "setup"}
-            statusLabel={i?.slack?.connected ? "Live" : i?.slack?.hasUrl ? "Paused" : "Setup"}
+            status={
+              !canCrm
+                ? "locked"
+                : i?.slack?.connected
+                  ? "ready"
+                  : i?.slack?.hasUrl
+                    ? "partial"
+                    : "setup"
+            }
+            statusLabel={
+              !canCrm
+                ? "Growth+"
+                : i?.slack?.connected
+                  ? "Live"
+                  : i?.slack?.hasUrl
+                    ? "Paused"
+                    : "Setup"
+            }
             icon={HiOutlineLink}
+            lockedFeature={canCrm ? undefined : "crm"}
           />
           <IntegrationCard
             href="/setup/crm"
             title="GoHighLevel (GHL)"
             body="Send Contractor Leads events to your GHL webhook/workflow endpoint in real time."
-            status={i?.ghl?.connected ? "ready" : i?.ghl?.hasUrl ? "partial" : "setup"}
-            statusLabel={i?.ghl?.connected ? "Live" : i?.ghl?.hasUrl ? "Paused" : "Setup"}
+            status={
+              !canCrm
+                ? "locked"
+                : i?.ghl?.connected
+                  ? "ready"
+                  : i?.ghl?.hasUrl
+                    ? "partial"
+                    : "setup"
+            }
+            statusLabel={
+              !canCrm
+                ? "Growth+"
+                : i?.ghl?.connected
+                  ? "Live"
+                  : i?.ghl?.hasUrl
+                    ? "Paused"
+                    : "Setup"
+            }
             icon={HiOutlineLink}
+            lockedFeature={canCrm ? undefined : "crm"}
           />
           <IntegrationCard
             href="/facebook"
@@ -311,10 +441,11 @@ export function DashboardCrmIntegrations({
             href="/setup/crm"
             title="Zapier · Make · HubSpot"
             body="Point any of these tools at your webhook URL — no native OAuth apps required."
-            status={webhookReady ? "ready" : "setup"}
-            statusLabel={webhookReady ? "Via webhook" : "Connect URL"}
+            status={!canCrm ? "locked" : webhookReady ? "ready" : "setup"}
+            statusLabel={!canCrm ? "Growth+" : webhookReady ? "Via webhook" : "Connect URL"}
             icon={SiZapier}
             brand="#FF4A00"
+            lockedFeature={canCrm ? undefined : "crm"}
           />
         </div>
 

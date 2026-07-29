@@ -8,6 +8,10 @@ import {
 } from "react-icons/hi2";
 import { AiAssistantWorkspace } from "@/components/ai/ai-assistant-workspace";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
+import {
+  CREDITS_CHANGED_EVENT,
+  type CreditsChangedDetail,
+} from "@/lib/client/credits-sync";
 
 type HomeStats = {
   creditsRemaining: number;
@@ -29,23 +33,44 @@ export function HomeView({ userName }: { userName?: string | null }) {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/dashboard/stats")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (cancelled || !data) return;
-        const s = data.stats ?? {};
-        const quality = data.qualitySplit ?? {};
-        setStats({
-          creditsRemaining: s.creditsRemaining ?? 0,
-          savedCount: s.savedCount ?? 0,
-          weekLeads: s.weekLeads ?? 0,
-          searchCount: s.searchCount ?? 0,
-          hotCount: quality.hotCount ?? 0,
-        });
-      })
-      .catch(() => {});
+    function loadStats() {
+      fetch("/api/dashboard/stats", { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (cancelled || !data) return;
+          const s = data.stats ?? {};
+          const quality = data.qualitySplit ?? {};
+          setStats({
+            creditsRemaining: s.creditsRemaining ?? 0,
+            savedCount: s.savedCount ?? 0,
+            weekLeads: s.weekLeads ?? 0,
+            searchCount: s.searchCount ?? 0,
+            hotCount: quality.hotCount ?? 0,
+          });
+        })
+        .catch(() => {});
+    }
+    loadStats();
+    function onCreditsChanged(event: Event) {
+      const detail = (event as CustomEvent<CreditsChangedDetail>).detail;
+      if (typeof detail?.creditsRemaining === "number") {
+        setStats((prev) =>
+          prev
+            ? { ...prev, creditsRemaining: detail.creditsRemaining! }
+            : prev,
+        );
+      }
+      loadStats();
+    }
+    function onVisibility() {
+      if (document.visibilityState === "visible") loadStats();
+    }
+    window.addEventListener(CREDITS_CHANGED_EVENT, onCreditsChanged);
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
       cancelled = true;
+      window.removeEventListener(CREDITS_CHANGED_EVENT, onCreditsChanged);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
 

@@ -8,12 +8,10 @@ import {
 import { LeadGeoMap } from "@/components/leads/lead-geo-map";
 import { normalizeCountryCode, resolveLeadCoords } from "@/lib/geo";
 import { HiOutlineMagnifyingGlass } from "react-icons/hi2";
-import { requirePlanFeatureOrRedirect } from "@/lib/plan-access-server";
 
 export default async function LeadMapPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
-  requirePlanFeatureOrRedirect(user, "map");
 
   const leads = await prisma.lead.findMany({
     where: {
@@ -105,6 +103,13 @@ export default async function LeadMapPage() {
       <PageHeader
         title="Lead Map"
         description={description}
+        backHref="/dashboard"
+        backLabel="Back to dashboard"
+        crumbs={[
+          { label: "Home", href: "/home" },
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Lead map" },
+        ]}
         actions={
           <PrimaryActionLink href="/leads/search">
             <HiOutlineMagnifyingGlass className="h-4 w-4" />

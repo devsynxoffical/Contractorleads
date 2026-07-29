@@ -142,6 +142,13 @@ export default async function AllLeadsPage({
             ? `${total} lead${total === 1 ? "" : "s"} match your filters.`
             : `${total} AI-verified leads from your searches.`
         }
+        backHref="/dashboard"
+        backLabel="Back to dashboard"
+        crumbs={[
+          { label: "Home", href: "/home" },
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "All leads" },
+        ]}
         actions={
           <>
             <ExportLeadsButtons scope="all" disabled={!leads.length} />

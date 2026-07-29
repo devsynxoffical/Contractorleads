@@ -118,7 +118,7 @@ export function GlobalSearch({ className }: { className?: string }) {
                 {leads.map((l) => (
                   <Link
                     key={l.id}
-                    href={`/leads/${l.id}`}
+                    href={`/leads/${l.id}?from=search`}
                     onClick={() => setOpen(false)}
                     className="block rounded-lg px-2 py-2 hover:bg-brand-50"
                   >
@@ -141,7 +141,7 @@ export function GlobalSearch({ className }: { className?: string }) {
                 {saved.map((s) => (
                   <Link
                     key={s.id}
-                    href={`/leads/${s.lead.id}`}
+                    href={`/leads/${s.lead.id}?from=saved`}
                     onClick={() => setOpen(false)}
                     className="block rounded-lg px-2 py-2 hover:bg-brand-50"
                   >

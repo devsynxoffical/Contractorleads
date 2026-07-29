@@ -58,18 +58,12 @@ function countryLabel(code?: string | null) {
   return COUNTRY_NAMES[key] ?? code;
 }
 
-function tierColor(tier?: string | null) {
-  if (tier === "hot") return "#f472b6";
-  if (tier === "warm") return "#c084fc";
-  return "#38bdf8";
-}
-
 function mapPalette(isLight: boolean) {
   if (isLight) {
     return {
-      land: "#d4cce3",
-      landHover: "#b9aed4",
-      landStroke: "#b4a8cc",
+      land: "#c4b5e0",
+      landHover: "#a78bdb",
+      landStroke: "#8b7bb8",
       landSelected: "#7c3aed",
       markerStroke: "#ffffff",
       markerHoverFill: "#ffffff",
@@ -85,9 +79,16 @@ function mapPalette(isLight: boolean) {
   };
 }
 
-function leadHref(base: string, id: string) {
+function tierColor(tier?: string | null) {
+  if (tier === "hot") return "#db2777";
+  if (tier === "warm") return "#0f766e";
+  return "#0284c7";
+}
+
+function leadHref(base: string, id: string, from = "map") {
   const root = base.replace(/\/$/, "");
-  return `${root}/${id}`;
+  if (root.startsWith("/admin")) return `${root}/${id}`;
+  return `${root}/${id}?from=${from}`;
 }
 
 export function LeadGeoMapInner({
@@ -96,6 +97,7 @@ export function LeadGeoMapInner({
   title = "Traffic Analytics",
   subtitle = "Lead locations worldwide",
   leadDetailBase = "/leads",
+  leadFrom = "map",
 }: {
   leads: GeoLead[];
   compact?: boolean;
@@ -103,6 +105,7 @@ export function LeadGeoMapInner({
   subtitle?: string;
   /** Path prefix for lead detail links, e.g. `/admin/leads` */
   leadDetailBase?: string;
+  leadFrom?: string;
 }) {
   const { theme } = useTheme();
   const isLight = theme === "light";
@@ -204,7 +207,7 @@ export function LeadGeoMapInner({
     const map = new jsVectorMap({
       selector: mapEl.current,
       map: "world",
-      backgroundColor: "transparent",
+      backgroundColor: isLight ? "#ebe6f4" : "transparent",
       draggable: true,
       zoomButtons: true,
       zoomOnScroll: true,
@@ -401,13 +404,13 @@ export function LeadGeoMapInner({
           ) : (
             <div className="flex items-center gap-3 text-[11px] font-medium text-ink-muted">
               <span className="inline-flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-[#f472b6]" /> Hot
+                <span className="h-2 w-2 rounded-full bg-[#db2777]" /> Hot
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-[#c084fc]" /> Warm
+                <span className="h-2 w-2 rounded-full bg-[#0f766e]" /> Warm
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-[#38bdf8]" /> Nurture
+                <span className="h-2 w-2 rounded-full bg-[#0284c7]" /> Nurture
               </span>
             </div>
           )}
@@ -415,13 +418,13 @@ export function LeadGeoMapInner({
             {!compact && (
               <div className="flex items-center gap-3 text-[11px] font-medium text-ink-muted">
                 <span className="inline-flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-[#f472b6]" /> Hot
+                  <span className="h-2 w-2 rounded-full bg-[#db2777]" /> Hot
                 </span>
                 <span className="inline-flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-[#c084fc]" /> Warm
+                  <span className="h-2 w-2 rounded-full bg-[#0f766e]" /> Warm
                 </span>
                 <span className="inline-flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-[#38bdf8]" /> Nurture
+                  <span className="h-2 w-2 rounded-full bg-[#0284c7]" /> Nurture
                 </span>
               </div>
             )}
@@ -439,11 +442,15 @@ export function LeadGeoMapInner({
         <div
           className={`lead-map-canvas relative z-[1] w-full overflow-hidden bg-[var(--input-bg)] ${
             compact
-              ? "h-[280px] sm:h-[340px]"
+              ? "min-h-[300px] h-[300px] sm:min-h-[380px] sm:h-[380px]"
               : "h-[400px] sm:h-[480px] lg:h-[540px]"
           }`}
         >
-          <div ref={mapEl} className="lead-vector-map h-full w-full" />
+          <div
+            ref={mapEl}
+            id={compact ? "lead-map-compact" : "lead-map-full"}
+            className="lead-vector-map absolute inset-0 h-full w-full"
+          />
 
           {!plotLeads.length && (
             <div className="pointer-events-none absolute inset-0 z-[5] flex flex-col items-center justify-center gap-2 bg-[var(--panel-solid)]/80 px-6 text-center">
@@ -547,7 +554,7 @@ export function LeadGeoMapInner({
                 Selected pin
               </p>
               <Link
-                href={leadHref(leadDetailBase, activeLead.id)}
+                href={leadHref(leadDetailBase, activeLead.id, leadFrom)}
                 className="mt-1 block text-base font-semibold text-ink hover:text-brand-500"
               >
                 {activeLead.businessName}
@@ -577,7 +584,7 @@ export function LeadGeoMapInner({
           {filteredCards.map((lead) => (
             <Link
               key={lead.id}
-              href={leadHref(leadDetailBase, lead.id)}
+              href={leadHref(leadDetailBase, lead.id, leadFrom)}
               className={`hud-panel block w-full transition hover:brightness-110 ${
                 activeLeadId === lead.id ? "ring-1 ring-brand-500/40" : ""
               }`}

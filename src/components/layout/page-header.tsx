@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { BackLink, PageCrumbs, type Crumb } from "@/components/layout/back-nav";
 
 /** Logo pink → magenta → purple. Prefer CSS var so light/dark stay in sync. */
 const LOGO_GRADIENT = "var(--logo-gradient)";
@@ -10,27 +11,48 @@ export function PageHeader({
   description,
   actions,
   className,
+  backHref,
+  backLabel = "Back",
+  crumbs,
 }: {
-  eyebrow?: string;
+  eyebrow?: string | null;
   title: string;
   description?: string;
   actions?: React.ReactNode;
   className?: string;
+  /** Show a back link above the title */
+  backHref?: string;
+  backLabel?: string;
+  /** Optional breadcrumb trail under the back link */
+  crumbs?: Crumb[];
 }) {
   return (
     <div
       className={cn(
         "mb-6 flex flex-col gap-4 sm:mb-8 lg:flex-row lg:items-end lg:justify-between",
-        className
+        className,
       )}
     >
       <div className="min-w-0">
-        {eyebrow && (
+        {(backHref || (crumbs && crumbs.length > 0)) && (
+          <div className="mb-3 space-y-2">
+            {backHref ? (
+              <BackLink href={backHref} label={backLabel} />
+            ) : null}
+            {crumbs && crumbs.length > 0 ? <PageCrumbs items={crumbs} /> : null}
+          </div>
+        )}
+        {eyebrow ? (
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-600">
             {eyebrow}
           </p>
-        )}
-        <h1 className="mt-1.5 font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-ink sm:text-[1.75rem]">
+        ) : null}
+        <h1
+          className={cn(
+            "font-[family-name:var(--font-display)] text-2xl font-semibold tracking-tight text-ink sm:text-[1.75rem]",
+            eyebrow ? "mt-1.5" : "mt-0",
+          )}
+        >
           {title}
         </h1>
         {description && (
@@ -80,3 +102,4 @@ export function SecondaryActionLink({
 }
 
 export { LOGO_GRADIENT };
+export type { Crumb };

@@ -1,5 +1,5 @@
 export const LEAD_REPORT_TYPES = [
-  "full",
+  "website",
   "seo",
   "marketing",
   "ads",
@@ -14,21 +14,25 @@ export const LEAD_REPORT_TYPE_META: Record<
   LeadReportType,
   { label: string; description: string }
 > = {
-  full: {
-    label: "Full intelligence",
-    description: "Website, SEO, ads, marketing, local presence, and pitch",
+  website: {
+    label: "Website audit",
+    description:
+      "Speed, hero, content, contact page, and key site pages — justifies the website score",
   },
   seo: {
-    label: "SEO & website",
-    description: "Technical SEO, content, schema, and conversion gaps",
+    label: "SEO report",
+    description:
+      "On-page SEO, technical readiness, and ranking opportunity from the live crawl",
   },
   marketing: {
-    label: "Marketing",
-    description: "Brand, content, social, and demand-gen opportunity",
+    label: "Instagram & social",
+    description:
+      "Instagram / social presence, content proof, and demand-gen gaps",
   },
   ads: {
-    label: "Ads & PPC",
-    description: "Paid search, local services ads, and creative angles",
+    label: "Google Ads / PPC",
+    description:
+      "Paid search readiness, landing page conversion, and Local Services Ads angles",
   },
   local: {
     label: "Local presence",
@@ -42,4 +46,3 @@ export function isLeadReportType(value: unknown): value is LeadReportType {
     (LEAD_REPORT_TYPES as readonly string[]).includes(value)
   );
 }
-

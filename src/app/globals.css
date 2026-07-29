@@ -1434,8 +1434,20 @@ html[data-theme="light"] .lead-vector-map .jvm-zoom-btn:hover {
 
 html[data-theme="light"] .lead-map-canvas {
   background:
-    radial-gradient(ellipse 80% 60% at 50% 40%, rgba(167, 139, 250, 0.12), transparent 70%),
+    radial-gradient(ellipse 80% 60% at 50% 40%, rgba(167, 139, 250, 0.16), transparent 70%),
     #ebe6f4 !important;
+}
+
+html[data-theme="light"] .lead-vector-map .jvm-container {
+  background: transparent !important;
+}
+
+html[data-theme="light"] .lead-vector-map svg {
+  background: transparent !important;
+}
+
+html[data-theme="light"] .lead-vector-map path.jvm-region {
+  stroke-width: 0.6px;
 }
 
 /* App main parity with admin — beat leftover dark utilities in light mode */

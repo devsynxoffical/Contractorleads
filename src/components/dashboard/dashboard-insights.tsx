@@ -5,14 +5,7 @@ import Link from "next/link";
 import { HiOutlineArrowDownTray, HiOutlineArrowRight } from "react-icons/hi2";
 import { HudPanel } from "@/components/dashboard/hud-panel";
 import { getTierOneCountry } from "@/lib/constants";
-
-type QualityHealth = {
-  sampleSize: number;
-  avgLeadScore: number;
-  completeProfileRate: number;
-  hotRate: number;
-  hotCount: number;
-};
+import { leadDetailHref } from "@/lib/nav-context";
 
 type RecentSearch = {
   id: string;
@@ -75,12 +68,20 @@ function activityTypeLabel(type: string) {
   return labels[type] ?? type.replace(/_/g, " ");
 }
 
-function activityHref(type: string): string | null {
-  if (type === "pipeline") return "/leads/pipeline";
-  if (type === "save") return "/leads/saved";
-  if (type === "export") return "/leads";
+function activityHref(
+  type: string,
+  metadata?: Record<string, unknown> | null,
+): string | null {
+  const leadId =
+    typeof metadata?.leadId === "string" ? metadata.leadId : null;
+
+  if (type === "pipeline" || type === "save") {
+    if (leadId) return leadDetailHref(leadId, "dashboard");
+    if (type === "pipeline") return "/leads/pipeline";
+    return "/leads/saved";
+  }
+  if (type === "export" || type === "lead_generate") return "/leads";
   if (type === "outreach") return "/scripts";
-  if (type === "lead_generate") return "/leads";
   return null;
 }
 
@@ -90,33 +91,6 @@ function industryLeadsHref(industry: string) {
 
 function industrySearchHref(industry: string) {
   return `/leads/search?industry=${encodeURIComponent(industry)}`;
-}
-
-function MetricCard({
-  label,
-  value,
-  hint,
-  href,
-}: {
-  label: string;
-  value: string;
-  hint?: string;
-  href: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="group rounded-xl border border-brand-500/20 bg-[var(--input-bg)]/50 px-3 py-2.5 transition hover:border-brand-500/40 hover:bg-brand-500/[0.06]"
-    >
-      <p className="text-[11px] uppercase tracking-wide text-ink-faint">{label}</p>
-      <p className="mt-1 text-xl font-bold tabular-nums text-ink">{value}</p>
-      {hint ? (
-        <p className="mt-1 text-[10px] text-brand-500 opacity-0 transition group-hover:opacity-100">
-          {hint}
-        </p>
-      ) : null}
-    </Link>
-  );
 }
 
 async function downloadExport(exportId: string, format: string) {
@@ -234,7 +208,7 @@ function buildFeed(
       createdAt: a.createdAt,
       type: a.type,
       message: a.message,
-      href: activityHref(a.type),
+      href: activityHref(a.type, a.metadata),
     });
   }
 
@@ -257,110 +231,62 @@ function buildFeed(
 }
 
 export function DashboardInsights({
-  qualityHealth,
   topIndustries,
   recentSearches,
   activities,
   recentExports,
 }: {
-  qualityHealth?: QualityHealth | null;
   topIndustries: TopIndustry[];
   recentSearches: RecentSearch[];
   activities: Activity[];
   recentExports: RecentExport[];
 }) {
-  const qh = qualityHealth;
-  const sampleSize = qh?.sampleSize ?? 0;
   const feed = buildFeed(recentSearches, activities, recentExports);
 
   return (
-    <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
-      <div className="space-y-5">
-        <HudPanel
-          title="Lead quality"
-          subtitle={
-            sampleSize > 0
-              ? `Based on your ${sampleSize} workspace lead${sampleSize === 1 ? "" : "s"}`
-              : "Run Lead Finder to see quality metrics"
-          }
-        >
-          {sampleSize > 0 ? (
-            <div className="grid grid-cols-2 gap-3">
-              <MetricCard
-                label="Avg score"
-                value={String(qh?.avgLeadScore ?? 0)}
-                hint="View by score →"
-                href="/leads?sort=score"
-              />
-              <MetricCard
-                label="Hot leads"
-                value={`${qh?.hotCount ?? 0} (${qh?.hotRate ?? 0}%)`}
-                hint="Open hot queue →"
-                href="/leads/hot"
-              />
-              <MetricCard
-                label="Rich profiles"
-                value={`${qh?.completeProfileRate ?? 0}%`}
-                hint="Owner + LinkedIn + social"
-                href="/leads"
-              />
-              <MetricCard
-                label="All leads"
-                value={String(sampleSize)}
-                hint="Browse workspace →"
-                href="/leads"
-              />
-            </div>
-          ) : (
-            <div className="rounded-xl border border-dashed border-border px-4 py-8 text-center">
-              <p className="text-[13px] text-ink-muted">
-                No leads yet. Generate your first list in Lead Finder.
-              </p>
-              <Link href="/leads/search" className="mt-3 inline-flex hud-btn-primary text-[12px]">
-                Open Lead Finder
-              </Link>
-            </div>
-          )}
-        </HudPanel>
-
-        <HudPanel title="Leads by industry" subtitle="Click to filter or run again">
-          <ul className="divide-y divide-brand-500/10">
-            {topIndustries.map((i, idx) => {
-              const industry = i.industry?.trim();
-              if (!industry) return null;
-              return (
-                <li key={industry || idx} className="py-2">
-                  <div className="flex items-center justify-between gap-3">
-                    <Link
-                      href={industryLeadsHref(industry)}
-                      className="min-w-0 flex-1 text-[13px] font-medium text-ink hover:text-brand-600"
-                    >
-                      {industry}
-                      <span className="ml-1.5 text-ink-faint">({i.count})</span>
-                    </Link>
-                    <Link
-                      href={industrySearchHref(industry)}
-                      className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-brand-600 hover:underline"
-                    >
-                      Search again
-                      <HiOutlineArrowRight className="h-3 w-3" />
-                    </Link>
-                  </div>
-                </li>
-              );
-            })}
-            {!topIndustries.length && (
-              <li className="py-6 text-center text-[13px] text-ink-faint">
-                Industries appear after your first search.
+    <div className="mt-5 grid gap-5 xl:grid-cols-2">
+      <HudPanel
+        title="Leads by industry"
+        subtitle="Open your list or search that market again"
+      >
+        <ul className="divide-y divide-brand-500/10">
+          {topIndustries.map((i, idx) => {
+            const industry = i.industry?.trim();
+            if (!industry) return null;
+            return (
+              <li key={industry || idx} className="py-2.5">
+                <div className="flex items-center justify-between gap-3">
+                  <Link
+                    href={industryLeadsHref(industry)}
+                    className="min-w-0 flex-1 text-[13px] font-medium text-ink hover:text-brand-600"
+                  >
+                    {industry}
+                    <span className="ml-1.5 tabular-nums text-ink-faint">
+                      {i.count}
+                    </span>
+                  </Link>
+                  <Link
+                    href={industrySearchHref(industry)}
+                    className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-brand-600 hover:underline"
+                  >
+                    Search again
+                    <HiOutlineArrowRight className="h-3 w-3" />
+                  </Link>
+                </div>
               </li>
-            )}
-          </ul>
-        </HudPanel>
-      </div>
+            );
+          })}
+          {!topIndustries.length && (
+            <li className="py-6 text-center text-[13px] text-ink-faint">
+              Industries appear after your first search.
+            </li>
+          )}
+        </ul>
+      </HudPanel>
 
       <HudPanel
         title="Recent activity"
-        subtitle="Searches, exports, pipeline updates"
+        subtitle="Searches, exports, and pipeline moves"
         actions={
           <Link href="/leads" className="hud-btn-ghost text-[11px]">
             All leads
@@ -402,7 +328,9 @@ export function DashboardInsights({
                 return (
                   <li key={`export-${row.id}`} className="py-2.5">
                     <div className="flex items-start gap-3">
-                      <span className="hud-pill hud-pill-muted shrink-0">Export</span>
+                      <span className="hud-pill hud-pill-muted shrink-0">
+                        Export
+                      </span>
                       <div className="min-w-0 flex-1">
                         <ExportDownloadButton
                           exportId={row.id}
@@ -423,7 +351,9 @@ export function DashboardInsights({
                   <span className="hud-pill hud-pill-muted">
                     {activityTypeLabel(row.type)}
                   </span>
-                  <p className="mt-1.5 text-[12px] leading-snug text-ink">{row.message}</p>
+                  <p className="mt-1.5 text-[12px] leading-snug text-ink">
+                    {row.message}
+                  </p>
                   <p className="mt-0.5 text-[10px] text-ink-faint">
                     {formatWhen(row.createdAt)}
                   </p>
@@ -433,7 +363,10 @@ export function DashboardInsights({
               return (
                 <li key={row.id} className="py-2.5">
                   {row.href ? (
-                    <Link href={row.href} className="group block hover:text-brand-600">
+                    <Link
+                      href={row.href}
+                      className="group block hover:text-brand-600"
+                    >
                       {inner}
                     </Link>
                   ) : (

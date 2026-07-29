@@ -31,7 +31,10 @@ export async function POST(
     include: { lead: true },
   });
 
-  await logActivity(user.id, "save", `Saved ${saved.lead.businessName}`);
+  await logActivity(user.id, "save", `Saved ${saved.lead.businessName}`, {
+    leadId: id,
+    savedLeadId: saved.id,
+  });
 
   // Only notify CRM on first save
   if (!existing) {

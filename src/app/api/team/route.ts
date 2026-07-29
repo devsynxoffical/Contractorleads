@@ -3,13 +3,56 @@ import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { teamSeatLimit } from "@/lib/plans";
 import { userHasPlanFeature } from "@/lib/plan-access";
+import { sendTeamInviteEmail } from "@/lib/email";
+import {
+  createTeamInviteToken,
+  serializeTeamMember,
+  teamInviteAcceptUrl,
+} from "@/lib/team-invite";
 
 const ROLES = new Set(["admin", "member", "viewer"]);
 
 async function requireOwner() {
   const user = await getSessionUser();
-  if (!user) return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+  if (!user) {
+    return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
+  }
   return { user };
+}
+
+async function sendInviteForMember(opts: {
+  member: {
+    id: string;
+    email: string;
+    name: string | null;
+    role: string;
+  };
+  owner: {
+    id: string;
+    email: string;
+    name: string | null;
+    companyName: string | null;
+  };
+}) {
+  const token = createTeamInviteToken({
+    memberId: opts.member.id,
+    ownerUserId: opts.owner.id,
+    email: opts.member.email,
+  });
+  const acceptUrl = teamInviteAcceptUrl(token);
+  const ownerName =
+    opts.owner.name?.trim() ||
+    opts.owner.companyName?.trim() ||
+    opts.owner.email;
+  const result = await sendTeamInviteEmail({
+    to: opts.member.email,
+    inviteeName: opts.member.name,
+    ownerName,
+    companyName: opts.owner.companyName,
+    role: opts.member.role,
+    acceptUrl,
+  });
+  return { acceptUrl, emailOk: result.ok, emailError: result.error };
 }
 
 export async function GET() {
@@ -24,6 +67,11 @@ export async function GET() {
         locked: true,
         seatLimit: teamSeatLimit(user.plan),
         members: [],
+        owner: {
+          email: user.email,
+          name: user.name,
+          companyName: user.companyName,
+        },
       },
       { status: 403 },
     );
@@ -35,9 +83,14 @@ export async function GET() {
   });
 
   return NextResponse.json({
-    members,
+    members: members.map(serializeTeamMember),
     seatLimit: teamSeatLimit(user.plan),
     locked: false,
+    owner: {
+      email: user.email,
+      name: user.name,
+      companyName: user.companyName,
+    },
   });
 }
 
@@ -54,6 +107,44 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json().catch(() => ({}));
+  const resendId = typeof body.resendId === "string" ? body.resendId : null;
+
+  if (resendId) {
+    const existing = await prisma.teamMember.findFirst({
+      where: {
+        id: resendId,
+        ownerUserId: user.id,
+        status: { not: "revoked" },
+      },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: "Member not found" }, { status: 404 });
+    }
+    const member = await prisma.teamMember.update({
+      where: { id: existing.id },
+      data: {
+        status: "pending",
+        invitedAt: new Date(),
+        acceptedAt: null,
+      },
+    });
+    const mail = await sendInviteForMember({
+      member,
+      owner: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        companyName: user.companyName,
+      },
+    });
+    return NextResponse.json({
+      member: serializeTeamMember(member),
+      inviteUrl: mail.acceptUrl,
+      emailSent: mail.emailOk,
+      emailError: mail.emailOk ? null : mail.emailError || "Invite email failed",
+    });
+  }
+
   const email = String(body.email || "")
     .trim()
     .toLowerCase();
@@ -101,7 +192,23 @@ export async function POST(request: NextRequest) {
         acceptedAt: null,
       },
     });
-    return NextResponse.json({ member });
+
+    const mail = await sendInviteForMember({
+      member,
+      owner: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        companyName: user.companyName,
+      },
+    });
+
+    return NextResponse.json({
+      member: serializeTeamMember(member),
+      inviteUrl: mail.acceptUrl,
+      emailSent: mail.emailOk,
+      emailError: mail.emailOk ? null : mail.emailError || "Invite email failed",
+    });
   } catch {
     return NextResponse.json({ error: "Could not invite teammate" }, { status: 500 });
   }
@@ -143,12 +250,17 @@ export async function PATCH(request: NextRequest) {
     data: {
       ...(role ? { role } : {}),
       ...(status === "active" || status === "pending" || status === "revoked"
-        ? { status }
+        ? {
+            status,
+            ...(status === "active" && !existing.acceptedAt
+              ? { acceptedAt: new Date() }
+              : {}),
+          }
         : {}),
     },
   });
 
-  return NextResponse.json({ member });
+  return NextResponse.json({ member: serializeTeamMember(member) });
 }
 
 export async function DELETE(request: NextRequest) {

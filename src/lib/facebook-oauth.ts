@@ -23,8 +23,9 @@ export {
 const GRAPH = "https://graph.facebook.com/v21.0";
 const OAUTH_SCOPES = ["public_profile", "email", "pages_show_list"].join(",");
 
-export function facebookOAuthRedirectUri() {
-  return `${appBaseUrl()}/api/integrations/facebook/callback`;
+export function facebookOAuthRedirectUri(baseUrl?: string) {
+  const base = (baseUrl || appBaseUrl()).replace(/\/$/, "");
+  return `${base}/api/integrations/facebook/callback`;
 }
 
 function signState(payload: string) {
@@ -57,7 +58,11 @@ function verifyState(state: string): { userId: string; nonce: string } | null {
   }
 }
 
-export function buildFacebookOAuthUrl(opts: { userId: string }) {
+export function buildFacebookOAuthUrl(opts: {
+  userId: string;
+  /** Prefer the live request origin so local :3001 matches the browser. */
+  baseUrl?: string;
+}) {
   const { appId } = getMetaAppCredentials();
   if (!appId) throw new Error("META_APP_ID is not configured");
 
@@ -72,7 +77,7 @@ export function buildFacebookOAuthUrl(opts: { userId: string }) {
 
   const url = new URL("https://www.facebook.com/v21.0/dialog/oauth");
   url.searchParams.set("client_id", appId);
-  url.searchParams.set("redirect_uri", facebookOAuthRedirectUri());
+  url.searchParams.set("redirect_uri", facebookOAuthRedirectUri(opts.baseUrl));
   url.searchParams.set("state", signState(payload));
   url.searchParams.set("scope", OAUTH_SCOPES);
   url.searchParams.set("response_type", "code");
@@ -83,12 +88,12 @@ export function parseFacebookOAuthState(state: string) {
   return verifyState(state);
 }
 
-async function exchangeCodeForToken(opts: { code: string }) {
+async function exchangeCodeForToken(opts: { code: string; baseUrl?: string }) {
   const { appId, appSecret } = getMetaAppCredentials();
   const url = new URL(`${GRAPH}/oauth/access_token`);
   url.searchParams.set("client_id", appId);
   url.searchParams.set("client_secret", appSecret);
-  url.searchParams.set("redirect_uri", facebookOAuthRedirectUri());
+  url.searchParams.set("redirect_uri", facebookOAuthRedirectUri(opts.baseUrl));
   url.searchParams.set("code", opts.code);
 
   const res = await fetch(url.toString(), { signal: AbortSignal.timeout(15000) });
@@ -155,6 +160,7 @@ export async function completeFacebookOAuth(opts: {
   userId: string;
   code: string;
   state: string;
+  baseUrl?: string;
 }) {
   const parsed = parseFacebookOAuthState(opts.state);
   if (!parsed || parsed.userId !== opts.userId) {
@@ -167,6 +173,7 @@ export async function completeFacebookOAuth(opts: {
 
   const short = await exchangeCodeForToken({
     code: opts.code,
+    baseUrl: opts.baseUrl,
   });
   const longLived = await exchangeLongLivedToken(short.access_token!);
   const profile = await fetchFacebookProfile(longLived.access_token!);
@@ -187,7 +194,7 @@ export async function completeFacebookOAuth(opts: {
   } catch (err) {
     console.error("[facebook] failed to save connection", err);
     throw new Error(
-      "Connected to Facebook but could not save your profile. Ask your admin to run a database migrate, then try again.",
+      "Connected to Facebook but could not save your profile. Try again in a moment.",
     );
   }
 

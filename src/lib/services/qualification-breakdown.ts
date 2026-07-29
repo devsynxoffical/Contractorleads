@@ -146,12 +146,47 @@ function websiteQualityBreakdown(
           ? "pass"
           : "warn",
     ),
+    sig(
+      "Page speed (crawl)",
+      audit.speedBand === "unknown"
+        ? "Speed not measured."
+        : `Band: ${audit.speedBand}${
+            audit.responseTimeMs != null
+              ? ` · TTFB ~${audit.responseTimeMs} ms`
+              : ""
+          } · ${Math.round(audit.htmlBytes / 1024)} KB HTML · ${audit.scriptCount} scripts.`,
+      audit.speedBand === "fast"
+        ? "pass"
+        : audit.speedBand === "slow"
+          ? "fail"
+          : audit.speedBand === "moderate"
+            ? "warn"
+            : "info",
+    ),
+    sig(
+      "Hero section",
+      audit.hasHeroSection
+        ? (audit.heroSignals || []).join(" · ") || "Hero signals detected."
+        : "Clear hero (headline + media + CTA) not detected.",
+      audit.hasHeroSection ? "pass" : "warn",
+    ),
+    sig(
+      "Key pages",
+      (audit.pages || [])
+        .filter((p) => p.key !== "home")
+        .map((p) => `${p.key}: ${p.reachable ? "found" : "missing"}`)
+        .join(" · ") || "Secondary pages not crawled.",
+      (audit.pages || []).filter((p) => p.key !== "home" && p.reachable)
+        .length >= 3
+        ? "pass"
+        : "warn",
+    ),
   ];
 
   return {
     score,
     headline: audit.reachable
-      ? "Scored from a live crawl of the homepage HTML (title, meta, schema, content, forms)."
+      ? "Scored from a live crawl of speed, hero, homepage content, forms, and key pages."
       : "Website URL listed but the live page did not load.",
     signals,
   };
@@ -219,6 +254,18 @@ function marketingBreakdown(
 ): ScoreBreakdown {
   const signals: BreakdownSignal[] = [
     sig(
+      "Instagram / social links",
+      [
+        audit.hasInstagramLink
+          ? "Instagram link on site"
+          : "no Instagram link on site",
+        audit.hasFacebookLink
+          ? "Facebook link on site"
+          : "no Facebook link on site",
+      ].join(" · "),
+      audit.hasInstagramLink ? "pass" : "warn",
+    ),
+    sig(
       "Open Graph tags",
       audit.hasOpenGraph
         ? "Social share previews are configured."
@@ -256,7 +303,7 @@ function marketingBreakdown(
   return {
     score,
     headline:
-      "Measured from homepage funnel gaps (forms, social tags, content) — not Google review count.",
+      "Measured from Instagram/social presence, content proof, and conversion gaps — not Google review count.",
     signals,
   };
 }
@@ -290,6 +337,33 @@ function ppcBreakdown(
       audit.https ? "pass" : "warn",
     ),
     sig(
+      "Page speed",
+      audit.speedBand === "slow"
+        ? "Slow landing page hurts Quality Score and conversion."
+        : audit.speedBand === "fast"
+          ? "Crawl speed band looks fast enough for paid traffic."
+          : `Speed band: ${audit.speedBand}.`,
+      audit.speedBand === "fast"
+        ? "pass"
+        : audit.speedBand === "slow"
+          ? "fail"
+          : "warn",
+    ),
+    sig(
+      "Hero / offer clarity",
+      audit.hasHeroSection
+        ? "Hero/CTA structure detected for ad landing."
+        : "Weak hero — paid visitors may not understand the offer.",
+      audit.hasHeroSection ? "pass" : "warn",
+    ),
+    sig(
+      "Tracking hints",
+      audit.hasGoogleAdsHint
+        ? "Analytics / ads tags detected on the page."
+        : "No obvious Google Ads / analytics tags detected.",
+      audit.hasGoogleAdsHint ? "pass" : "info",
+    ),
+    sig(
       "Bundle angle",
       audit.websiteQualityScore < 45
         ? "Low site quality — pitch rebuild + Google Ads together."
@@ -301,7 +375,7 @@ function ppcBreakdown(
   return {
     score,
     headline:
-      "Estimates paid-traffic readiness from HTTPS, forms, and measured site quality.",
+      "Estimates Google Ads readiness from HTTPS, forms, hero, speed, and measured site quality.",
     signals,
   };
 }

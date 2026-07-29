@@ -11,8 +11,9 @@ import {
   HiOutlineUserGroup,
 } from "react-icons/hi2";
 import { cn } from "@/lib/utils";
-import { planLabel } from "@/lib/plans";
+import { planLabel, type PlanFeatures } from "@/lib/plans";
 import { userHasPlanFeature } from "@/lib/plan-access";
+import { openUpgradePlanModal } from "@/lib/client/upgrade-plan";
 import type { SessionUser } from "@/lib/session-user";
 
 type MenuItem = {
@@ -21,6 +22,7 @@ type MenuItem = {
   icon: React.ComponentType<{ className?: string }>;
   locked?: boolean;
   lockHint?: string;
+  feature?: keyof PlanFeatures;
 };
 
 function useSetupProgress(user: SessionUser) {
@@ -79,11 +81,12 @@ export function WorkspaceSettingsMenu({
 
   const items: MenuItem[] = [
     {
-      href: canTeams ? "/team" : "/billing",
+      href: "/team",
       label: "Users and teams",
       icon: HiOutlineUserGroup,
       locked: !canTeams,
       lockHint: "Agency plan",
+      feature: "teams",
     },
     {
       href: "/billing",
@@ -202,6 +205,26 @@ export function WorkspaceSettingsMenu({
           <div className="py-1.5">
             {items.map((item) => {
               const Icon = item.icon;
+              if (item.locked && item.feature) {
+                return (
+                  <button
+                    key={item.label}
+                    type="button"
+                    onClick={() => {
+                      openUpgradePlanModal(item.feature!);
+                      setOpen(false);
+                      onNavigate?.();
+                    }}
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] font-medium text-ink transition hover:bg-slate-50"
+                  >
+                    <Icon className="h-[18px] w-[18px] shrink-0 text-ink-muted" />
+                    <span className="flex-1">{item.label}</span>
+                    <span className="rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
+                      {item.lockHint}
+                    </span>
+                  </button>
+                );
+              }
               return (
                 <Link
                   key={item.label}
@@ -214,11 +237,6 @@ export function WorkspaceSettingsMenu({
                 >
                   <Icon className="h-[18px] w-[18px] shrink-0 text-ink-muted" />
                   <span className="flex-1">{item.label}</span>
-                  {item.locked ? (
-                    <span className="rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
-                      {item.lockHint}
-                    </span>
-                  ) : null}
                 </Link>
               );
             })}

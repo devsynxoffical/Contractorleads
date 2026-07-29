@@ -30,6 +30,13 @@ export default async function ScriptsPage() {
       <PageHeader
         title="My Scripts"
         description="Edit, copy, and reuse saved email, SMS, and outreach copy from Ask Expert and lead outreach."
+        backHref="/ask-expert"
+        backLabel="Back to Ask Expert"
+        crumbs={[
+          { label: "Home", href: "/home" },
+          { label: "Ask Expert", href: "/ask-expert" },
+          { label: "Scripts" },
+        ]}
         actions={
           <PrimaryActionLink href="/ask-expert">
             <HiOutlineChatBubbleLeftRight className="h-4 w-4" />

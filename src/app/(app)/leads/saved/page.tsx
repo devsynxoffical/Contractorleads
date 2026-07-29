@@ -79,6 +79,13 @@ export default async function SavedLeadsPage() {
       <PageHeader
         title="Saved Leads"
         description={`${saved.length} leads in your workspace.`}
+        backHref="/dashboard"
+        backLabel="Back to dashboard"
+        crumbs={[
+          { label: "Home", href: "/home" },
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Saved" },
+        ]}
         actions={
           <>
             <ExportLeadsButtons scope="saved" disabled={!saved.length} />

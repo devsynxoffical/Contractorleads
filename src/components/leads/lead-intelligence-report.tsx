@@ -7,9 +7,17 @@ import {
   HiOutlineArrowDownTray,
   HiOutlineCheck,
   HiOutlineClipboardDocument,
+  HiOutlineCog6Tooth,
   HiOutlineDocumentText,
+  HiOutlineEye,
+  HiOutlineGlobeAlt,
+  HiOutlineMagnifyingGlass,
+  HiOutlineMapPin,
+  HiOutlineMegaphone,
   HiOutlinePencilSquare,
   HiOutlinePrinter,
+  HiOutlinePresentationChartLine,
+  HiOutlineSparkles,
   HiOutlineXMark,
 } from "react-icons/hi2";
 import { Button } from "@/components/ui/button";
@@ -21,7 +29,20 @@ import {
   LEAD_REPORT_TYPE_META,
   type LeadReportType,
 } from "@/lib/services/lead-intelligence-report-meta";
+import { ReportBrandingModal } from "@/components/leads/report-branding-modal";
+import { ReportPdfPreviewModal } from "@/components/leads/report-pdf-preview-modal";
 import { cn } from "@/lib/utils";
+
+const REPORT_ICONS: Record<
+  LeadReportType,
+  React.ComponentType<{ className?: string }>
+> = {
+  website: HiOutlineGlobeAlt,
+  seo: HiOutlineMagnifyingGlass,
+  marketing: HiOutlineMegaphone,
+  ads: HiOutlinePresentationChartLine,
+  local: HiOutlineMapPin,
+};
 
 type SavedReport = {
   id: string;
@@ -36,7 +57,7 @@ function reportTypeFromScript(type: string): LeadReportType {
   if (suffix && (LEAD_REPORT_TYPES as readonly string[]).includes(suffix)) {
     return suffix as LeadReportType;
   }
-  return "full";
+  return "website";
 }
 
 function formatWhen(value: string) {
@@ -54,11 +75,13 @@ function formatWhen(value: string) {
 export function LeadIntelligenceReportCard({
   leadId,
   businessName,
+  onReportsChange,
 }: {
   leadId: string;
   businessName: string;
+  onReportsChange?: () => void;
 }) {
-  const [reportType, setReportType] = useState<LeadReportType>("full");
+  const [reportType, setReportType] = useState<LeadReportType>("website");
   const [reports, setReports] = useState<SavedReport[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [creditCost, setCreditCost] = useState(2);
@@ -72,6 +95,13 @@ export function LeadIntelligenceReportCard({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
+  const [brandingOpen, setBrandingOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [previewTitle, setPreviewTitle] = useState("");
+  const [previewReportId, setPreviewReportId] = useState<string | null>(null);
 
   const active = reports.find((r) => r.id === activeId) ?? reports[0] ?? null;
   const dirty =
@@ -236,6 +266,7 @@ export function LeadIntelligenceReportCard({
       );
       // Drop straight into edit so the user can customize before send
       startEdit(report);
+      onReportsChange?.();
       if (typeof data.creditsRemaining === "number") {
         notifyCreditsChanged(data.creditsRemaining);
       }
@@ -258,137 +289,253 @@ export function LeadIntelligenceReportCard({
     }
   }
 
-  async function downloadPdf() {
-    const report = await ensureSaved();
-    if (!report?.id) return;
+  async function fetchPdfBlob(reportId: string, preview = false) {
+    const res = await fetch(
+      `/api/leads/${leadId}/report/${reportId}/pdf${preview ? "?preview=1" : ""}`,
+    );
+    const contentType = res.headers.get("content-type") || "";
+    if (!res.ok || !contentType.includes("pdf")) {
+      const data = contentType.includes("json")
+        ? await res.json().catch(() => ({}))
+        : {};
+      throw new Error(
+        (data as { error?: string }).error ||
+          `Could not build PDF (${res.status})`,
+      );
+    }
+    const blob = await res.blob();
+    const disposition = res.headers.get("Content-Disposition") || "";
+    const match = disposition.match(/filename="([^"]+)"/);
+    return {
+      blob,
+      filename: match?.[1] || `${businessName}-report.pdf`,
+    };
+  }
+
+  function revokePreviewUrl() {
+    setPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+  }
+
+  async function downloadPdf(reportId?: string | null) {
     setDownloadingPdf(true);
     setError("");
     try {
-      const res = await fetch(
-        `/api/leads/${leadId}/report/${report.id}/pdf`,
-      );
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error || "Could not download PDF");
-        return;
+      let id = reportId ?? null;
+      if (!id) {
+        const saved = await ensureSaved();
+        id = saved?.id ?? null;
       }
-      const blob = await res.blob();
+      if (!id) return;
+      const { blob, filename } = await fetchPdfBlob(id, false);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      const disposition = res.headers.get("Content-Disposition") || "";
-      const match = disposition.match(/filename="([^"]+)"/);
       a.href = url;
-      a.download = match?.[1] || `${businessName}-report.pdf`;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
       setStatusMsg(
-        "PDF downloaded with your edits. Attach the same report when emailing this lead.",
+        "PDF downloaded with your branding. Attach the same report when emailing this lead.",
       );
-    } catch {
-      setError("Could not download PDF");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not download PDF");
     } finally {
       setDownloadingPdf(false);
     }
   }
 
-  async function printReport() {
+  async function openPdfPreview() {
     const report = await ensureSaved();
-    if (!report?.content) return;
-    const win = window.open("", "_blank", "noopener,noreferrer,width=900,height=700");
-    if (!win) return;
-    const title = report.title || `${businessName} report`;
-    win.document.write(`<!doctype html><html><head><title>${title}</title>
-      <style>
-        body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#0f172a;line-height:1.55;padding:32px;max-width:820px;margin:0 auto}
-        h1{font-size:22px;margin:0 0 8px}
-        .meta{color:#64748b;font-size:13px;margin-bottom:24px}
-        pre{white-space:pre-wrap;font-family:inherit;font-size:14px;margin:0}
-      </style></head><body>
-      <h1>${title.replace(/</g, "&lt;")}</h1>
-      <div class="meta">${businessName.replace(/</g, "&lt;")} · ${formatWhen(report.createdAt)}</div>
-      <pre>${report.content.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</pre>
-      </body></html>`);
-    win.document.close();
-    win.focus();
-    win.print();
+    if (!report?.id) return;
+    setPreviewOpen(true);
+    setPreviewLoading(true);
+    setPreviewError(null);
+    setPreviewTitle(report.title || `${businessName} report`);
+    setPreviewReportId(report.id);
+    revokePreviewUrl();
+    try {
+      const { blob } = await fetchPdfBlob(report.id, true);
+      const url = URL.createObjectURL(blob);
+      setPreviewUrl(url);
+    } catch (e) {
+      setPreviewError(
+        e instanceof Error ? e.message : "Could not build PDF preview",
+      );
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
+
+  function closePdfPreview() {
+    setPreviewOpen(false);
+    setPreviewError(null);
+    setPreviewReportId(null);
+    revokePreviewUrl();
+  }
+
+  async function printReport() {
+    setError("");
+    try {
+      const report = await ensureSaved();
+      if (!report?.id) return;
+
+      // Prefer printing the branded PDF (same as download)
+      const { blob } = await fetchPdfBlob(report.id, true);
+      const url = URL.createObjectURL(blob);
+      const win = window.open(url, "_blank", "width=900,height=700");
+      if (!win) {
+        URL.revokeObjectURL(url);
+        setError("Pop-up blocked — allow pop-ups to print, or use Preview PDF.");
+        return;
+      }
+      const revoke = () => URL.revokeObjectURL(url);
+      win.addEventListener("beforeunload", revoke);
+      // Give the PDF viewer a moment to load, then print
+      window.setTimeout(() => {
+        try {
+          win.focus();
+          win.print();
+        } catch {
+          /* viewer may handle print UI itself */
+        }
+      }, 600);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not print report");
+    }
+  }
+
+  function printPreviewPdf() {
+    if (!previewUrl) return;
+    const win = window.open(previewUrl, "_blank", "width=900,height=700");
+    if (!win) {
+      setPreviewError("Pop-up blocked — allow pop-ups to print.");
+      return;
+    }
+    window.setTimeout(() => {
+      try {
+        win.focus();
+        win.print();
+      } catch {
+        /* ignore */
+      }
+    }, 600);
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
-        <div>
-          <CardTitle className="flex items-center gap-2">
-            <HiOutlineDocumentText className="h-5 w-5 text-brand-600" />
-            Lead intelligence report
-          </CardTitle>
-          <p className="mt-1 text-[12px] text-ink-muted">
-            Generate, then edit anything that looks wrong before you download
-            PDF or email the lead. PDFs use your{" "}
-            <Link href="/settings" className="font-medium text-brand-600 hover:underline">
-              company logo &amp; branding
-            </Link>
-            .
-          </p>
+    <Card className="overflow-hidden border-border shadow-[var(--shadow-soft)]">
+      <CardHeader className="border-b border-border/70 bg-[#faf8fc]/60 pb-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-[16px]">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-50 text-brand-700 ring-1 ring-brand-200">
+                <HiOutlineDocumentText className="h-4 w-4" />
+              </span>
+              Lead intelligence report
+            </CardTitle>
+            <p className="mt-2 max-w-2xl text-[13px] leading-relaxed text-ink-muted">
+              Pick a report type, generate, then preview or download a branded
+              PDF. Set your logo and company details here — not in system
+              settings.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => setBrandingOpen(true)}
+          >
+            <HiOutlineCog6Tooth className="mr-1.5 h-3.5 w-3.5" />
+            Setup logo
+          </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-          {LEAD_REPORT_TYPES.map((key) => {
-            const meta = LEAD_REPORT_TYPE_META[key];
-            const selected = reportType === key;
-            return (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setReportType(key)}
-                className={cn(
-                  "rounded-xl border px-3 py-2.5 text-left transition",
-                  selected
-                    ? "border-brand-300 bg-brand-50/80 ring-1 ring-brand-200"
-                    : "border-border bg-white hover:border-brand-200",
-                )}
-              >
-                <p className="text-[13px] font-semibold text-ink">
-                  {meta.label}
-                </p>
-                <p className="mt-0.5 text-[11px] leading-snug text-ink-muted">
-                  {meta.description}
-                </p>
-              </button>
-            );
-          })}
+      <CardContent className="space-y-5 pt-5">
+        <div>
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-faint">
+            Report type
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+            {LEAD_REPORT_TYPES.map((key) => {
+              const meta = LEAD_REPORT_TYPE_META[key];
+              const selected = reportType === key;
+              const Icon = REPORT_ICONS[key];
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setReportType(key)}
+                  className={cn(
+                    "flex h-full flex-col rounded-2xl border px-3.5 py-3 text-left transition",
+                    selected
+                      ? "border-brand-300 bg-brand-50 shadow-[var(--shadow-soft)] ring-1 ring-brand-200"
+                      : "border-border bg-white hover:border-brand-200 hover:bg-brand-50/40",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "mb-2 flex h-8 w-8 items-center justify-center rounded-lg",
+                      selected
+                        ? "bg-white text-brand-700 ring-1 ring-brand-200"
+                        : "bg-[#faf8fc] text-ink-muted",
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <p className="text-[13px] font-semibold text-ink">
+                    {meta.label}
+                  </p>
+                  <p className="mt-1 text-[11px] leading-snug text-ink-muted">
+                    {meta.description}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            size="sm"
-            loading={generating}
-            disabled={generating || saving}
-            onClick={() => void generate()}
-          >
-            {generating
-              ? "Generating report…"
-              : `Generate ${LEAD_REPORT_TYPE_META[reportType].label}`}
-          </Button>
-          <span className="text-[12px] text-ink-muted">
-            Uses {creditCost} credits · saved to{" "}
-            <Link href="/scripts" className="font-medium text-brand-600 hover:underline">
-              My Scripts
-            </Link>
-          </span>
-          {reports.length > 0 ? (
+        <div className="flex flex-col gap-3 rounded-2xl border border-border bg-[#faf8fc] p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-[13px] font-semibold text-ink">
+              Generate {LEAD_REPORT_TYPE_META[reportType].label}
+            </p>
+            <p className="mt-0.5 text-[12px] text-ink-muted">
+              {creditCost} credits · saved to{" "}
+              <Link
+                href="/scripts"
+                className="font-medium text-brand-600 hover:underline"
+              >
+                My Scripts
+              </Link>
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {reports.length > 0 ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => void load()}
+                disabled={loading || generating || saving}
+              >
+                <HiOutlineArrowPath className="mr-1.5 h-3.5 w-3.5" />
+                Refresh list
+              </Button>
+            ) : null}
             <Button
-              variant="secondary"
               size="sm"
-              onClick={() => void load()}
-              disabled={loading || generating || saving}
+              loading={generating}
+              disabled={generating || saving}
+              onClick={() => void generate()}
             >
-              <HiOutlineArrowPath className="mr-1.5 h-3.5 w-3.5" />
-              Refresh
+              <HiOutlineSparkles className="mr-1.5 h-3.5 w-3.5" />
+              {generating
+                ? "Generating…"
+                : `Generate ${LEAD_REPORT_TYPE_META[reportType].label}`}
             </Button>
-          ) : null}
+          </div>
         </div>
 
         {error ? (
@@ -428,7 +575,7 @@ export function LeadIntelligenceReportCard({
                   type="button"
                   onClick={() => selectReport(r.id)}
                   className={cn(
-                    "rounded-full border px-3 py-1 text-[12px] font-medium transition",
+                    "rounded-full border px-3 py-1.5 text-[12px] font-medium transition",
                     selected
                       ? "border-brand-300 bg-brand-50 text-brand-800"
                       : "border-border bg-white text-ink-muted hover:border-brand-200",
@@ -442,8 +589,8 @@ export function LeadIntelligenceReportCard({
         ) : null}
 
         {active ? (
-          <div className="overflow-hidden rounded-2xl border border-border bg-[#faf8fc]">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/80 bg-white px-4 py-3">
+          <div className="overflow-hidden rounded-2xl border border-border bg-white shadow-[var(--shadow-soft)]">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/80 bg-[#faf8fc]/80 px-4 py-3">
               <div className="min-w-0">
                 <p className="truncate text-[13px] font-semibold text-ink">
                   {editing
@@ -505,6 +652,15 @@ export function LeadIntelligenceReportCard({
                 <Button
                   variant="secondary"
                   size="sm"
+                  disabled={saving}
+                  onClick={() => void openPdfPreview()}
+                >
+                  <HiOutlineEye className="mr-1.5 h-3.5 w-3.5" />
+                  Preview PDF
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
                   loading={downloadingPdf || saving}
                   disabled={downloadingPdf || saving}
                   onClick={() => void downloadPdf()}
@@ -560,11 +716,56 @@ export function LeadIntelligenceReportCard({
             )}
           </div>
         ) : !loading ? (
-          <p className="rounded-xl border border-dashed border-border bg-white px-4 py-6 text-center text-[13px] text-ink-muted">
-            No report yet for this lead. Choose a report type and generate one.
-          </p>
+          <div className="rounded-2xl border border-dashed border-border bg-[#faf8fc] px-4 py-10 text-center">
+            <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-white text-brand-600 ring-1 ring-brand-100">
+              <HiOutlineGlobeAlt className="h-5 w-5" />
+            </span>
+            <p className="mt-3 text-[14px] font-semibold text-ink">
+              No report yet
+            </p>
+            <p className="mx-auto mt-1 max-w-sm text-[13px] text-ink-muted">
+              Choose a report type above and generate one for {businessName}.
+            </p>
+          </div>
         ) : null}
       </CardContent>
+
+      <ReportBrandingModal
+        open={brandingOpen}
+        onClose={() => setBrandingOpen(false)}
+        onSaved={() => {
+          if (previewOpen && previewReportId) {
+            void (async () => {
+              setPreviewLoading(true);
+              setPreviewError(null);
+              revokePreviewUrl();
+              try {
+                const { blob } = await fetchPdfBlob(previewReportId, true);
+                setPreviewUrl(URL.createObjectURL(blob));
+              } catch (e) {
+                setPreviewError(
+                  e instanceof Error ? e.message : "Could not refresh preview",
+                );
+              } finally {
+                setPreviewLoading(false);
+              }
+            })();
+          }
+        }}
+      />
+
+      <ReportPdfPreviewModal
+        open={previewOpen}
+        title={previewTitle}
+        pdfUrl={previewUrl}
+        loading={previewLoading}
+        error={previewError}
+        downloading={downloadingPdf}
+        onClose={closePdfPreview}
+        onDownload={() => void downloadPdf(previewReportId ?? undefined)}
+        onPrint={printPreviewPdf}
+        onOpenBranding={() => setBrandingOpen(true)}
+      />
     </Card>
   );
 }

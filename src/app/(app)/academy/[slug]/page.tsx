@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   ACADEMY_ARTICLES,
@@ -6,6 +5,7 @@ import {
   getAcademyArticle,
 } from "@/lib/academy-content";
 import { PageHeader } from "@/components/layout/page-header";
+import Link from "next/link";
 
 export function generateStaticParams() {
   return ACADEMY_ARTICLES.map((a) => ({ slug: a.slug }));
@@ -26,19 +26,17 @@ export default async function AcademyArticlePage({
 
   return (
     <div className="page-pad">
-      <div className="mb-4">
-        <Link
-          href="/academy"
-          className="text-[13px] font-semibold text-brand-600 hover:underline"
-        >
-          ← Back to Academy
-        </Link>
-      </div>
-
       <PageHeader
         eyebrow={`${article.type === "blog" ? "Blog" : "Guide"} · ${categoryLabel(article.category)}`}
         title={article.title}
         description={article.summary}
+        backHref="/academy"
+        backLabel="Back to Academy"
+        crumbs={[
+          { label: "Home", href: "/home" },
+          { label: "Academy", href: "/academy" },
+          { label: article.title },
+        ]}
       />
 
       <p className="mb-6 text-[12px] text-ink-faint">

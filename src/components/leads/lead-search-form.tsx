@@ -468,6 +468,13 @@ export function LeadSearchForm() {
         <PageHeader
           title="Lead Finder"
           description="AI-verified home-service businesses across Tier 1 countries — choose a country, entire-country or local area, then score for outreach fit."
+          backHref="/dashboard"
+          backLabel="Back to dashboard"
+          crumbs={[
+            { label: "Home", href: "/home" },
+            { label: "Dashboard", href: "/dashboard" },
+            { label: "Lead Finder" },
+          ]}
           actions={
             <>
               <SecondaryActionLink href="/ask-expert">
@@ -484,7 +491,11 @@ export function LeadSearchForm() {
 
         <div className="stagger grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatChip label="Coverage" value="Tier 1" hint="US · CA · UK · AU · NZ" />
-          <StatChip label="Industries" value="12" hint="Roofing → GCs" />
+          <StatChip
+            label="Industries"
+            value="12"
+            hint="Roofing → General Contractors"
+          />
           <StatChip label="Per lead" value="1 credit" hint="Only leads returned" />
           <StatChip label="Re-export" value="Free" hint="Already billed leads" />
         </div>
@@ -894,7 +905,10 @@ export function LeadSearchForm() {
               />
             }
           />
-          <LeadResultsList leads={leads} />
+          <LeadResultsList
+            leads={leads}
+            profileHrefFor={(lead) => `/leads/${lead.id}?from=search`}
+          />
         </div>
       )}
     </div>

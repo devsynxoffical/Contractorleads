@@ -50,6 +50,13 @@ export default async function PipelinePage() {
       <PageHeader
         title="Pipeline CRM"
         description="Add leads from Lead Finder, then move them New → Contacted → Qualified → Closed. Drag cards or use the status menu on each card."
+        backHref="/dashboard"
+        backLabel="Back to dashboard"
+        crumbs={[
+          { label: "Home", href: "/home" },
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Pipeline" },
+        ]}
         actions={
           <>
             <SecondaryActionLink href="/leads/saved">

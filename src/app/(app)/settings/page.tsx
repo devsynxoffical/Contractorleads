@@ -3,7 +3,6 @@ import { getSessionUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import Link from "next/link";
-import { userHasPlanFeature } from "@/lib/plan-access";
 
 export default async function SettingsPage() {
   const user = await getSessionUser();
@@ -14,6 +13,13 @@ export default async function SettingsPage() {
       <PageHeader
         title="All settings"
         description="Business profile powers outreach and your AI Assistant. Use the links below for team, billing, security, and integrations."
+        backHref="/dashboard"
+        backLabel="Back to dashboard"
+        crumbs={[
+          { label: "Home", href: "/home" },
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Settings" },
+        ]}
       />
       <div className="flex flex-wrap gap-2 text-[13px]">
         <Link
@@ -29,7 +35,7 @@ export default async function SettingsPage() {
           Billing and plan usage
         </Link>
         <Link
-          href={userHasPlanFeature(user, "teams") ? "/team" : "/billing"}
+          href="/team"
           className="rounded-xl border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-800 hover:border-slate-300"
         >
           Users &amp; teams

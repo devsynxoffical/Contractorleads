@@ -13,6 +13,13 @@ export default async function SecuritySettingsPage() {
       <PageHeader
         title="Security"
         description="Password and account access for your Contractor Leads workspace."
+        backHref="/settings"
+        backLabel="Back to all settings"
+        crumbs={[
+          { label: "Home", href: "/home" },
+          { label: "Settings", href: "/settings" },
+          { label: "Security" },
+        ]}
       />
       <div className="flex flex-wrap gap-2 text-[13px]">
         <Link

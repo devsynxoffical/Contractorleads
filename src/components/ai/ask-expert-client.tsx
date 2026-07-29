@@ -5,10 +5,12 @@ import {
   LOGO_GRADIENT,
   SecondaryActionLink,
 } from "@/components/layout/page-header";
+import { BackLink, PageCrumbs } from "@/components/layout/back-nav";
 import { SectionLabel } from "@/components/ui/section";
 import { AiAssistantWorkspace } from "@/components/ai/ai-assistant-workspace";
 import { CREDIT_COSTS } from "@/lib/constants";
 import {
+  HiOutlineCog6Tooth,
   HiOutlineDocumentText,
   HiOutlineSparkles,
 } from "react-icons/hi2";
@@ -21,6 +23,16 @@ export function AskExpertClient({
   return (
     <div className="page-pad page-enter relative min-h-[calc(100vh-8rem)]">
       <div className="mesh-bg absolute inset-0 -z-10 rounded-2xl" />
+
+      <div className="mb-4 space-y-2">
+        <BackLink href="/home" label="Back to home" />
+        <PageCrumbs
+          items={[
+            { label: "Home", href: "/home" },
+            { label: "Ask Contractor Leads" },
+          ]}
+        />
+      </div>
 
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
@@ -45,6 +57,10 @@ export function AskExpertClient({
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
+          <SecondaryActionLink href="/ask-expert/settings">
+            <HiOutlineCog6Tooth className="h-4 w-4" />
+            AI settings
+          </SecondaryActionLink>
           <SecondaryActionLink href="/scripts">
             <HiOutlineDocumentText className="h-4 w-4" />
             My Scripts
@@ -61,10 +77,10 @@ export function AskExpertClient({
         <p className="mt-3 text-center text-[12px] text-ink-faint">
           Tip: complete{" "}
           <a
-            href="/settings"
+            href="/ask-expert/settings"
             className="font-medium text-brand-500 hover:underline"
           >
-            Settings
+            AI Assistant settings
           </a>{" "}
           so answers match your services &amp; geo.{" "}
           <span

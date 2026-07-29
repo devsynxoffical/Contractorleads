@@ -88,8 +88,8 @@ export function LocationAutocomplete({
           onFocus={() => suggestions.length > 0 && setOpen(true)}
           placeholder={placeholder}
           className={cn(
-            "saas-input w-full pl-9",
-            inputClassName
+            "w-full pl-9",
+            inputClassName || "saas-input",
           )}
         />
       </div>

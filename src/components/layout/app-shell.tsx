@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -35,6 +35,7 @@ import {
   HiOutlineViewColumns,
   HiOutlineWrenchScrewdriver,
   HiOutlineXMark,
+  HiOutlineLockClosed,
 } from "react-icons/hi2";
 import { FaFacebook } from "react-icons/fa";
 import { cn, formatCredits } from "@/lib/utils";
@@ -47,16 +48,21 @@ import { ADMIN_STAFF_ROLES } from "@/lib/roles";
 import { ProductTourWalkthrough } from "@/components/onboarding/product-tour-walkthrough";
 import {
   CREDITS_CHANGED_EVENT,
+  fetchCreditsRemaining,
+  notifyCreditsChanged,
   type CreditsChangedDetail,
 } from "@/lib/client/credits-sync";
+import { openUpgradePlanModal } from "@/lib/client/upgrade-plan";
+import { UpgradePlanModalHost } from "@/components/billing/upgrade-plan-modal";
+import type { PlanFeatures } from "@/lib/plans";
 
 type NavItem = {
   href: string;
   label: string;
   icon: IconType;
   badge?: boolean;
-  /** Hide unless plan includes this feature */
-  feature?: "map" | "crm" | "teams" | "reports" | "workspaces" | "api";
+  /** Show item even when locked; click opens upgrade modal */
+  feature?: keyof PlanFeatures;
 };
 
 type NavSection = {
@@ -76,7 +82,7 @@ function buildSections(user: SessionUser): NavSection[] {
         { href: "/leads/saved", label: "Saved Leads", icon: HiOutlineStar },
         { href: "/leads/hot", label: "Hot Leads", icon: HiOutlineFire, badge: true },
         { href: "/leads/pipeline", label: "Pipeline CRM", icon: HiOutlineViewColumns },
-        { href: "/leads/map", label: "Lead Map", icon: HiOutlineMap, feature: "map" },
+        { href: "/leads/map", label: "Lead Map", icon: HiOutlineMap },
       ],
     },
     {
@@ -88,6 +94,11 @@ function buildSections(user: SessionUser): NavSection[] {
           icon: HiOutlineChatBubbleLeftRight,
         },
         { href: "/scripts", label: "My Scripts", icon: HiOutlineBookOpen },
+        {
+          href: "/ask-expert/settings",
+          label: "AI settings",
+          icon: HiOutlineCog6Tooth,
+        },
         {
           href: "/academy",
           label: "Academy",
@@ -109,7 +120,7 @@ function buildSections(user: SessionUser): NavSection[] {
       items: [
         { href: "/leads/industries", label: "Industries", icon: HiOutlineHomeModern },
         { href: "/analytics", label: "Analytics", icon: HiOutlineArrowTrendingDown },
-        { href: "/ai-tools", label: "AI Tools", icon: HiOutlineCpuChip },
+
         {
           href: "/team",
           label: "Users & teams",
@@ -136,9 +147,7 @@ function buildSections(user: SessionUser): NavSection[] {
   const filtered = sections
     .map((section) => ({
       ...section,
-      items: section.items.filter(
-        (item) => !item.feature || userHasPlanFeature(user, item.feature),
-      ),
+      items: section.items,
     }))
     .filter((section) => section.items.length > 0);
 
@@ -186,16 +195,21 @@ function isActive(
   from?: string | null,
 ) {
   if (isLeadDetailPath(pathname)) {
-    const source =
-      from === "hot" || from === "saved" || from === "all" ? from : "all";
-    if (href === "/leads/hot") return source === "hot";
-    if (href === "/leads/saved") return source === "saved";
-    if (href === "/leads") return source === "all";
+    if (href === "/dashboard") return from === "dashboard";
+    if (href === "/leads/hot") return from === "hot";
+    if (href === "/leads/saved") return from === "saved";
+    if (href === "/leads/map") return from === "map";
+    if (href === "/leads/pipeline") return from === "pipeline";
+    if (href === "/leads/search") return from === "search";
+    if (href === "/home" || href === "/digest") return from === "digest";
+    if (href === "/leads") return from === "all" || !from;
     return false;
   }
 
   if (href === "/leads") return pathname === "/leads";
   if (href === "/home") return pathname === "/home";
+  if (href === "/dashboard") return pathname === "/dashboard";
+  if (href === "/ask-expert") return pathname === "/ask-expert";
   if (href === "/setup") {
     return pathname === "/setup" || pathname.startsWith("/setup/");
   }
@@ -299,6 +313,26 @@ function SidebarNav({
               {section.items.map((item) => {
                 const active = isActive(pathname, item.href, from);
                 const Icon = item.icon;
+                const locked =
+                  Boolean(item.feature) &&
+                  !userHasPlanFeature(user, item.feature!);
+                if (locked) {
+                  return (
+                    <button
+                      key={item.href}
+                      type="button"
+                      onClick={() => {
+                        openUpgradePlanModal(item.feature!);
+                        onNavigate?.();
+                      }}
+                      className="group flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-[13.5px] font-medium text-ink-faint transition-all duration-200 hover:bg-brand-50 hover:text-ink-muted"
+                    >
+                      <Icon className="h-[18px] w-[18px] shrink-0 text-ink-faint" />
+                      <span className="flex-1 truncate">{item.label}</span>
+                      <HiOutlineLockClosed className="h-3.5 w-3.5 shrink-0 opacity-70" />
+                    </button>
+                  );
+                }
                 return (
                   <Link
                     key={item.href}
@@ -396,6 +430,8 @@ export function AppShell({
   const [creditsRemaining, setCreditsRemaining] = useState(
     user.creditsRemaining,
   );
+  const creditsRef = useRef(creditsRemaining);
+  creditsRef.current = creditsRemaining;
   const [tourDone, setTourDone] = useState(
     Boolean(user.productTourCompleted),
   );
@@ -419,6 +455,35 @@ export function AppShell({
       window.removeEventListener(CREDITS_CHANGED_EVENT, onCreditsChanged);
     };
   }, [router]);
+
+  // Admin (or Stripe) can change the balance while this tab stays open; the
+  // App Router layout often keeps the old session props until a hard refresh.
+  useEffect(() => {
+    let cancelled = false;
+    async function syncFromServer() {
+      const next = await fetchCreditsRemaining();
+      if (cancelled || next == null) return;
+      if (creditsRef.current === next) return;
+      setCreditsRemaining(next);
+      notifyCreditsChanged(next);
+    }
+    void syncFromServer();
+    function onFocus() {
+      void syncFromServer();
+    }
+    function onVisibility() {
+      if (document.visibilityState === "visible") void syncFromServer();
+    }
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    const interval = window.setInterval(syncFromServer, 30_000);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.clearInterval(interval);
+    };
+  }, []);
 
   useEffect(() => {
     function onReplay() {
@@ -566,6 +631,7 @@ export function AppShell({
       </div>
 
       <SupportChatWidget user={shellUser} />
+      <UpgradePlanModalHost currentPlan={user.plan} />
       <ProductTourWalkthrough
         open={showProductTour}
         onCompleted={() => {

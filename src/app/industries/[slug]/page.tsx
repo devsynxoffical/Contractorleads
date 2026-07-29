@@ -29,7 +29,6 @@ import {
 } from "@/components/seo/json-ld";
 import { TIER_ONE_COUNTRIES } from "@/lib/constants";
 import {
-  SEO_REGIONS,
   TRADE_PAGES,
   buildMetadata,
   getTradeBySlug,
@@ -138,12 +137,12 @@ export default async function TradePage({ params }: Params) {
             { value: "Live", label: "Google & Yelp data at search time" },
             { value: "4", label: "AI scores on every lead" },
             {
-              value: `${SEO_REGIONS.length}`,
-              label: `US state markets for ${lower}`,
-            },
-            {
               value: `${TIER_ONE_COUNTRIES.length}`,
               label: "Countries you can prospect",
+            },
+            {
+              value: `${TRADE_PAGES.length}`,
+              label: "Home-service industries",
             },
           ]}
         />
@@ -224,14 +223,11 @@ export default async function TradePage({ params }: Params) {
         tone="light"
         id="markets"
         eyebrow="By location"
-        title={`Find ${trade.name} leads by US state`}
-        description={`Choose a state to see how agencies prospect ${lower} contractors in that market — then run a live search in Lead Finder with AI scores and owner contacts.`}
+        title={`Find ${trade.name} leads by country`}
+        description={`Prospect verified ${lower} contractors across the United States, Canada, the UK, Australia, and New Zealand — same live data and AI scores everywhere.`}
         align="center"
       >
-        <IndustryLocationSection
-          industryName={trade.name}
-          industrySlug={trade.slug}
-        />
+        <IndustryLocationSection industryName={trade.name} />
       </SubpageSection>
 
       <SubpageSection

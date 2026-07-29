@@ -22,6 +22,10 @@ const BODY_TOP = 100;
 /** Reserved band for footer — PDFKit margin keeps content out of this zone */
 const FOOTER_H = 44;
 
+function toPdfSafeText(value: string) {
+  return value.replace(/[^\x09\x0A\x0D\x20-\x7E\xA0-\xFF]/g, "?");
+}
+
 function formatWhen(value: Date | string | null | undefined) {
   const d =
     typeof value === "string"
@@ -53,10 +57,14 @@ export function reportPdfFilename(businessName: string, title?: string | null) {
 
 function logoBufferFromDataUrl(dataUrl: string | null | undefined): Buffer | null {
   if (!dataUrl?.startsWith("data:image/")) return null;
+  // PDFKit reliably embeds JPEG/PNG; skip unsupported types (e.g. webp)
+  if (!/^data:image\/(png|jpeg|jpg);base64,/i.test(dataUrl)) return null;
   const comma = dataUrl.indexOf(",");
   if (comma < 0) return null;
   try {
-    return Buffer.from(dataUrl.slice(comma + 1), "base64");
+    const buf = Buffer.from(dataUrl.slice(comma + 1), "base64");
+    if (buf.length < 32 || buf.length > 900_000) return null;
+    return buf;
   } catch {
     return null;
   }
@@ -238,7 +246,7 @@ export async function buildLeadReportPdf(
     .fillColor("#0f172a")
     .font("Helvetica-Bold")
     .fontSize(16)
-    .text(input.title, { width: contentW });
+    .text(toPdfSafeText(input.title), { width: contentW });
 
   doc.moveDown(0.35);
   doc
@@ -246,14 +254,16 @@ export async function buildLeadReportPdf(
     .font("Helvetica")
     .fontSize(9.5)
     .text(
-      [
-        `Prepared for: ${input.businessName}`,
-        formatWhen(input.generatedAt),
-        `Prepared by: ${agencyName}`,
-        input.subtitle || null,
-      ]
-        .filter(Boolean)
-        .join("  ·  "),
+      toPdfSafeText(
+        [
+          `Prepared for: ${input.businessName}`,
+          formatWhen(input.generatedAt),
+          `Prepared by: ${agencyName}`,
+          input.subtitle || null,
+        ]
+          .filter(Boolean)
+          .join("  ·  "),
+      ),
       { width: contentW },
     );
 
@@ -276,7 +286,18 @@ export async function buildLeadReportPdf(
   doc.moveDown(0.75);
 
   // Collapse runs of blank lines so we don't burn vertical space
-  const lines = input.content
+  // Strip characters PDFKit Helvetica can't encode (keeps Latin-1 safe text)
+  const safeContent = toPdfSafeText(
+    input.content
+      .replace(/\u0000/g, "")
+      .replace(/[\u2018\u2019]/g, "'")
+      .replace(/[\u201C\u201D]/g, '"')
+      .replace(/[\u2013\u2014]/g, "-")
+      .replace(/\u2026/g, "...")
+      .replace(/\u00A0/g, " "),
+  );
+
+  const lines = safeContent
     .replace(/\r\n/g, "\n")
     .split("\n")
     .map((l) => l.replace(/\t/g, "  "));

@@ -69,7 +69,7 @@ export const PLAN_FEATURES: Record<PlanId, PlanFeatures> = {
     mcp: false,
     sso: false,
     teams: false,
-    map: false,
+    map: true,
     crm: false,
     reports: false,
     workspaces: false,
@@ -143,6 +143,68 @@ export function planHasFeature(
   feature: keyof PlanFeatures,
 ) {
   return Boolean(featuresForPlan(plan)[feature]);
+}
+
+/** Lowest paid tier that includes a feature (for upgrade copy). */
+export function lowestPlanWithFeature(feature: keyof PlanFeatures): PlanId {
+  for (const id of PLAN_IDS) {
+    if (PLAN_FEATURES[id][feature]) return id;
+  }
+  return "enterprise";
+}
+
+export const PLAN_FEATURE_COPY: Record<
+  keyof PlanFeatures,
+  { label: string; blurb: string }
+> = {
+  map: {
+    label: "Lead Map",
+    blurb: "See your verified leads pinned on a live territory map.",
+  },
+  crm: {
+    label: "CRM webhooks",
+    blurb: "Push lead events to Zapier, Make, HubSpot, Slack, or GoHighLevel.",
+  },
+  api: {
+    label: "API · MCP · SSO",
+    blurb: "Call public search endpoints and connect Contractor Leads to your stack.",
+  },
+  mcp: {
+    label: "MCP access",
+    blurb: "Connect AI agents to your Contractor Leads workspace via MCP.",
+  },
+  sso: {
+    label: "SSO",
+    blurb: "Single sign-on for your agency team.",
+  },
+  teams: {
+    label: "Users & teams",
+    blurb: "Invite seats, assign roles, and share your credit pool across the team.",
+  },
+  reports: {
+    label: "Client Reports",
+    blurb: "Generate polished lead reports you can send to clients.",
+  },
+  workspaces: {
+    label: "Workspaces",
+    blurb: "Separate workspaces for agencies managing multiple brands.",
+  },
+};
+
+export function upgradeCopyForFeature(
+  feature: keyof PlanFeatures,
+  currentPlan?: string | null,
+) {
+  const meta = PLAN_FEATURE_COPY[feature];
+  const required = lowestPlanWithFeature(feature);
+  return {
+    feature,
+    featureLabel: meta.label,
+    description: meta.blurb,
+    requiredPlan: required,
+    requiredPlanLabel: planLabel(required),
+    currentPlanLabel: planLabel(currentPlan),
+  };
 }
 
 export function teamSeatLimit(plan: string | null | undefined) {

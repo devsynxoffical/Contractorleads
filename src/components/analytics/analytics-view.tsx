@@ -68,6 +68,13 @@ export function AnalyticsView() {
       <PageHeader
         title="Analytics"
         description="Search volume, lead quality, and CRM conversion across your workspace."
+        backHref="/dashboard"
+        backLabel="Back to dashboard"
+        crumbs={[
+          { label: "Home", href: "/home" },
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Analytics" },
+        ]}
         actions={
           <Link
             href="/dashboard"

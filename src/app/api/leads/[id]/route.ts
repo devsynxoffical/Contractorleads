@@ -2,12 +2,42 @@ import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { CREDIT_COSTS } from "@/lib/constants";
+import { parseLeadFrom, type AppLeadFrom } from "@/lib/nav-context";
 
-type LeadFrom = "all" | "hot" | "saved" | "digest";
-
-function parseFrom(raw: string | null): LeadFrom {
-  if (raw === "hot" || raw === "saved" || raw === "digest") return raw;
-  return "all";
+async function orderedIdsForFrom(userId: string, from: AppLeadFrom) {
+  if (from === "hot") {
+    const rows = await prisma.lead.findMany({
+      where: { qualityTier: "hot", search: { userId } },
+      orderBy: { leadScore: "desc" },
+      select: { id: true },
+      take: 200,
+    });
+    return rows.map((r) => r.id);
+  }
+  if (from === "saved" || from === "pipeline") {
+    const rows = await prisma.savedLead.findMany({
+      where: { userId },
+      orderBy: { updatedAt: "desc" },
+      select: { leadId: true },
+      take: 200,
+    });
+    return rows.map((r) => r.leadId);
+  }
+  if (from === "digest") {
+    const { buildMorningDigest } = await import(
+      "@/lib/services/morning-digest"
+    );
+    const digest = await buildMorningDigest(userId);
+    return digest.leads.map((l) => l.id);
+  }
+  // all | map | search — workspace lead list
+  const rows = await prisma.lead.findMany({
+    where: { search: { userId } },
+    orderBy: { createdAt: "desc" },
+    select: { id: true },
+    take: 200,
+  });
+  return rows.map((r) => r.id);
 }
 
 export async function GET(
@@ -20,7 +50,7 @@ export async function GET(
   }
 
   const { id } = await params;
-  const from = parseFrom(new URL(request.url).searchParams.get("from"));
+  const from = parseLeadFrom(new URL(request.url).searchParams.get("from"));
 
   const lead = await prisma.lead.findFirst({
     where: {
@@ -42,52 +72,20 @@ export async function GET(
     return NextResponse.json({ error: "Lead not found" }, { status: 404 });
   }
 
-  let orderedIds: string[] = [];
-
-  if (from === "hot") {
-    const rows = await prisma.lead.findMany({
-      where: { qualityTier: "hot", search: { userId: user.id } },
-      orderBy: { leadScore: "desc" },
-      select: { id: true },
-      take: 200,
-    });
-    orderedIds = rows.map((r) => r.id);
-  } else if (from === "saved") {
-    const rows = await prisma.savedLead.findMany({
-      where: { userId: user.id },
-      orderBy: { updatedAt: "desc" },
-      select: { leadId: true },
-      take: 200,
-    });
-    orderedIds = rows.map((r) => r.leadId);
-  } else if (from === "digest") {
-    const { buildMorningDigest } = await import("@/lib/services/morning-digest");
-    const digest = await buildMorningDigest(user.id);
-    orderedIds = digest.leads.map((l) => l.id);
-  } else {
-    const rows = await prisma.lead.findMany({
-      where: { search: { userId: user.id } },
-      orderBy: { createdAt: "desc" },
-      select: { id: true },
-      take: 200,
-    });
-    orderedIds = rows.map((r) => r.id);
-  }
+  let orderedIds = await orderedIdsForFrom(user.id, from);
 
   if (!orderedIds.includes(id) && from !== "all") {
-    const rows = await prisma.lead.findMany({
-      where: { search: { userId: user.id } },
-      orderBy: { createdAt: "desc" },
-      select: { id: true },
-      take: 200,
-    });
-    orderedIds = rows.map((r) => r.id);
+    orderedIds = await orderedIdsForFrom(user.id, "all");
   }
 
   const idx = orderedIds.indexOf(id);
-  const prevId = idx > 0 ? orderedIds[idx - 1] : null;
-  const nextId =
-    idx >= 0 && idx < orderedIds.length - 1 ? orderedIds[idx + 1] : null;
+  const navigation = {
+    from,
+    prevId: idx > 0 ? orderedIds[idx - 1] : null,
+    nextId: idx >= 0 && idx < orderedIds.length - 1 ? orderedIds[idx + 1] : null,
+    position: idx >= 0 ? idx + 1 : null,
+    total: orderedIds.length,
+  };
 
   return NextResponse.json({
     lead: { ...lead, unlocked: true },
@@ -97,12 +95,6 @@ export async function GET(
       creditsRemaining: user.creditsRemaining,
       note: "Viewing is free. Credits are charged only when exporting.",
     },
-    navigation: {
-      from,
-      prevId,
-      nextId,
-      position: idx >= 0 ? idx + 1 : null,
-      total: orderedIds.length,
-    },
+    navigation,
   });
 }

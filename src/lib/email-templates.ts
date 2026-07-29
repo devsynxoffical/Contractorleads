@@ -912,3 +912,45 @@ export function enterpriseBookingNotifyEmail(opts: {
     }),
   });
 }
+
+export function teamInviteEmailContent(opts: {
+  inviteeName?: string | null;
+  ownerName: string;
+  companyName?: string | null;
+  role: string;
+  acceptUrl: string;
+}) {
+  const workspace = opts.companyName?.trim() || opts.ownerName;
+  const roleLabel =
+    opts.role === "admin"
+      ? "Admin"
+      : opts.role === "viewer"
+        ? "Viewer"
+        : "Member";
+  const greeting = opts.inviteeName?.trim()
+    ? `Hi ${opts.inviteeName.trim()},`
+    : "Hi,";
+  const bodyHtml = `
+    <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:${EMAIL_BRAND.muted};">
+      ${esc(greeting)} <strong style="color:${EMAIL_BRAND.ink};">${esc(opts.ownerName)}</strong> invited you to the
+      <strong style="color:${EMAIL_BRAND.ink};">${esc(workspace)}</strong> workspace on Contractor Leads as
+      <strong style="color:${EMAIL_BRAND.ink};">${esc(roleLabel)}</strong>.
+    </p>
+    <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:${EMAIL_BRAND.muted};">
+      Accept the invite to confirm your seat. This link expires in 14 days.
+    </p>
+    <div style="margin:28px 0 8px;">
+      ${ctaButton("Accept invite", opts.acceptUrl)}
+    </div>`;
+
+  return renderEmailShell({
+    preheader: `${opts.ownerName} invited you to ${workspace} on Contractor Leads`,
+    heroTitle: "You're invited",
+    heroSubtitle: `Join ${workspace} as ${roleLabel}`,
+    bodyHtml,
+    secondaryHtml: `
+      <p style="margin:0;font-size:13px;line-height:1.5;color:${EMAIL_BRAND.muted};">
+        If you weren’t expecting this, you can ignore the email.
+      </p>`,
+  });
+}

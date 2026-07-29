@@ -3,20 +3,25 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
-  HiOutlineArrowLeft,
   HiOutlineArrowPath,
   HiOutlineClipboardDocument,
   HiOutlineCheck,
 } from "react-icons/hi2";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BackLink, PageCrumbs } from "@/components/layout/back-nav";
 import { PageHeader, LOGO_GRADIENT } from "@/components/layout/page-header";
 import { notifyCreditsChanged } from "@/lib/client/credits-sync";
+import {
+  LEAD_FROM_HREF,
+  LEAD_FROM_LABEL,
+  type AppLeadFrom,
+} from "@/lib/nav-context";
 import {
   QUALIFICATION_SCORE_KEYS,
   QUALIFICATION_SCORE_META,
   type QualificationScoreKey,
-} from "@/lib/services/qualification-detail-report";
+} from "@/lib/services/qualification-detail-report-meta";
 import { cn } from "@/lib/utils";
 
 type SavedReport = {
@@ -59,12 +64,14 @@ export function QualificationDetailView({
   scoreKey,
   backHref,
   basePath,
+  from = "all",
 }: {
   leadId: string;
   scoreKey: QualificationScoreKey;
   backHref: string;
   /** Prefix for sibling score links, e.g. `/leads/xyz/qualification` */
   basePath: string;
+  from?: AppLeadFrom;
 }) {
   const meta = QUALIFICATION_SCORE_META[scoreKey];
   const [lead, setLead] = useState<LeadSnapshot | null>(null);
@@ -138,7 +145,7 @@ export function QualificationDetailView({
           );
         } else {
           setStatusMsg(
-            "GPT detailed problem report ready — review before pitching the lead.",
+            "Detailed problem report ready — review before pitching the lead.",
           );
         }
         // Refresh lead scores from GET
@@ -177,21 +184,33 @@ export function QualificationDetailView({
 
   return (
     <div className="page-pad page-enter space-y-6">
-      <div>
-        <Link
+      <div className="space-y-2">
+        <BackLink
           href={backHref}
-          className="inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-muted transition hover:text-brand-700"
-        >
-          <HiOutlineArrowLeft className="h-4 w-4" />
-          Back to {lead?.businessName || "lead"}
-        </Link>
+          label={`Back to ${lead?.businessName || "lead"}`}
+        />
+        <PageCrumbs
+          items={[
+            { label: "Home", href: "/home" },
+            {
+              label: LEAD_FROM_LABEL[from].replace(/^Back to /i, ""),
+              href: LEAD_FROM_HREF[from],
+            },
+            {
+              label: lead?.businessName || "Lead",
+              href: backHref,
+            },
+            { label: meta.label },
+          ]}
+        />
       </div>
 
       <PageHeader
+        eyebrow={null}
         title={meta.label}
         description={
           lead
-            ? `Detailed GPT problem report for ${lead.businessName}${
+            ? `Detailed score report for ${lead.businessName}${
                 lead.website ? ` · ${lead.website.replace(/^https?:\/\//, "")}` : ""
               }`
             : meta.description
@@ -206,7 +225,7 @@ export function QualificationDetailView({
               onClick={() => void generate(true)}
             >
               <HiOutlineArrowPath className="mr-1.5 h-3.5 w-3.5" />
-              {report ? "Regenerate with GPT" : "Generate with GPT"}
+              {report ? "Regenerate report" : "Generate report"}
             </Button>
             <Button
               variant="secondary"
@@ -232,7 +251,7 @@ export function QualificationDetailView({
           return (
             <Link
               key={key}
-              href={`${basePath}/${key}`}
+              href={`${basePath}/${key}?from=${from}`}
               className={cn(
                 "rounded-full border px-3 py-1.5 text-[12px] font-semibold transition",
                 active
@@ -264,7 +283,7 @@ export function QualificationDetailView({
             </p>
             <p className="text-[11px] text-ink-faint">
               Uses {creditCost} credit to generate · regenerate re-crawls the
-              site and rewrites with GPT.
+              site and rewrites the report from live signals.
             </p>
             {lead?.outreachAngle ? (
               <div className="rounded-xl border border-brand-100 bg-brand-50/50 px-3 py-2 text-[12px] leading-relaxed text-ink">
@@ -308,7 +327,7 @@ export function QualificationDetailView({
             {loading || generating ? (
               <p className="text-[14px] text-ink-muted">
                 {generating
-                  ? "Crawling the site and writing a GPT detail report…"
+                  ? "Crawling the site and writing the detail report…"
                   : "Loading…"}
               </p>
             ) : report ? (
@@ -317,7 +336,7 @@ export function QualificationDetailView({
               </pre>
             ) : (
               <p className="text-[14px] text-ink-muted">
-                No detail report yet. Click Generate with GPT.
+                No detail report yet. Click Generate report.
               </p>
             )}
           </CardContent>

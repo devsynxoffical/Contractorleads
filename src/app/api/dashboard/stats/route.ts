@@ -5,8 +5,6 @@ import { startOfWeek, addDays, format } from "date-fns";
 import { processDueEnrollments } from "@/lib/email-automation";
 import { LEAD_STATUSES } from "@/lib/constants";
 import { normalizeCountryCode, resolveLeadCoords } from "@/lib/geo";
-import { planHasFeature } from "@/lib/plans";
-import { isSubscriptionEntitled } from "@/lib/plan-access";
 
 export async function GET() {
   const user = await getSessionUser();
@@ -291,21 +289,62 @@ export async function GET() {
       onboardingComplete: Boolean(freshUser?.onboardingComplete),
     },
     dailyLeads,
-    activities: activities.map((a) => ({
-      id: a.id,
-      type: a.type,
-      message: a.message,
-      createdAt: a.createdAt.toISOString(),
-      metadata: a.metadata
-        ? (() => {
-            try {
-              return JSON.parse(a.metadata) as Record<string, unknown>;
-            } catch {
-              return null;
-            }
-          })()
-        : null,
-    })),
+    activities: await (async () => {
+      const parsed = activities.map((a) => {
+        let metadata: Record<string, unknown> | null = null;
+        if (a.metadata) {
+          try {
+            metadata = JSON.parse(a.metadata) as Record<string, unknown>;
+          } catch {
+            metadata = null;
+          }
+        }
+        return {
+          id: a.id,
+          type: a.type,
+          message: a.message,
+          createdAt: a.createdAt.toISOString(),
+          metadata,
+        };
+      });
+
+      const missingLeadIds = [
+        ...new Set(
+          parsed
+            .map((a) =>
+              typeof a.metadata?.savedLeadId === "string" &&
+              typeof a.metadata?.leadId !== "string"
+                ? a.metadata.savedLeadId
+                : null,
+            )
+            .filter((id): id is string => Boolean(id)),
+        ),
+      ];
+
+      if (missingLeadIds.length) {
+        const rows = await prisma.savedLead.findMany({
+          where: { userId: user.id, id: { in: missingLeadIds } },
+          select: { id: true, leadId: true },
+        });
+        const bySaved = new Map(rows.map((r) => [r.id, r.leadId]));
+        for (const row of parsed) {
+          const savedId =
+            typeof row.metadata?.savedLeadId === "string"
+              ? row.metadata.savedLeadId
+              : null;
+          if (
+            savedId &&
+            row.metadata &&
+            typeof row.metadata.leadId !== "string"
+          ) {
+            const leadId = bySaved.get(savedId);
+            if (leadId) row.metadata = { ...row.metadata, leadId };
+          }
+        }
+      }
+
+      return parsed;
+    })(),
     recentSearches: recentSearches.map((s) => ({
       ...s,
       createdAt: s.createdAt.toISOString(),
@@ -336,12 +375,6 @@ export async function GET() {
       hotCount: qualitySample.filter((row) => row.qualityTier === "hot").length,
     },
     map: await (async () => {
-      const mapAllowed =
-        planHasFeature(user.plan, "map") &&
-        isSubscriptionEntitled(user.subscriptionStatus, user.plan);
-      if (!mapAllowed) {
-        return { allowed: false as const, leads: [], lockedCount: 0 };
-      }
       const rows = await prisma.lead.findMany({
         where: { search: { userId: user.id } },
         take: 200,

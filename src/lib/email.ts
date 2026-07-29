@@ -9,6 +9,7 @@ import {
   paymentReceiptEmailContent,
   purchaseConfirmationEmailContent,
   renderManagedTemplate,
+  teamInviteEmailContent,
   verificationEmailContent,
 } from "@/lib/email-templates";
 import { getEmailTemplate } from "@/lib/email-template-store";
@@ -801,6 +802,30 @@ export async function sendEnterpriseBookingEmails(opts: {
     clientError: clientRes.error,
     teamError: teamRes.error,
   };
+}
+
+export async function sendTeamInviteEmail(opts: {
+  to: string;
+  inviteeName?: string | null;
+  ownerName: string;
+  companyName?: string | null;
+  role: string;
+  acceptUrl: string;
+}) {
+  const content = teamInviteEmailContent({
+    inviteeName: opts.inviteeName,
+    ownerName: opts.ownerName,
+    companyName: opts.companyName,
+    role: opts.role,
+    acceptUrl: opts.acceptUrl,
+  });
+  return sendEmail({
+    to: opts.to,
+    subject: `${opts.ownerName} invited you to Contractor Leads`,
+    html: content.html,
+    text: content.text,
+    tags: ["team-invite"],
+  });
 }
 
 export type { EmailTemplateKey };

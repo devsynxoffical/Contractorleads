@@ -40,20 +40,27 @@ function SetupCard({
     <Link
       href={href}
       className={cn(
-        "group flex flex-col rounded-2xl border bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] transition hover:border-brand-200 hover:shadow-[var(--shadow-elevated)]",
-        ready ? "border-emerald-500/35" : "border-border",
+        "group flex h-full flex-col rounded-2xl border bg-[var(--surface)] p-5 shadow-[var(--shadow-soft)] transition hover:border-brand-200 hover:shadow-[var(--shadow-elevated)]",
+        ready ? "border-emerald-500/30" : "border-border",
       )}
     >
       <div className="flex items-start justify-between gap-3">
-        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-ink text-[var(--canvas)] dark:bg-brand-500 dark:text-white">
+        <span
+          className={cn(
+            "flex h-11 w-11 items-center justify-center rounded-xl ring-1",
+            ready
+              ? "bg-emerald-500/10 text-emerald-700 ring-emerald-500/20"
+              : "bg-brand-50 text-brand-700 ring-brand-200",
+          )}
+        >
           <Icon className="h-5 w-5" />
         </span>
         <span
           className={cn(
             "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide",
             ready
-              ? "bg-emerald-500/15 text-emerald-700 ring-1 ring-emerald-500/25 dark:text-emerald-300"
-              : "bg-amber-500/15 text-amber-800 ring-1 ring-amber-500/25 dark:text-amber-200",
+              ? "bg-emerald-500/15 text-emerald-700 ring-1 ring-emerald-500/25"
+              : "bg-amber-500/15 text-amber-800 ring-1 ring-amber-500/25",
           )}
         >
           {ready ? (
@@ -68,7 +75,7 @@ function SetupCard({
       <p className="mt-1.5 flex-1 text-[13px] leading-relaxed text-ink-muted">
         {body}
       </p>
-      <span className="mt-4 inline-flex items-center gap-1.5 text-[13px] font-semibold text-ink group-hover:gap-2">
+      <span className="mt-4 inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand-700 transition group-hover:gap-2">
         {cta}
         <HiOutlineArrowRight className="h-4 w-4" />
       </span>
@@ -126,6 +133,7 @@ export default function SetupHubPage() {
   const doneCount = [status.email, status.api, status.crm, status.profile].filter(
     Boolean,
   ).length;
+  const pct = (doneCount / 4) * 100;
 
   return (
     <SetupShell
@@ -133,26 +141,27 @@ export default function SetupHubPage() {
       description="Set up email, API access, and CRM sync on their own pages — not buried in Settings. Finish these once and your team can sell."
       statuses={statuses}
     >
-      <div className="rounded-2xl border border-border bg-ink p-5 text-[var(--canvas)] dark:bg-gradient-to-br dark:from-brand-700 dark:to-[#1a1228] dark:text-white sm:p-6">
-        <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[var(--canvas)]/70 dark:text-white/70">
-          Setup progress
-        </p>
-        <p className="mt-1 text-[28px] font-semibold tabular-nums">
-          {doneCount}
-          <span className="text-[16px] font-medium text-[var(--canvas)]/55 dark:text-white/55">
-            {" "}
-            / 4
-          </span>
-        </p>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--canvas)]/20 dark:bg-white/15">
+      <div className="rounded-2xl border border-border bg-[var(--surface)] p-5 shadow-[var(--shadow-soft)] sm:p-6">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-ink-muted">
+              Setup progress
+            </p>
+            <p className="mt-1 text-[28px] font-semibold tabular-nums text-ink">
+              {doneCount}
+              <span className="text-[16px] font-medium text-ink-muted"> / 4</span>
+            </p>
+          </div>
+          <p className="max-w-sm text-right text-[13px] text-ink-muted">
+            Recommended order: Email → API → CRM → Business profile.
+          </p>
+        </div>
+        <div className="mt-4 h-2 overflow-hidden rounded-full bg-brand-50 ring-1 ring-brand-100">
           <div
-            className="h-full rounded-full bg-emerald-400 transition-all"
-            style={{ width: `${(doneCount / 4) * 100}%` }}
+            className="h-full rounded-full bg-emerald-500 transition-all"
+            style={{ width: `${pct}%` }}
           />
         </div>
-        <p className="mt-3 text-[13px] text-[var(--canvas)]/75 dark:text-white/75">
-          Recommended order: Email → API → CRM → Business profile.
-        </p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">

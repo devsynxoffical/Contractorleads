@@ -146,6 +146,13 @@ export default function ReferralsPage() {
             ? `Earn ${data.commissionPercent}% cash commission when someone you refer purchases a paid plan. Withdraw to PayPal or bank — not credits.`
             : "The referral program is currently paused by an admin."
         }
+        backHref="/dashboard"
+        backLabel="Back to dashboard"
+        crumbs={[
+          { label: "Home", href: "/home" },
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Referrals" },
+        ]}
       />
 
       {error ? (

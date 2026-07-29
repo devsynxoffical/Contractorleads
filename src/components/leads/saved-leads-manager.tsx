@@ -8,7 +8,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
 import { EnrollEmailSequenceButton } from "@/components/leads/enroll-email-sequence-button";
-import { FilterChipRow } from "@/components/leads/filter-chip-row";
 import { cn } from "@/lib/utils";
 import { LEAD_STATUSES } from "@/lib/constants";
 import {
@@ -47,6 +46,38 @@ type SendResult = {
 };
 
 const VARS = ["businessName", "firstName", "city", "industry", "myName", "myCompany"];
+
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  children,
+  className,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <label
+      className={cn(
+        "flex min-w-0 flex-1 flex-col gap-1 text-[11px] font-medium text-ink-muted",
+        className,
+      )}
+    >
+      <span className="truncate">{label}</span>
+      <select
+        className="saas-input h-10 w-full min-w-0 text-[13px]"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        {children}
+      </select>
+    </label>
+  );
+}
 
 export function SavedLeadsManager({
   leads,
@@ -195,105 +226,124 @@ export function SavedLeadsManager({
   return (
     <div className="space-y-3">
       {leads.length > 0 ? (
-        <div className="space-y-4 rounded-xl border border-border bg-[var(--surface)] px-4 py-3">
-          <FilterChipRow
-            label="Saved"
-            options={LEAD_WHEN_FILTERS}
-            value={whenFilter}
-            onChange={(value) => {
-              setWhenFilter(value);
-              setSelected(new Set());
-            }}
-          />
-
-          <FilterChipRow
-            label="Quality tier"
-            options={LEAD_TIER_FILTERS}
-            value={tierFilter}
-            onChange={(value) => {
-              setTierFilter(value);
-              setSelected(new Set());
-            }}
-            tone="tier"
-          />
-
-          <FilterChipRow
-            label="Lead score"
-            options={LEAD_STRENGTH_FILTERS}
-            value={strengthFilter}
-            onChange={(value) => {
-              setStrengthFilter(value);
-              setSelected(new Set());
-            }}
-          />
-
-          <FilterChipRow
-            label="Pipeline status"
-            options={[
-              { value: "all", label: "All statuses" },
-              ...LEAD_STATUSES.map((s) => ({ value: s.value, label: s.label })),
-            ]}
-            value={statusFilter}
-            onChange={(value) => {
-              setStatusFilter(value);
-              setSelected(new Set());
-            }}
-          />
-
-          <FilterChipRow
-            label="Email"
-            options={[
-              { value: "all", label: "All leads" },
-              { value: "has", label: "Has email" },
-              { value: "missing", label: "No email" },
-            ]}
-            value={emailFilter}
-            onChange={(value) => {
-              setEmailFilter(value);
-              setSelected(new Set());
-            }}
-          />
-
-          {categories.length > 0 ? (
-            <label className="block text-[12px]">
-              <span className="font-medium text-ink-muted">Service / industry</span>
-              <select
-                className="saas-input mt-1"
-                value={industryFilter}
-                onChange={(e) => {
-                  setIndustryFilter(e.target.value);
+        <div className="space-y-3 rounded-xl border border-border bg-[var(--surface)] px-4 py-3">
+          <div className="flex flex-col gap-2 lg:flex-row lg:items-end">
+            <div className="grid min-w-0 flex-1 grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
+              <FilterSelect
+                label="Saved"
+                value={whenFilter}
+                onChange={(value) => {
+                  setWhenFilter(value);
                   setSelected(new Set());
                 }}
               >
-                <option value="all">All services ({leads.length})</option>
-                {categories.map((c) => {
-                  const count = leads.filter(
-                    (l) => l.lead.industry?.toLowerCase() === c.toLowerCase(),
-                  ).length;
-                  return (
-                    <option key={c} value={c}>
-                      {c} ({count})
-                    </option>
-                  );
-                })}
-              </select>
-            </label>
-          ) : null}
+                {LEAD_WHEN_FILTERS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </FilterSelect>
 
-          {filtersActive ? (
-            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
-              <p className="text-[12px] text-ink-muted">
-                Showing {filteredLeads.length} of {leads.length} saved lead
-                {leads.length === 1 ? "" : "s"}
-              </p>
+              <FilterSelect
+                label="Quality tier"
+                value={tierFilter}
+                onChange={(value) => {
+                  setTierFilter(value);
+                  setSelected(new Set());
+                }}
+              >
+                {LEAD_TIER_FILTERS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </FilterSelect>
+
+              <FilterSelect
+                label="Lead score"
+                value={strengthFilter}
+                onChange={(value) => {
+                  setStrengthFilter(value);
+                  setSelected(new Set());
+                }}
+              >
+                {LEAD_STRENGTH_FILTERS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </FilterSelect>
+
+              <FilterSelect
+                label="Pipeline status"
+                value={statusFilter}
+                onChange={(value) => {
+                  setStatusFilter(value);
+                  setSelected(new Set());
+                }}
+              >
+                <option value="all">All statuses</option>
+                {LEAD_STATUSES.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </FilterSelect>
+
+              <FilterSelect
+                label="Email"
+                value={emailFilter}
+                onChange={(value) => {
+                  setEmailFilter(value);
+                  setSelected(new Set());
+                }}
+              >
+                <option value="all">All leads</option>
+                <option value="has">Has email</option>
+                <option value="missing">No email</option>
+              </FilterSelect>
+
+              {categories.length > 0 ? (
+                <FilterSelect
+                  label="Service / industry"
+                  value={industryFilter}
+                  onChange={(value) => {
+                    setIndustryFilter(value);
+                    setSelected(new Set());
+                  }}
+                >
+                  <option value="all">All services ({leads.length})</option>
+                  {categories.map((c) => {
+                    const count = leads.filter(
+                      (l) =>
+                        l.lead.industry?.toLowerCase() === c.toLowerCase(),
+                    ).length;
+                    return (
+                      <option key={c} value={c}>
+                        {c} ({count})
+                      </option>
+                    );
+                  })}
+                </FilterSelect>
+              ) : null}
+            </div>
+
+            {filtersActive ? (
               <button
                 type="button"
                 onClick={clearFilters}
-                className="text-[12px] font-semibold text-brand-600 hover:underline"
+                className="h-10 shrink-0 self-stretch rounded-xl border border-border px-3 text-[12px] font-semibold text-brand-600 transition hover:bg-brand-50 lg:self-end"
               >
-                Clear filters
+                Clear
               </button>
-            </div>
+            ) : null}
+          </div>
+
+          {filtersActive ? (
+            <p className="text-[12px] text-ink-muted">
+              Showing {filteredLeads.length} of {leads.length} saved lead
+              {leads.length === 1 ? "" : "s"}
+            </p>
           ) : null}
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">

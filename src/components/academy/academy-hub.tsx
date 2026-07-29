@@ -111,6 +111,12 @@ export function AcademyHub() {
         eyebrow="Academy"
         title="Learn Contractor Leads"
         description="Guides, FAQs, and playbooks so your team can use the product without waiting on admin. Search anything — Lead Finder, email, credits, referrals, and more."
+        backHref="/home"
+        backLabel="Back to home"
+        crumbs={[
+          { label: "Home", href: "/home" },
+          { label: "Academy" },
+        ]}
         actions={
           <button
             type="button"

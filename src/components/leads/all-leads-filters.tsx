@@ -3,7 +3,6 @@
 import { useCallback, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { FilterChipRow } from "@/components/leads/filter-chip-row";
 import {
   LEAD_STRENGTH_FILTERS,
   LEAD_TIER_FILTERS,
@@ -19,6 +18,38 @@ const SORT_OPTIONS = [
 type Props = {
   categories: string[];
 };
+
+function FilterSelect({
+  label,
+  value,
+  onChange,
+  children,
+  className,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <label
+      className={cn(
+        "flex min-w-0 flex-1 flex-col gap-1 text-[11px] font-medium text-ink-muted",
+        className,
+      )}
+    >
+      <span className="truncate">{label}</span>
+      <select
+        className="saas-input h-10 w-full min-w-0 text-[13px]"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        {children}
+      </select>
+    </label>
+  );
+}
 
 export function AllLeadsFilters({ categories }: Props) {
   const router = useRouter();
@@ -60,7 +91,7 @@ export function AllLeadsFilters({ categories }: Props) {
   return (
     <div
       className={cn(
-        "mb-4 space-y-4 rounded-xl border border-border bg-white p-4 shadow-[var(--shadow-soft)]",
+        "mb-4 space-y-3 rounded-xl border border-border bg-white p-4 shadow-[var(--shadow-soft)]",
         pending && "opacity-80",
       )}
     >
@@ -87,35 +118,48 @@ export function AllLeadsFilters({ categories }: Props) {
         </button>
       </form>
 
-      <FilterChipRow
-        label="When found"
-        options={LEAD_WHEN_FILTERS}
-        value={when}
-        onChange={(value) => pushParams({ when: value })}
-      />
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-end">
+        <div className="grid min-w-0 flex-1 grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
+          <FilterSelect
+            label="When found"
+            value={when}
+            onChange={(value) => pushParams({ when: value })}
+          >
+            {LEAD_WHEN_FILTERS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </FilterSelect>
 
-      <FilterChipRow
-        label="Quality tier"
-        options={LEAD_TIER_FILTERS}
-        value={tier}
-        onChange={(value) => pushParams({ tier: value })}
-        tone="tier"
-      />
+          <FilterSelect
+            label="Quality tier"
+            value={tier}
+            onChange={(value) => pushParams({ tier: value })}
+          >
+            {LEAD_TIER_FILTERS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </FilterSelect>
 
-      <FilterChipRow
-        label="Lead score"
-        options={LEAD_STRENGTH_FILTERS}
-        value={strength}
-        onChange={(value) => pushParams({ strength: value })}
-      />
+          <FilterSelect
+            label="Lead score"
+            value={strength}
+            onChange={(value) => pushParams({ strength: value })}
+          >
+            {LEAD_STRENGTH_FILTERS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </FilterSelect>
 
-      <div className="grid gap-2 sm:grid-cols-2">
-        <label className="block text-[11px] font-medium text-ink-muted">
-          Service / industry
-          <select
-            className="saas-input mt-1"
+          <FilterSelect
+            label="Service / industry"
             value={category}
-            onChange={(e) => pushParams({ category: e.target.value })}
+            onChange={(value) => pushParams({ category: value })}
           >
             <option value="all">All services</option>
             {categories.map((c) => (
@@ -123,44 +167,34 @@ export function AllLeadsFilters({ categories }: Props) {
                 {c}
               </option>
             ))}
-          </select>
-        </label>
+          </FilterSelect>
 
-        <label className="block text-[11px] font-medium text-ink-muted">
-          Sort
-          <select
-            className="saas-input mt-1"
+          <FilterSelect
+            label="Sort"
             value={sort}
-            onChange={(e) => pushParams({ sort: e.target.value })}
+            onChange={(value) => pushParams({ sort: value })}
+            className="col-span-2 sm:col-span-1"
           >
             {SORT_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
               </option>
             ))}
-          </select>
-        </label>
-      </div>
+          </FilterSelect>
+        </div>
 
-      <p className="text-[11px] text-ink-faint">
-        Date filters use when you ran the search. Tier and score reflect AI
-        qualification on each lead.
-      </p>
-
-      {hasActive && (
-        <div className="flex items-center justify-between gap-2 border-t border-border pt-3">
-          <p className="text-[12px] text-ink-muted">Filters active</p>
+        {hasActive ? (
           <button
             type="button"
             onClick={() => {
               startTransition(() => router.push(pathname));
             }}
-            className="text-[12px] font-semibold text-brand-600 hover:underline"
+            className="h-10 shrink-0 self-stretch rounded-xl border border-border px-3 text-[12px] font-semibold text-brand-600 transition hover:bg-brand-50 lg:self-end"
           >
-            Clear all filters
+            Clear
           </button>
-        </div>
-      )}
+        ) : null}
+      </div>
     </div>
   );
 }

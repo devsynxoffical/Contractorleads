@@ -15,8 +15,20 @@ export default async function TeamPage() {
       <PageHeader
         title="Users and teams"
         description="Invite teammates, assign roles, and manage Agency seats. Available on Agency and Enterprise."
+        backHref="/dashboard"
+        backLabel="Back to dashboard"
+        crumbs={[
+          { label: "Home", href: "/home" },
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "Team" },
+        ]}
       />
-      <TeamMembersPanel plan={user.plan} locked={locked} />
+      <TeamMembersPanel
+        plan={user.plan}
+        locked={locked}
+        ownerEmail={user.email}
+        ownerName={user.name}
+      />
     </div>
   );
 }
