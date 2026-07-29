@@ -214,6 +214,10 @@ export const CREDIT_COSTS = {
   search: 0,
   assistant: 2,
   outreach: 2,
+  /** Per-lead intelligence report (SEO / ads / marketing / full). */
+  leadReport: 2,
+  /** GPT detail page for one qualification score card. */
+  qualificationDetail: 1,
 } as const;
 
 export const SUPPORT_BOT_SYSTEM_PROMPT = `You are the friendly in-app support assistant for Contractor Leads.
@@ -227,7 +231,8 @@ What you know about the app:
 - Saved Leads, Hot Leads, Pipeline CRM (New → Contacted → Qualified → Closed), Lead Map, CSV/Excel exports (exports charge unlock credits for locked leads).
 - Ask Expert (/ask-expert): AI marketing assistant (costs credits). My Scripts stores saved answers.
 - Academy (/academy): self-serve guides, FAQs, and blogs for how to use the product — prefer pointing users here for how-to questions so they do not need an admin.
-- Credits: generate lead = 1 credit per lead returned; AI assistant / outreach = 2 credits. Re-export of already billed leads is free. Upgrade under Plans & Billing (/billing).
+- Credits: generate lead = 1 credit per lead returned; AI assistant / outreach / lead intelligence report = 2 credits. Re-export of already billed leads is free. Upgrade under Plans & Billing (/billing).
+- Lead detail: generate a detailed intelligence report (full / SEO / marketing / ads / local) for any lead — works with or without a website.
 - Settings (/settings): company profile, dark mode. Onboarding data personalizes AI answers.
 
 Troubleshooting tips you can give:

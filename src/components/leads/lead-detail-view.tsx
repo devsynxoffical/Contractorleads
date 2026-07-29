@@ -10,7 +10,6 @@ import {
   HiOutlineArrowTopRightOnSquare,
   HiOutlineBookmark,
   HiOutlineCheckBadge,
-  HiOutlineChevronDown,
   HiOutlineEnvelope,
   HiOutlineExclamationTriangle,
   HiOutlineInformationCircle,
@@ -29,14 +28,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/input";
 import { LEAD_STATUSES } from "@/lib/constants";
 import { OutreachStudio } from "@/components/leads/outreach-studio";
+import { LeadIntelligenceReportCard } from "@/components/leads/lead-intelligence-report";
 import { EnrollEmailSequenceButton } from "@/components/leads/enroll-email-sequence-button";
 import { LeadSendEmailCard } from "@/components/leads/lead-send-email-card";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
 import { adminScrapeLeadIds } from "@/lib/client/search-session";
-import type {
-  QualificationBreakdown,
-  ScoreBreakdown,
-} from "@/lib/services/qualification-breakdown";
 import { useRouter } from "next/navigation";
 
 type Lead = {
@@ -146,104 +142,38 @@ function parseTeamMembers(raw: string | null): TeamMember[] {
   }
 }
 
-type QualificationScoreKey =
-  | "websiteQuality"
-  | "marketingOpportunity"
-  | "ppcOpportunity"
-  | "seoOpportunity";
-
-function statusDot(status: "pass" | "warn" | "fail" | "info") {
-  if (status === "pass") return "bg-emerald-500";
-  if (status === "warn") return "bg-amber-500";
-  if (status === "fail") return "bg-rose-500";
-  return "bg-slate-400";
-}
-
-function QualificationScoreBar({
-  scoreKey,
+function QualificationScoreCard({
+  href,
   label,
   value,
-  expanded,
-  loading,
-  breakdown,
-  onToggle,
+  hint,
 }: {
-  scoreKey: QualificationScoreKey;
+  href: string;
   label: string;
   value: number | null | undefined;
-  expanded: boolean;
-  loading: boolean;
-  breakdown: ScoreBreakdown | null;
-  onToggle: (key: QualificationScoreKey) => void;
+  hint: string;
 }) {
   const v = value ?? 0;
   return (
-    <div className="rounded-xl border border-border/70 bg-[#faf8fc]">
-      <button
-        type="button"
-        onClick={() => onToggle(scoreKey)}
-        className="flex w-full items-start gap-2 px-3 py-3 text-left transition hover:bg-brand-50/50"
-        aria-expanded={expanded}
-      >
-        <HiOutlineChevronDown
-          className={`mt-0.5 h-4 w-4 shrink-0 text-ink-faint transition ${
-            expanded ? "rotate-180" : ""
-          }`}
+    <Link
+      href={href}
+      className="block rounded-xl border border-border/70 bg-[#faf8fc] px-3 py-3 text-left transition hover:border-brand-200 hover:bg-brand-50/50"
+    >
+      <div className="mb-1.5 flex items-center justify-between gap-2 text-[12px]">
+        <span className="font-medium text-ink">{label}</span>
+        <span className="font-semibold tabular-nums text-ink">{v}</span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-[#f0ebf5]">
+        <div
+          className="h-full rounded-full transition-all"
+          style={{
+            width: `${Math.min(100, v)}%`,
+            background: LOGO_GRADIENT,
+          }}
         />
-        <div className="min-w-0 flex-1">
-          <div className="mb-1.5 flex items-center justify-between gap-2 text-[12px]">
-            <span className="font-medium text-ink">{label}</span>
-            <span className="font-semibold tabular-nums text-ink">{v}</span>
-          </div>
-          <div className="h-2 overflow-hidden rounded-full bg-[#f0ebf5]">
-            <div
-              className="h-full rounded-full transition-all"
-              style={{
-                width: `${Math.min(100, v)}%`,
-                background: LOGO_GRADIENT,
-              }}
-            />
-          </div>
-          <p className="mt-1.5 text-[11px] text-ink-faint">
-            Click for scoring basis
-          </p>
-        </div>
-      </button>
-      {expanded ? (
-        <div className="border-t border-border/70 px-3 py-3">
-          {loading ? (
-            <p className="text-[12px] text-ink-muted">Loading live audit details…</p>
-          ) : breakdown ? (
-            <div className="space-y-3">
-              <p className="text-[12px] leading-relaxed text-ink-muted">
-                {breakdown.headline}
-              </p>
-              <ul className="space-y-2">
-                {breakdown.signals.map((signal) => (
-                  <li
-                    key={`${signal.label}-${signal.detail}`}
-                    className="flex gap-2 text-[12px] leading-snug"
-                  >
-                    <span
-                      className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${statusDot(signal.status)}`}
-                      aria-hidden
-                    />
-                    <div>
-                      <p className="font-semibold text-ink">{signal.label}</p>
-                      <p className="text-ink-muted">{signal.detail}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : (
-            <p className="text-[12px] text-ink-muted">
-              Could not load scoring details. Try again in a moment.
-            </p>
-          )}
-        </div>
-      ) : null}
-    </div>
+      </div>
+      <p className="mt-1.5 text-[11px] text-brand-600">{hint}</p>
+    </Link>
   );
 }
 
@@ -434,11 +364,7 @@ export function LeadDetailView({
   const [adminEnriching, setAdminEnriching] = useState(false);
   const [adminDeleting, setAdminDeleting] = useState(false);
   const [adminMessage, setAdminMessage] = useState<string | null>(null);
-  const [qualificationExpanded, setQualificationExpanded] =
-    useState<QualificationScoreKey | null>(null);
-  const [qualificationBreakdown, setQualificationBreakdown] =
-    useState<QualificationBreakdown | null>(null);
-  const [qualificationLoading, setQualificationLoading] = useState(false);
+  const [qualificationRefreshing, setQualificationRefreshing] = useState(false);
 
   function mergeLead(updated: Lead) {
     setLead((prev) => ({
@@ -448,23 +374,58 @@ export function LeadDetailView({
     }));
   }
 
-  async function toggleQualificationScore(key: QualificationScoreKey) {
-    if (qualificationExpanded === key) {
-      setQualificationExpanded(null);
-      return;
-    }
-    setQualificationExpanded(key);
-    if (qualificationBreakdown) return;
-
-    setQualificationLoading(true);
+  async function refreshQualification() {
+    setQualificationRefreshing(true);
+    setAdminMessage(null);
     try {
-      const res = await fetch(`/api/leads/${leadId}/qualification-breakdown`);
-      const data = (await res.json()) as QualificationBreakdown & {
+      const res = await fetch(
+        `/api/leads/${leadId}/qualification-breakdown`,
+        { method: "POST" },
+      );
+      const data = (await res.json()) as {
         error?: string;
+        lead?: {
+          websiteQualityScore: number | null;
+          seoOpportunityScore: number | null;
+          marketingOpportunityScore: number | null;
+          ppcOpportunityScore: number | null;
+          outreachAngle: string | null;
+        };
+        measuredScores?: {
+          websiteQualityScore: number;
+          seoOpportunityScore: number;
+          marketingOpportunityScore: number;
+          ppcOpportunityScore: number;
+          outreachAngle: string;
+        } | null;
+        source?: string;
       };
-      if (res.ok) setQualificationBreakdown(data);
+      if (!res.ok) {
+        setAdminMessage(data.error || "Could not refresh site audit");
+        return;
+      }
+      if (lead) {
+        const scores = data.lead || data.measuredScores;
+        if (scores) {
+          setLead({
+            ...lead,
+            websiteQualityScore: scores.websiteQualityScore,
+            seoOpportunityScore: scores.seoOpportunityScore,
+            marketingOpportunityScore: scores.marketingOpportunityScore,
+            ppcOpportunityScore: scores.ppcOpportunityScore,
+            outreachAngle: scores.outreachAngle,
+          });
+        }
+      }
+      setAdminMessage(
+        data.source === "live_audit"
+          ? "Site audit refreshed from a live homepage crawl."
+          : "Site audit refreshed.",
+      );
+    } catch {
+      setAdminMessage("Could not refresh site audit");
     } finally {
-      setQualificationLoading(false);
+      setQualificationRefreshing(false);
     }
   }
 
@@ -545,9 +506,6 @@ export function LeadDetailView({
     setVerificationScore(null);
     setVerificationMessage(null);
     setPopup(null);
-    setQualificationExpanded(null);
-    setQualificationBreakdown(null);
-    setQualificationLoading(false);
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when lead or list scope changes
   }, [leadId, from, isAdmin]);
@@ -1422,12 +1380,25 @@ export function LeadDetailView({
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle>AI qualification engine</CardTitle>
-              <p className="text-[12px] text-ink-muted">
-                Website &amp; SEO scores come from a live homepage audit (title,
-                meta, schema, content, forms) — not guesses from review count.
-              </p>
+            <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+              <div>
+                <CardTitle>Website &amp; opportunity scores</CardTitle>
+                <p className="mt-1 text-[12px] text-ink-muted">
+                  Click any score for a GPT detailed problem report (what&apos;s
+                  wrong, why it matters, how to pitch). Refresh re-audits the
+                  live homepage.
+                </p>
+              </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                loading={qualificationRefreshing}
+                disabled={qualificationRefreshing || !lead.website}
+                onClick={() => void refreshQualification()}
+              >
+                <HiOutlineArrowPath className="mr-1.5 h-3.5 w-3.5" />
+                {lead.website ? "Refresh audit" : "No website"}
+              </Button>
             </CardHeader>
             <CardContent className="space-y-4">
               {lead.outreachAngle && (
@@ -1438,70 +1409,55 @@ export function LeadDetailView({
                   <p className="mt-1">{lead.outreachAngle}</p>
                 </div>
               )}
-              {qualificationBreakdown ? (
-                <p className="rounded-lg bg-[#faf8fc] px-3 py-2 text-[11px] text-ink-muted">
-                  Scoring source:{" "}
-                  <span className="font-semibold text-ink">
-                    {qualificationBreakdown.source === "live_audit"
-                      ? "Live homepage crawl"
-                      : "Google Places estimate (no live crawl)"}
-                  </span>
-                  {qualificationBreakdown.websiteUrl ? (
-                    <>
-                      {" "}
-                      ·{" "}
-                      <a
-                        href={qualificationBreakdown.websiteUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-medium text-brand-600 hover:underline"
-                      >
-                        {qualificationBreakdown.websiteUrl.replace(/^https?:\/\//, "")}
-                      </a>
-                    </>
-                  ) : null}
-                </p>
-              ) : null}
               <div className="grid gap-3 sm:grid-cols-2">
-                <QualificationScoreBar
-                  scoreKey="websiteQuality"
+                <QualificationScoreCard
+                  href={
+                    isAdmin
+                      ? `/admin/leads/${lead.id}/qualification/websiteQuality`
+                      : `/leads/${lead.id}/qualification/websiteQuality`
+                  }
                   label="Website quality"
                   value={lead.websiteQualityScore}
-                  expanded={qualificationExpanded === "websiteQuality"}
-                  loading={qualificationLoading}
-                  breakdown={qualificationBreakdown?.websiteQuality ?? null}
-                  onToggle={toggleQualificationScore}
+                  hint="Open detailed GPT report →"
                 />
-                <QualificationScoreBar
-                  scoreKey="marketingOpportunity"
+                <QualificationScoreCard
+                  href={
+                    isAdmin
+                      ? `/admin/leads/${lead.id}/qualification/marketingOpportunity`
+                      : `/leads/${lead.id}/qualification/marketingOpportunity`
+                  }
                   label="Marketing opportunity"
                   value={lead.marketingOpportunityScore}
-                  expanded={qualificationExpanded === "marketingOpportunity"}
-                  loading={qualificationLoading}
-                  breakdown={qualificationBreakdown?.marketingOpportunity ?? null}
-                  onToggle={toggleQualificationScore}
+                  hint="Open detailed GPT report →"
                 />
-                <QualificationScoreBar
-                  scoreKey="ppcOpportunity"
+                <QualificationScoreCard
+                  href={
+                    isAdmin
+                      ? `/admin/leads/${lead.id}/qualification/ppcOpportunity`
+                      : `/leads/${lead.id}/qualification/ppcOpportunity`
+                  }
                   label="PPC opportunity"
                   value={lead.ppcOpportunityScore}
-                  expanded={qualificationExpanded === "ppcOpportunity"}
-                  loading={qualificationLoading}
-                  breakdown={qualificationBreakdown?.ppcOpportunity ?? null}
-                  onToggle={toggleQualificationScore}
+                  hint="Open detailed GPT report →"
                 />
-                <QualificationScoreBar
-                  scoreKey="seoOpportunity"
+                <QualificationScoreCard
+                  href={
+                    isAdmin
+                      ? `/admin/leads/${lead.id}/qualification/seoOpportunity`
+                      : `/leads/${lead.id}/qualification/seoOpportunity`
+                  }
                   label="SEO opportunity"
                   value={lead.seoOpportunityScore}
-                  expanded={qualificationExpanded === "seoOpportunity"}
-                  loading={qualificationLoading}
-                  breakdown={qualificationBreakdown?.seoOpportunity ?? null}
-                  onToggle={toggleQualificationScore}
+                  hint="Open detailed GPT report →"
                 />
               </div>
             </CardContent>
           </Card>
+
+          <LeadIntelligenceReportCard
+            leadId={lead.id}
+            businessName={lead.businessName}
+          />
 
           <OutreachStudio
             leadId={lead.id}

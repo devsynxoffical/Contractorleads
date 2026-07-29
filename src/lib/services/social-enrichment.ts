@@ -69,7 +69,9 @@ export async function enrichLeadSocial(lead: LeadRecord) {
     matchYelpBusiness(lead.businessName, location),
     matchHouzzBusiness(lead.businessName, location),
     matchNextdoorBusiness(lead.businessName, location),
-    lead.website ? auditWebsite(lead.website) : Promise.resolve(emptyWebsiteAudit()),
+    lead.website
+      ? auditWebsite(lead.website, { timeoutMs: 12000 })
+      : Promise.resolve(emptyWebsiteAudit()),
   ]);
 
   const companyLinkedIn =

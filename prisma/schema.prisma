@@ -38,6 +38,12 @@ model User {
   productTourCompleted Boolean @default(false)
   darkMode            Boolean  @default(false)
   companyName         String?
+  /// Agency branding for client-facing reports / PDFs
+  companyLogoData     String?  // data URL (image/png|jpeg|webp), compressed
+  companyWebsite      String?
+  companyTagline      String?
+  companyAddress      String?
+  reportAccentColor   String?  // hex e.g. #3D1078
   /// Agency owner contact (managed from admin + settings)
   ownerName           String?
   ownerEmail          String?

@@ -26,11 +26,25 @@ type Script = {
 };
 
 function typeLabel(type: string) {
+  if (type.startsWith("lead_intelligence_report")) {
+    const suffix = type.includes(":") ? type.split(":").pop() : "full";
+    const labels: Record<string, string> = {
+      full: "Full intelligence report",
+      seo: "SEO & website report",
+      marketing: "Marketing report",
+      ads: "Ads & PPC report",
+      local: "Local presence report",
+    };
+    return labels[suffix || "full"] || "Lead intelligence report";
+  }
+  if (type === "seo_website_report") return "AI website + SEO report";
   return type.replace(/_/g, " ");
 }
 
 function typeTone(type: string) {
   const t = type.toLowerCase();
+  if (t.includes("intelligence") || t.includes("seo_website") || t.includes("report"))
+    return "bg-amber-50 text-amber-900 ring-amber-100";
   if (t.includes("sms")) return "bg-emerald-50 text-emerald-800 ring-emerald-100";
   if (t.includes("email")) return "bg-sky-50 text-sky-800 ring-sky-100";
   if (t.includes("call") || t.includes("script"))

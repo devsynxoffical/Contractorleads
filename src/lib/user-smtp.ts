@@ -417,6 +417,11 @@ async function sendViaUserResend(
     to: string;
     subject: string;
     text: string;
+    attachments?: Array<{
+      filename: string;
+      content: Buffer;
+      contentType?: string;
+    }>;
   },
 ) {
   const apiKey = sender.resendApiKey?.trim();
@@ -433,6 +438,7 @@ async function sendViaUserResend(
     subject: opts.subject,
     text: opts.text,
     tags: ["lead-email"],
+    attachments: opts.attachments,
   });
   if (!sent.ok) {
     throw new Error(sent.error || "Resend could not send this email");
@@ -456,6 +462,11 @@ async function sendViaSmtpDirect(
     replyTo?: string;
     inReplyTo?: string;
     references?: string;
+    attachments?: Array<{
+      filename: string;
+      content: Buffer;
+      contentType?: string;
+    }>;
   },
 ) {
   const attempts: SmtpPayload[] = [cfg];
@@ -468,7 +479,14 @@ async function sendViaSmtpDirect(
   for (const attempt of attempts) {
     try {
       const transport = createSmtpTransport(attempt);
-      const info = await transport.sendMail(mail);
+      const info = await transport.sendMail({
+        ...mail,
+        attachments: mail.attachments?.map((a) => ({
+          filename: a.filename,
+          content: a.content,
+          contentType: a.contentType,
+        })),
+      });
       return {
         messageId: typeof info.messageId === "string" ? info.messageId : null,
         smtpAccountId: cfg.id ?? null,
@@ -496,6 +514,11 @@ export async function sendOutboundEmail(opts: {
   replyTo?: string;
   inReplyTo?: string;
   references?: string;
+  attachments?: Array<{
+    filename: string;
+    content: Buffer;
+    contentType?: string;
+  }>;
 }) {
   const sender = await getUserSenderConfig(opts.userId, opts.accountId);
   if (!sender) {
@@ -528,6 +551,7 @@ export async function sendOutboundEmail(opts: {
       replyTo: opts.replyTo,
       inReplyTo: opts.inReplyTo,
       references: opts.references,
+      attachments: opts.attachments,
     });
   } catch (lastErr) {
     if (sender.resendApiKey) {

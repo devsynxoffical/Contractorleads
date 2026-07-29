@@ -3,6 +3,12 @@ import { logActivity } from "@/lib/credits";
 import { dispatchCrmWebhook } from "@/lib/crm-webhook";
 import { sendOutboundEmail, formatSmtpError } from "@/lib/user-smtp";
 import { findOwnedLead } from "@/lib/lead-ownership";
+import { getAgencyReportBranding } from "@/lib/agency-branding";
+import { LEAD_REPORT_SCRIPT_TYPE } from "@/lib/services/lead-intelligence-report";
+import {
+  buildLeadReportPdf,
+  reportPdfFilename,
+} from "@/lib/services/lead-report-pdf";
 
 /**
  * Send a one-off email to a lead from the agency SMTP mailbox.
@@ -17,6 +23,8 @@ export async function sendLeadEmail(opts: {
   /** When replying to an inbound message */
   inReplyToMessageId?: string | null;
   references?: string | null;
+  /** Attach a saved lead intelligence report as PDF */
+  attachReportId?: string | null;
 }) {
   const subject = opts.subject.trim();
   const body = opts.body.trim();
@@ -40,6 +48,40 @@ export async function sendLeadEmail(opts: {
     });
   }
 
+  const attachments: Array<{
+    filename: string;
+    content: Buffer;
+    contentType?: string;
+  }> = [];
+
+  if (opts.attachReportId) {
+    const script = await prisma.script.findFirst({
+      where: {
+        id: opts.attachReportId,
+        userId: opts.userId,
+        relatedLeadId: opts.leadId,
+        type: { startsWith: LEAD_REPORT_SCRIPT_TYPE },
+      },
+    });
+    if (!script) {
+      throw new Error("Report not found to attach");
+    }
+    const branding = await getAgencyReportBranding(opts.userId);
+    const pdf = await buildLeadReportPdf({
+      title: script.title || `Intelligence report — ${lead.businessName}`,
+      businessName: lead.businessName,
+      content: script.content,
+      generatedAt: script.createdAt,
+      agencyName: branding?.companyName || branding?.name || null,
+      branding,
+    });
+    attachments.push({
+      filename: reportPdfFilename(lead.businessName, script.title),
+      content: pdf,
+      contentType: "application/pdf",
+    });
+  }
+
   try {
     const sent = await sendOutboundEmail({
       userId: opts.userId,
@@ -49,6 +91,7 @@ export async function sendLeadEmail(opts: {
       accountId: opts.smtpAccountId,
       inReplyTo: opts.inReplyToMessageId || undefined,
       references: opts.references || opts.inReplyToMessageId || undefined,
+      attachments: attachments.length ? attachments : undefined,
     });
 
     const emailRow = await prisma.leadEmail.create({
@@ -61,7 +104,9 @@ export async function sendLeadEmail(opts: {
         fromEmail: sent.fromEmail,
         toEmail: to,
         subject,
-        body,
+        body: attachments.length
+          ? `${body}\n\n[Attached: ${attachments.map((a) => a.filename).join(", ")}]`
+          : body,
         status: "sent",
         messageId: sent.messageId,
         inReplyTo: opts.inReplyToMessageId || null,
@@ -95,7 +140,9 @@ export async function sendLeadEmail(opts: {
     await logActivity(
       opts.userId,
       "email_sent",
-      `Emailed ${lead.businessName} <${to}>`,
+      `Emailed ${lead.businessName} <${to}>${
+        attachments.length ? " with report PDF" : ""
+      }`,
       { leadId: lead.id, emailId: emailRow.id, subject },
     );
 
@@ -103,6 +150,7 @@ export async function sendLeadEmail(opts: {
       email: emailRow,
       savedLeadId: saved.id,
       status: saved.status === "new" ? "contacted" : saved.status,
+      attachedReport: Boolean(attachments.length),
     };
   } catch (e) {
     const msg = formatSmtpError(e);

@@ -1,0 +1,61 @@
+import { NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
+import { findAccessibleLead } from "@/lib/lead-ownership";
+import { prisma } from "@/lib/prisma";
+import { getAgencyReportBranding } from "@/lib/agency-branding";
+import { LEAD_REPORT_SCRIPT_TYPE } from "@/lib/services/lead-intelligence-report";
+import {
+  buildLeadReportPdf,
+  reportPdfFilename,
+} from "@/lib/services/lead-report-pdf";
+
+export const runtime = "nodejs";
+
+type Params = { params: Promise<{ id: string; scriptId: string }> };
+
+export async function GET(_request: Request, { params }: Params) {
+  const user = await getSessionUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id: leadId, scriptId } = await params;
+  const lead = await findAccessibleLead(user, leadId);
+  if (!lead) {
+    return NextResponse.json({ error: "Lead not found" }, { status: 404 });
+  }
+
+  const script = await prisma.script.findFirst({
+    where: {
+      id: scriptId,
+      userId: user.id,
+      relatedLeadId: leadId,
+      type: { startsWith: LEAD_REPORT_SCRIPT_TYPE },
+    },
+  });
+  if (!script) {
+    return NextResponse.json({ error: "Report not found" }, { status: 404 });
+  }
+
+  const branding = await getAgencyReportBranding(user.id);
+
+  const pdf = await buildLeadReportPdf({
+    title: script.title || `Intelligence report — ${lead.businessName}`,
+    businessName: lead.businessName,
+    content: script.content,
+    generatedAt: script.createdAt,
+    agencyName: branding?.companyName || user.companyName || user.name || null,
+    branding,
+  });
+
+  const filename = reportPdfFilename(lead.businessName, script.title);
+
+  return new NextResponse(new Uint8Array(pdf), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Cache-Control": "private, no-store",
+    },
+  });
+}

@@ -11,6 +11,12 @@ export type SessionUser = {
   productTourCompleted?: boolean;
   darkMode: boolean;
   companyName: string | null;
+  companyWebsite?: string | null;
+  companyTagline?: string | null;
+  companyAddress?: string | null;
+  reportAccentColor?: string | null;
+  /** True when a logo is saved (actual bytes loaded only for PDF generation). */
+  hasCompanyLogo?: boolean;
   ownerName: string | null;
   ownerEmail: string | null;
   ownerPhone: string | null;

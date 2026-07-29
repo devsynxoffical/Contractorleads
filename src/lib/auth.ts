@@ -55,6 +55,11 @@ function toSessionUser(
     productTourCompleted?: boolean;
     darkMode: boolean;
     companyName: string | null;
+    companyWebsite?: string | null;
+    companyTagline?: string | null;
+    companyAddress?: string | null;
+    reportAccentColor?: string | null;
+    companyLogoData?: string | null;
     ownerName?: string | null;
     ownerEmail?: string | null;
     ownerPhone?: string | null;
@@ -81,6 +86,11 @@ function toSessionUser(
     productTourCompleted: user.productTourCompleted ?? false,
     darkMode: user.darkMode,
     companyName: user.companyName,
+    companyWebsite: user.companyWebsite ?? null,
+    companyTagline: user.companyTagline ?? null,
+    companyAddress: user.companyAddress ?? null,
+    reportAccentColor: user.reportAccentColor ?? null,
+    hasCompanyLogo: Boolean(user.companyLogoData?.trim()),
     ownerName: user.ownerName ?? null,
     ownerEmail: user.ownerEmail ?? null,
     ownerPhone: user.ownerPhone ?? null,

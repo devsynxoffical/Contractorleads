@@ -8,7 +8,7 @@ import {
 } from "./website-people";
 import { searchFacebookPage } from "./facebook";
 import { scrapeWebsiteSocialPack } from "./website-social-pack";
-import { emptyWebsiteAudit } from "./website-audit";
+import { auditWebsite, emptyWebsiteAudit } from "./website-audit";
 import { matchYelpBusiness } from "./yelp";
 import { mapPool } from "@/lib/utils/async-pool";
 import type { PlaceResult } from "./google-places";
@@ -230,9 +230,24 @@ async function enrichAndPersistPlace(opts: {
   const { discoverSocialProfiles } = await import("./web-search");
 
   // Homepage-first scrape (skips extra pages when already complete)
-  const pack = website
-    ? await withTimeout(scrapeWebsiteSocialPack(website), 4500, emptyPack)
-    : emptyPack;
+  let packTimedOut = false;
+  let pack = website
+    ? await withTimeout(scrapeWebsiteSocialPack(website), 8000, null)
+    : null;
+  if (website && !pack) {
+    packTimedOut = true;
+    // Focused homepage audit so we don't invent "dead site" scores on timeout
+    const focusedAudit = await withTimeout(
+      auditWebsite(website, { timeoutMs: 10000 }),
+      11000,
+      emptyWebsiteAudit(),
+    );
+    pack = {
+      ...emptyPack,
+      audit: focusedAudit,
+    };
+  }
+  if (!pack) pack = emptyPack;
 
   const packHasLi = Boolean(pack.linkedinCompany || pack.linkedinOwner);
   const packHasSocial = Boolean(
@@ -299,6 +314,9 @@ async function enrichAndPersistPlace(opts: {
         preferRules,
         timeoutMs: preferRules ? 1 : 8000,
         websiteAudit: pack.audit,
+        // Timeout without a confirmed HTTP failure → don't claim the site is dead
+        treatUnreachableAsPending:
+          packTimedOut && !pack.audit.reachable,
       }),
       !(pack.facebook || fromWeb.facebook)
         ? withTimeout(searchFacebookPage(place.name), 2500, null)

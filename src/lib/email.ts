@@ -197,6 +197,11 @@ export async function sendUserResendEmail(params: {
   text: string;
   replyTo?: string;
   tags?: string[];
+  attachments?: Array<{
+    filename: string;
+    content: Buffer | string;
+    contentType?: string;
+  }>;
 }): Promise<{ ok: boolean; messageId?: string; error?: string }> {
   const email = params.fromEmail.trim();
   if (!email) {
@@ -221,6 +226,16 @@ export async function sendUserResendEmail(params: {
       reply_to: params.replyTo,
       tags: params.tags?.map((name) => ({ name })),
     };
+    if (params.attachments?.length) {
+      payload.attachments = params.attachments.map((a) => ({
+        filename: a.filename,
+        content:
+          typeof a.content === "string"
+            ? a.content
+            : a.content.toString("base64"),
+        content_type: a.contentType,
+      }));
+    }
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -228,7 +243,7 @@ export async function sendUserResendEmail(params: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(30000),
     });
     if (!res.ok) {
       const body = await res.text();

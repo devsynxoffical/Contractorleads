@@ -24,6 +24,13 @@ type LeadMail = {
   createdAt: string;
 };
 
+type LeadReportOption = {
+  id: string;
+  title: string | null;
+  type: string;
+  createdAt: string;
+};
+
 export function LeadSendEmailCard({
   leadId,
   leadEmail,
@@ -39,10 +46,12 @@ export function LeadSendEmailCard({
 }) {
   const [accounts, setAccounts] = useState<SmtpAccount[]>([]);
   const [emails, setEmails] = useState<LeadMail[]>([]);
+  const [reports, setReports] = useState<LeadReportOption[]>([]);
   const [smtpAccountId, setSmtpAccountId] = useState("");
+  const [attachReportId, setAttachReportId] = useState("");
   const [subject, setSubject] = useState(`Quick intro — ${businessName}`);
   const [body, setBody] = useState(
-    `Hi ${ownerName || "there"},\n\nI came across ${businessName} and thought we might be able to help with more booked jobs.\n\nOpen to a quick chat?\n`,
+    `Hi ${ownerName || "there"},\n\nI came across ${businessName} and thought we might be able to help with more booked jobs.\n\nI've attached a short opportunity report covering website, SEO, ads, and local presence — happy to walk through it on a quick call.\n\nOpen to a chat this week?\n`,
   );
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -53,6 +62,12 @@ export function LeadSendEmailCard({
     if (!res.ok) return;
     setEmails(data.emails ?? []);
     setAccounts(data.accounts ?? []);
+    const reportList = (data.reports as LeadReportOption[] | undefined) ?? [];
+    setReports(reportList);
+    setAttachReportId((prev) => {
+      if (prev && reportList.some((r) => r.id === prev)) return prev;
+      return reportList[0]?.id ?? "";
+    });
     const def =
       (data.accounts as SmtpAccount[] | undefined)?.find((a) => a.isDefault) ||
       data.accounts?.[0];
@@ -84,6 +99,7 @@ export function LeadSendEmailCard({
         subject,
         body,
         smtpAccountId: smtpAccountId || undefined,
+        attachReportId: attachReportId || undefined,
       }),
     });
     const data = await res.json();
@@ -92,7 +108,11 @@ export function LeadSendEmailCard({
       setMsg(data.error || "Send failed");
       return;
     }
-    setMsg("Email sent. Pipeline moved to Contacted if it was New.");
+    setMsg(
+      data.attachedReport
+        ? "Email sent with report PDF attached. Pipeline moved to Contacted if it was New."
+        : "Email sent. Pipeline moved to Contacted if it was New.",
+    );
     onSent?.(data.status || "contacted");
     await load();
   }
@@ -117,7 +137,9 @@ export function LeadSendEmailCard({
       <CardHeader>
         <CardTitle>Email lead</CardTitle>
         <p className="text-[12px] text-ink-muted">
-          Send from your SMTP mailbox to <span className="font-medium text-ink">{leadEmail}</span>
+          Send from your mailbox to{" "}
+          <span className="font-medium text-ink">{leadEmail}</span>. Optionally
+          attach a generated intelligence report as PDF.
         </p>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -144,7 +166,7 @@ export function LeadSendEmailCard({
           </label>
         ) : (
           <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
-            Add an SMTP mailbox in Settings → Email automation first.
+            Add a sender in Setup → Email first.
           </p>
         )}
         <div className="space-y-1.5">
@@ -159,12 +181,35 @@ export function LeadSendEmailCard({
             onChange={(e) => setBody(e.target.value)}
           />
         </div>
+        <label className="block text-[12px]">
+          <span className="font-medium text-ink-muted">
+            Attach intelligence report (PDF)
+          </span>
+          <select
+            className="saas-input mt-1"
+            value={attachReportId}
+            onChange={(e) => setAttachReportId(e.target.value)}
+          >
+            <option value="">No attachment</option>
+            {reports.map((r) => (
+              <option key={r.id} value={r.id}>
+                {(r.title || "Lead report") +
+                  ` · ${new Date(r.createdAt).toLocaleDateString()}`}
+              </option>
+            ))}
+          </select>
+          <span className="mt-1 block text-[11px] text-ink-muted">
+            {reports.length
+              ? "PDF is built from the saved report — edit it in Lead intelligence report first if anything needs fixing."
+              : "Generate & edit a report in Lead intelligence report first, then attach it here."}
+          </span>
+        </label>
         <Button
           onClick={send}
           disabled={busy || !accounts.length || !subject.trim() || !body.trim()}
           loading={busy}
         >
-          Send email
+          {attachReportId ? "Send email + PDF report" : "Send email"}
         </Button>
 
         {emails.length > 0 && (

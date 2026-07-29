@@ -4,7 +4,7 @@ import { z } from "zod";
 import { getOpenAIApiKey } from "@/lib/openai-config";
 import type { PlaceResult } from "./google-places";
 import type { WebsiteAudit } from "./website-audit";
-import { emptyWebsiteAudit } from "./website-audit";
+import { emptyWebsiteAudit, pendingWebsiteAudit } from "./website-audit";
 
 const qualificationSchema = z.object({
   serviceCategory: z.string(),
@@ -157,6 +157,8 @@ export function scoreLeadFromStoredFields(lead: {
 /**
  * Rules-only base score from Google Places signals (before enrichment).
  * Intentionally capped well below 100 — completeness finalizes the score.
+ * Website/SEO/marketing/PPC are NOT invented from review count — those come
+ * from a live homepage audit (or honest pending/no-site defaults).
  */
 function ruleBasedQualification(
   place: PlaceResult,
@@ -174,23 +176,32 @@ function ruleBasedQualification(
     Math.min(70, Math.max(18, ratingPts + reviewPts + websitePts)),
   );
 
-  const websiteScore = hasWebsite ? 55 : 25;
-  const marketingScore = Math.min(95, 40 + reviews * 0.4 + rating * 7);
-  const ppcScore = hasWebsite ? Math.min(90, 50 + (5 - rating) * 10) : 70;
-  const seoScore = hasWebsite
-    ? Math.min(85, 35 + reviews * 0.25)
-    : Math.min(90, 60 + reviews * 0.15);
+  if (!hasWebsite) {
+    const empty = emptyWebsiteAudit();
+    return {
+      serviceCategory: industry,
+      revenueRangeEstimate: null,
+      websiteQualityScore: empty.websiteQualityScore,
+      marketingOpportunityScore: empty.marketingOpportunityScore,
+      ppcOpportunityScore: empty.ppcOpportunityScore,
+      seoOpportunityScore: empty.seoOpportunityScore,
+      outreachAngle: empty.outreachAngle,
+      leadScore,
+      qualityTier: tierFromScore(leadScore),
+      source: "rules",
+    };
+  }
 
+  // URL exists but no live audit yet — neutral band (not review-inflated)
+  const pending = pendingWebsiteAudit();
   return {
     serviceCategory: industry,
     revenueRangeEstimate: null,
-    websiteQualityScore: websiteScore,
-    marketingOpportunityScore: Math.round(marketingScore),
-    ppcOpportunityScore: Math.round(ppcScore),
-    seoOpportunityScore: Math.round(seoScore),
-    outreachAngle: hasWebsite
-      ? "Position paid traffic to complement their existing web presence and fill service-area gaps."
-      : "Lead with a no-website angle — they are likely losing local search demand to competitors.",
+    websiteQualityScore: pending.websiteQualityScore,
+    marketingOpportunityScore: pending.marketingOpportunityScore,
+    ppcOpportunityScore: pending.ppcOpportunityScore,
+    seoOpportunityScore: pending.seoOpportunityScore,
+    outreachAngle: pending.outreachAngle,
     leadScore,
     qualityTier: tierFromScore(leadScore),
     source: "rules",
@@ -202,6 +213,7 @@ export function applyLiveWebsiteAudit(
   base: QualificationResult,
   audit: WebsiteAudit | null | undefined,
   hasWebsite: boolean,
+  opts?: { treatUnreachableAsPending?: boolean },
 ): QualificationResult {
   if (!hasWebsite) {
     const empty = emptyWebsiteAudit();
@@ -214,17 +226,45 @@ export function applyLiveWebsiteAudit(
       outreachAngle: empty.outreachAngle,
     };
   }
-  if (!audit?.reachable) {
+
+  if (!audit) {
+    const pending = pendingWebsiteAudit();
     return {
       ...base,
-      websiteQualityScore: 22,
-      seoOpportunityScore: 86,
-      marketingOpportunityScore: Math.max(base.marketingOpportunityScore, 78),
-      ppcOpportunityScore: Math.max(base.ppcOpportunityScore, 72),
-      outreachAngle:
-        "Website URL is listed but the live page did not load — pitch a rebuild or hosting fix before ads.",
+      websiteQualityScore: pending.websiteQualityScore,
+      seoOpportunityScore: pending.seoOpportunityScore,
+      marketingOpportunityScore: pending.marketingOpportunityScore,
+      ppcOpportunityScore: pending.ppcOpportunityScore,
+      outreachAngle: pending.outreachAngle,
     };
   }
+
+  if (!audit.reachable) {
+    // Timeout / skip → pending (don't pretend the site is dead).
+    // Confirmed fetch failure (empty audit with unreachable) → real rebuild pitch.
+    if (opts?.treatUnreachableAsPending) {
+      const pending = pendingWebsiteAudit();
+      return {
+        ...base,
+        websiteQualityScore: pending.websiteQualityScore,
+        seoOpportunityScore: pending.seoOpportunityScore,
+        marketingOpportunityScore: pending.marketingOpportunityScore,
+        ppcOpportunityScore: pending.ppcOpportunityScore,
+        outreachAngle: pending.outreachAngle,
+      };
+    }
+    const empty = emptyWebsiteAudit();
+    return {
+      ...base,
+      websiteQualityScore: empty.websiteQualityScore,
+      seoOpportunityScore: empty.seoOpportunityScore,
+      marketingOpportunityScore: empty.marketingOpportunityScore,
+      ppcOpportunityScore: empty.ppcOpportunityScore,
+      outreachAngle:
+        "Website URL is listed but the live page did not load — pitch hosting fix, rebuild, or GBP-first acquisition before ads.",
+    };
+  }
+
   return {
     ...base,
     websiteQualityScore: audit.websiteQualityScore,
@@ -244,10 +284,14 @@ export async function qualifyLead(
     timeoutMs?: number;
     /** Live homepage audit — drives website/SEO opportunity scores. */
     websiteAudit?: WebsiteAudit | null;
+    /** When true, unreachable/timeout audits use neutral pending scores (not "dead site"). */
+    treatUnreachableAsPending?: boolean;
   },
 ): Promise<QualificationResult> {
   const withAudit = (result: QualificationResult) =>
-    applyLiveWebsiteAudit(result, opts?.websiteAudit, hasWebsite);
+    applyLiveWebsiteAudit(result, opts?.websiteAudit, hasWebsite, {
+      treatUnreachableAsPending: opts?.treatUnreachableAsPending,
+    });
 
   if (opts?.preferRules) {
     return withAudit(ruleBasedQualification(place, industry, hasWebsite));
