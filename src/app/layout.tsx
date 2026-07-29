@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Outfit, Plus_Jakarta_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { ThemeScript } from "@/components/theme/theme-script";
 import { SEO, seoBaseUrl } from "@/lib/seo";
 import "./globals.css";
+import { MetaPixelTracker } from "@/components/pixel/meta-pixel-tracker";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -75,6 +77,10 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const metaPixelId =
+    process.env.NEXT_PUBLIC_META_PIXEL_ID ||
+    "1652137686625875";
+
   return (
     <html
       lang="en"
@@ -84,12 +90,39 @@ export default function RootLayout({
     >
       <head>
         <ThemeScript />
+        <Script
+          id="meta-pixel"
+          strategy="afterInteractive"
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={{
+            __html: `
+              !function(f,b,e,v,n,t,s)
+              {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+              n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+              if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+              n.queue=[];t=b.createElement(e);t.async=!0;
+              t.src=v;s=b.getElementsByTagName(e)[0];
+              s.parentNode.insertBefore(t,s)}(window, document,'script',
+              'https://connect.facebook.net/en_US/fbevents.js');
+              fbq('init', '${metaPixelId}');
+            `,
+          }}
+        />
       </head>
       <body
         className="min-h-full font-sans antialiased"
         suppressHydrationWarning
       >
         <ThemeProvider initialTheme="light">{children}</ThemeProvider>
+        <noscript>
+          <img
+            height="1"
+            width="1"
+            style={{ display: "none" }}
+            src={`https://www.facebook.com/tr?id=${metaPixelId}&ev=PageView&noscript=1`}
+          />
+        </noscript>
+        <MetaPixelTracker />
       </body>
     </html>
   );

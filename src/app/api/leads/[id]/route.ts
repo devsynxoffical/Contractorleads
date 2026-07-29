@@ -3,10 +3,10 @@ import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { CREDIT_COSTS } from "@/lib/constants";
 
-type LeadFrom = "all" | "hot" | "saved";
+type LeadFrom = "all" | "hot" | "saved" | "digest";
 
 function parseFrom(raw: string | null): LeadFrom {
-  if (raw === "hot" || raw === "saved") return raw;
+  if (raw === "hot" || raw === "saved" || raw === "digest") return raw;
   return "all";
 }
 
@@ -60,6 +60,10 @@ export async function GET(
       take: 200,
     });
     orderedIds = rows.map((r) => r.leadId);
+  } else if (from === "digest") {
+    const { buildMorningDigest } = await import("@/lib/services/morning-digest");
+    const digest = await buildMorningDigest(user.id);
+    orderedIds = digest.leads.map((l) => l.id);
   } else {
     const rows = await prisma.lead.findMany({
       where: { search: { userId: user.id } },

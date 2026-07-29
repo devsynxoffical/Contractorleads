@@ -101,7 +101,7 @@ type Lead = {
   }>;
 };
 
-type LeadFrom = "all" | "hot" | "saved" | "scrape";
+type LeadFrom = "all" | "hot" | "saved" | "scrape" | "digest";
 
 type LeadNavigation = {
   from: LeadFrom;
@@ -116,6 +116,7 @@ const BACK_HREF: Record<LeadFrom, string> = {
   hot: "/leads/hot",
   saved: "/leads/saved",
   scrape: "/admin/scrape",
+  digest: "/digest",
 };
 
 const BACK_LABEL: Record<LeadFrom, string> = {
@@ -123,6 +124,7 @@ const BACK_LABEL: Record<LeadFrom, string> = {
   hot: "Back to hot leads",
   saved: "Back to saved leads",
   scrape: "Back to scrape results",
+  digest: "Back to morning digest",
 };
 
 type TeamMember = {

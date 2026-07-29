@@ -10,6 +10,7 @@ import {
   HiOutlineCreditCard,
   HiOutlineSparkles,
   HiOutlineMap,
+  HiOutlineSun,
 } from "react-icons/hi2";
 import { AiAssistantWorkspace } from "@/components/ai/ai-assistant-workspace";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
@@ -22,8 +23,15 @@ type HomeStats = {
   hotCount: number;
 };
 
+type DigestPreview = {
+  leadCount: number;
+  emailReady: boolean;
+  totalActionable: number;
+};
+
 export function HomeView({ userName }: { userName?: string | null }) {
   const [stats, setStats] = useState<HomeStats | null>(null);
+  const [digestPreview, setDigestPreview] = useState<DigestPreview | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -47,7 +55,31 @@ export function HomeView({ userName }: { userName?: string | null }) {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/digest")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.digest) return;
+        setDigestPreview({
+          leadCount: data.digest.leads?.length ?? 0,
+          emailReady: Boolean(data.digest.emailReady),
+          totalActionable: data.digest.totalActionable ?? 0,
+        });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const quickLinks = [
+    {
+      href: "/digest",
+      label: "Morning digest",
+      desc: "Top 5 leads to email today",
+      icon: HiOutlineSun,
+    },
     {
       href: "/leads/search",
       label: "Lead Finder",
@@ -101,15 +133,59 @@ export function HomeView({ userName }: { userName?: string | null }) {
               Ask your AI assistant anything — find leads from Lead Finder.
             </p>
           </div>
-          <Link
-            href="/leads/search"
-            className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-semibold text-white shadow-md shadow-fuchsia-500/20"
-            style={{ background: LOGO_GRADIENT }}
-          >
-            <HiOutlineBolt className="h-4 w-4" />
-            Open Lead Finder
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/digest"
+              className="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-[13px] font-semibold text-amber-900 shadow-sm transition hover:border-amber-300 hover:bg-amber-100/80"
+            >
+              <HiOutlineSun className="h-4 w-4" />
+              Morning digest
+              {digestPreview && digestPreview.leadCount > 0 && (
+                <span className="rounded-md bg-amber-200/80 px-1.5 py-0.5 text-[11px] tabular-nums">
+                  {digestPreview.leadCount}
+                </span>
+              )}
+            </Link>
+            <Link
+              href="/leads/search"
+              className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-semibold text-white shadow-md shadow-fuchsia-500/20"
+              style={{ background: LOGO_GRADIENT }}
+            >
+              <HiOutlineBolt className="h-4 w-4" />
+              Open Lead Finder
+            </Link>
+          </div>
         </div>
+
+        {digestPreview && digestPreview.leadCount > 0 && (
+          <Link
+            href="/digest"
+            className="group block rounded-2xl border border-amber-200/80 bg-gradient-to-r from-amber-50/90 via-white to-orange-50/60 p-4 shadow-[var(--shadow-card)] transition hover:border-amber-300 hover:shadow-md"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700 transition group-hover:scale-105">
+                  <HiOutlineSun className="h-5 w-5" />
+                </span>
+                <div>
+                  <p className="text-[14px] font-semibold text-ink">
+                    {digestPreview.leadCount} lead{digestPreview.leadCount === 1 ? "" : "s"} ready for outreach
+                  </p>
+                  <p className="mt-0.5 text-[12px] text-ink-muted">
+                    {digestPreview.emailReady
+                      ? "Email connected — open your morning digest to review and send intros."
+                      : "Connect email in setup, then work through today's top picks."}
+                    {digestPreview.totalActionable > digestPreview.leadCount &&
+                      ` · ${digestPreview.totalActionable} total in queue`}
+                  </p>
+                </div>
+              </div>
+              <span className="text-[12px] font-semibold text-brand-600 group-hover:underline">
+                Open digest →
+              </span>
+            </div>
+          </Link>
+        )}
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
