@@ -1,5 +1,5 @@
-import { lookup } from "dns/promises";
-import net from "net";
+import { lookup } from "node:dns/promises";
+import net from "node:net";
 
 /**
  * SSRF guard for outbound requests aimed at user-supplied URLs (CRM webhooks,

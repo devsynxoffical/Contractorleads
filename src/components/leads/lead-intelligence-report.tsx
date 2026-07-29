@@ -20,7 +20,7 @@ import {
   LEAD_REPORT_TYPES,
   LEAD_REPORT_TYPE_META,
   type LeadReportType,
-} from "@/lib/services/lead-intelligence-report";
+} from "@/lib/services/lead-intelligence-report-meta";
 import { cn } from "@/lib/utils";
 
 type SavedReport = {

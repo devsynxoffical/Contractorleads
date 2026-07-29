@@ -1,8 +1,8 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateText } from "ai";
 import { getOpenAIApiKey } from "@/lib/openai-config";
-import type { WebsiteAudit } from "@/lib/services/website-audit";
-import { emptyWebsiteAudit } from "@/lib/services/website-audit";
+import type { WebsiteAudit } from "@/lib/services/website-audit-empty";
+import { emptyWebsiteAudit } from "@/lib/services/website-audit-empty";
 
 export const QUALIFICATION_SCORE_KEYS = [
   "websiteQuality",
