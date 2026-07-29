@@ -278,6 +278,15 @@ export function AdminShell({
             <p className="text-[13px] font-semibold text-ink">{roleLabel}</p>
             <p className="truncate text-[11px] text-ink-muted">{user.email}</p>
           </div>
+          {(user.role === SUPER_ADMIN_ROLE || user.role === OWNER_ROLE) && (
+            <Link
+              href="/home"
+              className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-brand-500 hover:bg-brand-50"
+            >
+              <HiOutlineArrowLeft className="h-3.5 w-3.5" />
+              App
+            </Link>
+          )}
           <ThemeToggle compact />
           <button
             type="button"
