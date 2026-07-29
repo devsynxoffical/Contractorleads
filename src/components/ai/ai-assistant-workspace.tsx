@@ -374,7 +374,7 @@ export function AiAssistantWorkspace({
               <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-brand-500">
                 AI assistant
               </p>
-              <p className="text-[11px] text-ink-faint">
+              <p className="text-[12px] text-ink-muted">
                 {activeId ? "Continuing chat" : "New conversation"}
               </p>
             </div>

@@ -324,7 +324,7 @@ export default function AdminScrapePage() {
       />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,28rem)_minmax(0,1fr)]">
-        <div className="max-w-xl space-y-3 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">
+        <div className="max-w-xl space-y-3 rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
           <AdminIndustryField
             selectValue={industrySelect}
             customValue={customIndustry}
@@ -435,7 +435,7 @@ export default function AdminScrapePage() {
                   value={radius}
                   onChange={(e) => setRadius(Number(e.target.value) || 0)}
                 />
-                <p className="mt-1 text-[11px] text-ink-faint">
+                <p className="mt-1.5 text-[12px] leading-relaxed text-ink-muted">
                   Use 0 for exact area only.
                 </p>
               </label>
@@ -481,7 +481,7 @@ export default function AdminScrapePage() {
                 onChange={(e) => setCustomLeadCount(e.target.value)}
                 placeholder="e.g. 75"
               />
-              <p className="mt-1 text-[11px] text-ink-faint">
+              <p className="mt-1.5 text-[12px] leading-relaxed text-ink-muted">
                 Between 1 and 1000. Requesting {resolvedLeadCount} leads.
               </p>
             </label>
@@ -535,7 +535,7 @@ export default function AdminScrapePage() {
         </div>
 
         <div className="space-y-4">
-          <div className="rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">
+          <div className="rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h2 className="text-[14px] font-semibold text-ink">
@@ -612,7 +612,7 @@ export default function AdminScrapePage() {
                   leadsIndustry ? (
                     <Link
                       href={`/admin/leads?industry=${encodeURIComponent(leadsIndustry)}`}
-                      className="inline-flex h-9 items-center rounded-xl border border-border bg-white px-3 text-[12px] font-semibold text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
+                      className="inline-flex h-9 items-center rounded-xl border border-border bg-[var(--surface)] px-3 text-[12px] font-semibold text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
                     >
                       Open in All Leads →
                     </Link>
@@ -636,7 +636,7 @@ export default function AdminScrapePage() {
               />
             </div>
           ) : (
-            <div className="rounded-2xl border border-border/80 bg-white p-10 text-center text-[13px] text-ink-muted shadow-[var(--shadow-card)]">
+            <div className="rounded-2xl border border-border/80 bg-[var(--surface)] p-10 text-center text-[13px] text-ink-muted shadow-[var(--shadow-card)]">
               {loadingLeads
                 ? "Loading leads…"
                 : "Pick a niche or run a scrape to see leads here."}

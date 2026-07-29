@@ -313,7 +313,7 @@ export function DashboardInsights({
                               · {row.location}
                             </span>
                           </p>
-                          <p className="mt-0.5 text-[11px] text-ink-faint">
+                          <p className="mt-0.5 text-[12px] text-ink-muted">
                             {row.resultCount} leads · {formatWhen(row.createdAt)}
                           </p>
                         </div>

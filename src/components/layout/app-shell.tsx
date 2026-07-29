@@ -95,11 +95,6 @@ function buildSections(user: SessionUser): NavSection[] {
         },
         { href: "/scripts", label: "My Scripts", icon: HiOutlineBookOpen },
         {
-          href: "/ask-expert/settings",
-          label: "AI settings",
-          icon: HiOutlineCog6Tooth,
-        },
-        {
           href: "/academy",
           label: "Academy",
           icon: HiOutlineAcademicCap,
@@ -535,7 +530,7 @@ export function AppShell({
   return (
     <div
       className={cn(
-        "flex h-[100dvh] overflow-hidden bg-transparent",
+        "flex h-[100dvh] overflow-hidden bg-transparent print:h-auto print:overflow-visible",
         hudMode && "app-shell--hud",
       )}
     >
@@ -550,7 +545,7 @@ export function AppShell({
           </span>
           <button
             type="button"
-            className="rounded-lg bg-white px-2.5 py-1 font-semibold text-ink"
+            className="rounded-lg bg-white/15 px-2.5 py-1 font-semibold text-white transition hover:bg-white/25"
             onClick={async () => {
               await fetch("/api/admin/impersonate/exit", { method: "POST" });
               window.location.href = "/admin/customers";
@@ -620,11 +615,11 @@ export function AppShell({
           onToggleSidebar={toggleSidebar}
           hud={hudMode}
         />
-        <main className="hud-shell-main scrollbar-thin min-w-0 flex-1 overflow-x-hidden overflow-y-auto">
+        <main className="hud-shell-main scrollbar-thin min-w-0 flex-1 overflow-x-hidden overflow-y-auto print:overflow-visible">
           <div className="page-enter min-h-full">{children}</div>
         </main>
         <footer
-          className="hud-shell-footer shrink-0 border-t border-border bg-[var(--sidebar)] px-4 py-3 text-center text-[11px] text-ink-faint backdrop-blur-md sm:px-6 sm:text-[12px]"
+          className="hud-shell-footer shrink-0 border-t border-border bg-[var(--sidebar)] px-4 py-3 text-center text-[12px] text-ink-muted backdrop-blur-md print:hidden sm:px-6 sm:text-[12px]"
         >
           Copyright © 2026 Contractor Leads. All rights reserved.
         </footer>

@@ -39,6 +39,8 @@ export type MorningDigest = {
   smtpAccountCount: number;
   leads: DigestLead[];
   totalActionable: number;
+  /** Hot-tier leads available to work (same ownership as digest). */
+  hotCount: number;
 };
 
 function digestGreeting(): string {
@@ -114,14 +116,15 @@ function digestRankScore(lead: {
 }
 
 export async function buildMorningDigest(userId: string): Promise<MorningDigest> {
-  const [candidates, savedRows, emailedLeadIds, smtpAccounts] = await Promise.all([
+  const [candidates, savedRows, emailedLeadIds, smtpAccounts, hotCount] =
+    await Promise.all([
     prisma.lead.findMany({
       where: {
         ...leadOwnershipWhere(userId),
         OR: [{ email: { not: null } }, { phone: { not: null } }],
       },
       orderBy: [{ leadScore: "desc" }, { createdAt: "desc" }],
-      take: 80,
+      take: 200,
       select: {
         id: true,
         businessName: true,
@@ -155,6 +158,12 @@ export async function buildMorningDigest(userId: string): Promise<MorningDigest>
       distinct: ["leadId"],
     }),
     listSmtpAccounts(userId),
+    prisma.lead.count({
+      where: {
+        ...leadOwnershipWhere(userId),
+        qualityTier: "hot",
+      },
+    }),
   ]);
 
   const savedByLeadId = new Map(savedRows.map((s) => [s.leadId, s]));
@@ -223,5 +232,6 @@ export async function buildMorningDigest(userId: string): Promise<MorningDigest>
     smtpAccountCount: enabledSmtp.length,
     leads,
     totalActionable: actionable.length,
+    hotCount,
   };
 }

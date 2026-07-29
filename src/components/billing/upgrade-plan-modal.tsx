@@ -162,7 +162,7 @@ export function UpgradePlanModalHost({
               Upgrade to {copy.requiredPlanLabel}
             </Link>
           </div>
-          <p className="mt-3 text-center text-[11px] text-ink-faint">
+          <p className="mt-3 text-center text-[12px] text-ink-muted">
             Current plan: {planLabel(currentPlan)}
           </p>
         </div>

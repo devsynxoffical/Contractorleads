@@ -178,14 +178,14 @@ export function ReportBrandingModal({
         aria-label="Close"
         onClick={onClose}
       />
-      <div className="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-border bg-white shadow-2xl">
+      <div className="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-border bg-[var(--surface)] shadow-2xl">
         <div className="h-1.5 w-full shrink-0" style={{ background: LOGO_GRADIENT }} />
         <div className="flex items-start justify-between gap-3 border-b border-border px-5 py-4">
           <div>
             <h2 id={titleId} className="text-[16px] font-semibold text-ink">
               Report branding
             </h2>
-            <p className="mt-1 text-[12px] text-ink-muted">
+            <p className="mt-1.5 text-[13px] leading-relaxed text-ink-muted">
               Logo and company details used on PDF downloads and emailed reports.
             </p>
           </div>
@@ -214,7 +214,7 @@ export function ReportBrandingModal({
                   <div className="flex flex-wrap items-start gap-4">
                     <div
                       className={cn(
-                        "flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border bg-white",
+                        "flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border bg-[var(--surface)]",
                         logoPreview && !removeLogo
                           ? "border-brand-200"
                           : "border-dashed border-border",
@@ -255,7 +255,7 @@ export function ReportBrandingModal({
                       <div className="flex flex-wrap items-center gap-2">
                         <label
                           htmlFor={fileInputId}
-                          className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-border bg-white px-3.5 text-[13px] font-semibold text-ink shadow-[var(--shadow-soft)] transition hover:border-brand-200 hover:text-brand-700"
+                          className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-border bg-[var(--surface)] px-3.5 text-[13px] font-semibold text-ink shadow-[var(--shadow-soft)] transition hover:border-brand-200 hover:text-brand-700"
                         >
                           <HiOutlineArrowUpTray className="h-4 w-4 text-brand-600" />
                           {logoPreview && !removeLogo
@@ -330,7 +330,7 @@ export function ReportBrandingModal({
                           reportAccentColor: e.target.value,
                         }))
                       }
-                      className="h-10 w-14 cursor-pointer rounded-lg border border-border bg-white p-1"
+                      className="h-10 w-14 cursor-pointer rounded-lg border border-border bg-[var(--surface)] p-1"
                       aria-label="Accent color"
                     />
                     <Input

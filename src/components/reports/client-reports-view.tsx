@@ -25,6 +25,7 @@ import {
 } from "@/components/layout/navigation-progress";
 import { cn } from "@/lib/utils";
 import { leadDetailHref } from "@/lib/nav-context";
+import { LEAD_STATUSES } from "@/lib/constants";
 
 type ReportLead = {
   id: string;
@@ -44,12 +45,14 @@ type ReportLead = {
   updatedAt: string;
 };
 
+type AgencyInfo = {
+  companyName: string | null;
+  name: string | null;
+  email: string;
+};
+
 type ReportPayload = {
-  agency: {
-    companyName: string | null;
-    name: string | null;
-    email: string;
-  };
+  agency: AgencyInfo;
   summary: {
     total: number;
     hot: number;
@@ -219,12 +222,12 @@ function tierVariant(tier?: string | null) {
 function reportTypeLabel(type: string) {
   if (type.startsWith("lead_intelligence_report")) {
     const suffix = type.includes(":") ? type.split(":").pop() : "";
+    if (suffix === "full") return "All-services pitch";
     if (suffix === "website") return "Website growth proposal";
     if (suffix === "seo") return "SEO growth proposal";
     if (suffix === "marketing") return "Instagram & social proposal";
     if (suffix === "ads") return "Google Ads proposal";
     if (suffix === "local") return "Local presence proposal";
-    if (suffix === "full") return "Full growth proposal";
     return "Client pitch report";
   }
   if (type.startsWith("qualification_detail:")) {
@@ -268,6 +271,9 @@ export function ClientReportsView({
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [applied, setApplied] = useState<Filters>(EMPTY_FILTERS);
   const [data, setData] = useState<ReportPayload | null>(initial);
+  const [agency, setAgency] = useState<AgencyInfo | null>(
+    initial?.agency ?? null,
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [title, setTitle] = useState("Pipeline report");
@@ -283,7 +289,8 @@ export function ClientReportsView({
       const res = await fetch(`/api/reports/clients?${params}`);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Could not load clients");
-      setClients(json.clients || []);
+      setClients(Array.isArray(json.clients) ? json.clients : []);
+      if (json.agency) setAgency(json.agency);
     } catch (e) {
       setClientsError(e instanceof Error ? e.message : "Could not load clients");
       setClients([]);
@@ -304,7 +311,17 @@ export function ClientReportsView({
       );
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Could not load client");
-      setDetail(json);
+      setDetail({
+        client: json.client,
+        reports: Array.isArray(json.reports) ? json.reports : [],
+        emails: Array.isArray(json.emails) ? json.emails : [],
+        counts: json.counts ?? {
+          reports: 0,
+          emails: 0,
+          outbound: 0,
+          inbound: 0,
+        },
+      });
       setSelectedLeadId(leadId);
     } catch (e) {
       setDetailError(e instanceof Error ? e.message : "Could not load client");
@@ -331,11 +348,12 @@ export function ClientReportsView({
       if (f.from) params.set("from", f.from);
       if (f.to) params.set("to", f.to);
       if (f.q) params.set("q", f.q);
-      params.set("take", "300");
+      params.set("take", "1000");
       const res = await fetch(`/api/reports?${params}`);
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Failed to load report");
       setData(json);
+      if (json.agency) setAgency(json.agency);
       setApplied(f);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load report");
@@ -350,9 +368,12 @@ export function ClientReportsView({
   }, [tab, data, load]);
 
   const agencyLabel = useMemo(() => {
-    if (!data) return "Your agency";
-    return data.agency.companyName || data.agency.name || "Your agency";
-  }, [data]);
+    const a = agency ?? data?.agency;
+    if (!a) return "Your agency";
+    return a.companyName || a.name || "Your agency";
+  }, [agency, data?.agency]);
+
+  const agencyEmail = agency?.email ?? data?.agency.email ?? "";
 
   const reportHeading = clientName.trim()
     ? `${clientName.trim()} · ${title.trim() || "Report"}`
@@ -364,6 +385,14 @@ export function ClientReportsView({
   }
 
   function printReport() {
+    const cleanup = () => {
+      document.documentElement.classList.remove("printing-client-report");
+      window.removeEventListener("afterprint", cleanup);
+    };
+    document.documentElement.classList.add("printing-client-report");
+    window.addEventListener("afterprint", cleanup);
+    // Fallback if afterprint doesn't fire (some browsers)
+    window.setTimeout(cleanup, 60_000);
     window.print();
   }
 
@@ -375,6 +404,18 @@ export function ClientReportsView({
 
   const openReport = detail?.reports.find((r) => r.id === openReportId) ?? null;
   const openEmail = detail?.emails.find((e) => e.id === openEmailId) ?? null;
+
+  const rankedLeads = useMemo(() => {
+    if (!data?.leads?.length) return [];
+    return [...data.leads].sort((a, b) => b.leadScore - a.leadScore);
+  }, [data?.leads]);
+
+  const statusLabel = useCallback((value: string) => {
+    return (
+      LEAD_STATUSES.find((s) => s.value === value)?.label ??
+      value.replace(/_/g, " ")
+    );
+  }, []);
 
   return (
     <div className="page-pad page-enter space-y-5">
@@ -426,6 +467,7 @@ export function ClientReportsView({
       </div>
 
       {tab === "clients" ? (
+        <>
         <div className="print:hidden space-y-5">
           {!selectedLeadId ? (
             <>
@@ -562,8 +604,8 @@ export function ClientReportsView({
                             >
                               {detail.client.qualityTier || "nurture"}
                             </Badge>
-                            <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold capitalize text-slate-600">
-                              {detail.client.status}
+                            <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+                              {statusLabel(detail.client.status)}
                             </span>
                           </div>
                           <p className="mt-1 text-[13px] text-ink-muted">
@@ -665,7 +707,7 @@ export function ClientReportsView({
                           <HiOutlineDocumentText className="h-4 w-4 text-brand-600" />
                           Reports ({detail.reports.length})
                         </CardTitle>
-                        <p className="mt-1 text-[12px] text-ink-muted">
+                        <p className="mt-1.5 text-[13px] leading-relaxed text-ink-muted">
                           Intelligence and qualification reports for this client
                         </p>
                       </CardHeader>
@@ -691,7 +733,7 @@ export function ClientReportsView({
                                     <p className="text-[13px] font-semibold text-ink">
                                       {r.title}
                                     </p>
-                                    <span className="shrink-0 text-[11px] text-ink-faint">
+                                    <span className="shrink-0 text-[12px] text-ink-muted">
                                       {formatWhen(r.createdAt)}
                                     </span>
                                   </div>
@@ -722,7 +764,7 @@ export function ClientReportsView({
                           <HiOutlineEnvelope className="h-4 w-4 text-brand-600" />
                           Emails ({detail.emails.length})
                         </CardTitle>
-                        <p className="mt-1 text-[12px] text-ink-muted">
+                        <p className="mt-1.5 text-[13px] leading-relaxed text-ink-muted">
                           {detail.client.email
                             ? `All messages to/from ${detail.client.email}`
                             : "Emails linked to this lead"}
@@ -750,7 +792,7 @@ export function ClientReportsView({
                                     <p className="text-[13px] font-semibold text-ink">
                                       {e.subject || "(no subject)"}
                                     </p>
-                                    <span className="shrink-0 text-[11px] text-ink-faint">
+                                    <span className="shrink-0 text-[12px] text-ink-muted">
                                       {formatWhen(e.createdAt)}
                                     </span>
                                   </div>
@@ -768,7 +810,7 @@ export function ClientReportsView({
                                 </button>
                                 {openEmailId === e.id ? (
                                   <div className="mb-3 space-y-2 rounded-xl border border-border bg-[#faf8fc] p-3">
-                                    <p className="text-[11px] text-ink-faint">
+                                    <p className="text-[12px] text-ink-muted">
                                       From {e.fromEmail} → {e.toEmail}
                                     </p>
                                     <pre className="max-h-80 overflow-auto whitespace-pre-wrap font-[family-name:var(--font-jakarta)] text-[12px] leading-relaxed text-ink">
@@ -789,53 +831,178 @@ export function ClientReportsView({
                     </Card>
                   </div>
 
-                  {/* Printable client snapshot */}
-                  <div
-                    id="client-report-print"
-                    className="hidden space-y-4 print:block"
-                  >
-                    <h1 className="text-2xl font-semibold">
-                      {detail.client.businessName}
-                    </h1>
-                    <p className="text-sm text-ink-muted">
-                      Client snapshot · {formatWhen(new Date().toISOString())}
-                    </p>
-                    {openReport ? (
-                      <section>
-                        <h2 className="mb-2 font-semibold">{openReport.title}</h2>
-                        <pre className="whitespace-pre-wrap text-sm">
-                          {openReport.content}
-                        </pre>
-                      </section>
-                    ) : null}
-                    {openEmail ? (
-                      <section>
-                        <h2 className="mb-2 font-semibold">
-                          {openEmail.subject}
-                        </h2>
-                        <pre className="whitespace-pre-wrap text-sm">
-                          {openEmail.body}
-                        </pre>
-                      </section>
-                    ) : (
-                      <section>
-                        <h2 className="mb-2 font-semibold">Email history</h2>
-                        <ul className="space-y-2 text-sm">
-                          {detail.emails.map((e) => (
-                            <li key={e.id}>
-                              <strong>{e.subject}</strong> · {e.direction} ·{" "}
-                              {formatWhen(e.createdAt)}
-                            </li>
-                          ))}
-                        </ul>
-                      </section>
-                    )}
-                  </div>
+                  {/* screen-only client UI ends; print block is outside print:hidden */}
                 </>
               ) : null}
             </div>
           )}
         </div>
+
+          {detail ? (
+            <div
+              id="client-report-print"
+              className="hidden space-y-5 print:block"
+            >
+              <header className="border-b border-border pb-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-600">
+                  Client report
+                </p>
+                <h1 className="mt-1 text-2xl font-semibold text-ink">
+                  {detail.client.businessName}
+                </h1>
+                <p className="mt-1 text-[13px] text-ink-muted">
+                  Prepared by {agencyLabel}
+                  {agencyEmail ? ` · ${agencyEmail}` : ""} ·{" "}
+                  {formatWhen(new Date().toISOString())}
+                </p>
+              </header>
+
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {[
+                  {
+                    l: "Score",
+                    v: detail.client.leadScore,
+                  },
+                  {
+                    l: "Tier",
+                    v: (detail.client.qualityTier || "nurture").toUpperCase(),
+                  },
+                  {
+                    l: "Status",
+                    v: statusLabel(detail.client.status),
+                  },
+                  {
+                    l: "Reports",
+                    v: detail.reports.length,
+                  },
+                ].map((c) => (
+                  <div
+                    key={c.l}
+                    className="rounded-xl border border-border px-3 py-3"
+                  >
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+                      {c.l}
+                    </p>
+                    <p className="mt-1 text-xl font-semibold tabular-nums text-ink">
+                      {c.v}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <section>
+                <h2 className="mb-2 text-[13px] font-semibold text-ink">
+                  Contact
+                </h2>
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px]">
+                  {[
+                    ["Owner", detail.client.ownerName || "—"],
+                    ["Email", detail.client.email || "—"],
+                    ["Phone", detail.client.phone || "—"],
+                    ["Website", detail.client.website || "—"],
+                    [
+                      "Location",
+                      [detail.client.city, detail.client.state]
+                        .filter(Boolean)
+                        .join(", ") || "—",
+                    ],
+                    ["Industry", detail.client.industry || "—"],
+                    [
+                      "Google",
+                      detail.client.googleRating != null
+                        ? `${detail.client.googleRating} ★ · ${detail.client.reviewCount ?? 0} reviews`
+                        : "—",
+                    ],
+                    ["Address", detail.client.address || "—"],
+                  ].map(([k, v]) => (
+                    <div key={k}>
+                      <dt className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+                        {k}
+                      </dt>
+                      <dd className="text-ink">{v}</dd>
+                    </div>
+                  ))}
+                </dl>
+                {detail.client.outreachAngle ? (
+                  <p className="mt-3 rounded-xl border border-border bg-[#faf8fc] px-3 py-2 text-[13px] text-ink">
+                    {detail.client.outreachAngle}
+                  </p>
+                ) : null}
+              </section>
+
+              {openReport ? (
+                <section className="break-inside-avoid">
+                  <h2 className="mb-2 text-[13px] font-semibold text-ink">
+                    {openReport.title}
+                  </h2>
+                  <p className="mb-2 text-[12px] text-ink-muted">
+                    {reportTypeLabel(openReport.type)} ·{" "}
+                    {formatWhen(openReport.createdAt)}
+                  </p>
+                  <pre className="whitespace-pre-wrap text-[13px] leading-relaxed text-ink">
+                    {openReport.content}
+                  </pre>
+                </section>
+              ) : detail.reports.length ? (
+                <section>
+                  <h2 className="mb-2 text-[13px] font-semibold text-ink">
+                    Pitch reports ({detail.reports.length})
+                  </h2>
+                  <ul className="space-y-4">
+                    {detail.reports.map((r) => (
+                      <li key={r.id} className="break-inside-avoid">
+                        <p className="font-semibold text-ink">{r.title}</p>
+                        <p className="text-[12px] text-ink-muted">
+                          {reportTypeLabel(r.type)} · {formatWhen(r.createdAt)}
+                        </p>
+                        <pre className="mt-2 whitespace-pre-wrap text-[12px] leading-relaxed text-ink">
+                          {r.content}
+                        </pre>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
+
+              {openEmail ? (
+                <section className="break-inside-avoid">
+                  <h2 className="mb-2 text-[13px] font-semibold text-ink">
+                    {openEmail.subject || "(no subject)"}
+                  </h2>
+                  <p className="mb-2 text-[12px] text-ink-muted">
+                    {openEmail.direction} · {openEmail.fromEmail} →{" "}
+                    {openEmail.toEmail} · {formatWhen(openEmail.createdAt)}
+                  </p>
+                  <pre className="whitespace-pre-wrap text-[13px] leading-relaxed text-ink">
+                    {openEmail.body}
+                  </pre>
+                </section>
+              ) : detail.emails.length ? (
+                <section>
+                  <h2 className="mb-2 text-[13px] font-semibold text-ink">
+                    Email history ({detail.emails.length})
+                  </h2>
+                  <ul className="space-y-3">
+                    {detail.emails.map((e) => (
+                      <li key={e.id} className="break-inside-avoid border-b border-border pb-3">
+                        <p className="font-semibold text-ink">
+                          {e.subject || "(no subject)"}
+                        </p>
+                        <p className="text-[12px] text-ink-muted">
+                          {e.direction} · {formatWhen(e.createdAt)} ·{" "}
+                          {e.status}
+                        </p>
+                        <pre className="mt-1 whitespace-pre-wrap text-[12px] leading-relaxed text-ink-muted">
+                          {e.body}
+                        </pre>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
+            </div>
+          ) : null}
+        </>
       ) : null}
 
       {tab === "builder" ? (
@@ -988,8 +1155,8 @@ export function ClientReportsView({
                         type="button"
                         variant="secondary"
                         size="sm"
-                        disabled={!data.leads.length}
-                        onClick={() => downloadCsv(data.leads, reportHeading)}
+                        disabled={!rankedLeads.length}
+                        onClick={() => downloadCsv(rankedLeads, reportHeading)}
                       >
                         <HiOutlineArrowDownTray className="h-4 w-4" />
                         CSV
@@ -997,7 +1164,7 @@ export function ClientReportsView({
                       <Button
                         type="button"
                         size="sm"
-                        disabled={!data.leads.length}
+                        disabled={!rankedLeads.length}
                         onClick={printReport}
                       >
                         <HiOutlinePrinter className="h-4 w-4" />
@@ -1015,7 +1182,7 @@ export function ClientReportsView({
 
               <div
                 id="client-report-print"
-                className="space-y-5 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)] print:border-0 print:p-0 print:shadow-none"
+                className="space-y-5 rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] print:border-0 print:p-0 print:shadow-none"
               >
                 <header className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-4">
                   <div>
@@ -1027,7 +1194,7 @@ export function ClientReportsView({
                     </h1>
                     <p className="mt-1 text-[13px] text-ink-muted">
                       Prepared by {agencyLabel}
-                      {data.agency.email ? ` · ${data.agency.email}` : ""} ·{" "}
+                      {agencyEmail ? ` · ${agencyEmail}` : ""} ·{" "}
                       {new Date(data.generatedAt).toLocaleString()}
                     </p>
                     {notes.trim() ? (
@@ -1071,10 +1238,10 @@ export function ClientReportsView({
                   <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                     <h2 className="flex items-center gap-2 text-[13px] font-semibold text-ink">
                       <HiOutlineDocumentText className="h-4 w-4 text-brand-600" />
-                      Lead roster ({data.leads.length})
+                      Lead roster ({rankedLeads.length})
                     </h2>
-                    <p className="text-[11px] text-ink-faint print:hidden">
-                      Filters applied
+                    <p className="text-[12px] text-ink-muted print:hidden">
+                      Highest score first
                       {applied.status ? ` · ${applied.status}` : ""}
                       {applied.quality ? ` · ${applied.quality}` : ""}
                       {applied.industry ? ` · ${applied.industry}` : ""}
@@ -1086,7 +1253,7 @@ export function ClientReportsView({
                     </p>
                   </div>
 
-                  {data.leads.length === 0 ? (
+                  {rankedLeads.length === 0 ? (
                     <p className="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-ink-muted">
                       No saved leads match these filters.{" "}
                       <Link
@@ -1097,8 +1264,8 @@ export function ClientReportsView({
                       </Link>
                     </p>
                   ) : (
-                    <div className="overflow-x-auto rounded-xl border border-border">
-                      <table className="w-full min-w-[640px] text-left text-[13px]">
+                    <div className="report-print-roster overflow-x-auto rounded-xl border border-border">
+                      <table className="w-full min-w-0 text-left text-[13px] sm:min-w-[640px]">
                         <thead>
                           <tr className="border-b border-border bg-[#faf8fc] text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint">
                             <th className="px-3 py-2.5">Business</th>
@@ -1109,7 +1276,7 @@ export function ClientReportsView({
                           </tr>
                         </thead>
                         <tbody>
-                          {data.leads.map((l) => (
+                          {rankedLeads.map((l) => (
                             <tr
                               key={l.id}
                               className="border-b border-border/70 last:border-0"
@@ -1130,7 +1297,7 @@ export function ClientReportsView({
                                 </p>
                                 <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
                                   {l.industry ? (
-                                    <span className="text-[11px] text-ink-faint">
+                                    <span className="text-[12px] text-ink-muted">
                                       {l.industry}
                                     </span>
                                   ) : null}
@@ -1149,8 +1316,8 @@ export function ClientReportsView({
                                 {[l.city, l.state].filter(Boolean).join(", ") ||
                                   "—"}
                               </td>
-                              <td className="px-3 py-2.5 capitalize text-ink-muted">
-                                {l.status}
+                              <td className="px-3 py-2.5 text-ink-muted">
+                                {statusLabel(l.status)}
                               </td>
                               <td className="px-3 py-2.5">
                                 <span className="font-semibold tabular-nums text-brand-600">

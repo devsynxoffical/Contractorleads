@@ -175,7 +175,7 @@ export function WorkspaceSettingsMenu({
           role="dialog"
           aria-label="Team and workspace setup"
           className={cn(
-            "absolute z-50 w-[min(300px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border bg-white shadow-[0_18px_50px_rgba(15,23,42,0.18)]",
+            "absolute z-50 w-[min(300px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border bg-[var(--surface)] shadow-[0_18px_50px_rgba(15,23,42,0.18)]",
             variant === "sidebar"
               ? "bottom-[calc(100%+8px)] left-0 right-0 w-auto"
               : "right-0 top-[calc(100%+8px)]",

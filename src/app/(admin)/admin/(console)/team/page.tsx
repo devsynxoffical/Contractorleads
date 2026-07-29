@@ -193,7 +193,7 @@ export default function AdminTeamPage() {
         </p>
       )}
 
-      <section className="mb-8 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">
+      <section className="mb-8 rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
         <h2 className="text-sm font-semibold text-ink">Role templates</h2>
         <p className="mt-1 text-[13px] text-ink-muted">
           Changes apply to every staff member with that role. Super Admins always
@@ -233,7 +233,7 @@ export default function AdminTeamPage() {
               />
               <span>
                 <span className="font-medium text-ink">{p.label}</span>
-                <span className="mt-0.5 block text-[11px] text-ink-faint">
+                <span className="mt-0.5 block text-[12px] text-ink-muted">
                   {p.key}
                 </span>
               </span>
@@ -248,7 +248,7 @@ export default function AdminTeamPage() {
         </div>
       </section>
 
-      <section className="mb-8 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">
+      <section className="mb-8 rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
         <h2 className="text-sm font-semibold text-ink">Create staff member</h2>
         <form
           onSubmit={createStaff}
@@ -313,7 +313,7 @@ export default function AdminTeamPage() {
         </form>
       </section>
 
-      <section className="overflow-x-auto rounded-2xl border border-border/80 bg-white shadow-[var(--shadow-card)]">
+      <section className="overflow-x-auto rounded-2xl border border-border/80 bg-[var(--surface)] shadow-[var(--shadow-card)]">
         <table className="w-full min-w-[720px] text-left text-[13px]">
           <thead className="border-b border-border bg-[#faf8fc] text-[11px] uppercase tracking-wide text-ink-faint">
             <tr>

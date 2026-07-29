@@ -120,7 +120,7 @@ export default function AdminPlatformPage() {
                         Open
                       </span>
                     </div>
-                    <p className="mt-1 text-[12px] text-ink-muted">{m.description}</p>
+                    <p className="mt-1.5 text-[13px] leading-relaxed text-ink-muted">{m.description}</p>
                     <p className="mt-2 text-[11px] tabular-nums text-ink-faint">
                       {m.metric}
                     </p>

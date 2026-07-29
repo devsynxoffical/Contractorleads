@@ -359,7 +359,7 @@ export default function AdminReferralsPage() {
                   <p className="mt-1 text-[12px] text-ink">
                     {w.payoutDetails}
                   </p>
-                  <p className="mt-1 text-[11px] text-ink-faint">
+                  <p className="mt-1.5 text-[12px] leading-relaxed text-ink-muted">
                     {new Date(w.createdAt).toLocaleString()} · {w.status}
                   </p>
                 </div>

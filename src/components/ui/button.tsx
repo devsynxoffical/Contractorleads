@@ -2,17 +2,17 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 rounded-xl text-sm font-semibold tracking-tight transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/35 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]",
+  "inline-flex items-center justify-center gap-2 rounded-xl text-sm font-semibold tracking-tight transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/35 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--canvas)] disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]",
   {
     variants: {
       variant: {
         default:
-          "text-white shadow-[0_4px_14px_var(--brand-glow)] hover:opacity-95 hover:shadow-[0_6px_20px_var(--brand-glow-strong)] [background:var(--logo-gradient)]",
+          "btn-on-brand border border-transparent text-[var(--btn-on-brand)] shadow-[0_4px_14px_var(--brand-glow)] hover:opacity-95 hover:shadow-[0_6px_20px_var(--brand-glow-strong)] [background:var(--logo-gradient)]",
         secondary:
-          "border border-border bg-surface text-ink shadow-[var(--shadow-soft)] hover:border-brand-200 hover:bg-brand-50/60 hover:text-brand-500",
-        ghost:
-          "text-ink-muted hover:bg-brand-50/80 hover:text-brand-500",
-        danger: "bg-red-600 text-white shadow-sm hover:bg-red-700",
+          "border border-[color:var(--border-strong)] bg-[var(--surface)] text-ink shadow-[var(--shadow-soft)] hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700",
+        ghost: "text-ink-muted hover:bg-brand-50 hover:text-brand-700",
+        danger:
+          "border border-transparent bg-red-600 text-white shadow-sm hover:bg-red-700",
       },
       size: {
         default: "h-10 px-4",
@@ -25,7 +25,7 @@ const buttonVariants = cva(
       variant: "default",
       size: "default",
     },
-  }
+  },
 );
 
 function Spinner({ className }: { className?: string }) {

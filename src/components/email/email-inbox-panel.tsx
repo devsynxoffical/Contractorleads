@@ -215,7 +215,7 @@ export function EmailInboxPanel() {
                       <p className="mt-0.5 truncate text-[12px] text-ink-muted">
                         {e.subject || "(no subject)"}
                       </p>
-                      <p className="mt-1 line-clamp-2 text-[11px] text-ink-faint">
+                      <p className="mt-1 line-clamp-2 text-[12px] text-ink-muted">
                         {e.preview}
                       </p>
                       <p className="mt-1 text-[10px] text-ink-faint">

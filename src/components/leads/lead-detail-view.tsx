@@ -188,7 +188,7 @@ function QualificationScoreCard({
   return (
     <Link
       href={href}
-      className="group flex flex-col rounded-2xl border border-border bg-white p-4 shadow-[var(--shadow-soft)] transition hover:border-brand-200 hover:shadow-[var(--shadow-elevated)]"
+      className="group flex flex-col rounded-2xl border border-border bg-[var(--surface)] p-4 shadow-[var(--shadow-soft)] transition hover:border-brand-200 hover:shadow-[var(--shadow-elevated)]"
     >
       <div className="flex items-start justify-between gap-3">
         <span
@@ -238,7 +238,7 @@ function SocialButton({
       className={`inline-flex flex-1 min-w-[120px] items-center justify-center gap-2 rounded-xl border px-4 py-3 text-[13px] font-semibold shadow-[var(--shadow-soft)] transition hover:border-brand-200 hover:bg-brand-50 ${
         verified
           ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-          : "border-border bg-white text-ink"
+          : "border-border bg-[var(--surface)] text-ink"
       }`}
     >
       {icon}
@@ -301,7 +301,7 @@ function ResultPopup({
         className="absolute inset-0 bg-ink/40 backdrop-blur-[2px]"
         onClick={onClose}
       />
-      <div className="relative w-full max-w-sm rounded-2xl border border-border bg-white p-6 text-center shadow-[var(--shadow-elevated)]">
+      <div className="relative w-full max-w-sm rounded-2xl border border-border bg-[var(--surface)] p-6 text-center shadow-[var(--shadow-elevated)]">
         <span
           className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full ${iconStyles}`}
         >
@@ -325,7 +325,7 @@ function ResultPopup({
               href={popup.actionUrl}
               target="_blank"
               rel="noopener"
-              className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl px-4 text-[13px] font-semibold text-white shadow-sm transition hover:opacity-95"
+              className="btn-on-brand inline-flex h-10 items-center justify-center gap-1.5 rounded-xl px-4 text-[13px] font-semibold text-[var(--btn-on-brand)] shadow-sm transition hover:opacity-95"
               style={{ background: LOGO_GRADIENT }}
               onClick={onClose}
             >
@@ -336,7 +336,7 @@ function ResultPopup({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-10 items-center justify-center rounded-xl border border-border bg-white px-4 text-[13px] font-semibold text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
+            className="inline-flex h-10 items-center justify-center rounded-xl border border-border bg-[var(--surface)] px-4 text-[13px] font-semibold text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
           >
             Close
           </button>
@@ -350,7 +350,7 @@ function ResultPopup({
 function PlatformTag({ href, label }: { href?: string | null; label: string }) {
   if (!href) {
     return (
-      <span className="rounded-lg border border-dashed border-border px-2.5 py-1 text-[11px] text-ink-faint">
+      <span className="rounded-lg border border-dashed border-border px-2.5 py-1 text-[12px] text-ink-muted">
         {label}
       </span>
     );
@@ -360,7 +360,7 @@ function PlatformTag({ href, label }: { href?: string | null; label: string }) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="rounded-lg border border-border bg-white px-2.5 py-1 text-[11px] font-medium text-brand-700 transition hover:bg-brand-50"
+      className="rounded-lg border border-border bg-[var(--surface)] px-2.5 py-1 text-[11px] font-medium text-brand-700 transition hover:bg-brand-50"
     >
       {label}
     </a>
@@ -903,7 +903,7 @@ export function LeadDetailView({
           {navigation?.prevId ? (
             <Link
               href={detailHref(navigation.prevId)}
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border bg-white px-3 text-[12px] font-semibold text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border bg-[var(--surface)] px-3 text-[12px] font-semibold text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
             >
               <HiOutlineArrowLeft className="h-3.5 w-3.5" />
               Previous
@@ -917,7 +917,7 @@ export function LeadDetailView({
           {navigation?.nextId ? (
             <Link
               href={detailHref(navigation.nextId)}
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border bg-white px-3 text-[12px] font-semibold text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border bg-[var(--surface)] px-3 text-[12px] font-semibold text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
             >
               Next
               <HiOutlineArrowRight className="h-3.5 w-3.5" />
@@ -931,7 +931,7 @@ export function LeadDetailView({
         </div>
       </div>
 
-      <div className="relative overflow-hidden rounded-[1.5rem] border border-border/80 bg-white shadow-[var(--shadow-elevated)]">
+      <div className="relative overflow-hidden rounded-[1.5rem] border border-border/80 bg-[var(--panel-solid)] text-ink shadow-[var(--shadow-elevated)]">
         <div className="h-1.5 w-full" style={{ background: LOGO_GRADIENT }} />
         <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-start sm:justify-between sm:p-7">
           <div className="min-w-0">
@@ -973,7 +973,7 @@ export function LeadDetailView({
 
           <div className="flex shrink-0 flex-col items-start gap-3 sm:items-end">
             <div className="rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 to-white px-5 py-3 text-center shadow-[var(--shadow-soft)]">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
                 Lead score
               </p>
               <p
@@ -990,7 +990,7 @@ export function LeadDetailView({
             {isAdmin ? (
               <Link
                 href={`/admin/leads/${leadId}?edit=1${navFrom === "scrape" ? "&from=scrape" : ""}`}
-                className="inline-flex h-10 items-center rounded-xl border border-border bg-white px-4 text-[13px] font-semibold text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
+                className="inline-flex h-10 items-center rounded-xl border border-border bg-[var(--surface)] px-4 text-[13px] font-semibold text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
               >
                 Edit raw fields
               </Link>
@@ -1008,12 +1008,6 @@ export function LeadDetailView({
         </div>
       </div>
 
-      {!isAdmin ? (
-        <div className="mt-5">
-          <LeadActivityPanel leadId={lead.id} refreshKey={activityRefresh} />
-        </div>
-      ) : null}
-
       <div className="mt-6 grid gap-5 lg:grid-cols-3">
         <div className="space-y-5 lg:col-span-2">
           <Card>
@@ -1022,11 +1016,11 @@ export function LeadDetailView({
             </CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-2">
               <div className="flex items-center gap-3 rounded-xl border border-border bg-[#faf8fc] px-3.5 py-3 text-sm">
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-brand-600 shadow-sm">
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--surface)] text-brand-600 shadow-sm">
                   <HiOutlineUser className="h-4 w-4" />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-muted">
                     Owner
                   </p>
                   <p className="truncate font-medium text-ink">
@@ -1056,11 +1050,11 @@ export function LeadDetailView({
                 href={lead.phone ? `tel:${lead.phone}` : undefined}
                 className="flex items-center gap-3 rounded-xl border border-border bg-[#faf8fc] px-3.5 py-3 text-sm transition hover:border-brand-200"
               >
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-brand-600 shadow-sm">
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--surface)] text-brand-600 shadow-sm">
                   <HiOutlinePhone className="h-4 w-4" />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-muted">
                     Phone
                   </p>
                   <p className="truncate font-medium text-ink">
@@ -1069,11 +1063,11 @@ export function LeadDetailView({
                 </div>
               </a>
               <div className="flex items-center gap-3 rounded-xl border border-border bg-[#faf8fc] px-3.5 py-3 text-sm">
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-brand-600 shadow-sm">
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--surface)] text-brand-600 shadow-sm">
                   <HiOutlineEnvelope className="h-4 w-4" />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-muted">
                     Email
                   </p>
                   <p className="truncate font-medium text-ink">
@@ -1092,11 +1086,11 @@ export function LeadDetailView({
                 </div>
               </div>
               <div className="flex items-center gap-3 rounded-xl border border-border bg-[#faf8fc] px-3.5 py-3 text-sm">
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-amber-500 shadow-sm">
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--surface)] text-amber-500 shadow-sm">
                   <HiStar className="h-4 w-4" />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-muted">
                     Star rating
                   </p>
                   <p className="truncate font-medium text-ink">
@@ -1106,11 +1100,11 @@ export function LeadDetailView({
                 </div>
               </div>
               <div className="flex items-center gap-3 rounded-xl border border-border bg-[#faf8fc] px-3.5 py-3 text-sm sm:col-span-2">
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-brand-600 shadow-sm">
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--surface)] text-brand-600 shadow-sm">
                   <HiOutlineGlobeAlt className="h-4 w-4" />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-muted">
                     Website
                   </p>
                   {lead.website ? (
@@ -1129,7 +1123,7 @@ export function LeadDetailView({
               </div>
               {lead.yearsInBusiness != null && (
                 <div className="flex items-center gap-3 rounded-xl border border-border bg-[#faf8fc] px-3.5 py-3 text-sm sm:col-span-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-muted">
                     Years in business
                   </p>
                   <p className="font-medium text-ink">{lead.yearsInBusiness}</p>
@@ -1139,13 +1133,13 @@ export function LeadDetailView({
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-start justify-between gap-3">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <HiOutlineUserGroup className="h-5 w-5 text-brand-600" />
+            <CardHeader className="flex flex-col gap-4 border-b border-border/70 pb-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0 space-y-1.5">
+                <CardTitle className="flex items-center gap-2.5 text-[17px]">
+                  <HiOutlineUserGroup className="h-5 w-5 shrink-0 text-brand-600" />
                   Public decision makers
                 </CardTitle>
-                <p className="mt-1 text-[12px] text-ink-muted">
+                <p className="text-[13px] leading-relaxed text-ink-muted">
                   Verified from pages published by this business.
                 </p>
               </div>
@@ -1154,6 +1148,7 @@ export function LeadDetailView({
                 variant="secondary"
                 onClick={fetchSocial}
                 disabled={fetchingSocial}
+                className="shrink-0"
               >
                 <HiOutlineArrowPath
                   className={`h-4 w-4 ${fetchingSocial ? "animate-spin" : ""}`}
@@ -1161,10 +1156,10 @@ export function LeadDetailView({
                 {fetchingSocial ? "Refreshing…" : "Refresh public data"}
               </Button>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap items-center gap-2 text-[11px]">
+            <CardContent className="space-y-4 pt-5">
+              <div className="flex flex-wrap items-center gap-2.5 text-[12px]">
                 <span
-                  className={`rounded-full px-2.5 py-1 font-semibold ${
+                  className={`rounded-full px-3 py-1 font-semibold ${
                     publicPeopleCount
                       ? "bg-emerald-50 text-emerald-700"
                       : "bg-amber-50 text-amber-800"
@@ -1175,7 +1170,7 @@ export function LeadDetailView({
                     : "No public people confirmed"}
                 </span>
                 {lead.peopleEnrichedAt && (
-                  <span className="text-ink-faint">
+                  <span className="text-ink-muted">
                     Checked {new Date(lead.peopleEnrichedAt).toLocaleString()}
                   </span>
                 )}
@@ -1186,10 +1181,10 @@ export function LeadDetailView({
                   href={lead.ownerSourceUrl ?? undefined}
                   target={lead.ownerSourceUrl ? "_blank" : undefined}
                   rel={lead.ownerSourceUrl ? "noopener noreferrer" : undefined}
-                  className="flex items-start gap-4 rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50/90 to-white p-4 transition hover:border-brand-200"
+                  className="flex items-start gap-4 rounded-2xl border border-brand-200 bg-gradient-to-br from-brand-50/90 to-[var(--surface)] p-4 transition hover:border-brand-300"
                 >
                   <span
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-base font-bold text-white shadow-sm"
+                    className="btn-on-brand flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-base font-bold text-[var(--btn-on-brand)] shadow-sm"
                     style={{ background: LOGO_GRADIENT }}
                   >
                     {lead.ownerName.charAt(0).toUpperCase()}
@@ -1230,7 +1225,7 @@ export function LeadDetailView({
                         rel="noopener noreferrer"
                         className="flex items-start gap-3 rounded-xl border border-border bg-[#faf8fc] px-3.5 py-3 transition hover:border-brand-200"
                       >
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-brand-600 shadow-sm">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--surface)] text-brand-600 shadow-sm">
                           <HiOutlineUser className="h-4 w-4" />
                         </span>
                         <span className="min-w-0">
@@ -1264,7 +1259,7 @@ export function LeadDetailView({
             </CardHeader>
             <CardContent className="space-y-4">
               {lead.socialEnrichedAt && (
-                <p className="text-[11px] text-ink-faint">
+                <p className="text-[12px] text-ink-muted">
                   Last fetched{" "}
                   {new Date(lead.socialEnrichedAt).toLocaleString()}
                 </p>
@@ -1354,7 +1349,7 @@ export function LeadDetailView({
                       href={linkedinSearchUrl}
                       target="_blank"
                       rel="noopener"
-                      className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-white px-3 text-[12px] font-semibold text-brand-700 transition hover:bg-brand-50"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-[var(--surface)] px-3 text-[12px] font-semibold text-brand-700 transition hover:bg-brand-50"
                     >
                       Search on LinkedIn
                       <HiOutlineArrowTopRightOnSquare className="h-3.5 w-3.5" />
@@ -1374,30 +1369,32 @@ export function LeadDetailView({
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between gap-3">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <HiOutlineMegaphone className="h-5 w-5 text-brand-600" />
-                  Facebook Ads Library
-                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
+            <CardHeader className="flex flex-col gap-4 border-b border-border/70 pb-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0 space-y-2">
+                <CardTitle className="flex flex-wrap items-center gap-x-2.5 gap-y-2 text-[17px]">
+                  <span className="inline-flex items-center gap-2.5">
+                    <HiOutlineMegaphone className="h-5 w-5 shrink-0 text-brand-600" />
+                    Facebook Ads Library
+                  </span>
+                  <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
                     Coming soon
                   </span>
                 </CardTitle>
-                <p className="mt-1 text-[12px] text-ink-muted">
+                <p className="max-w-xl text-[13px] leading-relaxed text-ink-muted">
                   Check if this business is running Meta ads — and where the
                   marketing opportunity lies.
                 </p>
               </div>
-              <Button size="sm" disabled title="Coming soon">
+              <Button size="sm" disabled title="Coming soon" className="shrink-0">
                 Check ads
               </Button>
             </CardHeader>
-            <CardContent>
-              <div className="rounded-xl border border-dashed border-amber-200 bg-amber-50/80 px-4 py-5 text-center">
+            <CardContent className="pt-5">
+              <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50/80 px-4 py-6 text-center">
                 <p className="text-[14px] font-semibold text-amber-950">
                   Coming soon
                 </p>
-                <p className="mx-auto mt-1 max-w-md text-[13px] text-amber-900/80">
+                <p className="mx-auto mt-2 max-w-md text-[13px] leading-relaxed text-amber-900/90">
                   Meta Ads Library checks are temporarily unavailable while we
                   finish this feature for agencies and admins.
                 </p>
@@ -1406,21 +1403,22 @@ export function LeadDetailView({
           </Card>
 
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between gap-3">
-              <CardTitle>AI verification</CardTitle>
+            <CardHeader className="flex flex-col gap-4 border-b border-border/70 pb-4 sm:flex-row sm:items-center sm:justify-between">
+              <CardTitle className="text-[17px]">AI verification</CardTitle>
               <Button
                 size="sm"
                 variant="secondary"
                 onClick={reVerify}
                 loading={verifying}
+                className="shrink-0"
               >
                 {verifying ? "Re-verifying…" : "Re-verify"}
               </Button>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-5">
               <div className="flex items-center gap-4">
                 <div
-                  className="flex h-16 w-16 flex-col items-center justify-center rounded-2xl text-white"
+                  className="btn-on-brand flex h-16 w-16 flex-col items-center justify-center rounded-2xl text-[var(--btn-on-brand)]"
                   style={{ background: LOGO_GRADIENT }}
                 >
                   <span className="text-xl font-bold leading-none">
@@ -1558,7 +1556,7 @@ export function LeadDetailView({
                   </Button>
                   <Link
                     href={`/leads/${leadId}`}
-                    className="inline-flex h-9 w-full items-center justify-center rounded-xl border border-border bg-white px-3 text-[13px] font-semibold text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
+                    className="inline-flex h-9 w-full items-center justify-center rounded-xl border border-border bg-[var(--surface)] px-3 text-[13px] font-semibold text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
                   >
                     Open in app
                   </Link>
@@ -1704,7 +1702,7 @@ export function LeadDetailView({
                         className="rounded-xl border border-border bg-[#faf8fc] px-3 py-2.5 text-sm"
                       >
                         <p className="text-ink">{n.content}</p>
-                        <p className="mt-1 text-[11px] text-ink-faint">
+                        <p className="mt-1.5 text-[12px] leading-relaxed text-ink-muted">
                           {new Date(n.createdAt).toLocaleString()}
                         </p>
                       </li>
@@ -1716,6 +1714,12 @@ export function LeadDetailView({
           )}
         </div>
       </div>
+
+      {!isAdmin ? (
+        <div className="mt-6">
+          <LeadActivityPanel leadId={lead.id} refreshKey={activityRefresh} />
+        </div>
+      ) : null}
 
       {popup && <ResultPopup popup={popup} onClose={() => setPopup(null)} />}
     </div>

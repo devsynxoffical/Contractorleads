@@ -56,7 +56,7 @@ export function PageHeader({
           {title}
         </h1>
         {description && (
-          <p className="mt-1.5 max-w-2xl text-[13px] leading-relaxed text-ink-muted sm:text-sm">
+          <p className="mt-2 max-w-2xl text-[13px] leading-relaxed text-ink-muted sm:text-[14px]">
             {description}
           </p>
         )}
@@ -76,7 +76,7 @@ export function PrimaryActionLink({
   return (
     <Link
       href={href}
-      className="inline-flex h-10 items-center gap-2 rounded-xl px-4 text-[13px] font-semibold text-white shadow-[0_6px_18px_var(--brand-glow)] transition hover:opacity-95"
+      className="btn-on-brand inline-flex h-10 items-center gap-2 rounded-xl px-4 text-[13px] font-semibold text-[var(--btn-on-brand)] shadow-[0_6px_18px_var(--brand-glow)] transition hover:opacity-95"
       style={{ background: LOGO_GRADIENT }}
     >
       {children}
@@ -94,7 +94,7 @@ export function SecondaryActionLink({
   return (
     <Link
       href={href}
-      className="inline-flex h-10 items-center gap-2 rounded-xl border border-border bg-surface px-3.5 text-[13px] font-medium text-ink-muted shadow-[var(--shadow-soft)] backdrop-blur transition hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700"
+      className="inline-flex h-10 items-center gap-2 rounded-xl border border-[color:var(--border-strong)] bg-[var(--surface)] px-3.5 text-[13px] font-semibold text-ink shadow-[var(--shadow-soft)] backdrop-blur transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
     >
       {children}
     </Link>

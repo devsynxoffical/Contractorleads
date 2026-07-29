@@ -2,7 +2,7 @@ import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
 const fieldClass =
-  "flex h-11 w-full rounded-xl border border-border bg-[var(--input-bg)] px-3.5 text-sm text-ink placeholder:text-ink-faint outline-none transition hover:border-brand-500/40 focus:border-brand-500/55 focus:bg-[var(--input-bg-focus)] focus:ring-4 focus:ring-[var(--ring)]";
+  "flex h-11 w-full rounded-xl border border-[color:var(--border-strong)] bg-[var(--input-bg)] px-3.5 text-sm text-ink placeholder:text-ink-muted outline-none transition hover:border-brand-500/50 focus:border-brand-500 focus:bg-[var(--input-bg-focus)] focus:ring-4 focus:ring-[var(--ring)]";
 
 export function Input({
   className,
@@ -18,8 +18,8 @@ export function Label({
   return (
     <label
       className={cn(
-        "text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-faint",
-        className
+        "text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-muted",
+        className,
       )}
       {...props}
     />
@@ -46,8 +46,8 @@ export const Textarea = forwardRef<
     <textarea
       ref={ref}
       className={cn(
-        "flex min-h-[120px] w-full rounded-xl border border-border bg-[var(--input-bg)] px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-faint outline-none transition hover:border-brand-500/40 focus:border-brand-500/55 focus:bg-[var(--input-bg-focus)] focus:ring-4 focus:ring-[var(--ring)]",
-        className
+        "flex min-h-[120px] w-full rounded-xl border border-[color:var(--border-strong)] bg-[var(--input-bg)] px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-muted outline-none transition hover:border-brand-500/50 focus:border-brand-500 focus:bg-[var(--input-bg-focus)] focus:ring-4 focus:ring-[var(--ring)]",
+        className,
       )}
       {...props}
     />

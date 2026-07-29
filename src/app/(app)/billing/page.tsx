@@ -452,11 +452,11 @@ export default async function BillingPage({
                   ) : null}
                 </p>
                 {selectedPrice != null && billingPeriod === "annual" ? (
-                  <p className="mt-0.5 text-[11px] text-ink-faint">
+                  <p className="mt-0.5 text-[12px] text-ink-muted">
                     Billed annually
                   </p>
                 ) : null}
-                <p className="mt-1 text-[12px] text-ink-muted">
+                <p className="mt-1.5 text-[13px] leading-relaxed text-ink-muted">
                   {plan.creditsLabel}
                 </p>
                 {perLead != null ? (

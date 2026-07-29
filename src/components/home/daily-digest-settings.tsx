@@ -160,14 +160,14 @@ export function DailyDigestSettings() {
 
   if (loading) {
     return (
-      <div className="rounded-2xl border border-border bg-white/90 p-5 text-[13px] text-ink-muted shadow-[var(--shadow-card)]">
+      <div className="rounded-2xl border border-border bg-[var(--surface)] p-5 text-[13px] text-ink-muted shadow-[var(--shadow-card)]">
         Loading digest settings…
       </div>
     );
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-white/90 p-5 shadow-[var(--shadow-card)] sm:p-6">
+    <div className="rounded-2xl border border-border bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="inline-flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.14em] text-brand-600">
@@ -292,14 +292,14 @@ export function DailyDigestSettings() {
                 className={`rounded-xl border px-4 py-2 text-[13px] font-semibold transition ${
                   form.dailyLeadCount === n
                     ? "border-brand-400 bg-brand-50 text-brand-700"
-                    : "border-border bg-white text-ink-muted hover:border-brand-200"
+                    : "border-border bg-[var(--surface)] text-ink-muted hover:border-brand-200"
                 }`}
               >
                 {n}
               </button>
             ))}
           </div>
-          <p className="mt-1.5 text-[11px] text-ink-faint">
+          <p className="mt-1.5 text-[12px] text-ink-muted">
             ≈ {estimatedCredits.toFixed(1)} credits / morning (only charged for
             leads actually returned)
           </p>
@@ -320,7 +320,7 @@ export function DailyDigestSettings() {
               </option>
             ))}
           </select>
-          <p className="mt-1.5 text-[11px] text-ink-faint">
+          <p className="mt-1.5 text-[12px] text-ink-muted">
             Sends around 7–9am local time when the morning job runs.
           </p>
         </div>
@@ -371,7 +371,7 @@ export function DailyDigestSettings() {
                   {d.leadCount} leads · {d.creditsCharged} credits ·{" "}
                   <span className="capitalize text-ink-muted">{d.emailStatus}</span>
                 </span>
-                <span className="text-[11px] text-ink-faint">
+                <span className="text-[12px] text-ink-muted">
                   {new Date(d.createdAt).toLocaleString(undefined, {
                     month: "short",
                     day: "numeric",

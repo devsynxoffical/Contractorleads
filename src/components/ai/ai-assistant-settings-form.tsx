@@ -139,7 +139,7 @@ export function AiAssistantSettingsForm({ user }: { user: SessionUser }) {
             {fields.map((field) => (
               <div key={field.key} className="space-y-1.5">
                 <Label>{field.label}</Label>
-                <p className="text-[11px] text-ink-faint">{field.hint}</p>
+                <p className="text-[12px] text-ink-muted">{field.hint}</p>
                 {field.type === "input" ? (
                   <Input
                     value={form[field.key]}

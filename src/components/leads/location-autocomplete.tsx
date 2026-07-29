@@ -94,7 +94,7 @@ export function LocationAutocomplete({
         />
       </div>
       {open && (suggestions.length > 0 || loading) && (
-        <ul className="absolute z-40 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-border bg-white py-1 shadow-[var(--shadow-elevated)]">
+        <ul className="absolute z-40 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-border bg-[var(--surface)] py-1 shadow-[var(--shadow-elevated)]">
           {loading && suggestions.length === 0 && (
             <li className="px-3 py-2 text-[12px] text-ink-muted">
               Searching locations…

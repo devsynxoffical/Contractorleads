@@ -24,19 +24,19 @@ export default async function SecuritySettingsPage() {
       <div className="flex flex-wrap gap-2 text-[13px]">
         <Link
           href="/settings"
-          className="rounded-xl border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-800 hover:border-slate-300"
+          className="rounded-xl border border-slate-200 bg-[var(--surface)] px-3 py-2 font-semibold text-slate-800 hover:border-slate-300"
         >
           Business profile
         </Link>
         <Link
           href="/billing"
-          className="rounded-xl border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-800 hover:border-slate-300"
+          className="rounded-xl border border-slate-200 bg-[var(--surface)] px-3 py-2 font-semibold text-slate-800 hover:border-slate-300"
         >
           Billing
         </Link>
         <Link
           href="/team"
-          className="rounded-xl border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-800 hover:border-slate-300"
+          className="rounded-xl border border-slate-200 bg-[var(--surface)] px-3 py-2 font-semibold text-slate-800 hover:border-slate-300"
         >
           Users &amp; teams
         </Link>

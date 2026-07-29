@@ -164,7 +164,7 @@ export function SmsInboxPanel({
                     <span className="truncate text-[14px] text-ink">
                       {t.businessName}
                     </span>
-                    <span className="shrink-0 text-[11px] text-ink-faint">
+                    <span className="shrink-0 text-[12px] text-ink-muted">
                       {new Date(t.createdAt).toLocaleDateString()}
                     </span>
                   </span>
@@ -251,7 +251,7 @@ export function SmsInboxPanel({
                   maxLength={1600}
                 />
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] text-ink-faint">
+                  <span className="text-[12px] text-ink-muted">
                     {replyBody.length}/1600
                   </span>
                   <Button type="submit" loading={busy} disabled={!replyBody.trim()}>

@@ -246,7 +246,7 @@ export function ScriptsLibrary({ initialScripts }: { initialScripts: Script[] })
                     >
                       {typeLabel(script.type)}
                     </span>
-                    <span className="text-[11px] text-ink-faint">
+                    <span className="text-[12px] text-ink-muted">
                       {formatWhen(script.createdAt)}
                     </span>
                   </div>
@@ -357,7 +357,7 @@ export function ScriptsLibrary({ initialScripts }: { initialScripts: Script[] })
                         {script.relatedLeadId ? (
                           <Link
                             href={`/leads/${script.relatedLeadId}`}
-                            className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-border bg-white px-3 text-[13px] font-semibold text-ink transition hover:border-brand-300 hover:text-brand-700"
+                            className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-border bg-[var(--surface)] px-3 text-[13px] font-semibold text-ink transition hover:border-brand-300 hover:text-brand-700"
                           >
                             <HiOutlineMegaphone className="h-4 w-4" />
                             Open related lead
@@ -365,7 +365,7 @@ export function ScriptsLibrary({ initialScripts }: { initialScripts: Script[] })
                         ) : (
                           <Link
                             href="/ask-expert"
-                            className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-border bg-white px-3 text-[13px] font-semibold text-ink transition hover:border-brand-300 hover:text-brand-700"
+                            className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-border bg-[var(--surface)] px-3 text-[13px] font-semibold text-ink transition hover:border-brand-300 hover:text-brand-700"
                           >
                             <HiOutlineArrowPath className="h-4 w-4" />
                             Generate another

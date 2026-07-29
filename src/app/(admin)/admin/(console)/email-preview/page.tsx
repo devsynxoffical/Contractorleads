@@ -51,7 +51,7 @@ function Field({
     <label className="block text-[12px]">
       <span className="font-medium text-ink-muted">{label}</span>
       {hint ? (
-        <span className="mt-0.5 block text-[11px] text-ink-faint">{hint}</span>
+        <span className="mt-0.5 block text-[12px] text-ink-muted">{hint}</span>
       ) : null}
       <div className="mt-1">{children}</div>
     </label>
@@ -165,7 +165,7 @@ export default function AdminEmailTemplatesPage() {
       )}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
-        <div className="space-y-4 rounded-2xl border border-border/80 bg-white p-4 md:p-5">
+        <div className="space-y-4 rounded-2xl border border-border/80 bg-[var(--surface)] p-4 md:p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <label className="flex items-center gap-2 text-[13px] font-medium text-ink">
               <input
@@ -350,7 +350,7 @@ export default function AdminEmailTemplatesPage() {
         </div>
 
         <div className="space-y-4">
-          <div className="rounded-2xl border border-border/80 bg-white p-4">
+          <div className="rounded-2xl border border-border/80 bg-[var(--surface)] p-4">
             <p className="mb-3 text-[13px] text-ink-muted">
               Preview subject:{" "}
               <span className="font-semibold text-ink">{subject || "…"}</span>
@@ -373,7 +373,7 @@ export default function AdminEmailTemplatesPage() {
                 Send test email
               </Button>
             </div>
-            <p className="mt-2 text-[11px] text-ink-faint">
+            <p className="mt-2 text-[12px] text-ink-muted">
               Test send uses the current form (save first if you want the live template updated).
             </p>
           </div>

@@ -342,7 +342,7 @@ export function TeamMembersPanel({
               <Label htmlFor="team-role">Role</Label>
               <select
                 id="team-role"
-                className="saas-input h-10 w-full rounded-xl border border-border bg-white px-3 text-[13px]"
+                className="saas-input h-10 w-full rounded-xl border border-border bg-[var(--surface)] px-3 text-[13px]"
                 value={form.role}
                 onChange={(e) => setForm({ ...form, role: e.target.value })}
                 disabled={busy || seatsFull}
@@ -425,7 +425,7 @@ export function TeamMembersPanel({
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <select
-                    className="h-8 rounded-lg border border-border bg-white px-2 text-[12px]"
+                    className="h-8 rounded-lg border border-border bg-[var(--surface)] px-2 text-[12px]"
                     value={m.role}
                     disabled={busy}
                     onChange={(e) => updateRole(m.id, e.target.value)}

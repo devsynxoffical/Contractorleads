@@ -286,7 +286,7 @@ export default function AdminCustomerDetailPage() {
       )}
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <section className="space-y-3 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">
+        <section className="space-y-3 rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
           <h2 className="text-sm font-semibold text-ink">Profile</h2>
           {(
             [
@@ -349,7 +349,7 @@ export default function AdminCustomerDetailPage() {
         </section>
 
         <div className="space-y-5">
-          <section className="space-y-3 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">
+          <section className="space-y-3 rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
             <h2 className="text-sm font-semibold text-ink">
               Plan & subscription
             </h2>
@@ -401,7 +401,7 @@ export default function AdminCustomerDetailPage() {
             </Button>
           </section>
 
-          <section className="space-y-3 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">
+          <section className="space-y-3 rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
             <h2 className="text-sm font-semibold text-ink">SSO, API & MCP</h2>
             <p className="text-[12px] text-ink-muted">
               Gate external integrations by plan and apply hard monthly API limits.
@@ -492,7 +492,7 @@ export default function AdminCustomerDetailPage() {
             </Button>
           </section>
 
-          <section className="space-y-3 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">
+          <section className="space-y-3 rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
             <h2 className="text-sm font-semibold text-ink">Referral attribution</h2>
             <p className="text-[12px] text-ink-muted">
               Their share code:{" "}
@@ -548,7 +548,7 @@ export default function AdminCustomerDetailPage() {
             </div>
           </section>
 
-          <section className="space-y-3 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">
+          <section className="space-y-3 rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
             <h2 className="text-sm font-semibold text-ink">Credits</h2>
             <p className="text-2xl font-semibold tabular-nums text-ink">
               {customer.creditsRemaining}
@@ -582,7 +582,7 @@ export default function AdminCustomerDetailPage() {
             </ul>
           </section>
 
-          <section className="space-y-3 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">
+          <section className="space-y-3 rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
             <h2 className="text-sm font-semibold text-ink">Reset password</h2>
             <input
               type="password"
@@ -599,7 +599,7 @@ export default function AdminCustomerDetailPage() {
             </Button>
           </section>
 
-          <section className="space-y-3 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">
+          <section className="space-y-3 rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
             <h2 className="text-sm font-semibold text-ink">
               Internal support notes
             </h2>
@@ -618,7 +618,7 @@ export default function AdminCustomerDetailPage() {
             </Button>
           </section>
 
-          <section className="space-y-3 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">
+          <section className="space-y-3 rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
             <h2 className="text-sm font-semibold text-ink">
               CRM · Slack · GHL webhooks
             </h2>
@@ -735,7 +735,7 @@ export default function AdminCustomerDetailPage() {
             </Button>
           </section>
 
-          <section className="space-y-3 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">
+          <section className="space-y-3 rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
             <h2 className="text-sm font-semibold text-ink">
               Users &amp; teams ({customer.teamMembers?.length ?? 0} seats)
             </h2>
@@ -751,7 +751,7 @@ export default function AdminCustomerDetailPage() {
             </ul>
           </section>
 
-          <section className="space-y-3 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">
+          <section className="space-y-3 rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
             <h2 className="text-sm font-semibold text-ink">
               Email setup
             </h2>
@@ -777,7 +777,7 @@ export default function AdminCustomerDetailPage() {
         </div>
       </div>
 
-      <section className="mt-5 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">
+      <section className="mt-5 rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
         <h2 className="text-sm font-semibold text-ink">
           Usage snapshot · {customer._count.searches} searches ·{" "}
           {customer._count.savedLeads} saved · {customer._count.leadEmails} emails ·{" "}
@@ -793,7 +793,7 @@ export default function AdminCustomerDetailPage() {
               <span>
                 {s.industry} · {s.country} · {s.resultCount} results
               </span>
-              <span className="text-[11px] text-ink-faint">
+              <span className="text-[12px] text-ink-muted">
                 {new Date(s.createdAt).toLocaleString()}
               </span>
             </li>

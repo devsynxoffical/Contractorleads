@@ -217,7 +217,7 @@ export function EmailMetricsDashboard({
                   <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-600">
                     {statusLabel(e.direction, e.status)}
                   </span>
-                  <span className="text-[11px] text-ink-faint">
+                  <span className="text-[12px] text-ink-muted">
                     {new Date(e.createdAt).toLocaleString()}
                   </span>
                 </div>

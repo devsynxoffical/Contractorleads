@@ -180,7 +180,9 @@ export async function runLeadPipeline(params: SearchParams) {
     leads.push(lead);
   });
 
-  const finalLeads = leads.slice(0, targetCount);
+  const finalLeads = leads
+    .slice(0, targetCount)
+    .sort((a, b) => b.leadScore - a.leadScore || b.createdAt.getTime() - a.createdAt.getTime());
 
   await prisma.search.update({
     where: { id: search.id },

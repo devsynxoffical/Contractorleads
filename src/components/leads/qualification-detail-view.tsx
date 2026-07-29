@@ -7,10 +7,11 @@ import {
   HiOutlineClipboardDocument,
   HiOutlineCheck,
 } from "react-icons/hi2";
-import { Button } from "@/components/ui/button";
+import { Button, Spinner } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BackLink, PageCrumbs } from "@/components/layout/back-nav";
 import { PageHeader, LOGO_GRADIENT } from "@/components/layout/page-header";
+import { ClientPitchReportView } from "@/components/leads/client-pitch-report-view";
 import { notifyCreditsChanged } from "@/lib/client/credits-sync";
 import {
   LEAD_FROM_HREF,
@@ -207,12 +208,14 @@ export function QualificationDetailView({
 
       <PageHeader
         eyebrow={null}
-        title={meta.label}
-        description={
+        title={
           lead
-            ? `Detailed score report for ${lead.businessName}${
-                lead.website ? ` · ${lead.website.replace(/^https?:\/\//, "")}` : ""
-              }`
+            ? `${meta.label} — ${lead.businessName}`
+            : meta.label
+        }
+        description={
+          lead?.website
+            ? `Live audit detail · ${lead.website.replace(/^https?:\/\//, "")}`
             : meta.description
         }
         actions={
@@ -255,8 +258,8 @@ export function QualificationDetailView({
               className={cn(
                 "rounded-full border px-3 py-1.5 text-[12px] font-semibold transition",
                 active
-                  ? "border-brand-300 bg-brand-50 text-brand-800"
-                  : "border-border bg-white text-ink-muted hover:border-brand-200",
+                  ? "border-brand-300 bg-brand-50 text-brand-700"
+                  : "border-border bg-[var(--surface)] text-ink-muted hover:border-brand-200",
               )}
             >
               {m.shortLabel}
@@ -265,50 +268,54 @@ export function QualificationDetailView({
         })}
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[240px_1fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-[14px]">Measured score</CardTitle>
+      <div className="grid gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">
+        <Card className="h-fit lg:sticky lg:top-4">
+          <CardHeader className="border-b border-border/70 bg-[#faf8fc]/60 pb-4">
+            <CardTitle className="text-[15px]">Measured score</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pt-5">
             <div
-              className="flex h-24 w-24 flex-col items-center justify-center rounded-2xl text-white"
+              className="btn-on-brand flex h-28 w-28 flex-col items-center justify-center rounded-2xl text-white shadow-[var(--shadow-soft)]"
               style={{ background: LOGO_GRADIENT }}
             >
-              <span className="text-3xl font-bold leading-none">{score}</span>
-              <span className="text-[11px] opacity-80">/100</span>
+              <span className="text-4xl font-bold leading-none tabular-nums">
+                {score}
+              </span>
+              <span className="mt-1 text-[12px] font-medium opacity-90">
+                /100
+              </span>
             </div>
-            <p className="text-[13px] leading-relaxed text-ink-muted">
+            <p className="text-[14px] leading-relaxed text-ink-muted">
               {meta.description}
             </p>
-            <p className="text-[11px] text-ink-faint">
-              Uses {creditCost} credit to generate · regenerate re-crawls the
+            <p className="text-[12px] leading-relaxed text-ink-muted">
+              Uses {creditCost} credit to generate. Regenerate re-crawls the
               site and rewrites the report from live signals.
             </p>
             {lead?.outreachAngle ? (
-              <div className="rounded-xl border border-brand-100 bg-brand-50/50 px-3 py-2 text-[12px] leading-relaxed text-ink">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-brand-600">
+              <div className="rounded-xl border border-brand-100 bg-brand-50/60 px-3.5 py-3 text-[13px] leading-relaxed text-ink">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-brand-700">
                   Outreach angle
                 </p>
-                <p className="mt-1">{lead.outreachAngle}</p>
+                <p className="mt-1.5 text-ink">{lead.outreachAngle}</p>
               </div>
             ) : null}
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>
+        <Card className="overflow-hidden">
+          <CardHeader className="border-b border-border/70 bg-[#faf8fc]/60 pb-4">
+            <CardTitle className="text-[16px] leading-snug sm:text-[17px]">
               {report?.title || `${meta.label} — problems & fixes`}
             </CardTitle>
             {report?.createdAt ? (
-              <p className="text-[12px] text-ink-muted">
+              <p className="mt-1 text-[13px] text-ink-muted">
                 Updated {new Date(report.createdAt).toLocaleString()}
                 {source ? ` · ${source}` : ""}
               </p>
             ) : null}
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4 pt-5">
             {error ? (
               <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-[13px] text-rose-800">
                 {error}{" "}
@@ -325,17 +332,25 @@ export function QualificationDetailView({
               </p>
             ) : null}
             {loading || generating ? (
-              <p className="text-[14px] text-ink-muted">
-                {generating
-                  ? "Crawling the site and writing the detail report…"
-                  : "Loading…"}
-              </p>
+              <div className="flex flex-col items-center justify-center gap-3 py-14 text-center">
+                <Spinner className="h-8 w-8 text-brand-600" />
+                <p className="text-[14px] font-semibold text-ink">
+                  {generating
+                    ? "Writing the detail report…"
+                    : "Loading report…"}
+                </p>
+                <p className="max-w-sm text-[13px] text-ink-muted">
+                  {generating
+                    ? "Crawling the site and drafting a professional problems & fixes document."
+                    : "Fetching your saved report."}
+                </p>
+              </div>
             ) : report ? (
-              <pre className="max-h-[70vh] overflow-auto whitespace-pre-wrap rounded-2xl border border-border bg-[#faf8fc] px-4 py-4 text-[13px] leading-relaxed text-ink">
-                {report.content}
-              </pre>
+              <div className="max-h-[min(70vh,52rem)] overflow-auto bg-[#f7f5f9]/80 p-1 sm:p-2">
+                <ClientPitchReportView content={report.content} />
+              </div>
             ) : (
-              <p className="text-[14px] text-ink-muted">
+              <p className="py-8 text-center text-[14px] text-ink-muted">
                 No detail report yet. Click Generate report.
               </p>
             )}

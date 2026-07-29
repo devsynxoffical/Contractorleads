@@ -252,7 +252,7 @@ export default function AdminSiteLeadsPage() {
           className={`rounded-full px-4 py-2 text-[13px] font-semibold transition ${
             tab === "enterprise"
               ? "bg-brand-600 text-white"
-              : "border border-border bg-white text-ink-muted hover:text-ink"
+              : "border border-border bg-[var(--surface)] text-ink-muted hover:text-ink"
           }`}
         >
           Enterprise bookings
@@ -263,7 +263,7 @@ export default function AdminSiteLeadsPage() {
           className={`rounded-full px-4 py-2 text-[13px] font-semibold transition ${
             tab === "visitors"
               ? "bg-brand-600 text-white"
-              : "border border-border bg-white text-ink-muted hover:text-ink"
+              : "border border-border bg-[var(--surface)] text-ink-muted hover:text-ink"
           }`}
         >
           Marketing visitors
@@ -286,7 +286,7 @@ export default function AdminSiteLeadsPage() {
             ].map(([label, value]) => (
               <div
                 key={String(label)}
-                className="rounded-2xl border border-border/80 bg-white px-4 py-3 shadow-[var(--shadow-card)]"
+                className="rounded-2xl border border-border/80 bg-[var(--surface)] px-4 py-3 shadow-[var(--shadow-card)]"
               >
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
                   {label}
@@ -298,9 +298,9 @@ export default function AdminSiteLeadsPage() {
             ))}
           </div>
 
-          <div className="mb-5 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">
+          <div className="mb-5 rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
             <p className="text-[14px] font-semibold text-ink">Booking settings</p>
-            <p className="mt-1 text-[12px] text-ink-muted">
+            <p className="mt-1.5 text-[13px] leading-relaxed text-ink-muted">
               Confirmation emails go to the prospect; internal alerts go to the notify
               address below.
             </p>
@@ -333,7 +333,7 @@ export default function AdminSiteLeadsPage() {
             </Button>
           </div>
 
-          <div className="overflow-hidden rounded-2xl border border-border/80 bg-white shadow-[var(--shadow-card)]">
+          <div className="overflow-hidden rounded-2xl border border-border/80 bg-[var(--surface)] shadow-[var(--shadow-card)]">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[1100px] text-left text-[13px]">
                 <thead className="border-b border-border/70 bg-slate-50/80 text-[11px] uppercase tracking-wide text-ink-faint">
@@ -453,7 +453,7 @@ export default function AdminSiteLeadsPage() {
             ].map(([label, value]) => (
               <div
                 key={String(label)}
-                className="rounded-2xl border border-border/80 bg-white px-4 py-3 shadow-[var(--shadow-card)]"
+                className="rounded-2xl border border-border/80 bg-[var(--surface)] px-4 py-3 shadow-[var(--shadow-card)]"
               >
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
                   {label}
@@ -478,7 +478,7 @@ export default function AdminSiteLeadsPage() {
             <span className="text-ink-faint">{total} shown</span>
           </div>
 
-          <div className="overflow-hidden rounded-2xl border border-border/80 bg-white shadow-[var(--shadow-card)]">
+          <div className="overflow-hidden rounded-2xl border border-border/80 bg-[var(--surface)] shadow-[var(--shadow-card)]">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[900px] text-left text-[13px]">
                 <thead className="border-b border-border/70 bg-slate-50/80 text-[11px] uppercase tracking-wide text-ink-faint">
@@ -496,7 +496,7 @@ export default function AdminSiteLeadsPage() {
                     <tr key={v.id} className="hover:bg-brand-50/30">
                       <td className="px-4 py-3">
                         <p className="font-medium text-ink">{v.email ?? "—"}</p>
-                        <p className="text-[11px] text-ink-faint">
+                        <p className="text-[12px] text-ink-muted">
                           {v.landingPath ?? "/"} · cookie {v.visitorKey}
                         </p>
                       </td>

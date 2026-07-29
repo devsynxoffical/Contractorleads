@@ -71,7 +71,7 @@ export async function POST(
   };
   const reportType: LeadReportType = isLeadReportType(body.reportType)
     ? body.reportType
-    : "website";
+    : "full";
 
   try {
     await deductCredits(

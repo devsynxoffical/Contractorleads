@@ -135,8 +135,8 @@ export async function GET(request: Request) {
         id: r.id,
         title: r.title || "Untitled report",
         type: r.type,
-        preview: r.content.slice(0, 280),
-        content: r.content,
+        preview: (r.content || "").slice(0, 280),
+        content: r.content || "",
         createdAt: r.createdAt.toISOString(),
       })),
       emails: emails.map((e) => ({
@@ -144,8 +144,8 @@ export async function GET(request: Request) {
         direction: e.direction,
         fromEmail: e.fromEmail,
         toEmail: e.toEmail,
-        subject: e.subject,
-        body: e.body,
+        subject: e.subject || "",
+        body: e.body || "",
         status: e.status,
         error: e.error,
         createdAt: e.createdAt.toISOString(),
@@ -259,28 +259,30 @@ export async function GET(request: Request) {
     }
   }
 
-  const clients = saved.map((s) => {
-    const emailKey = s.lead.email?.trim().toLowerCase() || "";
-    const byLead = emailCountByLead.get(s.lead.id) || 0;
-    const byEmail = emailKey ? emailCountByAddress.get(emailKey) || 0 : 0;
-    return {
-      leadId: s.lead.id,
-      savedLeadId: s.id,
-      status: s.status,
-      businessName: s.lead.businessName,
-      ownerName: s.lead.ownerName,
-      phone: s.lead.phone,
-      email: s.lead.email,
-      city: s.lead.city,
-      state: s.lead.state,
-      industry: s.lead.industry,
-      leadScore: s.lead.leadScore,
-      qualityTier: s.lead.qualityTier,
-      reportCount: reportCountByLead.get(s.lead.id) || 0,
-      emailCount: Math.max(byLead, byEmail),
-      updatedAt: s.updatedAt.toISOString(),
-    };
-  });
+  const clients = saved
+    .map((s) => {
+      const emailKey = s.lead.email?.trim().toLowerCase() || "";
+      const byLead = emailCountByLead.get(s.lead.id) || 0;
+      const byEmail = emailKey ? emailCountByAddress.get(emailKey) || 0 : 0;
+      return {
+        leadId: s.lead.id,
+        savedLeadId: s.id,
+        status: s.status,
+        businessName: s.lead.businessName,
+        ownerName: s.lead.ownerName,
+        phone: s.lead.phone,
+        email: s.lead.email,
+        city: s.lead.city,
+        state: s.lead.state,
+        industry: s.lead.industry,
+        leadScore: s.lead.leadScore,
+        qualityTier: s.lead.qualityTier,
+        reportCount: reportCountByLead.get(s.lead.id) || 0,
+        emailCount: Math.max(byLead, byEmail),
+        updatedAt: s.updatedAt.toISOString(),
+      };
+    })
+    .sort((a, b) => b.leadScore - a.leadScore);
 
   return NextResponse.json({
     clients,

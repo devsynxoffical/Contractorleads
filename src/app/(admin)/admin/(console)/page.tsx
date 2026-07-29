@@ -475,7 +475,7 @@ export default function AdminOverviewPage() {
                 <p className="text-[13px] font-medium leading-snug text-ink">
                   {a.message}
                 </p>
-                <p className="mt-1 text-[12px] text-ink-muted">
+                <p className="mt-1.5 text-[13px] leading-relaxed text-ink-muted">
                   {a.user.companyName || a.user.name || a.user.email}
                   <span className="text-ink-faint">
                     {" "}

@@ -187,7 +187,7 @@ export function HomeView({ userName }: { userName?: string | null }) {
             <Link
               key={card.label}
               href={card.href}
-              className="group rounded-2xl border border-border bg-white/90 px-4 py-3.5 shadow-[var(--shadow-card)] transition hover:border-brand-200 hover:shadow-md"
+              className="group rounded-2xl border border-border bg-[var(--surface)] px-4 py-3.5 shadow-[var(--shadow-card)] transition hover:border-brand-200 hover:shadow-md"
             >
               <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
                 {card.label}

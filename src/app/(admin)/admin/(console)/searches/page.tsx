@@ -72,7 +72,7 @@ export default function AdminSearchesPage() {
         </button>
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-border/80 bg-white shadow-[var(--shadow-card)]">
+      <div className="overflow-x-auto rounded-2xl border border-border/80 bg-[var(--surface)] shadow-[var(--shadow-card)]">
         <table className="w-full min-w-[720px] text-left text-[13px]">
           <thead className="border-b border-border bg-[#faf8fc] text-[11px] uppercase tracking-wide text-ink-faint">
             <tr>

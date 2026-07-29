@@ -123,7 +123,7 @@ function DigestLeadCard({
   };
 
   return (
-    <article className="rounded-2xl border border-border bg-white/90 shadow-[var(--shadow-card)]">
+    <article className="rounded-2xl border border-border bg-[var(--surface)] shadow-[var(--shadow-card)]">
       <div className="flex flex-wrap items-start justify-between gap-3 p-4 sm:p-5">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -204,7 +204,7 @@ function DigestLeadCard({
                     id={`smtp-${lead.id}`}
                     value={smtpAccountId}
                     onChange={(e) => setSmtpAccountId(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-border bg-white px-3 py-2 text-[13px]"
+                    className="mt-1 w-full rounded-xl border border-border bg-[var(--surface)] px-3 py-2 text-[13px]"
                   >
                     {accounts.map((a) => (
                       <option key={a.id} value={a.id}>
@@ -330,7 +330,7 @@ export function MorningDigestView({ userName }: { userName?: string | null }) {
 
         <DailyDigestSettings />
         {loading && !digest && (
-          <div className="rounded-2xl border border-dashed border-border bg-white/60 px-6 py-12 text-center text-[13px] text-ink-muted">
+          <div className="rounded-2xl border border-dashed border-border bg-[#faf8fc] px-6 py-12 text-center text-[13px] text-ink-muted">
             Building your digest…
           </div>
         )}
@@ -362,7 +362,7 @@ export function MorningDigestView({ userName }: { userName?: string | null }) {
                     {digest.emailReady ? "Email connected" : "Connect email"}
                   </p>
                 </div>
-                <p className="mt-1 text-[12px] text-ink-muted">
+                <p className="mt-1.5 text-[13px] leading-relaxed text-ink-muted">
                   {digest.emailReady
                     ? `${digest.smtpAccountCount} mailbox${digest.smtpAccountCount === 1 ? "" : "es"} ready`
                     : "Add SMTP in setup to send intros from the digest"}
@@ -377,7 +377,7 @@ export function MorningDigestView({ userName }: { userName?: string | null }) {
                 )}
               </div>
 
-              <div className="rounded-2xl border border-border bg-white/90 px-4 py-3.5">
+              <div className="rounded-2xl border border-border bg-[var(--surface)] px-4 py-3.5">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
                   Today&apos;s picks
                 </p>
@@ -389,15 +389,20 @@ export function MorningDigestView({ userName }: { userName?: string | null }) {
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-border bg-white/90 px-4 py-3.5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-faint">
+              <Link
+                href="/leads/hot"
+                className="block rounded-2xl border border-[color:var(--border-strong)] bg-[var(--surface)] px-4 py-3.5 transition hover:border-brand-300 hover:bg-brand-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/35"
+              >
+                <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-muted">
                   Outreach queue
                 </p>
                 <p className="mt-1 font-[family-name:var(--font-display)] text-[26px] font-semibold tabular-nums text-ink">
-                  {digest.totalActionable}
+                  {digest.hotCount}
                 </p>
-                <p className="text-[12px] text-ink-muted">leads not contacted yet</p>
-              </div>
+                <p className="text-[12px] text-ink-muted">
+                  hot leads · open full list →
+                </p>
+              </Link>
             </div>
 
             {doneCount > 0 && (
@@ -419,7 +424,7 @@ export function MorningDigestView({ userName }: { userName?: string | null }) {
               ))}
 
               {!visibleLeads.length && (
-                <div className="rounded-2xl border border-dashed border-border bg-white/60 px-6 py-12 text-center">
+                <div className="rounded-2xl border border-dashed border-border bg-[#faf8fc] px-6 py-12 text-center">
                   <HiOutlineSparkles className="mx-auto h-8 w-8 text-brand-400" />
                   <p className="mt-3 text-[14px] font-semibold text-ink">
                     {digest.leads.length

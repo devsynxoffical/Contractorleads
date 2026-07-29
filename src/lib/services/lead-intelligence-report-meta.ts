@@ -1,9 +1,9 @@
 export const LEAD_REPORT_TYPES = [
+  "full",
   "website",
   "seo",
   "marketing",
   "ads",
-  "local",
 ] as const;
 
 export type LeadReportType = (typeof LEAD_REPORT_TYPES)[number];
@@ -14,6 +14,12 @@ export const LEAD_REPORT_TYPE_META: Record<
   LeadReportType,
   { label: string; description: string; serviceName: string }
 > = {
+  full: {
+    label: "All-services pitch",
+    description:
+      "Full growth proposal across website, SEO, social, and ads in one document",
+    serviceName: "Full digital growth (website, SEO, social & ads)",
+  },
   website: {
     label: "Website growth proposal",
     description:
@@ -37,12 +43,6 @@ export const LEAD_REPORT_TYPE_META: Record<
     description:
       "Client-ready pitch: paid search readiness and our ads launch plan",
     serviceName: "Google Ads & Local Services Ads",
-  },
-  local: {
-    label: "Local presence proposal",
-    description:
-      "Client-ready pitch: Google reviews / local visibility and our plan",
-    serviceName: "Google Business Profile & local reputation",
   },
 };
 

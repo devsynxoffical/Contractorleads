@@ -198,10 +198,10 @@ export function LeadActivityPanel({
 
   return (
     <Card className="border-border shadow-[var(--shadow-soft)]">
-      <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
-        <div>
-          <CardTitle className="text-[16px]">Client activity</CardTitle>
-          <p className="mt-1 text-[12px] text-ink-muted">
+      <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 border-b border-border/70 pb-4">
+        <div className="min-w-0 space-y-1.5">
+          <CardTitle className="text-[17px]">Client activity</CardTitle>
+          <p className="text-[13px] leading-relaxed text-ink-muted">
             Click a card to open emails or reports for this lead.
           </p>
         </div>
@@ -211,35 +211,36 @@ export function LeadActivityPanel({
           size="sm"
           loading={loading}
           onClick={() => void load()}
+          className="shrink-0"
         >
           {!loading && <HiOutlineArrowPath className="h-3.5 w-3.5" />}
           Refresh
         </Button>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid gap-3 sm:grid-cols-4">
+      <CardContent className="space-y-5 pt-5">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {stats.map((stat) => (
             <button
               key={stat.key}
               type="button"
               onClick={stat.onClick}
               className={cn(
-                "rounded-xl border px-3.5 py-3 text-left transition",
+                "rounded-2xl border px-4 py-4 text-left transition",
                 stat.active
                   ? "border-brand-300 bg-brand-50 shadow-[var(--shadow-soft)] ring-1 ring-brand-200"
-                  : "border-border bg-[#faf8fc] hover:border-brand-200 hover:bg-white",
+                  : "border-[color:var(--border-strong)] bg-[#faf8fc] hover:border-brand-300 hover:bg-[var(--surface)]",
               )}
             >
-              <div className="flex items-center gap-2 text-brand-600">
-                <stat.icon className="h-4 w-4" />
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+              <div className="flex items-center gap-2.5 text-brand-600">
+                <stat.icon className="h-4 w-4 shrink-0" />
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-muted">
                   {stat.label}
                 </p>
               </div>
-              <p className="mt-1.5 text-2xl font-semibold tabular-nums text-ink">
+              <p className="mt-3 text-[1.65rem] font-semibold tabular-nums leading-none text-ink">
                 {loading && !data ? "—" : stat.value}
               </p>
-              <p className="mt-1 text-[11px] font-medium text-brand-700">
+              <p className="mt-2.5 text-[12px] font-semibold text-brand-700">
                 View details →
               </p>
             </button>
@@ -274,10 +275,10 @@ export function LeadActivityPanel({
                 else setTab(item.id);
               }}
               className={cn(
-                "rounded-xl px-3 py-1.5 text-[12px] font-semibold transition",
+                "rounded-xl px-3.5 py-2 text-[12px] font-semibold transition",
                 tab === item.id
-                  ? "bg-brand-600 text-white"
-                  : "border border-border bg-white text-ink-muted hover:border-brand-200 hover:text-brand-700",
+                  ? "btn-on-brand bg-brand-600 text-[var(--btn-on-brand)]"
+                  : "border border-[color:var(--border-strong)] bg-[var(--surface)] text-ink-muted hover:border-brand-300 hover:text-brand-700",
               )}
             >
               {item.label}
@@ -452,7 +453,7 @@ export function LeadActivityPanel({
                           <p className="text-[13px] font-semibold text-ink">
                             {e.subject || "(no subject)"}
                           </p>
-                          <span className="shrink-0 text-[11px] text-ink-faint">
+                          <span className="shrink-0 text-[12px] text-ink-muted">
                             {formatWhen(e.createdAt)}
                           </span>
                         </div>
@@ -470,7 +471,7 @@ export function LeadActivityPanel({
                       </button>
                       {openEmailId === e.id ? (
                         <div className="mb-3 space-y-2 rounded-xl border border-border bg-[#faf8fc] p-3">
-                          <p className="text-[11px] text-ink-faint">
+                          <p className="text-[12px] text-ink-muted">
                             From {e.fromEmail} → {e.toEmail}
                           </p>
                           <pre className="max-h-80 overflow-auto whitespace-pre-wrap font-[family-name:var(--font-jakarta)] text-[12px] leading-relaxed text-ink">
@@ -514,7 +515,7 @@ export function LeadActivityPanel({
                           <p className="text-[13px] font-semibold text-ink">
                             {r.title}
                           </p>
-                          <span className="shrink-0 text-[11px] text-ink-faint">
+                          <span className="shrink-0 text-[12px] text-ink-muted">
                             {formatWhen(r.createdAt)}
                           </span>
                         </div>

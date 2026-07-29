@@ -47,7 +47,7 @@ export function EnrollEmailSequenceButton({
       >
         {busy ? "Enrolling…" : "Enroll in nurture"}
       </button>
-      {msg ? <span className="text-[11px] text-ink-faint">{msg}</span> : null}
+      {msg ? <span className="text-[12px] text-ink-muted">{msg}</span> : null}
     </div>
   );
 }

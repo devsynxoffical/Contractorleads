@@ -1,5 +1,6 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateText } from "ai";
+import { EXPERT_COPYWRITER_SYSTEM_PROMPT } from "@/lib/constants";
 import { getOpenAIApiKey } from "@/lib/openai-config";
 import { auditWebsite, type WebsiteAudit } from "@/lib/services/website-audit";
 import {
@@ -140,7 +141,8 @@ const FORMAT_RULES = [
   "Purpose: a professional service proposal they can read and say yes to.",
   "Tone: confident, respectful, clear. No hype, no slang, no emojis.",
   "Do NOT use markdown: no # headings, no **, no __, no backticks.",
-  "Use numbered sections like: 1) Title",
+  "Use numbered sections like: 1) Cover note",
+  "For steps inside a section, use 1. 2. 3. (period) — never 1) 2) 3) inside a section.",
   "Use simple bullet lines starting with • when listing items.",
   "Do NOT mention lead scores, opportunity scores, SDRs, CRM, pipeline, or 'agency upside'.",
   "Do NOT mention AI, GPT, ChatGPT, or language models.",
@@ -150,53 +152,55 @@ const FORMAT_RULES = [
 
 const SHARED_SECTIONS = [
   "Required structure (keep these section numbers and titles):",
-  "1) Cover note — short personal greeting to the owner/business",
-  "2) What we reviewed — website / channels checked (factual)",
-  "3) Issues we found — clear list of problems / mistakes / gaps (be specific)",
-  "4) Why this costs you jobs — plain-language impact on quotes and booked work",
-  "5) How we help — our service and exactly what we will do to fix each issue",
-  "6) What you get — deliverables and timeline (e.g. 30 days)",
-  "7) Recommended next step — soft CTA for a short call or kickoff",
+  "1) Cover note — personal greeting; 2–3 short paragraphs",
+  "2) What we reviewed — factual channels/pages checked; include what already looks strong",
+  "3) Issues we found — 5–8 specific problems; each issue = bold one-line title + 2–4 sentence explanation",
+  "4) Why this costs you jobs — plain-language business impact (quotes, phone calls, seasonality)",
+  "5) How we help — group fixes by channel (Website / SEO / Social / Ads as relevant); be concrete",
+  "6) What you get — deliverables + week-by-week 30-day timeline",
+  "7) Recommended next step — soft CTA + what happens on the kickoff call",
+  "Be DETAILED and specific. Target a thorough client proposal, not a short summary.",
 ].join("\n");
 
 const SECTION_PROMPTS: Record<LeadReportType, string> = {
+  full: [
+    "Write a DETAILED CLIENT-FACING All-Services Growth Proposal for this contractor.",
+    "Service being pitched: a combined package — website, local SEO, Instagram/social, and Google Ads.",
+    SHARED_SECTIONS,
+    "Cover each channel specifically from the audit: website conversion, SEO foundations, social proof, and paid search readiness.",
+    "Organize issues and fixes so the owner sees one clear growth plan, not four separate pitches.",
+    "Target length: 1400–2000 words. Prefer depth and clarity over filler.",
+  ].join("\n"),
   website: [
-    "Write a CLIENT-FACING Website Growth Proposal for this contractor.",
+    "Write a DETAILED CLIENT-FACING Website Growth Proposal for this contractor.",
     "Service being pitched: Website design, speed, conversion, and quote capture.",
     SHARED_SECTIONS,
     "Focus on: speed, hero/CTA, missing pages, forms, phone, HTTPS, content trust.",
     "Frame issues as obstacles to getting more estimates — then map each to what we will build or improve.",
-    "Target length: 850–1300 words.",
+    "Target length: 1200–1700 words.",
   ].join("\n"),
   seo: [
-    "Write a CLIENT-FACING Local SEO Growth Proposal for this contractor.",
+    "Write a DETAILED CLIENT-FACING Local SEO Growth Proposal for this contractor.",
     "Service being pitched: Local SEO to win more search demand in their city/trade.",
     SHARED_SECTIONS,
     "Focus on: title/meta, schema, H1, content depth, services pages, local SEO foundations.",
     "Be clear this is based on a live site review, not a full keyword rank export.",
-    "Target length: 850–1300 words.",
+    "Target length: 1200–1700 words.",
   ].join("\n"),
   marketing: [
-    "Write a CLIENT-FACING Instagram & Social Growth Proposal for this contractor.",
+    "Write a DETAILED CLIENT-FACING Instagram & Social Growth Proposal for this contractor.",
     "Service being pitched: Instagram / social content that turns project proof into booked jobs.",
     SHARED_SECTIONS,
     "Focus on: Instagram presence, site social links, gallery/proof, posting system, bio CTA.",
-    "Target length: 800–1200 words.",
+    "Target length: 1100–1600 words.",
   ].join("\n"),
   ads: [
-    "Write a CLIENT-FACING Google Ads Growth Proposal for this contractor.",
+    "Write a DETAILED CLIENT-FACING Google Ads Growth Proposal for this contractor.",
     "Service being pitched: Google Ads and/or Local Services Ads to capture high-intent searchers.",
     SHARED_SECTIONS,
     "Focus on: landing-page readiness (HTTPS, form, phone, hero, speed), tracking, launch plan.",
     "Do not invent budgets as facts — label any ranges as estimates.",
-    "Target length: 800–1200 words.",
-  ].join("\n"),
-  local: [
-    "Write a CLIENT-FACING Local Presence & Reputation Proposal for this contractor.",
-    "Service being pitched: Google Business Profile, reviews, and local visibility.",
-    SHARED_SECTIONS,
-    "Focus on: reviews, local trust, NAP consistency, and how local presence feeds more calls.",
-    "Target length: 800–1200 words.",
+    "Target length: 1100–1600 words.",
   ].join("\n"),
 };
 
@@ -212,7 +216,12 @@ function pitchFixesFromAudit(
     ];
   }
 
-  if (reportType === "website" || reportType === "seo" || reportType === "ads") {
+  if (
+    reportType === "full" ||
+    reportType === "website" ||
+    reportType === "seo" ||
+    reportType === "ads"
+  ) {
     if (!audit.https) fixes.push("Move the site to secure HTTPS hosting.");
     if (!audit.hasContactForm) {
       fixes.push("Add a clear Get a Quote form with click-to-call on every key page.");
@@ -227,7 +236,11 @@ function pitchFixesFromAudit(
     }
   }
 
-  if (reportType === "website" || reportType === "seo") {
+  if (
+    reportType === "full" ||
+    reportType === "website" ||
+    reportType === "seo"
+  ) {
     const contact = audit.pages?.find((p) => p.key === "contact");
     const about = audit.pages?.find((p) => p.key === "about");
     const services = audit.pages?.find((p) => p.key === "services");
@@ -244,7 +257,7 @@ function pitchFixesFromAudit(
     }
   }
 
-  if (reportType === "marketing") {
+  if (reportType === "full" || reportType === "marketing") {
     if (!audit.hasInstagramLink) {
       fixes.push("Connect Instagram to the website and optimize the profile bio CTA.");
     }
@@ -254,7 +267,7 @@ function pitchFixesFromAudit(
     fixes.push("Run a weekly posting system with location tags and quote CTAs.");
   }
 
-  if (reportType === "ads") {
+  if (reportType === "full" || reportType === "ads") {
     if (audit.hasContactForm && audit.https && audit.hasPhoneOnPage) {
       fixes.push("Launch geo-fenced Google Search and/or Local Services Ads.");
       fixes.push("Install call tracking and conversion events before scaling spend.");
@@ -263,18 +276,12 @@ function pitchFixesFromAudit(
     }
   }
 
-  if (reportType === "local") {
-    fixes.push("Fully optimize Google Business Profile categories, services, and photos.");
-    fixes.push("Install a review-request workflow after completed jobs.");
-    fixes.push("Align name, address, and phone across major directories.");
-  }
-
   if (!fixes.length) {
     fixes.push(
       "Keep the strong foundation and layer growth work: service-area pages, reviews, and demand capture.",
     );
   }
-  return fixes.slice(0, 6);
+  return fixes.slice(0, reportType === "full" ? 8 : 6);
 }
 
 function buildFallbackReport(
@@ -315,10 +322,10 @@ function buildFallbackReport(
       : `• Website URL on file: ${lead.website || "not provided"}`,
     `• Homepage signals: HTTPS, titles, hero/CTA, forms, phone, speed`,
     `• Key pages: Contact, About, Services, Gallery, Blog`,
-    reportType === "marketing"
+    reportType === "marketing" || reportType === "full"
       ? `• Social presence: Instagram ${lead.instagram || (audit?.hasInstagramLink ? "linked on site" : "not detected")}, Facebook ${lead.facebook || (audit?.hasFacebookLink ? "linked on site" : "not detected")}`
       : null,
-    reportType === "local"
+    reportType === "full"
       ? `• Public reputation: Google ${lead.googleRating ?? "n/a"} (${lead.reviewCount ?? 0} reviews)`
       : null,
     "",
@@ -347,7 +354,7 @@ function buildFallbackReport(
 
 export async function generateLeadIntelligenceReport(
   lead: LeadReportInput,
-  reportType: LeadReportType = "website",
+  reportType: LeadReportType = "full",
 ) {
   const audit = lead.website?.trim()
     ? await auditWebsite(lead.website, { timeoutMs: 14000 })
@@ -366,7 +373,7 @@ export async function generateLeadIntelligenceReport(
   const { text } = await generateText({
     model: openai("gpt-4o-mini"),
     system: [
-      "You are a senior account strategist at a local marketing agency that sells website, SEO, social, ads, and reputation services to home-service contractors.",
+      EXPERT_COPYWRITER_SYSTEM_PROMPT,
       "You write polished client proposals the contractor can forward to a partner or print for a meeting.",
       "You diagnose real problems from the audit, explain business impact, and clearly pitch the agency's service as the solution.",
       FORMAT_RULES,

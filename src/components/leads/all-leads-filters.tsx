@@ -91,7 +91,7 @@ export function AllLeadsFilters({ categories }: Props) {
   return (
     <div
       className={cn(
-        "mb-4 space-y-3 rounded-xl border border-border bg-white p-4 shadow-[var(--shadow-soft)]",
+        "mb-4 space-y-3 rounded-xl border border-border bg-[var(--surface)] p-4 shadow-[var(--shadow-soft)]",
         pending && "opacity-80",
       )}
     >

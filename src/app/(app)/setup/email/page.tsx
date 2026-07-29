@@ -65,13 +65,13 @@ export default function SetupEmailPage() {
           </Link>
           <Link
             href="/inbox?tab=bulk"
-            className="inline-flex h-9 items-center rounded-xl border border-border bg-white px-3.5 text-[13px] font-semibold text-ink"
+            className="inline-flex h-9 items-center rounded-xl border border-border bg-[var(--surface)] px-3.5 text-[13px] font-semibold text-ink"
           >
             Bulk send
           </Link>
           <Link
             href="/inbox?tab=compose"
-            className="inline-flex h-9 items-center rounded-xl border border-border bg-white px-3.5 text-[13px] font-semibold text-ink"
+            className="inline-flex h-9 items-center rounded-xl border border-border bg-[var(--surface)] px-3.5 text-[13px] font-semibold text-ink"
           >
             Compose
           </Link>

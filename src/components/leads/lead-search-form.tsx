@@ -57,6 +57,17 @@ import {
 
 type Lead = SearchSessionLead & { phone: string | null; industry: string | null };
 
+function byLeadScoreDesc<T extends { leadScore: number }>(leads: T[]): T[] {
+  return [...leads].sort((a, b) => b.leadScore - a.leadScore);
+}
+
+const SEARCH_STAGES = [
+  { pct: 12, label: "Searching Google Places…" },
+  { pct: 38, label: "Enriching contacts & social profiles…" },
+  { pct: 62, label: "AI scoring & verification…" },
+  { pct: 88, label: "Finalizing your lead list…" },
+] as const;
+
 const QUICK_SEARCHES = [
   {
     title: "Roofing · Texas",
@@ -125,8 +136,28 @@ export function LeadSearchForm() {
   const [leadCapacity, setLeadCapacity] = useState<number | null>(null);
   const [filterNote, setFilterNote] = useState<string | null>(null);
   const [stage, setStage] = useState(0);
+  const [progressPct, setProgressPct] = useState(0);
   const [restoring, setRestoring] = useState(true);
   const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (!loading) {
+      setProgressPct(0);
+      return;
+    }
+    const stageIdx = Math.min(Math.max(stage, 1), SEARCH_STAGES.length) - 1;
+    const target = SEARCH_STAGES[stageIdx]?.pct ?? 12;
+    setProgressPct((p) => Math.max(p, target));
+
+    const id = window.setInterval(() => {
+      setProgressPct((p) => {
+        const cap = stage >= 4 ? 96 : Math.min(target + 10, 94);
+        if (p >= cap) return p;
+        return Math.min(cap, p + 1);
+      });
+    }, 450);
+    return () => window.clearInterval(id);
+  }, [loading, stage]);
 
   useEffect(() => {
     let cancelled = false;
@@ -193,7 +224,7 @@ export function LeadSearchForm() {
       const cached = loadFinderSearchCache();
       if (cached?.leads.length) {
         if (cancelled) return;
-        setLeads(cached.leads as Lead[]);
+        setLeads(byLeadScoreDesc(cached.leads as Lead[]));
         setSelected(new Set(cached.selectedLeadIds));
         setPreset({
           industry: cached.industry,
@@ -228,7 +259,7 @@ export function LeadSearchForm() {
         const res = await fetch("/api/leads/search/latest");
         if (!res.ok || cancelled) return;
         const data = await res.json();
-        const found = (data.leads ?? []) as Lead[];
+        const found = byLeadScoreDesc((data.leads ?? []) as Lead[]);
         if (!found.length || cancelled) return;
 
         const s = data.search;
@@ -315,11 +346,12 @@ export function LeadSearchForm() {
     setFilterNote(null);
     setLeads([]);
     setStage(1);
+    setProgressPct(8);
 
     const timers = [
-      setTimeout(() => setStage(2), 700),
-      setTimeout(() => setStage(3), 1400),
-      setTimeout(() => setStage(4), 2100),
+      setTimeout(() => setStage(2), 1800),
+      setTimeout(() => setStage(3), 4500),
+      setTimeout(() => setStage(4), 9000),
     ];
 
     try {
@@ -337,11 +369,14 @@ export function LeadSearchForm() {
         }
         setLoading(false);
         setStage(0);
+        setProgressPct(0);
         return;
       }
 
-      setLeads(data.leads);
-      setSelected(new Set(data.leads.map((l: Lead) => l.id)));
+      setProgressPct(100);
+      const ranked = byLeadScoreDesc(data.leads as Lead[]);
+      setLeads(ranked);
+      setSelected(new Set(ranked.map((l) => l.id)));
       if (typeof data.capacity?.available === "number") {
         setLeadCapacity(data.capacity.available);
       }
@@ -352,7 +387,7 @@ export function LeadSearchForm() {
       }
       setStage(4);
       const billed = data.meta?.billing?.searchCharged;
-      const returned = data.meta?.leadsReturned ?? data.leads?.length ?? 0;
+      const returned = data.meta?.leadsReturned ?? ranked.length;
       const billedCount = data.meta?.leadsBilled ?? returned;
       const requested = data.meta?.requestedLeadCount;
       if (typeof billed === "number" && billed > 0) {
@@ -373,7 +408,7 @@ export function LeadSearchForm() {
         );
       } else if (
         data.meta?.requireSocialPresence &&
-        data.leads?.length === 0
+        ranked.length === 0
       ) {
         setFilterNote(
           "No businesses in this area had LinkedIn, social profiles, and an owner name on their website. Try a wider radius or turn off the filter."
@@ -381,7 +416,7 @@ export function LeadSearchForm() {
       }
       saveFinderSearchCache({
         searchId: data.search?.id,
-        leads: data.leads,
+        leads: ranked,
         industry: criteria.industry,
         country: criteria.country,
         locationScope: criteria.locationScope,
@@ -390,11 +425,12 @@ export function LeadSearchForm() {
         customLocation: criteria.customLocation ?? "",
         zip: criteria.zip ?? "",
         radius: criteria.radius ? String(criteria.radius) : undefined,
-        selectedLeadIds: data.leads.map((l: Lead) => l.id),
+        selectedLeadIds: ranked.map((l) => l.id),
       });
     } finally {
       timers.forEach(clearTimeout);
       setLoading(false);
+      setStage(0);
       stopNavigationProgress();
     }
   }
@@ -795,12 +831,32 @@ export function LeadSearchForm() {
               </div>
             )}
             {loading && (
-              <div className="mt-5 space-y-2">
-                <div className="h-1.5 overflow-hidden rounded-full bg-brand-50">
-                  <div className="shimmer-bar h-full w-2/3 rounded-full" />
+              <div className="mt-5 space-y-3 rounded-2xl border border-brand-100 bg-brand-50/50 px-4 py-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-[13px] font-semibold text-ink">
+                    {
+                      SEARCH_STAGES[
+                        Math.min(Math.max(stage, 1), SEARCH_STAGES.length) - 1
+                      ]?.label
+                    }
+                  </p>
+                  <span className="text-[13px] font-bold tabular-nums text-brand-700">
+                    {Math.min(100, Math.round(progressPct))}%
+                  </span>
+                </div>
+                <div className="h-2.5 overflow-hidden rounded-full bg-[var(--surface)] ring-1 ring-brand-100">
+                  <div
+                    className="h-full rounded-full transition-[width] duration-500 ease-out"
+                    style={{
+                      width: `${Math.min(100, progressPct)}%`,
+                      background:
+                        "linear-gradient(90deg, #c026d3 0%, #a21caf 50%, #7c3aed 100%)",
+                    }}
+                  />
                 </div>
                 <p className="text-[12px] text-ink-muted">
-                  Running Places → Yelp → AI qualification…
+                  Finding and verifying contractors — this can take a minute for
+                  larger searches. Keep this tab open.
                 </p>
               </div>
             )}
@@ -868,7 +924,7 @@ export function LeadSearchForm() {
             ].map((f) => (
               <div
                 key={f.title}
-                className="hover-lift rounded-xl border border-border bg-white p-5 shadow-[var(--shadow-card)]"
+                className="hover-lift rounded-xl border border-border bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]"
               >
                 <f.icon className="h-5 w-5 text-brand-600" />
                 <p className="mt-3 text-sm font-semibold text-ink">{f.title}</p>
@@ -882,7 +938,7 @@ export function LeadSearchForm() {
       )}
 
       {restoring && leads.length === 0 && (
-        <div className="mt-8 rounded-2xl border border-border/80 bg-white/90 p-6 text-center text-[13px] text-ink-muted">
+        <div className="mt-8 rounded-2xl border border-border/80 bg-[var(--surface)] p-6 text-center text-[13px] text-ink-muted">
           <HiOutlineArrowPath className="mx-auto mb-2 h-5 w-5 animate-spin text-brand-500" />
           Restoring your last search results…
         </div>

@@ -234,7 +234,7 @@ export function ApiAccessSettings() {
                 SSO: <code className="text-ink">/api/public/sso/leads/search</code>
               </p>
               <p className="pt-1 font-semibold text-ink">Example</p>
-              <pre className="overflow-x-auto whitespace-pre-wrap rounded-lg bg-white p-2 text-[11px] text-ink">
+              <pre className="overflow-x-auto whitespace-pre-wrap rounded-lg bg-[var(--surface)] p-2 text-[11px] text-ink">
                 {curlExample}
               </pre>
               <p>

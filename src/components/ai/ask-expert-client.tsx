@@ -36,7 +36,7 @@ export function AskExpertClient({
 
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <div className="animate-float relative flex h-11 w-11 items-center justify-center rounded-xl bg-white shadow-[var(--shadow-card)]">
+          <div className="animate-float relative flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--surface)] shadow-[var(--shadow-card)]">
             <Image
               src="/logo.png"
               alt=""

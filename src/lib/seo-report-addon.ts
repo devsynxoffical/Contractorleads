@@ -1,5 +1,6 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateText } from "ai";
+import { EXPERT_COPYWRITER_SYSTEM_PROMPT } from "@/lib/constants";
 import { getOpenAIApiKey } from "@/lib/openai-config";
 import { auditWebsite } from "@/lib/services/website-audit";
 
@@ -31,8 +32,10 @@ export async function generateSeoAnalysisReport(website: string) {
   const openai = createOpenAI({ apiKey });
   const { text } = await generateText({
     model: openai("gpt-4o-mini"),
-    system:
-      "You are a senior local SEO and website CRO consultant. Return concise, specific, action-focused advice.",
+    system: [
+      EXPERT_COPYWRITER_SYSTEM_PROMPT,
+      "Return concise, specific, action-focused website and local SEO advice a contractor will understand.",
+    ].join(" "),
     prompt: [
       `Analyze this contractor website and generate a practical audit report.`,
       `Website: ${website}`,

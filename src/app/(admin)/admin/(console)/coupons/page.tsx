@@ -169,7 +169,7 @@ export default function AdminCouponsPage() {
         </p>
       ) : null}
 
-      <section className="mb-8 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">
+      <section className="mb-8 rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
         <h2 className="text-sm font-semibold text-ink">Create coupon</h2>
         <p className="mt-1 text-[13px] text-ink-muted">
           Customers enter the code on Billing before checkout, or in the Stripe
@@ -365,7 +365,7 @@ export default function AdminCouponsPage() {
         </form>
       </section>
 
-      <section className="overflow-x-auto rounded-2xl border border-border/80 bg-white shadow-[var(--shadow-card)]">
+      <section className="overflow-x-auto rounded-2xl border border-border/80 bg-[var(--surface)] shadow-[var(--shadow-card)]">
         <table className="w-full min-w-[760px] text-left text-[13px]">
           <thead className="border-b border-border bg-[#faf8fc] text-[11px] uppercase tracking-wide text-ink-faint">
             <tr>
@@ -383,11 +383,11 @@ export default function AdminCouponsPage() {
                   <p className="font-semibold tabular-nums text-ink">{c.code}</p>
                   <p className="text-[12px] text-ink-muted">{c.name}</p>
                   {c.applicablePlans.length ? (
-                    <p className="mt-0.5 text-[11px] text-ink-faint">
+                    <p className="mt-0.5 text-[12px] text-ink-muted">
                       Plans: {c.applicablePlans.join(", ")}
                     </p>
                   ) : (
-                    <p className="mt-0.5 text-[11px] text-ink-faint">All plans</p>
+                    <p className="mt-0.5 text-[12px] text-ink-muted">All plans</p>
                   )}
                 </td>
                 <td className="px-4 py-3">
@@ -412,7 +412,7 @@ export default function AdminCouponsPage() {
                     {c.active ? "Active" : "Paused"}
                   </span>
                   {c.expiresAt ? (
-                    <p className="text-[11px] text-ink-faint">
+                    <p className="text-[12px] text-ink-muted">
                       Exp {new Date(c.expiresAt).toLocaleDateString()}
                     </p>
                   ) : null}

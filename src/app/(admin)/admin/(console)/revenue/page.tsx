@@ -129,7 +129,7 @@ function PlanBar({ rows }: { rows: PlanRow[] }) {
               style={{ width: `${(row.totalUsers / max) * 100}%` }}
             />
           </div>
-          <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-ink-faint">
+          <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[12px] text-ink-muted">
             <span>
               <strong className="text-ink">{row.activePaid}</strong> paid
             </span>

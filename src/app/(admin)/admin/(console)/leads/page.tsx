@@ -465,7 +465,7 @@ export default function AdminLeadsPage() {
       {showCreate && (
         <form
           onSubmit={createLead}
-          className="mb-5 grid gap-3 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)] sm:grid-cols-2"
+          className="mb-5 grid gap-3 rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] sm:grid-cols-2"
         >
           <h2 className="sm:col-span-2 text-sm font-semibold text-ink">
             Manual lead
@@ -530,7 +530,7 @@ export default function AdminLeadsPage() {
 
       <div
         className={cn(
-          "mb-4 space-y-3 rounded-2xl border border-border/80 bg-white p-4 shadow-[var(--shadow-card)]",
+          "mb-4 space-y-3 rounded-2xl border border-border/80 bg-[var(--surface)] p-4 shadow-[var(--shadow-card)]",
           loading && "opacity-80",
         )}
       >
@@ -725,7 +725,7 @@ export default function AdminLeadsPage() {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-border/80 bg-white shadow-[var(--shadow-card)]">
+      <div className="overflow-x-auto rounded-2xl border border-border/80 bg-[var(--surface)] shadow-[var(--shadow-card)]">
         <table className="w-full min-w-[860px] text-left text-[13px]">
           <thead className="border-b border-border bg-[#faf8fc] text-[11px] uppercase tracking-wide text-ink-faint">
             <tr>

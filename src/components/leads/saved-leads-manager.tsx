@@ -282,7 +282,7 @@ export function SavedLeadsManager({
                   setSelected(new Set());
                 }}
               >
-                <option value="all">All statuses</option>
+                <option value="all">Any status</option>
                 {LEAD_STATUSES.map((s) => (
                   <option key={s.value} value={s.value}>
                     {s.label}
@@ -432,7 +432,10 @@ export function SavedLeadsManager({
                   onClick={(e) => e.stopPropagation()}
                   onKeyDown={(e) => e.stopPropagation()}
                 >
-                  <Badge>{s.status}</Badge>
+                  <Badge>
+                    {LEAD_STATUSES.find((st) => st.value === s.status)?.label ??
+                      s.status}
+                  </Badge>
                   {s.favorite && <Badge variant="brand">Favorite</Badge>}
                   <span className="text-sm font-semibold tabular-nums text-brand-600">
                     Score {s.lead.leadScore}

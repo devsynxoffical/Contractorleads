@@ -288,7 +288,7 @@ export function LeadResultCard({
             {lead.phone && (
               <a
                 href={`tel:${lead.phone}`}
-                className="inline-flex h-9 items-center rounded-xl border border-border bg-white px-3 text-[12px] font-semibold text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
+                className="inline-flex h-9 items-center rounded-xl border border-border bg-[var(--surface)] px-3 text-[12px] font-semibold text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
               >
                 Call
               </a>
@@ -298,7 +298,7 @@ export function LeadResultCard({
                 href={lead.website}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex h-9 items-center rounded-xl border border-border bg-white px-3 text-[12px] font-semibold text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
+                className="inline-flex h-9 items-center rounded-xl border border-border bg-[var(--surface)] px-3 text-[12px] font-semibold text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
               >
                 Website
               </a>
@@ -308,7 +308,7 @@ export function LeadResultCard({
                 href={lead.googleMapsLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex h-9 items-center rounded-xl border border-border bg-white px-3 text-[12px] font-semibold text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
+                className="inline-flex h-9 items-center rounded-xl border border-border bg-[var(--surface)] px-3 text-[12px] font-semibold text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
               >
                 Maps
               </a>
@@ -339,7 +339,7 @@ export function LeadResultsHeader({
   return (
     <div
       className={cn(
-        "mb-4 flex flex-col gap-3 rounded-2xl border border-border/80 bg-white/90 p-4 shadow-[var(--shadow-card)] sm:flex-row sm:items-center sm:justify-between sm:p-5",
+        "mb-4 flex flex-col gap-3 rounded-2xl border border-border/80 bg-[var(--surface)] p-4 shadow-[var(--shadow-card)] sm:flex-row sm:items-center sm:justify-between sm:p-5",
         className,
       )}
     >
@@ -381,9 +381,10 @@ export function LeadResultsList({
   showPipeline?: boolean;
 }) {
   if (!leads.length) return null;
+  const ranked = [...leads].sort((a, b) => b.leadScore - a.leadScore);
   return (
     <div className="space-y-3">
-      {leads.map((lead, i) => (
+      {ranked.map((lead, i) => (
         <LeadResultCard
           key={lead.id}
           lead={lead}

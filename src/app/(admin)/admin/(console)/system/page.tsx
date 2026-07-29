@@ -259,7 +259,7 @@ export default function AdminSystemPage() {
         description="Manage Stripe Billing and email provider keys here. Other platform secrets stay in host env (Railway / .env)."
       />
 
-      <section className="mb-6 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)] dark:bg-[var(--surface)]">
+      <section className="mb-6 rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] dark:bg-[var(--surface)]">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-sm font-semibold text-ink">
@@ -319,7 +319,7 @@ export default function AdminSystemPage() {
               onChange={(e) => setFromEmail(e.target.value)}
             />
           </label>
-          <p className="text-[11px] text-ink-faint">
+          <p className="text-[12px] text-ink-muted">
             Prefer a replyable address like hello@ or support@ — avoid noreply@.
             For best deliverability, send from a subdomain (e.g.
             mail.contractorleads.us) once it&apos;s verified in Resend.
@@ -336,7 +336,7 @@ export default function AdminSystemPage() {
         </form>
       </section>
 
-      <section className="mb-6 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)] dark:bg-[var(--surface)]">
+      <section className="mb-6 rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] dark:bg-[var(--surface)]">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-sm font-semibold text-ink">Twilio SMS</h2>
@@ -442,7 +442,7 @@ export default function AdminSystemPage() {
         </form>
       </section>
 
-      <section className="mb-6 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)] dark:bg-[var(--surface)]">
+      <section className="mb-6 rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] dark:bg-[var(--surface)]">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-sm font-semibold text-ink">Stripe Billing</h2>
@@ -626,7 +626,7 @@ export default function AdminSystemPage() {
               value={priceMessaging}
               onChange={(e) => setPriceMessaging(e.target.value)}
             />
-            <span className="mt-1 block text-[11px] text-ink-faint">
+            <span className="mt-1 block text-[12px] text-ink-muted">
               Create a $15.50/mo recurring price in Stripe and paste its price ID here.
               {stripe ? (
                 stripe.messagingReady ? (
@@ -651,7 +651,7 @@ export default function AdminSystemPage() {
               value={priceSeoReport}
               onChange={(e) => setPriceSeoReport(e.target.value)}
             />
-            <span className="mt-1 block text-[11px] text-ink-faint">
+            <span className="mt-1 block text-[12px] text-ink-muted">
               Create a $15 one-time price in Stripe and paste its price ID here.
               {stripe ? (
                 stripe.seoReportReady ? (
@@ -686,7 +686,7 @@ export default function AdminSystemPage() {
         {groups.map((group) => (
           <section
             key={group}
-            className="rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)] dark:bg-[var(--surface)]"
+            className="rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] dark:bg-[var(--surface)]"
           >
             <h2 className="text-sm font-semibold text-ink">{group}</h2>
             <ul className="mt-3 space-y-2">

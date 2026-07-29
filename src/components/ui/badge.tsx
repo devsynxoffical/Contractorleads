@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 
 const variants = {
   default:
-    "bg-slate-100 text-slate-700 ring-1 ring-slate-200/80 dark:bg-[#122033] dark:text-[color:var(--ink-muted)] dark:ring-brand-500/15",
+    "bg-slate-100 text-slate-700 ring-1 ring-slate-200/80 dark:bg-white/5 dark:text-[color:var(--ink-muted)] dark:ring-white/10",
   hot: "bg-red-50 text-red-700 ring-1 ring-red-200 dark:bg-red-500/15 dark:text-red-300 dark:ring-red-400/30",
   warm: "bg-amber-50 text-amber-800 ring-1 ring-amber-200 dark:bg-amber-500/15 dark:text-amber-200 dark:ring-amber-400/30",
   nurture:
@@ -23,7 +23,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-lg px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em]",
+        "inline-flex items-center rounded-lg px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.06em]",
         variants[variant],
         className,
       )}

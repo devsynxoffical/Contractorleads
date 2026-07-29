@@ -153,7 +153,9 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
         return;
       }
 
-      const found = (data.leads ?? []) as Lead[];
+      const found = [...((data.leads ?? []) as Lead[])].sort(
+        (a, b) => b.leadScore - a.leadScore,
+      );
       setLeads(found);
       if (typeof data.creditsRemaining === "number") {
         notifyCreditsChanged(data.creditsRemaining);
@@ -246,7 +248,7 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
     "h-10 w-full rounded-xl border px-3 font-[family-name:var(--font-jakarta)] text-[13px] outline-none transition",
     embedded
       ? "border-brand-500/20 bg-[var(--panel-solid)] text-ink placeholder:text-ink-faint focus:border-brand-500/50"
-      : "border-border bg-white text-ink placeholder:text-ink-faint focus:border-brand-400",
+      : "border-border bg-[var(--surface)] text-ink placeholder:text-ink-faint focus:border-brand-400",
   );
 
   const panel = (
@@ -255,7 +257,7 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
         "font-[family-name:var(--font-jakarta)] text-ink",
         embedded
           ? "overflow-hidden"
-          : "relative flex h-[min(640px,92dvh)] w-full max-w-lg flex-col rounded-t-2xl border border-border bg-white shadow-2xl sm:rounded-2xl",
+          : "relative flex h-[min(640px,92dvh)] w-full max-w-lg flex-col rounded-t-2xl border border-border bg-[var(--surface)] shadow-2xl sm:rounded-2xl",
       )}
     >
       {!embedded && (
@@ -271,7 +273,7 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
               <p className="font-[family-name:var(--font-display)] text-sm font-semibold tracking-tight text-ink">
                 Search Leads
               </p>
-              <p className="text-[11px] text-ink-faint">
+              <p className="text-[12px] text-ink-muted">
                 Chat or filters — preset or custom service & area
               </p>
             </div>
@@ -338,7 +340,7 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
                   "rounded-full border px-3 py-1.5 font-[family-name:var(--font-jakarta)] text-[12px] font-medium transition",
                   embedded
                     ? "border-brand-500/20 bg-[var(--panel-solid)] text-ink-muted hover:border-brand-500/40 hover:text-brand-600"
-                    : "border-border bg-white text-ink-muted hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700",
+                    : "border-border bg-[var(--surface)] text-ink-muted hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700",
                 )}
               >
                 {p}
@@ -364,14 +366,14 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
                   "flex items-start justify-between gap-3 rounded-xl border px-3 py-3 transition",
                   embedded
                     ? "border-brand-500/15 bg-[var(--panel-solid)] hover:border-brand-500/35"
-                    : "border-border bg-white hover:border-brand-200 hover:bg-brand-50/40",
+                    : "border-border bg-[var(--surface)] hover:border-brand-200 hover:bg-brand-50/40",
                 )}
               >
                 <div className="min-w-0">
                   <p className="truncate font-[family-name:var(--font-display)] text-[14px] font-semibold tracking-tight text-ink">
                     {lead.businessName}
                   </p>
-                  <p className="mt-0.5 flex items-center gap-1 text-[11px] text-ink-faint">
+                  <p className="mt-0.5 flex items-center gap-1 text-[12px] text-ink-muted">
                     <HiOutlineMapPin className="h-3 w-3 shrink-0" />
                     <span className="truncate">
                       {lead.city || lead.state || lead.address || "—"}
@@ -493,7 +495,7 @@ export function QuickLeadSearch({ embedded = true }: { embedded?: boolean }) {
                 "inline-flex rounded-xl border p-0.5",
                 embedded
                   ? "border-brand-500/20 bg-[var(--panel-solid)]"
-                  : "border-border bg-white",
+                  : "border-border bg-[var(--surface)]",
               )}
               role="group"
               aria-label="Location type"

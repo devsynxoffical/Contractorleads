@@ -1,5 +1,6 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateText } from "ai";
+import { EXPERT_COPYWRITER_SYSTEM_PROMPT } from "@/lib/constants";
 import { getOpenAIApiKey } from "@/lib/openai-config";
 import type { WebsiteAudit } from "@/lib/services/website-audit";
 import { emptyWebsiteAudit } from "@/lib/services/website-audit";
@@ -412,7 +413,8 @@ export async function generateQualificationDetailReport(
   const { text } = await generateText({
     model: openai("gpt-4o-mini"),
     system: [
-      "You are a senior local SEO / paid media / contractor-website consultant writing client-ready audit detail for agency SDRs.",
+      EXPERT_COPYWRITER_SYSTEM_PROMPT,
+      "You are writing client-ready audit detail an agency can send or use on a sales call.",
       FORMAT_RULES,
       "Target 700–1100 words.",
     ].join(" "),

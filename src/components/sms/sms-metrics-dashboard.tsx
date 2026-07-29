@@ -298,7 +298,7 @@ export function SmsMetricsDashboard({
                         · {statusLabel(m.direction, m.status)}
                       </span>
                     </p>
-                    <span className="text-[11px] text-ink-faint">
+                    <span className="text-[12px] text-ink-muted">
                       {new Date(m.createdAt).toLocaleString()}
                     </span>
                   </div>

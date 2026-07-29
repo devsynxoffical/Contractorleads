@@ -112,7 +112,7 @@ export function SeoReportAddonCard({
             <p className="text-[12px] font-semibold text-ink">
               Latest report: {latestReport.title || "Website SEO report"}
             </p>
-            <p className="mt-0.5 text-[11px] text-ink-faint">
+            <p className="mt-0.5 text-[12px] text-ink-muted">
               Generated {new Date(latestReport.createdAt).toLocaleString()}
             </p>
             <pre className="mt-2 max-h-52 overflow-auto whitespace-pre-wrap text-[12px] leading-relaxed text-ink-muted">

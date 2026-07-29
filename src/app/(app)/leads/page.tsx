@@ -166,13 +166,13 @@ export default async function AllLeadsPage({
 
       <Suspense
         fallback={
-          <div className="mb-4 h-36 animate-pulse rounded-xl border border-border bg-white" />
+          <div className="mb-4 h-36 animate-pulse rounded-xl border border-border bg-[var(--surface)]" />
         }
       >
         <AllLeadsFilters categories={categories} />
       </Suspense>
 
-      <div className="overflow-x-auto rounded-xl border border-border bg-white shadow-[var(--shadow-card)]">
+      <div className="overflow-x-auto rounded-xl border border-border bg-[var(--surface)] shadow-[var(--shadow-card)]">
         <AllLeadsTableBody
           pipelineLeadIds={pipelineLeadIds}
           leads={leads.map((lead) => ({

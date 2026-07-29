@@ -146,7 +146,7 @@ export function EmailBulkPanel({
   if (!hasAddon) {
     return (
       <div className="rounded-2xl border border-amber-200 bg-amber-50/70 px-5 py-10 text-center">
-        <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-white text-amber-800 ring-1 ring-amber-200">
+        <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--surface)] text-amber-800 ring-1 ring-amber-200">
           <HiOutlineLockClosed className="h-5 w-5" />
         </span>
         <h3 className="mt-3 text-[16px] font-semibold text-ink">

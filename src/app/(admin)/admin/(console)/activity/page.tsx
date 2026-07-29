@@ -37,18 +37,18 @@ export default function AdminActivityPage() {
         actions={
           <a
             href="/api/admin/activity/export"
-            className="inline-flex h-10 items-center rounded-xl border border-border bg-white px-4 text-sm font-semibold text-ink-muted"
+            className="inline-flex h-10 items-center rounded-xl border border-border bg-[var(--surface)] px-4 text-sm font-semibold text-ink-muted"
           >
             Export CSV
           </a>
         }
       />
-      <div className="overflow-hidden rounded-2xl border border-border/80 bg-white shadow-[var(--shadow-card)]">
+      <div className="overflow-hidden rounded-2xl border border-border/80 bg-[var(--surface)] shadow-[var(--shadow-card)]">
         <ul className="divide-y divide-border/60">
           {activities.map((a) => (
             <li key={a.id} className="px-4 py-3 text-[13px]">
               <p className="font-medium text-ink">{a.message}</p>
-              <p className="mt-0.5 text-[11px] text-ink-faint">
+              <p className="mt-0.5 text-[12px] text-ink-muted">
                 <span className="uppercase">{a.type}</span> ·{" "}
                 {a.user.companyName || a.user.name || a.user.email} ·{" "}
                 {new Date(a.createdAt).toLocaleString()}

@@ -178,7 +178,7 @@ export default function AdminPlansPage() {
           {plans.map((p) => (
             <label key={p.id} className="block text-[12px]">
               <span className="font-semibold text-ink">{p.label}</span>
-              <span className="mt-0.5 block text-[11px] text-ink-faint">
+              <span className="mt-0.5 block text-[12px] text-ink-muted">
                 {p.customers} customers
               </span>
               <div className="relative mt-2">
@@ -227,13 +227,13 @@ export default function AdminPlansPage() {
                 {" · "}
                 {p.customers} customers
               </p>
-              <p className="mt-1 text-[11px] text-ink-faint">
+              <p className="mt-1.5 text-[12px] leading-relaxed text-ink-muted">
                 {p.monthlyLeads != null
                   ? `${p.monthlyLeads.toLocaleString()} leads · `
                   : ""}
                 API {p.apiMonthlyLimit}/mo · {p.teamSeats} seats
               </p>
-              <p className="mt-1 text-[11px] text-ink-faint">
+              <p className="mt-1.5 text-[12px] leading-relaxed text-ink-muted">
                 {Math.round(p.creditsOutstanding).toLocaleString()} credits in
                 customer balances
               </p>

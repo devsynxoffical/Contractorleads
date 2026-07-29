@@ -155,7 +155,7 @@ export function SmsComposePanel({
           />
         </label>
         <div className="flex items-center justify-between gap-2">
-          <span className="text-[11px] text-ink-faint">
+          <span className="text-[12px] text-ink-muted">
             {bodyText.length}/1600 · standard SMS ≈ 160 chars
           </span>
           <Button

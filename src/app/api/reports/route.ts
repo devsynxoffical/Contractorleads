@@ -31,8 +31,8 @@ function parseFilters(url: URL) {
   const to = url.searchParams.get("to")?.trim() || "";
   const q = url.searchParams.get("q")?.trim() || "";
   const take = Math.min(
-    500,
-    Math.max(1, Number(url.searchParams.get("take") ?? 200) || 200),
+    2000,
+    Math.max(1, Number(url.searchParams.get("take") ?? 1000) || 1000),
   );
   return { status, quality, industry, from, to, q, take };
 }
@@ -108,13 +108,13 @@ export async function GET(request: Request) {
           },
         },
       },
-      orderBy: [{ updatedAt: "desc" }],
+      orderBy: [{ lead: { leadScore: "desc" } }, { updatedAt: "desc" }],
       take,
     }),
     prisma.savedLead.findMany({
       where: { userId: user.id },
       select: { lead: { select: { industry: true } } },
-      take: 500,
+      take: 2000,
     }),
     prisma.savedLead.groupBy({
       by: ["status"],

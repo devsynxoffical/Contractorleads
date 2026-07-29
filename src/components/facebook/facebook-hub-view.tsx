@@ -341,7 +341,7 @@ export function FacebookHubView() {
               Leads on Facebook
             </h2>
           </div>
-          <p className="mt-1 text-[12px] text-ink-muted">
+          <p className="mt-1.5 text-[13px] leading-relaxed text-ink-muted">
             Pages and ads we’ve found for businesses in your workspace.
           </p>
         </div>
@@ -409,7 +409,7 @@ export function FacebookHubView() {
                           href={lead.facebook}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border bg-white px-3 text-[12px] font-semibold text-[#1877F2] transition hover:bg-[#1877F2]/08"
+                          className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border bg-[var(--surface)] px-3 text-[12px] font-semibold text-[#1877F2] transition hover:bg-[#1877F2]/08"
                         >
                           <FaFacebook className="h-3.5 w-3.5" />
                           Open page
@@ -421,7 +421,7 @@ export function FacebookHubView() {
                           href={lead.searchUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border bg-white px-3 text-[12px] font-semibold text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
+                          className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border bg-[var(--surface)] px-3 text-[12px] font-semibold text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
                         >
                           Ads Library
                           <HiOutlineArrowTopRightOnSquare className="h-3.5 w-3.5" />
@@ -429,7 +429,7 @@ export function FacebookHubView() {
                       ) : null}
                       <Link
                         href={leadDetailHref(lead.id, "dashboard")}
-                        className="inline-flex h-9 items-center rounded-xl border border-border bg-white px-3 text-[12px] font-semibold text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
+                        className="inline-flex h-9 items-center rounded-xl border border-border bg-[var(--surface)] px-3 text-[12px] font-semibold text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
                       >
                         View lead
                       </Link>
@@ -471,7 +471,7 @@ export function FacebookHubView() {
                         </li>
                       ))}
                       {lead.ads.length > 3 ? (
-                        <li className="text-[11px] text-ink-faint">
+                        <li className="text-[12px] text-ink-muted">
                           +{lead.ads.length - 3} more ads on this lead
                         </li>
                       ) : null}

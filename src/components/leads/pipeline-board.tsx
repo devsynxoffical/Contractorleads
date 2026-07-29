@@ -191,7 +191,7 @@ export function PipelineBoard({ initialColumns }: { initialColumns: Column[] }) 
           </Link>
           <Link
             href="/leads/saved"
-            className="inline-flex h-10 items-center rounded-xl border border-border bg-white px-5 text-sm font-semibold text-ink hover:border-brand-300"
+            className="inline-flex h-10 items-center rounded-xl border border-border bg-[var(--surface)] px-5 text-sm font-semibold text-ink hover:border-brand-300"
           >
             Saved leads
           </Link>
@@ -274,7 +274,7 @@ export function PipelineBoard({ initialColumns }: { initialColumns: Column[] }) 
           >
             <div className="mb-3 flex items-center justify-between px-1">
               <h2 className="text-sm font-semibold text-ink">{col.label}</h2>
-              <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-brand-600 shadow-sm">
+              <span className="rounded-full bg-[var(--surface)] px-2 py-0.5 text-[11px] font-semibold text-brand-600 shadow-sm">
                 {col.items.length}
               </span>
             </div>
@@ -336,7 +336,7 @@ export function PipelineBoard({ initialColumns }: { initialColumns: Column[] }) 
                         onChange={(e) =>
                           void moveLead(s.id, s.status, e.target.value)
                         }
-                        className="mt-1 min-h-10 w-full rounded-lg border border-border bg-white px-2 text-[13px] text-ink outline-none focus:border-brand-400"
+                        className="mt-1 min-h-10 w-full rounded-lg border border-border bg-[var(--surface)] px-2 text-[13px] text-ink outline-none focus:border-brand-400"
                       >
                         {LEAD_STATUSES.map((status) => (
                           <option key={status.value} value={status.value}>
@@ -362,7 +362,7 @@ export function PipelineBoard({ initialColumns }: { initialColumns: Column[] }) 
               {!col.items.length && (
                 <p
                   className={cn(
-                    "rounded-lg border border-dashed border-border bg-white px-3 py-6 text-center text-xs text-ink-faint",
+                    "rounded-lg border border-dashed border-border bg-[var(--surface)] px-3 py-6 text-center text-xs text-ink-faint",
                     dropTarget === col.value &&
                       "border-brand-400 text-brand-600",
                   )}

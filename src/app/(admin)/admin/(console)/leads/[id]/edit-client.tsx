@@ -251,7 +251,7 @@ export default function AdminLeadEditClient({
         {FIELD_GROUPS.map((group) => (
           <section
             key={group.title}
-            className="rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]"
+            className="rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]"
           >
             <h2 className="mb-3 text-sm font-semibold text-ink">{group.title}</h2>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -315,7 +315,7 @@ export default function AdminLeadEditClient({
         ))}
 
         {lead.savedBy && lead.savedBy.length > 0 && (
-          <section className="rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)]">
+          <section className="rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
             <h2 className="text-sm font-semibold text-ink">
               Saved by agencies
             </h2>

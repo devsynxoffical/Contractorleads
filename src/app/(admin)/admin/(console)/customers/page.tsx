@@ -209,7 +209,7 @@ export default function AdminCustomersPage() {
       {showCreate && (
         <form
           onSubmit={createCustomer}
-          className="mb-5 grid gap-3 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)] sm:grid-cols-2"
+          className="mb-5 grid gap-3 rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] sm:grid-cols-2"
         >
           <h2 className="sm:col-span-2 text-sm font-semibold text-ink">
             New agency account
@@ -303,7 +303,7 @@ export default function AdminCustomersPage() {
         </button>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-border/80 bg-white shadow-[var(--shadow-card)]">
+      <div className="overflow-hidden rounded-2xl border border-border/80 bg-[var(--surface)] shadow-[var(--shadow-card)]">
         <table className="w-full text-left text-[13px]">
           <thead className="border-b border-border bg-[#faf8fc] text-[11px] uppercase tracking-wide text-ink-faint">
             <tr>
@@ -337,7 +337,7 @@ export default function AdminCustomersPage() {
                   </p>
                   <p className="text-[12px] text-ink-muted">{c.email}</p>
                   {c.ownerName || c.ownerEmail ? (
-                    <p className="mt-1 text-[11px] text-ink-faint">
+                    <p className="mt-1.5 text-[12px] leading-relaxed text-ink-muted">
                       Owner: {c.ownerName || "—"}
                       {c.ownerEmail ? ` · ${c.ownerEmail}` : ""}
                     </p>
@@ -350,7 +350,7 @@ export default function AdminCustomersPage() {
                 </td>
                 <td className="px-4 py-3 capitalize">
                   {c.plan}
-                  <span className="mt-0.5 block text-[11px] text-ink-faint">
+                  <span className="mt-0.5 block text-[12px] text-ink-muted">
                     {c.subscriptionStatus}
                   </span>
                 </td>

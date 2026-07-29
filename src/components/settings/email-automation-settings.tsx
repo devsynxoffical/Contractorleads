@@ -434,7 +434,7 @@ export function EmailAutomationSettings() {
                     placeholder="you@yourdomain.com"
                     required
                   />
-                  <p className="text-[11px] text-ink-faint">
+                  <p className="text-[12px] text-ink-muted">
                     Must be on a domain verified in your Resend account.
                   </p>
                 </div>
@@ -632,7 +632,7 @@ export function EmailAutomationSettings() {
                       </button>
                     )}
                   </div>
-                  <p className="text-[11px] text-ink-faint">
+                  <p className="text-[12px] text-ink-muted">
                     {index === 0
                       ? "Sends immediately when a lead is enrolled."
                       : `Sends ${step.day - steps[index - 1].day <= 1 ? "1 day" : `${step.day - steps[index - 1].day} days`} after step ${index}.`}

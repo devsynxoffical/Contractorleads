@@ -122,10 +122,10 @@ export function SupportChatWidget({ user }: { user: SessionUser }) {
             className="absolute inset-0 animate-fade-in bg-stone-900/25 backdrop-blur-[2px]"
             onClick={() => setOpen(false)}
           />
-          <div className="animate-bot-in relative flex h-[min(560px,92dvh)] w-full max-w-sm flex-col overflow-hidden rounded-t-2xl border border-border bg-white text-ink shadow-2xl sm:rounded-2xl">
+          <div className="animate-bot-in relative flex h-[min(560px,92dvh)] w-full max-w-sm flex-col overflow-hidden rounded-t-2xl border border-border bg-[var(--surface)] text-ink shadow-2xl sm:rounded-2xl">
             <div className="flex items-center justify-between border-b border-border px-4 py-3.5">
               <div className="flex items-center gap-2.5">
-                <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-border">
+                <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--surface)] shadow-sm ring-1 ring-border">
                   <Image
                     src="/logo.png"
                     alt=""
@@ -168,7 +168,7 @@ export function SupportChatWidget({ user }: { user: SessionUser }) {
                         key={q}
                         type="button"
                         onClick={() => ask(q)}
-                        className="rounded-lg border border-border bg-white px-3 py-1.5 text-left text-[12px] font-medium text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
+                        className="rounded-lg border border-border bg-[var(--surface)] px-3 py-1.5 text-left text-[12px] font-medium text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
                       >
                         {q}
                       </button>
@@ -186,7 +186,7 @@ export function SupportChatWidget({ user }: { user: SessionUser }) {
                     className={`max-w-[88%] whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed ${
                       m.role === "user"
                         ? "rounded-br-md text-white"
-                        : "rounded-bl-md border border-border bg-white text-ink shadow-sm"
+                        : "rounded-bl-md border border-border bg-[var(--surface)] text-ink shadow-sm"
                     }`}
                     style={
                       m.role === "user" ? { background: LOGO_GRADIENT } : undefined
@@ -200,7 +200,7 @@ export function SupportChatWidget({ user }: { user: SessionUser }) {
 
               {loading && messages[messages.length - 1]?.role === "user" && (
                 <div className="flex justify-start">
-                  <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-md border border-border bg-white px-3.5 py-3">
+                  <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-md border border-border bg-[var(--surface)] px-3.5 py-3">
                     <span className="typing-dot h-1.5 w-1.5 rounded-full bg-brand-500" />
                     <span className="typing-dot h-1.5 w-1.5 rounded-full bg-brand-500" />
                     <span className="typing-dot h-1.5 w-1.5 rounded-full bg-brand-500" />
@@ -220,7 +220,7 @@ export function SupportChatWidget({ user }: { user: SessionUser }) {
                 e.preventDefault();
                 void ask();
               }}
-              className="flex items-center gap-2 border-t border-border bg-white p-3"
+              className="flex items-center gap-2 border-t border-border bg-[var(--surface)] p-3"
             >
               <input
                 ref={inputRef}

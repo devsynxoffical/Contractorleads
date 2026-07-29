@@ -78,7 +78,7 @@ export default function IndustriesPage() {
         ))}
       </div>
 
-      <div className="mt-8 flex items-start gap-3 rounded-xl border border-border bg-white p-4 shadow-[var(--shadow-card)]">
+      <div className="mt-8 flex items-start gap-3 rounded-xl border border-border bg-[var(--surface)] p-4 shadow-[var(--shadow-card)]">
         <HiOutlineCheckBadge className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" />
         <p className="text-[13px] leading-relaxed text-ink-muted">
           Lead scores use ratings, reviews, completeness, and optional AI

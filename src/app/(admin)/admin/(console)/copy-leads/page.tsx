@@ -111,7 +111,7 @@ export default function AdminCopyLeadsPage() {
         description="Give an agency leads for a service that another agency already scraped — no second Google Places call."
       />
 
-      <div className="mb-4 grid max-w-3xl gap-3 rounded-2xl border border-border/80 bg-white p-5 shadow-[var(--shadow-card)] sm:grid-cols-2">
+      <div className="mb-4 grid max-w-3xl gap-3 rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] sm:grid-cols-2">
         <AdminIndustryField
           label="Service"
           selectValue={industrySelect}
@@ -176,7 +176,7 @@ export default function AdminCopyLeadsPage() {
         )}
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-border/80 bg-white shadow-[var(--shadow-card)]">
+      <div className="overflow-hidden rounded-2xl border border-border/80 bg-[var(--surface)] shadow-[var(--shadow-card)]">
         <table className="w-full text-left text-[13px]">
           <thead className="border-b border-border bg-[#faf8fc] text-[11px] uppercase tracking-wide text-ink-faint">
             <tr>

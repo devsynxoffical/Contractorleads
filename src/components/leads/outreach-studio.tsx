@@ -211,14 +211,14 @@ export function OutreachStudio({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>AI Outreach Studio</CardTitle>
-        <p className="text-sm text-ink-muted">
+      <CardHeader className="border-b border-border/70 pb-4">
+        <CardTitle className="text-[17px]">AI Outreach Studio</CardTitle>
+        <p className="text-[13px] leading-relaxed text-ink-muted sm:text-sm">
           Personalized outreach for {businessName}
         </p>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex flex-wrap gap-2">
+      <CardContent className="space-y-5 pt-5">
+        <div className="flex flex-wrap gap-2.5">
           {types.map((t) => (
             <Button
               key={t.key}
@@ -226,6 +226,7 @@ export function OutreachStudio({
               size="sm"
               onClick={() => generate(t.key)}
               disabled={busy}
+              className="rounded-full px-4"
             >
               {loading === t.key ? "Generating…" : t.label}
             </Button>
@@ -238,7 +239,7 @@ export function OutreachStudio({
           </p>
         )}
         {content !== "" || activeType ? (
-          <div className="space-y-3 rounded-lg border border-border bg-[#FBFAF8] p-4">
+          <div className="space-y-3 rounded-2xl border border-[color:var(--border-strong)] bg-[#faf8fc] p-4 sm:p-5">
             {showEmailSend ? (
               <div className="space-y-1.5">
                 <Label>Subject</Label>
@@ -286,13 +287,13 @@ export function OutreachStudio({
             <div className="space-y-1.5">
               <Label>Message</Label>
               <Textarea
-                className="min-h-[140px] bg-white"
+                className="min-h-[140px] bg-[var(--surface)]"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 disabled={busy}
               />
               {showSmsSend ? (
-                <p className="text-[11px] text-ink-faint">
+                <p className="text-[11px] text-ink-muted">
                   {content.trim().length} characters
                 </p>
               ) : null}

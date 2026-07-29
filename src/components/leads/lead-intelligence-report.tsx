@@ -12,15 +12,15 @@ import {
   HiOutlineEye,
   HiOutlineGlobeAlt,
   HiOutlineMagnifyingGlass,
-  HiOutlineMapPin,
   HiOutlineMegaphone,
   HiOutlinePencilSquare,
   HiOutlinePrinter,
   HiOutlinePresentationChartLine,
   HiOutlineSparkles,
+  HiOutlineSquares2X2,
   HiOutlineXMark,
 } from "react-icons/hi2";
-import { Button } from "@/components/ui/button";
+import { Button, Spinner } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Textarea } from "@/components/ui/input";
 import { notifyCreditsChanged } from "@/lib/client/credits-sync";
@@ -38,11 +38,11 @@ const REPORT_ICONS: Record<
   LeadReportType,
   React.ComponentType<{ className?: string }>
 > = {
+  full: HiOutlineSquares2X2,
   website: HiOutlineGlobeAlt,
   seo: HiOutlineMagnifyingGlass,
   marketing: HiOutlineMegaphone,
   ads: HiOutlinePresentationChartLine,
-  local: HiOutlineMapPin,
 };
 
 type SavedReport = {
@@ -55,10 +55,11 @@ type SavedReport = {
 
 function reportTypeFromScript(type: string): LeadReportType {
   const suffix = type.includes(":") ? type.split(":").pop() : null;
+  if (suffix === "local") return "full";
   if (suffix && (LEAD_REPORT_TYPES as readonly string[]).includes(suffix)) {
     return suffix as LeadReportType;
   }
-  return "website";
+  return "full";
 }
 
 function formatWhen(value: string) {
@@ -82,7 +83,7 @@ export function LeadIntelligenceReportCard({
   businessName: string;
   onReportsChange?: () => void;
 }) {
-  const [reportType, setReportType] = useState<LeadReportType>("website");
+  const [reportType, setReportType] = useState<LeadReportType>("full");
   const [reports, setReports] = useState<SavedReport[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [creditCost, setCreditCost] = useState(2);
@@ -473,14 +474,17 @@ export function LeadIntelligenceReportCard({
                     "flex h-full flex-col rounded-2xl border px-3.5 py-3 text-left transition",
                     selected
                       ? "border-brand-300 bg-brand-50 shadow-[var(--shadow-soft)] ring-1 ring-brand-200"
-                      : "border-border bg-white hover:border-brand-200 hover:bg-brand-50/40",
+                      : "border-border bg-[var(--surface)] hover:border-brand-200 hover:bg-brand-50/40",
+                    key === "full" && !selected
+                      ? "border-brand-100 bg-brand-50/30"
+                      : null,
                   )}
                 >
                   <span
                     className={cn(
                       "mb-2 flex h-8 w-8 items-center justify-center rounded-lg",
                       selected
-                        ? "bg-white text-brand-700 ring-1 ring-brand-200"
+                        ? "bg-[var(--surface)] text-brand-700 ring-1 ring-brand-200"
                         : "bg-[#faf8fc] text-ink-muted",
                     )}
                   >
@@ -577,7 +581,7 @@ export function LeadIntelligenceReportCard({
                     "rounded-full border px-3 py-1.5 text-[12px] font-medium transition",
                     selected
                       ? "border-brand-300 bg-brand-50 text-brand-800"
-                      : "border-border bg-white text-ink-muted hover:border-brand-200",
+                      : "border-border bg-[var(--surface)] text-ink-muted hover:border-brand-200",
                   )}
                 >
                   {LEAD_REPORT_TYPE_META[t].label} · {formatWhen(r.createdAt)}
@@ -588,7 +592,7 @@ export function LeadIntelligenceReportCard({
         ) : null}
 
         {active ? (
-          <div className="overflow-hidden rounded-2xl border border-border bg-white shadow-[var(--shadow-soft)]">
+          <div className="overflow-hidden rounded-2xl border border-border bg-[var(--surface)] shadow-[var(--shadow-soft)]">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/80 bg-[#faf8fc]/80 px-4 py-3">
               <div className="min-w-0">
                 <p className="truncate text-[13px] font-semibold text-ink">
@@ -680,7 +684,7 @@ export function LeadIntelligenceReportCard({
             </div>
 
             {editing ? (
-              <div className="space-y-3 bg-white px-4 py-4">
+              <div className="space-y-3 bg-[var(--surface)] px-4 py-4">
                 <div className="space-y-1.5">
                   <label className="text-[11px] font-semibold uppercase tracking-wide text-ink-muted">
                     Report title
@@ -711,14 +715,37 @@ export function LeadIntelligenceReportCard({
                 </div>
               </div>
             ) : (
-              <div className="max-h-[36rem] overflow-auto border-t border-border/60">
-                <ClientPitchReportView content={active.content} />
+              <div className="max-h-[42rem] overflow-auto border-t border-border/60 bg-[#f7f5f9]/80 p-4 sm:p-5">
+                {generating ? (
+                  <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+                    <Spinner className="h-8 w-8 text-brand-600" />
+                    <p className="text-[14px] font-semibold text-ink">
+                      Writing your client proposal…
+                    </p>
+                    <p className="max-w-sm text-[13px] text-ink-muted">
+                      Crawling the site and drafting a professional pitch
+                      document.
+                    </p>
+                  </div>
+                ) : (
+                  <ClientPitchReportView content={active.content} />
+                )}
               </div>
             )}
           </div>
+        ) : generating ? (
+          <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-[#faf8fc] px-4 py-14 text-center">
+            <Spinner className="h-8 w-8 text-brand-600" />
+            <p className="text-[14px] font-semibold text-ink">
+              Writing your client proposal…
+            </p>
+            <p className="max-w-sm text-[13px] text-ink-muted">
+              Crawling the site and drafting a professional pitch document.
+            </p>
+          </div>
         ) : !loading ? (
           <div className="rounded-2xl border border-dashed border-border bg-[#faf8fc] px-4 py-10 text-center">
-            <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-white text-brand-600 ring-1 ring-brand-100">
+            <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--surface)] text-brand-600 ring-1 ring-brand-100">
               <HiOutlineDocumentText className="h-5 w-5" />
             </span>
             <p className="mt-3 text-[14px] font-semibold text-ink">

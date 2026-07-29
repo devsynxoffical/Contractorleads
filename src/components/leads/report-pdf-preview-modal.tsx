@@ -68,7 +68,7 @@ export function ReportPdfPreviewModal({
         aria-label="Close"
         onClick={onClose}
       />
-      <div className="relative flex h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-border bg-white shadow-2xl">
+      <div className="relative flex h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-border bg-[var(--surface)] shadow-2xl">
         <div className="h-1.5 w-full shrink-0" style={{ background: LOGO_GRADIENT }} />
         <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-4 py-3 sm:px-5">
           <div className="min-w-0">
@@ -134,12 +134,12 @@ export function ReportPdfPreviewModal({
                 data={pdfUrl}
                 type="application/pdf"
                 title="Report PDF preview"
-                className="h-full w-full flex-1 rounded-xl border border-border bg-white"
+                className="h-full w-full flex-1 rounded-xl border border-border bg-[var(--surface)]"
               >
                 <iframe
                   title="Report PDF preview"
                   src={pdfUrl}
-                  className="h-full min-h-[60vh] w-full rounded-xl border-0 bg-white"
+                  className="h-full min-h-[60vh] w-full rounded-xl border-0 bg-[var(--surface)]"
                 />
               </object>
               <p className="px-1 text-center text-[11px] text-ink-muted">

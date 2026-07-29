@@ -40,7 +40,7 @@ export default function AdminHealthPage() {
           <button
             type="button"
             onClick={load}
-            className="rounded-xl border border-border bg-white px-3 py-2 text-[12px] font-semibold text-ink-muted"
+            className="rounded-xl border border-border bg-[var(--surface)] px-3 py-2 text-[12px] font-semibold text-ink-muted"
           >
             Re-check
           </button>
@@ -57,7 +57,7 @@ export default function AdminHealthPage() {
         {checks.map((c) => (
           <li
             key={c.name}
-            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/80 bg-white px-4 py-3 shadow-[var(--shadow-card)]"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/80 bg-[var(--surface)] px-4 py-3 shadow-[var(--shadow-card)]"
           >
             <div>
               <p className="text-sm font-semibold text-ink">{c.name}</p>

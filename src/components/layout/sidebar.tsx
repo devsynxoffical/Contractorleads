@@ -56,7 +56,6 @@ const sections: NavSection[] = [
     items: [
       { href: "/ask-expert", label: "Ask Contractor Leads", icon: HiOutlineChatBubbleLeftRight },
       { href: "/scripts", label: "My Scripts", icon: HiOutlineBookOpen },
-      { href: "/ask-expert/settings", label: "AI settings", icon: HiOutlineCog6Tooth },
     ],
   },
   {
