@@ -110,6 +110,51 @@ model User {
   teamMembers     TeamMember[]
   leadUnlocks     LeadUnlock[]
   couponRedemptions CouponRedemption[]
+  digestSubscription DigestSubscription?
+  digestDeliveries   DigestDelivery[]
+}
+
+/// Morning email of fresh verified leads matching the user's saved filters.
+model DigestSubscription {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enabled        Boolean  @default(false)
+  industry       String   @default("Roofing")
+  country        String   @default("US")
+  /// local = state/city; country = entire country
+  locationScope  String   @default("local")
+  state          String?
+  city           String?
+  /// Allowed: 20 | 50 | 100
+  dailyLeadCount Int      @default(20)
+  /// IANA timezone for morning delivery window (default US Central)
+  timezone       String   @default("America/Chicago")
+  lastRunAt      DateTime?
+  lastError      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deliveries     DigestDelivery[]
+}
+
+/// One morning delivery batch (leads emailed to the subscriber).
+model DigestDelivery {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptionId String
+  subscription   DigestSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  leadCount      Int
+  /// JSON array of lead ids
+  leadIds        String
+  creditsCharged Float    @default(0)
+  /// sent | skipped | failed
+  emailStatus    String   @default("sent")
+  error          String?
+  createdAt      DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([subscriptionId, createdAt])
 }
 
 /// Agency+ seat invites managed by the account owner.

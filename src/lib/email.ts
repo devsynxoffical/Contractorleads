@@ -533,6 +533,119 @@ export async function sendLeadScrapeEmail(opts: {
   });
 }
 
+/** Morning daily digest — transactional product email (fresh leads for saved filters). */
+export async function sendDailyDigestEmail(opts: {
+  userId: string;
+  to: string;
+  name?: string | null;
+  industry: string;
+  locationLabel: string;
+  leadCount: number;
+  hotCount?: number;
+  warmCount?: number;
+  sampleNames?: string[];
+  digestUrl?: string;
+  leadsUrl?: string;
+}) {
+  const user = await prisma.user.findUnique({
+    where: { id: opts.userId },
+    select: { emailMarketingOptIn: true },
+  });
+  // Still respect opt-out for product digests that resemble marketing cadence
+  if (user && user.emailMarketingOptIn === false) {
+    return { ok: true as const, skipped: true as const };
+  }
+
+  const unsub = unsubscribeUrlForUser(opts.userId);
+  const prefs = preferencesUrlForUser(opts.userId);
+  const base = appBaseUrl();
+  const digestUrl = opts.digestUrl || `${base}/digest`;
+  const leadsUrl = opts.leadsUrl || `${base}/leads`;
+  const name = opts.name || "there";
+  const samples = (opts.sampleNames || []).slice(0, 8);
+
+  const sampleRows = samples
+    .map(
+      (n) =>
+        `<li style="margin:0 0 6px;font-size:14px;line-height:1.45;color:#334155;">${n
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")}</li>`,
+    )
+    .join("");
+
+  const subject = `Your daily digest: ${opts.leadCount} ${opts.industry} leads — ${opts.locationLabel}`;
+  const text = `Hi ${name},
+
+Your daily digest is ready: ${opts.leadCount} verified ${opts.industry} leads in ${opts.locationLabel}.
+
+Hot: ${opts.hotCount ?? 0} · Warm: ${opts.warmCount ?? 0}
+
+${samples.length ? `Sample businesses:\n${samples.map((s) => `- ${s}`).join("\n")}\n\n` : ""}Review them here: ${digestUrl}
+All leads: ${leadsUrl}
+
+— Contractor Leads`;
+
+  const html = `<!DOCTYPE html>
+<html><body style="margin:0;padding:0;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f8fafc;padding:24px 12px;">
+    <tr><td align="center">
+      <table role="presentation" width="560" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;">
+        <tr><td style="padding:28px 28px 12px;background:linear-gradient(135deg,#db2777,#9333ea);">
+          <p style="margin:0;font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.85);">Daily Digest</p>
+          <h1 style="margin:8px 0 0;font-size:22px;line-height:1.25;color:#ffffff;">${opts.leadCount} ${opts.industry.replace(/&/g, "&amp;")} leads ready</h1>
+          <p style="margin:8px 0 0;font-size:14px;color:rgba(255,255,255,0.9);">${opts.locationLabel.replace(/&/g, "&amp;")}</p>
+        </td></tr>
+        <tr><td style="padding:24px 28px;">
+          <p style="margin:0 0 16px;font-size:15px;line-height:1.55;color:#334155;">Hi ${name.replace(/&/g, "&amp;")}, your morning batch of verified contractors is ready — billed at 1 credit per lead returned.</p>
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 20px;">
+            <tr>
+              <td width="33%" style="padding:12px;background:#faf5ff;border-radius:12px;text-align:center;">
+                <p style="margin:0;font-size:20px;font-weight:700;color:#7c3aed;">${opts.leadCount}</p>
+                <p style="margin:4px 0 0;font-size:11px;color:#64748b;">Leads</p>
+              </td>
+              <td width="8"></td>
+              <td width="33%" style="padding:12px;background:#fdf2f8;border-radius:12px;text-align:center;">
+                <p style="margin:0;font-size:20px;font-weight:700;color:#db2777;">${opts.hotCount ?? 0}</p>
+                <p style="margin:4px 0 0;font-size:11px;color:#64748b;">Hot</p>
+              </td>
+              <td width="8"></td>
+              <td width="33%" style="padding:12px;background:#f0fdf4;border-radius:12px;text-align:center;">
+                <p style="margin:0;font-size:20px;font-weight:700;color:#16a34a;">${opts.warmCount ?? 0}</p>
+                <p style="margin:4px 0 0;font-size:11px;color:#64748b;">Warm</p>
+              </td>
+            </tr>
+          </table>
+          ${
+            sampleRows
+              ? `<p style="margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#94a3b8;">Sample businesses</p><ul style="margin:0 0 20px;padding-left:18px;">${sampleRows}</ul>`
+              : ""
+          }
+          <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 0 12px;">
+            <tr><td style="border-radius:10px;background:linear-gradient(135deg,#db2777,#9333ea);">
+              <a href="${digestUrl}" style="display:inline-block;padding:13px 22px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;">Open morning digest</a>
+            </td></tr>
+          </table>
+          <p style="margin:0;font-size:13px;"><a href="${leadsUrl}" style="color:#7c3aed;font-weight:600;text-decoration:none;">View all leads →</a></p>
+        </td></tr>
+        <tr><td style="padding:16px 28px 24px;border-top:1px solid #e2e8f0;">
+          <p style="margin:0;font-size:11px;line-height:1.5;color:#94a3b8;">Manage digest filters in the app. <a href="${prefs}" style="color:#64748b;">Email preferences</a> · <a href="${unsub}" style="color:#64748b;">Unsubscribe</a></p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+
+  return sendEmail({
+    to: opts.to,
+    subject,
+    html,
+    text,
+    unsubscribeUrl: unsub,
+    tags: ["daily-digest"],
+  });
+}
+
 /**
  * Purchase / subscription confirmation ("thank you for purchasing").
  * Transactional — always sent (not gated by marketing opt-in).

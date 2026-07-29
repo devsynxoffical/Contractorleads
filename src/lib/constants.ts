@@ -256,7 +256,8 @@ Lead discovery
 - Saved leads / CRM: /leads/saved
 - Pipeline CRM: /leads/pipeline
 - Lead map: /leads/map
-- Morning digest (top outreach picks): /digest
+- Morning digest (top outreach picks + daily email subscription): /digest
+- Daily Digest: subscribe with industry, location, and 20/50/100 leads — emailed each morning (1 credit per lead returned)
 
 Outreach & AI
 - Outreach scripts on a lead: open any lead → Outreach Studio

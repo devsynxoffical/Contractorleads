@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
+import { DailyDigestSettings } from "@/components/home/daily-digest-settings";
 import type { DigestLead, MorningDigest } from "@/lib/services/morning-digest";
 
 type SmtpAccount = {
@@ -306,15 +307,15 @@ export function MorningDigestView({ userName }: { userName?: string | null }) {
               Back to home
             </Link>
             <p className="mt-3 text-[12px] font-semibold uppercase tracking-[0.16em] text-brand-600">
-              Morning digest
+              Daily Digest
             </p>
             <h1 className="mt-1 font-[family-name:var(--font-display)] text-[clamp(1.5rem,3vw,1.85rem)] font-semibold tracking-tight text-ink">
               {digest?.greeting ?? "Good morning"}
               {userName ? `, ${userName.split(" ")[0]}` : ""}
             </h1>
             <p className="mt-1 max-w-xl text-[14px] text-ink-muted">
-              Your top outreach picks for today — connect email, review each lead, and send
-              intros without hunting through lists.
+              Subscribe to fresh verified leads by email each morning — then work
+              today&apos;s top outreach picks below.
             </p>
           </div>
           <button
@@ -327,6 +328,7 @@ export function MorningDigestView({ userName }: { userName?: string | null }) {
           </button>
         </div>
 
+        <DailyDigestSettings />
         {loading && !digest && (
           <div className="rounded-2xl border border-dashed border-border bg-white/60 px-6 py-12 text-center text-[13px] text-ink-muted">
             Building your digest…
