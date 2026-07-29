@@ -168,6 +168,81 @@ export function SubpageCard({
   );
 }
 
+/** Stat tiles for the band directly under a subpage hero. */
+export function SubpageStats({
+  items,
+  tone = "tint",
+}: {
+  items: Array<{ value: string; label: string }>;
+  tone?: SectionTone;
+}) {
+  const dark = tone === "dark";
+
+  return (
+    <ul className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {items.map((item, i) => (
+        <li key={item.label}>
+          <Reveal delay={0.05 * i}>
+            <div
+              className={`h-full rounded-2xl border p-4 text-center ${
+                dark
+                  ? "border-white/10 bg-white/[0.04]"
+                  : "border-violet-100 bg-white"
+              }`}
+            >
+              <p className="font-[family-name:var(--font-display)] text-[22px] font-semibold tracking-tight text-fuchsia-700">
+                {item.value}
+              </p>
+              <p
+                className={`mt-1 text-[12.5px] leading-snug ${
+                  dark ? "text-white/60" : "text-slate-600"
+                }`}
+              >
+                {item.label}
+              </p>
+            </div>
+          </Reveal>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * Even grid of internal links. Long lists (US states, trades) read as a wall of
+ * pills when wrapped inline, so give each one an equal tile.
+ */
+export function SubpageLinkGrid({
+  items,
+  columns = 5,
+}: {
+  items: Array<{ href: string; label: string }>;
+  columns?: 3 | 4 | 5;
+}) {
+  const cols =
+    columns === 3
+      ? "sm:grid-cols-2 lg:grid-cols-3"
+      : columns === 4
+        ? "sm:grid-cols-3 lg:grid-cols-4"
+        : "sm:grid-cols-3 lg:grid-cols-5";
+
+  return (
+    <ul className={`grid grid-cols-2 gap-2 ${cols}`}>
+      {items.map((item) => (
+        <li key={item.href}>
+          <Link
+            href={item.href}
+            className="group flex h-full items-center justify-between gap-1.5 rounded-xl border border-violet-100 bg-white px-3 py-2.5 text-[13px] font-semibold text-slate-700 transition hover:border-fuchsia-300 hover:text-fuchsia-700"
+          >
+            <span className="truncate">{item.label}</span>
+            <HiOutlineArrowRight className="h-3.5 w-3.5 shrink-0 opacity-0 transition group-hover:opacity-100" />
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 /** Gradient closer band — same treatment as the homepage final CTA. */
 export function SubpageCtaBand({
   title,

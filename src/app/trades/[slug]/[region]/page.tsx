@@ -2,10 +2,25 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
+  HiOutlineArrowRight,
+  HiOutlineCheck,
+  HiOutlineMapPin,
+  HiOutlineMegaphone,
+  HiOutlineSparkles,
+  HiOutlineUserCircle,
+} from "react-icons/hi2";
+import {
   MarketingSiteShell,
   MarketingSubpageHero,
 } from "@/components/marketing/marketing-site-shell";
-import { SubpageCtaBand } from "@/components/marketing/marketing-subpage";
+import {
+  SubpageCard,
+  SubpageCtaBand,
+  SubpageLinkGrid,
+  SubpageSection,
+  SubpageStats,
+} from "@/components/marketing/marketing-subpage";
+import { Reveal } from "@/components/marketing/marketing-ui";
 import {
   JsonLd,
   breadcrumbJsonLd,
@@ -56,11 +71,36 @@ export default async function TradeRegionPage({ params }: Params) {
   const region = getRegionBySlug(regionSlug);
   if (!trade || !region) notFound();
 
+  const lower = trade.name.toLowerCase();
   const regionIndex = SEO_REGIONS.findIndex((r) => r.slug === region.slug);
-  const showRegions = SEO_REGIONS.filter((_, i) => {
+  const nearbyRegions = SEO_REGIONS.filter((_, i) => {
     const d = Math.abs(i - regionIndex);
-    return d > 0 && d <= 4;
-  }).slice(0, 8);
+    return d > 0 && d <= 9;
+  });
+  const otherTrades = TRADE_PAGES.filter((t) => t.slug !== trade.slug);
+
+  const workflow = [
+    {
+      title: `Filter to ${region.name}`,
+      body: `Set the market to ${region.name} (${region.code}), pick ${trade.name}, and tighten by city, radius, or ZIP code.`,
+      icon: HiOutlineMapPin,
+    },
+    {
+      title: "Read the scores",
+      body: "Each business returns with website, PPC, SEO, and marketing-fit scores so the weakest digital presence rises to the top.",
+      icon: HiOutlineSparkles,
+    },
+    {
+      title: "Get the owner",
+      body: "Decision-maker names and contact details are enriched from the company site, with Meta ad activity alongside them.",
+      icon: HiOutlineUserCircle,
+    },
+    {
+      title: "Send the first touch",
+      body: "Generate email, SMS, or a call script from that lead's audit and send it from your own mailbox.",
+      icon: HiOutlineMegaphone,
+    },
+  ];
 
   return (
     <MarketingSiteShell>
@@ -68,7 +108,7 @@ export default async function TradeRegionPage({ params }: Params) {
       <JsonLd
         data={breadcrumbJsonLd([
           { name: "Home", path: "/" },
-          { name: "Trades", path: "/trades" },
+          { name: "Industries", path: "/trades" },
           { name: trade.name, path: `/trades/${trade.slug}` },
           {
             name: region.name,
@@ -80,93 +120,164 @@ export default async function TradeRegionPage({ params }: Params) {
       <MarketingSubpageHero
         eyebrow={`${trade.name} · ${region.name}`}
         title={`${trade.name} contractor leads in ${region.name}`}
-        description={`Agencies use Contractor Leads to find verified ${trade.name.toLowerCase()} businesses across ${region.name} (${region.code}) — with AI scores, owner contacts, and outreach-ready scripts.`}
+        description={`Agencies use Contractor Leads to find verified ${lower} businesses across ${region.name} (${region.code}) — with AI scores, owner contacts, and outreach-ready scripts.`}
       >
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Link
             href="/register"
-            className="rounded-full bg-gradient-to-r from-pink-600 via-fuchsia-600 to-violet-600 px-5 py-2.5 text-[14px] font-semibold text-white"
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-600 via-fuchsia-600 to-violet-600 px-5 py-2.5 text-[14px] font-semibold text-white transition hover:opacity-95"
           >
-            Search {region.name} {trade.name.toLowerCase()} leads
+            Search {region.name} leads
+            <HiOutlineArrowRight className="h-4 w-4" />
           </Link>
           <Link
             href={`/trades/${trade.slug}`}
-            className="rounded-full border border-violet-200 bg-white px-5 py-2.5 text-[14px] font-semibold text-slate-700"
+            className="inline-flex rounded-full border border-white/25 bg-white/10 px-5 py-2.5 text-[14px] font-semibold text-white backdrop-blur transition hover:bg-white/20"
           >
-            All {trade.name} pages
+            All {trade.name} markets
           </Link>
         </div>
+        <ul className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[12.5px] font-medium text-white/70">
+          <li className="inline-flex items-center gap-1.5">
+            <HiOutlineCheck className="h-4 w-4 text-fuchsia-300" />
+            10 free leads on Starter
+          </li>
+          <li className="inline-flex items-center gap-1.5">
+            <HiOutlineCheck className="h-4 w-4 text-fuchsia-300" />
+            No credit card required
+          </li>
+        </ul>
       </MarketingSubpageHero>
 
-      <section className="mx-auto max-w-3xl space-y-8 px-5 py-16 text-[15px] leading-relaxed text-slate-600 sm:px-8">
-        <div>
-          <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold text-slate-900">
-            Why {region.name} {trade.name.toLowerCase()} outreach
-          </h2>
-          <p className="mt-3">{trade.angle}</p>
-          <p className="mt-3">
-            Filter Lead Finder by {region.name}, pick {trade.name}, and pull a
-            scored batch with phones, websites, ratings, and decision-maker
-            enrichment when available — then move keepers into Pipeline CRM.
-          </p>
+      <SubpageSection tone="tint">
+        <SubpageStats
+          items={[
+            { value: region.code, label: `${region.name} market coverage` },
+            { value: "Live", label: "Google & Yelp data at search time" },
+            { value: "4", label: "AI scores on every lead" },
+            {
+              value: `${otherTrades.length + 1}`,
+              label: `Trades searchable in ${region.name}`,
+            },
+          ]}
+        />
+      </SubpageSection>
+
+      <SubpageSection
+        tone="light"
+        eyebrow="The opportunity"
+        title={`Why ${region.name} ${lower} outreach works`}
+      >
+        <div className="grid gap-6 lg:grid-cols-[1.15fr_1fr] lg:items-start">
+          <Reveal>
+            <div className="space-y-4 text-[15px] leading-relaxed text-slate-600">
+              <p>{trade.angle}</p>
+              <p>
+                In {region.name}, that plays out as a long tail of {lower}{" "}
+                businesses with solid reviews and a weak digital footprint — the
+                exact profile that converts on a specific, evidence-backed pitch
+                rather than a cold template.
+              </p>
+              <p>
+                Contractor Leads scores that footprint for you, so your first line
+                names a problem the owner already knows they have.
+              </p>
+            </div>
+          </Reveal>
+          <Reveal delay={0.1}>
+            <div className="rounded-2xl border border-violet-100 bg-gradient-to-br from-fuchsia-50 to-violet-50 p-6">
+              <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-fuchsia-700">
+                What agencies get
+              </p>
+              <ul className="mt-4 space-y-2.5">
+                {[
+                  `Live Google and Yelp data for ${region.name}`,
+                  "AI scores for website, PPC, SEO, and fit",
+                  "Owner enrichment and Meta ads context",
+                  "Email, SMS, and call scripts per lead",
+                  "Pipeline stages and CRM webhooks",
+                ].map((item) => (
+                  <li
+                    key={item}
+                    className="flex items-start gap-2 text-[14px] leading-relaxed text-slate-700"
+                  >
+                    <HiOutlineCheck className="mt-0.5 h-4 w-4 shrink-0 text-fuchsia-600" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </Reveal>
         </div>
-        <div>
-          <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold text-slate-900">
-            What agencies get
-          </h2>
-          <ul className="mt-3 list-disc space-y-2 pl-5">
-            <li>Live Google / Yelp business data for {region.name}</li>
-            <li>AI opportunity scores (website, PPC, SEO, marketing fit)</li>
-            <li>Owner enrichment + Meta ads context when available</li>
-            <li>Cold email, SMS, and call scripts from Outreach Studio</li>
-          </ul>
+      </SubpageSection>
+
+      <SubpageSection
+        tone="dark"
+        eyebrow="How it works"
+        title={`From ${region.name} search to first reply`}
+        description="Four steps in one workspace — no exporting, no second tool, no manual research pass."
+      >
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {workflow.map((step, i) => {
+            const Icon = step.icon;
+            return (
+              <Reveal key={step.title} delay={0.05 * i}>
+                <SubpageCard
+                  tone="dark"
+                  icon={<Icon className="h-5 w-5" />}
+                  title={step.title}
+                  body={step.body}
+                />
+              </Reveal>
+            );
+          })}
         </div>
-        <div>
-          <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold text-slate-900">
-            More {trade.name} markets
-          </h2>
-          <ul className="mt-3 flex flex-wrap gap-2">
-            {showRegions.map((r) => (
-              <li key={r.slug}>
-                <Link
-                  href={`/trades/${trade.slug}/${r.slug}`}
-                  className="inline-flex rounded-full border border-violet-100 bg-white px-3 py-1.5 text-[13px] font-semibold text-slate-700 hover:border-fuchsia-300"
-                >
-                  {r.name}
-                </Link>
-              </li>
-            ))}
-            <li>
-              <Link
-                href={`/trades/${trade.slug}`}
-                className="inline-flex rounded-full border border-fuchsia-200 bg-fuchsia-50 px-3 py-1.5 text-[13px] font-semibold text-fuchsia-800"
-              >
-                All states →
-              </Link>
-            </li>
-          </ul>
-        </div>
-        <div>
-          <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold text-slate-900">
-            Other trades in {region.name}
-          </h2>
-          <ul className="mt-3 flex flex-wrap gap-2">
-            {TRADE_PAGES.filter((t) => t.slug !== trade.slug).map((t) => (
-              <li key={t.slug}>
-                <Link
-                  href={`/trades/${t.slug}/${region.slug}`}
-                  className="inline-flex rounded-full border border-violet-100 bg-white px-3 py-1.5 text-[13px] font-semibold text-slate-700 hover:border-fuchsia-300"
-                >
-                  {t.name}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
+      </SubpageSection>
+
+      <SubpageSection
+        tone="light"
+        eyebrow="Nearby markets"
+        title={`More ${trade.name} states`}
+        description={`Run the same play in neighbouring markets, or open the ${trade.name} hub for all ${SEO_REGIONS.length} states.`}
+      >
+        <Reveal>
+          <SubpageLinkGrid
+            items={nearbyRegions.map((r) => ({
+              href: `/trades/${trade.slug}/${r.slug}`,
+              label: r.name,
+            }))}
+          />
+        </Reveal>
+        <Reveal delay={0.1}>
+          <Link
+            href={`/trades/${trade.slug}`}
+            className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-fuchsia-200 bg-fuchsia-50 px-4 py-2 text-[13px] font-semibold text-fuchsia-800 transition hover:border-fuchsia-300"
+          >
+            All {SEO_REGIONS.length} {trade.name} states
+            <HiOutlineArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </Reveal>
+      </SubpageSection>
+
+      <SubpageSection
+        tone="soft"
+        eyebrow="Other industries"
+        title={`Other trades in ${region.name}`}
+        description={`The same live data and scoring works across every vertical we cover in ${region.name}.`}
+      >
+        <Reveal>
+          <SubpageLinkGrid
+            columns={4}
+            items={otherTrades.map((t) => ({
+              href: `/trades/${t.slug}/${region.slug}`,
+              label: t.name,
+            }))}
+          />
+        </Reveal>
+      </SubpageSection>
 
       <SubpageCtaBand
-        title={`Find ${trade.name.toLowerCase()} leads in ${region.name}`}
+        title={`Find ${lower} leads in ${region.name}`}
         description={`Run a live ${region.name} search, get AI scores and owner contacts, and send your first sequence the same day.`}
         primaryLabel="Start free trial"
         secondaryHref="/pricing"

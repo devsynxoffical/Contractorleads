@@ -1,11 +1,20 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
+import { HiOutlineArrowRight, HiOutlineEnvelope } from "react-icons/hi2";
 import {
   MarketingSiteShell,
   MarketingSubpageHero,
 } from "@/components/marketing/marketing-site-shell";
 import { FOUNDER } from "@/components/marketing/footer-founder-card";
-import { SubpageCtaBand } from "@/components/marketing/marketing-subpage";
+import {
+  SubpageCard,
+  SubpageCtaBand,
+  SubpageSection,
+  SubpageStats,
+} from "@/components/marketing/marketing-subpage";
+import { Reveal } from "@/components/marketing/marketing-ui";
+import { INDUSTRIES, TIER_ONE_COUNTRIES } from "@/lib/constants";
 import { JsonLd, breadcrumbJsonLd, organizationJsonLd } from "@/components/seo/json-ld";
 import { buildMetadata } from "@/lib/seo";
 import { EMAIL_BRAND } from "@/lib/email-brand";
@@ -50,23 +59,35 @@ export default function AboutPage() {
         description="We are not a homeowner marketplace. Contractor Leads is prospecting software for agencies and operators who need live, verified home-service businesses — with the contact, the score, and the pitch angle."
       />
 
-      <section className="mx-auto max-w-6xl px-5 py-16 sm:px-8 sm:py-20">
-        <div className="grid gap-6 md:grid-cols-3">
-          {VALUES.map((item) => (
-            <div
-              key={item.title}
-              className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
-            >
-              <h2 className="font-[family-name:var(--font-display)] text-lg font-semibold text-slate-900">
-                {item.title}
-              </h2>
-              <p className="mt-3 text-[14px] leading-relaxed text-slate-600">
-                {item.body}
-              </p>
-            </div>
+      <SubpageSection tone="tint">
+        <SubpageStats
+          items={[
+            { value: `${INDUSTRIES.length}`, label: "Home-service verticals" },
+            {
+              value: `${TIER_ONE_COUNTRIES.length}`,
+              label: "Countries you can prospect",
+            },
+            { value: "Live", label: "Google & Yelp data at search time" },
+            { value: "4", label: "AI scores on every lead" },
+          ]}
+        />
+      </SubpageSection>
+
+      <SubpageSection
+        tone="light"
+        align="center"
+        eyebrow="What drives us"
+        title="Why Contractor Leads exists"
+        description="Three convictions shape every decision we make about the product."
+      >
+        <div className="grid gap-4 md:grid-cols-3">
+          {VALUES.map((item, i) => (
+            <Reveal key={item.title} delay={0.06 * i}>
+              <SubpageCard title={item.title} body={item.body} />
+            </Reveal>
           ))}
         </div>
-      </section>
+      </SubpageSection>
 
       <section className="border-y border-slate-200/80 bg-[#faf8fc] py-16 sm:py-20">
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-5 sm:px-8 md:grid-cols-[auto_1fr]">
@@ -115,21 +136,37 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-3xl px-5 py-16 text-center sm:px-8 sm:py-20">
-        <h2 className="font-[family-name:var(--font-display)] text-xl font-semibold text-slate-900">
-          Contact
-        </h2>
-        <p className="mt-3 text-[15px] leading-relaxed text-slate-600">
-          Questions about fit, partnerships, or enterprise seats:{" "}
-          <a
-            href={`mailto:${EMAIL_BRAND.contactEmail}`}
-            className="font-semibold text-fuchsia-700 hover:underline"
-          >
-            {EMAIL_BRAND.contactEmail}
-          </a>
-        </p>
-        <p className="mt-2 text-[14px] text-slate-500">{EMAIL_BRAND.address}</p>
-      </section>
+      <SubpageSection
+        tone="light"
+        align="center"
+        eyebrow="Contact"
+        title="Talk to us"
+        description="Questions about fit, partnerships, or enterprise seats — we answer every message."
+      >
+        <Reveal className="mx-auto max-w-xl">
+          <div className="rounded-2xl border border-violet-100 bg-white p-6 text-center shadow-sm sm:p-8">
+            <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-100 to-violet-100 text-fuchsia-700">
+              <HiOutlineEnvelope className="h-6 w-6" />
+            </span>
+            <a
+              href={`mailto:${EMAIL_BRAND.contactEmail}`}
+              className="mt-4 block font-[family-name:var(--font-display)] text-[18px] font-semibold text-fuchsia-700 hover:underline"
+            >
+              {EMAIL_BRAND.contactEmail}
+            </a>
+            <p className="mt-3 text-[13px] leading-relaxed text-slate-500">
+              {EMAIL_BRAND.address}
+            </p>
+            <Link
+              href="/enterprise/book"
+              className="mt-6 inline-flex items-center gap-1.5 rounded-full border border-violet-200 bg-[#faf8fc] px-4 py-2 text-[13px] font-semibold text-slate-700 transition hover:border-fuchsia-300"
+            >
+              Book an enterprise call
+              <HiOutlineArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        </Reveal>
+      </SubpageSection>
 
       <SubpageCtaBand
         title="See it on your own market"
