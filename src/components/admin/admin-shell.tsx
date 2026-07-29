@@ -246,13 +246,13 @@ export function AdminShell({
         </nav>
         <div className="shrink-0 space-y-1 border-t border-brand-500/15 p-3">
           {(user.role === SUPER_ADMIN_ROLE || user.role === OWNER_ROLE) && (
-            <Link
+            <a
               href="/home"
               className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-[13px] font-medium text-ink-muted transition hover:bg-brand-50 hover:text-ink"
             >
               <HiOutlineArrowLeft className="h-4 w-4" />
               Back to app
-            </Link>
+            </a>
           )}
           <button
             type="button"
@@ -279,13 +279,13 @@ export function AdminShell({
             <p className="truncate text-[11px] text-ink-muted">{user.email}</p>
           </div>
           {(user.role === SUPER_ADMIN_ROLE || user.role === OWNER_ROLE) && (
-            <Link
+            <a
               href="/home"
               className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-[11px] font-semibold text-brand-500 hover:bg-brand-50"
             >
               <HiOutlineArrowLeft className="h-3.5 w-3.5" />
               App
-            </Link>
+            </a>
           )}
           <ThemeToggle compact />
           <button
