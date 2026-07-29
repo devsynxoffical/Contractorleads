@@ -214,7 +214,7 @@ export const CREDIT_COSTS = {
   search: 0,
   assistant: 2,
   outreach: 2,
-  /** Per-lead intelligence report (SEO / ads / marketing / full). */
+  /** Per-lead client pitch proposal (website / SEO / ads / marketing / local). */
   leadReport: 2,
   /** Detail page for one qualification score card. */
   qualificationDetail: 1,
@@ -231,8 +231,8 @@ What you know about the app:
 - Saved Leads, Hot Leads, Pipeline CRM (New → Contacted → Qualified → Closed), Lead Map, CSV/Excel exports (exports charge unlock credits for locked leads).
 - Ask Expert (/ask-expert): AI marketing assistant (costs credits). My Scripts stores saved answers.
 - Academy (/academy): self-serve guides, FAQs, and blogs for how to use the product — prefer pointing users here for how-to questions so they do not need an admin.
-- Credits: generate lead = 1 credit per lead returned; AI assistant / outreach / lead intelligence report = 2 credits. Re-export of already billed leads is free. Upgrade under Plans & Billing (/billing).
-- Lead detail: generate a detailed intelligence report (full / SEO / marketing / ads / local) for any lead — works with or without a website.
+- Credits: generate lead = 1 credit per lead returned; AI assistant / outreach / client pitch proposal = 2 credits. Re-export of already billed leads is free. Upgrade under Plans & Billing (/billing).
+- Lead detail: generate a client-facing pitch proposal (website / SEO / marketing / ads / local) showing problems, impact, and how you fix them — ready to PDF and email.
 - Settings (/settings): company profile, dark mode. Onboarding data personalizes AI answers.
 
 Troubleshooting tips you can give:

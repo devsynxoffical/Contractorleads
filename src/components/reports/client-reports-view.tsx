@@ -219,13 +219,13 @@ function tierVariant(tier?: string | null) {
 function reportTypeLabel(type: string) {
   if (type.startsWith("lead_intelligence_report")) {
     const suffix = type.includes(":") ? type.split(":").pop() : "";
-    if (suffix === "website") return "Website audit";
-    if (suffix === "seo") return "SEO report";
-    if (suffix === "marketing") return "Instagram & social";
-    if (suffix === "ads") return "Google Ads / PPC";
-    if (suffix === "local") return "Local presence";
-    if (suffix === "full") return "Full intelligence";
-    return "Intelligence report";
+    if (suffix === "website") return "Website growth proposal";
+    if (suffix === "seo") return "SEO growth proposal";
+    if (suffix === "marketing") return "Instagram & social proposal";
+    if (suffix === "ads") return "Google Ads proposal";
+    if (suffix === "local") return "Local presence proposal";
+    if (suffix === "full") return "Full growth proposal";
+    return "Client pitch report";
   }
   if (type.startsWith("qualification_detail:")) {
     const key = type.split(":")[1] || "";

@@ -29,14 +29,14 @@ function typeLabel(type: string) {
   if (type.startsWith("lead_intelligence_report")) {
     const suffix = type.includes(":") ? type.split(":").pop() : "website";
     const labels: Record<string, string> = {
-      full: "Full intelligence report",
-      website: "Website audit report",
-      seo: "SEO report",
-      marketing: "Instagram & social report",
-      ads: "Google Ads / PPC report",
-      local: "Local presence report",
+      full: "Full growth proposal",
+      website: "Website growth proposal",
+      seo: "SEO growth proposal",
+      marketing: "Instagram & social proposal",
+      ads: "Google Ads proposal",
+      local: "Local presence proposal",
     };
-    return labels[suffix || "website"] || "Lead intelligence report";
+    return labels[suffix || "website"] || "Client pitch report";
   }
   if (type === "seo_website_report") return "AI website + SEO report";
   return type.replace(/_/g, " ");

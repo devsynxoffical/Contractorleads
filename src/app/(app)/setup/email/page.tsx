@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { SetupShell } from "@/components/setup/setup-shell";
 import { EmailAutomationSettings } from "@/components/settings/email-automation-settings";
-import { EmailMetricsDashboard } from "@/components/email/email-metrics-dashboard";
-import { EmailInboxPanel } from "@/components/email/email-inbox-panel";
 
 export default function SetupEmailPage() {
   const [ready, setReady] = useState(false);
@@ -29,51 +27,56 @@ export default function SetupEmailPage() {
   return (
     <SetupShell
       title="Email & outreach"
-      description="Set your sender identity, read lead replies in your inbox, and run nurture sequences."
+      description="Connect your sender mailbox here, or use the full Email workspace for inbox, compose, bulk send, sequences, and activity."
       statuses={{ "/setup/email": ready }}
       steps={[
         {
-          title: "Open Email inbox",
-          body: "View and reply to received lead emails anytime.",
+          title: "Open the Email workspace",
+          body: "Overview, inbox, compose, bulk send, setup, sequences, and activity in one place.",
         },
         {
           title: "Add your email sender",
-          body: "Resend API key + from address on your verified domain.",
+          body: "Resend API key + from address on your verified domain (or SMTP).",
         },
         {
-          title: "Send from lead detail",
-          body: "Open a lead → Email lead card → pick mailbox → send.",
+          title: "Send to leads",
+          body: "Compose to any saved lead, or bulk send with the Messaging add-on.",
         },
         {
-          title: "Optional: Day 1–3 sequence",
-          body: "Edit templates below, then enroll from Saved / detail.",
+          title: "Optional: Day 1–N sequence",
+          body: "Edit templates below, then enroll from Saved / lead detail.",
         },
       ]}
     >
-      <div className="rounded-xl border border-border bg-[var(--surface)] px-4 py-3 text-[13px] text-ink-muted">
-        Prefer a dedicated page?{" "}
-        <Link
-          href="/inbox"
-          className="font-semibold text-brand-600 hover:underline"
-        >
-          Open Email inbox →
-        </Link>
-      </div>
-
-      <EmailInboxPanel />
-
-      <section className="space-y-3 border-t border-border pt-6">
+      <div className="flex flex-col gap-3 rounded-xl border border-border bg-[var(--surface)] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-[17px] font-semibold text-ink">Email dashboard</h2>
-          <p className="mt-1 text-[13px] text-ink-muted">
-            Delivered sends, inbound replies, failures, and nurture enrollments.
+          <p className="text-[14px] font-semibold text-ink">Email workspace</p>
+          <p className="mt-0.5 text-[13px] text-ink-muted">
+            Manage everything — setup, single send, bulk campaigns, inbox, and
+            metrics.
           </p>
         </div>
-        <EmailMetricsDashboard
-          endpoint="/api/emails/stats"
-          leadHref={(id) => `/leads/${id}?from=saved`}
-        />
-      </section>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/inbox"
+            className="inline-flex h-9 items-center rounded-xl bg-brand-600 px-3.5 text-[13px] font-semibold text-white"
+          >
+            Open Email →
+          </Link>
+          <Link
+            href="/inbox?tab=bulk"
+            className="inline-flex h-9 items-center rounded-xl border border-border bg-white px-3.5 text-[13px] font-semibold text-ink"
+          >
+            Bulk send
+          </Link>
+          <Link
+            href="/inbox?tab=compose"
+            className="inline-flex h-9 items-center rounded-xl border border-border bg-white px-3.5 text-[13px] font-semibold text-ink"
+          >
+            Compose
+          </Link>
+        </div>
+      </div>
 
       <div className="border-t border-border pt-6">
         <EmailAutomationSettings />

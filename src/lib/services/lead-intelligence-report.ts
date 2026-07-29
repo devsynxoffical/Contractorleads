@@ -49,10 +49,6 @@ export type LeadReportInput = {
   agencyContext?: string | null;
 };
 
-function scoreLine(label: string, value: number | null | undefined) {
-  return `${label}: ${value == null ? "n/a" : `${value}/100`}`;
-}
-
 function socialLine(label: string, value: string | null | undefined) {
   return `${label}: ${value?.trim() || "not found"}`;
 }
@@ -70,39 +66,37 @@ function pageLines(audit: WebsiteAudit | null) {
         : p.found
           ? "linked but unreachable"
           : "not found";
-      return `- ${p.key}: ${status}${p.url ? ` · ${p.url}` : ""}`;
+      return `• ${p.key}: ${status}${p.url ? ` · ${p.url}` : ""}`;
     })
     .join("\n");
 }
 
+function agencyNameFromContext(agencyContext?: string | null) {
+  const line = agencyContext
+    ?.split("\n")
+    .map((l) => l.trim())
+    .find((l) => /^company\s*:/i.test(l) || /^agency\s*:/i.test(l));
+  if (!line) return "our team";
+  return line.replace(/^[^:]+:\s*/i, "").trim() || "our team";
+}
+
 function buildLeadSnapshot(lead: LeadReportInput, audit: WebsiteAudit | null) {
   return [
-    `Business: ${lead.businessName}`,
-    `Owner: ${lead.ownerName || "unknown"}`,
-    `Industry: ${lead.industry || lead.serviceCategory || "home services"}`,
+    `Business (client): ${lead.businessName}`,
+    `Owner / contact: ${lead.ownerName || "unknown"}`,
+    `Trade: ${lead.industry || lead.serviceCategory || "home services"}`,
     `Location: ${[lead.city, lead.state].filter(Boolean).join(", ") || lead.address || "unknown"}`,
     `Phone: ${lead.phone || "unknown"}`,
     `Email: ${lead.email || "unknown"}`,
     `Website: ${lead.website || "none"}`,
     `Google: ${lead.googleRating ?? "n/a"} (${lead.reviewCount ?? 0} reviews)`,
     `Yelp: ${lead.yelpRating ?? "n/a"} (${lead.yelpReviews ?? 0} reviews)`,
-    `Years in business: ${lead.yearsInBusiness ?? "unknown"}`,
-    `Lead score: ${lead.leadScore ?? "n/a"}`,
-    scoreLine("Website quality", lead.websiteQualityScore ?? audit?.websiteQualityScore),
-    scoreLine("SEO opportunity", lead.seoOpportunityScore ?? audit?.seoOpportunityScore),
-    scoreLine(
-      "Marketing opportunity",
-      lead.marketingOpportunityScore ?? audit?.marketingOpportunityScore,
-    ),
-    scoreLine("PPC opportunity", lead.ppcOpportunityScore ?? audit?.ppcOpportunityScore),
-    `Stored outreach angle: ${lead.outreachAngle || "n/a"}`,
     socialLine("Facebook", lead.facebook),
     socialLine("Instagram", lead.instagram),
     socialLine("LinkedIn", linkedinUrl(lead)),
-    socialLine("Yelp", lead.yelpUrl),
     audit
       ? [
-          "Live website audit (measured — do not invent beyond this):",
+          "Live website audit (FACTUAL ONLY — do not invent beyond this):",
           JSON.stringify(
             {
               reachable: audit.reachable,
@@ -114,16 +108,12 @@ function buildLeadSnapshot(lead: LeadReportInput, audit: WebsiteAudit | null) {
               hasViewport: audit.hasViewport,
               hasCanonical: audit.hasCanonical,
               hasOpenGraph: audit.hasOpenGraph,
-              hasJsonLd: audit.hasJsonLd,
               hasLocalBusinessSchema: audit.hasLocalBusinessSchema,
               h1Count: audit.h1Count,
               wordCount: audit.wordCount,
-              imageCount: audit.imageCount,
-              imagesMissingAlt: audit.imagesMissingAlt,
               hasPhoneOnPage: audit.hasPhoneOnPage,
               hasEmailOnPage: audit.hasEmailOnPage,
               hasContactForm: audit.hasContactForm,
-              hasBlogHint: audit.hasBlogHint,
               responseTimeMs: audit.responseTimeMs,
               speedBand: audit.speedBand,
               htmlBytes: audit.htmlBytes,
@@ -133,11 +123,6 @@ function buildLeadSnapshot(lead: LeadReportInput, audit: WebsiteAudit | null) {
               hasInstagramLink: audit.hasInstagramLink,
               hasFacebookLink: audit.hasFacebookLink,
               hasGoogleAdsHint: audit.hasGoogleAdsHint,
-              likelySpaShell: audit.likelySpaShell,
-              websiteQualityScore: audit.websiteQualityScore,
-              seoOpportunityScore: audit.seoOpportunityScore,
-              marketingOpportunityScore: audit.marketingOpportunityScore,
-              ppcOpportunityScore: audit.ppcOpportunityScore,
               findings: audit.findings,
             },
             null,
@@ -151,252 +136,213 @@ function buildLeadSnapshot(lead: LeadReportInput, audit: WebsiteAudit | null) {
 }
 
 const FORMAT_RULES = [
-  "Write in plain professional prose only.",
-  "Do NOT use markdown: no # headings, no **, no __, no backticks, no emoji.",
+  "Audience: the CONTRACTOR / business owner (the client). Write TO them, not about them as a lead.",
+  "Purpose: a professional service proposal they can read and say yes to.",
+  "Tone: confident, respectful, clear. No hype, no slang, no emojis.",
+  "Do NOT use markdown: no # headings, no **, no __, no backticks.",
   "Use numbered sections like: 1) Title",
   "Use simple bullet lines starting with • when listing items.",
-  "Every claim must be justified by the measured audit or provided lead fields.",
-  "If a signal is missing, say it was not detected — never invent page content, rankings, or ad spend.",
-  "Do not mention AI, GPT, ChatGPT, or language models.",
+  "Do NOT mention lead scores, opportunity scores, SDRs, CRM, pipeline, or 'agency upside'.",
+  "Do NOT mention AI, GPT, ChatGPT, or language models.",
+  "Every problem must come from the live audit or provided fields. Never invent rankings, ad spend, or page content.",
+  "If something looks strong, say so honestly — then explain the growth opportunity, not fake problems.",
+].join("\n");
+
+const SHARED_SECTIONS = [
+  "Required structure (keep these section numbers and titles):",
+  "1) Cover note — short personal greeting to the owner/business",
+  "2) What we reviewed — website / channels checked (factual)",
+  "3) Issues we found — clear list of problems / mistakes / gaps (be specific)",
+  "4) Why this costs you jobs — plain-language impact on quotes and booked work",
+  "5) How we help — our service and exactly what we will do to fix each issue",
+  "6) What you get — deliverables and timeline (e.g. 30 days)",
+  "7) Recommended next step — soft CTA for a short call or kickoff",
 ].join("\n");
 
 const SECTION_PROMPTS: Record<LeadReportType, string> = {
   website: [
-    "Write a Website Audit Report ONLY (not SEO/ads/marketing).",
-    "Justify the website quality score using measured signals.",
-    "Required sections:",
-    "1) Score summary — what the website quality score means for this contractor",
-    "2) Speed & performance — TTFB, HTML size, script load band",
-    "3) Hero section — whether headline/media/CTA were detected and what that means",
-    "4) Homepage content — title, H1, word count, trust signals",
-    "5) Key pages inventory — Contact, About, Services, Gallery/Projects, Blog (found or missing)",
-    "6) Conversion paths — phone, email, quote forms",
-    "7) Priority website fixes ranked by ROI",
-    "8) Suggested agency pitch focused on website rebuild or polish",
-    "Target length: 800–1200 words.",
+    "Write a CLIENT-FACING Website Growth Proposal for this contractor.",
+    "Service being pitched: Website design, speed, conversion, and quote capture.",
+    SHARED_SECTIONS,
+    "Focus on: speed, hero/CTA, missing pages, forms, phone, HTTPS, content trust.",
+    "Frame issues as obstacles to getting more estimates — then map each to what we will build or improve.",
+    "Target length: 850–1300 words.",
   ].join("\n"),
   seo: [
-    "Write an SEO Complete Report ONLY (not a full marketing deck).",
-    "Treat the SEO opportunity score as agency upside from on-page / technical / local SEO gaps.",
-    "Be clear this is a crawl-based SEO readiness analysis, not live Google keyword rankings (unless ranking data was provided — it was not).",
-    "Required sections:",
-    "1) Score summary — why SEO opportunity is this number",
-    "2) Technical SEO scorecard — HTTPS, title, meta, viewport, canonical, schema, H1",
-    "3) Content & on-page gaps — depth, services pages, alt text, crawlability",
-    "4) Local SEO readiness — LocalBusiness schema, city/service page signals",
-    "5) Ranking opportunity narrative — what must improve before ranking for local service terms",
-    "6) Top 10 SEO fixes (highest ROI first)",
-    "7) 30-day SEO sprint",
-    "8) Suggested SEO pitch",
-    "Target length: 800–1200 words.",
+    "Write a CLIENT-FACING Local SEO Growth Proposal for this contractor.",
+    "Service being pitched: Local SEO to win more search demand in their city/trade.",
+    SHARED_SECTIONS,
+    "Focus on: title/meta, schema, H1, content depth, services pages, local SEO foundations.",
+    "Be clear this is based on a live site review, not a full keyword rank export.",
+    "Target length: 850–1300 words.",
   ].join("\n"),
   marketing: [
-    "Write an Instagram & Social Media Optimization report ONLY.",
-    "Focus on Instagram presence, social proof, content cadence, and demand-gen from social.",
-    "Use lead Instagram/Facebook fields and whether those links appear on the website.",
-    "Required sections:",
-    "1) Score summary — marketing opportunity score meaning",
-    "2) Instagram presence — URL found or missing; site link status",
-    "3) Social proof gaps — gallery/projects, Open Graph, content hubs",
-    "4) Content & posting recommendations for a contractor brand",
-    "5) Profile and bio optimization checklist",
-    "6) 30-day Instagram / social plan",
-    "7) Suggested social marketing pitch",
-    "Target length: 700–1100 words.",
+    "Write a CLIENT-FACING Instagram & Social Growth Proposal for this contractor.",
+    "Service being pitched: Instagram / social content that turns project proof into booked jobs.",
+    SHARED_SECTIONS,
+    "Focus on: Instagram presence, site social links, gallery/proof, posting system, bio CTA.",
+    "Target length: 800–1200 words.",
   ].join("\n"),
   ads: [
-    "Write a Google Ads / PPC Opportunity report ONLY.",
-    "Focus on paid search and Local Services Ads readiness.",
-    "Justify the PPC opportunity score from landing-page conversion readiness (HTTPS, forms, phone, hero, speed).",
-    "Do not invent current ad accounts, budgets, or Quality Scores.",
-    "Required sections:",
-    "1) Score summary — what the PPC opportunity score means",
-    "2) Landing page readiness for Google Ads",
-    "3) Tracking & conversion signals detected or missing",
-    "4) Google Ads vs Local Services Ads recommendation",
-    "5) Creative and offer angles for this trade/city",
-    "6) Budget & launch guidance (ranges only, clearly labeled as estimates)",
-    "7) 30-day ads launch plan",
-    "8) Suggested ads pitch",
-    "Target length: 700–1100 words.",
+    "Write a CLIENT-FACING Google Ads Growth Proposal for this contractor.",
+    "Service being pitched: Google Ads and/or Local Services Ads to capture high-intent searchers.",
+    SHARED_SECTIONS,
+    "Focus on: landing-page readiness (HTTPS, form, phone, hero, speed), tracking, launch plan.",
+    "Do not invent budgets as facts — label any ranges as estimates.",
+    "Target length: 800–1200 words.",
   ].join("\n"),
   local: [
-    "Write a Local Presence & Google Business Profile report ONLY.",
-    "Required sections:",
-    "1) Score context from reviews and local signals",
-    "2) Reviews & reputation snapshot",
-    "3) GBP / citation / directory gaps",
-    "4) Local SEO opportunity tied to the site crawl",
-    "5) Review-growth and NAP consistency plan",
-    "6) 30-day local dominance plan",
-    "7) Suggested local SEO pitch",
-    "Target length: 700–1100 words.",
+    "Write a CLIENT-FACING Local Presence & Reputation Proposal for this contractor.",
+    "Service being pitched: Google Business Profile, reviews, and local visibility.",
+    SHARED_SECTIONS,
+    "Focus on: reviews, local trust, NAP consistency, and how local presence feeds more calls.",
+    "Target length: 800–1200 words.",
   ].join("\n"),
 };
+
+function pitchFixesFromAudit(
+  reportType: LeadReportType,
+  audit: WebsiteAudit | null,
+): string[] {
+  const fixes: string[] = [];
+  if (!audit?.reachable) {
+    return [
+      "Build or restore a fast, mobile-friendly website with clear services and a quote form.",
+      "Set up call tracking and a simple lead notification so no estimate request is missed.",
+    ];
+  }
+
+  if (reportType === "website" || reportType === "seo" || reportType === "ads") {
+    if (!audit.https) fixes.push("Move the site to secure HTTPS hosting.");
+    if (!audit.hasContactForm) {
+      fixes.push("Add a clear Get a Quote form with click-to-call on every key page.");
+    }
+    if (!audit.hasHeroSection) {
+      fixes.push("Rewrite the homepage hero with one promise, proof, and primary CTA.");
+    }
+    if (audit.speedBand === "slow" || audit.speedBand === "moderate") {
+      fixes.push(
+        `Improve page speed (currently ${audit.speedBand}) so visitors and ads convert better.`,
+      );
+    }
+  }
+
+  if (reportType === "website" || reportType === "seo") {
+    const contact = audit.pages?.find((p) => p.key === "contact");
+    const about = audit.pages?.find((p) => p.key === "about");
+    const services = audit.pages?.find((p) => p.key === "services");
+    if (!contact?.reachable) fixes.push("Create a dedicated Contact / Quote page.");
+    if (!about?.reachable) fixes.push("Add an About page that builds trust.");
+    if (!services?.reachable) {
+      fixes.push("Add a Services page with city and service coverage.");
+    }
+    if (!audit.hasLocalBusinessSchema) {
+      fixes.push("Add LocalBusiness schema so Google understands the company.");
+    }
+    if (!audit.title || audit.title.length < 8) {
+      fixes.push("Write stronger title tags for home and top service pages.");
+    }
+  }
+
+  if (reportType === "marketing") {
+    if (!audit.hasInstagramLink) {
+      fixes.push("Connect Instagram to the website and optimize the profile bio CTA.");
+    }
+    if (!audit.pages?.find((p) => p.key === "gallery")?.reachable) {
+      fixes.push("Build a project gallery feed for before/after social proof.");
+    }
+    fixes.push("Run a weekly posting system with location tags and quote CTAs.");
+  }
+
+  if (reportType === "ads") {
+    if (audit.hasContactForm && audit.https && audit.hasPhoneOnPage) {
+      fixes.push("Launch geo-fenced Google Search and/or Local Services Ads.");
+      fixes.push("Install call tracking and conversion events before scaling spend.");
+    } else {
+      fixes.push("Fix conversion path first, then launch paid campaigns.");
+    }
+  }
+
+  if (reportType === "local") {
+    fixes.push("Fully optimize Google Business Profile categories, services, and photos.");
+    fixes.push("Install a review-request workflow after completed jobs.");
+    fixes.push("Align name, address, and phone across major directories.");
+  }
+
+  if (!fixes.length) {
+    fixes.push(
+      "Keep the strong foundation and layer growth work: service-area pages, reviews, and demand capture.",
+    );
+  }
+  return fixes.slice(0, 6);
+}
 
 function buildFallbackReport(
   lead: LeadReportInput,
   reportType: LeadReportType,
   audit: WebsiteAudit | null,
 ) {
-  const title = LEAD_REPORT_TYPE_META[reportType].label;
-  const website = lead.website || "No website found";
-  const seo = lead.seoOpportunityScore ?? audit?.seoOpportunityScore ?? null;
-  const webQ = lead.websiteQualityScore ?? audit?.websiteQualityScore ?? null;
-  const mkt =
-    lead.marketingOpportunityScore ?? audit?.marketingOpportunityScore ?? null;
-  const ppc = lead.ppcOpportunityScore ?? audit?.ppcOpportunityScore ?? null;
+  const meta = LEAD_REPORT_TYPE_META[reportType];
+  const agency = agencyNameFromContext(lead.agencyContext);
   const location = [lead.city, lead.state].filter(Boolean).join(", ");
+  const owner = lead.ownerName?.trim() || "there";
   const findings = audit?.findings?.length
-    ? audit.findings.map((f, i) => `${i + 1}. ${f}`).join("\n")
-    : "1. Live crawl signals were limited.";
+    ? audit.findings
+    : ["We could not fully crawl the live website — that alone is a risk for customers searching online."];
+  const fixes = pitchFixesFromAudit(reportType, audit);
+  const date = new Date().toLocaleDateString(undefined, {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
 
-  if (reportType === "website") {
-    return [
-      `${title} — ${lead.businessName}`,
-      `Generated: ${new Date().toISOString().slice(0, 10)}`,
-      `Website: ${website}`,
-      "",
-      "1) Score summary",
-      `Website quality score: ${webQ ?? "n/a"}/100 for ${lead.businessName}${location ? ` in ${location}` : ""}. This score comes from a live crawl of speed, hero/CTA structure, homepage content, and whether Contact, About, Services, Gallery, and Blog pages exist.`,
-      "",
-      "2) Speed & performance",
-      `Speed band: ${audit?.speedBand ?? "unknown"}. TTFB: ${audit?.responseTimeMs ?? "n/a"} ms. HTML size: ${audit ? Math.round(audit.htmlBytes / 1024) : "n/a"} KB. Scripts detected: ${audit?.scriptCount ?? "n/a"}.`,
-      "",
-      "3) Hero section",
-      audit?.hasHeroSection
-        ? `Hero signals detected: ${(audit.heroSignals || []).join("; ") || "present"}.`
-        : "A clear hero (headline + media + CTA) was not detected on the homepage.",
-      "",
-      "4) Homepage content",
-      `Title: ${audit?.title || "missing"}. H1 count: ${audit?.h1Count ?? "n/a"}${audit?.h1Text ? ` (“${audit.h1Text}”)` : ""}. Crawlable words: ${audit?.wordCount ?? "n/a"}. HTTPS: ${audit?.https ? "yes" : audit ? "no" : "n/a"}. Contact form on home: ${audit?.hasContactForm ? "yes" : audit ? "no" : "n/a"}.`,
-      "",
-      "5) Key pages inventory",
-      pageLines(audit),
-      "",
-      "6) Findings that drive the score",
-      findings,
-      "",
-      "7) Priority website fixes",
-      "1) Make Contact / Quote reachable with a phone + form above the fold.",
-      "2) Strengthen the hero with one clear service promise and CTA.",
-      "3) Ensure HTTPS, title, meta, and a single H1.",
-      "4) Add or improve Services and About pages with local proof.",
-      "5) Reduce heavy scripts / oversized HTML if speed is moderate or slow.",
-      "",
-      "8) Suggested pitch",
-      lead.outreachAngle ||
-        `Reviewed ${lead.businessName}'s site structure and conversion path — happy to walk through a short website fix plan.`,
-    ].join("\n");
-  }
-
-  if (reportType === "marketing") {
-    return [
-      `${title} — ${lead.businessName}`,
-      `Generated: ${new Date().toISOString().slice(0, 10)}`,
-      "",
-      "1) Score summary",
-      `Marketing opportunity score: ${mkt ?? "n/a"}/100. Higher scores mean more room to win booked jobs with Instagram, social proof, and content.`,
-      "",
-      "2) Instagram presence",
-      `Lead Instagram field: ${lead.instagram?.trim() || "not listed"}. Instagram link on website: ${audit?.hasInstagramLink ? "detected" : audit ? "not detected" : "n/a"}. Facebook on website: ${audit?.hasFacebookLink ? "detected" : audit ? "not detected" : "n/a"}.`,
-      "",
-      "3) Social proof gaps",
-      findings,
-      "",
-      "4) Recommendations",
-      "1) Claim or optimize Instagram with trade + city keywords in the bio.",
-      "2) Post weekly project proof (before/after) with location tags.",
-      "3) Link Instagram in site header/footer and match Open Graph previews.",
-      "4) Drive DMs and profile link to a quote form / click-to-call.",
-      "",
-      "5) Suggested pitch",
-      `Noticed ${lead.businessName} can book more estimates with a tighter Instagram and project-proof system — open to a 15-minute walkthrough?`,
-    ].join("\n");
-  }
-
-  if (reportType === "ads") {
-    return [
-      `${title} — ${lead.businessName}`,
-      `Generated: ${new Date().toISOString().slice(0, 10)}`,
-      "",
-      "1) Score summary",
-      `PPC opportunity score: ${ppc ?? "n/a"}/100 based on landing-page conversion readiness (not invented ad account data).`,
-      "",
-      "2) Landing page readiness",
-      `HTTPS: ${audit?.https ? "yes" : audit ? "no" : "n/a"}. Form: ${audit?.hasContactForm ? "yes" : audit ? "no" : "n/a"}. Phone on page: ${audit?.hasPhoneOnPage ? "yes" : audit ? "no" : "n/a"}. Hero: ${audit?.hasHeroSection ? "yes" : audit ? "no" : "n/a"}. Speed: ${audit?.speedBand ?? "unknown"}. Ads/analytics hints: ${audit?.hasGoogleAdsHint ? "detected" : audit ? "not detected" : "n/a"}.`,
-      "",
-      "3) Findings",
-      findings,
-      "",
-      "4) Priority PPC fixes before spend",
-      "1) Fix conversion path (form + click-to-call) on the landing page.",
-      "2) Improve speed if moderate/slow.",
-      "3) Add call tracking and thank-you / conversion events.",
-      "4) Launch Local Services Ads and/or tightly geo-fenced Search campaigns.",
-      "",
-      "5) Suggested pitch",
-      `Reviewed ${lead.businessName} for Google Ads readiness — can share a launch plan once the landing page converts.`,
-    ].join("\n");
-  }
-
-  if (reportType === "seo") {
-    return [
-      `${title} — ${lead.businessName}`,
-      `Generated: ${new Date().toISOString().slice(0, 10)}`,
-      `Website: ${website}`,
-      "",
-      "1) Score summary",
-      `SEO opportunity score: ${seo ?? "n/a"}/100. This is a crawl-based readiness / gap score, not a live keyword ranking export.`,
-      "",
-      "2) Technical SEO scorecard",
-      `HTTPS: ${audit?.https ? "yes" : audit ? "no" : "n/a"}`,
-      `Title: ${audit?.title || "missing"}`,
-      `Meta description: ${audit?.metaDescription ? "present" : audit ? "missing" : "n/a"}`,
-      `Canonical: ${audit?.hasCanonical ? "present" : audit ? "missing" : "n/a"}`,
-      `LocalBusiness schema: ${audit?.hasLocalBusinessSchema ? "present" : audit ? "missing" : "n/a"}`,
-      `H1 count: ${audit?.h1Count ?? "n/a"}`,
-      `Homepage words: ${audit?.wordCount ?? "n/a"}`,
-      "",
-      "3) Findings",
-      findings,
-      "",
-      "4) Top fixes",
-      "1) Unique title/meta on home + top service pages.",
-      "2) Add LocalBusiness + service-area schema.",
-      "3) Build/optimize city + service landing pages.",
-      "4) Fix H1 hierarchy and thin copy.",
-      "5) Improve crawlable content and internal links to Contact/Services.",
-      "",
-      "5) Suggested pitch",
-      lead.outreachAngle ||
-        `Happy to share a 30-day SEO sprint for ${lead.businessName} based on the live site gaps we measured.`,
-    ].join("\n");
-  }
-
-  // local default
   return [
-    `${title} — ${lead.businessName}`,
-    `Generated: ${new Date().toISOString().slice(0, 10)}`,
+    `${meta.label}`,
+    `Prepared for: ${lead.businessName}`,
+    location ? `Location: ${location}` : null,
+    `Prepared by: ${agency}`,
+    `Date: ${date}`,
+    lead.website ? `Website reviewed: ${lead.website}` : null,
     "",
-    "1) Executive summary",
-    `${lead.businessName} is a ${lead.industry || lead.serviceCategory || "home-service"} contractor${
-      location ? ` in ${location}` : ""
-    }. Google ${lead.googleRating ?? "n/a"} (${lead.reviewCount ?? 0} reviews). Website quality ${webQ ?? "n/a"}/100; SEO opportunity ${seo ?? "n/a"}/100.`,
+    "1) Cover note",
+    `Hi ${owner},`,
     "",
-    "2) Findings",
-    findings,
+    `We reviewed how ${lead.businessName} shows up online for ${lead.industry || lead.serviceCategory || "your trade"} customers${location ? ` in ${location}` : ""}. This short proposal highlights what is holding back more booked estimates — and exactly how ${agency} can help through ${meta.serviceName.toLowerCase()}.`,
     "",
-    "3) Priority recommendations",
-    "1) Fully optimize Google Business Profile categories, services, and photos.",
-    "2) Systematize review requests after completed jobs.",
-    "3) Align NAP across site and directories.",
-    "4) Add local landing pages for top cities/services.",
+    "2) What we reviewed",
+    audit?.reachable
+      ? `• Live website crawl of ${audit.finalUrl || lead.website}`
+      : `• Website URL on file: ${lead.website || "not provided"}`,
+    `• Homepage signals: HTTPS, titles, hero/CTA, forms, phone, speed`,
+    `• Key pages: Contact, About, Services, Gallery, Blog`,
+    reportType === "marketing"
+      ? `• Social presence: Instagram ${lead.instagram || (audit?.hasInstagramLink ? "linked on site" : "not detected")}, Facebook ${lead.facebook || (audit?.hasFacebookLink ? "linked on site" : "not detected")}`
+      : null,
+    reportType === "local"
+      ? `• Public reputation: Google ${lead.googleRating ?? "n/a"} (${lead.reviewCount ?? 0} reviews)`
+      : null,
     "",
-    "4) Suggested pitch",
-    lead.outreachAngle ||
-      `Noticed ${lead.businessName} can win more local search share with GBP + review velocity — open to a quick plan?`,
-  ].join("\n");
+    "3) Issues we found",
+    ...findings.map((f, i) => `${i + 1}. ${f}`),
+    "",
+    "4) Why this costs you jobs",
+    "When the online experience is slow, unclear, or missing trust and quote paths, homeowners move on to the next contractor. Every weak CTA, missing page, or thin local signal is a quote that never reaches your phone.",
+    "",
+    "5) How we help",
+    `Here is what ${agency} will do under ${meta.serviceName}:`,
+    ...fixes.map((f, i) => `${i + 1}) ${f}`),
+    "",
+    "6) What you get",
+    "• A clear punch-list of fixes prioritized by impact on booked jobs",
+    "• Implementation support for the items above (copy, pages, tracking, or campaigns as relevant)",
+    "• A 30-day action plan with weekly checkpoints",
+    "• Simple reporting so you can see calls, forms, and progress",
+    "",
+    "7) Recommended next step",
+    `If this matches what you want for ${lead.businessName}, reply to this report or book a short call with ${agency}. We will walk through the issues on your site, confirm priorities, and outline kickoff within one business day.`,
+  ]
+    .filter((line) => line !== null)
+    .join("\n");
 }
 
 export async function generateLeadIntelligenceReport(
@@ -420,8 +366,9 @@ export async function generateLeadIntelligenceReport(
   const { text } = await generateText({
     model: openai("gpt-4o-mini"),
     system: [
-      "You are a senior agency strategist specializing in home-service contractor acquisition.",
-      "Write client-ready reports agencies can forward. Be concrete, numbered, and revenue-oriented.",
+      "You are a senior account strategist at a local marketing agency that sells website, SEO, social, ads, and reputation services to home-service contractors.",
+      "You write polished client proposals the contractor can forward to a partner or print for a meeting.",
+      "You diagnose real problems from the audit, explain business impact, and clearly pitch the agency's service as the solution.",
       FORMAT_RULES,
     ].join(" "),
     prompt: [
@@ -429,11 +376,11 @@ export async function generateLeadIntelligenceReport(
       "",
       FORMAT_RULES,
       "",
-      "Agency context (sender):",
+      "Agency writing this proposal (sender — use their name/services when pitching):",
       lead.agencyContext?.trim() ||
-        "Independent marketing agency selling to contractors.",
+        "Independent marketing agency helping contractors get more booked jobs.",
       "",
-      "Lead data:",
+      "Client / business data:",
       buildLeadSnapshot(lead, audit),
     ].join("\n"),
   });

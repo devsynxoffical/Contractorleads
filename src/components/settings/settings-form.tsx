@@ -75,7 +75,7 @@ export function SettingsForm({ user }: { user: SessionUser }) {
           <CardTitle>Business profile</CardTitle>
           <p className="text-[12px] text-ink-muted">
             Used for AI context and outreach. Report logo and PDF branding are
-            set from the Lead intelligence report section (Setup logo).
+            set from the Client pitch report section (Setup logo).
           </p>
         </CardHeader>
         <CardContent className="space-y-4">

@@ -2,12 +2,18 @@ import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-/** Search the user's saved leads that have an email address (for the composer). */
+/** Search the user's saved leads that have an email address (for compose / bulk). */
 export async function GET(request: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const q = new URL(request.url).searchParams.get("q")?.trim() || "";
+  const url = new URL(request.url);
+  const q = url.searchParams.get("q")?.trim() || "";
+  const rawLimit = Number(url.searchParams.get("limit") || "25");
+  const take = Math.min(
+    200,
+    Math.max(1, Number.isFinite(rawLimit) ? rawLimit : 25),
+  );
 
   const saved = await prisma.savedLead.findMany({
     where: {
@@ -31,7 +37,7 @@ export async function GET(request: Request) {
       },
     },
     orderBy: { updatedAt: "desc" },
-    take: 25,
+    take,
   });
 
   return NextResponse.json({

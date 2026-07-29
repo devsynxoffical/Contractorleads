@@ -56,7 +56,7 @@ function sanitizeFilename(name: string) {
 
 export function reportPdfFilename(businessName: string, title?: string | null) {
   const base = sanitizeFilename(businessName) || "lead-report";
-  const kind = sanitizeFilename(title || "intelligence-report") || "report";
+  const kind = sanitizeFilename(title || "client-proposal") || "proposal";
   return `${base}-${kind}.pdf`.toLowerCase();
 }
 
@@ -208,7 +208,7 @@ export async function buildLeadReportPdf(
   const brand: BrandCtx = {
     agencyName,
     accent: brandIn?.reportAccentColor?.trim() || "#3D1078",
-    tagline: brandIn?.companyTagline?.trim() || "Lead Intelligence Report",
+    tagline: brandIn?.companyTagline?.trim() || "Client Growth Proposal",
     website: brandIn?.companyWebsite?.trim() || null,
     address: brandIn?.companyAddress?.trim() || null,
     contactBits: [
@@ -231,7 +231,7 @@ export async function buildLeadReportPdf(
     info: {
       Title: input.title,
       Author: agencyName,
-      Subject: `Intelligence report for ${input.businessName}`,
+      Subject: `Service proposal for ${input.businessName}`,
       Creator: agencyName,
     },
   });

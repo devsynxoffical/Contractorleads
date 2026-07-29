@@ -12,31 +12,37 @@ export const LEAD_REPORT_SCRIPT_TYPE = "lead_intelligence_report";
 
 export const LEAD_REPORT_TYPE_META: Record<
   LeadReportType,
-  { label: string; description: string }
+  { label: string; description: string; serviceName: string }
 > = {
   website: {
-    label: "Website audit",
+    label: "Website growth proposal",
     description:
-      "Speed, hero, content, contact page, and key site pages — justifies the website score",
+      "Client-ready pitch: site problems found, impact on quotes, and how we fix them",
+    serviceName: "Website design & conversion",
   },
   seo: {
-    label: "SEO report",
+    label: "SEO growth proposal",
     description:
-      "On-page SEO, technical readiness, and ranking opportunity from the live crawl",
+      "Client-ready pitch: SEO gaps on their site and our local ranking plan",
+    serviceName: "Local SEO",
   },
   marketing: {
-    label: "Instagram & social",
+    label: "Instagram & social proposal",
     description:
-      "Instagram / social presence, content proof, and demand-gen gaps",
+      "Client-ready pitch: social gaps and how we grow booked jobs from Instagram",
+    serviceName: "Instagram & social media",
   },
   ads: {
-    label: "Google Ads / PPC",
+    label: "Google Ads proposal",
     description:
-      "Paid search readiness, landing page conversion, and Local Services Ads angles",
+      "Client-ready pitch: paid search readiness and our ads launch plan",
+    serviceName: "Google Ads & Local Services Ads",
   },
   local: {
-    label: "Local presence",
-    description: "Google Business Profile, reviews, and local SEO",
+    label: "Local presence proposal",
+    description:
+      "Client-ready pitch: Google reviews / local visibility and our plan",
+    serviceName: "Google Business Profile & local reputation",
   },
 };
 

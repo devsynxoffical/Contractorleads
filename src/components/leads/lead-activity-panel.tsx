@@ -51,13 +51,13 @@ type EmailFilter = "all" | "outbound" | "inbound";
 function reportTypeLabel(type: string) {
   if (type.startsWith("lead_intelligence_report")) {
     const suffix = type.includes(":") ? type.split(":").pop() : "";
-    if (suffix === "website") return "Website audit";
-    if (suffix === "seo") return "SEO report";
-    if (suffix === "marketing") return "Instagram & social";
-    if (suffix === "ads") return "Google Ads / PPC";
-    if (suffix === "local") return "Local presence";
-    if (suffix === "full") return "Full intelligence";
-    return "Intelligence report";
+    if (suffix === "website") return "Website growth proposal";
+    if (suffix === "seo") return "SEO growth proposal";
+    if (suffix === "marketing") return "Instagram & social proposal";
+    if (suffix === "ads") return "Google Ads proposal";
+    if (suffix === "local") return "Local presence proposal";
+    if (suffix === "full") return "Full growth proposal";
+    return "Client pitch report";
   }
   if (type.startsWith("qualification_detail:")) {
     const key = type.split(":")[1] || "";
@@ -360,7 +360,7 @@ export function LeadActivityPanel({
                 </div>
                 {data.reports.length === 0 ? (
                   <p className="mt-2 text-[12px] text-ink-muted">
-                    No reports yet. Generate one in Lead intelligence below.
+                    No proposals yet. Generate one in Client pitch report below.
                   </p>
                 ) : (
                   <ul className="mt-2 divide-y divide-border">
@@ -491,12 +491,12 @@ export function LeadActivityPanel({
           {data && tab === "reports" ? (
             <div>
               <p className="mb-2 text-[12px] text-ink-muted">
-                All intelligence and qualification reports saved for this lead (
+                All client proposals and qualification reports saved for this lead (
                 {data.reports.length})
               </p>
               {data.reports.length === 0 ? (
                 <p className="py-6 text-center text-[13px] text-ink-muted">
-                  No reports yet. Generate one from Lead intelligence on this
+                  No proposals yet. Generate one from Client pitch report on this
                   page.
                 </p>
               ) : (

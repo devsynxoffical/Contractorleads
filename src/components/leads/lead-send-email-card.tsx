@@ -139,7 +139,11 @@ export function LeadSendEmailCard({
         <p className="text-[12px] text-ink-muted">
           Send from your mailbox to{" "}
           <span className="font-medium text-ink">{leadEmail}</span>. Optionally
-          attach a generated intelligence report as PDF.
+          attach a client pitch proposal as PDF. Full workspace:{" "}
+          <a href="/inbox" className="font-medium text-brand-600 hover:underline">
+            Email
+          </a>
+          .
         </p>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -183,7 +187,7 @@ export function LeadSendEmailCard({
         </div>
         <label className="block text-[12px]">
           <span className="font-medium text-ink-muted">
-            Attach intelligence report (PDF)
+            Attach client proposal (PDF)
           </span>
           <select
             className="saas-input mt-1"
@@ -200,8 +204,8 @@ export function LeadSendEmailCard({
           </select>
           <span className="mt-1 block text-[11px] text-ink-muted">
             {reports.length
-              ? "PDF is built from the saved report — edit it in Lead intelligence report first if anything needs fixing."
-              : "Generate & edit a report in Lead intelligence report first, then attach it here."}
+              ? "PDF is built from the saved proposal — edit it in Client pitch report first if anything needs fixing."
+              : "Generate & edit a proposal in Client pitch report first, then attach it here."}
           </span>
         </label>
         <Button

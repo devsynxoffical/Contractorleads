@@ -1,17 +1,39 @@
-"use client";
-
+import { Suspense } from "react";
+import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { EmailWorkspace } from "@/components/email/email-workspace";
-import { EmailMetricsDashboard } from "@/components/email/email-metrics-dashboard";
+import { getSessionUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { hasMessagingAddon } from "@/lib/messaging-addon";
+import { listSmtpAccounts, migrateLegacySmtpIfNeeded } from "@/lib/user-smtp";
 
-export default function InboxPage() {
+export default async function InboxPage() {
+  const user = await getSessionUser();
+  if (!user) redirect("/login");
+
+  await migrateLegacySmtpIfNeeded(user.id);
+  const [dbUser, accounts] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: user.id },
+      select: {
+        role: true,
+        messagingAddonStatus: true,
+        messagingAddonManual: true,
+      },
+    }),
+    listSmtpAccounts(user.id),
+  ]);
+
+  const smtpReady = accounts.some((a) => a.enabled && a.fromEmail);
+  const hasAddon = hasMessagingAddon(dbUser ?? user);
+
   return (
     <div className="page-pad space-y-8">
       <PageHeader
         title="Email"
-        description="Compose new emails to your leads, read replies, and respond from your connected SMTP mailbox. Delivery metrics are below."
-        backHref="/setup/email"
-        backLabel="Back to email setup"
+        description="Full email workspace: setup your mailbox, compose to any lead, bulk send campaigns, read replies, run sequences, and track activity."
+        backHref="/setup"
+        backLabel="Back to setup"
         crumbs={[
           { label: "Home", href: "/home" },
           { label: "Setup", href: "/setup" },
@@ -19,15 +41,13 @@ export default function InboxPage() {
         ]}
       />
 
-      <EmailWorkspace />
-
-      <section className="space-y-3 border-t border-border pt-6">
-        <h2 className="text-[17px] font-semibold text-ink">Email activity</h2>
-        <EmailMetricsDashboard
-          endpoint="/api/emails/stats"
-          leadHref={(id) => `/leads/${id}?from=saved`}
-        />
-      </section>
+      <Suspense
+        fallback={
+          <p className="text-[13px] text-ink-muted">Loading email workspace…</p>
+        }
+      >
+        <EmailWorkspace smtpReady={smtpReady} hasAddon={hasAddon} />
+      </Suspense>
     </div>
   );
 }

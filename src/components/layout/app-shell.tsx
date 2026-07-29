@@ -111,7 +111,7 @@ function buildSections(user: SessionUser): NavSection[] {
       items: [
         { href: "/setup", label: "Setup hub", icon: HiOutlineWrenchScrewdriver },
         { href: "/facebook", label: "Facebook", icon: FaFacebook },
-        { href: "/inbox", label: "Email inbox", icon: HiOutlineInbox },
+        { href: "/inbox", label: "Email", icon: HiOutlineInbox },
         { href: "/sms", label: "SMS", icon: HiOutlineDevicePhoneMobile },
       ],
     },

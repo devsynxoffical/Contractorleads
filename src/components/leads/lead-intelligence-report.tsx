@@ -31,6 +31,7 @@ import {
 } from "@/lib/services/lead-intelligence-report-meta";
 import { ReportBrandingModal } from "@/components/leads/report-branding-modal";
 import { ReportPdfPreviewModal } from "@/components/leads/report-pdf-preview-modal";
+import { ClientPitchReportView } from "@/components/leads/client-pitch-report-view";
 import { cn } from "@/lib/utils";
 
 const REPORT_ICONS: Record<
@@ -434,12 +435,12 @@ export function LeadIntelligenceReportCard({
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-50 text-brand-700 ring-1 ring-brand-200">
                 <HiOutlineDocumentText className="h-4 w-4" />
               </span>
-              Lead intelligence report
+              Client pitch report
             </CardTitle>
             <p className="mt-2 max-w-2xl text-[13px] leading-relaxed text-ink-muted">
-              Pick a report type, generate, then preview or download a branded
-              PDF. Set your logo and company details here — not in system
-              settings.
+              Generate a professional proposal for this contractor: problems we
+              found, why it costs them jobs, and how your service fixes it —
+              ready to PDF, print, or email.
             </p>
           </div>
           <Button
@@ -456,7 +457,7 @@ export function LeadIntelligenceReportCard({
       <CardContent className="space-y-5 pt-5">
         <div>
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-faint">
-            Report type
+            Service to pitch
           </p>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
             {LEAD_REPORT_TYPES.map((key) => {
@@ -500,10 +501,10 @@ export function LeadIntelligenceReportCard({
         <div className="flex flex-col gap-3 rounded-2xl border border-border bg-[#faf8fc] p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-[13px] font-semibold text-ink">
-              Generate {LEAD_REPORT_TYPE_META[reportType].label}
+              Build proposal: {LEAD_REPORT_TYPE_META[reportType].serviceName}
             </p>
             <p className="mt-0.5 text-[12px] text-ink-muted">
-              {creditCost} credits · saved to{" "}
+              {creditCost} credits · problems + impact + your plan · saved to{" "}
               <Link
                 href="/scripts"
                 className="font-medium text-brand-600 hover:underline"
@@ -531,9 +532,7 @@ export function LeadIntelligenceReportCard({
               onClick={() => void generate()}
             >
               <HiOutlineSparkles className="mr-1.5 h-3.5 w-3.5" />
-              {generating
-                ? "Generating…"
-                : `Generate ${LEAD_REPORT_TYPE_META[reportType].label}`}
+              {generating ? "Writing proposal…" : "Generate client proposal"}
             </Button>
           </div>
         </div>
@@ -594,14 +593,14 @@ export function LeadIntelligenceReportCard({
               <div className="min-w-0">
                 <p className="truncate text-[13px] font-semibold text-ink">
                   {editing
-                    ? "Editing report"
-                    : active.title || "Lead report"}
+                    ? "Editing proposal"
+                    : active.title || "Client proposal"}
                 </p>
                 <p className="text-[11px] text-ink-muted">
                   {formatWhen(active.createdAt)}
                   {editing
                     ? " · customize title & body, then save"
-                    : " · edit before sending to the lead"}
+                    : " · edit before sending to the client"}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -703,28 +702,31 @@ export function LeadIntelligenceReportCard({
                     spellCheck
                   />
                   <p className="text-[11px] text-ink-muted">
-                    Tip: keep section headings like{" "}
-                    <span className="font-medium">1) Executive summary</span> so
-                    the PDF formats cleanly. Save, then attach from Email lead.
+                    Tip: keep numbered sections like{" "}
+                    <span className="font-medium">3) Issues we found</span> and{" "}
+                    <span className="font-medium">5) How we help</span> so the
+                    PDF and on-screen layout stay clean. Save, then attach from
+                    Email lead.
                   </p>
                 </div>
               </div>
             ) : (
-              <pre className="max-h-[32rem] overflow-auto whitespace-pre-wrap px-4 py-4 text-[13px] leading-relaxed text-ink">
-                {active.content}
-              </pre>
+              <div className="max-h-[36rem] overflow-auto border-t border-border/60">
+                <ClientPitchReportView content={active.content} />
+              </div>
             )}
           </div>
         ) : !loading ? (
           <div className="rounded-2xl border border-dashed border-border bg-[#faf8fc] px-4 py-10 text-center">
             <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-white text-brand-600 ring-1 ring-brand-100">
-              <HiOutlineGlobeAlt className="h-5 w-5" />
+              <HiOutlineDocumentText className="h-5 w-5" />
             </span>
             <p className="mt-3 text-[14px] font-semibold text-ink">
-              No report yet
+              No client proposal yet
             </p>
-            <p className="mx-auto mt-1 max-w-sm text-[13px] text-ink-muted">
-              Choose a report type above and generate one for {businessName}.
+            <p className="mx-auto mt-1 max-w-md text-[13px] text-ink-muted">
+              Pick a service above and generate a pitch for {businessName} —
+              issues found, why it costs jobs, and what you will deliver.
             </p>
           </div>
         ) : null}
