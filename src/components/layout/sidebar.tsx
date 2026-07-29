@@ -67,7 +67,7 @@ const sections: NavSection[] = [
   {
     title: "Platform",
     items: [
-      { href: "/industries", label: "Industries", icon: HiOutlineHomeModern },
+      { href: "/leads/industries", label: "Industries", icon: HiOutlineHomeModern },
       { href: "/analytics", label: "Analytics", icon: HiOutlineArrowTrendingDown },
       { href: "/ai-tools", label: "AI Tools", icon: HiOutlineCpuChip },
       { href: "/reports", label: "Client Reports", icon: HiOutlineArrowUpTray },
