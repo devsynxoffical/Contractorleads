@@ -17,10 +17,10 @@ import {
 import {
   SubpageCard,
   SubpageCtaBand,
-  SubpageLinkGrid,
   SubpageSection,
   SubpageStats,
 } from "@/components/marketing/marketing-subpage";
+import { IndustryLocationSection } from "@/components/marketing/industry-location-section";
 import { Reveal } from "@/components/marketing/marketing-ui";
 import {
   JsonLd,
@@ -139,7 +139,7 @@ export default async function TradePage({ params }: Params) {
             { value: "4", label: "AI scores on every lead" },
             {
               value: `${SEO_REGIONS.length}`,
-              label: `US states with ${lower} landers`,
+              label: `US state markets for ${lower}`,
             },
             {
               value: `${TIER_ONE_COUNTRIES.length}`,
@@ -222,18 +222,16 @@ export default async function TradePage({ params }: Params) {
 
       <SubpageSection
         tone="light"
+        id="markets"
         eyebrow="By location"
-        title={`${trade.name} leads by state`}
-        description={`Agency landing pages for ${lower} contractors in all ${SEO_REGIONS.length} US states. Canada, the UK, Australia, and New Zealand are searchable in the app.`}
+        title={`Find ${trade.name} leads by US state`}
+        description={`Choose a state to see how agencies prospect ${lower} contractors in that market — then run a live search in Lead Finder with AI scores and owner contacts.`}
+        align="center"
       >
-        <Reveal>
-          <SubpageLinkGrid
-            items={SEO_REGIONS.map((r) => ({
-              href: `/industries/${trade.slug}/${r.slug}`,
-              label: r.name,
-            }))}
-          />
-        </Reveal>
+        <IndustryLocationSection
+          industryName={trade.name}
+          industrySlug={trade.slug}
+        />
       </SubpageSection>
 
       <SubpageSection

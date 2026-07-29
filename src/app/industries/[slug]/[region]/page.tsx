@@ -27,6 +27,11 @@ import {
   softwareApplicationJsonLd,
 } from "@/components/seo/json-ld";
 import {
+  leadFinderDeepLink,
+  siblingStateCodes,
+  usRegionLabelForState,
+} from "@/lib/marketing-us-regions";
+import {
   SEO_REGIONS,
   TRADE_PAGES,
   buildMetadata,
@@ -72,12 +77,13 @@ export default async function TradeRegionPage({ params }: Params) {
   if (!trade || !region) notFound();
 
   const lower = trade.name.toLowerCase();
-  const regionIndex = SEO_REGIONS.findIndex((r) => r.slug === region.slug);
-  const nearbyRegions = SEO_REGIONS.filter((_, i) => {
-    const d = Math.abs(i - regionIndex);
-    return d > 0 && d <= 9;
-  });
+  const regionLabel = usRegionLabelForState(region.code);
+  const siblingCodes = siblingStateCodes(region.code, 10);
+  const siblingRegions = siblingCodes
+    .map((code) => SEO_REGIONS.find((r) => r.code === code))
+    .filter(Boolean) as typeof SEO_REGIONS;
   const otherTrades = TRADE_PAGES.filter((t) => t.slug !== trade.slug);
+  const finderHref = leadFinderDeepLink(trade.name, region.code);
 
   const workflow = [
     {
@@ -120,21 +126,21 @@ export default async function TradeRegionPage({ params }: Params) {
       <MarketingSubpageHero
         eyebrow={`${trade.name} · ${region.name}`}
         title={`${trade.name} contractor leads in ${region.name}`}
-        description={`Agencies use Contractor Leads to find verified ${lower} businesses across ${region.name} (${region.code}) — with AI scores, owner contacts, and outreach-ready scripts.`}
+        description={`Find verified ${lower} contractors in ${region.name} (${region.code}) — live Google data, AI opportunity scores, owner contacts, and outreach scripts.`}
       >
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Link
             href="/register"
             className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-pink-600 via-fuchsia-600 to-violet-600 px-5 py-2.5 text-[14px] font-semibold text-white transition hover:opacity-95"
           >
-            Search {region.name} leads
+            Start free — {region.name} {trade.name}
             <HiOutlineArrowRight className="h-4 w-4" />
           </Link>
           <Link
-            href={`/industries/${trade.slug}`}
+            href={`/industries/${trade.slug}#markets`}
             className="inline-flex rounded-full border border-white/25 bg-white/10 px-5 py-2.5 text-[14px] font-semibold text-white backdrop-blur transition hover:bg-white/20"
           >
-            All {trade.name} markets
+            All {trade.name} states
           </Link>
         </div>
         <ul className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[12.5px] font-medium text-white/70">
@@ -236,13 +242,14 @@ export default async function TradeRegionPage({ params }: Params) {
 
       <SubpageSection
         tone="light"
-        eyebrow="Nearby markets"
-        title={`More ${trade.name} states`}
-        description={`Run the same play in neighbouring markets, or open the ${trade.name} hub for all ${SEO_REGIONS.length} states.`}
+        eyebrow="More markets"
+        title={`Other ${regionLabel} states for ${trade.name}`}
+        description={`Browse neighbouring ${regionLabel} markets, or open the full ${trade.name} state list.`}
       >
         <Reveal>
           <SubpageLinkGrid
-            items={nearbyRegions.map((r) => ({
+            columns={4}
+            items={siblingRegions.map((r) => ({
               href: `/industries/${trade.slug}/${r.slug}`,
               label: r.name,
             }))}
@@ -250,13 +257,19 @@ export default async function TradeRegionPage({ params }: Params) {
         </Reveal>
         <Reveal delay={0.1}>
           <Link
-            href={`/industries/${trade.slug}`}
+            href={`/industries/${trade.slug}#markets`}
             className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-fuchsia-200 bg-fuchsia-50 px-4 py-2 text-[13px] font-semibold text-fuchsia-800 transition hover:border-fuchsia-300"
           >
-            All {SEO_REGIONS.length} {trade.name} states
+            Browse all {SEO_REGIONS.length} US states
             <HiOutlineArrowRight className="h-3.5 w-3.5" />
           </Link>
         </Reveal>
+        <p className="mt-4 text-center text-[12px] text-slate-500">
+          Signed in?{" "}
+          <Link href={finderHref} className="font-semibold text-fuchsia-700 hover:underline">
+            Open Lead Finder for {region.name} {trade.name}
+          </Link>
+        </p>
       </SubpageSection>
 
       <SubpageSection

@@ -154,6 +154,7 @@ export function LeadSearchForm() {
 
   useEffect(() => {
     const qIndustry = searchParams.get("industry");
+    const qState = searchParams.get("state")?.trim().toUpperCase() ?? "";
     if (qIndustry && isPresetIndustry(qIndustry)) {
       setSelectedIndustry(qIndustry);
       setIndustryMode("preset");
@@ -162,13 +163,18 @@ export function LeadSearchForm() {
         customIndustry: "",
         industryMode: "preset",
         country: p?.country ?? "US",
-        locationScope: p?.locationScope ?? "local",
+        locationScope: qState ? "local" : (p?.locationScope ?? "local"),
         locationMode: p?.locationMode ?? "standard",
         customLocation: p?.customLocation ?? "",
-        state: p?.state,
+        state: qState || p?.state,
         city: p?.city ?? "",
         radius: p?.radius ?? "25",
       }));
+      if (qState) {
+        setSelectedState(qState);
+        setLocationScope("local");
+        setSelectedCountry("US");
+      }
     }
   }, [searchParams]);
 
