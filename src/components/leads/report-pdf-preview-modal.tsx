@@ -129,11 +129,31 @@ export function ReportPdfPreviewModal({
               Building PDF preview…
             </p>
           ) : pdfUrl ? (
-            <iframe
-              title="Report PDF preview"
-              src={pdfUrl}
-              className="h-full w-full rounded-xl border border-border bg-white"
-            />
+            <div className="flex h-full flex-col gap-2">
+              <object
+                data={pdfUrl}
+                type="application/pdf"
+                title="Report PDF preview"
+                className="h-full w-full flex-1 rounded-xl border border-border bg-white"
+              >
+                <iframe
+                  title="Report PDF preview"
+                  src={pdfUrl}
+                  className="h-full min-h-[60vh] w-full rounded-xl border-0 bg-white"
+                />
+              </object>
+              <p className="px-1 text-center text-[11px] text-ink-muted">
+                Preview not showing?{" "}
+                <a
+                  href={pdfUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-brand-700 hover:underline"
+                >
+                  Open PDF in a new tab
+                </a>
+              </p>
+            </div>
           ) : (
             <p className="py-16 text-center text-[13px] text-ink-muted">
               No preview available.

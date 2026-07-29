@@ -25,11 +25,13 @@ const securityHeaders = [
       "img-src 'self' data: blob: https:",
       "font-src 'self' data: https://fonts.gstatic.com",
       "connect-src 'self' https://api.stripe.com https://www.facebook.com https://graph.facebook.com https://www.googletagmanager.com https://www.google-analytics.com",
-      "frame-src https://js.stripe.com https://hooks.stripe.com https://www.googletagmanager.com",
+      // 'self' + blob: needed for lead report PDF preview iframes / embeds
+      "frame-src 'self' blob: https://js.stripe.com https://hooks.stripe.com https://www.googletagmanager.com",
+      "child-src 'self' blob:",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
-      "object-src 'none'",
+      "object-src 'self' blob:",
       "upgrade-insecure-requests",
     ].join("; "),
   },
@@ -45,6 +47,9 @@ const deploymentId =
 const nextConfig: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
+  // pdfkit reads Helvetica.afm via fs from its package data dir. Bundling it
+  // rewrites __dirname to /ROOT/... and preview/download fail with ENOENT.
+  serverExternalPackages: ["pdfkit", "fontkit"],
   // Without this, a tab holding assets from an older build navigates against the
   // new server and fails instead of reloading.
   deploymentId,
@@ -76,6 +81,7 @@ const nextConfig: NextConfig = {
     "/**": [
       "./node_modules/.prisma/**/*",
       "./node_modules/@prisma/client/**/*",
+      "./node_modules/pdfkit/js/data/**/*",
       "./prisma/**/*",
     ],
   },

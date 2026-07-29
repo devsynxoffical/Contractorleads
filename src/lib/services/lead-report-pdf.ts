@@ -1,6 +1,11 @@
-import PDFDocument from "pdfkit";
+import { createRequire } from "module";
 import type { AgencyReportBranding } from "@/lib/agency-branding";
 import { agencyDisplayName } from "@/lib/agency-branding";
+
+// Load pdfkit via Node require so AFM font metrics resolve from node_modules
+// (Next bundling would break Helvetica.afm paths).
+const require = createRequire(import.meta.url);
+const PDFDocument = require("pdfkit") as typeof import("pdfkit");
 
 export type LeadReportPdfInput = {
   title: string;
