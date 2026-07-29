@@ -1,0 +1,22 @@
+event_name,trigger_type,url_pattern,when_to_fire,recommended_params
+PageView,auto_all_pages,/*,On every page load and SPA navigation,path,url
+ViewContent,page,/pricing,When pricing page is viewed,content_name=Pricing
+ViewContent,page,/features,When features page is viewed,content_name=Features
+ViewContent,page,/blog,When blog index is viewed,content_name=Blog
+ViewContent,page,/blog/[slug],When a blog article is viewed,content_name=Blog Post;content_category=Blog
+ViewContent,page,/leads,When leads listing is viewed,content_name=Leads
+ViewContent,page,/leads/hot,When hot leads page is viewed,content_name=Hot Leads
+ViewContent,page,/leads/[id],When a lead detail page is viewed,content_name=Lead Detail;content_type=lead
+ViewContent,page,/digest,When morning digest is viewed,content_name=Morning Digest
+CompleteRegistration,page,/register,After successful account creation,status=success
+CompleteRegistration,page,/verify-email,When email verification succeeds,status=verified
+Lead,action,/enterprise/book,When enterprise booking form is submitted,content_name=Enterprise Booking
+Lead,action,/api/marketing/subscribe,When marketing subscribe API returns ok,content_name=Newsletter Signup
+Lead,action,/api/leads/[id]/save,When user saves a lead,status=saved
+Lead,action,/api/leads/[id]/send-email,When outreach email is sent,status=sent;content_type=outreach_email
+Lead,action,/api/leads/bulk-email,When bulk email send succeeds,status=sent_bulk
+Lead,action,/api/sms,When SMS send succeeds,status=sent_sms
+StartTrial,action,/api/billing/checkout,When user starts checkout for paid plan,content_name=Plan Checkout
+AddPaymentInfo,page,/billing,When billing page is viewed for plan purchase intent,content_name=Billing
+Purchase,action,/api/billing/webhook,When Stripe webhook confirms paid checkout,value,currency,content_name=Subscription
+Subscribe,action,/api/billing/webhook,When recurring subscription is active,value,currency,content_name=Subscription Renewal

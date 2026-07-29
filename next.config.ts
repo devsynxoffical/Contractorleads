@@ -20,12 +20,12 @@ const securityHeaders = [
       "default-src 'self'",
       `script-src 'self' 'unsafe-inline'${
         process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'"
-      } https://js.stripe.com https://connect.facebook.net`,
-      "style-src 'self' 'unsafe-inline'",
+      } https://js.stripe.com https://connect.facebook.net https://www.googletagmanager.com`,
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https:",
-      "font-src 'self' data:",
-      "connect-src 'self' https://api.stripe.com https://www.facebook.com https://graph.facebook.com",
-      "frame-src https://js.stripe.com https://hooks.stripe.com",
+      "font-src 'self' data: https://fonts.gstatic.com",
+      "connect-src 'self' https://api.stripe.com https://www.facebook.com https://graph.facebook.com https://www.googletagmanager.com https://www.google-analytics.com",
+      "frame-src https://js.stripe.com https://hooks.stripe.com https://www.googletagmanager.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
