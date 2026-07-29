@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import { HiOutlineArrowRight, HiOutlineEnvelope } from "react-icons/hi2";
 import {
@@ -91,15 +90,14 @@ export default function AboutPage() {
 
       <section className="border-y border-slate-200/80 bg-[#faf8fc] py-16 sm:py-20">
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-5 sm:px-8 md:grid-cols-[auto_1fr]">
-          <div className="relative mx-auto h-40 w-40 shrink-0 overflow-hidden rounded-2xl border border-violet-200/80 bg-[#3D1078] shadow-[0_16px_48px_rgba(124,58,237,0.25)] sm:h-48 sm:w-48">
-            <Image
+          <div className="mx-auto h-40 w-40 shrink-0 overflow-hidden rounded-2xl border border-violet-200/80 bg-[#3D1078] shadow-[0_16px_48px_rgba(124,58,237,0.25)] sm:h-48 sm:w-48">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src={FOUNDER.imageSrc}
               alt={FOUNDER.imageAlt}
-              fill
-              sizes="192px"
-              unoptimized
-              className="object-cover object-[center_22%]"
-              priority
+              width={192}
+              height={192}
+              className="h-full w-full object-cover object-top"
             />
           </div>
           <div>

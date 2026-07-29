@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FaFacebookF, FaLinkedinIn } from "react-icons/fa6";
@@ -10,7 +9,7 @@ export const FOUNDER = {
   name: "Vaishali Kapoor",
   title: "Founder",
   bio: "I'm building Contractor Leads to help agencies and operators find better local contractor leads without spending hours on manual research.",
-  imageSrc: "/marketing/founder-portrait.jpg",
+  imageSrc: "/marketing/founder-portrait.jpg?v=2",
   imageAlt: "Vaishali Kapoor, Founder of Contractor Leads",
   facebook: SEO.social.facebook,
   linkedin: SEO.social.linkedin,
@@ -57,14 +56,14 @@ export function FooterFounderCard({
 
       <div className="relative">
         <div className="flex items-center gap-3.5">
-          <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-white/15 bg-[#3D1078] shadow-[0_8px_24px_rgba(0,0,0,0.35)] sm:h-[4.5rem] sm:w-[4.5rem]">
-            <Image
+          <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl border border-white/15 bg-[#3D1078] shadow-[0_8px_24px_rgba(0,0,0,0.35)] sm:h-[4.5rem] sm:w-[4.5rem]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src={FOUNDER.imageSrc}
               alt={FOUNDER.imageAlt}
-              fill
-              sizes="72px"
-              unoptimized
-              className="object-cover object-[center_22%]"
+              width={72}
+              height={72}
+              className="h-full w-full object-cover object-top"
             />
           </div>
           <div className="min-w-0">
