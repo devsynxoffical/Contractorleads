@@ -291,13 +291,30 @@ export async function GET() {
       onboardingComplete: Boolean(freshUser?.onboardingComplete),
     },
     dailyLeads,
-    activities,
-    recentSearches,
+    activities: activities.map((a) => ({
+      id: a.id,
+      type: a.type,
+      message: a.message,
+      createdAt: a.createdAt.toISOString(),
+      metadata: a.metadata
+        ? (() => {
+            try {
+              return JSON.parse(a.metadata) as Record<string, unknown>;
+            } catch {
+              return null;
+            }
+          })()
+        : null,
+    })),
+    recentSearches: recentSearches.map((s) => ({
+      ...s,
+      createdAt: s.createdAt.toISOString(),
+    })),
     recentExports: recentExports.map((e) => ({
       id: e.id,
       format: e.format,
       leadCount: exportLeadCount(e.leadIds),
-      createdAt: e.createdAt,
+      createdAt: e.createdAt.toISOString(),
     })),
     topIndustries: industryBreakdown.map((i) => ({
       industry: i.industry,
@@ -316,7 +333,7 @@ export async function GET() {
       avgLeadScore,
       completeProfileRate,
       hotRate,
-      placesScannedRecent: recentSearches.reduce((n, s) => n + (s.resultCount || 0), 0),
+      hotCount: qualitySample.filter((row) => row.qualityTier === "hot").length,
     },
     map: await (async () => {
       const mapAllowed =

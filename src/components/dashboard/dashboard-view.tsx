@@ -11,15 +11,14 @@ import {
   HiOutlineFire,
   HiOutlineMagnifyingGlass,
   HiOutlineMap,
-  HiOutlineTrophy,
   HiOutlineUserGroup,
   HiOutlineWallet,
 } from "react-icons/hi2";
 import { formatCredits, formatNumber } from "@/lib/utils";
 import type { SessionUser } from "@/lib/session-user";
 import { QuickLeadSearch } from "@/components/leads/quick-lead-search";
-import { getTierOneCountry } from "@/lib/constants";
 import { HudPanel } from "@/components/dashboard/hud-panel";
+import { DashboardInsights } from "@/components/dashboard/dashboard-insights";
 import {
   DashboardCrmIntegrations,
   type DashboardIntegrations,
@@ -41,7 +40,13 @@ type DashboardData = {
   pipeline?: DashboardPipeline;
   integrations?: DashboardIntegrations;
   dailyLeads: { day: string; count: number }[];
-  activities: { id: string; message: string; createdAt: string; type: string }[];
+  activities: {
+    id: string;
+    message: string;
+    createdAt: string;
+    type: string;
+    metadata?: Record<string, unknown> | null;
+  }[];
   recentSearches: {
     id: string;
     industry: string;
@@ -73,7 +78,7 @@ type DashboardData = {
     avgLeadScore: number;
     completeProfileRate: number;
     hotRate: number;
-    placesScannedRecent: number;
+    hotCount: number;
   };
   map?: {
     allowed: boolean;
@@ -507,173 +512,13 @@ export function DashboardView({ user }: { user: SessionUser }) {
           </div>
         </div>
 
-        <div className="mt-5 grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
-          <HudPanel
-            title="Lead quality health"
-            subtitle={`Last ${qh?.sampleSize ?? 0} leads scanned`}
-          >
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl border border-brand-500/20 bg-[var(--input-bg)]/50 px-3 py-2">
-                <p className="text-[11px] uppercase tracking-wide text-ink-faint">Avg score</p>
-                <p className="mt-1 text-xl font-bold text-ink">{qh?.avgLeadScore ?? 0}</p>
-              </div>
-              <div className="rounded-xl border border-brand-500/20 bg-[var(--input-bg)]/50 px-3 py-2">
-                <p className="text-[11px] uppercase tracking-wide text-ink-faint">Hot rate</p>
-                <p className="mt-1 text-xl font-bold text-ink">{qh?.hotRate ?? 0}%</p>
-              </div>
-              <div className="rounded-xl border border-brand-500/20 bg-[var(--input-bg)]/50 px-3 py-2">
-                <p className="text-[11px] uppercase tracking-wide text-ink-faint">Full profiles</p>
-                <p className="mt-1 text-xl font-bold text-ink">{qh?.completeProfileRate ?? 0}%</p>
-              </div>
-              <div className="rounded-xl border border-brand-500/20 bg-[var(--input-bg)]/50 px-3 py-2">
-                <p className="text-[11px] uppercase tracking-wide text-ink-faint">Recent scanned</p>
-                <p className="mt-1 text-xl font-bold text-ink">{qh?.placesScannedRecent ?? 0}</p>
-              </div>
-            </div>
-          </HudPanel>
-
-          <HudPanel title="Top industries" subtitle="Most searched categories">
-            <ul className="divide-y divide-brand-500/10">
-              {(data?.topIndustries ?? []).map((i, idx) => (
-                <li
-                  key={i.industry || idx}
-                  className="flex items-center justify-between py-2.5"
-                >
-                  <p className="text-[13px] font-medium text-ink">
-                    {i.industry || "Unknown"}
-                  </p>
-                  <span className="hud-pill">{i.count}</span>
-                </li>
-              ))}
-              {!data?.topIndustries?.length && (
-                <li className="py-6 text-center text-[13px] text-ink-faint">
-                  Industries appear after your first search.
-                </li>
-              )}
-            </ul>
-          </HudPanel>
-
-          <HudPanel title="Search history" subtitle="Recent generation runs">
-            <ul className="divide-y divide-brand-500/10">
-              {(data?.recentSearches ?? []).slice(0, 5).map((s) => (
-                <li key={s.id} className="py-2.5">
-                  <Link href="/leads/search" className="block">
-                    <p className="text-[13px] font-medium text-ink">
-                      {s.industry}
-                      <span className="font-normal text-ink-muted">
-                        {" "}
-                        ·{" "}
-                        {s.locationScope === "country"
-                          ? getTierOneCountry(s.country).name
-                          : [s.city, s.state, getTierOneCountry(s.country).name]
-                              .filter(Boolean)
-                              .join(", ")}
-                      </span>
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-ink-faint">
-                      {s.resultCount} leads ·{" "}
-                      {new Date(s.createdAt).toLocaleDateString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </p>
-                  </Link>
-                </li>
-              ))}
-              {!data?.recentSearches?.length && (
-                <li className="py-6 text-center text-[13px] text-ink-faint">
-                  No searches yet.
-                </li>
-              )}
-            </ul>
-          </HudPanel>
-
-          <HudPanel title="Activity log" subtitle="Searches, saves, status">
-            <ul className="divide-y divide-brand-500/10">
-              {(data?.activities ?? []).slice(0, 6).map((a) => (
-                <li key={a.id} className="flex items-start gap-3 py-2.5">
-                  <span
-                    className={
-                      a.type === "search" || a.type === "lead"
-                        ? "hud-pill"
-                        : "hud-pill hud-pill-muted"
-                    }
-                  >
-                    {a.type.slice(0, 8)}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[12px] leading-snug text-ink">
-                      {a.message}
-                    </p>
-                    <p className="mt-0.5 text-[10px] text-ink-faint">
-                      {new Date(a.createdAt).toLocaleString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                        hour: "numeric",
-                        minute: "2-digit",
-                      })}
-                    </p>
-                  </div>
-                </li>
-              ))}
-              {!data?.activities?.length && (
-                <li className="py-6 text-center text-[13px] text-ink-faint">
-                  Activity appears after your first search.
-                </li>
-              )}
-            </ul>
-          </HudPanel>
-        </div>
-
-        <div className="mt-5 grid gap-5 lg:grid-cols-2">
-          <HudPanel title="Export history" subtitle="CSV / Excel downloads">
-            <ul className="divide-y divide-brand-500/10">
-              {(data?.recentExports ?? []).map((e) => (
-                <li
-                  key={e.id}
-                  className="flex items-center justify-between py-2.5"
-                >
-                  <div>
-                    <p className="text-[13px] font-semibold uppercase text-ink">
-                      {e.format}
-                    </p>
-                    <p className="text-[11px] text-ink-faint">
-                      {e.leadCount} leads ·{" "}
-                      {new Date(e.createdAt).toLocaleDateString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </p>
-                  </div>
-                  <HiOutlineArrowDownTray className="h-4 w-4 text-brand-500" />
-                </li>
-              ))}
-              {!data?.recentExports?.length && (
-                <li className="py-6 text-center text-[13px] text-ink-faint">
-                  No exports yet.
-                </li>
-              )}
-            </ul>
-          </HudPanel>
-
-          <HudPanel title="Credits" subtitle="Plan balance">
-            <p className="text-[40px] font-bold tabular-nums tracking-tight text-ink">
-              {formatCredits(creditsAnim)}
-            </p>
-            <div className="mt-3 h-1.5 overflow-hidden bg-[var(--input-bg)]">
-              <div
-                className="h-full bg-[#a855f7] shadow-[0_0_10px_var(--brand-500)]"
-                style={{ width: `${creditPct}%` }}
-              />
-            </div>
-            <div className="mt-4">
-              <Link href="/billing" className="hud-btn-primary">
-                <HiOutlineTrophy className="h-4 w-4" />
-                View plan
-              </Link>
-            </div>
-          </HudPanel>
-        </div>
+        <DashboardInsights
+          qualityHealth={qh}
+          topIndustries={data?.topIndustries ?? []}
+          recentSearches={data?.recentSearches ?? []}
+          activities={data?.activities ?? []}
+          recentExports={data?.recentExports ?? []}
+        />
       </div>
     </div>
   );
