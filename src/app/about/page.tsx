@@ -97,6 +97,7 @@ export default function AboutPage() {
               alt={FOUNDER.imageAlt}
               fill
               sizes="192px"
+              unoptimized
               className="object-cover object-[center_22%]"
               priority
             />

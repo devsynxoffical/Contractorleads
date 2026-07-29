@@ -10,7 +10,7 @@ export const FOUNDER = {
   name: "Vaishali Kapoor",
   title: "Founder",
   bio: "I'm building Contractor Leads to help agencies and operators find better local contractor leads without spending hours on manual research.",
-  imageSrc: "/marketing/founder-new.jpg",
+  imageSrc: "/marketing/founder-portrait.jpg",
   imageAlt: "Vaishali Kapoor, Founder of Contractor Leads",
   facebook: SEO.social.facebook,
   linkedin: SEO.social.linkedin,
@@ -63,6 +63,7 @@ export function FooterFounderCard({
               alt={FOUNDER.imageAlt}
               fill
               sizes="72px"
+              unoptimized
               className="object-cover object-[center_22%]"
             />
           </div>
