@@ -1579,6 +1579,38 @@ html[data-theme="dark"] .marketing-site .bg-\[\#f8f5ff\],
 html[data-theme="dark"] .marketing-site .bg-\[\#f8f5ff\] {
   background-color: #f8f5ff !important;
 }
+/*
+ * The app's dark remaps for these tint hexes are unscoped, so they also hit
+ * marketing sections — turning them near-black while slate copy stayed dark and
+ * unreadable. Marketing is always light, so restore the authored values.
+ */
+html[data-theme="dark"] .marketing-site .bg-\[\#faf8fc\] {
+  background-color: #faf8fc !important;
+  color: #0f172a !important;
+}
+html[data-theme="dark"] .marketing-site .bg-\[\#faf8fc\]\/90 {
+  background-color: rgba(250, 248, 252, 0.9) !important;
+  color: #0f172a !important;
+}
+html[data-theme="dark"] .marketing-site .bg-\[\#faf8fb\] {
+  background-color: #faf8fb !important;
+  color: #0f172a !important;
+}
+html[data-theme="dark"] .marketing-site .bg-\[\#f3f4f6\] {
+  background-color: #f3f4f6 !important;
+  color: #0f172a !important;
+}
+html[data-theme="dark"] .marketing-site .bg-\[\#f7f4fa\] {
+  background-color: #f7f4fa !important;
+  color: #0f172a !important;
+}
+html[data-theme="dark"] .marketing-site .from-\[\#faf8fc\],
+html[data-theme="dark"] .marketing-site .from-\[\#faf8fb\],
+html[data-theme="dark"] .marketing-site .from-\[\#fcf2f8\],
+html[data-theme="dark"] .marketing-site .from-\[\#f3eef6\] {
+  --tw-gradient-from: #faf8fc !important;
+}
+
 .marketing-site .saas-input {
   background: #f8f5ff !important;
   color: #0f172a !important;

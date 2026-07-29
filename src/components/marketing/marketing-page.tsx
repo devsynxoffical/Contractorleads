@@ -73,6 +73,7 @@ import {
   BrandLogoChip,
 } from "./brand-logos";
 import { MarketingTrialModals } from "./marketing-trial-modal";
+import { MarketingEmailOptIn } from "./marketing-email-optin";
 import { MarketingVisitTracker } from "./marketing-visit-tracker";
 import { MarketingPricingSection } from "./marketing-pricing-section";
 import type { MarketingPlanCard } from "./marketing-plans-data";
@@ -578,7 +579,7 @@ function Integrations() {
           Contractor Leads doesn&apos;t ask you to abandon your CRM, your inbox, or your ad accounts — it feeds them.
         </p>
         <p className="mx-auto mt-3 max-w-2xl text-[14px] leading-relaxed text-slate-500">
-          Push saved leads and status changes straight into Zapier, Make, HubSpot, or a custom endpoint the moment they happen. Send nurture sequences from your own Gmail, Outlook, or SMTP mailbox so replies land in an inbox you already check. Connect your Meta ad account context to see contractor ad activity without leaving the lead profile.
+          Push saved leads and status changes straight into GoHighLevel, Zapier, Make, HubSpot, or a custom endpoint the moment they happen. Send nurture sequences from your own Gmail, Outlook, or SMTP mailbox so replies land in an inbox you already check. Connect your Meta ad account context to see contractor ad activity without leaving the lead profile.
         </p>
       </Reveal>
       <motion.div
@@ -892,13 +893,13 @@ function FinalCta() {
             transition={{ delay: 0.25, duration: 0.6 }}
           >
             <span className="inline-flex items-center gap-1">
-              <HiOutlineShieldCheck className="h-3.5 w-3.5" /> Business email verified
+              <HiOutlineShieldCheck className="h-3.5 w-3.5" /> Business Email Verified
             </span>
             <span className="inline-flex items-center gap-1">
-              <HiOutlineBolt className="h-3.5 w-3.5" /> Fast onboarding
+              <HiOutlineBolt className="h-3.5 w-3.5" /> Fast Onboarding
             </span>
             <span className="inline-flex items-center gap-1">
-              <HiOutlineCheck className="h-3.5 w-3.5" /> Cancel anytime
+              <HiOutlineCheck className="h-3.5 w-3.5" /> Cancel Anytime
             </span>
           </motion.div>
         </Reveal>
@@ -959,6 +960,7 @@ export function MarketingPage({
       <Pricing plans={plans} />
       <Faq />
       <FinalCta />
+      <MarketingEmailOptIn />
       <FooterLivePurchases floating />
       <MarketingSiteFooter />
       <StickyCta />

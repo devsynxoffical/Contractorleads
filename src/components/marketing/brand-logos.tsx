@@ -1,6 +1,6 @@
 "use client";
 
-import type { IconType } from "react-icons";
+import type { IconBaseProps, IconType } from "react-icons";
 import { FaLinkedinIn, FaSlack } from "react-icons/fa6";
 import {
   SiGoogle,
@@ -34,6 +34,26 @@ export type BrandLogo = {
   bg: string;
 };
 
+/** react-icons ships no GoHighLevel glyph, so mirror their upward-arrow mark. */
+const GoHighLevelIcon: IconType = ({
+  size,
+  title,
+  ...props
+}: IconBaseProps) => (
+  <svg
+    viewBox="0 0 24 24"
+    width={size ?? "1em"}
+    height={size ?? "1em"}
+    fill="currentColor"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden={title ? undefined : true}
+    {...props}
+  >
+    {title ? <title>{title}</title> : null}
+    <path d="M12.9 2.68a1.28 1.28 0 0 0-1.8 0L3.4 10.3a1.28 1.28 0 0 0 1.8 1.82l4.53-4.48v13.1a1.28 1.28 0 0 0 2.55 0V7.64l4.52 4.48a1.28 1.28 0 0 0 1.8-1.82Z" />
+  </svg>
+);
+
 /** Unique stack logos for marquees / social proof — no repeats */
 export const SOCIAL_BRANDS: BrandLogo[] = [
   { name: "OpenAI", icon: RiOpenaiFill, color: "#000000", bg: "#f4f4f5" },
@@ -61,6 +81,7 @@ export const INTEGRATION_BRANDS: BrandLogo[] = [
   { name: "Zapier", icon: SiZapier, color: "#FF4A00", bg: "#fff0e8" },
   { name: "Slack", icon: FaSlack, color: "#4A154B", bg: "#f4eaf5" },
   { name: "HubSpot", icon: SiHubspot, color: "#FF7A59", bg: "#fff0eb" },
+  { name: "GoHighLevel", icon: GoHighLevelIcon, color: "#188BF6", bg: "#e7f1fe" },
   { name: "Analytics", icon: SiGoogleanalytics, color: "#E37400", bg: "#fef0e0" },
   { name: "Instagram", icon: SiInstagram, color: "#E4405F", bg: "#fce8ee" },
 ];

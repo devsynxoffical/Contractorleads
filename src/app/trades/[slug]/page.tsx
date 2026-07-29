@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { MarketingChrome, MarketingHero } from "@/components/marketing/marketing-chrome";
+import {
+  MarketingSiteShell,
+  MarketingSubpageHero,
+} from "@/components/marketing/marketing-site-shell";
+import { SubpageCtaBand } from "@/components/marketing/marketing-subpage";
 import {
   JsonLd,
   breadcrumbJsonLd,
@@ -38,7 +42,7 @@ export default async function TradePage({ params }: Params) {
   if (!trade) notFound();
 
   return (
-    <MarketingChrome>
+    <MarketingSiteShell>
       <JsonLd data={softwareApplicationJsonLd()} />
       <JsonLd
         data={breadcrumbJsonLd([
@@ -48,7 +52,7 @@ export default async function TradePage({ params }: Params) {
         ])}
       />
 
-      <MarketingHero
+      <MarketingSubpageHero
         eyebrow={`${trade.name} leads`}
         title={trade.headline}
         description={trade.description}
@@ -67,7 +71,7 @@ export default async function TradePage({ params }: Params) {
             View plans
           </Link>
         </div>
-      </MarketingHero>
+      </MarketingSubpageHero>
 
       <section className="mx-auto max-w-3xl space-y-8 px-5 py-16 text-[15px] leading-relaxed text-slate-600 sm:px-8">
         <div>
@@ -129,6 +133,15 @@ export default async function TradePage({ params }: Params) {
           </ul>
         </div>
       </section>
-    </MarketingChrome>
+
+      <SubpageCtaBand
+        title={`Start prospecting ${trade.name.toLowerCase()} contractors`}
+        description={`Pull a live, AI-scored ${trade.name.toLowerCase()} list with owner contacts and outreach scripts — in any market you sell into.`}
+        primaryLabel="Start free trial"
+        secondaryHref="/pricing"
+        secondaryLabel="View plans"
+        note="10 free leads on Starter · No credit card required"
+      />
+    </MarketingSiteShell>
   );
 }

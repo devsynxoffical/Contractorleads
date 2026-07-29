@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { MarketingChrome } from "@/components/marketing/marketing-chrome";
+import { MarketingSiteShell } from "@/components/marketing/marketing-site-shell";
 import { EnterpriseBookingForm } from "@/components/marketing/enterprise-booking-form";
 import { buildMetadata } from "@/lib/seo";
 
@@ -12,10 +12,10 @@ export const metadata: Metadata = buildMetadata({
 
 export default function EnterpriseBookPage() {
   return (
-    <MarketingChrome>
+    <MarketingSiteShell>
       <section className="mx-auto max-w-6xl px-5 py-12 sm:px-8 sm:py-16">
         <EnterpriseBookingForm source="enterprise-page" />
       </section>
-    </MarketingChrome>
+    </MarketingSiteShell>
   );
 }

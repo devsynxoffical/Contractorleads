@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { MarketingChrome, MarketingHero } from "@/components/marketing/marketing-chrome";
+import { MarketingSiteShell, MarketingSubpageHero } from "@/components/marketing/marketing-site-shell";
+import { SubpageCtaBand } from "@/components/marketing/marketing-subpage";
 import { JsonLd, breadcrumbJsonLd } from "@/components/seo/json-ld";
 import {
   ACADEMY_ARTICLES,
@@ -28,14 +29,14 @@ export default function BlogIndexPage() {
   );
 
   return (
-    <MarketingChrome>
+    <MarketingSiteShell>
       <JsonLd
         data={breadcrumbJsonLd([
           { name: "Home", path: "/" },
           { name: "Blog", path: "/blog" },
         ])}
       />
-      <MarketingHero
+      <MarketingSubpageHero
         eyebrow="Blog & guides"
         title="How agencies find and close contractor leads"
         description="Step-by-step guides from the Contractor Leads Academy — Lead Finder, scoring, email sequences, pipeline, billing, and AI workflows."
@@ -46,7 +47,7 @@ export default function BlogIndexPage() {
         >
           Start free trial
         </Link>
-      </MarketingHero>
+      </MarketingSubpageHero>
 
       <section className="mx-auto max-w-6xl px-5 py-12 sm:px-8">
         <div className="mb-8 flex flex-wrap gap-2">
@@ -98,6 +99,15 @@ export default function BlogIndexPage() {
           );
         })}
       </section>
-    </MarketingChrome>
+
+      <SubpageCtaBand
+        title="Put the playbooks to work"
+        description="Reading is step one. Run a real search, score a real list, and send your first sequence today."
+        primaryLabel="Start free trial"
+        secondaryHref="/features"
+        secondaryLabel="Explore features"
+        note="10 free leads on Starter · No credit card required"
+      />
+    </MarketingSiteShell>
   );
 }

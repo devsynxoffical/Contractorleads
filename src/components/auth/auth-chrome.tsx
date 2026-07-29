@@ -6,40 +6,31 @@ import { HiOutlineArrowRight } from "react-icons/hi2";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
 import { FooterFounderCard } from "@/components/marketing/footer-founder-card";
 import { EMAIL_BRAND } from "@/lib/email-brand";
+import { SEO } from "@/lib/seo";
 
 const FOOTER_COLUMNS = [
   {
     h: "Product",
     links: [
-      ["Features", "/#features"],
-      ["Technology", "/#integrations"],
-      ["Lead Finder", "/register"],
-      ["AI Assistant", "/#features"],
-      ["Pricing", "/#pricing"],
-      ["Integrations", "/#features"],
-      ["FAQ", "/#faq"],
-      ["Start free", "/register"],
+      ["Features", "/features"],
+      ["Pricing", "/pricing"],
+      ["Industries", "/trades"],
+      ["Blog", "/blog"],
+      ["FAQs", "/#faq"],
     ],
   },
   {
     h: "Company",
     links: [
-      ["About", "/"],
-      ["Sign in", "/login"],
-      ["Register", "/register"],
-      ["Help", "/#faq"],
-      ["Contact", "mailto:hello@contractorleads.us"],
-      ["Security", "/"],
+      ["About", "/about"],
+      ["Contact", `mailto:${EMAIL_BRAND.contactEmail}`],
     ],
   },
   {
     h: "Social",
     links: [
-      ["Instagram", "#"],
-      ["LinkedIn", "#"],
-      ["TikTok", "#"],
-      ["X", "#"],
-      ["YouTube", "#"],
+      ["LinkedIn", SEO.social.linkedin],
+      ["Facebook", SEO.social.facebook],
     ],
   },
   {
@@ -47,8 +38,6 @@ const FOOTER_COLUMNS = [
     links: [
       ["Privacy Policy", "/privacy"],
       ["Terms of Service", "/terms"],
-      ["Cookie Notice", "/privacy"],
-      ["Acceptable Use", "/terms"],
     ],
   },
 ] as const;
@@ -192,16 +181,21 @@ export function AuthSiteFooter() {
             <div key={col.h}>
               <p className="text-[13px] font-semibold text-white">{col.h}</p>
               <ul className="mt-4 space-y-2.5">
-                {col.links.map(([label, href]) => (
-                  <li key={label}>
-                    <a
-                      href={href}
-                      className="text-[13px] text-white/55 transition hover:text-white"
-                    >
-                      {label}
-                    </a>
-                  </li>
-                ))}
+                {col.links.map(([label, href]) => {
+                  const external = href.startsWith("http");
+                  return (
+                    <li key={label}>
+                      <a
+                        href={href}
+                        target={external ? "_blank" : undefined}
+                        rel={external ? "noopener noreferrer" : undefined}
+                        className="text-[13px] text-white/55 transition hover:text-white"
+                      >
+                        {label}
+                      </a>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           ))}

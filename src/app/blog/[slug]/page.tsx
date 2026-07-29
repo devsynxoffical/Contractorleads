@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { MarketingChrome } from "@/components/marketing/marketing-chrome";
+import { MarketingSiteShell } from "@/components/marketing/marketing-site-shell";
 import {
   BlogArticleBody,
   BlogMetaLine,
@@ -50,7 +50,7 @@ export default async function BlogArticlePage({ params }: Params) {
   ).slice(0, 3);
 
   return (
-    <MarketingChrome>
+    <MarketingSiteShell>
       <JsonLd
         data={blogPostingJsonLd({
           title: article.title,
@@ -131,6 +131,6 @@ export default async function BlogArticlePage({ params }: Params) {
           </div>
         ) : null}
       </div>
-    </MarketingChrome>
+    </MarketingSiteShell>
   );
 }

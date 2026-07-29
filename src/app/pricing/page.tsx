@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { MarketingChrome, MarketingHero } from "@/components/marketing/marketing-chrome";
+import { MarketingSiteShell, MarketingSubpageHero } from "@/components/marketing/marketing-site-shell";
 import { MarketingPricingSection } from "@/components/marketing/marketing-pricing-section";
+import { SubpageCtaBand } from "@/components/marketing/marketing-subpage";
 import { getMarketingPlansLive } from "@/components/marketing/marketing-plans-data";
 import {
   JsonLd,
@@ -30,7 +31,7 @@ export default async function PricingPage() {
   const plans = await getMarketingPlansLive();
 
   return (
-    <MarketingChrome>
+    <MarketingSiteShell>
       <JsonLd
         data={breadcrumbJsonLd([
           { name: "Home", path: "/" },
@@ -39,7 +40,7 @@ export default async function PricingPage() {
       />
       <JsonLd data={faqPageJsonLd(MARKETING_FAQ.slice(0, 3))} />
 
-      <MarketingHero
+      <MarketingSubpageHero
         eyebrow="Pricing"
         title="Plans built for contractor outreach desks"
         description="Pick the seat that matches how many searches and closers you run. Logged-in? You’ll see your current plan and upgrade into billing — not signup."
@@ -52,11 +53,20 @@ export default async function PricingPage() {
             See features
           </Link>
         </div>
-      </MarketingHero>
+      </MarketingSubpageHero>
 
-      <section className="mx-auto max-w-6xl px-5 pb-16 sm:px-8">
+      <section className="mx-auto max-w-6xl px-5 py-16 sm:px-8">
         <MarketingPricingSection plans={plans} />
       </section>
-    </MarketingChrome>
+
+      <SubpageCtaBand
+        title="Start free, upgrade when you're closing"
+        description="Every plan includes AI scoring, owner enrichment, and Outreach Studio. Begin on Starter with 10 free leads and no card."
+        primaryLabel="Create your account"
+        secondaryHref="/features"
+        secondaryLabel="See all features"
+        note="No credit card required · Cancel anytime"
+      />
+    </MarketingSiteShell>
   );
 }

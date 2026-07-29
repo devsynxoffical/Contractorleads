@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { MarketingChrome, MarketingHero } from "@/components/marketing/marketing-chrome";
+import {
+  MarketingSiteShell,
+  MarketingSubpageHero,
+} from "@/components/marketing/marketing-site-shell";
+import { SubpageCtaBand } from "@/components/marketing/marketing-subpage";
 import {
   JsonLd,
   breadcrumbJsonLd,
@@ -59,7 +63,7 @@ export default async function TradeRegionPage({ params }: Params) {
   }).slice(0, 8);
 
   return (
-    <MarketingChrome>
+    <MarketingSiteShell>
       <JsonLd data={softwareApplicationJsonLd()} />
       <JsonLd
         data={breadcrumbJsonLd([
@@ -73,7 +77,7 @@ export default async function TradeRegionPage({ params }: Params) {
         ])}
       />
 
-      <MarketingHero
+      <MarketingSubpageHero
         eyebrow={`${trade.name} · ${region.name}`}
         title={`${trade.name} contractor leads in ${region.name}`}
         description={`Agencies use Contractor Leads to find verified ${trade.name.toLowerCase()} businesses across ${region.name} (${region.code}) — with AI scores, owner contacts, and outreach-ready scripts.`}
@@ -92,7 +96,7 @@ export default async function TradeRegionPage({ params }: Params) {
             All {trade.name} pages
           </Link>
         </div>
-      </MarketingHero>
+      </MarketingSubpageHero>
 
       <section className="mx-auto max-w-3xl space-y-8 px-5 py-16 text-[15px] leading-relaxed text-slate-600 sm:px-8">
         <div>
@@ -160,6 +164,15 @@ export default async function TradeRegionPage({ params }: Params) {
           </ul>
         </div>
       </section>
-    </MarketingChrome>
+
+      <SubpageCtaBand
+        title={`Find ${trade.name.toLowerCase()} leads in ${region.name}`}
+        description={`Run a live ${region.name} search, get AI scores and owner contacts, and send your first sequence the same day.`}
+        primaryLabel="Start free trial"
+        secondaryHref="/pricing"
+        secondaryLabel="View plans"
+        note="10 free leads on Starter · No credit card required"
+      />
+    </MarketingSiteShell>
   );
 }

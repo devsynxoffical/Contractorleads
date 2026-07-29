@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import Image from "next/image";
 import {
   MarketingSiteShell,
   MarketingSubpageHero,
 } from "@/components/marketing/marketing-site-shell";
 import { FOUNDER } from "@/components/marketing/footer-founder-card";
+import { SubpageCtaBand } from "@/components/marketing/marketing-subpage";
 import { JsonLd, breadcrumbJsonLd, organizationJsonLd } from "@/components/seo/json-ld";
 import { buildMetadata } from "@/lib/seo";
 import { EMAIL_BRAND } from "@/lib/email-brand";
@@ -129,13 +129,16 @@ export default function AboutPage() {
           </a>
         </p>
         <p className="mt-2 text-[14px] text-slate-500">{EMAIL_BRAND.address}</p>
-        <Link
-          href="/register"
-          className="mt-8 inline-flex rounded-full bg-gradient-to-r from-pink-600 via-fuchsia-600 to-violet-600 px-6 py-3 text-[14px] font-semibold text-white shadow-[0_8px_24px_rgba(168,85,247,0.35)] transition hover:brightness-105"
-        >
-          Get started free
-        </Link>
       </section>
+
+      <SubpageCtaBand
+        title="See it on your own market"
+        description="Pick a trade, pick a city, and watch Contractor Leads score live businesses in seconds."
+        primaryLabel="Get started free"
+        secondaryHref="/features"
+        secondaryLabel="See all features"
+        note="10 free leads on Starter · No credit card required"
+      />
     </MarketingSiteShell>
   );
 }

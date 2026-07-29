@@ -13,7 +13,7 @@ export const metadata: Metadata = buildMetadata({
 
 export default function PrivacyPage() {
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-[#ffffff] text-slate-900">
+    <div className="marketing-site flex min-h-[100dvh] flex-col bg-[#ffffff] text-slate-900">
       <AuthSiteHeader mode="login" />
       <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-12 sm:px-8">
         <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-fuchsia-600">

@@ -7,6 +7,7 @@ import { HiOutlineArrowRight } from "react-icons/hi2";
 import { FooterReveal } from "./marketing-motion";
 import { FooterFounderCard } from "./footer-founder-card";
 import { EMAIL_BRAND } from "@/lib/email-brand";
+import { SEO } from "@/lib/seo";
 
 const columns = [
   {
@@ -14,31 +15,23 @@ const columns = [
     links: [
       ["Features", "/features"],
       ["Pricing", "/pricing"],
-      ["Trades", "/trades"],
+      ["Industries", "/trades"],
       ["Blog", "/blog"],
-      ["FAQ", "/#faq"],
-      ["Get started free", "/register"],
+      ["FAQs", "/#faq"],
     ],
   },
   {
     h: "Company",
     links: [
       ["About", "/about"],
-      ["Sign in", "/login"],
-      ["Register", "/register"],
-      ["Help", "/#faq"],
       ["Contact", "mailto:hello@contractorleads.us"],
-      ["Privacy", "/privacy"],
-      ["Terms", "/terms"],
     ],
   },
   {
     h: "Social",
     links: [
-      ["LinkedIn", "https://www.linkedin.com/company/contractorleads"],
-      ["Instagram", "https://www.instagram.com/contractorleads"],
-      ["TikTok", "https://www.tiktok.com/@contractorleads"],
-      ["X", "https://x.com/contractorleads"],
+      ["LinkedIn", SEO.social.linkedin],
+      ["Facebook", SEO.social.facebook],
     ],
   },
   {
@@ -143,16 +136,21 @@ export function MarketingSiteFooter() {
               <div>
                 <p className="text-[13px] font-semibold text-white">{col.h}</p>
                 <ul className="mt-4 space-y-2.5">
-                  {col.links.map(([label, href]) => (
-                    <li key={label}>
-                      <a
-                        href={href}
-                        className="text-[13px] text-white/55 transition hover:text-white"
-                      >
-                        {label}
-                      </a>
-                    </li>
-                  ))}
+                  {col.links.map(([label, href]) => {
+                    const external = href.startsWith("http");
+                    return (
+                      <li key={label}>
+                        <a
+                          href={href}
+                          target={external ? "_blank" : undefined}
+                          rel={external ? "noopener noreferrer" : undefined}
+                          className="text-[13px] text-white/55 transition hover:text-white"
+                        >
+                          {label}
+                        </a>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             </FooterReveal>

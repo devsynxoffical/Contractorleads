@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { MarketingChrome, MarketingHero } from "@/components/marketing/marketing-chrome";
+import { MarketingSiteShell, MarketingSubpageHero } from "@/components/marketing/marketing-site-shell";
+import { SubpageCtaBand } from "@/components/marketing/marketing-subpage";
 import { JsonLd, breadcrumbJsonLd } from "@/components/seo/json-ld";
 import { TRADE_PAGES, buildMetadata } from "@/lib/seo";
 
@@ -20,14 +21,14 @@ export const metadata: Metadata = buildMetadata({
 
 export default function TradesIndexPage() {
   return (
-    <MarketingChrome>
+    <MarketingSiteShell>
       <JsonLd
         data={breadcrumbJsonLd([
           { name: "Home", path: "/" },
           { name: "Trades", path: "/trades" },
         ])}
       />
-      <MarketingHero
+      <MarketingSubpageHero
         eyebrow="Trades"
         title="Contractor leads for every home-service vertical"
         description="Agencies sell into specific trades. Jump into the vertical you pitch — each page is built around how that market buys marketing."
@@ -54,6 +55,15 @@ export default function TradesIndexPage() {
           ))}
         </div>
       </section>
-    </MarketingChrome>
+
+      <SubpageCtaBand
+        title="Pick a trade and pull your first scored list"
+        description="Search live business data in any of these verticals across the US, Canada, the UK, Australia, and New Zealand."
+        primaryLabel="Start free trial"
+        secondaryHref="/features"
+        secondaryLabel="See how it works"
+        note="10 free leads on Starter · No credit card required"
+      />
+    </MarketingSiteShell>
   );
 }

@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FaFacebookF, FaLinkedinIn } from "react-icons/fa6";
+import { SEO } from "@/lib/seo";
 
 export const FOUNDER = {
   name: "Vaishali Kapoor",
@@ -11,8 +12,8 @@ export const FOUNDER = {
   bio: "I'm building Contractor Leads to help agencies and operators find better local contractor leads without spending hours on manual research.",
   imageSrc: "/marketing/founder-new.jpg",
   imageAlt: "Vaishali Kapoor, Founder of Contractor Leads",
-  facebook: "https://www.facebook.com/vaishali.joshi.658637",
-  linkedin: "https://www.linkedin.com/in/vaishali-joshi-milliondollarmedia/",
+  facebook: SEO.social.facebook,
+  linkedin: SEO.social.linkedin,
 } as const;
 
 /**

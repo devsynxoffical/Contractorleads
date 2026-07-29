@@ -36,22 +36,17 @@ export const SEO = {
   locale: "en_US",
   ogImagePath: "/opengraph-image",
   /**
-   * Public social profiles for Organization sameAs + footer.
-   * Override with NEXT_PUBLIC_SOCIAL_* env vars when handles change.
+   * Founder profiles — the only social accounts that actually exist today, so
+   * footers and Organization sameAs point here instead of at brand handles we
+   * haven't claimed. Override with NEXT_PUBLIC_SOCIAL_* once brand pages ship.
    */
   social: {
     linkedin:
       process.env.NEXT_PUBLIC_SOCIAL_LINKEDIN?.trim() ||
-      "https://www.linkedin.com/company/contractorleads",
-    instagram:
-      process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM?.trim() ||
-      "https://www.instagram.com/contractorleads",
-    tiktok:
-      process.env.NEXT_PUBLIC_SOCIAL_TIKTOK?.trim() ||
-      "https://www.tiktok.com/@contractorleads",
-    x:
-      process.env.NEXT_PUBLIC_SOCIAL_X?.trim() ||
-      "https://x.com/contractorleads",
+      "https://www.linkedin.com/in/vaishali-joshi-milliondollarmedia/",
+    facebook:
+      process.env.NEXT_PUBLIC_SOCIAL_FACEBOOK?.trim() ||
+      "https://www.facebook.com/vaishali.joshi.658637",
   },
 } as const;
 
