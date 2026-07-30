@@ -1,5 +1,11 @@
+import { execFile } from "node:child_process";
+import path from "node:path";
+import { promisify } from "node:util";
 import { getTierOneCountry } from "@/lib/constants";
-import { chunkArray, mapPool } from "@/lib/utils/async-pool";
+import {
+  logGooglePlacesError,
+  PUBLIC_PLACES_SEARCH_UNAVAILABLE,
+} from "@/lib/google-places-errors";
 
 export type PlaceResult = {
   placeId: string;
@@ -25,7 +31,9 @@ export class GooglePlacesError extends Error {
 const BROWSER_UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
 
-/** Map industry labels to better Places text queries */
+const execFileAsync = promisify(execFile);
+
+/** Map industry labels to better search phrases */
 function industryQuery(industry: string) {
   const map: Record<string, string> = {
     Painting: "painting contractors house painters",
@@ -121,113 +129,6 @@ type PlaceDetails = {
   geometry?: { location?: { lat: number; lng: number } };
 };
 
-async function fetchPlaceDetailsLegacy(
-  placeId: string,
-  apiKey: string
-): Promise<PlaceDetails | null> {
-  const detailsUrl = new URL(
-    "https://maps.googleapis.com/maps/api/place/details/json"
-  );
-  detailsUrl.searchParams.set("place_id", placeId);
-  detailsUrl.searchParams.set(
-    "fields",
-    "name,formatted_address,formatted_phone_number,international_phone_number,website,rating,user_ratings_total,url,geometry"
-  );
-  detailsUrl.searchParams.set("key", apiKey);
-
-  const detailsRes = await fetch(detailsUrl.toString(), {
-    signal: AbortSignal.timeout(12000),
-  });
-  if (!detailsRes.ok) return null;
-
-  const detailsData = (await detailsRes.json()) as {
-    status?: string;
-    result?: PlaceDetails;
-  };
-
-  if (detailsData.status && detailsData.status !== "OK") return null;
-  return detailsData.result ?? null;
-}
-
-/** Places API (New) — often returns websiteUri when legacy Details omits it */
-async function fetchWebsiteFromPlacesNew(
-  placeId: string,
-  apiKey: string
-): Promise<string | undefined> {
-  try {
-    const res = await fetch(
-      `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`,
-      {
-        headers: {
-          "X-Goog-Api-Key": apiKey,
-          "X-Goog-FieldMask": "websiteUri,nationalPhoneNumber,internationalPhoneNumber",
-        },
-        signal: AbortSignal.timeout(10000),
-      }
-    );
-    if (!res.ok) return undefined;
-    const data = (await res.json()) as {
-      websiteUri?: string;
-      nationalPhoneNumber?: string;
-      internationalPhoneNumber?: string;
-    };
-    return normalizeWebsiteUrl(data.websiteUri);
-  } catch {
-    return undefined;
-  }
-}
-
-async function enrichOnePlace(
-  place: {
-    place_id: string;
-    name: string;
-    formatted_address?: string;
-    rating?: number;
-    user_ratings_total?: number;
-    geometry?: { location?: { lat: number; lng: number } };
-  },
-  apiKey: string,
-  opts?: { fast?: boolean },
-): Promise<PlaceResult> {
-  let details = await fetchPlaceDetailsLegacy(place.place_id, apiKey);
-
-  // One retry — Details occasionally flakes without website (skip in fast mode)
-  if (!opts?.fast && !details?.website) {
-    await new Promise((r) => setTimeout(r, 200));
-    const retry = await fetchPlaceDetailsLegacy(place.place_id, apiKey);
-    if (retry) {
-      details = details
-        ? { ...details, ...retry, website: retry.website || details.website }
-        : retry;
-    }
-  }
-
-  let website = normalizeWebsiteUrl(details?.website);
-  if (!opts?.fast && !website) {
-    website = await fetchWebsiteFromPlacesNew(place.place_id, apiKey);
-  }
-
-  const phone =
-    details?.formatted_phone_number ||
-    details?.international_phone_number ||
-    undefined;
-
-  return {
-    placeId: place.place_id,
-    name: details?.name || place.name,
-    address: details?.formatted_address || place.formatted_address || "",
-    phone,
-    website,
-    rating: details?.rating ?? place.rating,
-    reviewCount: details?.user_ratings_total ?? place.user_ratings_total,
-    mapsUrl:
-      details?.url ||
-      `https://www.google.com/maps/place/?q=place_id:${place.place_id}`,
-    latitude: details?.geometry?.location?.lat ?? place.geometry?.location?.lat,
-    longitude:
-      details?.geometry?.location?.lng ?? place.geometry?.location?.lng,
-  };
-}
 
 function buildPlacesQueries(params: {
   industry: string;
@@ -297,95 +198,66 @@ function buildPlacesQueries(params: {
   return [...queries];
 }
 
-async function textSearchPages(
-  query: string,
-  apiKeyValue: string,
-  googleRegion: string,
-  maxResults: number,
-): Promise<
-  Array<{
-    place_id: string;
-    name: string;
-    formatted_address?: string;
-    rating?: number;
-    user_ratings_total?: number;
-    geometry?: { location?: { lat: number; lng: number } };
-  }>
-> {
-  const combined: Array<{
-    place_id: string;
-    name: string;
-    formatted_address?: string;
-    rating?: number;
-    user_ratings_total?: number;
-    geometry?: { location?: { lat: number; lng: number } };
-  }> = [];
+type ScraperLead = {
+  place_id?: string;
+  name?: string;
+  address?: string;
+  phone?: string;
+  website?: string;
+  rating?: number;
+  review_count?: number;
+  google_maps_url?: string;
+  latitude?: number;
+  longitude?: number;
+};
 
-  let pageToken: string | undefined;
-  for (let page = 0; page < 3 && combined.length < maxResults; page++) {
-    if (pageToken) {
-      await new Promise((r) => setTimeout(r, 1800));
-    }
-    const searchUrl = new URL(
-      "https://maps.googleapis.com/maps/api/place/textsearch/json",
-    );
-    searchUrl.searchParams.set("query", query);
-    searchUrl.searchParams.set("region", googleRegion);
-    searchUrl.searchParams.set("key", apiKeyValue);
-    if (pageToken) searchUrl.searchParams.set("pagetoken", pageToken);
-
-    const searchRes = await fetch(searchUrl.toString(), {
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!searchRes.ok) {
-      throw new GooglePlacesError(
-        `Google Places HTTP ${searchRes.status}. Try again in a moment.`,
-      );
-    }
-    const searchData = (await searchRes.json()) as {
-      status?: string;
-      error_message?: string;
-      next_page_token?: string;
-      results?: Array<{
-        place_id: string;
-        name: string;
-        formatted_address?: string;
-        rating?: number;
-        user_ratings_total?: number;
-        geometry?: { location?: { lat: number; lng: number } };
-      }>;
-    };
-
-    if (
-      searchData.status &&
-      searchData.status !== "OK" &&
-      searchData.status !== "ZERO_RESULTS"
-    ) {
-      const msg = searchData.error_message || searchData.status;
-      if (searchData.status === "REQUEST_DENIED") {
-        throw new GooglePlacesError(
-          `Google Places denied the request. Enable Billing on your Google Cloud project, then enable Places API. Details: ${msg}`,
-        );
-      }
-      if (searchData.status === "OVER_QUERY_LIMIT") {
-        throw new GooglePlacesError(
-          "Google Places quota exceeded. Check billing/quota in Google Cloud Console.",
-        );
-      }
-      if (searchData.status === "INVALID_REQUEST") {
-        throw new GooglePlacesError(
-          `Invalid Places request. Try a city name with the state. (${msg})`,
-        );
-      }
-      throw new GooglePlacesError(`Google Places error: ${msg}`);
-    }
-
-    combined.push(...(searchData.results ?? []));
-    pageToken = searchData.next_page_token || undefined;
-    if (!pageToken) break;
+async function runScraper(params: {
+  quick: boolean;
+  query?: string;
+  niche?: string;
+  city?: string;
+  workers: number;
+  limit: number;
+  grid?: number;
+  radius?: number;
+}): Promise<ScraperLead[]> {
+  const runnerPath = path.join(process.cwd(), "Gmap-scrapper", "api_runner.py");
+  const args = [runnerPath];
+  if (params.quick) {
+    args.push("--quick", "--query", params.query ?? "");
+  } else {
+    args.push("--niche", params.niche ?? "", "--city", params.city ?? "");
   }
+  args.push("--workers", String(params.workers), "--limit", String(params.limit));
+  if (params.grid) args.push("--grid", String(params.grid));
+  if (params.radius) args.push("--radius", String(params.radius));
 
-  return combined;
+  try {
+    const { stdout, stderr } = await execFileAsync("python3", args, {
+      cwd: process.cwd(),
+      timeout: 280000,
+      maxBuffer: 16 * 1024 * 1024,
+    });
+    const raw = stdout.trim();
+    if (!raw) {
+      logGooglePlacesError("scraper", `Empty response. stderr=${stderr?.slice(0, 300)}`);
+      throw new GooglePlacesError(PUBLIC_PLACES_SEARCH_UNAVAILABLE);
+    }
+    const data = JSON.parse(raw) as {
+      ok?: boolean;
+      leads?: ScraperLead[];
+      error?: string;
+    };
+    if (!data.ok) {
+      logGooglePlacesError("scraper", data.error || "unknown scraper error");
+      throw new GooglePlacesError(PUBLIC_PLACES_SEARCH_UNAVAILABLE);
+    }
+    return data.leads ?? [];
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    logGooglePlacesError("scraper", msg);
+    throw new GooglePlacesError(PUBLIC_PLACES_SEARCH_UNAVAILABLE);
+  }
 }
 
 export async function searchGooglePlaces(params: {
@@ -399,65 +271,56 @@ export async function searchGooglePlaces(params: {
   radius?: number;
   limit?: number;
 }): Promise<PlaceResult[]> {
-  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
-  if (!apiKey || apiKey.includes("your-key") || apiKey === "AIza...") {
-    throw new GooglePlacesError(
-      "Google Places API key not configured. Add GOOGLE_PLACES_API_KEY to .env.",
-    );
-  }
-  const apiKeyValue = apiKey;
   const country = getTierOneCountry(params.country);
   const wanted = Math.max(1, Math.min(params.limit ?? 10, 1200));
-  const fast = wanted >= 80;
+  const location =
+    params.customLocation?.trim() || locationQuery(params) || country.name;
+  const query = `${industryQuery(params.industry)} in ${location}`;
 
-  const queries = buildPlacesQueries(params);
-  // Fewer query fan-outs for small searches; more for large targets
-  const queryBudget =
-    wanted <= 40 ? 1 : wanted <= 100 ? 4 : wanted <= 250 ? 8 : wanted <= 500 ? 14 : 22;
-  const selectedQueries = queries.slice(0, queryBudget);
-
-  const deduped = new Map<
-    string,
-    {
-      place_id: string;
-      name: string;
-      formatted_address?: string;
-      rating?: number;
-      user_ratings_total?: number;
-      geometry?: { location?: { lat: number; lng: number } };
-    }
-  >();
-
-  // Fan-out Places text searches in parallel batches (each query ≤ ~60 results)
-  for (const batch of chunkArray(selectedQueries, 3)) {
-    if (deduped.size >= wanted) break;
-    const pages = await Promise.all(
-      batch.map((q) =>
-        textSearchPages(
-          q,
-          apiKeyValue,
-          country.googleRegion,
-          Math.min(60, wanted - deduped.size + 20),
-        ).catch((err) => {
-          if (err instanceof GooglePlacesError) throw err;
-          return [] as Awaited<ReturnType<typeof textSearchPages>>;
-        }),
-      ),
-    );
-    for (const rows of pages) {
-      for (const row of rows) {
-        if (!deduped.has(row.place_id)) deduped.set(row.place_id, row);
-      }
-    }
+  const workers = wanted >= 300 ? 8 : wanted >= 120 ? 6 : 4;
+  let rows: ScraperLead[];
+  if (params.locationScope === "local") {
+    rows = await runScraper({
+      quick: false,
+      niche: params.industry,
+      city: location,
+      workers,
+      limit: wanted,
+      grid: wanted >= 300 ? 5 : wanted >= 120 ? 4 : 3,
+      radius: Math.max(6, Math.min(25, params.radius ?? 10)),
+    });
+  } else {
+    rows = await runScraper({
+      quick: true,
+      query,
+      workers,
+      limit: wanted,
+    });
   }
 
-  const results = Array.from(deduped.values()).slice(0, wanted);
-  if (!results.length) return [];
+  const deduped = new Map<string, PlaceResult>();
+  for (const row of rows) {
+    const name = row.name?.trim();
+    if (!name) continue;
+    const mapsUrl = row.google_maps_url?.trim() || "";
+    const placeId = row.place_id?.trim() || mapsUrl || `${name}-${row.phone || row.address || ""}`;
+    if (deduped.has(placeId)) continue;
+    deduped.set(placeId, {
+      placeId,
+      name,
+      address: row.address?.trim() || "",
+      phone: row.phone?.trim() || undefined,
+      website: normalizeWebsiteUrl(row.website || undefined),
+      rating: row.rating ?? undefined,
+      reviewCount: row.review_count ?? undefined,
+      mapsUrl: mapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`,
+      latitude: row.latitude ?? undefined,
+      longitude: row.longitude ?? undefined,
+    });
+    if (deduped.size >= wanted) break;
+  }
 
-  // Cap Details concurrency higher for volume searches
-  return mapPool(results, fast ? 20 : 12, (place) =>
-    enrichOnePlace(place, apiKeyValue, { fast }),
-  );
+  return Array.from(deduped.values()).slice(0, wanted);
 }
 
 /**

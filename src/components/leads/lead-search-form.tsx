@@ -538,7 +538,7 @@ export function LeadSearchForm() {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
-        <Card className="animate-slide-left overflow-hidden border-border shadow-[var(--shadow-card)]">
+        <Card className="animate-slide-left border-border shadow-[var(--shadow-card)]">
           <div
             className="h-1.5 w-full"
             style={{ background: LOGO_GRADIENT }}
@@ -718,10 +718,10 @@ export function LeadSearchForm() {
                     value={customLocation}
                     onChange={(v) => setCustomLocation(v)}
                     country={selectedCountry}
-                    placeholder={`Start typing a city, county, or region in ${getTierOneCountry(selectedCountry).name}`}
+                    placeholder={`City, address, or region in ${getTierOneCountry(selectedCountry).name}`}
                   />
                   <p className="text-[12px] text-ink-muted">
-                    Pick a suggestion so we search the correct place.
+                    Type to see matching places below — pick one for the best results.
                   </p>
                 </div>
               )}

@@ -65,16 +65,6 @@ export async function POST(request: Request) {
     const targetLeadCount = Math.min(requestedCount, capacity.available);
     const capped = targetLeadCount < requestedCount;
 
-    if (!process.env.GOOGLE_PLACES_API_KEY) {
-      return NextResponse.json(
-        {
-          error:
-            "Google Places API key not configured. Add GOOGLE_PLACES_API_KEY to your environment.",
-        },
-        { status: 503 },
-      );
-    }
-
     const result = await runLeadPipeline({
       userId: user.id,
       industry,
@@ -232,11 +222,13 @@ export async function POST(request: Request) {
     const isPlaces =
       err instanceof Error &&
       (err.name === "GooglePlacesError" ||
-        message.includes("Google Places") ||
-        message.includes("Billing"));
-    return NextResponse.json(
-      { error: message },
-      { status: isPlaces ? 503 : 500 },
-    );
+        message.includes("Location search is temporarily unavailable"));
+    if (isPlaces) {
+      return NextResponse.json({ error: message }, { status: 503 });
+    }
+    console.error("[leads/search]", err);
+    return NextResponse.json({ error: "Search failed. Please try again." }, {
+      status: 500,
+    });
   }
 }

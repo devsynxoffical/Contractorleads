@@ -16,6 +16,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ suggestions: [] });
   }
 
-  const suggestions = await autocompletePlaces({ query: q, country });
-  return NextResponse.json({ suggestions });
+  const { suggestions, error } = await autocompletePlaces({ query: q, country });
+  return NextResponse.json({ suggestions, error });
 }

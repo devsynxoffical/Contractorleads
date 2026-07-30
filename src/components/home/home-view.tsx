@@ -110,12 +110,12 @@ export function HomeView({ userName }: { userName?: string | null }) {
           <div className="flex flex-wrap gap-2">
             <Link
               href="/digest"
-              className="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-[13px] font-semibold text-amber-900 shadow-sm transition hover:border-amber-300 hover:bg-amber-100/80"
+              className="inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-[13px] font-semibold text-amber-900 shadow-sm transition hover:border-amber-300 hover:bg-amber-100/80 dark:border-amber-400/30 dark:bg-amber-500/15 dark:text-amber-100 dark:hover:border-amber-400/45 dark:hover:bg-amber-500/25"
             >
               <HiOutlineSun className="h-4 w-4" />
               Morning digest
               {digestPreview && digestPreview.leadCount > 0 && (
-                <span className="rounded-md bg-amber-200/80 px-1.5 py-0.5 text-[11px] tabular-nums">
+                <span className="rounded-md bg-amber-200/80 px-1.5 py-0.5 text-[11px] tabular-nums text-amber-950 dark:bg-amber-400/25 dark:text-amber-50">
                   {digestPreview.leadCount}
                 </span>
               )}
@@ -134,11 +134,11 @@ export function HomeView({ userName }: { userName?: string | null }) {
         {digestPreview && digestPreview.leadCount > 0 && (
           <Link
             href="/digest"
-            className="group block rounded-2xl border border-amber-200/80 bg-gradient-to-r from-amber-50/90 via-white to-orange-50/60 p-4 shadow-[var(--shadow-card)] transition hover:border-amber-300 hover:shadow-md"
+            className="group block rounded-2xl border border-amber-200/80 bg-gradient-to-r from-amber-50/90 via-white to-orange-50/60 p-4 shadow-[var(--shadow-card)] transition hover:border-amber-300 hover:shadow-md dark:border-amber-400/25 dark:from-amber-500/20 dark:via-[color:var(--surface)] dark:to-orange-500/10 dark:hover:border-amber-400/40"
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-start gap-3">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700 transition group-hover:scale-105">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700 transition group-hover:scale-105 dark:bg-amber-500/20 dark:text-amber-200">
                   <HiOutlineSun className="h-5 w-5" />
                 </span>
                 <div>
@@ -154,7 +154,7 @@ export function HomeView({ userName }: { userName?: string | null }) {
                   </p>
                 </div>
               </div>
-              <span className="text-[12px] font-semibold text-brand-600 group-hover:underline">
+              <span className="text-[12px] font-semibold text-brand-600 group-hover:underline dark:text-brand-400">
                 Open digest →
               </span>
             </div>

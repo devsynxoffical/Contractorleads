@@ -330,7 +330,7 @@ export function MorningDigestView({ userName }: { userName?: string | null }) {
 
         <DailyDigestSettings />
         {loading && !digest && (
-          <div className="rounded-2xl border border-dashed border-border bg-[#faf8fc] px-6 py-12 text-center text-[13px] text-ink-muted">
+          <div className="rounded-2xl border border-dashed border-border bg-[var(--input-bg)] px-6 py-12 text-center text-[13px] text-ink-muted">
             Building your digest…
           </div>
         )}
@@ -348,8 +348,8 @@ export function MorningDigestView({ userName }: { userName?: string | null }) {
               <div
                 className={`rounded-2xl border px-4 py-3.5 ${
                   digest.emailReady
-                    ? "border-emerald-200 bg-emerald-50/80"
-                    : "border-amber-200 bg-amber-50/80"
+                    ? "border-emerald-200 bg-emerald-50/80 dark:border-emerald-400/30 dark:bg-emerald-500/15"
+                    : "border-amber-200 bg-amber-50/80 dark:border-amber-400/30 dark:bg-amber-500/15"
                 }`}
               >
                 <div className="flex items-center gap-2">
@@ -424,7 +424,7 @@ export function MorningDigestView({ userName }: { userName?: string | null }) {
               ))}
 
               {!visibleLeads.length && (
-                <div className="rounded-2xl border border-dashed border-border bg-[#faf8fc] px-6 py-12 text-center">
+                <div className="rounded-2xl border border-dashed border-border bg-[var(--input-bg)] px-6 py-12 text-center">
                   <HiOutlineSparkles className="mx-auto h-8 w-8 text-brand-400" />
                   <p className="mt-3 text-[14px] font-semibold text-ink">
                     {digest.leads.length

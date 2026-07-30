@@ -98,13 +98,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: resolved.error }, { status: 400 });
     }
 
-    if (!process.env.GOOGLE_PLACES_API_KEY) {
-      return NextResponse.json(
-        { error: "GOOGLE_PLACES_API_KEY is not configured" },
-        { status: 503 },
-      );
-    }
-
     const {
       industry,
       country,

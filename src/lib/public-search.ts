@@ -206,13 +206,6 @@ export async function handlePublicSearch(
     if (!resolved.ok) {
       return jsonWithCors({ error: resolved.error }, { status: 400 });
     }
-    if (!process.env.GOOGLE_PLACES_API_KEY) {
-      return jsonWithCors(
-        { error: "GOOGLE_PLACES_API_KEY is not configured on the server" },
-        { status: 503 },
-      );
-    }
-
     const rate = await assertSearchRateLimit(integration.user.id);
     if (!rate.ok) {
       return jsonWithCors({ error: rate.error }, { status: 429 });
@@ -342,8 +335,11 @@ export async function handlePublicSearch(
       quota: { used: quota.used, limit: quota.limit },
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Search failed";
     console.error(`[public-search:${kind}]`, err);
+    const message =
+      err instanceof Error && err.name === "GooglePlacesError"
+        ? err.message
+        : "Search failed. Please try again.";
     return jsonWithCors({ error: message, kind }, { status: 500 });
   }
 }

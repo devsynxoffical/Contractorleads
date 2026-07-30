@@ -437,23 +437,64 @@ html[data-theme="dark"] .app-shell--hud .hud-shell-main [class*="border-border"]
 html[data-theme="dark"] .app-shell--hud .bg-amber-50,
 html[data-theme="dark"] .app-shell--hud .bg-amber-50\/70,
 html[data-theme="dark"] .app-shell--hud .bg-amber-50\/80,
+html[data-theme="dark"] .app-shell--hud .bg-amber-50\/90,
+html[data-theme="dark"] .app-shell--hud .bg-amber-100,
+html[data-theme="dark"] .app-shell--hud .bg-amber-100\/80,
 html[data-theme="dark"] .admin-shell--hud .bg-amber-50,
 html[data-theme="dark"] .admin-shell--hud .bg-amber-50\/70,
-html[data-theme="dark"] .admin-shell--hud .bg-amber-50\/80 {
-  background-color: rgba(245, 158, 11, 0.14) !important;
-  color: #fde68a !important;
+html[data-theme="dark"] .admin-shell--hud .bg-amber-50\/80,
+html[data-theme="dark"] .admin-shell--hud .bg-amber-50\/90,
+html[data-theme="dark"] .admin-shell--hud .bg-amber-100 {
+  background-color: rgba(245, 158, 11, 0.16) !important;
 }
+html[data-theme="dark"] .app-shell--hud .from-amber-50,
+html[data-theme="dark"] .app-shell--hud .from-amber-50\/90,
+html[data-theme="dark"] .app-shell--hud .from-amber-50\/80,
+html[data-theme="dark"] .admin-shell--hud .from-amber-50,
+html[data-theme="dark"] .admin-shell--hud .from-amber-50\/90 {
+  --tw-gradient-from: rgba(245, 158, 11, 0.22) !important;
+  --tw-gradient-to: rgba(245, 158, 11, 0) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+html[data-theme="dark"] .app-shell--hud .via-white,
+html[data-theme="dark"] .admin-shell--hud .via-white {
+  --tw-gradient-via: rgba(22, 14, 36, 0.96) !important;
+  --tw-gradient-to: rgba(22, 14, 36, 0) !important;
+  --tw-gradient-stops: var(--tw-gradient-from),
+    var(--tw-gradient-via),
+    var(--tw-gradient-to) !important;
+}
+html[data-theme="dark"] .app-shell--hud .to-orange-50,
+html[data-theme="dark"] .app-shell--hud .to-orange-50\/60,
+html[data-theme="dark"] .app-shell--hud .to-orange-50\/80,
+html[data-theme="dark"] .admin-shell--hud .to-orange-50,
+html[data-theme="dark"] .admin-shell--hud .to-orange-50\/60 {
+  --tw-gradient-to: rgba(249, 115, 22, 0.12) !important;
+}
+html[data-theme="dark"] .app-shell--hud .text-amber-600,
+html[data-theme="dark"] .app-shell--hud .text-amber-700,
 html[data-theme="dark"] .app-shell--hud .text-amber-800,
 html[data-theme="dark"] .app-shell--hud .text-amber-900,
 html[data-theme="dark"] .app-shell--hud .text-amber-950,
+html[data-theme="dark"] .admin-shell--hud .text-amber-600,
+html[data-theme="dark"] .admin-shell--hud .text-amber-700,
 html[data-theme="dark"] .admin-shell--hud .text-amber-800,
 html[data-theme="dark"] .admin-shell--hud .text-amber-900,
 html[data-theme="dark"] .admin-shell--hud .text-amber-950 {
   color: #fde68a !important;
 }
 html[data-theme="dark"] .app-shell--hud .border-amber-200,
-html[data-theme="dark"] .admin-shell--hud .border-amber-200 {
+html[data-theme="dark"] .app-shell--hud .border-amber-200\/80,
+html[data-theme="dark"] .app-shell--hud .border-amber-300,
+html[data-theme="dark"] .admin-shell--hud .border-amber-200,
+html[data-theme="dark"] .admin-shell--hud .border-amber-200\/80 {
   border-color: rgba(245, 158, 11, 0.35) !important;
+}
+
+html[data-theme="dark"] .app-shell--hud .bg-orange-50,
+html[data-theme="dark"] .app-shell--hud .bg-orange-50\/60,
+html[data-theme="dark"] .admin-shell--hud .bg-orange-50 {
+  background-color: rgba(249, 115, 22, 0.14) !important;
 }
 
 html[data-theme="dark"] .app-shell--hud .bg-emerald-50,
@@ -463,11 +504,12 @@ html[data-theme="dark"] .admin-shell--hud .bg-emerald-50,
 html[data-theme="dark"] .admin-shell--hud .bg-emerald-50\/70,
 html[data-theme="dark"] .admin-shell--hud .bg-emerald-50\/80 {
   background-color: rgba(16, 185, 129, 0.14) !important;
-  color: #a7f3d0 !important;
 }
+html[data-theme="dark"] .app-shell--hud .text-emerald-600,
 html[data-theme="dark"] .app-shell--hud .text-emerald-700,
 html[data-theme="dark"] .app-shell--hud .text-emerald-800,
 html[data-theme="dark"] .app-shell--hud .text-emerald-900,
+html[data-theme="dark"] .admin-shell--hud .text-emerald-600,
 html[data-theme="dark"] .admin-shell--hud .text-emerald-700,
 html[data-theme="dark"] .admin-shell--hud .text-emerald-800,
 html[data-theme="dark"] .admin-shell--hud .text-emerald-900 {
@@ -483,7 +525,6 @@ html[data-theme="dark"] .app-shell--hud .bg-red-50,
 html[data-theme="dark"] .admin-shell--hud .bg-rose-50,
 html[data-theme="dark"] .admin-shell--hud .bg-red-50 {
   background-color: rgba(244, 63, 94, 0.14) !important;
-  color: #fecdd3 !important;
 }
 html[data-theme="dark"] .app-shell--hud .text-rose-700,
 html[data-theme="dark"] .app-shell--hud .text-rose-800,
@@ -505,7 +546,6 @@ html[data-theme="dark"] .app-shell--hud .bg-slate-100,
 html[data-theme="dark"] .admin-shell--hud .bg-slate-50,
 html[data-theme="dark"] .admin-shell--hud .bg-slate-100 {
   background-color: rgba(148, 163, 184, 0.12) !important;
-  color: var(--ink-muted) !important;
 }
 html[data-theme="dark"] .app-shell--hud .text-slate-700,
 html[data-theme="dark"] .app-shell--hud .text-slate-800,
@@ -516,8 +556,12 @@ html[data-theme="dark"] .admin-shell--hud .text-slate-900 {
   color: var(--ink) !important;
 }
 
+html[data-theme="dark"] .app-shell--hud .text-brand-600,
+html[data-theme="dark"] .app-shell--hud .text-brand-700,
 html[data-theme="dark"] .app-shell--hud .text-brand-800,
 html[data-theme="dark"] .app-shell--hud .text-brand-900,
+html[data-theme="dark"] .admin-shell--hud .text-brand-600,
+html[data-theme="dark"] .admin-shell--hud .text-brand-700,
 html[data-theme="dark"] .admin-shell--hud .text-brand-800,
 html[data-theme="dark"] .admin-shell--hud .text-brand-900 {
   color: var(--brand-400) !important;
@@ -543,15 +587,35 @@ html[data-theme="dark"] .admin-shell--hud .hover\:bg-slate-100:hover {
 html[data-theme="dark"] .app-shell--hud .bg-sky-50,
 html[data-theme="dark"] .admin-shell--hud .bg-sky-50 {
   background-color: rgba(14, 165, 233, 0.14) !important;
-  color: #bae6fd !important;
 }
+html[data-theme="dark"] .app-shell--hud .text-sky-700,
 html[data-theme="dark"] .app-shell--hud .text-sky-800,
+html[data-theme="dark"] .admin-shell--hud .text-sky-700,
 html[data-theme="dark"] .admin-shell--hud .text-sky-800 {
   color: #bae6fd !important;
 }
 html[data-theme="dark"] .app-shell--hud .border-sky-200,
 html[data-theme="dark"] .admin-shell--hud .border-sky-200 {
   border-color: rgba(14, 165, 233, 0.35) !important;
+}
+
+html[data-theme="dark"] .app-shell--hud .bg-fuchsia-50,
+html[data-theme="dark"] .app-shell--hud .bg-purple-50,
+html[data-theme="dark"] .admin-shell--hud .bg-fuchsia-50,
+html[data-theme="dark"] .admin-shell--hud .bg-purple-50 {
+  background-color: rgba(217, 70, 239, 0.12) !important;
+}
+html[data-theme="dark"] .app-shell--hud .text-fuchsia-700,
+html[data-theme="dark"] .app-shell--hud .text-fuchsia-800,
+html[data-theme="dark"] .admin-shell--hud .text-fuchsia-700,
+html[data-theme="dark"] .admin-shell--hud .text-fuchsia-800 {
+  color: #f0abfc !important;
+}
+
+html[data-theme="dark"] .app-shell--hud .hover\:bg-amber-100:hover,
+html[data-theme="dark"] .app-shell--hud .hover\:bg-amber-100\/80:hover,
+html[data-theme="dark"] .admin-shell--hud .hover\:bg-amber-100:hover {
+  background-color: rgba(245, 158, 11, 0.22) !important;
 }
 
 html[data-theme="dark"] .app-shell--hud .bg-red-50,

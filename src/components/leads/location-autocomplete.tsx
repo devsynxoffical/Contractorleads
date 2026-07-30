@@ -33,6 +33,7 @@ export function LocationAutocomplete({
   const [open, setOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -50,20 +51,34 @@ export function LocationAutocomplete({
     if (q.length < 2) {
       setSuggestions([]);
       setLoading(false);
+      setFetchError(null);
       return;
     }
 
     setLoading(true);
+    setFetchError(null);
     debounceRef.current = setTimeout(async () => {
       try {
         const res = await fetch(
           `/api/places/autocomplete?q=${encodeURIComponent(q)}&country=${encodeURIComponent(country)}`
         );
-        const data = await res.json();
+        const data = (await res.json()) as {
+          suggestions?: Suggestion[];
+          error?: string;
+        };
+        if (!res.ok) {
+          setSuggestions([]);
+          setFetchError("Location suggestions are temporarily unavailable.");
+          setOpen(false);
+          return;
+        }
         setSuggestions(data.suggestions ?? []);
-        setOpen(true);
+        setFetchError(data.error ?? null);
+        setOpen((data.suggestions?.length ?? 0) > 0 || Boolean(data.error));
       } catch {
         setSuggestions([]);
+        setFetchError("Location suggestions are temporarily unavailable.");
+        setOpen(false);
       } finally {
         setLoading(false);
       }
@@ -74,10 +89,16 @@ export function LocationAutocomplete({
     };
   }, [value, country]);
 
+  const showPanel =
+    open && (loading || suggestions.length > 0 || Boolean(fetchError));
+
   return (
     <div ref={wrapRef} className={cn("relative", className)}>
       <div className="relative">
-        <HiOutlineMapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
+        <HiOutlineMapPin
+          className="pointer-events-none absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-ink-faint"
+          aria-hidden
+        />
         <input
           name={name}
           type="text"
@@ -85,30 +106,42 @@ export function LocationAutocomplete({
           disabled={disabled}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          onFocus={() => suggestions.length > 0 && setOpen(true)}
+          onFocus={() => {
+            if (suggestions.length > 0 || fetchError) setOpen(true);
+          }}
           placeholder={placeholder}
           className={cn(
-            "w-full pl-9",
             inputClassName || "saas-input",
+            "w-full !pl-9",
           )}
         />
       </div>
-      {open && (suggestions.length > 0 || loading) && (
-        <ul className="absolute z-40 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-border bg-[var(--surface)] py-1 shadow-[var(--shadow-elevated)]">
-          {loading && suggestions.length === 0 && (
+      {showPanel && (
+        <ul
+          className="absolute z-[60] mt-1 max-h-56 w-full overflow-auto rounded-xl border border-border bg-[var(--surface)] py-1 shadow-[var(--shadow-elevated)]"
+          role="listbox"
+        >
+          {loading && suggestions.length === 0 && !fetchError && (
             <li className="px-3 py-2 text-[12px] text-ink-muted">
               Searching locations…
+            </li>
+          )}
+          {fetchError && (
+            <li className="px-3 py-2 text-[12px] text-rose-600 dark:text-rose-400">
+              {fetchError}
             </li>
           )}
           {suggestions.map((s) => (
             <li key={s.placeId}>
               <button
                 type="button"
-                className="flex w-full flex-col items-start px-3 py-2 text-left hover:bg-brand-50"
+                role="option"
+                className="flex w-full flex-col items-start px-3 py-2 text-left transition hover:bg-brand-50 dark:hover:bg-brand-500/10"
                 onClick={() => {
                   onChange(s.description, s);
                   setOpen(false);
                   setSuggestions([]);
+                  setFetchError(null);
                 }}
               >
                 <span className="text-[13px] font-medium text-ink">
