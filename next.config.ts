@@ -24,13 +24,14 @@ const securityHeaders = [
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: https:",
       "font-src 'self' data: https://fonts.gstatic.com",
-      "connect-src 'self' https://api.stripe.com https://www.facebook.com https://graph.facebook.com https://www.googletagmanager.com https://www.google-analytics.com",
+      "connect-src 'self' https://api.stripe.com https://www.facebook.com https://connect.facebook.net https://graph.facebook.com https://www.googletagmanager.com https://www.google-analytics.com",
       // 'self' + blob: needed for lead report PDF preview iframes / embeds
-      "frame-src 'self' blob: https://js.stripe.com https://hooks.stripe.com https://www.googletagmanager.com",
+      // facebook.com needed for Meta Pixel / Ads Library embeds
+      "frame-src 'self' blob: https://js.stripe.com https://hooks.stripe.com https://www.googletagmanager.com https://www.facebook.com https://connect.facebook.net",
       "child-src 'self' blob:",
       "frame-ancestors 'none'",
       "base-uri 'self'",
-      "form-action 'self'",
+      "form-action 'self' https://www.facebook.com",
       "object-src 'self' blob:",
       "upgrade-insecure-requests",
     ].join("; "),

@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process";
+import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { getTierOneCountry } from "@/lib/constants";
@@ -211,49 +212,95 @@ type ScraperLead = {
   longitude?: number;
 };
 
+function parseScraperJson(raw: string): {
+  ok?: boolean;
+  leads?: ScraperLead[];
+  error?: string;
+} {
+  const trimmed = raw.trim();
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    // If any log noise leaked onto stdout, grab the last JSON object.
+    const start = trimmed.lastIndexOf("{");
+    const end = trimmed.lastIndexOf("}");
+    if (start >= 0 && end > start) {
+      return JSON.parse(trimmed.slice(start, end + 1));
+    }
+    throw new Error("Scraper returned invalid JSON");
+  }
+}
+
+function coordsFromMapsUrl(url?: string): { lat?: number; lng?: number } {
+  if (!url) return {};
+  const m = url.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+  if (!m) return {};
+  return { lat: Number(m[1]), lng: Number(m[2]) };
+}
+
+function playwrightBrowsersPath(): string {
+  const current = process.env.PLAYWRIGHT_BROWSERS_PATH?.trim();
+  // Cursor sandbox injects a temp path that often has no Chromium binaries.
+  if (current && !current.includes("cursor-sandbox-cache")) {
+    return current;
+  }
+  if (process.platform === "darwin") {
+    return path.join(os.homedir(), "Library", "Caches", "ms-playwright");
+  }
+  if (process.platform === "win32") {
+    return path.join(
+      process.env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local"),
+      "ms-playwright",
+    );
+  }
+  return path.join(os.homedir(), ".cache", "ms-playwright");
+}
+
 async function runScraper(params: {
-  quick: boolean;
-  query?: string;
-  niche?: string;
-  city?: string;
+  query: string;
   workers: number;
   limit: number;
-  grid?: number;
-  radius?: number;
 }): Promise<ScraperLead[]> {
-  const runnerPath = path.join(process.cwd(), "Gmap-scrapper", "api_runner.py");
-  const args = [runnerPath];
-  if (params.quick) {
-    args.push("--quick", "--query", params.query ?? "");
-  } else {
-    args.push("--niche", params.niche ?? "", "--city", params.city ?? "");
-  }
-  args.push("--workers", String(params.workers), "--limit", String(params.limit));
-  if (params.grid) args.push("--grid", String(params.grid));
-  if (params.radius) args.push("--radius", String(params.radius));
+  const scraperDir = path.join(process.cwd(), "Gmap-scrapper");
+  const runnerPath = path.join(scraperDir, "api_runner.py");
+  const args = [
+    runnerPath,
+    "--quick",
+    "--query",
+    params.query,
+    "--workers",
+    String(params.workers),
+    "--limit",
+    String(params.limit),
+  ];
 
   try {
     const { stdout, stderr } = await execFileAsync("python3", args, {
-      cwd: process.cwd(),
-      timeout: 280000,
+      cwd: scraperDir,
+      timeout: 180000,
       maxBuffer: 16 * 1024 * 1024,
+      env: {
+        ...process.env,
+        PYTHONUNBUFFERED: "1",
+        PLAYWRIGHT_BROWSERS_PATH: playwrightBrowsersPath(),
+      },
     });
     const raw = stdout.trim();
     if (!raw) {
-      logGooglePlacesError("scraper", `Empty response. stderr=${stderr?.slice(0, 300)}`);
+      logGooglePlacesError(
+        "scraper",
+        `Empty response. stderr=${stderr?.slice(0, 400)}`,
+      );
       throw new GooglePlacesError(PUBLIC_PLACES_SEARCH_UNAVAILABLE);
     }
-    const data = JSON.parse(raw) as {
-      ok?: boolean;
-      leads?: ScraperLead[];
-      error?: string;
-    };
+    const data = parseScraperJson(raw);
     if (!data.ok) {
       logGooglePlacesError("scraper", data.error || "unknown scraper error");
       throw new GooglePlacesError(PUBLIC_PLACES_SEARCH_UNAVAILABLE);
     }
     return data.leads ?? [];
   } catch (error) {
+    if (error instanceof GooglePlacesError) throw error;
     const msg = error instanceof Error ? error.message : String(error);
     logGooglePlacesError("scraper", msg);
     throw new GooglePlacesError(PUBLIC_PLACES_SEARCH_UNAVAILABLE);
@@ -271,31 +318,46 @@ export async function searchGooglePlaces(params: {
   radius?: number;
   limit?: number;
 }): Promise<PlaceResult[]> {
-  const country = getTierOneCountry(params.country);
-  const wanted = Math.max(1, Math.min(params.limit ?? 10, 1200));
-  const location =
-    params.customLocation?.trim() || locationQuery(params) || country.name;
-  const query = `${industryQuery(params.industry)} in ${location}`;
+  // Scraper is slower than Places API — keep caps practical for Lead Finder.
+  const wanted = Math.max(1, Math.min(params.limit ?? 10, 200));
+  const workers = wanted >= 100 ? 6 : wanted >= 40 ? 4 : 3;
 
-  const workers = wanted >= 300 ? 8 : wanted >= 120 ? 6 : 4;
-  let rows: ScraperLead[];
-  if (params.locationScope === "local") {
-    rows = await runScraper({
-      quick: false,
-      niche: params.industry,
-      city: location,
-      workers,
-      limit: wanted,
-      grid: wanted >= 300 ? 5 : wanted >= 120 ? 4 : 3,
-      radius: Math.max(6, Math.min(25, params.radius ?? 10)),
-    });
-  } else {
-    rows = await runScraper({
-      quick: true,
-      query,
-      workers,
-      limit: wanted,
-    });
+  const queries = buildPlacesQueries(params);
+  // One query for small searches; fan out a few quick searches for volume.
+  const queryBudget =
+    wanted <= 25 ? 1 : wanted <= 60 ? 2 : wanted <= 120 ? 3 : 4;
+  const selectedQueries = queries.slice(0, queryBudget);
+  const perQueryLimit = Math.min(
+    80,
+    Math.max(wanted, Math.ceil(wanted / selectedQueries.length) + 10),
+  );
+
+  const failures: string[] = [];
+  const batches = await Promise.all(
+    selectedQueries.map((q) =>
+      runScraper({
+        query: q,
+        workers,
+        limit: perQueryLimit,
+      }).catch((err) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        failures.push(`${q} → ${msg}`);
+        logGooglePlacesError("scraper-query", `${q} → ${msg}`);
+        return [] as ScraperLead[];
+      }),
+    ),
+  );
+
+  const rows = batches.flat();
+  if (!rows.length) {
+    if (failures.length) {
+      logGooglePlacesError(
+        "scraper",
+        `All queries failed (${failures.length}): ${failures[0]}`,
+      );
+    }
+    // Soft empty — do not 503 the user for flaky Maps scrapes.
+    return [];
   }
 
   const deduped = new Map<string, PlaceResult>();
@@ -303,8 +365,12 @@ export async function searchGooglePlaces(params: {
     const name = row.name?.trim();
     if (!name) continue;
     const mapsUrl = row.google_maps_url?.trim() || "";
-    const placeId = row.place_id?.trim() || mapsUrl || `${name}-${row.phone || row.address || ""}`;
+    const placeId =
+      row.place_id?.trim() ||
+      mapsUrl ||
+      `${name}-${row.phone || row.address || ""}`;
     if (deduped.has(placeId)) continue;
+    const fromUrl = coordsFromMapsUrl(mapsUrl);
     deduped.set(placeId, {
       placeId,
       name,
@@ -313,9 +379,11 @@ export async function searchGooglePlaces(params: {
       website: normalizeWebsiteUrl(row.website || undefined),
       rating: row.rating ?? undefined,
       reviewCount: row.review_count ?? undefined,
-      mapsUrl: mapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`,
-      latitude: row.latitude ?? undefined,
-      longitude: row.longitude ?? undefined,
+      mapsUrl:
+        mapsUrl ||
+        `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`,
+      latitude: row.latitude ?? fromUrl.lat,
+      longitude: row.longitude ?? fromUrl.lng,
     });
     if (deduped.size >= wanted) break;
   }

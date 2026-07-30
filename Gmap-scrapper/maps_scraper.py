@@ -1,29 +1,31 @@
 from __future__ import annotations
 """
 Google Maps Scraper — Headless Playwright.
-
-Deep-scrape mode
-────────────────
-Google Maps caps each search at ~120 results.  To get ALL businesses in a
-city we split the area into a grid (e.g. 3×3 = 9 zones), run a separate
-search in each zone, then de-duplicate.  This routinely returns 300-1 000+
-unique leads per city.
-
-Flow
-────
-1. Launch hidden Chromium
-2. First search → detect city centre coordinates
-3. Build a grid of lat/lng points around that centre
-4. For each grid cell: navigate → scroll → collect listing URLs
-5. Visit every unique listing → extract details
-6. Return de-duplicated list of Lead objects
 """
 
 import asyncio
 import math
+import os
 import random
 import re
+import sys
+from pathlib import Path
 from urllib.parse import quote_plus
+
+# Cursor / sandbox often points Playwright at an empty cache. Prefer the
+# real user browser install so Chromium can launch.
+_browsers = os.environ.get("PLAYWRIGHT_BROWSERS_PATH", "")
+if (not _browsers) or ("cursor-sandbox-cache" in _browsers):
+    home = Path.home()
+    if sys.platform == "darwin":
+        os.environ["PLAYWRIGHT_BROWSERS_PATH"] = str(
+            home / "Library" / "Caches" / "ms-playwright"
+        )
+    elif sys.platform == "win32":
+        local = os.environ.get("LOCALAPPDATA") or str(home / "AppData" / "Local")
+        os.environ["PLAYWRIGHT_BROWSERS_PATH"] = str(Path(local) / "ms-playwright")
+    else:
+        os.environ["PLAYWRIGHT_BROWSERS_PATH"] = str(home / ".cache" / "ms-playwright")
 
 from playwright.async_api import (
     async_playwright,
@@ -43,7 +45,7 @@ from rich.progress import (
 from models import Lead
 import config
 
-console = Console()
+console = Console(stderr=True)
 
 # ─── Selectors ───────────────────────────────────────────────────────
 SEL_SEARCHBOX = "input[name='q']"
@@ -227,8 +229,9 @@ class GoogleMapsScraper:
     #  Public: single search (quick mode)
     # ──────────────────────────────────────────────────────────────────
 
-    async def scrape(self, query: str) -> list[Lead]:
+    async def scrape(self, query: str, max_leads: int | None = None) -> list[Lead]:
         console.print(f"\n[bold cyan]🔍 Searching:[/] [yellow]{query}[/]\n")
+        cap = max(1, min(max_leads or config.MAX_LEADS_PER_SEARCH, config.MAX_LEADS_PER_SEARCH))
 
         async with async_playwright() as pw:
             browser = await pw.chromium.launch(headless=config.HEADLESS)
@@ -246,9 +249,19 @@ class GoogleMapsScraper:
             page.set_default_timeout(config.BROWSER_TIMEOUT)
 
             try:
-                await self._open(page)
-                await self._search(page, query)
+                # Direct search URL is more reliable than typing into the box.
+                search_url = f"https://www.google.com/maps/search/{quote_plus(query)}"
+                console.print("[dim]  → Opening search results (headless)…[/]")
+                await page.goto(search_url, wait_until="domcontentloaded", timeout=30_000)
+                await asyncio.sleep(2.5)
+                await self._dismiss_consent(page)
+                await asyncio.sleep(1.5)
+                try:
+                    await page.wait_for_selector(SEL_FEED, timeout=12_000)
+                except PwTimeout:
+                    await asyncio.sleep(3)
                 hrefs = await self._scroll_and_collect(page)
+                hrefs = hrefs[:cap]
                 await self._extract_all(page, hrefs)
             except Exception as e:
                 console.print(f"[bold red]❌ Error: {e}[/]")
@@ -256,7 +269,26 @@ class GoogleMapsScraper:
                 await browser.close()
 
         console.print(f"\n[bold green]✅ Scraped {len(self.leads)} unique leads[/]\n")
-        return self.leads
+        return self.leads[:cap]
+
+    async def _dismiss_consent(self, page: Page):
+        for sel in [
+            "button:has-text('Accept all')",
+            "button:has-text('Reject all')",
+            "button:has-text('Accept')",
+            "form[action*='consent'] button",
+            "[aria-label='Accept all']",
+            "button:has-text('I agree')",
+        ]:
+            try:
+                btn = page.locator(sel)
+                if await btn.count() > 0:
+                    await btn.first.click()
+                    console.print("[dim]  → Accepted consent dialog[/]")
+                    await asyncio.sleep(1)
+                    break
+            except Exception:
+                continue
 
     # ══════════════════════════════════════════════════════════════════
     #  Internal steps
@@ -521,10 +553,10 @@ class GoogleMapsScraper:
 #  Convenience wrappers
 # ═══════════════════════════════════════════════════════════════════════
 
-async def scrape_google_maps(query: str) -> list[Lead]:
+async def scrape_google_maps(query: str, max_leads: int | None = None) -> list[Lead]:
     """Single search (quick)."""
     scraper = GoogleMapsScraper()
-    return await scraper.scrape(query)
+    return await scraper.scrape(query, max_leads=max_leads)
 
 
 async def deep_scrape_google_maps(niche: str, city: str) -> list[Lead]:

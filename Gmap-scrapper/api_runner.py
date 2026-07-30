@@ -31,7 +31,7 @@ async def _run(args) -> list[dict]:
     if args.quick:
         if not args.query:
             raise ValueError("--query is required in --quick mode")
-        leads = await scrape_google_maps(args.query)
+        leads = await scrape_google_maps(args.query, max_leads=args.limit)
     else:
         if not args.niche or not args.city:
             raise ValueError("--niche and --city are required in deep mode")

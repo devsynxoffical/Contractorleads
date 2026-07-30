@@ -92,10 +92,10 @@ export async function runLeadPipeline(params: SearchParams) {
   // Automatic: LinkedIn + social required unless explicitly turned off
   const requireSocial = params.requireSocialPresence !== false;
   const targetCount = clampTarget(params.targetLeadCount);
-  // Over-fetch Places heavily when social filter is on (many candidates lack profiles)
+  // Over-fetch for social filter, but keep scraper volume practical (Maps is slower than Places API).
   const fetchLimit = requireSocial
-    ? Math.min(1200, Math.max(targetCount * 12, targetCount + 80))
-    : Math.min(1200, Math.max(targetCount * 2, targetCount + 20));
+    ? Math.min(180, Math.max(targetCount * 3, targetCount + 30))
+    : Math.min(120, Math.max(targetCount * 2, targetCount + 15));
 
   const preferRules = true; // keep volume searches fast
   // Higher concurrency — enrichment is I/O bound
