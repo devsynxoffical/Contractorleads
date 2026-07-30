@@ -12,7 +12,6 @@ Repo: https://github.com/devsynxoffical/Contractorleads
 DATABASE_URL = ${{Postgres.DATABASE_URL}}
 JWT_SECRET = long-random-string
 NEXT_PUBLIC_APP_URL = https://YOUR-APP.up.railway.app
-GOOGLE_PLACES_API_KEY = your-places-key
 OPENAI_API_KEY = your-openai-key
 YELP_FUSION_API_KEY = optional
 STRIPE_SECRET_KEY = sk_live_or_test
@@ -21,10 +20,21 @@ STRIPE_PRICE_STARTER = price_...
 STRIPE_PRICE_GROWTH = price_...
 STRIPE_PRICE_AGENCY = price_...
 
+Lead Finder uses the bundled `Gmap-scrapper` (Python + Playwright Chromium)
+built into the Docker image — `GOOGLE_PLACES_API_KEY` is no longer required.
+
 5. Settings → Networking → Generate Domain
 6. Put that URL into NEXT_PUBLIC_APP_URL and redeploy
 7. In Stripe Dashboard → Webhooks, add `https://YOUR-APP/api/billing/webhook` for checkout.session.completed, customer.subscription.*, invoice.paid
 8. Open URL → Register → test Home search + Billing subscribe
+
+### Confirm scraper on live (Railway Console)
+
+```bash
+python3 -c "import playwright; print('package OK')"
+ls /ms-playwright || echo "NO BROWSER CACHE"
+python3 Gmap-scrapper/api_runner.py --quick --query "plumbers in Austin TX" --limit 1 --workers 1
+```
 
 ## Region (required)
 

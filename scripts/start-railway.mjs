@@ -64,6 +64,15 @@ function ensureStandaloneAssets() {
   if (existsSync(publicSrc)) {
     cpSync(publicSrc, publicDest, { recursive: true });
   }
+  // Maps scraper must live next to the running server (cwd = standalone)
+  const scraperSrc = join(root, "Gmap-scrapper");
+  const scraperDest = join(standaloneDir, "Gmap-scrapper");
+  if (existsSync(scraperSrc)) {
+    cpSync(scraperSrc, scraperDest, { recursive: true });
+    console.log("[start] Copied Gmap-scrapper into standalone");
+  } else {
+    console.warn("[start] Gmap-scrapper missing — Lead Finder scraper will fail");
+  }
 }
 
 let child;

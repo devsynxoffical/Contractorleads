@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process";
+import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -241,9 +242,15 @@ function coordsFromMapsUrl(url?: string): { lat?: number; lng?: number } {
 function playwrightBrowsersPath(): string {
   const current = process.env.PLAYWRIGHT_BROWSERS_PATH?.trim();
   // Cursor sandbox injects a temp path that often has no Chromium binaries.
-  if (current && !current.includes("cursor-sandbox-cache")) {
+  if (
+    current &&
+    !current.includes("cursor-sandbox-cache") &&
+    existsSync(current)
+  ) {
     return current;
   }
+  // Docker / Railway image path
+  if (existsSync("/ms-playwright")) return "/ms-playwright";
   if (process.platform === "darwin") {
     return path.join(os.homedir(), "Library", "Caches", "ms-playwright");
   }
@@ -256,13 +263,35 @@ function playwrightBrowsersPath(): string {
   return path.join(os.homedir(), ".cache", "ms-playwright");
 }
 
+function resolveScraperDir(): string {
+  const candidates = [
+    path.join(process.cwd(), "Gmap-scrapper"),
+    path.join(process.cwd(), "..", "Gmap-scrapper"),
+    path.join(process.cwd(), "..", "..", "Gmap-scrapper"),
+  ];
+  for (const dir of candidates) {
+    if (existsSync(path.join(dir, "api_runner.py"))) return dir;
+  }
+  return candidates[0];
+}
+
+function resolvePythonBin(): string {
+  const fromEnv = process.env.PYTHON_BIN?.trim();
+  if (fromEnv) return fromEnv;
+  return "python3";
+}
+
 async function runScraper(params: {
   query: string;
   workers: number;
   limit: number;
 }): Promise<ScraperLead[]> {
-  const scraperDir = path.join(process.cwd(), "Gmap-scrapper");
+  const scraperDir = resolveScraperDir();
   const runnerPath = path.join(scraperDir, "api_runner.py");
+  if (!existsSync(runnerPath)) {
+    logGooglePlacesError("scraper", `Missing runner at ${runnerPath}`);
+    throw new GooglePlacesError(PUBLIC_PLACES_SEARCH_UNAVAILABLE);
+  }
   const args = [
     runnerPath,
     "--quick",
@@ -275,7 +304,7 @@ async function runScraper(params: {
   ];
 
   try {
-    const { stdout, stderr } = await execFileAsync("python3", args, {
+    const { stdout, stderr } = await execFileAsync(resolvePythonBin(), args, {
       cwd: scraperDir,
       timeout: 180000,
       maxBuffer: 16 * 1024 * 1024,

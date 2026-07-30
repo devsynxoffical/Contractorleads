@@ -6,9 +6,8 @@
 # (Singapore). Config-as-code overrides the dashboard Scale → Regions value.
 
 [build]
-builder = "RAILPACK"
-# Railpack / Nixpacks already installs deps — only run the app build here
-buildCommand = "npm run build"
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
 
 [deploy]
 # Schema sync BEFORE the new replica serves traffic / healthchecks

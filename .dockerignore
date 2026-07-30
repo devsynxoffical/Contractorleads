@@ -1,0 +1,14 @@
+# Keep local build context small
+node_modules
+.next
+.git
+.venv
+Gmap-scrapper/.venv
+Gmap-scrapper/output
+Gmap-scrapper/__pycache__
+Gmap-scrapper/debug_*.png
+DJI_*.JPG
+vaishali.jpg
+.env
+.env.*
+!.env.example
