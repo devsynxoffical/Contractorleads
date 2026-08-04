@@ -7,7 +7,9 @@ import { getTierOneCountry } from "@/lib/constants";
 import {
   logGooglePlacesError,
   PUBLIC_PLACES_SEARCH_UNAVAILABLE,
+  sanitizePlacesErrorForClient,
 } from "@/lib/google-places-errors";
+import { mapPool } from "@/lib/utils/async-pool";
 
 export type PlaceResult = {
   placeId: string;
@@ -35,23 +37,38 @@ const BROWSER_UA =
 
 const execFileAsync = promisify(execFile);
 
-/** Map industry labels to better search phrases */
-function industryQuery(industry: string) {
-  const map: Record<string, string> = {
-    Painting: "painting contractors house painters",
-    Roofing: "roofing contractors",
-    HVAC: "HVAC heating air conditioning contractors",
-    Plumbing: "plumbers",
-    Electrical: "electricians electrical contractors",
-    Solar: "solar panel installation",
-    Landscaping: "landscaping contractors",
-    Remodeling: "home remodeling contractors",
-    "Cleaning Services": "house cleaning services",
-    "Pest Control": "pest control",
-    "Pool Services": "pool service pool cleaning",
-    "General Contractors": "general contractors",
-  };
-  return map[industry] ?? `${industry} contractors`;
+/** Better search phrases for preset industries. */
+const PRESET_PHRASES: Record<string, string[]> = {
+  Painting: ["painting contractors", "house painters"],
+  Roofing: ["roofing contractors", "roofers"],
+  HVAC: ["HVAC contractors", "heating and air conditioning contractors"],
+  Plumbing: ["plumbers", "plumbing contractors"],
+  Electrical: ["electricians", "electrical contractors"],
+  Solar: ["solar panel installers", "solar companies"],
+  Landscaping: ["landscaping contractors", "landscapers"],
+  Remodeling: ["home remodeling contractors", "remodeling companies"],
+  "Cleaning Services": ["house cleaning services", "cleaning companies"],
+  "Pest Control": ["pest control companies", "exterminators"],
+  "Pool Services": ["pool service", "pool cleaning companies"],
+  "General Contractors": ["general contractors", "construction companies"],
+};
+
+/**
+ * Natural search phrases for a service / industry.
+ * Custom services are NOT forced into "X contractors" — that phrasing kills
+ * results for things like window tinting, dog grooming, or gutter cleaning.
+ */
+function industryPhrases(industry: string): string[] {
+  const raw = industry.trim();
+  if (!raw) return [];
+  const preset = PRESET_PHRASES[raw];
+  if (preset?.length) return preset;
+  const out = new Set<string>([raw]);
+  out.add(`${raw} services`);
+  out.add(`${raw} companies`);
+  out.add(`${raw} company`);
+  out.add(`best ${raw}`);
+  return [...out];
 }
 
 function locationQuery(params: {
@@ -147,57 +164,83 @@ function buildPlacesQueries(params: {
     params.locationScope === "country"
       ? country.name
       : params.customLocation?.trim() || locationQuery(params);
-  const trade = industryQuery(params.industry);
-  const industry = params.industry;
+  const phrases = industryPhrases(params.industry);
+  if (!phrases.length) return [];
 
   const queries = new Set<string>();
-  queries.add(`${trade} in ${loc}`);
-  queries.add(`${trade} near ${loc}`);
-  queries.add(`${industry} contractors ${loc}`);
-  queries.add(`${industry} company ${loc}`);
-  queries.add(`best ${trade} ${loc}`);
-  queries.add(`residential ${industry} ${loc}`);
-  queries.add(`commercial ${industry} ${loc}`);
-  queries.add(`${industry} services ${loc}`);
 
+  for (const phrase of phrases) {
+    if (loc) {
+      queries.add(`${phrase} in ${loc}`);
+      queries.add(`${phrase} near ${loc}`);
+      queries.add(`${phrase} ${loc}`);
+    } else {
+      queries.add(phrase);
+    }
+  }
+
+  // Local: state-wide + postal-code variants for volume/diversity.
+  const topPhrases = phrases.slice(0, 2);
   if (params.locationScope === "local" && params.state && params.city) {
-    queries.add(`${trade} in ${params.state}, ${country.name}`);
-    queries.add(`${trade} near ${params.state}`);
+    for (const phrase of topPhrases) {
+      queries.add(`${phrase} in ${params.state}, ${country.name}`);
+      queries.add(`${phrase} near ${params.state}`);
+    }
   }
   if (params.zip) {
-    queries.add(`${trade} ${params.zip}`);
+    for (const phrase of topPhrases) {
+      queries.add(`${phrase} ${params.zip}`);
+    }
   }
 
-  // Country-wide: fan across major US metros for volume
+  // Country-wide: fan across major US metros for volume.
   if (params.locationScope === "country" && params.country === "US") {
-    const metros = [
-      "New York NY",
-      "Los Angeles CA",
-      "Chicago IL",
-      "Houston TX",
-      "Phoenix AZ",
-      "Philadelphia PA",
-      "San Antonio TX",
-      "San Diego CA",
-      "Dallas TX",
-      "Austin TX",
-      "Jacksonville FL",
-      "Miami FL",
-      "Atlanta GA",
-      "Denver CO",
-      "Seattle WA",
-      "Boston MA",
-      "Nashville TN",
-      "Charlotte NC",
-      "Detroit MI",
-      "Las Vegas NV",
-    ];
-    for (const metro of metros) {
-      queries.add(`${trade} in ${metro}`);
+    for (const metro of US_METROS) {
+      queries.add(`${topPhrases[0]} in ${metro}`);
     }
   }
 
   return [...queries];
+}
+
+const US_METROS = [
+  "New York NY",
+  "Los Angeles CA",
+  "Chicago IL",
+  "Houston TX",
+  "Phoenix AZ",
+  "Philadelphia PA",
+  "San Antonio TX",
+  "San Diego CA",
+  "Dallas TX",
+  "Austin TX",
+  "Jacksonville FL",
+  "Miami FL",
+  "Atlanta GA",
+  "Denver CO",
+  "Seattle WA",
+  "Boston MA",
+  "Nashville TN",
+  "Charlotte NC",
+  "Detroit MI",
+  "Las Vegas NV",
+];
+
+/**
+ * Spread the query budget across the whole pool (not just the first N near-
+ * identical "in <loc>" queries). Guarantees the state-wide, postal-code, and
+ * metro variants actually get run for volume searches.
+ */
+function selectQueries(pool: string[], budget: number): string[] {
+  if (!pool.length) return [];
+  if (budget <= 1) return [pool[0]];
+  if (budget >= pool.length) return pool;
+  const out: string[] = [];
+  for (let i = 0; i < budget; i++) {
+    const idx = Math.round((i * (pool.length - 1)) / (budget - 1));
+    out.push(pool[idx]);
+  }
+  return [...new Set(out)];
 }
 
 type ScraperLead = {
@@ -324,15 +367,16 @@ async function runScraper(params: {
     }
     const data = parseScraperJson(raw);
     if (!data.ok) {
-      logGooglePlacesError("scraper", data.error || "unknown scraper error");
-      throw new GooglePlacesError(PUBLIC_PLACES_SEARCH_UNAVAILABLE);
+      const detail = data.error || "unknown scraper error";
+      logGooglePlacesError("scraper", detail);
+      throw new GooglePlacesError(sanitizePlacesErrorForClient(detail));
     }
     return data.leads ?? [];
   } catch (error) {
     if (error instanceof GooglePlacesError) throw error;
     const msg = error instanceof Error ? error.message : String(error);
     logGooglePlacesError("scraper", msg);
-    throw new GooglePlacesError(PUBLIC_PLACES_SEARCH_UNAVAILABLE);
+    throw new GooglePlacesError(sanitizePlacesErrorForClient(msg));
   }
 }
 
@@ -349,43 +393,53 @@ export async function searchGooglePlaces(params: {
 }): Promise<PlaceResult[]> {
   // Scraper is slower than Places API — keep caps practical for Lead Finder.
   const wanted = Math.max(1, Math.min(params.limit ?? 10, 200));
-  const workers = wanted >= 100 ? 6 : wanted >= 40 ? 4 : 3;
+  const workers = wanted >= 100 ? 5 : wanted >= 40 ? 3 : 2;
 
-  const queries = buildPlacesQueries(params);
-  // One query for small searches; fan out a few quick searches for volume.
+  const pool = buildPlacesQueries(params);
+  // One query for small searches; fan out a few diverse queries for volume.
   const queryBudget =
     wanted <= 25 ? 1 : wanted <= 60 ? 2 : wanted <= 120 ? 3 : 4;
-  const selectedQueries = queries.slice(0, queryBudget);
+  const selectedQueries = selectQueries(pool, queryBudget);
+  if (!selectedQueries.length) {
+    logGooglePlacesError("scraper", `No search queries built for "${params.industry}"`);
+    throw new GooglePlacesError(PUBLIC_PLACES_SEARCH_UNAVAILABLE);
+  }
   const perQueryLimit = Math.min(
     80,
     Math.max(wanted, Math.ceil(wanted / selectedQueries.length) + 10),
   );
 
   const failures: string[] = [];
-  const batches = await Promise.all(
-    selectedQueries.map((q) =>
-      runScraper({
-        query: q,
-        workers,
-        limit: perQueryLimit,
-      }).catch((err) => {
-        const msg = err instanceof Error ? err.message : String(err);
-        failures.push(`${q} → ${msg}`);
-        logGooglePlacesError("scraper-query", `${q} → ${msg}`);
-        return [] as ScraperLead[];
-      }),
-    ),
+  // Max 2 headless browsers at once — parallel Chromium launches trip Google's
+  // anti-bot checks, which is the main source of flaky empty scrapes.
+  const batches = await mapPool(selectedQueries, 2, async (q) =>
+    runScraper({
+      query: q,
+      workers,
+      limit: perQueryLimit,
+    }).catch((err) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      failures.push(`${q} → ${msg}`);
+      logGooglePlacesError("scraper-query", `${q} → ${msg}`);
+      return [] as ScraperLead[];
+    }),
   );
 
   const rows = batches.flat();
   if (!rows.length) {
-    if (failures.length) {
+    if (failures.length === selectedQueries.length) {
+      // Every scrape attempt failed (blocked/timeout) — surface it instead of
+      // silently returning an empty list the user mistakes for "no businesses".
       logGooglePlacesError(
         "scraper",
-        `All queries failed (${failures.length}): ${failures[0]}`,
+        `All ${failures.length} queries failed: ${failures.join(" | ")}`,
+      );
+      const detail = failures[0].split(" → ")[1] ?? "";
+      throw new GooglePlacesError(
+        sanitizePlacesErrorForClient(detail) || PUBLIC_PLACES_SEARCH_UNAVAILABLE,
       );
     }
-    // Soft empty — do not 503 the user for flaky Maps scrapes.
+    // Queries ran fine but genuinely found nothing for this service/area.
     return [];
   }
 

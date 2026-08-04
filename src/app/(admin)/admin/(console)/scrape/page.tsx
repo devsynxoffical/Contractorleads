@@ -267,7 +267,7 @@ export default function AdminScrapePage() {
           requireSocialPresence,
           targetLeadCount: resolvedLeadCount,
         }),
-        signal: AbortSignal.timeout(180000),
+        signal: AbortSignal.timeout(300000),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Scrape failed");

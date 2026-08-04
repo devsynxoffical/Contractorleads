@@ -60,6 +60,20 @@ SEL_PRICE = "span[aria-label*='Price']"
 SEL_INFO_BTN = "button[data-item-id]"
 SEL_INFO_LINK = "a[data-item-id]"
 
+# Google's anti-bot pages. When detected, the scrape must FAIL (not silently
+# return zero leads) so the app can tell the user instead of showing an empty
+# result they assume means "no businesses here".
+CAPTCHA_HINTS = (
+    "unusual traffic",
+    "recaptcha",
+    "are you a robot",
+    "not a robot",
+    "verify you are human",
+    "security check",
+    "our systems have detected",
+    "enter the characters you see",
+)
+
 
 # ═══════════════════════════════════════════════════════════════════════
 #  Grid helpers
@@ -148,6 +162,11 @@ class GoogleMapsScraper:
                 # ── Step 1: First search to find city centre ─────────
                 await self._open(page)
                 await self._search(page, query)
+                if await self._looks_blocked(page):
+                    raise RuntimeError(
+                        "Google served a captcha / unusual-traffic page during the deep scrape. "
+                        "Wait a few minutes before retrying."
+                    )
                 centre = _extract_coords_from_url(page.url)
 
                 if not centre:
@@ -260,11 +279,41 @@ class GoogleMapsScraper:
                     await page.wait_for_selector(SEL_FEED, timeout=12_000)
                 except PwTimeout:
                     await asyncio.sleep(3)
-                hrefs = await self._scroll_and_collect(page)
+
+                if await self._looks_blocked(page):
+                    raise RuntimeError(
+                        "Google served a captcha / unusual-traffic page. "
+                        "Wait a few minutes before retrying."
+                    )
+
+                hrefs = await self._scroll_and_collect(page, cap=cap)
+                if not hrefs:
+                    # One retry — transient network / delayed render happens often.
+                    console.print("[yellow]  ⚠ No results yet, retrying once…[/]")
+                    await asyncio.sleep(3)
+                    await page.goto(search_url, wait_until="domcontentloaded", timeout=30_000)
+                    await asyncio.sleep(3)
+                    await self._dismiss_consent(page)
+                    if await self._looks_blocked(page):
+                        raise RuntimeError(
+                            "Google served a captcha / unusual-traffic page. "
+                            "Wait a few minutes before retrying."
+                        )
+                    hrefs = await self._scroll_and_collect(page, cap=cap)
+
                 hrefs = hrefs[:cap]
                 await self._extract_all(page, hrefs)
+
+                # Listings found but zero extracted → detail pages were blocked
+                # (redirects to login/captcha). Fail loudly instead of empty.
+                if hrefs and not self.leads:
+                    raise RuntimeError(
+                        "Found listings but could not read their details — "
+                        "Google likely blocked the detail pages. Try again shortly."
+                    )
             except Exception as e:
                 console.print(f"[bold red]❌ Error: {e}[/]")
+                raise
             finally:
                 await browser.close()
 
@@ -289,6 +338,21 @@ class GoogleMapsScraper:
                     break
             except Exception:
                 continue
+
+    async def _looks_blocked(self, page: Page) -> bool:
+        """True when Google is showing a captcha / unusual-traffic page."""
+        try:
+            if (
+                await page.locator(
+                    "iframe[src*='recaptcha'], iframe[src*='captcha']"
+                ).count()
+                > 0
+            ):
+                return True
+            body = (await page.locator("body").inner_text(timeout=3_000)).lower()
+            return any(hint in body for hint in CAPTCHA_HINTS)
+        except Exception:
+            return False
 
     # ══════════════════════════════════════════════════════════════════
     #  Internal steps
@@ -354,9 +418,15 @@ class GoogleMapsScraper:
         except PwTimeout:
             await asyncio.sleep(5)
 
-    async def _scroll_and_collect(self, page: Page, silent: bool = False) -> list[str]:
+    async def _scroll_and_collect(
+        self, page: Page, silent: bool = False, cap: int | None = None
+    ) -> list[str]:
         if not silent:
             console.print("[dim]  → Scrolling to load all results…[/]")
+
+        # Stop early once we have enough listings — scrolling until the end of
+        # huge lists (up to 1000) wastes time and can blow the Node-side timeout.
+        target = max(1, min(cap or config.MAX_LEADS_PER_SEARCH, config.MAX_LEADS_PER_SEARCH))
 
         feed = page.locator(SEL_FEED)
         if await feed.count() == 0:
@@ -377,7 +447,7 @@ class GoogleMapsScraper:
 
             if await page.locator(SEL_END).count() > 0:
                 break
-            if cur >= config.MAX_LEADS_PER_SEARCH:
+            if cur >= target:
                 break
             if cur == prev:
                 stale += 1
