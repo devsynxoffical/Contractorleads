@@ -13,6 +13,7 @@ import {
 } from "react-icons/hi2";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
 import { AiAssistantMessage } from "@/components/ai/ai-assistant-message";
+import { notifyCreditsChanged } from "@/lib/client/credits-sync";
 import { cn } from "@/lib/utils";
 
 type ChatMsg = {
@@ -195,6 +196,9 @@ export function AiAssistantWorkspace({
         if (data.conversationId && data.conversationId !== activeId) {
           setActiveId(data.conversationId);
         }
+        if (typeof data.creditsRemaining === "number") {
+          notifyCreditsChanged(data.creditsRemaining);
+        }
         setMessages((m) => [
           ...m,
           {
@@ -241,6 +245,11 @@ export function AiAssistantWorkspace({
               : msg,
           ),
         );
+      }
+
+      const remaining = res.headers.get("X-Credits-Remaining");
+      if (remaining && Number.isFinite(Number(remaining))) {
+        notifyCreditsChanged(Number(remaining));
       }
 
       void refreshChats();

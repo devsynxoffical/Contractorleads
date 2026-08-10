@@ -11,6 +11,7 @@ type EmailRow = {
   fromEmail: string | null;
   toEmail: string | null;
   createdAt: string;
+  openedAt?: string | null;
   error: string | null;
   lead?: { id: string; businessName: string } | null;
   user?: {
@@ -156,6 +157,7 @@ export function EmailMetricsDashboard({
     stats.sent + stats.failed > 0
       ? Math.round((stats.sent / (stats.sent + stats.failed)) * 100)
       : 0;
+  const openRate = Math.round(stats.openRate * 100);
 
   return (
     <div className="space-y-5">
@@ -171,14 +173,14 @@ export function EmailMetricsDashboard({
           hint={`${stats.receivedToday} today · ${stats.unreadReceived} unread`}
         />
         <Stat
+          label="Opened"
+          value={stats.opened.toLocaleString()}
+          hint={`${openRate}% open rate · tracking pixel`}
+        />
+        <Stat
           label="Failed"
           value={stats.failed.toLocaleString()}
           hint={`${stats.failedToday} today · send errors`}
-        />
-        <Stat
-          label="Delivery rate"
-          value={`${deliveryRate}%`}
-          hint={`${stats.total.toLocaleString()} total messages`}
         />
       </div>
 
@@ -189,6 +191,11 @@ export function EmailMetricsDashboard({
         <Stat
           label="Paused / done"
           value={`${stats.enrollmentsPaused} / ${stats.enrollmentsCompleted}`}
+        />
+        <Stat
+          label="Delivery rate"
+          value={`${deliveryRate}%`}
+          hint={`${stats.total.toLocaleString()} total messages`}
         />
       </div>
 
@@ -216,6 +223,11 @@ export function EmailMetricsDashboard({
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-600">
                     {statusLabel(e.direction, e.status)}
+                    {e.openedAt ? (
+                      <span className="ml-2 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-600">
+                        Opened
+                      </span>
+                    ) : null}
                   </span>
                   <span className="text-[12px] text-ink-muted">
                     {new Date(e.createdAt).toLocaleString()}

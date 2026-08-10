@@ -196,6 +196,7 @@ export async function sendUserResendEmail(params: {
   to: string;
   subject: string;
   text: string;
+  html?: string;
   replyTo?: string;
   tags?: string[];
   attachments?: Array<{
@@ -211,11 +212,14 @@ export async function sendUserResendEmail(params: {
   const from = params.fromName?.trim()
     ? `${params.fromName.trim()} <${email}>`
     : email;
-  const html = params.text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\n/g, "<br>");
+  const html =
+    params.html && params.html.trim()
+      ? params.html
+      : params.text
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\n/g, "<br>");
 
   try {
     const payload: Record<string, unknown> = {

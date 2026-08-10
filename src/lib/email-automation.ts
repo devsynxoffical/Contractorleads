@@ -191,6 +191,7 @@ export async function processEnrollment(enrollmentId: string) {
         body: text,
         status: "sent",
         messageId: sentMail.messageId,
+        trackingToken: sentMail.trackingToken ?? null,
         enrollmentId: enrollment.id,
       },
     });

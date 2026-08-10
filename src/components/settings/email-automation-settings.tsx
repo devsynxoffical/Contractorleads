@@ -20,6 +20,27 @@ type SmtpAccount = {
   hasResendKey?: boolean;
   lastTestedAt: string | null;
   deliveryMode: "platform" | "smtp";
+  sendWeight?: number;
+};
+
+type AccountPerformance = {
+  id: string;
+  label: string;
+  fromEmail: string;
+  enabled: boolean;
+  sendWeight: number;
+  desiredShare: number;
+  actualShare: number;
+  sent: number;
+  failed: number;
+  delivered: number;
+  replied: number;
+  opened: number;
+  openRate: number;
+  bounceRate: number;
+  replyRate: number;
+  healthScore: number;
+  suggestedWeight: number;
 };
 
 type EditingAccount = Omit<SmtpAccount, "id" | "hasPassword" | "hasResendKey" | "lastTestedAt" | "isDefault"> & {
@@ -30,6 +51,7 @@ type EditingAccount = Omit<SmtpAccount, "id" | "hasPassword" | "hasResendKey" | 
   hasPassword: boolean;
   hasResendKey: boolean;
   deliveryMode: "platform" | "smtp";
+  sendWeight: number;
 };
 
 type SequenceStep = {
@@ -58,10 +80,12 @@ const emptyAccount = (): EditingAccount => ({
   hasPassword: false,
   hasResendKey: false,
   deliveryMode: "platform",
+  sendWeight: 1,
 });
 
 export function EmailAutomationSettings() {
   const [accounts, setAccounts] = useState<SmtpAccount[]>([]);
+  const [performance, setPerformance] = useState<AccountPerformance[]>([]);
   const [editing, setEditing] = useState<EditingAccount | null>(null);
   const [sequence, setSequence] = useState<SequenceForm | null>(null);
   const [steps, setSteps] = useState<SequenceStep[]>([]);
@@ -93,9 +117,11 @@ export function EmailAutomationSettings() {
               : a.host?.trim()
                 ? "smtp"
                 : "platform",
+          sendWeight: Number(a.sendWeight) || 1,
         }),
       ),
     );
+    setPerformance(smtpData.performance ?? []);
     if (seqData.sequence) {
       setSequence({
         name: seqData.sequence.name,
@@ -159,6 +185,25 @@ export function EmailAutomationSettings() {
       setAccounts(data.accounts ?? []);
       setMsg("Default mailbox updated");
     }
+  }
+
+  async function setWeight(id: string, sendWeight: number) {
+    setBusy(true);
+    setMsg(null);
+    const res = await fetch("/api/settings/smtp-accounts", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "set_weight", id, sendWeight }),
+    });
+    const data = await res.json();
+    setBusy(false);
+    if (!res.ok) {
+      setMsg(data.error || "Could not update rotation share");
+      return;
+    }
+    setAccounts(data.accounts ?? []);
+    setPerformance(data.performance ?? []);
+    setMsg("Rotation share updated — new sends will follow the new split.");
   }
 
   async function removeAccount(id: string) {
@@ -324,6 +369,7 @@ export function EmailAutomationSettings() {
                         hasPassword: a.hasPassword,
                         hasResendKey: Boolean(a.hasResendKey),
                         deliveryMode: a.deliveryMode,
+                        sendWeight: Number(a.sendWeight) || 1,
                       })
                     }
                   >
@@ -544,6 +590,31 @@ export function EmailAutomationSettings() {
                 />
                 Enabled
               </label>
+              <div className="space-y-1.5">
+                <Label>
+                  Rotation share (1–100){" "}
+                  <span className="font-normal text-ink-faint">
+                    — proportional share of cold-outreach volume
+                  </span>
+                </Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={editing.sendWeight}
+                  onChange={(e) =>
+                    setEditing({
+                      ...editing,
+                      sendWeight: Math.max(1, Number(e.target.value) || 1),
+                    })
+                  }
+                />
+                <p className="text-[12px] text-ink-muted">
+                  Equal weights (e.g. all 1) split volume evenly. Raise a
+                  mailbox to send more from it; lower it to send less. The
+                  rotation self-corrects as weights change.
+                </p>
+              </div>
               <label className="flex items-center gap-2 text-[13px] text-ink-muted">
                 <input
                   type="checkbox"
@@ -570,6 +641,95 @@ export function EmailAutomationSettings() {
           )}
         </CardContent>
       </Card>
+
+      {performance.length > 0 && (
+        <Card className="border-border shadow-[var(--shadow-card)]">
+          <CardHeader>
+            <CardTitle>Rotation performance</CardTitle>
+            <p className="text-[13px] text-ink-muted">
+              How much cold-outreach volume each mailbox has handled versus your
+              target split. Actual share follows the rotation weights you set.
+              Click a share to fine-tune that mailbox.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {performance.map((p) => {
+              const share = Math.min(100, Math.max(0, p.actualShare));
+              const desired = Math.min(100, Math.max(0, p.desiredShare));
+              const weightUp =
+                p.suggestedWeight > p.sendWeight && p.actualShare < p.desiredShare - 2;
+              const weightDown =
+                p.suggestedWeight < p.sendWeight && p.actualShare > p.desiredShare + 2;
+              return (
+                <div
+                  key={p.id}
+                  className="rounded-lg border border-border p-3"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <div className="text-[14px] font-medium">
+                        {p.label}
+                        {!p.enabled && (
+                          <span className="ml-2 text-[12px] font-normal text-ink-faint">
+                            disabled
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[12px] text-ink-muted">
+                        {p.fromEmail}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[13px] font-medium tabular-nums">
+                        {Math.round(share)}% actual · {Math.round(desired)}%
+                        desired
+                      </div>
+                      <div className="text-[12px] text-ink-muted tabular-nums">
+                        {p.sent} sent · {p.delivered} delivered · {p.opened}{" "}
+                        opened · {p.failed} failed · {p.replied} replied
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-bg-elevated">
+                      <div
+                        className="h-full rounded-full bg-brand"
+                        style={{ width: `${share}%` }}
+                      />
+                    </div>
+                    <button
+                      className="text-[12px] text-brand underline-offset-2 hover:underline"
+                      onClick={() =>
+                        weightUp
+                          ? setWeight(p.id, p.suggestedWeight)
+                          : weightDown
+                            ? setWeight(p.id, p.suggestedWeight)
+                            : setWeight(p.id, p.sendWeight)
+                      }
+                      title={
+                        p.healthScore >= 80
+                          ? "Healthy mailbox — keep this share"
+                          : "Raise/lower share via the mailbox editor"
+                      }
+                    >
+                      {weightUp
+                        ? `Boost share (suggest ${p.suggestedWeight})`
+                        : weightDown
+                          ? `Cut share (suggest ${p.suggestedWeight})`
+                          : `Weight ${p.sendWeight} · health ${Math.round(p.healthScore)}%`}
+                    </button>
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-ink-muted tabular-nums">
+                    <span>Open {Math.round(p.openRate)}%</span>
+                    <span>Bounce {Math.round(p.bounceRate)}%</span>
+                    <span>Reply {Math.round(p.replyRate)}%</span>
+                  </div>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
 
       {sequence ? (
         <Card className="border-border shadow-[var(--shadow-card)]">

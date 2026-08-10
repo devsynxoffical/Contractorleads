@@ -30,6 +30,13 @@ type MapInstance = {
   setSelectedRegions: (regions: string | string[]) => void;
   clearSelectedRegions: () => void;
   clearSelectedMarkers: () => void;
+  _applyTransform?: () => void;
+  _baseScale?: number;
+  _baseTransX?: number;
+  _baseTransY?: number;
+  scale?: number;
+  transX?: number;
+  transY?: number;
 };
 
 const COUNTRY_NAMES: Record<string, string> = {
@@ -363,6 +370,30 @@ export function LeadGeoMapInner({
   function resetView() {
     setActiveCountry(null);
     setActiveLeadId(null);
+    // Reset the camera in place instead of destroying + recreating the map.
+    // jsVectorMap's native reset() also removes every marker, so restore the
+    // base scale/translation directly and re-apply the transform. Markers stay.
+    const map = mapRef.current;
+    if (map) {
+      try {
+        if (
+          typeof map._baseScale === "number" &&
+          typeof map._baseTransX === "number" &&
+          typeof map._baseTransY === "number" &&
+          typeof map._applyTransform === "function"
+        ) {
+          map.scale = map._baseScale;
+          map.transX = map._baseTransX;
+          map.transY = map._baseTransY;
+          map._applyTransform();
+          map.clearSelectedRegions();
+          map.clearSelectedMarkers();
+          return;
+        }
+      } catch {
+        /* fall through to full recreate below */
+      }
+    }
     setViewEpoch((n) => n + 1);
   }
 

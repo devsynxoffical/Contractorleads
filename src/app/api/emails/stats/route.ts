@@ -26,6 +26,7 @@ export async function GET(request: Request) {
         fromEmail: true,
         toEmail: true,
         createdAt: true,
+        openedAt: true,
         error: true,
         lead: { select: { id: true, businessName: true } },
       },

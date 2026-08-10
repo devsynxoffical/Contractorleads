@@ -22,6 +22,8 @@ export type EmailDashboardStats = {
   failed: number;
   received: number;
   unreadReceived: number;
+  opened: number;
+  openRate: number;
   total: number;
   sentToday: number;
   receivedToday: number;
@@ -55,6 +57,7 @@ export async function getEmailDashboardStats(
     failed,
     received,
     unreadReceived,
+    opened,
     sentToday,
     receivedToday,
     failedToday,
@@ -80,6 +83,14 @@ export async function getEmailDashboardStats(
         direction: "inbound",
         status: "received",
         readAt: null,
+      },
+    }),
+    prisma.leadEmail.count({
+      where: {
+        ...whereUser,
+        direction: "outbound",
+        status: "sent",
+        openedAt: { not: null },
       },
     }),
     prisma.leadEmail.count({
@@ -149,6 +160,8 @@ export async function getEmailDashboardStats(
     failed,
     received,
     unreadReceived,
+    opened,
+    openRate: sent ? opened / sent : 0,
     total: sent + failed + received,
     sentToday,
     receivedToday,

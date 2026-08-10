@@ -23,7 +23,8 @@ import {
   HiOutlineUserGroup,
   HiStar,
 } from "react-icons/hi2";
-import { FaFacebook, FaInstagram, FaLinkedin } from "react-icons/fa";
+import { FaFacebook, FaInstagram, FaLinkedin, FaWhatsapp } from "react-icons/fa";
+import { toE164 } from "@/lib/phone";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -145,6 +146,51 @@ function parseTeamMembers(raw: string | null): TeamMember[] {
   } catch {
     return [];
   }
+}
+
+type FacebookAd = {
+  id: string;
+  pageName: string;
+  adSnapshotUrl: string;
+  adCreativeBodies: string[];
+  publisherPlatforms: string[];
+  spend?: { lower: string; upper: string } | null;
+};
+
+type FacebookAdsData = {
+  ads: FacebookAd[];
+  totalCount: number;
+  searchUrl: string;
+  message?: string;
+};
+
+function parseAdsData(raw: string | null): FacebookAdsData | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed.ads)) return null;
+    return parsed as FacebookAdsData;
+  } catch {
+    return null;
+  }
+}
+
+function buildAdsLibraryUrlFallback(businessName: string, country = "US") {
+  const params = new URLSearchParams({
+    active_status: "active",
+    ad_type: "all",
+    country,
+    q: businessName,
+    search_type: "keyword_unordered",
+    media_type: "all",
+  });
+  return `https://www.facebook.com/ads/library/?${params.toString()}`;
+}
+
+function buildWhatsAppUrl(phone: string, businessName: string) {
+  const e164 = toE164(phone) || phone.replace(/\D/g, "");
+  const text = `Hi ${businessName} — I have a quick question about your business.`;
+  return `https://wa.me/${e164}?text=${encodeURIComponent(text)}`;
 }
 
 function scoreTone(value: number) {
@@ -406,6 +452,7 @@ export function LeadDetailView({
   const [adminDeleting, setAdminDeleting] = useState(false);
   const [adminMessage, setAdminMessage] = useState<string | null>(null);
   const [qualificationRefreshing, setQualificationRefreshing] = useState(false);
+  const [checkingAds, setCheckingAds] = useState(false);
 
   function mergeLead(updated: Lead) {
     setLead((prev) => ({
@@ -745,6 +792,72 @@ export function LeadDetailView({
     }
   }
 
+  async function checkAds() {
+    setCheckingAds(true);
+    try {
+      const res = await fetch(`/api/leads/${leadId}/facebook-ads`, {
+        method: "POST",
+        signal: AbortSignal.timeout(30000),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Ads check failed");
+      if (data.lead) mergeLead(data.lead);
+
+      const result = data.result as {
+        ads?: Array<{
+          id?: string;
+          pageName?: string;
+          adSnapshotUrl?: string;
+          adCreativeBodies?: string[];
+          publisherPlatforms?: string[];
+          spend?: { lower?: string; upper?: string };
+        }>;
+        totalCount?: number;
+        searchUrl?: string;
+        message?: string;
+      };
+      if (result.ads?.length) {
+        setPopup({
+          kind: "success",
+          title: "Ads found",
+          message: `Found ${result.totalCount} active ad${result.totalCount === 1 ? "" : "s"} for this business in the Meta Ads Library.`,
+          actionUrl: result.searchUrl,
+          actionLabel: "Open Ads Library",
+        });
+      } else if (result.message) {
+        setPopup({
+          kind: "info",
+          title: "No ads found",
+          message: result.message,
+          actionUrl: result.searchUrl,
+          actionLabel: "Open Ads Library",
+        });
+      } else {
+        setPopup({
+          kind: "info",
+          title: "No active ads",
+          message:
+            "No active ads found for this business in the Meta Ads Library.",
+          actionUrl: result.searchUrl,
+          actionLabel: "Open Ads Library",
+        });
+      }
+    } catch (e) {
+      setPopup({
+        kind: "error",
+        title: "Ads check failed",
+        message:
+          e instanceof Error && e.name === "TimeoutError"
+            ? "The check took too long. Please try again in a moment."
+            : e instanceof Error
+              ? e.message
+              : "Something went wrong. Please try again.",
+      });
+    } finally {
+      setCheckingAds(false);
+    }
+  }
+
   if (loadError) {
     const errBackHref =
       backHref ||
@@ -792,6 +905,7 @@ export function LeadDetailView({
   const linkedinOwner =
     lead.linkedinOwnerUrl && (lead.linkedinOwnerConfidenceScore ?? 0) >= 85;
   const teamMembers = parseTeamMembers(lead.teamMembersJson);
+  const adsData = parseAdsData(lead.facebookAdsData);
   const additionalTeamMembers = teamMembers.filter(
     (member) =>
       member.name.trim().toLowerCase() !== lead.ownerName?.trim().toLowerCase(),
@@ -1062,6 +1176,26 @@ export function LeadDetailView({
                   </p>
                 </div>
               </a>
+              {lead.phone && (
+                <a
+                  href={buildWhatsAppUrl(lead.phone, lead.businessName)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-3 text-sm transition hover:border-emerald-400"
+                >
+                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--surface)] text-emerald-600 shadow-sm">
+                    <FaWhatsapp className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+                      WhatsApp
+                    </p>
+                    <p className="truncate font-medium text-emerald-900">
+                      Chat on WhatsApp
+                    </p>
+                  </div>
+                </a>
+              )}
               <div className="flex items-center gap-3 rounded-xl border border-border bg-[#faf8fc] px-3.5 py-3 text-sm">
                 <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--surface)] text-brand-600 shadow-sm">
                   <HiOutlineEnvelope className="h-4 w-4" />
@@ -1376,29 +1510,121 @@ export function LeadDetailView({
                     <HiOutlineMegaphone className="h-5 w-5 shrink-0 text-brand-600" />
                     Facebook Ads Library
                   </span>
-                  <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
-                    Coming soon
-                  </span>
+                  {adsData && adsData.ads.length > 0 ? (
+                    <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-800">
+                      {adsData.totalCount} active ad
+                      {adsData.totalCount === 1 ? "" : "s"}
+                    </span>
+                  ) : lead.facebookAdsCheckedAt ? (
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-ink-muted">
+                      Checked · no active ads
+                    </span>
+                  ) : null}
                 </CardTitle>
                 <p className="max-w-xl text-[13px] leading-relaxed text-ink-muted">
                   Check if this business is running Meta ads — and where the
                   marketing opportunity lies.
                 </p>
               </div>
-              <Button size="sm" disabled title="Coming soon" className="shrink-0">
-                Check ads
+              <Button
+                size="sm"
+                onClick={checkAds}
+                loading={checkingAds}
+                disabled={checkingAds}
+                className="shrink-0"
+              >
+                {checkingAds ? "Checking…" : "Check ads"}
               </Button>
             </CardHeader>
             <CardContent className="pt-5">
-              <div className="rounded-2xl border border-dashed border-amber-300 bg-amber-50/80 px-4 py-6 text-center">
-                <p className="text-[14px] font-semibold text-amber-950">
-                  Coming soon
-                </p>
-                <p className="mx-auto mt-2 max-w-md text-[13px] leading-relaxed text-amber-900/90">
-                  Meta Ads Library checks are temporarily unavailable while we
-                  finish this feature for agencies and admins.
-                </p>
-              </div>
+              {checkingAds ? (
+                <div className="rounded-2xl border border-dashed border-border bg-[#faf8fc] px-4 py-6 text-center">
+                  <p className="text-[13px] text-ink-muted">
+                    Checking the Meta Ads Library for “{lead.businessName}”…
+                  </p>
+                </div>
+              ) : adsData && adsData.ads.length > 0 ? (
+                <ul className="space-y-2.5">
+                  {adsData.ads.slice(0, 8).map((ad) => (
+                    <li
+                      key={ad.id || ad.adSnapshotUrl}
+                      className="rounded-xl border border-border bg-[var(--surface)] p-3"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-[13px] font-semibold text-ink">
+                          {ad.pageName}
+                        </p>
+                        <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-700">
+                          {ad.publisherPlatforms.join(", ") || "Meta"}
+                        </span>
+                      </div>
+                      {ad.adCreativeBodies[0] ? (
+                        <p className="mt-1.5 line-clamp-2 text-[12px] leading-relaxed text-ink-muted">
+                          {ad.adCreativeBodies[0]}
+                        </p>
+                      ) : null}
+                      <div className="mt-2 flex flex-wrap items-center gap-3">
+                        {ad.spend?.lower ? (
+                          <span className="text-[11px] font-medium text-ink-muted">
+                            Est. spend {ad.spend.lower}
+                            {ad.spend.upper ? `–${ad.spend.upper}` : ""}
+                          </span>
+                        ) : null}
+                        {ad.adSnapshotUrl ? (
+                          <a
+                            href={ad.adSnapshotUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[12px] font-semibold text-brand-700 hover:underline"
+                          >
+                            View ad
+                            <HiOutlineArrowTopRightOnSquare className="h-3 w-3" />
+                          </a>
+                        ) : null}
+                      </div>
+                    </li>
+                  ))}
+                  {adsData.ads.length > 8 ? (
+                    <li className="text-[12px] text-ink-muted">
+                      +{adsData.ads.length - 8} more ads —{" "}
+                      <a
+                        href={adsData.searchUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-brand-700 hover:underline"
+                      >
+                        open Ads Library
+                      </a>
+                    </li>
+                  ) : null}
+                </ul>
+              ) : lead.facebookAdsCheckedAt ? (
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 px-4 py-6 text-center">
+                  <p className="text-[14px] font-semibold text-slate-800">
+                    No active ads found
+                  </p>
+                  <p className="mx-auto mt-2 max-w-md text-[13px] leading-relaxed text-slate-600">
+                    {adsData?.message ||
+                      "This business is not running active Meta ads. Re-check anytime, or browse the public Ads Library to confirm."}
+                  </p>
+                  <a
+                    href={adsData?.searchUrl || buildAdsLibraryUrlFallback(lead.businessName)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-4 inline-flex h-9 items-center gap-1.5 rounded-xl border border-border bg-[var(--surface)] px-3 text-[12px] font-semibold text-brand-700 transition hover:bg-brand-50"
+                  >
+                    Open Ads Library
+                    <HiOutlineArrowTopRightOnSquare className="h-3.5 w-3.5" />
+                  </a>
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-border bg-[#faf8fc] px-4 py-6 text-center">
+                  <p className="text-[13px] leading-relaxed text-ink-muted">
+                    Run a check to see whether this business is running Meta
+                    ads, where they run, and the ad creative they use.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 

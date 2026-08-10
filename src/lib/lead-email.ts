@@ -109,6 +109,7 @@ export async function sendLeadEmail(opts: {
           : body,
         status: "sent",
         messageId: sent.messageId,
+        trackingToken: sent.trackingToken ?? null,
         inReplyTo: opts.inReplyToMessageId || null,
       },
     });

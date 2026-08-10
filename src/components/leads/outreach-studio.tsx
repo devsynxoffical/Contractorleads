@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { notifyCreditsChanged } from "@/lib/client/credits-sync";
+import { toE164 } from "@/lib/phone";
+import { FaWhatsapp } from "react-icons/fa";
 
 const types = [
   { key: "email", label: "Cold Email" },
@@ -347,6 +349,18 @@ export function OutreachStudio({
                   Send SMS
                 </Button>
               ) : null}
+
+              {showSmsSend && leadPhone ? (
+                <a
+                  href={buildWhatsAppUrl(leadPhone, content.trim())}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-[13px] font-semibold text-white shadow-sm transition hover:bg-emerald-700"
+                >
+                  <FaWhatsapp className="h-3.5 w-3.5" />
+                  Open in WhatsApp
+                </a>
+              ) : null}
             </div>
 
             {showEmailSend && !leadEmail ? (
@@ -391,4 +405,9 @@ export function OutreachStudio({
       </CardContent>
     </Card>
   );
+}
+
+function buildWhatsAppUrl(phone: string, message: string) {
+  const e164 = toE164(phone) || phone.replace(/\D/g, "");
+  return `https://wa.me/${e164}?text=${encodeURIComponent(message)}`;
 }

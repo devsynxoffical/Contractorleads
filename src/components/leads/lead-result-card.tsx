@@ -16,6 +16,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
+import { FaWhatsapp } from "react-icons/fa";
+import { toE164 } from "@/lib/phone";
 
 export type LeadResult = {
   id: string;
@@ -293,6 +295,17 @@ export function LeadResultCard({
                 Call
               </a>
             )}
+            {lead.phone && (
+              <a
+                href={buildWhatsAppUrl(lead.phone, lead.businessName)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-9 items-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-[12px] font-semibold text-emerald-800 transition hover:border-emerald-400"
+              >
+                <FaWhatsapp className="h-3 w-3" />
+                WhatsApp
+              </a>
+            )}
             {lead.website && (
               <a
                 href={lead.website}
@@ -395,4 +408,10 @@ export function LeadResultsList({
       ))}
     </div>
   );
+}
+
+function buildWhatsAppUrl(phone: string, businessName: string) {
+  const e164 = toE164(phone) || phone.replace(/\D/g, "");
+  const text = `Hi ${businessName} — I have a quick question about your business.`;
+  return `https://wa.me/${e164}?text=${encodeURIComponent(text)}`;
 }

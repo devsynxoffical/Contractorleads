@@ -619,6 +619,8 @@ model SmtpAccount {
   deliveryMode String      @default("platform")
   enabled      Boolean     @default(true)
   isDefault    Boolean     @default(false)
+  /// Proportional share of cold-outreach volume in weighted rotation (1 = one unit)
+  sendWeight   Int         @default(1)
   lastTestedAt DateTime?
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
@@ -653,11 +655,16 @@ model LeadEmail {
   enrollmentId  String?
   /// Set when an agent opens an inbound message in the inbox
   readAt        DateTime?
+  /// Unique unguessable token used by the open-tracking pixel
+  trackingToken String?    @unique
+  /// Set once when the recipient's mail client loads the tracking pixel
+  openedAt      DateTime?
   createdAt     DateTime     @default(now())
 
   @@index([userId, leadId, createdAt])
   @@index([userId, createdAt])
   @@index([userId, direction, createdAt])
+  @@index([userId, openedAt])
   @@index([fromEmail])
   @@index([toEmail])
 }

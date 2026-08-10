@@ -2,6 +2,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { streamText } from "ai";
 import { getSessionUser, buildBusinessContext } from "@/lib/auth";
 import { buildWorkspaceDataContext } from "@/lib/ai-user-context";
+import { buildKnowledgeContext } from "@/lib/ai-knowledge";
 import {
   ASK_EXPERT_SYSTEM_PROMPT,
   SUPPORT_BOT_SYSTEM_PROMPT,
@@ -15,6 +16,27 @@ function titleFromMessage(message: string) {
   const clean = message.replace(/\s+/g, " ").trim();
   if (clean.length <= 48) return clean || "New chat";
   return `${clean.slice(0, 45)}…`;
+}
+
+/**
+ * Grounded fallback used when no OpenAI key is configured. Answers from the
+ * platform's own Academy knowledge instead of firing a canned marketing pitch
+ * that ignores the question.
+ */
+function groundedFallback(
+  message: string,
+  knowledge: string,
+  displayName: string,
+) {
+  const asked = message.trim().slice(0, 160);
+  if (knowledge.trim()) {
+    return `Hi ${displayName} — here's what the platform help center says for "${asked}":
+
+${knowledge.trim()}
+
+Still stuck? Search more guides in [Academy](/academy) or message the team.`;
+  }
+  return `Hi ${displayName} — I couldn't find a help-center match for "${asked}". Try searching the [Academy](/academy) for how-to guides, or rephrase your question with more detail and I'll point you to the right screen.`;
 }
 
 export async function POST(request: Request) {
@@ -31,32 +53,27 @@ export async function POST(request: Request) {
 
   const isSupport = support === true;
   const apiKey = getOpenAIApiKey();
+  const knowledge = buildKnowledgeContext(message);
+  const displayName =
+    user.name || user.ownerName || user.companyName || "there";
 
   // Support/help chat is free and never saved as a script
   if (isSupport) {
     if (!apiKey) {
       return Response.json({
-        content:
-          "Here are quick fixes for common issues:\n\n• No leads found — try a bigger city, another industry, or Entire country scope.\n• Out of credits — upgrade under Plans & Billing.\n• Search errors — the Google Places API key may not be configured yet.\n\nStill stuck? Contact the team with a screenshot of the error.",
+        content: groundedFallback(message, knowledge, displayName),
       });
     }
     const openaiSupport = createOpenAI({ apiKey });
+    const supportSystem = knowledge
+      ? `${SUPPORT_BOT_SYSTEM_PROMPT}\n\n${knowledge}`
+      : SUPPORT_BOT_SYSTEM_PROMPT;
     const supportResult = streamText({
       model: openaiSupport("gpt-4o-mini"),
-      system: SUPPORT_BOT_SYSTEM_PROMPT,
+      system: supportSystem,
       prompt: message,
     });
     return supportResult.toTextStreamResponse();
-  }
-
-  try {
-    await deductCredits(user.id, CREDIT_COSTS.assistant, "ai_assistant");
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "";
-    if (msg === "INSUFFICIENT_CREDITS") {
-      return new Response("Insufficient credits", { status: 402 });
-    }
-    return new Response("Credit error", { status: 500 });
   }
 
   let chatId: string | null =
@@ -103,34 +120,8 @@ export async function POST(request: Request) {
     content: m.content,
   }));
 
-  const businessContext = buildBusinessContext(user);
-  const workspaceContext = await buildWorkspaceDataContext(user.id);
-  const system = `${ASK_EXPERT_SYSTEM_PROMPT}
-
-User account & business profile:
-${businessContext}
-
-${workspaceContext}
-
-Rules for personalization:
-- Use the user's real name when available — never leave blank spots like "Hi ," or "[Name]".
-- Ground product answers in their company, services, ICP, markets, and live lead stats when helpful.
-- Never claim you "know everything" about them — be helpful, not invasive.
-- If profile fields are missing, mention Settings once, then give full in-app steps with action links anyway.
-- Every how-to answer must include at least one [Label](/path) action button for the relevant screen.`;
-
-  const headers = new Headers({
-    "X-Conversation-Id": chatId,
-  });
-
   if (!apiKey) {
-    const displayName =
-      user.name || user.ownerName || user.companyName || "there";
-    const fallback = `Hey ${displayName} — here's a direct take for ${user.companyName || "your agency"}:
-
-Focus on a single home-service niche in one metro first. Your offer should promise booked estimates, not "more leads." Lead with a hook like: "Your competitors are buying the ZIP codes you sleep on."
-
-For ${user.idealCustomer || "contractors"}, pitch a 14-day sprint: audit → creative → launch → optimize. CTA: "Reply YES for a 15-min fit call this week."`;
+    const fallback = groundedFallback(message, knowledge, displayName);
 
     await prisma.aiMessage.create({
       data: {
@@ -160,13 +151,49 @@ For ${user.idealCustomer || "contractors"}, pitch a 14-day sprint: audit → cre
       {
         content: fallback,
         conversationId: chatId,
-        creditsRemaining: user.creditsRemaining - CREDIT_COSTS.assistant,
+        creditsRemaining: user.creditsRemaining,
       },
-      { headers },
+      { headers: { "X-Conversation-Id": chatId } },
     );
   }
 
+  let balance: number;
+  try {
+    balance = await deductCredits(
+      user.id,
+      CREDIT_COSTS.assistant,
+      "ai_assistant",
+    );
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "";
+    if (msg === "INSUFFICIENT_CREDITS") {
+      return new Response("Insufficient credits", { status: 402 });
+    }
+    return new Response("Credit error", { status: 500 });
+  }
+
+  const businessContext = buildBusinessContext(user);
+  const workspaceContext = await buildWorkspaceDataContext(user.id);
+  const system = `${ASK_EXPERT_SYSTEM_PROMPT}
+
+User account & business profile:
+${businessContext}
+
+${workspaceContext}
+
+Rules for personalization:
+- Use the user's real name when available — never leave blank spots like "Hi ," or "[Name]".
+- Ground product answers in their company, services, ICP, markets, and live lead stats when helpful.
+- Never claim you "know everything" about them — be helpful, not invasive.
+- If profile fields are missing, mention Settings once, then give full in-app steps with action links anyway.
+- Every how-to answer must include at least one [Label](/path) action button for the relevant screen.
+${knowledge ? `\n${knowledge}` : ""}`;
+
   const openai = createOpenAI({ apiKey });
+  const headers = new Headers({
+    "X-Conversation-Id": chatId,
+    "X-Credits-Remaining": String(balance),
+  });
   const result = streamText({
     model: openai("gpt-4o-mini"),
     system,

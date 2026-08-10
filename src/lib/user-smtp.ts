@@ -1,9 +1,11 @@
 import nodemailer from "nodemailer";
 import type SMTPTransport from "nodemailer/lib/smtp-transport";
+import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { decryptSecret, encryptSecret } from "@/lib/crypto-secret";
 import { sendUserResendEmail, verifyResendApiKey } from "@/lib/email";
 import { assertPublicSmtpHost, BlockedUrlError } from "@/lib/safe-fetch";
+import { appBaseUrl } from "@/lib/email-brand";
 
 export type SmtpPayload = {
   id?: string;
@@ -152,6 +154,26 @@ export type SenderConfig = {
   smtp?: SmtpPayload;
 };
 
+export type SmtpAccountStats = {
+  id: string;
+  label: string;
+  fromEmail: string;
+  enabled: boolean;
+  sendWeight: number;
+  desiredShare: number;
+  actualShare: number;
+  sent: number;
+  failed: number;
+  delivered: number;
+  replied: number;
+  opened: number;
+  openRate: number;
+  bounceRate: number;
+  replyRate: number;
+  healthScore: number;
+  suggestedWeight: number;
+};
+
 function isResendDelivery(mode: string | null | undefined): boolean {
   return mode === "platform" || mode === "resend";
 }
@@ -180,6 +202,7 @@ function rowToSenderConfig(row: {
   fromEmail: string;
   fromName: string | null;
   deliveryMode?: string | null;
+  sendWeight?: number;
 }): SenderConfig {
   const deliveryMode = inferDeliveryMode(row);
   const resendKey = row.resendApiKeyEnc?.trim()
@@ -247,6 +270,163 @@ export async function listSmtpAccounts(userId: string) {
   });
 }
 
+/**
+ * Weighted round-robin sender picker for cold outreach. Distributes sends
+ * proportionally to each account's sendWeight. Self-correcting: picks the
+ * enabled account whose recent share of sends is furthest below its desired
+ * share, so weights can change mid-flight and distribution converges.
+ */
+export async function pickRotationSender(userId: string): Promise<SenderConfig | null> {
+  await migrateLegacySmtpIfNeeded(userId);
+  const accounts = await prisma.smtpAccount.findMany({
+    where: { userId, enabled: true },
+    orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+  });
+  if (!accounts.length) return getUserSenderConfig(userId);
+
+  const totalWeight = accounts.reduce(
+    (sum, a) => sum + Math.max(1, a.sendWeight),
+    0,
+  );
+
+  const recent = await prisma.leadEmail.groupBy({
+    by: ["smtpAccountId"],
+    where: { userId, direction: "outbound", smtpAccountId: { not: null } },
+    _count: { _all: true },
+  });
+  const recentMap = new Map<string, number>(
+    recent
+      .filter((r) => r.smtpAccountId)
+      .map((r) => [r.smtpAccountId as string, r._count._all]),
+  );
+  const totalRecent = [...recentMap.values()].reduce((s, n) => s + n, 0);
+
+  let best = accounts[0];
+  let bestScore = -Infinity;
+  for (const account of accounts) {
+    const desired = Math.max(1, account.sendWeight) / totalWeight;
+    const actual = totalRecent
+      ? (recentMap.get(account.id) ?? 0) / totalRecent
+      : 0;
+    const score = desired - actual;
+    if (score > bestScore) {
+      bestScore = score;
+      best = account;
+    }
+  }
+  return rowToSenderConfig(best);
+}
+
+/**
+ * Per-mailbox cold-outreach performance. Aggregates outbound LeadEmail rows
+ * (sent / failed) and inbound replies. Opens are added once open tracking is
+ * live (they ride on LeadEmail status). Health is a transparent score:
+ * 100 - bouncePenalty + replyBonus, clamped 0..100.
+ */
+export async function getSmtpAccountPerformance(
+  userId: string,
+): Promise<SmtpAccountStats[]> {
+  await migrateLegacySmtpIfNeeded(userId);
+  const accounts = await listSmtpAccounts(userId);
+  if (!accounts.length) return [];
+
+  const enabled = accounts.filter((a) => a.enabled);
+  const totalWeight = enabled.reduce(
+    (sum, a) => sum + Math.max(1, a.sendWeight),
+    0,
+  );
+
+  const [sentGroup, failedGroup, openedGroup, inboundGroup] = await Promise.all([
+    prisma.leadEmail.groupBy({
+      by: ["smtpAccountId"],
+      where: { userId, direction: "outbound", smtpAccountId: { not: null } },
+      _count: { _all: true },
+    }),
+    prisma.leadEmail.groupBy({
+      by: ["smtpAccountId"],
+      where: {
+        userId,
+        direction: "outbound",
+        smtpAccountId: { not: null },
+        status: "failed",
+      },
+      _count: { _all: true },
+    }),
+    prisma.leadEmail.groupBy({
+      by: ["smtpAccountId"],
+      where: {
+        userId,
+        direction: "outbound",
+        smtpAccountId: { not: null },
+        openedAt: { not: null },
+      },
+      _count: { _all: true },
+    }),
+    prisma.leadEmail.groupBy({
+      by: ["smtpAccountId"],
+      where: { userId, direction: "inbound", smtpAccountId: { not: null } },
+      _count: { _all: true },
+    }),
+  ]);
+
+  const countMap = (rows: Array<{ smtpAccountId: string | null; _count: { _all: number } }>) =>
+    new Map<string, number>(
+      rows
+        .filter((r) => r.smtpAccountId)
+        .map((r) => [r.smtpAccountId as string, r._count._all]),
+    );
+
+  const sentMap = countMap(sentGroup);
+  const failedMap = countMap(failedGroup);
+  const openedMap = countMap(openedGroup);
+  const inboundMap = countMap(inboundGroup);
+  const totalSent = [...sentMap.values()].reduce((s, n) => s + n, 0);
+
+  return accounts.map((a) => {
+    const sent = sentMap.get(a.id) ?? 0;
+    const failed = failedMap.get(a.id) ?? 0;
+    const opened = openedMap.get(a.id) ?? 0;
+    const replied = inboundMap.get(a.id) ?? 0;
+    const delivered = Math.max(0, sent - failed);
+    const weight = Math.max(1, a.sendWeight);
+    const bounceRate = sent ? failed / sent : 0;
+    const replyRate = sent ? replied / sent : 0;
+    const openRate = sent ? opened / sent : 0;
+    const healthScore = Math.max(
+      0,
+      Math.min(
+        100,
+        Math.round(100 - bounceRate * 400 + replyRate * 150 + openRate * 60),
+      ),
+    );
+    // Suggest weight by deliverability: good senders keep/raise share, bouncy ones drop.
+    let suggested = weight;
+    if (sent >= 10) {
+      const factor = 1 - bounceRate * 2;
+      suggested = Math.max(1, Math.round(weight * factor));
+    }
+    return {
+      id: a.id,
+      label: a.label,
+      fromEmail: a.fromEmail,
+      enabled: a.enabled,
+      sendWeight: weight,
+      desiredShare: totalWeight ? Math.round((weight / totalWeight) * 100) : 0,
+      actualShare: totalSent ? Math.round(((sentMap.get(a.id) ?? 0) / totalSent) * 100) : 0,
+      sent,
+      failed,
+      delivered,
+      replied,
+      opened,
+      openRate: Math.round(openRate * 100),
+      bounceRate: Math.round(bounceRate * 100),
+      replyRate: Math.round(replyRate * 100),
+      healthScore,
+      suggestedWeight: suggested,
+    };
+  });
+}
+
 export async function ensureSingleDefault(userId: string, preferId?: string) {
   const accounts = await prisma.smtpAccount.findMany({ where: { userId } });
   if (!accounts.length) return;
@@ -281,6 +461,7 @@ export async function upsertSmtpAccount(opts: {
   isDefault?: boolean;
   deliveryMode?: "platform" | "smtp";
   resendApiKey?: string;
+  sendWeight?: number;
 }) {
   await migrateLegacySmtpIfNeeded(opts.userId);
 
@@ -311,6 +492,9 @@ export async function upsertSmtpAccount(opts: {
   const username = deliveryMode === "smtp" ? opts.username.trim() : "";
   const port = deliveryMode === "smtp" ? opts.port : 587;
   const secure = deliveryMode === "smtp" ? opts.secure : false;
+  const sendWeight = Number.isFinite(opts.sendWeight)
+    ? Math.max(1, Math.min(100, Math.round(opts.sendWeight ?? 1)))
+    : undefined;
 
   if (opts.id) {
     const existing = await prisma.smtpAccount.findFirst({
@@ -335,6 +519,7 @@ export async function upsertSmtpAccount(opts: {
         fromEmail,
         fromName: opts.fromName ?? null,
         enabled: opts.enabled,
+        ...(sendWeight !== undefined ? { sendWeight } : {}),
         ...(opts.password ? { passwordEnc: encryptSecret(opts.password) } : {}),
         ...(opts.resendApiKey
           ? { resendApiKeyEnc: encryptSecret(opts.resendApiKey) }
@@ -370,6 +555,7 @@ export async function upsertSmtpAccount(opts: {
       fromEmail,
       fromName: opts.fromName ?? null,
       enabled: opts.enabled,
+      sendWeight: sendWeight ?? 1,
       isDefault: count === 0 || Boolean(opts.isDefault),
     },
   });
@@ -417,6 +603,7 @@ async function sendViaUserResend(
     to: string;
     subject: string;
     text: string;
+    html?: string;
     attachments?: Array<{
       filename: string;
       content: Buffer;
@@ -437,6 +624,7 @@ async function sendViaUserResend(
     to: opts.to,
     subject: opts.subject,
     text: opts.text,
+    html: opts.html,
     tags: ["lead-email"],
     attachments: opts.attachments,
   });
@@ -520,15 +708,27 @@ export async function sendOutboundEmail(opts: {
     contentType?: string;
   }>;
 }) {
-  const sender = await getUserSenderConfig(opts.userId, opts.accountId);
+  // Explicit account = that mailbox. No account = weighted rotation across
+  // enabled mailboxes (replies always pass the original account explicitly).
+  const sender = opts.accountId
+    ? await getUserSenderConfig(opts.userId, opts.accountId)
+    : await pickRotationSender(opts.userId);
   if (!sender) {
     throw new Error(
       "Add a sender under Setup → Email (your name and reply-to address).",
     );
   }
 
+  // Open tracking: embed a 1x1 pixel that records openedAt once on load. The
+  // token is generated before send and returned so callers store it on the
+  // LeadEmail row, letting the pixel resolve without a provider webhook.
+  const trackingToken = randomBytes(16).toString("hex");
+  const html = withTrackingPixel(opts.text, opts.html, trackingToken);
+  const sendOpts = { ...opts, html };
+
   if (isResendDelivery(sender.deliveryMode)) {
-    return sendViaUserResend(sender, opts);
+    const sent = await sendViaUserResend(sender, sendOpts);
+    return { ...sent, trackingToken };
   }
 
   if (!sender.smtp) {
@@ -542,23 +742,44 @@ export async function sendOutboundEmail(opts: {
     : sender.fromEmail;
 
   try {
-    return await sendViaSmtpDirect(sender.smtp, {
+    const sent = await sendViaSmtpDirect(sender.smtp, {
       from: mailFrom,
       to: opts.to,
       subject: opts.subject,
       text: opts.text,
-      html: opts.html,
+      html,
       replyTo: opts.replyTo,
       inReplyTo: opts.inReplyTo,
       references: opts.references,
       attachments: opts.attachments,
     });
+    return { ...sent, trackingToken };
   } catch (lastErr) {
     if (sender.resendApiKey) {
-      return sendViaUserResend(sender, opts);
+      const sent = await sendViaUserResend(sender, sendOpts);
+      return { ...sent, trackingToken };
     }
     throw new Error(formatSmtpError(lastErr));
   }
+}
+
+/** Build an HTML body that appends the open-tracking pixel. */
+function withTrackingPixel(text: string, html: string | undefined, token: string) {
+  const base = appBaseUrl();
+  const pixel =
+    `<img src="${base}/api/email/open?t=${encodeURIComponent(token)}" ` +
+    `width="1" height="1" alt="" style="display:none;width:1px;height:1px" />`;
+  if (html && html.trim()) return `${html}${pixel}`;
+  const escaped = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\n/g, "<br>");
+  return (
+    `<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#111">` +
+    escaped +
+    `</div>${pixel}`
+  );
 }
 
 /** @deprecated Use sendOutboundEmail */
@@ -607,6 +828,7 @@ export function maskSmtpAccount(row: {
   passwordEnc: string;
   resendApiKeyEnc?: string;
   deliveryMode?: string | null;
+  sendWeight?: number;
 }) {
   const deliveryMode = inferDeliveryMode(row);
   return {
@@ -622,6 +844,7 @@ export function maskSmtpAccount(row: {
     isDefault: row.isDefault,
     lastTestedAt: row.lastTestedAt,
     deliveryMode,
+    sendWeight: row.sendWeight ?? 1,
     hasPassword: deliveryMode === "smtp" && Boolean(row.passwordEnc),
     hasResendKey: isResendDelivery(deliveryMode) && Boolean(row.resendApiKeyEnc?.trim()),
   };

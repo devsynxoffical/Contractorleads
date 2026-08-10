@@ -31,9 +31,8 @@ type BulkResult = {
   results: Array<{
     leadId: string;
     businessName?: string;
-    ok?: boolean;
-    error?: string;
-    skipped?: boolean;
+    status?: "sent" | "skipped" | "failed";
+    reason?: string;
   }>;
 };
 
@@ -76,7 +75,7 @@ export function EmailBulkPanel({
     setLoading(true);
     try {
       const res = await fetch(
-        `/api/emails/lead-picker?q=${encodeURIComponent(q)}&limit=100`,
+        `/api/emails/lead-picker?q=${encodeURIComponent(q)}&limit=200`,
       );
       const json = await res.json();
       if (res.ok) setLeads(json.leads ?? []);
@@ -298,14 +297,18 @@ export function EmailBulkPanel({
               <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-[13px] text-emerald-900">
                 Sent {results.sent} · skipped {results.skipped} · failed{" "}
                 {results.failed}
-                {results.results?.some((r) => r.error) ? (
+                {results.results?.some(
+                  (r) => r.status === "skipped" || r.status === "failed",
+                ) ? (
                   <ul className="mt-2 max-h-28 space-y-1 overflow-y-auto text-[12px]">
                     {results.results
-                      .filter((r) => r.error)
+                      .filter(
+                        (r) => r.status === "skipped" || r.status === "failed",
+                      )
                       .slice(0, 8)
                       .map((r) => (
                         <li key={r.leadId}>
-                          {r.businessName || r.leadId}: {r.error}
+                          {r.businessName || r.leadId}: {r.reason || r.status}
                         </li>
                       ))}
                   </ul>
