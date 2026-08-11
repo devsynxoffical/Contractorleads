@@ -53,6 +53,8 @@ model User {
   idealCustomer       String?
   serviceAreas        String?
   mainGoal            String?
+  /// Per-agency custom instructions injected into AI answers (voice, rules, offers).
+  aiCustomInstructions String?
   crmWebhookUrl       String?
   crmWebhookSecret   String?
   crmWebhookEnabled   Boolean  @default(false)
@@ -374,6 +376,36 @@ model AdminRoleTemplate {
   permissions String // JSON string array of permission keys
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+/// Admin-editable AI "brain": custom instructions, knowledge, per-feature
+/// system prompts, and model selection. Lets the platform owner train how the
+/// built-in AI answers instead of hardcoding prompts in source.
+model AiBrainConfig {
+  id                 String   @id @default("default")
+  /// Master switch — when false, all built-in prompts are used as-is.
+  enabled            Boolean  @default(true)
+  /// Custom instructions appended to every AI feature (voice, rules, guardrails).
+  globalInstructions String   @default("")
+  /// Custom knowledge / facts injected into Ask Expert + support chat.
+  knowledgeBase      String   @default("")
+  /// Ask Expert (AI assistant chat) system prompt override.
+  askExpertPrompt    String?
+  /// Support / help chat system prompt override.
+  supportBotPrompt   String?
+  /// Cold outreach email system prompt override.
+  emailPrompt        String?
+  /// Cold SMS system prompt override.
+  smsPrompt          String?
+  /// Follow-up email system prompt override.
+  followupPrompt     String?
+  /// Phone sales script system prompt override.
+  salesScriptPrompt  String?
+  /// Model used for Ask Expert / support chat.
+  model              String   @default("gpt-4o-mini")
+  /// Model used for outreach generators (email / SMS / script).
+  outreachModel      String   @default("gpt-4o-mini")
+  updatedAt          DateTime @updatedAt
 }
 
 /// Pending agency signups awaiting business-email verification.

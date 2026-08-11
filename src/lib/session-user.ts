@@ -25,6 +25,7 @@ export type SessionUser = {
   idealCustomer: string | null;
   serviceAreas: string | null;
   mainGoal: string | null;
+  aiCustomInstructions?: string | null;
   subscriptionStatus?: string | null;
   isActive?: boolean;
   adminNotes?: string | null;

@@ -29,6 +29,7 @@ import {
   HiOutlineWrenchScrewdriver,
   HiOutlineCreditCard,
   HiOutlineChatBubbleLeftRight,
+  HiOutlineSparkles,
 } from "react-icons/hi2";
 import { cn } from "@/lib/utils";
 import type { SessionUser } from "@/lib/session-user";
@@ -102,6 +103,7 @@ const NAV_SECTIONS: NavSection[] = [
         permission: "communications",
       },
       { href: "/admin/email-preview", label: "Email Templates", icon: HiOutlineEnvelope, permission: "system" },
+      { href: "/admin/ai", label: "AI Training", icon: HiOutlineSparkles, permission: "system" },
       {
         href: "/admin/exports",
         label: "Exports Log",

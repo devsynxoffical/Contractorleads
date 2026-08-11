@@ -68,6 +68,7 @@ function toSessionUser(
     idealCustomer: string | null;
     serviceAreas: string | null;
     mainGoal: string | null;
+    aiCustomInstructions?: string | null;
     subscriptionStatus?: string | null;
     isActive?: boolean;
     adminNotes?: string | null;
@@ -99,6 +100,7 @@ function toSessionUser(
     idealCustomer: user.idealCustomer,
     serviceAreas: user.serviceAreas,
     mainGoal: user.mainGoal,
+    aiCustomInstructions: user.aiCustomInstructions ?? null,
     subscriptionStatus: user.subscriptionStatus ?? null,
     isActive: user.isActive ?? true,
     adminNotes: user.adminNotes ?? null,

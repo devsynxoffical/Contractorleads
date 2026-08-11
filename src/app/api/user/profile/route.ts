@@ -32,6 +32,7 @@ export async function GET() {
       idealCustomer: true,
       serviceAreas: true,
       mainGoal: true,
+      aiCustomInstructions: true,
     },
   });
 
@@ -103,6 +104,10 @@ export async function PATCH(request: Request) {
       idealCustomer: body.idealCustomer,
       serviceAreas: body.serviceAreas,
       mainGoal: body.mainGoal,
+      aiCustomInstructions:
+        typeof body.aiCustomInstructions === "string"
+          ? body.aiCustomInstructions.trim() || null
+          : undefined,
       onboardingComplete: body.onboardingComplete ?? true,
       darkMode: body.darkMode,
     },

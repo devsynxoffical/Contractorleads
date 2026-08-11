@@ -4,6 +4,13 @@ import { getSessionUser, buildBusinessContext } from "@/lib/auth";
 import { buildWorkspaceDataContext } from "@/lib/ai-user-context";
 import { buildKnowledgeContext } from "@/lib/ai-knowledge";
 import {
+  getAiBrain,
+  effectiveBrain,
+  resolvePrompt,
+  globalInstructionsBlock,
+  customKnowledgeBlock,
+} from "@/lib/ai-config";
+import {
   ASK_EXPERT_SYSTEM_PROMPT,
   SUPPORT_BOT_SYSTEM_PROMPT,
   CREDIT_COSTS,
@@ -53,7 +60,9 @@ export async function POST(request: Request) {
 
   const isSupport = support === true;
   const apiKey = getOpenAIApiKey();
+  const brain = effectiveBrain(await getAiBrain());
   const knowledge = buildKnowledgeContext(message);
+  const extraKnowledge = customKnowledgeBlock(brain);
   const displayName =
     user.name || user.ownerName || user.companyName || "there";
 
@@ -65,11 +74,21 @@ export async function POST(request: Request) {
       });
     }
     const openaiSupport = createOpenAI({ apiKey });
-    const supportSystem = knowledge
-      ? `${SUPPORT_BOT_SYSTEM_PROMPT}\n\n${knowledge}`
-      : SUPPORT_BOT_SYSTEM_PROMPT;
+    const supportBase = resolvePrompt(
+      brain,
+      "supportBotPrompt",
+      SUPPORT_BOT_SYSTEM_PROMPT,
+    );
+    const supportSystem = [
+      supportBase,
+      globalInstructionsBlock(brain),
+      knowledge ? `\n${knowledge}` : "",
+      extraKnowledge,
+    ]
+      .filter(Boolean)
+      .join("");
     const supportResult = streamText({
-      model: openaiSupport("gpt-4o-mini"),
+      model: openaiSupport(brain?.model ?? "gpt-4o-mini"),
       system: supportSystem,
       prompt: message,
     });
@@ -174,7 +193,9 @@ export async function POST(request: Request) {
 
   const businessContext = buildBusinessContext(user);
   const workspaceContext = await buildWorkspaceDataContext(user.id);
-  const system = `${ASK_EXPERT_SYSTEM_PROMPT}
+  const askBase = resolvePrompt(brain, "askExpertPrompt", ASK_EXPERT_SYSTEM_PROMPT);
+  const system = `${askBase}
+${globalInstructionsBlock(brain)}
 
 User account & business profile:
 ${businessContext}
@@ -187,7 +208,7 @@ Rules for personalization:
 - Never claim you "know everything" about them — be helpful, not invasive.
 - If profile fields are missing, mention Settings once, then give full in-app steps with action links anyway.
 - Every how-to answer must include at least one [Label](/path) action button for the relevant screen.
-${knowledge ? `\n${knowledge}` : ""}`;
+${knowledge ? `\n${knowledge}` : ""}${extraKnowledge}`;
 
   const openai = createOpenAI({ apiKey });
   const headers = new Headers({
@@ -195,7 +216,7 @@ ${knowledge ? `\n${knowledge}` : ""}`;
     "X-Credits-Remaining": String(balance),
   });
   const result = streamText({
-    model: openai("gpt-4o-mini"),
+    model: openai(brain?.model ?? "gpt-4o-mini"),
     system,
     messages: historyMessages,
     onFinish: async ({ text }) => {

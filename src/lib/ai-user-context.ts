@@ -25,6 +25,8 @@ export function buildBusinessContext(user: SessionUser) {
     user.subscriptionStatus && `Subscription status: ${user.subscriptionStatus}`,
     `Credits remaining: ${Math.round(user.creditsRemaining * 100) / 100}`,
     `Onboarding complete: ${user.onboardingComplete ? "yes" : "no"}`,
+    user.aiCustomInstructions &&
+      `AGENCY CUSTOM INSTRUCTIONS (this agency's own voice and rules — follow above defaults when it applies): ${user.aiCustomInstructions}`,
   ].filter(Boolean) as string[];
 
   if (lines.length <= 4) {

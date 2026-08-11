@@ -212,6 +212,19 @@ async function main() {
     },
   });
 
+  await prisma.aiBrainConfig.upsert({
+    where: { id: "default" },
+    update: {},
+    create: {
+      id: "default",
+      enabled: true,
+      globalInstructions: "",
+      knowledgeBase: "",
+      model: "gpt-4o-mini",
+      outreachModel: "gpt-4o-mini",
+    },
+  });
+
   console.log("Seed complete:");
   if (SEED_DEMO) {
     console.log("  demo@contractorleads.us / demo12345");

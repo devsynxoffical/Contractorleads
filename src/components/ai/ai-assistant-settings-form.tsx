@@ -21,6 +21,7 @@ type AiProfile = {
   idealCustomer: string;
   serviceAreas: string;
   mainGoal: string;
+  aiCustomInstructions: string;
 };
 
 export function AiAssistantSettingsForm({ user }: { user: SessionUser }) {
@@ -32,6 +33,7 @@ export function AiAssistantSettingsForm({ user }: { user: SessionUser }) {
     idealCustomer: user.idealCustomer ?? "",
     serviceAreas: user.serviceAreas ?? "",
     mainGoal: user.mainGoal ?? "",
+    aiCustomInstructions: user.aiCustomInstructions ?? "",
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -120,6 +122,13 @@ export function AiAssistantSettingsForm({ user }: { user: SessionUser }) {
       hint: "What good looks like for you this quarter",
       type: "textarea",
       placeholder: "Book 8 discovery calls a week from hot roofing leads…",
+    },
+    {
+      key: "aiCustomInstructions",
+      label: "Custom AI instructions",
+      hint: "How the AI should talk and act for YOUR agency — tone, banned topics, your specific offers, call-to-action rules. Applies to chat, cold emails, SMS, and sales scripts.",
+      type: "textarea",
+      placeholder: "Always write in a casual, confident voice.\nNever mention discounts or price.\nOffer a free 15-minute website audit as the CTA.\nSign emails as the agency owner, not 'the team'.",
     },
   ];
 
