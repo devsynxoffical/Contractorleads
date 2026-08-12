@@ -19,6 +19,13 @@ export function isGooglePlacesInternalError(message: string): boolean {
     lower.includes("google places") ||
     lower.includes("google_places") ||
     lower.includes("google cloud") ||
+    lower.includes("maps platform") ||
+    lower.includes("places api") ||
+    lower.includes("api key") ||
+    lower.includes("api project") ||
+    lower.includes("not authorized") ||
+    lower.includes("has not been used") ||
+    lower.includes("permission") ||
     lower.includes("billing") ||
     lower.includes("quota") ||
     lower.includes(".env")

@@ -1,3 +1,5 @@
+import { resolvePlatformKey } from "@/lib/platform-keys";
+
 export type WebSearchResult = {
   title: string;
   url: string;
@@ -176,7 +178,7 @@ async function searchSerper(
   query: string,
   limit: number,
 ): Promise<WebSearchResult[]> {
-  const apiKey = process.env.SERPER_API_KEY;
+  const apiKey = (await resolvePlatformKey("serperApiKey")).trim();
   if (!apiKey) return [];
 
   try {
@@ -193,15 +195,52 @@ async function searchSerper(
 
     const data = (await response.json()) as {
       organic?: Array<{ title?: string; link?: string; snippet?: string }>;
+      knowledgeGraph?: {
+        title?: string;
+        type?: string;
+        description?: string;
+        knowledgeGraphUrl?: string;
+      };
+      answerBox?: {
+        title?: string;
+        link?: string;
+        snippet?: string;
+      };
     };
-    return (data.organic ?? [])
-      .filter((item) => item.title && item.link)
-      .slice(0, limit)
-      .map((item) => ({
-        title: item.title ?? "",
-        url: item.link ?? "",
-        snippet: item.snippet ?? "",
-      }));
+
+    const out: WebSearchResult[] = [];
+
+    // Google Knowledge Panel — snippet usually says "Founded by <owner>"
+    // or names the owner/principal, which owner-discovery parses.
+    if (data.knowledgeGraph?.title) {
+      const kgText =
+        `${data.knowledgeGraph.type ?? ""} ${data.knowledgeGraph.description ?? ""}`.trim();
+      out.push({
+        title: data.knowledgeGraph.title,
+        url: data.knowledgeGraph.knowledgeGraphUrl ?? "",
+        snippet: kgText || data.knowledgeGraph.title,
+      });
+    }
+
+    if (data.answerBox?.link) {
+      out.push({
+        title: data.answerBox.title ?? "",
+        url: data.answerBox.link,
+        snippet: data.answerBox.snippet ?? "",
+      });
+    }
+
+    for (const item of data.organic ?? []) {
+      if (item.title && item.link) {
+        out.push({
+          title: item.title,
+          url: item.link,
+          snippet: item.snippet ?? "",
+        });
+      }
+    }
+
+    return out.slice(0, limit);
   } catch {
     return [];
   }

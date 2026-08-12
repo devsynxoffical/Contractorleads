@@ -297,7 +297,7 @@ export async function qualifyLead(
     return withAudit(ruleBasedQualification(place, industry, hasWebsite));
   }
 
-  const apiKey = getOpenAIApiKey();
+  const apiKey = await getOpenAIApiKey();
   if (!apiKey) {
     return withAudit(ruleBasedQualification(place, industry, hasWebsite));
   }

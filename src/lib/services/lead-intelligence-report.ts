@@ -360,7 +360,7 @@ export async function generateLeadIntelligenceReport(
     ? await auditWebsite(lead.website, { timeoutMs: 14000 })
     : null;
 
-  const apiKey = getOpenAIApiKey();
+  const apiKey = await getOpenAIApiKey();
   if (!apiKey) {
     return {
       content: scrubReportMarkdown(buildFallbackReport(lead, reportType, audit)),

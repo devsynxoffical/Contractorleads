@@ -8,6 +8,14 @@ export type PublicTeamMember = {
   confidence: number;
 };
 
+/**
+ * Internal candidate with an optional source marker so we can cross-check
+ * JSON-LD claims (often stale metadata) against what the visible page says.
+ */
+type PersonCandidate = PublicTeamMember & {
+  source?: "jsonld" | "container" | "rolefirst" | "foundedby" | "visible";
+};
+
 export type WebsitePeopleResult = {
   owner: PublicTeamMember | null;
   team: PublicTeamMember[];
@@ -55,7 +63,7 @@ const CONTACT_FALLBACKS = [
 // Marketing/filler words that regex matches sometimes capture instead of a
 // person ("led by trained technicians committed to…").
 const NOT_A_NAME =
-  /\b(trained|licensed|insured|certified|professional|professionals|technician|technicians|expert|experts|team|teams|staff|crew|committed|dedicated|experienced|skilled|qualified|local|trusted|friendly|service|services|company|business|contractor|contractors|specialists|installers|plumbers|electricians|roofers|our|your|the|and|with|quality|customer|customers)\b/i;
+  /\b(trained|licensed|insured|certified|professional|professionals|technician|technicians|expert|experts|team|teams|staff|crew|committed|dedicated|experienced|skilled|qualified|local|trusted|friendly|service|services|company|business|contractor|contractors|specialists|installers|plumbers|electricians|roofers|our|your|the|and|with|quality|customer|customers|roofing|roof|roofs|construction|contracting|builders|building|remodeling|renovation|hvac|heating|cooling|plumbing|electrical|electric|landscaping|landscape|siding|windows|gutters|gutter|repair|repairs|cleaning|inc|llc|llp|ltd|corp|co|group|solutions|systems|home|homes|house|houses|pro|pros)\b/i;
 
 function clean(value: string): string {
   return value.replace(/\s+/g, " ").trim();
@@ -87,7 +95,7 @@ function formatRole(role: string): string {
     .join(" ");
 }
 
-function addMember(members: PublicTeamMember[], candidate: PublicTeamMember) {
+function addMember(members: PersonCandidate[], candidate: PersonCandidate) {
   if (!plausibleName(candidate.name) || !TEAM_ROLE.test(candidate.role)) return;
   const normalized = { ...candidate, role: formatRole(candidate.role) };
   const key = normalized.name.toLowerCase();
@@ -95,6 +103,55 @@ function addMember(members: PublicTeamMember[], candidate: PublicTeamMember) {
   if (!existing) members.push(normalized);
   else if (normalized.confidence > existing.confidence) {
     Object.assign(existing, normalized);
+  }
+}
+
+/**
+ * Find how the visible page labels a person — e.g. "Gregory Noland, Outside
+ * Sales" or "Gregory Noland — Outside Sales". Returns the phrase that follows
+ * the name up to the next separator. Used to cross-check (and override)
+ * metadata-only claims like a JSON-LD "Owner" tag.
+ */
+function visibleRoleForName(bodyText: string, name: string): string | null {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(
+    `${escaped}\\s*(?:,|—|–|-|:|\\(|\\|)\\s*([A-Za-zÀ-ÖØ-öø-ÿ'’&]+(?:[ -][A-Za-zÀ-ÖØ-öø-ÿ'’&]+){0,8})`,
+    "ig",
+  );
+  for (const match of bodyText.matchAll(re)) {
+    const role = clean(match[1]);
+    if (TEAM_ROLE.test(role)) {
+      // Cut at a trailing separator ("Owners — Noland's Roofing" -> "Owners")
+      return clean(role.split(/\s*(?:—|–|-|,|\(|\|)\s*/)[0]).slice(0, 60);
+    }
+  }
+  return null;
+}
+
+/**
+ * Visible text is ground truth; JSON-LD is metadata that can be stale or
+ * inconsistent. Re-rank candidates so a page-confirmed owner outranks a
+ * metadata-only "Owner", and a page that contradicts a JSON-LD claim wins.
+ */
+function crossCheckMembers(members: PersonCandidate[], bodyText: string) {
+  for (const member of members) {
+    const visible = visibleRoleForName(bodyText, member.name);
+    if (!visible) {
+      // Metadata-only claim (e.g. JSON-LD founder) never gets "verified" trust
+      if (member.source === "jsonld") {
+        member.confidence = Math.min(member.confidence, 70);
+      }
+      continue;
+    }
+    const visibleOwner = OWNER_ROLE.test(visible);
+    const claimedOwner = OWNER_ROLE.test(member.role);
+    if (claimedOwner && !visibleOwner) {
+      // Page contradicts the owner claim (e.g. "Outside Sales") — trust page
+      member.role = visible;
+      member.confidence = Math.min(member.confidence, 82);
+    } else if (claimedOwner && visibleOwner) {
+      member.confidence = Math.max(member.confidence, 90);
+    }
   }
 }
 
@@ -155,7 +212,7 @@ function pickBestEmail(emails: Iterable<string>): string | null {
 function walkJsonLd(
   node: unknown,
   sourceUrl: string,
-  members: PublicTeamMember[],
+  members: PersonCandidate[],
   emails: Set<string>,
 ) {
   if (Array.isArray(node)) {
@@ -171,7 +228,13 @@ function walkJsonLd(
     const role = clean(
       String(record.jobTitle ?? record.roleName ?? record.description ?? ""),
     );
-    addMember(members, { name, role, sourceUrl, confidence: 95 });
+    addMember(members, {
+      name,
+      role,
+      sourceUrl,
+      confidence: 95,
+      source: "jsonld",
+    });
   }
 
   const emailField = record.email;
@@ -199,7 +262,7 @@ function walkJsonLd(
 
 function extractFromHtml(html: string, sourceUrl: string) {
   const $ = cheerio.load(html.slice(0, 1_500_000));
-  const members: PublicTeamMember[] = [];
+  const members: PersonCandidate[] = [];
   const emails = new Set<string>();
 
   $('a[href^="mailto:"]').each((_, element) => {
@@ -255,17 +318,40 @@ function extractFromHtml(html: string, sourceUrl: string) {
     const role = text.match(TEAM_ROLE)?.[0] ?? "";
     if (!role) return;
     const name = clean(
-      container.find("h1,h2,h3,h4,strong,[itemprop='name']").first().text(),
+      container
+        .find("h1,h2,h3,h4,h5,strong,[itemprop='name'],img[alt]")
+        .first()
+        .attr("alt") ??
+        container.find("h1,h2,h3,h4,h5,strong,[itemprop='name']").first().text(),
     );
     addMember(members, {
       name,
       role,
       sourceUrl,
       confidence: 82,
+      source: "container",
     });
   });
 
   const bodyText = clean($("body").text());
+
+  // Visible "Name — Role" / "Name, Role" / "Name: Role" lines — this is what
+  // server-rendered team cards (WordPress, static HTML) actually publish.
+  const nameRoleRe =
+    /\b([A-Z][a-zÀ-öø-ÿ'’]+(?:\s+[A-Z][a-zÀ-öø-ÿ'’]+){1,3})\s*(?:,|—|–|-|:|\||│)\s*([A-Za-zÀ-ÖØ-öø-ÿ'’&]+(?:\s+[A-Za-zÀ-ÖØ-öø-ÿ'’&]+){0,8})/g;
+  for (const match of bodyText.matchAll(nameRoleRe)) {
+    const name = clean(match[1]);
+    const role = clean(match[2]);
+    if (!TEAM_ROLE.test(role)) continue;
+    addMember(members, {
+      name,
+      role,
+      sourceUrl,
+      confidence: 85,
+      source: "visible",
+    });
+  }
+
   const roleFirstMatches = bodyText.matchAll(
     /(owner|founder|co-founder|president|principal|ceo)\s*(?:is|:|-|—)\s*([A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’-]+(?:\s+[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’-]+){1,3})/gi,
   );
@@ -275,6 +361,7 @@ function extractFromHtml(html: string, sourceUrl: string) {
       role: clean(match[1]),
       sourceUrl,
       confidence: 88,
+      source: "rolefirst",
     });
   }
 
@@ -287,8 +374,12 @@ function extractFromHtml(html: string, sourceUrl: string) {
       role: clean(match[1] || "Founder / Owner"),
       sourceUrl,
       confidence: 92,
+      source: "foundedby",
     });
   }
+
+  // Metadata (JSON-LD) must not override what the visible page says.
+  crossCheckMembers(members, bodyText);
 
   // Plaintext emails — most contractor sites never use mailto:
   for (const match of deobfuscate(bodyText).matchAll(EMAIL_RE)) {
@@ -429,10 +520,16 @@ export async function extractWebsitePeople(
 
   members.sort((a, b) => b.confidence - a.confidence);
   const owner = members.find((member) => OWNER_ROLE.test(member.role)) ?? null;
+  const stripSource = (member: PersonCandidate): PublicTeamMember => ({
+    name: member.name,
+    role: member.role,
+    sourceUrl: member.sourceUrl,
+    confidence: member.confidence,
+  });
 
   return {
-    owner,
-    team: members.slice(0, 10),
+    owner: owner ? stripSource(owner) : null,
+    team: members.slice(0, 10).map(stripSource),
     email,
     emailSourceUrl,
     pagesChecked: pages,

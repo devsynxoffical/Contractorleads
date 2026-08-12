@@ -9,7 +9,7 @@ export async function GET() {
   }
 
   return NextResponse.json({
-    keys: getSystemKeyStatuses(),
-    note: "Stripe Billing keys can be edited above (or via Admin → System). Other secrets stay in Railway Variables / .env — full values are never shown.",
+    keys: await getSystemKeyStatuses(),
+    note: "Stripe Billing, email, Twilio, and platform API keys can be edited below (or via Admin → System). Other secrets stay in Railway Variables / .env — full values are never shown.",
   });
 }

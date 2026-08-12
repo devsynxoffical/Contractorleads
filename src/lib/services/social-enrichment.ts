@@ -6,6 +6,28 @@ import { matchNextdoorBusiness } from "./nextdoor";
 import { matchYelpBusiness } from "./yelp";
 import { extractWebsitePeople } from "./website-people";
 import { auditWebsite, emptyWebsiteAudit } from "./website-audit";
+import {
+  discoverOwnerFromSearch,
+  EMPTY_OWNER_DISCOVERY,
+} from "./owner-discovery";
+
+async function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  fallback: T,
+): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((resolve) => {
+        timer = setTimeout(() => resolve(fallback), ms);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
 
 type LeadRecord = {
   id: string;
@@ -80,6 +102,36 @@ export async function enrichLeadSocial(lead: LeadRecord) {
     linkedin.owner.confidence >= 90 ? linkedin.owner.url : null;
   const primaryLinkedIn = companyLinkedIn ?? ownerLinkedIn;
 
+  const websiteOwnerName = websitePeople.owner?.name ?? null;
+  const ownerFromSearch =
+    websiteOwnerName || lead.ownerName
+      ? EMPTY_OWNER_DISCOVERY
+      : await withTimeout(
+          discoverOwnerFromSearch(lead.businessName, location),
+          9000,
+          EMPTY_OWNER_DISCOVERY,
+        );
+
+  const ownerLinkedInFromSearch =
+    Boolean(ownerFromSearch.ownerLinkedInUrl) && !ownerLinkedIn;
+  const ownerLinkedInFinal =
+    ownerLinkedIn || ownerFromSearch.ownerLinkedInUrl || null;
+  const ownerNameFinal =
+    websiteOwnerName ??
+    ownerFromSearch.ownerName ??
+    lead.ownerName ??
+    undefined;
+  const ownerTitleFinal =
+    websitePeople.owner?.role ?? ownerFromSearch.ownerRole ?? undefined;
+  const ownerSourceUrlFinal =
+    websitePeople.owner?.sourceUrl ??
+    ownerFromSearch.sourceUrl ??
+    undefined;
+  const ownerConfidenceFinal =
+    websitePeople.owner?.confidence ??
+    ownerFromSearch.confidence ??
+    undefined;
+
   const facebook =
     lead.facebook ?? websiteSocial.facebook ?? facebookPage ?? null;
   const instagram = lead.instagram ?? websiteSocial.instagram ?? null;
@@ -107,23 +159,30 @@ export async function enrichLeadSocial(lead: LeadRecord) {
     data: {
       linkedinUrl: primaryLinkedIn,
       linkedinCompanyUrl: companyLinkedIn,
-      linkedinOwnerUrl: ownerLinkedIn,
+      linkedinOwnerUrl: ownerLinkedInFinal,
       linkedinConfidenceScore: linkedin.company.confidence || null,
-      linkedinOwnerConfidenceScore: linkedin.owner.confidence || null,
+      linkedinOwnerConfidenceScore: ownerLinkedInFinal
+        ? ownerLinkedInFromSearch
+          ? Math.max(ownerFromSearch.confidence, 90)
+          : linkedin.owner.confidence || null
+        : undefined,
       linkedinType: companyLinkedIn
         ? "company"
-        : ownerLinkedIn
+        : ownerLinkedInFinal
           ? "owner"
           : "none",
       // Prefer freshly extracted owner so refreshes correct stale/bad values
-      ownerName: websitePeople.owner?.name ?? lead.ownerName ?? undefined,
-      ownerTitle: websitePeople.owner?.role,
-      ownerSourceUrl: websitePeople.owner?.sourceUrl,
-      ownerConfidence: websitePeople.owner?.confidence,
+      ownerName: ownerNameFinal,
+      ownerTitle: ownerTitleFinal,
+      ownerSourceUrl: ownerSourceUrlFinal,
+      ownerConfidence: ownerConfidenceFinal,
       teamMembersJson: websitePeople.team.length
         ? JSON.stringify(websitePeople.team)
         : undefined,
-      peopleEnrichedAt: lead.website ? new Date() : undefined,
+      peopleEnrichedAt:
+        lead.website || websiteOwnerName || ownerFromSearch.ownerName
+          ? new Date()
+          : undefined,
       email: lead.email ?? websitePeople.email ?? undefined,
       emailSourceUrl: websitePeople.emailSourceUrl ?? undefined,
       facebook,
@@ -147,7 +206,7 @@ export async function enrichLeadSocial(lead: LeadRecord) {
     found: {
       linkedinCompany: Boolean(companyLinkedIn),
       linkedinOwner: Boolean(ownerLinkedIn),
-      owner: Boolean(websitePeople.owner),
+      owner: Boolean(websitePeople.owner || ownerFromSearch.ownerName),
       team: websitePeople.team.length > 0,
       email: Boolean(!lead.email && websitePeople.email),
       facebook: Boolean(

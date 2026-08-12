@@ -1,5 +1,6 @@
 import { INDUSTRIES } from "@/lib/constants";
 import { isOpenAIConfigured } from "@/lib/openai-config";
+import { getPlatformKeyStatuses } from "@/lib/platform-keys";
 import {
   ADMIN_PLANS,
   PLAN_API_LIMITS,
@@ -30,7 +31,11 @@ function maskHint(value: string | undefined | null): string | null {
   return `…${value.slice(-4)}`;
 }
 
-export function getSystemKeyStatuses(): EnvKeyStatus[] {
+export async function getSystemKeyStatuses(): Promise<EnvKeyStatus[]> {
+  const platformStatuses = await getPlatformKeyStatuses();
+  const platformByEnvKey = new Map(
+    platformStatuses.map((s) => [s.key, s]),
+  );
   const rows: Array<{ key: string; group: string; env: string | undefined }> = [
     { key: "DATABASE_URL", group: "Core", env: process.env.DATABASE_URL },
     { key: "JWT_SECRET", group: "Core", env: process.env.JWT_SECRET },
@@ -121,18 +126,23 @@ export function getSystemKeyStatuses(): EnvKeyStatus[] {
     },
   ];
 
-  return rows.map((row) => {
-    const configured =
-      row.key === "OPENAI_API_KEY"
-        ? isOpenAIConfigured()
-        : Boolean(row.env?.trim());
-    return {
-      key: row.key,
-      group: row.group,
-      configured,
-      hint: configured ? maskHint(row.env) : null,
-    };
-  });
+  return Promise.all(
+    rows.map(async (row) => {
+      const platform = platformByEnvKey.get(row.key);
+      const configured =
+        row.key === "OPENAI_API_KEY"
+          ? await isOpenAIConfigured()
+          : platform
+            ? platform.configured
+            : Boolean(row.env?.trim());
+      return {
+        key: row.key,
+        group: row.group,
+        configured,
+        hint: configured ? platform?.hint ?? maskHint(row.env) : null,
+      };
+    }),
+  );
 }
 
 export function isValidIndustry(value: string) {

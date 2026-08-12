@@ -1,3 +1,5 @@
+import { resolvePlatformKey } from "@/lib/platform-keys";
+
 export type YelpMatch = {
   url: string;
   rating?: number;
@@ -9,7 +11,7 @@ export async function matchYelpBusiness(
   name: string,
   location: string
 ): Promise<YelpMatch | null> {
-  const apiKey = process.env.YELP_FUSION_API_KEY;
+  const apiKey = (await resolvePlatformKey("yelpFusionApiKey")).trim();
   if (!apiKey) return null;
 
   const url = new URL("https://api.yelp.com/v3/businesses/search");

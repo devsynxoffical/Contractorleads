@@ -1,7 +1,10 @@
 /**
  * OpenAI key helpers — treat placeholders as missing so we never
  * silently call the API with "sk-..." and fall back to dummy scores.
+ * Effective key: admin-saved DB value wins, else OPENAI_API_KEY env.
  */
+
+import { resolvePlatformKey } from "@/lib/platform-keys";
 
 const PLACEHOLDER_PATTERNS = [
   /^sk-\.\.\.$/i,
@@ -12,15 +15,19 @@ const PLACEHOLDER_PATTERNS = [
   /^paste/i,
 ];
 
-export function getOpenAIApiKey(): string | null {
-  const raw = process.env.OPENAI_API_KEY?.trim();
-  if (!raw) return null;
-  if (raw.length < 20) return null;
-  if (PLACEHOLDER_PATTERNS.some((p) => p.test(raw))) return null;
-  if (!raw.startsWith("sk-")) return null;
-  return raw;
+function isValidKey(raw: string): boolean {
+  if (raw.length < 20) return false;
+  if (PLACEHOLDER_PATTERNS.some((p) => p.test(raw))) return false;
+  if (!raw.startsWith("sk-")) return false;
+  return true;
 }
 
-export function isOpenAIConfigured(): boolean {
-  return Boolean(getOpenAIApiKey());
+export async function getOpenAIApiKey(): Promise<string | null> {
+  const raw = (await resolvePlatformKey("openaiApiKey")).trim();
+  if (!raw) return null;
+  return isValidKey(raw) ? raw : null;
+}
+
+export async function isOpenAIConfigured(): Promise<boolean> {
+  return Boolean(await getOpenAIApiKey());
 }

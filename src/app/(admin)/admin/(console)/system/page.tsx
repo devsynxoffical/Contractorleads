@@ -57,6 +57,79 @@ type TwilioStatus = {
   webhookUrl: string;
 };
 
+type PlatformKeyStatus = {
+  field: string;
+  key: string;
+  group: string;
+  configured: boolean;
+  source: "database" | "environment" | "none";
+  hint: string | null;
+};
+
+const PLATFORM_FIELDS: Array<{
+  field: string;
+  label: string;
+  placeholder: string;
+  group: string;
+}> = [
+  {
+    field: "googlePlacesApiKey",
+    label: "Google Places API key",
+    placeholder: "AIza…",
+    group: "Lead sources",
+  },
+  {
+    field: "googlePlacesApiKey2",
+    label: "Google Places API key (backup)",
+    placeholder: "AIza… — used automatically if the primary fails",
+    group: "Lead sources",
+  },
+  {
+    field: "yelpFusionApiKey",
+    label: "Yelp Fusion API key",
+    placeholder: "Yelp Fusion key",
+    group: "Lead sources",
+  },
+  {
+    field: "openaiApiKey",
+    label: "OpenAI API key",
+    placeholder: "sk-…",
+    group: "AI",
+  },
+  {
+    field: "serperApiKey",
+    label: "Serper API key",
+    placeholder: "64-char key from serper.dev",
+    group: "Enrichment",
+  },
+  {
+    field: "ninjapearApiKey",
+    label: "NinjaPear API key",
+    placeholder: "NinjaPear (nubela.co) key",
+    group: "Enrichment",
+  },
+  {
+    field: "metaAppId",
+    label: "Meta App ID",
+    placeholder: "Facebook App ID",
+    group: "Meta",
+  },
+  {
+    field: "metaAppSecret",
+    label: "Meta App Secret",
+    placeholder: "Facebook App Secret",
+    group: "Meta",
+  },
+  {
+    field: "metaAccessToken",
+    label: "Meta Access Token",
+    placeholder: "Long-lived access token",
+    group: "Meta",
+  },
+];
+
+const PLATFORM_GROUPS = ["Lead sources", "AI", "Enrichment", "Meta"] as const;
+
 export default function AdminSystemPage() {
   const [keys, setKeys] = useState<EnvKeyStatus[]>([]);
   const [note, setNote] = useState("");
@@ -84,16 +157,24 @@ export default function AdminSystemPage() {
   const [twilioMessagingSid, setTwilioMessagingSid] = useState("");
   const [twilioBusy, setTwilioBusy] = useState(false);
   const [twilioMessage, setTwilioMessage] = useState<string | null>(null);
+  const [platformKeys, setPlatformKeys] = useState<PlatformKeyStatus[]>([]);
+  const [platformValues, setPlatformValues] = useState<Record<string, string>>(
+    {},
+  );
+  const [platformBusy, setPlatformBusy] = useState(false);
+  const [platformMessage, setPlatformMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   async function load() {
-    const [sys, stripeRes, emailRes, twilioRes] = await Promise.all([
-      fetch("/api/admin/system").then((r) => r.json()),
-      fetch("/api/admin/stripe").then((r) => r.json()),
-      fetch("/api/admin/email-provider").then((r) => r.json()),
-      fetch("/api/admin/twilio").then((r) => r.json()),
-    ]);
+    const [sys, stripeRes, emailRes, twilioRes, platformRes] =
+      await Promise.all([
+        fetch("/api/admin/system").then((r) => r.json()),
+        fetch("/api/admin/stripe").then((r) => r.json()),
+        fetch("/api/admin/email-provider").then((r) => r.json()),
+        fetch("/api/admin/twilio").then((r) => r.json()),
+        fetch("/api/admin/platform-keys").then((r) => r.json()),
+      ]);
     setKeys(sys.keys ?? []);
     setNote(sys.note ?? "");
     setStripe(stripeRes);
@@ -116,6 +197,8 @@ export default function AdminSystemPage() {
     setTwilioMessagingSid(twilioRes.messagingServiceSid || "");
     setTwilioAccountSid("");
     setTwilioAuthToken("");
+    setPlatformKeys(platformRes.keys ?? []);
+    setPlatformValues({});
   }
 
   async function saveEmail(e: React.FormEvent) {
@@ -184,6 +267,54 @@ export default function AdminSystemPage() {
   useEffect(() => {
     void load();
   }, []);
+
+  async function savePlatformKeys(e: React.FormEvent) {
+    e.preventDefault();
+    setPlatformBusy(true);
+    setPlatformMessage(null);
+    try {
+      const body: Record<string, string> = {};
+      for (const f of PLATFORM_FIELDS) {
+        const v = (platformValues[f.field] ?? "").trim();
+        if (v) body[f.field] = v;
+      }
+      const res = await fetch("/api/admin/platform-keys", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Save failed");
+      setPlatformMessage("Platform keys saved — effective values updated.");
+      setPlatformKeys(json.keys ?? []);
+      setPlatformValues({});
+    } catch (err) {
+      setPlatformMessage(err instanceof Error ? err.message : "Save failed");
+    } finally {
+      setPlatformBusy(false);
+    }
+  }
+
+  async function clearPlatformKey(field: string) {
+    setPlatformBusy(true);
+    setPlatformMessage(null);
+    try {
+      const res = await fetch("/api/admin/platform-keys", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [field]: "" }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Clear failed");
+      setPlatformMessage("Cleared — env fallback applies if set.");
+      setPlatformKeys(json.keys ?? []);
+      setPlatformValues((v) => ({ ...v, [field]: "" }));
+    } catch (err) {
+      setPlatformMessage(err instanceof Error ? err.message : "Clear failed");
+    } finally {
+      setPlatformBusy(false);
+    }
+  }
 
   async function saveStripe(e: React.FormEvent) {
     e.preventDefault();
@@ -256,7 +387,7 @@ export default function AdminSystemPage() {
     <div>
       <AdminPageHeader
         title="System & API Keys"
-        description="Manage Stripe Billing and email provider keys here. Other platform secrets stay in host env (Railway / .env)."
+        description="Manage Stripe Billing, email, SMS, and platform API keys here. Other host-level secrets stay in Railway / .env."
       />
 
       <section className="mb-6 rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] dark:bg-[var(--surface)]">
@@ -671,6 +802,92 @@ export default function AdminSystemPage() {
             </Button>
             {message ? (
               <p className="text-[13px] text-ink-muted">{message}</p>
+            ) : null}
+          </div>
+        </form>
+      </section>
+
+      <section className="mb-6 rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] dark:bg-[var(--surface)]">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold text-ink">Platform API keys</h2>
+            <p className="mt-1 max-w-2xl text-[13px] text-ink-muted">
+              Serper, Google Places, OpenAI, NinjaPear, Yelp Fusion, and Meta
+              secrets used by Lead Finder, enrichment, AI scoring, and the Ads
+              Library. Empty fields fall back to Railway / .env — no need to
+              redeploy when you rotate a key here. Google Places supports a
+              backup key that is used automatically if the primary hits quota,
+              billing, or auth errors.
+            </p>
+          </div>
+        </div>
+
+        <form onSubmit={savePlatformKeys} className="mt-4 space-y-4">
+          {PLATFORM_GROUPS.map((group) => {
+            const fields = PLATFORM_FIELDS.filter((f) => f.group === group);
+            if (!fields.length) return null;
+            return (
+              <div key={group}>
+                <p className="text-[12px] font-semibold text-ink">{group}</p>
+                <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                  {fields.map((f) => {
+                    const status = platformKeys.find(
+                      (k) => k.field === f.field,
+                    );
+                    return (
+                      <label
+                        key={f.field}
+                        className="block text-[12px] font-medium text-ink-muted"
+                      >
+                        {f.label}
+                        <input
+                          type="password"
+                          autoComplete="off"
+                          className="saas-input mt-1.5 font-mono text-[13px]"
+                          placeholder={
+                            status?.configured
+                              ? `Configured ${status.hint || ""} — paste to replace`
+                              : f.placeholder
+                          }
+                          value={platformValues[f.field] ?? ""}
+                          onChange={(e) =>
+                            setPlatformValues((v) => ({
+                              ...v,
+                              [f.field]: e.target.value,
+                            }))
+                          }
+                        />
+                        {status?.source === "database" ? (
+                          <span className="mt-1 flex items-center gap-2 text-[11px] text-emerald-700">
+                            Saved in database
+                            <button
+                              type="button"
+                              className="font-semibold text-brand-600 hover:underline"
+                              onClick={() => void clearPlatformKey(f.field)}
+                              disabled={platformBusy}
+                            >
+                              Clear
+                            </button>
+                          </span>
+                        ) : status?.source === "environment" ? (
+                          <span className="mt-1 block text-[11px] text-ink-faint">
+                            From environment (Railway / .env)
+                          </span>
+                        ) : null}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            <Button type="submit" disabled={platformBusy} size="sm">
+              {platformBusy ? "Saving…" : "Save platform keys"}
+            </Button>
+            {platformMessage ? (
+              <p className="text-[13px] text-ink-muted">{platformMessage}</p>
             ) : null}
           </div>
         </form>

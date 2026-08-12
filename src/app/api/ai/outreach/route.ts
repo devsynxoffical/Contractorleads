@@ -61,7 +61,7 @@ Lead Score: ${lead.leadScore}
 Outreach Angle: ${lead.outreachAngle ?? "n/a"}
 `;
 
-  const apiKey = getOpenAIApiKey();
+  const apiKey = await getOpenAIApiKey();
   let content: string;
 
   if (!apiKey) {

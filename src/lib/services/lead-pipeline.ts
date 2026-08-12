@@ -340,10 +340,36 @@ async function enrichAndPersistPlace(opts: {
   const ownerUrl =
     pack.linkedinOwner ||
     (fromWeb.linkedin?.includes("/in/") ? fromWeb.linkedin : null);
-  const primaryLinkedIn = companyUrl || ownerUrl || fromWeb.linkedin;
-  const resolvedOwner = ownerUrl;
-  const ownerName = websitePeople.owner?.name ?? null;
-  const ownerTitle = websitePeople.owner?.role ?? null;
+
+  const websiteOwnerName = websitePeople.owner?.name ?? null;
+  const { discoverOwnerFromSearch, EMPTY_OWNER_DISCOVERY } = await import(
+    "./owner-discovery"
+  );
+  const ownerFromSearch = websiteOwnerName
+    ? EMPTY_OWNER_DISCOVERY
+    : await withTimeout(
+        discoverOwnerFromSearch(place.name, location),
+        9000,
+        EMPTY_OWNER_DISCOVERY,
+      );
+
+  const resolvedOwner =
+    ownerUrl || ownerFromSearch.ownerLinkedInUrl || null;
+  const primaryLinkedIn = companyUrl || resolvedOwner || fromWeb.linkedin;
+  const ownerName = websiteOwnerName ?? ownerFromSearch.ownerName ?? null;
+  const ownerTitle =
+    websitePeople.owner?.role ?? ownerFromSearch.ownerRole ?? null;
+  const ownerSourceUrl =
+    websitePeople.owner?.sourceUrl ?? ownerFromSearch.sourceUrl ?? null;
+  const ownerConfidence =
+    websitePeople.owner?.confidence ?? ownerFromSearch.confidence ?? null;
+  const ownerLinkedInFromSearch =
+    Boolean(ownerFromSearch.ownerLinkedInUrl) && !ownerUrl;
+  const ownerLinkedInConfidence = resolvedOwner
+    ? ownerLinkedInFromSearch
+      ? Math.max(ownerFromSearch.confidence, 90)
+      : 96
+    : null;
 
   const facebook =
     pack.facebook || facebookPage || fromWeb.facebook || null;
@@ -427,10 +453,8 @@ async function enrichAndPersistPlace(opts: {
     reviewCount: place.reviewCount ?? existingLead?.reviewCount,
     ownerName: ownerNameFinal,
     ownerTitle: ownerTitle ?? existingLead?.ownerTitle,
-    ownerSourceUrl:
-      websitePeople.owner?.sourceUrl ?? existingLead?.ownerSourceUrl,
-    ownerConfidence:
-      websitePeople.owner?.confidence ?? existingLead?.ownerConfidence,
+    ownerSourceUrl: ownerSourceUrl ?? existingLead?.ownerSourceUrl,
+    ownerConfidence: ownerConfidence ?? existingLead?.ownerConfidence,
     teamMembersJson: websitePeople.team.length
       ? JSON.stringify(websitePeople.team)
       : existingLead?.teamMembersJson,
@@ -453,9 +477,8 @@ async function enrichAndPersistPlace(opts: {
     linkedinOwnerUrl: resolvedOwner ?? existingLead?.linkedinOwnerUrl,
     linkedinConfidenceScore:
       companyLi.confidence || existingLead?.linkedinConfidenceScore,
-    linkedinOwnerConfidenceScore: resolvedOwner
-      ? 96
-      : existingLead?.linkedinOwnerConfidenceScore,
+    linkedinOwnerConfidenceScore:
+      ownerLinkedInConfidence ?? existingLead?.linkedinOwnerConfidenceScore,
     linkedinType: linkedinType ?? existingLead?.linkedinType,
     leadScore: scored.leadScore,
     serviceCategory: qualification.serviceCategory,
@@ -466,9 +489,10 @@ async function enrichAndPersistPlace(opts: {
     seoOpportunityScore: qualification.seoOpportunityScore,
     outreachAngle: qualification.outreachAngle,
     qualityTier: scored.qualityTier,
-    peopleEnrichedAt: websitePeople.owner || websitePeople.email
-      ? new Date()
-      : existingLead?.peopleEnrichedAt,
+    peopleEnrichedAt:
+      websitePeople.owner || ownerFromSearch.ownerName || websitePeople.email
+        ? new Date()
+        : existingLead?.peopleEnrichedAt,
     socialEnrichedAt: new Date(),
     // Always refresh coords so Lead Map stays accurate for reused pool leads
     latitude: place.latitude ?? existingLead?.latitude ?? undefined,
@@ -489,13 +513,15 @@ async function enrichAndPersistPlace(opts: {
       businessName: place.name,
       ownerName: ownerNameFinal,
       ownerTitle,
-      ownerSourceUrl: websitePeople.owner?.sourceUrl ?? null,
-      ownerConfidence: websitePeople.owner?.confidence ?? null,
+      ownerSourceUrl: ownerSourceUrl,
+      ownerConfidence: ownerConfidence,
       teamMembersJson: websitePeople.team.length
         ? JSON.stringify(websitePeople.team)
         : null,
       peopleEnrichedAt:
-        websitePeople.owner || websitePeople.email ? new Date() : null,
+        websitePeople.owner || ownerFromSearch.ownerName || websitePeople.email
+          ? new Date()
+          : null,
       email: emailFinal,
       emailSourceUrl: websitePeople.emailSourceUrl,
       facebook,
@@ -527,7 +553,7 @@ async function enrichAndPersistPlace(opts: {
       linkedinCompanyUrl: companyUrl,
       linkedinOwnerUrl: resolvedOwner,
       linkedinConfidenceScore: companyLi.confidence || null,
-      linkedinOwnerConfidenceScore: resolvedOwner ? 96 : null,
+      linkedinOwnerConfidenceScore: ownerLinkedInConfidence,
       linkedinType,
       socialEnrichedAt: new Date(),
       qualityTier: scored.qualityTier,

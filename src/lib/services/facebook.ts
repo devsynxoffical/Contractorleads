@@ -1,3 +1,5 @@
+import { resolvePlatformKey } from "@/lib/platform-keys";
+
 export type FacebookAd = {
   id: string;
   pageName: string;
@@ -18,15 +20,12 @@ export type FacebookAdsResult = {
   message?: string;
 };
 
-function getMetaAccessToken(): string | null {
-  const token =
-    process.env.META_ACCESS_TOKEN?.trim() ||
-    process.env.FACEBOOK_ACCESS_TOKEN?.trim();
+async function getMetaAccessToken(): Promise<string | null> {
+  const token = (await resolvePlatformKey("metaAccessToken")).trim();
   if (token) return token;
 
-  const appId = process.env.META_APP_ID || process.env.FACEBOOK_APP_ID;
-  const appSecret =
-    process.env.META_APP_SECRET || process.env.FACEBOOK_APP_SECRET;
+  const appId = (await resolvePlatformKey("metaAppId")).trim();
+  const appSecret = (await resolvePlatformKey("metaAppSecret")).trim();
   if (appId && appSecret) return `${appId}|${appSecret}`;
   return null;
 }
@@ -80,7 +79,7 @@ export async function discoverSocialFromWebsite(website: string): Promise<{
 export async function searchFacebookPage(
   businessName: string
 ): Promise<string | null> {
-  const token = getMetaAccessToken();
+  const token = await getMetaAccessToken();
   if (!token) return null;
 
   try {
@@ -110,7 +109,7 @@ export async function searchFacebookAdsLibrary(
   opts?: { accessToken?: string | null },
 ): Promise<FacebookAdsResult> {
   const searchUrl = buildAdsLibraryUrl(businessName, country);
-  const token = opts?.accessToken?.trim() || getMetaAccessToken();
+  const token = opts?.accessToken?.trim() || (await getMetaAccessToken());
 
   if (!token) {
     return {
@@ -237,6 +236,6 @@ export async function searchFacebookAdsLibrary(
   }
 }
 
-export function isMetaConfigured(): boolean {
-  return Boolean(getMetaAccessToken());
+export async function isMetaConfigured(): Promise<boolean> {
+  return Boolean(await getMetaAccessToken());
 }

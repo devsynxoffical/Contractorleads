@@ -472,6 +472,22 @@ model TwilioConfig {
   updatedAt            DateTime @updatedAt
 }
 
+/// Platform API secrets (Serper, Google Places, OpenAI, NinjaPear, Yelp, Meta).
+/// Admin-editable; env fallback. Non-empty DB fields win over env.
+model PlatformKeyConfig {
+  id                 String   @id @default("default")
+  serperApiKey       String   @default("")
+  googlePlacesApiKey String   @default("")
+  googlePlacesApiKey2 String  @default("")
+  openaiApiKey       String   @default("")
+  ninjapearApiKey    String   @default("")
+  yelpFusionApiKey   String   @default("")
+  metaAccessToken    String   @default("")
+  metaAppId          String   @default("")
+  metaAppSecret      String   @default("")
+  updatedAt          DateTime @updatedAt
+}
+
 /// Outbound and inbound SMS tied to a lead (Twilio).
 model LeadSms {
   id          String     @id @default(cuid())

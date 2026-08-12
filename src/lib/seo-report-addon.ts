@@ -23,7 +23,7 @@ export function normalizeWebsiteInput(input: string): string | null {
 
 export async function generateSeoAnalysisReport(website: string) {
   const audit = await auditWebsite(website);
-  const apiKey = getOpenAIApiKey();
+  const apiKey = await getOpenAIApiKey();
 
   if (!apiKey) {
     return buildFallbackReport(website, audit);

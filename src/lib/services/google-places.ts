@@ -10,6 +10,7 @@ import {
   sanitizePlacesErrorForClient,
 } from "@/lib/google-places-errors";
 import { mapPool } from "@/lib/utils/async-pool";
+import { getGooglePlacesKeys } from "@/lib/platform-keys";
 
 export type PlaceResult = {
   placeId: string;
@@ -26,11 +27,18 @@ export type PlaceResult = {
 };
 
 export class GooglePlacesError extends Error {
-  constructor(message: string) {
+  /** HTTP status when the failure came from a Places API response, if known. */
+  statusCode?: number;
+
+  constructor(message: string, statusCode?: number) {
     super(message);
     this.name = "GooglePlacesError";
+    if (statusCode) this.statusCode = statusCode;
   }
 }
+
+/** Key/billing/quota failures worth retrying with the backup key. */
+const PLACES_KEY_FAILURE_STATUSES = new Set([400, 401, 403, 429]);
 
 const BROWSER_UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
@@ -256,6 +264,38 @@ type ScraperLead = {
   longitude?: number;
 };
 
+type PlacesApiPlace = {
+  id?: string;
+  displayName?: { text?: string };
+  formattedAddress?: string;
+  websiteUri?: string;
+  internationalPhoneNumber?: string;
+  rating?: number;
+  userRatingCount?: number;
+  location?: { latitude?: number; longitude?: number };
+  googleMapsUri?: string;
+  businessStatus?: string;
+};
+
+type PlacesTextSearchResponse = {
+  places?: PlacesApiPlace[];
+  nextPageToken?: string;
+  error?: { code?: number; status?: string; message?: string };
+};
+
+const PLACES_FIELD_MASK = [
+  "places.id",
+  "places.displayName",
+  "places.formattedAddress",
+  "places.websiteUri",
+  "places.internationalPhoneNumber",
+  "places.rating",
+  "places.userRatingCount",
+  "places.location",
+  "places.googleMapsUri",
+  "places.businessStatus",
+].join(",");
+
 function parseScraperJson(raw: string): {
   ok?: boolean;
   leads?: ScraperLead[];
@@ -380,6 +420,186 @@ async function runScraper(params: {
   }
 }
 
+async function searchTextOnce(
+  apiKey: string,
+  body: Record<string, unknown>,
+): Promise<PlacesTextSearchResponse> {
+  const response = await fetch(
+    "https://places.googleapis.com/v1/places:searchText",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": PLACES_FIELD_MASK,
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(12000),
+    },
+  );
+  if (!response.ok) {
+    const raw = await response.text().catch(() => "");
+    let detail = `HTTP ${response.status}`;
+    try {
+      const parsed = JSON.parse(raw) as {
+        error?: { message?: string; status?: string };
+      };
+      detail = parsed.error?.message || parsed.error?.status || detail;
+    } catch {
+      // non-JSON error body — keep HTTP status
+    }
+    logGooglePlacesError("places-api", `searchText ${detail}`);
+    throw new GooglePlacesError(
+      sanitizePlacesErrorForClient(detail),
+      response.status,
+    );
+  }
+  const data = (await response.json()) as PlacesTextSearchResponse;
+  if (data.error) {
+    const detail = data.error.message || data.error.status || "searchText error";
+    logGooglePlacesError("places-api", `searchText ${detail}`);
+    throw new GooglePlacesError(sanitizePlacesErrorForClient(detail));
+  }
+  return data;
+}
+
+async function placesTextSearch(opts: {
+  query: string;
+  regionCode: string;
+  pageToken?: string;
+}): Promise<PlacesTextSearchResponse> {
+  const { primary, backup } = await getGooglePlacesKeys();
+  const keys = [primary.trim(), backup.trim()].filter(Boolean);
+  if (!keys.length) {
+    throw new GooglePlacesError(PUBLIC_PLACES_SEARCH_UNAVAILABLE);
+  }
+  const body: Record<string, unknown> = {
+    textQuery: opts.query,
+    pageSize: 20,
+    languageCode: "en",
+    regionCode: opts.regionCode,
+  };
+  if (opts.pageToken) body.pageToken = opts.pageToken;
+
+  let lastError: GooglePlacesError | null = null;
+  for (let i = 0; i < keys.length; i++) {
+    try {
+      return await searchTextOnce(keys[i], body);
+    } catch (error) {
+      lastError =
+        error instanceof GooglePlacesError
+          ? error
+          : new GooglePlacesError(
+              sanitizePlacesErrorForClient(
+                error instanceof Error ? error.message : String(error),
+              ),
+            );
+      const status = lastError.statusCode;
+      if (!(status && PLACES_KEY_FAILURE_STATUSES.has(status))) {
+        // Not a key problem — no point trying the next key.
+        throw lastError;
+      }
+      logGooglePlacesError(
+        "places-api",
+        `primary key failed (${status}) — ${i + 1 < keys.length ? "trying backup" : "no backup"}`,
+      );
+    }
+  }
+  throw lastError ?? new GooglePlacesError(PUBLIC_PLACES_SEARCH_UNAVAILABLE);
+}
+
+async function searchOfficialQuery(opts: {
+  query: string;
+  regionCode: string;
+  maxPages: number;
+  wanted: number;
+}): Promise<PlaceResult[]> {
+  const out: PlaceResult[] = [];
+  let pageToken: string | undefined;
+  for (let page = 0; page < opts.maxPages; page++) {
+    const data = await placesTextSearch({
+      query: opts.query,
+      regionCode: opts.regionCode,
+      pageToken,
+    });
+    for (const place of data.places ?? []) {
+      if (out.length >= opts.wanted) break;
+      const name = place.displayName?.text?.trim();
+      if (!name) continue;
+      if (place.businessStatus && place.businessStatus !== "OPERATIONAL") {
+        continue;
+      }
+      const mapsUrl = place.googleMapsUri?.trim() || "";
+      out.push({
+        placeId:
+          place.id?.trim() || `${name}-${place.formattedAddress || ""}`,
+        name,
+        address: place.formattedAddress?.trim() || "",
+        phone: place.internationalPhoneNumber?.trim() || undefined,
+        website: normalizeWebsiteUrl(place.websiteUri),
+        rating: place.rating ?? undefined,
+        reviewCount: place.userRatingCount ?? undefined,
+        mapsUrl:
+          mapsUrl ||
+          `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`,
+        latitude: place.location?.latitude,
+        longitude: place.location?.longitude,
+      });
+    }
+    pageToken = data.nextPageToken;
+    if (!pageToken || out.length >= opts.wanted) break;
+  }
+  return out;
+}
+
+async function searchOfficialPlaces(opts: {
+  queries: string[];
+  wanted: number;
+  regionCode: string;
+}): Promise<PlaceResult[]> {
+  const { queries, wanted, regionCode } = opts;
+  const pagesPerQuery = wanted <= 20 ? 1 : wanted <= 60 ? 2 : 4;
+
+  const failures: string[] = [];
+  const batches = await mapPool(queries, 4, async (q) =>
+    searchOfficialQuery({
+      query: q,
+      regionCode,
+      maxPages: pagesPerQuery,
+      wanted,
+    }).catch((err) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      failures.push(`${q} → ${msg}`);
+      logGooglePlacesError("places-api-query", `${q} → ${msg}`);
+      return [] as PlaceResult[];
+    }),
+  );
+
+  const deduped = new Map<string, PlaceResult>();
+  for (const row of batches.flat()) {
+    const key = row.placeId || row.name;
+    if (deduped.has(key)) continue;
+    deduped.set(key, row);
+    if (deduped.size >= wanted) break;
+  }
+
+  if (!deduped.size) {
+    if (failures.length === queries.length) {
+      const detail = failures[0].split(" → ")[1] ?? "";
+      logGooglePlacesError(
+        "places-api",
+        `All ${failures.length} queries failed: ${failures.join(" | ")}`,
+      );
+      throw new GooglePlacesError(
+        sanitizePlacesErrorForClient(detail) || PUBLIC_PLACES_SEARCH_UNAVAILABLE,
+      );
+    }
+    return [];
+  }
+
+  return Array.from(deduped.values()).slice(0, wanted);
+}
+
 export async function searchGooglePlaces(params: {
   industry: string;
   country: string;
@@ -404,6 +624,24 @@ export async function searchGooglePlaces(params: {
     logGooglePlacesError("scraper", `No search queries built for "${params.industry}"`);
     throw new GooglePlacesError(PUBLIC_PLACES_SEARCH_UNAVAILABLE);
   }
+
+  const placesKeys = await getGooglePlacesKeys();
+  if (placesKeys.primary.trim() || placesKeys.backup.trim()) {
+    try {
+      return await searchOfficialPlaces({
+        queries: selectedQueries,
+        wanted,
+        regionCode: getTierOneCountry(params.country).code,
+      });
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      logGooglePlacesError(
+        "places-api",
+        `search failed (${msg}) — falling back to Maps scraper`,
+      );
+    }
+  }
+
   const perQueryLimit = Math.min(
     80,
     Math.max(wanted, Math.ceil(wanted / selectedQueries.length) + 10),

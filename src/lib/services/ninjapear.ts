@@ -4,6 +4,8 @@
  * Docs: https://nubela.co/docs
  */
 
+import { resolvePlatformKey } from "@/lib/platform-keys";
+
 export type NinjaPearCompany = {
   name: string | null;
   facebookUrl: string | null;
@@ -13,16 +15,13 @@ export type NinjaPearCompany = {
   ownerTitle: string | null;
 };
 
-function getNinjaPearApiKey(): string | null {
-  const key =
-    process.env.NINJAPEAR_API_KEY?.trim() ||
-    process.env.LINKEDIN_DATA_API_KEY?.trim() || // legacy env name — use NinjaPear key here
-    "";
+async function getNinjaPearApiKey(): Promise<string | null> {
+  const key = (await resolvePlatformKey("ninjapearApiKey")).trim();
   return key || null;
 }
 
-export function isNinjaPearConfigured(): boolean {
-  return Boolean(getNinjaPearApiKey());
+export async function isNinjaPearConfigured(): Promise<boolean> {
+  return Boolean(await getNinjaPearApiKey());
 }
 
 /**
@@ -32,7 +31,7 @@ export function isNinjaPearConfigured(): boolean {
 export async function enrichCompanyFromWebsite(
   website: string,
 ): Promise<NinjaPearCompany | null> {
-  const apiKey = getNinjaPearApiKey();
+  const apiKey = await getNinjaPearApiKey();
   if (!apiKey || !website.trim()) return null;
 
   try {

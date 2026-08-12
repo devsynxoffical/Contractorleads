@@ -400,7 +400,7 @@ export async function generateQualificationDetailReport(
 ): Promise<{ content: string; source: "ai" | "fallback" }> {
   const audit = input.audit ?? emptyWebsiteAudit();
   const meta = QUALIFICATION_SCORE_META[input.scoreKey];
-  const apiKey = getOpenAIApiKey();
+  const apiKey = await getOpenAIApiKey();
 
   if (!apiKey) {
     return {

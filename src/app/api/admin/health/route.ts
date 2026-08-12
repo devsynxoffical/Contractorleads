@@ -26,7 +26,7 @@ export async function GET() {
     };
   }
 
-  const keys = getSystemKeyStatuses();
+  const keys = await getSystemKeyStatuses();
   const byKey = Object.fromEntries(keys.map((k) => [k.key, k]));
   const emailStatus = await getEmailProviderStatus().catch(() => null);
 
@@ -50,8 +50,8 @@ export async function GET() {
       name: "Google Places",
       status: byKey.GOOGLE_PLACES_API_KEY?.configured ? "ok" : "missing",
       detail: byKey.GOOGLE_PLACES_API_KEY?.configured
-        ? "API key configured"
-        : "GOOGLE_PLACES_API_KEY missing",
+        ? "API key configured — Lead Finder + autocomplete use the official Places API"
+        : "GOOGLE_PLACES_API_KEY missing — Lead Finder falls back to Maps scraper",
     },
     {
       name: "OpenAI",
@@ -76,8 +76,8 @@ export async function GET() {
     },
     {
       name: "Meta / Facebook",
-      status: isMetaConfigured() ? "ok" : "warn",
-      detail: isMetaConfigured()
+      status: (await isMetaConfigured()) ? "ok" : "warn",
+      detail: (await isMetaConfigured())
         ? "App token or access token configured"
         : "META_* keys missing — Ads Library falls back to public link",
     },

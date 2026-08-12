@@ -59,7 +59,7 @@ export async function POST(request: Request) {
   }
 
   const isSupport = support === true;
-  const apiKey = getOpenAIApiKey();
+  const apiKey = await getOpenAIApiKey();
   const brain = effectiveBrain(await getAiBrain());
   const knowledge = buildKnowledgeContext(message);
   const extraKnowledge = customKnowledgeBlock(brain);
