@@ -90,9 +90,9 @@ async function pickKeeper(ids: string[]) {
 }
 
 type Crud = {
-  findMany: (args: object) => Promise<Array<{ id: string; leadId: string }>>;
-  update: (args: object) => Promise<unknown>;
-  delete: (args: object) => Promise<unknown>;
+  findMany: (args: any) => Promise<Array<{ id: string; leadId: string }>>;
+  update: (args: any) => Promise<unknown>;
+  delete: (args: any) => Promise<unknown>;
 };
 
 async function repoint(
