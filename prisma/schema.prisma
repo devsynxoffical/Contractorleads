@@ -265,9 +265,10 @@ model Lead {
   sms     LeadSms[]
   unlocks LeadUnlock[]
 
+  @@unique([googleMapsLink])
+  @@unique([phone])
   @@index([industry])
   @@index([country])
-  @@index([googleMapsLink])
   @@index([createdAt])
 }
 

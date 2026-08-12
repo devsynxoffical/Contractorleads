@@ -8,6 +8,7 @@ import {
   buildAdminLeadWhere,
   parseAdminLeadFilters,
 } from "@/lib/admin-lead-filters";
+import { findExistingLead } from "@/lib/services/lead-identity";
 
 export async function GET(request: Request) {
   const admin = await requirePermission("leads");
@@ -115,34 +116,47 @@ export async function POST(request: Request) {
         ? body.industry.trim()
         : "General Contractors";
 
-  const lead = await prisma.lead.create({
-    data: {
-      businessName,
-      ownerName: body.ownerName || null,
-      ownerTitle: body.ownerTitle || null,
-      phone: body.phone || null,
-      email: body.email || null,
-      website: body.website || null,
-      address: body.address || null,
-      googleMapsLink: body.googleMapsLink || null,
-      industry,
-      country: body.country || "US",
-      state: body.state || null,
-      city: body.city || null,
-      zip: body.zip || null,
-      leadScore: Number(body.leadScore) || 50,
-      qualityTier: body.qualityTier || "nurture",
-      verificationStatus: "manual",
-      outreachAngle: body.outreachAngle || null,
-    },
+  // Never create a second row for a business already in the pool.
+  const existing = await findExistingLead({
+    name: businessName,
+    address: body.address || undefined,
+    phone: body.phone || undefined,
+    website: body.website || undefined,
+    mapsUrl: body.googleMapsLink || undefined,
   });
+
+  const sharedData = {
+    businessName,
+    ownerName: body.ownerName || null,
+    ownerTitle: body.ownerTitle || null,
+    phone: body.phone || null,
+    email: body.email || null,
+    website: body.website || null,
+    address: body.address || null,
+    googleMapsLink: body.googleMapsLink || null,
+    industry,
+    country: body.country || "US",
+    state: body.state || null,
+    city: body.city || null,
+    zip: body.zip || null,
+    leadScore: Number(body.leadScore) || 50,
+    qualityTier: body.qualityTier || "nurture",
+    verificationStatus: "manual",
+    outreachAngle: body.outreachAngle || null,
+  };
+
+  const lead = existing
+    ? await prisma.lead.update({ where: { id: existing.id }, data: sharedData })
+    : await prisma.lead.create({ data: sharedData });
 
   await logActivity(
     admin.id,
     "admin_create_lead",
-    `Manually created ${businessName}`,
-    { leadId: lead.id },
+    existing
+      ? `Updated existing ${businessName} (no duplicate)`
+      : `Manually created ${businessName}`,
+    { leadId: lead.id, reused: Boolean(existing) },
   );
 
-  return NextResponse.json({ lead }, { status: 201 });
+  return NextResponse.json({ lead, reused: Boolean(existing) }, { status: 201 });
 }

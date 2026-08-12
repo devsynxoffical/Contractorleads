@@ -201,10 +201,14 @@ function buildPlacesQueries(params: {
     }
   }
 
-  // Country-wide: fan across major US metros for volume.
-  if (params.locationScope === "country" && params.country === "US") {
-    for (const metro of US_METROS) {
+  // Country-wide: fan across the country's major metros for volume + diversity.
+  // Without this, whole-country searches only run country-level queries and
+  // Google returns the same top-relevance results clustered in one big city.
+  if (params.locationScope === "country") {
+    const metros = COUNTRY_METROS[country.code] ?? [];
+    for (const metro of metros) {
       queries.add(`${topPhrases[0]} in ${metro}`);
+      queries.add(`${topPhrases[0]} near ${metro}`);
     }
   }
 
@@ -233,6 +237,107 @@ const US_METROS = [
   "Detroit MI",
   "Las Vegas NV",
 ];
+
+const GB_METROS = [
+  "London",
+  "Manchester",
+  "Birmingham",
+  "Leeds",
+  "Glasgow",
+  "Liverpool",
+  "Newcastle upon Tyne",
+  "Sheffield",
+  "Bristol",
+  "Nottingham",
+  "Leicester",
+  "Coventry",
+  "Cardiff",
+  "Edinburgh",
+  "Belfast",
+  "Southampton",
+  "Portsmouth",
+  "Brighton",
+  "Norwich",
+  "Aberdeen",
+  "Plymouth",
+  "Milton Keynes",
+  "Reading",
+  "Oxford",
+  "Cambridge",
+];
+
+const CA_METROS = [
+  "Toronto",
+  "Montreal",
+  "Vancouver",
+  "Calgary",
+  "Edmonton",
+  "Ottawa",
+  "Winnipeg",
+  "Quebec City",
+  "Hamilton",
+  "Kitchener",
+  "London",
+  "Halifax",
+  "Victoria",
+  "Saskatoon",
+  "Regina",
+  "Oshawa",
+  "Windsor",
+  "Kelowna",
+  "St. John's",
+  "Moncton",
+];
+
+const AU_METROS = [
+  "Sydney",
+  "Melbourne",
+  "Brisbane",
+  "Perth",
+  "Adelaide",
+  "Gold Coast",
+  "Canberra",
+  "Newcastle",
+  "Wollongong",
+  "Hobart",
+  "Geelong",
+  "Sunshine Coast",
+  "Townsville",
+  "Cairns",
+  "Darwin",
+  "Ballarat",
+  "Bendigo",
+  "Launceston",
+  "Toowoomba",
+  "Mackay",
+];
+
+const NZ_METROS = [
+  "Auckland",
+  "Wellington",
+  "Christchurch",
+  "Hamilton",
+  "Tauranga",
+  "Dunedin",
+  "Queenstown",
+  "Napier",
+  "Palmerston North",
+  "Rotorua",
+  "New Plymouth",
+  "Nelson",
+  "Whangarei",
+  "Invercargill",
+  "Hastings",
+];
+
+/** Major metros per tier-1 country, used to fan country-wide searches. */
+const COUNTRY_METROS: Record<string, string[]> = {
+  US: US_METROS,
+  GB: GB_METROS,
+  CA: CA_METROS,
+  AU: AU_METROS,
+  NZ: NZ_METROS,
+};
 
 /**
  * Spread the query budget across the whole pool (not just the first N near-
@@ -612,62 +717,115 @@ export async function searchGooglePlaces(params: {
   limit?: number;
 }): Promise<PlaceResult[]> {
   // Scraper is slower than Places API — keep caps practical for Lead Finder.
-  const wanted = Math.max(1, Math.min(params.limit ?? 10, 200));
+  const wanted = Math.max(1, Math.min(params.limit ?? 10, 300));
   const workers = wanted >= 100 ? 5 : wanted >= 40 ? 3 : 2;
 
   const pool = buildPlacesQueries(params);
-  // One query for small searches; fan out a few diverse queries for volume.
-  const queryBudget =
-    wanted <= 25 ? 1 : wanted <= 60 ? 2 : wanted <= 120 ? 3 : 4;
+  const isCountryWide = params.locationScope === "country";
+  // Country-wide searches fan across metros — give them a bigger budget so the
+  // regional queries actually run, otherwise results cluster in one big city.
+  const queryBudget = isCountryWide
+    ? wanted <= 25
+      ? 1
+      : wanted <= 60
+        ? 2
+        : wanted <= 120
+          ? 5
+          : 8
+    : wanted <= 25
+      ? 1
+      : wanted <= 60
+        ? 2
+        : wanted <= 120
+          ? 3
+          : 4;
   const selectedQueries = selectQueries(pool, queryBudget);
   if (!selectedQueries.length) {
     logGooglePlacesError("scraper", `No search queries built for "${params.industry}"`);
     throw new GooglePlacesError(PUBLIC_PLACES_SEARCH_UNAVAILABLE);
   }
 
+  const deduped = new Map<string, PlaceResult>();
+
+  // Primary path: official Places API. It can legitimately return fewer than
+  // `wanted` (partial failure, few matches), so it must NOT short-circuit the
+  // scraper — the shortfall below is topped up instead of returned short.
   const placesKeys = await getGooglePlacesKeys();
   if (placesKeys.primary.trim() || placesKeys.backup.trim()) {
     try {
-      return await searchOfficialPlaces({
+      const apiPlaces = await searchOfficialPlaces({
         queries: selectedQueries,
         wanted,
         regionCode: getTierOneCountry(params.country).code,
       });
+      for (const p of apiPlaces) {
+        if (deduped.size >= wanted) break;
+        deduped.set(p.placeId || p.name, p);
+      }
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       logGooglePlacesError(
         "places-api",
-        `search failed (${msg}) — falling back to Maps scraper`,
+        `search failed (${msg}) — filling from Maps scraper`,
       );
     }
   }
 
-  const perQueryLimit = Math.min(
-    80,
-    Math.max(wanted, Math.ceil(wanted / selectedQueries.length) + 10),
-  );
+  // Fill whatever the Places API couldn't return with the Maps scraper so the
+  // requested count is actually met. Results are merged + deduped by place id.
+  const need = wanted - deduped.size;
+  if (need > 0) {
+    const perQueryLimit = Math.min(
+      80,
+      Math.max(need, Math.ceil(need / selectedQueries.length) + 10),
+    );
 
-  const failures: string[] = [];
-  // Max 2 headless browsers at once — parallel Chromium launches trip Google's
-  // anti-bot checks, which is the main source of flaky empty scrapes.
-  const batches = await mapPool(selectedQueries, 2, async (q) =>
-    runScraper({
-      query: q,
-      workers,
-      limit: perQueryLimit,
-    }).catch((err) => {
-      const msg = err instanceof Error ? err.message : String(err);
-      failures.push(`${q} → ${msg}`);
-      logGooglePlacesError("scraper-query", `${q} → ${msg}`);
-      return [] as ScraperLead[];
-    }),
-  );
+    const failures: string[] = [];
+    // Max 2 headless browsers at once — parallel Chromium launches trip Google's
+    // anti-bot checks, which is the main source of flaky empty scrapes.
+    const batches = await mapPool(selectedQueries, 2, async (q) =>
+      runScraper({
+        query: q,
+        workers,
+        limit: perQueryLimit,
+      }).catch((err) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        failures.push(`${q} → ${msg}`);
+        logGooglePlacesError("scraper-query", `${q} → ${msg}`);
+        return [] as ScraperLead[];
+      }),
+    );
 
-  const rows = batches.flat();
-  if (!rows.length) {
-    if (failures.length === selectedQueries.length) {
-      // Every scrape attempt failed (blocked/timeout) — surface it instead of
-      // silently returning an empty list the user mistakes for "no businesses".
+    for (const row of batches.flat()) {
+      if (deduped.size >= wanted) break;
+      const name = row.name?.trim();
+      if (!name) continue;
+      const mapsUrl = row.google_maps_url?.trim() || "";
+      const placeId =
+        row.place_id?.trim() ||
+        mapsUrl ||
+        `${name}-${row.phone || row.address || ""}`;
+      if (deduped.has(placeId)) continue;
+      const fromUrl = coordsFromMapsUrl(mapsUrl);
+      deduped.set(placeId, {
+        placeId,
+        name,
+        address: row.address?.trim() || "",
+        phone: row.phone?.trim() || undefined,
+        website: normalizeWebsiteUrl(row.website || undefined),
+        rating: row.rating ?? undefined,
+        reviewCount: row.review_count ?? undefined,
+        mapsUrl:
+          mapsUrl ||
+          `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`,
+        latitude: row.latitude ?? fromUrl.lat,
+        longitude: row.longitude ?? fromUrl.lng,
+      });
+    }
+
+    if (!deduped.size && failures.length === selectedQueries.length) {
+      // Every source failed (blocked/timeout) — surface it instead of silently
+      // returning an empty list the user mistakes for "no businesses".
       logGooglePlacesError(
         "scraper",
         `All ${failures.length} queries failed: ${failures.join(" | ")}`,
@@ -677,36 +835,6 @@ export async function searchGooglePlaces(params: {
         sanitizePlacesErrorForClient(detail) || PUBLIC_PLACES_SEARCH_UNAVAILABLE,
       );
     }
-    // Queries ran fine but genuinely found nothing for this service/area.
-    return [];
-  }
-
-  const deduped = new Map<string, PlaceResult>();
-  for (const row of rows) {
-    const name = row.name?.trim();
-    if (!name) continue;
-    const mapsUrl = row.google_maps_url?.trim() || "";
-    const placeId =
-      row.place_id?.trim() ||
-      mapsUrl ||
-      `${name}-${row.phone || row.address || ""}`;
-    if (deduped.has(placeId)) continue;
-    const fromUrl = coordsFromMapsUrl(mapsUrl);
-    deduped.set(placeId, {
-      placeId,
-      name,
-      address: row.address?.trim() || "",
-      phone: row.phone?.trim() || undefined,
-      website: normalizeWebsiteUrl(row.website || undefined),
-      rating: row.rating ?? undefined,
-      reviewCount: row.review_count ?? undefined,
-      mapsUrl:
-        mapsUrl ||
-        `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`,
-      latitude: row.latitude ?? fromUrl.lat,
-      longitude: row.longitude ?? fromUrl.lng,
-    });
-    if (deduped.size >= wanted) break;
   }
 
   return Array.from(deduped.values()).slice(0, wanted);

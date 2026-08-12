@@ -18,8 +18,6 @@ export type SearchCriteriaInput = {
   zip?: string;
   customLocation?: string;
   radius?: number | string;
-  /** Keep only leads with LinkedIn + social + website owner name. Default false. */
-  requireSocialPresence?: boolean | string;
   /** Desired number of leads (10–1000). Default 50. */
   targetLeadCount?: number | string;
 };
@@ -33,19 +31,8 @@ export type ResolvedSearchCriteria = {
   zip?: string;
   customLocation?: string;
   radius?: number;
-  /** LinkedIn + social + website owner name required when true. */
-  requireSocialPresence: boolean;
   targetLeadCount: number;
 };
-
-function parseBool(value: unknown, defaultValue: boolean): boolean {
-  if (value === undefined || value === null || value === "") return defaultValue;
-  if (typeof value === "boolean") return value;
-  const s = String(value).toLowerCase();
-  if (s === "true" || s === "1" || s === "on" || s === "yes") return true;
-  if (s === "false" || s === "0" || s === "off" || s === "no") return false;
-  return defaultValue;
-}
 
 function extractStateFromText(text: string): string | null {
   for (const s of US_STATES) {
@@ -78,7 +65,6 @@ export function resolveSearchCriteria(
 
   const locationScope: LocationScope =
     input.locationScope === "country" ? "country" : "local";
-  const requireSocialPresence = parseBool(input.requireSocialPresence, true);
   const rawTarget = Number(input.targetLeadCount ?? 50);
   const targetLeadCount = Number.isFinite(rawTarget)
     ? Math.max(1, Math.min(1000, Math.floor(rawTarget)))
@@ -91,7 +77,6 @@ export function resolveSearchCriteria(
         industry,
         country,
         locationScope,
-        requireSocialPresence,
         targetLeadCount,
       },
     };
@@ -120,7 +105,6 @@ export function resolveSearchCriteria(
         zip: input.zip?.trim() || undefined,
         customLocation,
         radius,
-        requireSocialPresence,
         targetLeadCount,
       },
     };
@@ -146,7 +130,6 @@ export function resolveSearchCriteria(
       city: city || undefined,
       zip: zip || undefined,
       radius,
-      requireSocialPresence,
       targetLeadCount,
     },
   };
@@ -255,7 +238,6 @@ export function parseLeadQuery(input: string): ResolvedSearchCriteria | null {
     city: city || customLocation,
     customLocation,
     radius: locationScope === "local" ? 25 : undefined,
-    requireSocialPresence: true,
     targetLeadCount: 50,
   };
 }

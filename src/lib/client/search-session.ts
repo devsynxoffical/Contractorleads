@@ -21,6 +21,13 @@ export type SearchSessionLead = {
   revenueRangeEstimate?: string | null;
   yelpRating?: number | null;
   googleMapsLink?: string | null;
+  linkedinUrl?: string | null;
+  linkedinCompanyUrl?: string | null;
+  linkedinOwnerUrl?: string | null;
+  facebook?: string | null;
+  instagram?: string | null;
+  youtube?: string | null;
+  tiktok?: string | null;
 };
 
 export type HomeSearchCache = {
@@ -107,7 +114,6 @@ export type AdminScrapeCache = {
   radius: number;
   targetLeadCount: number;
   customLeadCount: string;
-  requireSocialPresence: boolean;
   savedAt: number;
 };
 

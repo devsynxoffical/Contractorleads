@@ -226,7 +226,6 @@ export async function runDailyDigestForSubscription(
       state: sub.state ?? undefined,
       city: sub.city ?? undefined,
       targetLeadCount: requested,
-      requireSocialPresence: true,
     });
 
     const leads = result.leads;

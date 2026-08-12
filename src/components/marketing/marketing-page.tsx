@@ -155,8 +155,8 @@ const FEATURES = [
   },
   {
     icon: SiInstagram,
-    title: "Social Presence Filter",
-    copy: "Require a verified LinkedIn, social profile, and identified owner before a lead is even accepted into your results.",
+    title: "LinkedIn-first ranking",
+    copy: "Businesses with a verified LinkedIn profile and active social presence rank first, with the rest of the list filled out below — full volume, strongest contacts on top.",
     color: "#E4405F",
     bg: "#fce8ee",
   },
@@ -217,7 +217,7 @@ const FAQS = [
   },
   {
     q: "Can I filter for LinkedIn + social presence?",
-    a: "Yes. Turn on the Social Presence Filter in Lead Finder to only accept leads that have a verified LinkedIn profile, active social presence, and an identified owner — useful when you want a smaller, higher-confidence list over raw volume.",
+    a: "Sorting is automatic: every Lead Finder result ranks businesses with a verified LinkedIn profile and active social presence first, then fills the list with the rest — so you get full volume with the strongest contacts on top.",
   },
   {
     q: "Does AI qualification need me to bring my own OpenAI key?",

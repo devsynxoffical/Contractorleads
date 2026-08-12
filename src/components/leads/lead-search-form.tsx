@@ -57,8 +57,24 @@ import {
 
 type Lead = SearchSessionLead & { phone: string | null; industry: string | null };
 
-function byLeadScoreDesc<T extends { leadScore: number }>(leads: T[]): T[] {
-  return [...leads].sort((a, b) => b.leadScore - a.leadScore);
+function hasLinkedInAndSocial(lead: Lead): boolean {
+  const linkedin = Boolean(
+    lead.linkedinUrl || lead.linkedinCompanyUrl || lead.linkedinOwnerUrl,
+  );
+  const social = Boolean(
+    lead.facebook || lead.instagram || lead.youtube || lead.tiktok,
+  );
+  return linkedin && social;
+}
+
+/** LinkedIn + social leads first, then the rest — each group by score. */
+function byLeadScoreDesc(leads: Lead[]): Lead[] {
+  return [...leads].sort((a, b) => {
+    const aRank = hasLinkedInAndSocial(a) ? 0 : 1;
+    const bRank = hasLinkedInAndSocial(b) ? 0 : 1;
+    if (aRank !== bRank) return aRank - bRank;
+    return b.leadScore - a.leadScore;
+  });
 }
 
 const SEARCH_STAGES = [
@@ -131,7 +147,6 @@ export function LeadSearchForm() {
   const [customLocation, setCustomLocation] = useState("");
   const [selectedState, setSelectedState] = useState("");
   const [city, setCity] = useState("");
-  const [requireSocialPresence, setRequireSocialPresence] = useState(true);
   const [targetLeadCount, setTargetLeadCount] = useState(50);
   const [leadCapacity, setLeadCapacity] = useState<number | null>(null);
   const [filterNote, setFilterNote] = useState<string | null>(null);
@@ -330,7 +345,6 @@ export function LeadSearchForm() {
     zip?: string;
     customLocation?: string;
     radius?: string | number;
-    requireSocialPresence?: boolean;
     targetLeadCount?: number;
   }) {
     const resolved = resolveSearchCriteria(payload);
@@ -402,17 +416,6 @@ export function LeadSearchForm() {
         setFilterNote(
           `Requested ${data.meta.requestedLeadCount} leads — capped to ${data.meta.targetLeadCount} by your remaining lead limit. Export existing leads or buy credits to raise the cap.`,
         );
-      } else if (data.meta?.requireSocialPresence && data.meta?.skippedNoSocial > 0) {
-        setFilterNote(
-          `Filtered to LinkedIn + social + website owner — skipped ${data.meta.skippedNoSocial} businesses missing those details.`
-        );
-      } else if (
-        data.meta?.requireSocialPresence &&
-        ranked.length === 0
-      ) {
-        setFilterNote(
-          "No businesses in this area had LinkedIn, social profiles, and an owner name on their website. Try a wider radius or turn off the filter."
-        );
       }
       saveFinderSearchCache({
         searchId: data.search?.id,
@@ -464,7 +467,6 @@ export function LeadSearchForm() {
         locationScope === "local"
           ? String(form.get("radius") || "25")
           : undefined,
-      requireSocialPresence,
       targetLeadCount,
     });
   }
@@ -782,25 +784,6 @@ export function LeadSearchForm() {
                       : `You can generate up to ${leadCapacity} more lead${leadCapacity === 1 ? "" : "s"}. You are only charged for leads actually returned.`}
                 </p>
               </div>
-
-              <label className="flex items-start gap-3 rounded-xl border border-brand-500/20 bg-brand-500/05 px-4 py-3 sm:col-span-2 lg:col-span-3">
-                <input
-                  type="checkbox"
-                  checked={requireSocialPresence}
-                  onChange={(e) => setRequireSocialPresence(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-brand-500/40 bg-transparent text-brand-500 focus:ring-brand-500"
-                />
-                <span className="text-[13px] leading-snug text-ink">
-                  <span className="font-semibold text-brand-600">
-                    LinkedIn + social required (on by default)
-                  </span>
-                  <span className="mt-0.5 block text-ink-muted">
-                    Every scrape automatically finds LinkedIn, Facebook/Instagram,
-                    owner, and Yelp. With this on, only leads that have LinkedIn +
-                    a social profile are kept.
-                  </span>
-                </span>
-              </label>
 
               <div className="flex items-end sm:col-span-2 lg:col-span-1">
                 <Button

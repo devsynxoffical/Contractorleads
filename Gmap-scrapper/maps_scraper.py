@@ -110,6 +110,31 @@ def _extract_coords_from_url(url: str) -> tuple[float, float] | None:
     return None
 
 
+def _extract_cid(url: str) -> str:
+    """Best-effort real place id (0x…:0x… hex pair in the URL).
+
+    This is unique per business, unlike the name slug, so it is the strongest
+    dedup signal across different queries / zoom levels of the same listing.
+    """
+    m = re.search(r"0x[0-9a-f]{4,}:0x[0-9a-f]{4,}", url, re.IGNORECASE)
+    return m.group(0) if m else ""
+
+
+def _canonical_maps_url(url: str) -> str:
+    """Stable version of a maps place URL for dedup / identity matching.
+
+    Drops the zoom component and the /data= blob (which contains viewport
+    state) but keeps the place slug + @lat,lng so the URL still navigates and
+    the same business always produces the same string.
+    """
+    if not url:
+        return ""
+    u = url.strip()
+    u = re.sub(r"@(-?\d+\.\d+,-?\d+\.\d+),\d+(?:\.\d+)?z", r"@\1", u)
+    u = re.sub(r"(?:/|&)data=[^&/?]+", "", u)
+    return u.rstrip("/")
+
+
 # ═══════════════════════════════════════════════════════════════════════
 #  Scraper
 # ═══════════════════════════════════════════════════════════════════════
@@ -122,6 +147,7 @@ class GoogleMapsScraper:
         self.leads: list[Lead] = []
         self._seen_keys: set[str] = set()
         self._seen_hrefs: set[str] = set()
+        self._seen_canon: set[str] = set()
         self._write_lock = asyncio.Lock()
 
     # ──────────────────────────────────────────────────────────────────
@@ -286,27 +312,67 @@ class GoogleMapsScraper:
                         "Wait a few minutes before retrying."
                     )
 
-                hrefs = await self._scroll_and_collect(page, cap=cap)
-                if not hrefs:
-                    # One retry — transient network / delayed render happens often.
-                    console.print("[yellow]  ⚠ No results yet, retrying once…[/]")
-                    await asyncio.sleep(3)
-                    await page.goto(search_url, wait_until="domcontentloaded", timeout=30_000)
-                    await asyncio.sleep(3)
-                    await self._dismiss_consent(page)
-                    if await self._looks_blocked(page):
-                        raise RuntimeError(
-                            "Google served a captcha / unusual-traffic page. "
-                            "Wait a few minutes before retrying."
-                        )
-                    hrefs = await self._scroll_and_collect(page, cap=cap)
+                # Round-based collect + extract: scroll, extract the new
+                # listings, and if some detail pages failed keep scrolling
+                # deeper until we reach the requested count (or run out).
+                # Dedup sets keep every business at most once.
+                collect_target = cap
+                found_hrefs = False
+                for _round in range(config.MAX_SCROLL_ROUNDS):
+                    if len(self.leads) >= cap:
+                        break
 
-                hrefs = hrefs[:cap]
-                await self._extract_all(page, hrefs)
+                    hrefs = await self._scroll_and_collect(
+                        page, cap=collect_target, silent=_round > 0
+                    )
+
+                    if not hrefs:
+                        # One retry — transient network / delayed render happens often.
+                        if not found_hrefs and _round == 0:
+                            console.print("[yellow]  ⚠ No results yet, retrying once…[/]")
+                            await asyncio.sleep(3)
+                            await page.goto(search_url, wait_until="domcontentloaded", timeout=30_000)
+                            await asyncio.sleep(3)
+                            await self._dismiss_consent(page)
+                            if await self._looks_blocked(page):
+                                raise RuntimeError(
+                                    "Google served a captcha / unusual-traffic page. "
+                                    "Wait a few minutes before retrying."
+                                )
+                            continue
+                        break
+
+                    found_hrefs = True
+                    new_hrefs: list[str] = []
+                    for h in hrefs:
+                        canon = _canonical_maps_url(h) or h
+                        if canon in self._seen_canon or h in self._seen_hrefs:
+                            continue
+                        self._seen_canon.add(canon)
+                        self._seen_hrefs.add(h)
+                        new_hrefs.append(h)
+
+                    if not new_hrefs:
+                        break  # feed exhausted — nothing new to extract
+
+                    # Extract what we still need plus a buffer for failures.
+                    need = cap - len(self.leads)
+                    buffer = max(5, need) if need > 0 else 0
+                    await self._extract_all(page, new_hrefs[: need + buffer])
+
+                    # No leads at all after a full round → detail pages are
+                    # blocked; don't waste time scrolling the whole list.
+                    if not self.leads and _round >= 1:
+                        break
+
+                    # Next round scrolls deeper to find replacement leads.
+                    collect_target = max(
+                        len(self._seen_hrefs) + 5, collect_target + 10
+                    )
 
                 # Listings found but zero extracted → detail pages were blocked
                 # (redirects to login/captcha). Fail loudly instead of empty.
-                if hrefs and not self.leads:
+                if found_hrefs and not self.leads:
                     raise RuntimeError(
                         "Found listings but could not read their details — "
                         "Google likely blocked the detail pages. Try again shortly."
@@ -360,13 +426,21 @@ class GoogleMapsScraper:
 
     @staticmethod
     def _lead_key(lead: Lead) -> str:
-        if lead.place_id:
-            return f"pid:{lead.place_id}"
-        if lead.google_maps_url:
-            return f"url:{lead.google_maps_url}"
-        name = (lead.name or "").strip().lower()
-        phone = (lead.phone or "").strip().lower()
-        address = (lead.address or "").strip().lower()
+        """Unique identity for a lead — strongest signal first.
+
+        Real place id (CID) > canonical maps URL > normalized name+phone+address.
+        This stops the same business appearing twice across queries, zoom
+        levels, or URL variants while still collapsing genuinely identical rows.
+        """
+        cid = (lead.place_id or "").strip() or _extract_cid(lead.google_maps_url)
+        if cid:
+            return f"cid:{cid.lower()}"
+        curl = _canonical_maps_url(lead.google_maps_url)
+        if curl:
+            return f"url:{curl.lower()}"
+        name = re.sub(r"\s+", " ", (lead.name or "").strip().lower())
+        phone = re.sub(r"\D", "", lead.phone or "")
+        address = re.sub(r"\s+", " ", (lead.address or "").strip().lower())
         return f"{name}|{phone}|{address}"
 
     async def _open(self, page: Page):
@@ -463,11 +537,16 @@ class GoogleMapsScraper:
               const out = [];
               const seen = new Set();
               for (const n of nodes) {
-                const href = n.getAttribute("href") || "";
-                if (href && !seen.has(href)) {
-                  seen.add(href);
-                  out.push(href);
-                }
+                const href = (n.getAttribute("href") || "").trim();
+                if (!href) continue;
+                // Same place can appear with different zoom / viewport data —
+                // dedupe on the canonical form so it is only collected once.
+                const canon = href
+                  .replace(/@[^/]*z/, "")
+                  .replace(/[\\/&]data=[^&\\/?]+/, "");
+                if (seen.has(canon)) continue;
+                seen.add(canon);
+                out.push(href);
               }
               return out;
             }""",
@@ -518,11 +597,22 @@ class GoogleMapsScraper:
             for href in hrefs:
                 lead_name = ""
                 try:
-                    await worker_page.goto(href, wait_until="domcontentloaded", timeout=20_000)
-                    await asyncio.sleep(
-                        random.uniform(config.DETAIL_DELAY_MIN, config.DETAIL_DELAY_MAX)
-                    )
-                    lead = await self._extract_one(worker_page, href)
+                    lead = None
+                    for attempt in range(config.DETAIL_RETRIES + 1):
+                        try:
+                            await worker_page.goto(href, wait_until="domcontentloaded", timeout=20_000)
+                            await asyncio.sleep(
+                                random.uniform(config.DETAIL_DELAY_MIN, config.DETAIL_DELAY_MAX)
+                            )
+                            lead = await self._extract_one(worker_page, href)
+                            if lead and lead.name:
+                                break
+                        except Exception:
+                            pass
+                        lead = None
+                        if attempt < config.DETAIL_RETRIES:
+                            await asyncio.sleep(1.0)
+
                     if lead and lead.name:
                         lead_name = lead.name
                         key = self._lead_key(lead)
@@ -605,14 +695,27 @@ class GoogleMapsScraper:
                         lead.website = (await link.get_attribute("href")) or ""
                         break
 
-            pid = re.search(r"place/([^/]+)", url)
-            if pid:
-                lead.place_id = pid.group(1)
+            # Real place id (0x…:0x… hex) — unique per business, unlike the
+            # name slug, so re-scrapes / different queries match the same row.
+            cid = _extract_cid(url)
+            if cid:
+                lead.place_id = cid
 
-            coords = re.findall(r"@(-?\d+\.\d+),(-?\d+\.\d+)", url)
-            if coords:
-                lead.latitude = float(coords[0][0])
-                lead.longitude = float(coords[0][1])
+            # Exact place coordinates live in the data blob (!3d!4d); the
+            # bare @lat,lng in search results is the map viewport, not the place.
+            exact = re.search(r"!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)", url)
+            if exact:
+                lead.latitude = float(exact.group(1))
+                lead.longitude = float(exact.group(2))
+            else:
+                coords = re.findall(r"@(-?\d+\.\d+),(-?\d+\.\d+)", url)
+                if coords:
+                    lead.latitude = float(coords[0][0])
+                    lead.longitude = float(coords[0][1])
+
+            # Store a stable URL (zoom + viewport data stripped) so the same
+            # business gets one googleMapsLink across every scrape.
+            lead.google_maps_url = _canonical_maps_url(url)
 
             return lead
         except Exception:

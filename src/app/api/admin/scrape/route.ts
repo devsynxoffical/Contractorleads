@@ -33,8 +33,33 @@ const leadSelect = {
   googleMapsLink: true,
   outreachAngle: true,
   revenueRangeEstimate: true,
+  linkedinUrl: true,
+  linkedinCompanyUrl: true,
+  linkedinOwnerUrl: true,
+  facebook: true,
+  instagram: true,
+  youtube: true,
+  tiktok: true,
   createdAt: true,
 } as const;
+
+function hasLinkedInAndSocial(lead: {
+  linkedinUrl?: string | null;
+  linkedinCompanyUrl?: string | null;
+  linkedinOwnerUrl?: string | null;
+  facebook?: string | null;
+  instagram?: string | null;
+  youtube?: string | null;
+  tiktok?: string | null;
+}): boolean {
+  const linkedin = Boolean(
+    lead.linkedinUrl || lead.linkedinCompanyUrl || lead.linkedinOwnerUrl,
+  );
+  const social = Boolean(
+    lead.facebook || lead.instagram || lead.youtube || lead.tiktok,
+  );
+  return linkedin && social;
+}
 
 /** List scraped niches (with counts) or leads for a niche. */
 export async function GET(request: Request) {
@@ -63,7 +88,14 @@ export async function GET(request: Request) {
         select: leadSelect,
       }),
     ]);
-    return NextResponse.json({ industry, total, leads });
+    // LinkedIn + social leads first, then the rest — each group newest first.
+    const ranked = [...leads].sort((a, b) => {
+      const aRank = hasLinkedInAndSocial(a) ? 0 : 1;
+      const bRank = hasLinkedInAndSocial(b) ? 0 : 1;
+      if (aRank !== bRank) return aRank - bRank;
+      return b.createdAt.getTime() - a.createdAt.getTime();
+    });
+    return NextResponse.json({ industry, total, leads: ranked });
   }
 
   const grouped = await prisma.lead.groupBy({
@@ -107,7 +139,6 @@ export async function POST(request: Request) {
       zip,
       customLocation,
       radius,
-      requireSocialPresence,
       targetLeadCount,
     } = resolved.criteria;
 
@@ -121,7 +152,6 @@ export async function POST(request: Request) {
       zip,
       customLocation,
       radius,
-      requireSocialPresence,
       targetLeadCount,
     });
 

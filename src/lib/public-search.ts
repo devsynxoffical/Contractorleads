@@ -159,7 +159,6 @@ export async function handlePublicPing(request: Request, kind: IntegrationKind) 
         state: "TX",
         city: "Austin",
         targetLeadCount: 10,
-        requireSocialPresence: false,
       },
     },
   });
@@ -191,17 +190,7 @@ export async function handlePublicSearch(
       return jsonWithCors({ error: parsed.error }, { status: 400 });
     }
 
-    // Public integrations default to volume (not strict social filter)
-    // unless the caller explicitly sets requireSocialPresence.
     const body = { ...parsed.body };
-    if (
-      body.requireSocialPresence === undefined ||
-      body.requireSocialPresence === null ||
-      body.requireSocialPresence === ""
-    ) {
-      body.requireSocialPresence = false;
-    }
-
     const resolved = resolveSearchCriteria(body);
     if (!resolved.ok) {
       return jsonWithCors({ error: resolved.error }, { status: 400 });

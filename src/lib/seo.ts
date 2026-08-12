@@ -70,7 +70,7 @@ export const MARKETING_FAQ: Array<{ q: string; a: string }> = [
   },
   {
     q: "Can I filter for LinkedIn and social presence?",
-    a: "Yes. Turn on the Social Presence Filter in Lead Finder to only accept leads that have a verified LinkedIn profile, active social presence, and an identified owner.",
+    a: "Sorting is automatic: every Lead Finder result ranks businesses with a verified LinkedIn profile and active social presence first, then fills the list with the rest — so you get full volume with the strongest contacts on top.",
   },
   {
     q: "Do I need my own OpenAI key?",

@@ -621,7 +621,8 @@ export function AppShell({
         <footer
           className="hud-shell-footer shrink-0 border-t border-border bg-[var(--sidebar)] px-4 py-3 text-center text-[12px] text-ink-muted backdrop-blur-md print:hidden sm:px-6 sm:text-[12px]"
         >
-          Copyright © 2026 Contractor Leads. All rights reserved.
+          <p>Copyright © 2026 Contractor Leads. All rights reserved.</p>
+          <p>Vaishali Media Productions LLC</p>
         </footer>
       </div>
 

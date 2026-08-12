@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { searchGooglePlaces } from "./google-places";
 import { findLinkedInCompanyUrl } from "./linkedin";
 import { finalizeLeadScore, qualifyLead } from "./qualification";
@@ -12,6 +13,7 @@ import { auditWebsite, emptyWebsiteAudit } from "./website-audit";
 import { matchYelpBusiness } from "./yelp";
 import { mapPool } from "@/lib/utils/async-pool";
 import type { PlaceResult } from "./google-places";
+import { findExistingLead } from "./lead-identity";
 
 const EMPTY_PEOPLE: WebsitePeopleResult = {
   owner: null,
@@ -31,8 +33,6 @@ export type SearchParams = {
   zip?: string;
   customLocation?: string;
   radius?: number;
-  /** Default true — only keep leads with LinkedIn + social. */
-  requireSocialPresence?: boolean;
   /** How many leads the client asked for (10–1000). */
   targetLeadCount?: number;
 };
@@ -89,25 +89,25 @@ function clampTarget(n: number | undefined) {
 }
 
 export async function runLeadPipeline(params: SearchParams) {
-  // Automatic: LinkedIn + social required unless explicitly turned off
-  const requireSocial = params.requireSocialPresence !== false;
+  // No hard LinkedIn/social filter — every qualified lead is kept. Leads with
+  // LinkedIn + social are simply ranked first in the returned list.
   const targetCount = clampTarget(params.targetLeadCount);
-  // Over-fetch for social filter, but keep scraper volume practical (Maps is slower than Places API).
-  const fetchLimit = requireSocial
-    ? Math.min(180, Math.max(targetCount * 3, targetCount + 30))
-    : Math.min(120, Math.max(targetCount * 2, targetCount + 15));
+  const isCountryWide = params.locationScope === "country";
+  // Country-wide scrapes fan across metros, so give them a bigger fetch budget.
+  const fetchLimit = isCountryWide
+    ? Math.min(300, Math.max(targetCount * 3, targetCount + 40))
+    : Math.min(150, Math.max(targetCount * 2, targetCount + 15));
 
   const preferRules = true; // keep volume searches fast
   // Higher concurrency — enrichment is I/O bound
-  const placeConcurrency = requireSocial
-    ? targetCount >= 100
-      ? 20
-      : 14
-    : targetCount >= 250
+  const placeConcurrency =
+    targetCount >= 250
       ? 22
-      : targetCount >= 80
+      : targetCount >= 100
         ? 16
-        : 10;
+        : targetCount >= 50
+          ? 12
+          : 8;
 
   const location =
     params.customLocation?.trim() ||
@@ -141,48 +141,42 @@ export async function runLeadPipeline(params: SearchParams) {
   });
 
   const leads: Awaited<ReturnType<typeof prisma.lead.create>>[] = [];
-  let skippedNoSocial = 0;
   let scanned = 0;
 
-  // Prefer businesses with websites when social filter is on
-  const ordered = requireSocial
-    ? [
-        ...places.filter((p) => p.website),
-        ...places.filter((p) => !p.website),
-      ]
-    : places;
+  // Prefer businesses with websites so the strongest candidates fill first.
+  const ordered = [
+    ...places.filter((p) => p.website),
+    ...places.filter((p) => !p.website),
+  ];
 
   await mapPool(ordered, placeConcurrency, async (place) => {
     if (leads.length >= targetCount) return;
 
     scanned += 1;
 
-    if (requireSocial && !place.website) {
-      skippedNoSocial += 1;
-      return;
-    }
-
     const lead = await enrichAndPersistPlace({
       place,
       params,
       searchId: search.id,
       location,
-      requireSocial,
       preferRules,
     });
 
-    if (lead === "skipped-social") {
-      skippedNoSocial += 1;
-      return;
-    }
     if (lead === "skipped-score") return;
     if (leads.length >= targetCount) return;
     leads.push(lead);
   });
 
-  const finalLeads = leads
-    .slice(0, targetCount)
-    .sort((a, b) => b.leadScore - a.leadScore || b.createdAt.getTime() - a.createdAt.getTime());
+  // LinkedIn + social leads first, then the rest — each group by score.
+  const finalLeads = leads.slice(0, targetCount).sort((a, b) => {
+    const aRank = leadHasLinkedInAndSocial(a) ? 0 : 1;
+    const bRank = leadHasLinkedInAndSocial(b) ? 0 : 1;
+    if (aRank !== bRank) return aRank - bRank;
+    return (
+      b.leadScore - a.leadScore ||
+      b.createdAt.getTime() - a.createdAt.getTime()
+    );
+  });
 
   await prisma.search.update({
     where: { id: search.id },
@@ -193,8 +187,6 @@ export async function runLeadPipeline(params: SearchParams) {
     search,
     leads: finalLeads,
     meta: {
-      requireSocialPresence: requireSocial,
-      skippedNoSocial,
       placesScanned: scanned || places.length,
       placesFetched: places.length,
       targetLeadCount: targetCount,
@@ -207,15 +199,11 @@ async function enrichAndPersistPlace(opts: {
   params: SearchParams;
   searchId: string;
   location: string;
-  requireSocial: boolean;
   preferRules: boolean;
 }): Promise<
-  | Awaited<ReturnType<typeof prisma.lead.create>>
-  | "skipped-social"
-  | "skipped-score"
+  Awaited<ReturnType<typeof prisma.lead.create>> | "skipped-score"
 > {
-  const { place, params, searchId, location, requireSocial, preferRules } =
-    opts;
+  const { place, params, searchId, location, preferRules } = opts;
 
   const website = place.website;
   const emptyPack = {
@@ -271,18 +259,6 @@ async function enrichAndPersistPlace(opts: {
         };
 
   const linkedinHint = pack.linkedinCompany || pack.linkedinOwner || fromWeb.linkedin;
-  const socialHint =
-    pack.facebook ||
-    pack.instagram ||
-    pack.youtube ||
-    pack.tiktok ||
-    fromWeb.facebook ||
-    fromWeb.instagram;
-
-  // Fail fast before secondary APIs when filter can't be satisfied
-  if (requireSocial && (!linkedinHint || !socialHint)) {
-    return "skipped-social";
-  }
 
   // Automatic light enrichment (short timeouts — no manual Fetch needed)
   const [companyLi, qualification, facebookPage, websitePeople, yelp] =
@@ -379,18 +355,15 @@ async function enrichAndPersistPlace(opts: {
 
   const websiteQualityScore = qualification.websiteQualityScore;
 
-  const existingLead = place.mapsUrl
-    ? await prisma.lead.findFirst({
-        where: { googleMapsLink: place.mapsUrl },
-      })
-    : await prisma.lead.findFirst({
-        where: {
-          businessName: { equals: place.name, mode: "insensitive" },
-          ...(place.address
-            ? { address: { equals: place.address, mode: "insensitive" } }
-            : {}),
-        },
-      });
+  // Match against the pool by the strongest identity signals so re-scrapes
+  // update the existing row instead of creating a duplicate.
+  const existingLead = await findExistingLead({
+    name: place.name,
+    address: place.address,
+    phone: place.phone,
+    website: place.website,
+    mapsUrl: place.mapsUrl,
+  });
 
   const socialSnapshot = {
     linkedinUrl: primaryLinkedIn ?? existingLead?.linkedinUrl,
@@ -401,10 +374,6 @@ async function enrichAndPersistPlace(opts: {
     youtube: pack.youtube ?? existingLead?.youtube,
     tiktok: pack.tiktok ?? existingLead?.tiktok,
   };
-
-  if (requireSocial && !leadHasLinkedInAndSocial(socialSnapshot)) {
-    return "skipped-social";
-  }
 
   const ownerNameFinal = ownerName ?? existingLead?.ownerName ?? null;
   const emailFinal = websitePeople.email ?? existingLead?.email ?? null;
@@ -508,9 +477,10 @@ async function enrichAndPersistPlace(opts: {
     });
   }
 
-  return prisma.lead.create({
-    data: {
-      businessName: place.name,
+  try {
+    return await prisma.lead.create({
+      data: {
+        businessName: place.name,
       ownerName: ownerNameFinal,
       ownerTitle,
       ownerSourceUrl: ownerSourceUrl,
@@ -567,5 +537,25 @@ async function enrichAndPersistPlace(opts: {
       longitude: place.longitude,
       verificationStatus: "verified",
     },
-  });
+    });
+  } catch (err) {
+    // Lost a create race (duplicate maps link or phone) — merge into the row
+    // another worker just created instead of leaving a duplicate.
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      const winner = await findExistingLead({
+        name: place.name,
+        address: place.address,
+        phone: place.phone,
+        website: place.website,
+        mapsUrl: place.mapsUrl,
+      });
+      if (winner) {
+        return prisma.lead.update({
+          where: { id: winner.id },
+          data: sharedData,
+        });
+      }
+    }
+    throw err;
+  }
 }

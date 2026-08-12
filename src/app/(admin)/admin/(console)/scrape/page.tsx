@@ -31,9 +31,28 @@ import {
   saveAdminScrapeCache,
 } from "@/lib/client/search-session";
 
-type ScrapeLead = LeadResult & { createdAt?: string };
+type ScrapeLead = LeadResult & {
+  createdAt?: string;
+  linkedinUrl?: string | null;
+  linkedinCompanyUrl?: string | null;
+  linkedinOwnerUrl?: string | null;
+  facebook?: string | null;
+  instagram?: string | null;
+  youtube?: string | null;
+  tiktok?: string | null;
+};
 
 type NicheRow = { name: string; count: number };
+
+function hasLinkedInAndSocial(lead: ScrapeLead): boolean {
+  const linkedin = Boolean(
+    lead.linkedinUrl || lead.linkedinCompanyUrl || lead.linkedinOwnerUrl,
+  );
+  const social = Boolean(
+    lead.facebook || lead.instagram || lead.youtube || lead.tiktok,
+  );
+  return linkedin && social;
+}
 
 function persistScrape(snapshot: {
   leads: ScrapeLead[];
@@ -50,7 +69,6 @@ function persistScrape(snapshot: {
   radius: number;
   targetLeadCount: number;
   customLeadCount: string;
-  requireSocialPresence: boolean;
 }) {
   saveAdminScrapeCache({
     leads: snapshot.leads,
@@ -67,7 +85,6 @@ function persistScrape(snapshot: {
     radius: snapshot.radius,
     targetLeadCount: snapshot.targetLeadCount,
     customLeadCount: snapshot.customLeadCount,
-    requireSocialPresence: snapshot.requireSocialPresence,
   });
 }
 
@@ -84,7 +101,6 @@ export default function AdminScrapePage() {
   const [radius, setRadius] = useState(25);
   const [targetLeadCount, setTargetLeadCount] = useState(50);
   const [customLeadCount, setCustomLeadCount] = useState("");
-  const [requireSocialPresence, setRequireSocialPresence] = useState(true);
   const [loading, setLoading] = useState(false);
   const [loadingLeads, setLoadingLeads] = useState(false);
   const [result, setResult] = useState<string | null>(null);
@@ -179,7 +195,6 @@ export default function AdminScrapePage() {
       setRadius(cached.radius ?? 25);
       setTargetLeadCount(cached.targetLeadCount ?? 50);
       setCustomLeadCount(cached.customLeadCount || "");
-      setRequireSocialPresence(cached.requireSocialPresence ?? true);
       setResult(cached.resultMessage);
       setLeads((cached.leads as ScrapeLead[]) ?? []);
       setLeadsTotal(cached.leadsTotal ?? 0);
@@ -206,7 +221,6 @@ export default function AdminScrapePage() {
       radius,
       targetLeadCount,
       customLeadCount,
-      requireSocialPresence,
     });
   }, [
     restored,
@@ -224,7 +238,6 @@ export default function AdminScrapePage() {
     radius,
     targetLeadCount,
     customLeadCount,
-    requireSocialPresence,
   ]);
 
   function selectNiche(name: string) {
@@ -264,7 +277,6 @@ export default function AdminScrapePage() {
           city: locationScope === "local" ? city : undefined,
           zip: locationScope === "local" ? zip : undefined,
           radius: locationScope === "local" ? radius : undefined,
-          requireSocialPresence,
           targetLeadCount: resolvedLeadCount,
         }),
         signal: AbortSignal.timeout(300000),
@@ -272,7 +284,11 @@ export default function AdminScrapePage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Scrape failed");
 
+      // LinkedIn + social leads first, newest batch first within each group.
       const scraped = ((data.leads ?? []) as ScrapeLead[]).slice().sort((a, b) => {
+        const aRank = hasLinkedInAndSocial(a) ? 0 : 1;
+        const bRank = hasLinkedInAndSocial(b) ? 0 : 1;
+        if (aRank !== bRank) return aRank - bRank;
         const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
         return tb - ta;
@@ -486,25 +502,6 @@ export default function AdminScrapePage() {
               </p>
             </label>
           )}
-
-          <label className="flex items-start gap-3 rounded-xl border border-brand-500/20 bg-brand-50/40 px-4 py-3">
-            <input
-              type="checkbox"
-              checked={requireSocialPresence}
-              onChange={(e) => setRequireSocialPresence(e.target.checked)}
-              className="mt-0.5 h-4 w-4 rounded border-brand-500/40 bg-transparent text-brand-500 focus:ring-brand-500"
-            />
-            <span className="text-[13px] leading-snug text-ink">
-              <span className="font-semibold text-brand-600">
-                LinkedIn + social required (on by default)
-              </span>
-              <span className="mt-0.5 block text-ink-muted">
-                Every scrape automatically finds LinkedIn, Facebook/Instagram,
-                owner, and Yelp. With this on, only leads that have LinkedIn +
-                a social profile are kept.
-              </span>
-            </span>
-          </label>
 
           <Button onClick={runScrape} loading={loading}>
             {loading ? "Scraping…" : `Run scrape (${resolvedLeadCount})`}

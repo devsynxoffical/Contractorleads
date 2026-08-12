@@ -208,6 +208,7 @@ export function AuthSiteFooter() {
         <div className="mt-8 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-6 text-[12px] text-white/40 sm:flex-row">
           <div className="space-y-1 text-center sm:text-left">
             <p>© {new Date().getFullYear()} Contractor Leads. All rights reserved.</p>
+            <p>Vaishali Media Productions LLC</p>
             <p className="text-white/30">{EMAIL_BRAND.address}</p>
           </div>
           <p className="text-white/30">Built for agencies that sell to contractors.</p>

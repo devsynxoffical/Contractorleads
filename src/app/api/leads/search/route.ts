@@ -58,7 +58,6 @@ export async function POST(request: Request) {
       zip,
       customLocation,
       radius,
-      requireSocialPresence,
       targetLeadCount: requestedCount,
     } = resolved.criteria;
 
@@ -75,7 +74,6 @@ export async function POST(request: Request) {
       zip,
       customLocation,
       radius,
-      requireSocialPresence,
       targetLeadCount,
     });
 
@@ -137,10 +135,6 @@ export async function POST(request: Request) {
       }
     }
 
-    const filterNote =
-      result.meta.requireSocialPresence && result.meta.skippedNoSocial > 0
-        ? ` (${result.meta.skippedNoSocial} skipped — missing LinkedIn, social, or owner)`
-        : "";
     const capNote = capped
       ? ` (capped to ${targetLeadCount} by lead limit)`
       : "";
@@ -154,7 +148,7 @@ export async function POST(request: Request) {
       "search",
       `Found ${result.leads.length} leads for ${industry} in ${
         locationScope === "country" ? country : state || city || country
-      }${filterNote}${capNote}${billNote}`,
+      }${capNote}${billNote}`,
       {
         searchId: result.search.id,
         charged: billedCharged,

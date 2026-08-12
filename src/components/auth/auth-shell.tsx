@@ -93,7 +93,10 @@ export function AuthShell({
 
       <footer className="relative z-10 border-t border-brand-500/10 bg-[#0b1220]/70 px-6 py-4 backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 text-xs text-white/55 sm:flex-row">
-          <p>© 2026 Contractor Leads. All rights reserved.</p>
+          <div className="space-y-1 text-center sm:text-left">
+            <p>© 2026 Contractor Leads. All rights reserved.</p>
+            <p>Vaishali Media Productions LLC</p>
+          </div>
           <div className="flex gap-5">
             <Link href="#" className="hover:text-brand-500">
               Privacy Policy
