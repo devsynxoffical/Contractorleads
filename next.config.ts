@@ -79,15 +79,19 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // Keep Prisma engine files in the standalone trace for cPanel Node hosting
-  outputFileTracingIncludes: {
-    "/**": [
-      "./node_modules/.prisma/**/*",
-      "./node_modules/@prisma/client/**/*",
-      "./node_modules/pdfkit/js/data/**/*",
-      "./prisma/**/*",
-    ],
-  },
+  // Keep Prisma engine files in the standalone trace for Railway/Docker/cPanel.
+  // On Vercel, Next.js file tracing picks up Prisma automatically — including
+  // it explicitly bloats every function bundle and causes deployment timeouts.
+  ...(!process.env.VERCEL && {
+    outputFileTracingIncludes: {
+      "/**": [
+        "./node_modules/.prisma/**/*",
+        "./node_modules/@prisma/client/**/*",
+        "./node_modules/pdfkit/js/data/**/*",
+        "./prisma/**/*",
+      ],
+    },
+  }),
 };
 
 export default nextConfig;
