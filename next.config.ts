@@ -42,8 +42,8 @@ const securityHeaders = [
 // and server deployment IDs never match. Railway sets this in both phases.
 const deploymentId =
   process.env.NEXT_DEPLOYMENT_ID?.trim() ||
-  process.env.VERCEL_GIT_COMMIT_SHA?.trim() ||
-  process.env.RAILWAY_GIT_COMMIT_SHA?.trim() ||
+  process.env.VERCEL_GIT_COMMIT_SHA?.trim().slice(0, 32) ||
+  process.env.RAILWAY_GIT_COMMIT_SHA?.trim().slice(0, 32) ||
   undefined;
 
 const nextConfig: NextConfig = {
