@@ -15,7 +15,8 @@
     "db:push": "prisma db push",
     "db:seed": "node prisma/seed.mjs",
     "postinstall": "prisma generate",
-    "package:cpanel": "node scripts/package-cpanel.mjs"
+    "package:cpanel": "node scripts/package-cpanel.mjs",
+    "build:vercel": "node scripts/vercel-build.mjs"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.13",

@@ -42,11 +42,13 @@ const securityHeaders = [
 // and server deployment IDs never match. Railway sets this in both phases.
 const deploymentId =
   process.env.NEXT_DEPLOYMENT_ID?.trim() ||
+  process.env.VERCEL_GIT_COMMIT_SHA?.trim() ||
   process.env.RAILWAY_GIT_COMMIT_SHA?.trim() ||
   undefined;
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  // "standalone" is Railway/Docker only — Vercel manages its own output bundling
+  // output: "standalone",
   poweredByHeader: false,
   // pdfkit reads Helvetica.afm via fs from its package data dir. Bundling it
   // rewrites __dirname to /ROOT/... and preview/download fail with ENOENT.
