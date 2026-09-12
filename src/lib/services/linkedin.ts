@@ -195,39 +195,98 @@ export function matchesBusinessName(
   businessName: string,
 ): boolean {
   if (!candidateText || !businessName) return false;
-  const candidateLower = candidateText.toLowerCase().replace(/[^a-z0-9]/g, " ");
-  const bizLower = businessName.toLowerCase().trim();
+  const candidateClean = candidateText
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+  const bizClean = businessName
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 
-  // Direct inclusion
-  if (candidateLower.includes(bizLower.replace(/[^a-z0-9]/g, " "))) return true;
+  if (!bizClean) return false;
 
-  const stopWords = new Set([
-    "roofing", "roof", "roofs", "plumbing", "plumber", "electric", "electrical", "hvac",
-    "heating", "cooling", "contractor", "contractors", "services", "service",
-    "company", "co", "ltd", "limited", "inc", "llc", "corp", "corporation", "group", "solutions",
-    "the", "and", "of", "in", "at", "uk", "us", "usa", "ca", "au", "nz",
-  ]);
+  // Direct exact phrase inclusion
+  if (candidateClean.includes(bizClean)) return true;
 
-  const distinctBizWords = bizLower
-    .replace(/[^a-z0-9\s]/g, " ")
-    .split(/\s+/)
-    .filter((w) => w.length >= 2 && !stopWords.has(w));
-
-  if (distinctBizWords.length > 0) {
-    return distinctBizWords.every((w) => {
-      if (w.length <= 2) {
-        return (
-          new RegExp(`\\b${w}\\b`, "i").test(candidateText) ||
-          candidateLower.includes(`-${w}-`) ||
-          candidateLower.includes(`/${w}-`) ||
-          candidateLower.includes(`-${w}/`)
-        );
-      }
-      return candidateLower.includes(w);
-    });
+  // Check with ampersand / "and" swap (e.g. "Restore & Revive" vs "Restore and Revive")
+  const bizWithAnd = bizClean.replace(/\b&\b/g, "and");
+  if (candidateClean.includes(bizWithAnd)) return true;
+  const bizWithoutStop = bizClean
+    .replace(
+      /\b(inc|llc|ltd|limited|co|corp|corporation|company|services|contractors|contractor)\b/g,
+      "",
+    )
+    .replace(/\s+/g, " ")
+    .trim();
+  if (
+    bizWithoutStop.length >= 4 &&
+    candidateClean.includes(bizWithoutStop)
+  ) {
+    return true;
   }
 
-  return candidateLower.includes(bizLower.replace(/[^a-z0-9]/g, " "));
+  const stopWords = new Set([
+    "roofing",
+    "roof",
+    "roofs",
+    "plumbing",
+    "plumber",
+    "electric",
+    "electrical",
+    "hvac",
+    "heating",
+    "cooling",
+    "contractor",
+    "contractors",
+    "services",
+    "service",
+    "company",
+    "co",
+    "ltd",
+    "limited",
+    "inc",
+    "llc",
+    "corp",
+    "corporation",
+    "group",
+    "solutions",
+    "the",
+    "and",
+    "of",
+    "in",
+    "at",
+    "uk",
+    "us",
+    "usa",
+    "ca",
+    "au",
+    "nz",
+  ]);
+
+  const distinctBizWords = bizClean
+    .split(/\s+/)
+    .filter((w) => w.length >= 3 && !stopWords.has(w));
+
+  if (distinctBizWords.length === 0) return false;
+
+  // If there's only 1 distinctive word (e.g. "Kingsley"), it must be a standalone word
+  if (distinctBizWords.length === 1) {
+    return new RegExp(`\\b${distinctBizWords[0]}\\b`, "i").test(candidateText);
+  }
+
+  // If there are multiple distinctive words (e.g. "Restore and Revive"),
+  // they must appear in close proximity (within 3 intervening words)
+  const pattern = distinctBizWords.join("\\s+(?:\\w+\\s+){0,3}?");
+  try {
+    if (new RegExp(`\\b${pattern}\\b`, "i").test(candidateClean)) {
+      return true;
+    }
+  } catch {
+    // fallback
+  }
+
+  return false;
 }
 
 async function findLinkedInViaSerper(

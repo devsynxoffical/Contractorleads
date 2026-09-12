@@ -20,8 +20,9 @@ export const EMPTY_OWNER_DISCOVERY: OwnerDiscoveryResult = {
 const ROLE_SRC =
   "[Oo]wner|[Cc]o-?[Oo]wner|[Ff]ounder|[Cc]o-?[Ff]ounder|[Pp]resident|[Pp]rincipal|[Pp]roprietor|[Cc][Ee][Oo]";
 
-const NAME_WORD = "[A-ZÀ-ÖØ][A-Za-zÀ-ÖØ-öø-ÿ'’-]+";
-const NAME_GROUP = `${NAME_WORD}(?: ${NAME_WORD}){1,3}`;
+const NAME_WORD = "[A-ZÀ-ÖØ][A-Za-zÀ-ÖØ-öø-ÿ'’-]{1,24}";
+// Real personal names are 2 or 3 words (First + Last, or First + Middle + Last)
+const NAME_GROUP = `${NAME_WORD}(?: ${NAME_WORD}){1,2}`;
 
 const NAME_ROLE_RE = new RegExp(
   `(${NAME_GROUP})\\s*(?:,|—|–|-|:|\\(|\\[|\\|)\\s*(${ROLE_SRC})\\b`,
@@ -38,8 +39,8 @@ const FOUNDED_BY_RE = new RegExp(
   `(?:[Ff]ounded|[Oo]wned|[Ee]stablished|[Ll]ed)\\b.{0,40}?by\\s+(${NAME_GROUP})\\b`,
 );
 
-const NOT_A_NAME =
-  /\b(owner|co-?owner|founder|co-?founder|president|ceo|principal|proprietor|manager|director|supervisor|estimator|sales|operations|staff|team|crew|service|services|company|business|inc|llc|ltd|corp|home|homes|house|houses|the|our|your|and|for|of|with|at|by|from|call|email|contact|about|meet|roof|roofs|roofing|plumbing|plumber|electric|electrical|electrician|heating|cooling|hvac|landscap\w*|painting|painters|construction|remodel\w*|renovation|builders|contractor|contractors|quality|local|trusted|professional\w*|trained|licensed|insured|certified|group|solutions|systems|pros?)\b/i;
+export const NOT_A_PERSON_NAME =
+  /\b(owner|co-?owner|founder|co-?founder|president|ceo|principal|proprietor|manager|director|supervisor|estimator|sales|operations|staff|team|crew|service|services|company|business|contractor|contractors|specialists?|installers?|technicians?|experts?|professionals?|partners?|associates?|enterprises?|ventures?|group|solutions?|systems?|agency|agencies|consulting|management|holdings?|capital|investments?|properties|property|estate|realty|realtor|finance|financial|insurance|mortgage|credit|bank|law|legal|attorney|firm|council|board|department|bureau|association|foundation|institute|academy|college|university|school|church|temple|hospital|clinic|doctor|dental|dentist|therapy|physical|mental|health|wellness|chiropractic|medical|care|nursing|pharmacy|fitness|gym|yoga|spa|salon|barber|store|shop|market|mart|outlet|cafe|coffee|bakery|restaurant|bistro|diner|bar|grill|pub|hotel|motel|inn|resort|auto|automotive|mechanic|garage|collision|towing|tires?|detail|detailing|wash|moving|movers|security|alarm|solar|energy|insulation|drywall|handyman|masonry|concrete|paving|asphalt|fencing|fence|deck|patio|pool|lawn|tree|arborist|pest|cleaning|cleaners?|janitorial|painting|painters?|plumbing|plumbers?|electric|electrical|electricians?|heating|cooling|hvac|roof|roofs|roofing|builders?|building|construction|remodeling|remodel\w*|renovation|restoration|revive|restore|rebuild|siding|windows?|gutters?|repairs?|inc|incorporated|llc|llp|ltd|limited|co|corp|corporation|gmbh|sa|bv|plc|small|big|large|great|good|best|top|fast|quick|easy|simple|smart|bright|fresh|pure|clean|clear|green|eco|safe|sure|true|real|first|choice|one|pro|pros|plus|max|all|star|super|ultra|micro|mega|express|direct|action|vision|future|advance|advanced|modern|classic|vintage|heritage|custom|premier|prime|apex|summit|pinnacle|national|international|global|united|american|british|royal|standard|general|universal|select|metro|central|valley|island|county|state|country|town|city|village|district|street|road|avenue|lane|drive|way|boulevard|blvd|digital|online|media|marketing|advertising|design|designs|creative|software|tech|technology|technologies|data|network|networks|cloud|cyber|labs?|studios?|gallery|the|our|your|their|and|for|of|with|at|by|from|in|on|to|is|was|are|were|about|meet|contact|call|email|view|public|source|website)\b/i;
 
 type OwnerCandidate = {
   name: string;
@@ -67,15 +68,42 @@ function formatRole(role: string): string {
     .join(" ");
 }
 
-function plausiblePersonName(value: string): boolean {
-  const name = clean(value);
-  if (!name || name.length < 4 || name.length > 60) return false;
-  const words = name.split(" ");
-  if (words.length < 2 || words.length > 4) return false;
-  if (NOT_A_NAME.test(name)) return false;
-  return words.every((word) =>
-    /^[A-ZÀ-ÖØ][A-Za-zÀ-ÖØ-öø-ÿ'’.-]*$/.test(word),
+export function plausiblePersonName(
+  value: string,
+  businessName?: string,
+): boolean {
+  const name = clean(value)
+    .replace(/\b(Jr|Sr|II|III|IV|MD|PhD|Ph\.D\.|Esq|Esq\.)\.?\b/gi, "")
+    .trim();
+  if (!name || name.length < 4 || name.length > 40) return false;
+
+  const words = name.split(/\s+/);
+  // Real personal names are 2 or 3 words
+  if (words.length < 2 || words.length > 3) return false;
+
+  // Strict: none of the words may match NOT_A_PERSON_NAME
+  if (NOT_A_PERSON_NAME.test(name)) return false;
+
+  // Each word must look like a capitalized personal name (letters, hyphens, apostrophes)
+  const isAllValidWords = words.every((word) =>
+    /^[A-ZÀ-ÖØ][A-Za-zÀ-ÖØ-öø-ÿ'’-]{1,24}$/.test(word),
   );
+  if (!isAllValidWords) return false;
+
+  // If a business name is provided, ensure no overlap with business name words
+  if (businessName) {
+    const bizWords = businessName
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .split(/\s+/)
+      .filter((w) => w.length >= 3);
+    const nameWords = words.map((w) => w.toLowerCase());
+    if (nameWords.some((nw) => bizWords.includes(nw))) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 function nameConflictsWithBusiness(name: string, businessName: string): boolean {
@@ -83,16 +111,10 @@ function nameConflictsWithBusiness(name: string, businessName: string): boolean 
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, " ")
     .split(/\s+/)
-    .filter((w) => w.length > 3);
+    .filter((w) => w.length >= 2);
   if (!bizWords.length) return false;
-  const nameLower = name.toLowerCase();
-  return bizWords.some(
-    (w) =>
-      nameLower === w ||
-      nameLower.startsWith(`${w} `) ||
-      nameLower.endsWith(` ${w}`) ||
-      nameLower.includes(` ${w} `),
-  );
+  const nameWords = name.toLowerCase().split(/\s+/);
+  return nameWords.some((nw) => bizWords.includes(nw));
 }
 
 function slugToName(url: string): string | null {
@@ -115,7 +137,7 @@ function tryAddCandidate(
   businessName: string,
 ) {
   const name = clean(rawName);
-  if (!plausiblePersonName(name)) return;
+  if (!plausiblePersonName(name, businessName)) return;
   if (nameConflictsWithBusiness(name, businessName)) return;
   const existing = out.find(
     (candidate) => candidate.name.toLowerCase() === name.toLowerCase(),

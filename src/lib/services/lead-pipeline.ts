@@ -19,6 +19,7 @@ import { matchNextdoorBusiness } from "./nextdoor";
 import { mapPool } from "@/lib/utils/async-pool";
 import type { PlaceResult } from "./google-places";
 import { findExistingLead } from "./lead-identity";
+import { plausiblePersonName } from "./owner-discovery";
 
 const EMPTY_PEOPLE: WebsitePeopleResult = {
   owner: null,
@@ -348,25 +349,40 @@ async function enrichAndPersistPlace(opts: {
       },
     );
 
-    const ownerNameFinal = websitePeople.owner?.name ?? null;
-    const ownerTitle = websitePeople.owner?.role ?? null;
-    const ownerSourceUrl = websitePeople.owner?.sourceUrl ?? null;
-    const ownerConfidence =
-      websitePeople.owner?.confidence ?? (ownerNameFinal ? 90 : null);
-    const emailFinal = websitePeople.email ?? null;
+    const existingOwner =
+      existingLead?.ownerName &&
+      plausiblePersonName(existingLead.ownerName, place.name)
+        ? existingLead.ownerName
+        : null;
 
-    const existingLead = await findExistingLead({
-      name: place.name,
-      address: place.address,
-      phone: place.phone,
-      website: place.website,
-      mapsUrl: place.mapsUrl,
-    });
+    const ownerCandidate =
+      websitePeople.owner?.name &&
+      plausiblePersonName(websitePeople.owner.name, place.name)
+        ? websitePeople.owner.name
+        : null;
+
+    const ownerNameFinal = ownerCandidate ?? existingOwner;
+    const ownerTitle = ownerCandidate
+      ? websitePeople.owner?.role ?? null
+      : existingOwner
+        ? existingLead?.ownerTitle ?? null
+        : null;
+    const ownerSourceUrl = ownerCandidate
+      ? websitePeople.owner?.sourceUrl ?? null
+      : existingOwner
+        ? existingLead?.ownerSourceUrl ?? null
+        : null;
+    const ownerConfidence = ownerCandidate
+      ? websitePeople.owner?.confidence ?? 90
+      : existingOwner
+        ? existingLead?.ownerConfidence ?? null
+        : null;
+    const emailFinal = websitePeople.email ?? existingLead?.email ?? null;
 
     const scored = finalizeLeadScore(qualification.leadScore, {
       hasWebsite: Boolean(website || existingLead?.website),
-      hasEmail: Boolean(emailFinal || existingLead?.email),
-      hasOwner: Boolean(ownerNameFinal || existingLead?.ownerName),
+      hasEmail: Boolean(emailFinal),
+      hasOwner: Boolean(ownerNameFinal),
       hasLinkedIn: Boolean(existingLead?.linkedinUrl),
       hasSocial: Boolean(existingLead?.facebook || existingLead?.instagram),
       hasPhone: Boolean(place.phone ?? existingLead?.phone),
@@ -385,14 +401,14 @@ async function enrichAndPersistPlace(opts: {
       website: website ?? existingLead?.website,
       googleRating: place.rating ?? existingLead?.googleRating,
       reviewCount: place.reviewCount ?? existingLead?.reviewCount,
-      ownerName: ownerNameFinal ?? existingLead?.ownerName,
-      ownerTitle: ownerTitle ?? existingLead?.ownerTitle,
-      ownerSourceUrl: ownerSourceUrl ?? existingLead?.ownerSourceUrl,
-      ownerConfidence: ownerConfidence ?? existingLead?.ownerConfidence,
+      ownerName: ownerNameFinal,
+      ownerTitle: ownerTitle,
+      ownerSourceUrl: ownerSourceUrl,
+      ownerConfidence: ownerConfidence,
       teamMembersJson: websitePeople.team.length
         ? JSON.stringify(websitePeople.team)
         : existingLead?.teamMembersJson,
-      email: emailFinal ?? existingLead?.email,
+      email: emailFinal,
       emailSourceUrl:
         websitePeople.emailSourceUrl ?? existingLead?.emailSourceUrl,
       facebook: existingLead?.facebook,
@@ -632,15 +648,60 @@ async function enrichAndPersistPlace(opts: {
         EMPTY_OWNER_DISCOVERY,
       );
 
+  // Match against the pool by the strongest identity signals so re-scrapes
+  // update the existing row instead of creating a duplicate.
+  const existingLead = await findExistingLead({
+    name: place.name,
+    address: place.address,
+    phone: place.phone,
+    website: place.website,
+    mapsUrl: place.mapsUrl,
+  });
+
+  const websiteOwnerCandidate =
+    websitePeople.owner?.name &&
+    plausiblePersonName(websitePeople.owner.name, place.name)
+      ? websitePeople.owner.name
+      : null;
+
+  const searchOwnerCandidate =
+    ownerFromSearch.ownerName &&
+    plausiblePersonName(ownerFromSearch.ownerName, place.name)
+      ? ownerFromSearch.ownerName
+      : null;
+
+  const existingOwner =
+    existingLead?.ownerName &&
+    plausiblePersonName(existingLead.ownerName, place.name)
+      ? existingLead.ownerName
+      : null;
+
+  const ownerNameFinal =
+    websiteOwnerCandidate ?? searchOwnerCandidate ?? existingOwner;
+  const ownerTitle = websiteOwnerCandidate
+    ? websitePeople.owner?.role ?? null
+    : searchOwnerCandidate
+      ? ownerFromSearch.ownerRole ?? null
+      : existingOwner
+        ? existingLead?.ownerTitle ?? null
+        : null;
+  const ownerSourceUrl = websiteOwnerCandidate
+    ? websitePeople.owner?.sourceUrl ?? null
+    : searchOwnerCandidate
+      ? ownerFromSearch.sourceUrl ?? null
+      : existingOwner
+        ? existingLead?.ownerSourceUrl ?? null
+        : null;
+  const ownerConfidence = websiteOwnerCandidate
+    ? websitePeople.owner?.confidence ?? null
+    : searchOwnerCandidate
+      ? ownerFromSearch.confidence ?? null
+      : existingOwner
+        ? existingLead?.ownerConfidence ?? null
+        : null;
+
   const resolvedOwner = ownerUrl || ownerFromSearch.ownerLinkedInUrl || null;
   const primaryLinkedIn = companyUrl || resolvedOwner || fromWeb.linkedin;
-  const ownerName = websiteOwnerName ?? ownerFromSearch.ownerName ?? null;
-  const ownerTitle =
-    websitePeople.owner?.role ?? ownerFromSearch.ownerRole ?? null;
-  const ownerSourceUrl =
-    websitePeople.owner?.sourceUrl ?? ownerFromSearch.sourceUrl ?? null;
-  const ownerConfidence =
-    websitePeople.owner?.confidence ?? ownerFromSearch.confidence ?? null;
   const ownerLinkedInFromSearch =
     Boolean(ownerFromSearch.ownerLinkedInUrl) && !ownerUrl;
   const ownerLinkedInConfidence = resolvedOwner
@@ -656,16 +717,6 @@ async function enrichAndPersistPlace(opts: {
 
   const websiteQualityScore = qualification.websiteQualityScore;
 
-  // Match against the pool by the strongest identity signals so re-scrapes
-  // update the existing row instead of creating a duplicate.
-  const existingLead = await findExistingLead({
-    name: place.name,
-    address: place.address,
-    phone: place.phone,
-    website: place.website,
-    mapsUrl: place.mapsUrl,
-  });
-
   const socialSnapshot = {
     linkedinUrl: primaryLinkedIn ?? existingLead?.linkedinUrl,
     linkedinCompanyUrl: companyUrl ?? existingLead?.linkedinCompanyUrl,
@@ -679,7 +730,6 @@ async function enrichAndPersistPlace(opts: {
     nextdoor: nextdoorUrlFinal ?? existingLead?.nextdoor,
   };
 
-  const ownerNameFinal = ownerName ?? existingLead?.ownerName ?? null;
   const emailFinal = websitePeople.email ?? existingLead?.email ?? null;
   const websiteFinal = website ?? existingLead?.website ?? null;
   const hasSocial = Boolean(

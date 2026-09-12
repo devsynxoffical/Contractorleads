@@ -60,26 +60,14 @@ const CONTACT_FALLBACKS = [
   "/about-us",
 ];
 
-// Marketing/filler words that regex matches sometimes capture instead of a
-// person ("led by trained technicians committed to…").
-const NOT_A_NAME =
-  /\b(trained|licensed|insured|certified|professional|professionals|technician|technicians|expert|experts|team|teams|staff|crew|committed|dedicated|experienced|skilled|qualified|local|trusted|friendly|service|services|company|business|contractor|contractors|specialists|installers|plumbers|electricians|roofers|our|your|the|and|with|quality|customer|customers|roofing|roof|roofs|construction|contracting|builders|building|remodeling|renovation|hvac|heating|cooling|plumbing|electrical|electric|landscaping|landscape|siding|windows|gutters|gutter|repair|repairs|cleaning|inc|llc|llp|ltd|corp|co|group|solutions|systems|home|homes|house|houses|pro|pros)\b/i;
+import { plausiblePersonName, NOT_A_PERSON_NAME } from "./owner-discovery";
 
 function clean(value: string): string {
   return value.replace(/\s+/g, " ").trim();
 }
 
 function plausibleName(value: string): boolean {
-  const name = clean(value);
-  const words = name.split(" ");
-  return (
-    name.length >= 4 &&
-    name.length <= 60 &&
-    words.length >= 2 &&
-    words.length <= 4 &&
-    !NOT_A_NAME.test(name) &&
-    words.every((word) => /^[A-ZÀ-ÖØ][A-Za-zÀ-ÖØ-öø-ÿ'’.-]*$/.test(word))
-  );
+  return plausiblePersonName(value);
 }
 
 function formatRole(role: string): string {
