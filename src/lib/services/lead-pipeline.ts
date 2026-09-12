@@ -212,8 +212,7 @@ export async function runLeadPipeline(params: SearchParams) {
       if (leads.length >= targetCount) break;
 
       scanned += 1;
-      let taskPromise: Promise<void>;
-      taskPromise = (async () => {
+      const taskPromise = (async () => {
         try {
           const lead = await enrichAndPersistPlace({
             place,
@@ -241,12 +240,15 @@ export async function runLeadPipeline(params: SearchParams) {
               /* ignore callback errors */
             }
           }
-        } finally {
-          activeEnriching.delete(taskPromise);
+        } catch {
+          /* ignore worker errors */
         }
       })();
 
       activeEnriching.add(taskPromise);
+      void taskPromise.finally(() => {
+        activeEnriching.delete(taskPromise);
+      });
       pendingEnrichments.push(taskPromise);
     }
   }
