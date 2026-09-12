@@ -102,6 +102,11 @@ export default function AdminScrapePage() {
   const [targetLeadCount, setTargetLeadCount] = useState(50);
   const [customLeadCount, setCustomLeadCount] = useState("");
   const [loading, setLoading] = useState(false);
+  const [liveStatus, setLiveStatus] = useState<{
+    current: number;
+    target: number;
+    placeName: string;
+  } | null>(null);
   const [loadingLeads, setLoadingLeads] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -265,10 +270,18 @@ export default function AdminScrapePage() {
     startNavigationProgress();
     setError(null);
     setResult(null);
+    setLiveStatus(null);
+    setLeads([]);
+    setLeadsTotal(0);
+    setLeadsIndustry(industry);
+
     try {
       const res = await fetch("/api/admin/scrape", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "text/event-stream, application/json",
+        },
         body: JSON.stringify({
           ...industryPayloadForApi(industrySelect, customIndustry),
           country,
@@ -278,56 +291,148 @@ export default function AdminScrapePage() {
           zip: locationScope === "local" ? zip : undefined,
           radius: locationScope === "local" ? radius : undefined,
           targetLeadCount: resolvedLeadCount,
+          stream: true,
         }),
-        signal: AbortSignal.timeout(300000),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Scrape failed");
 
-      // LinkedIn + social leads first, newest batch first within each group.
-      const scraped = ((data.leads ?? []) as ScrapeLead[]).slice().sort((a, b) => {
-        const aRank = hasLinkedInAndSocial(a) ? 0 : 1;
-        const bRank = hasLinkedInAndSocial(b) ? 0 : 1;
-        if (aRank !== bRank) return aRank - bRank;
-        const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return tb - ta;
-      });
-      // Keep this scrape's batch on the right — newest first, not the full niche pool.
-      setLeads(scraped);
-      setLeadsTotal(
-        typeof data.meta?.poolTotal === "number"
-          ? data.meta.poolTotal
-          : scraped.length,
-      );
-      setLeadsIndustry(industry);
-      setResult(
-        `Created/reused ${scraped.length} of ${resolvedLeadCount} requested leads for ${industry}.`,
-      );
-
-      // Promote custom niche into the select list immediately
-      if (industrySelect === CUSTOM_INDUSTRY_VALUE && industry) {
-        setIndustrySelect(industry);
-        setCustomIndustry("");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Scrape failed");
       }
 
-      await loadNiches();
-      // Pull niche total so the header can say "latest N of total" without
-      // replacing the just-scraped cards with older pool rows.
-      try {
-        const params = new URLSearchParams({ industry, take: "1" });
-        const poolRes = await fetch(`/api/admin/scrape?${params}`);
-        const poolData = await poolRes.json();
-        if (poolRes.ok && typeof poolData.total === "number") {
-          setLeadsTotal(poolData.total);
+      const contentType = res.headers.get("content-type") || "";
+      if (contentType.includes("text/event-stream") && res.body) {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const parts = buffer.split("\n\n");
+          buffer = parts.pop() || "";
+
+          for (const part of parts) {
+            if (!part.trim()) continue;
+            const eventMatch = part.match(/^event:\s*(\w+)/m);
+            const dataMatch = part.match(/^data:\s*(.+)$/m);
+            if (!dataMatch) continue;
+
+            const eventType = eventMatch ? eventMatch[1] : "message";
+            let payload: any;
+            try {
+              payload = JSON.parse(dataMatch[1]);
+            } catch {
+              continue;
+            }
+
+            if (eventType === "lead") {
+              const newLead = payload.lead as ScrapeLead;
+              setLiveStatus({
+                current: payload.current,
+                target: payload.target,
+                placeName: payload.placeName,
+              });
+              setLeads((prev) => {
+                const idx = prev.findIndex((l) => l.id === newLead.id);
+                if (idx >= 0) {
+                  const copy = [...prev];
+                  copy[idx] = newLead;
+                  return copy;
+                }
+                return [newLead, ...prev];
+              });
+              setLeadsTotal((prev) => Math.max(prev, payload.current));
+            } else if (eventType === "done") {
+              setLiveStatus(null);
+              const scraped = ((payload.leads ?? []) as ScrapeLead[])
+                .slice()
+                .sort((a, b) => {
+                  const aRank = hasLinkedInAndSocial(a) ? 0 : 1;
+                  const bRank = hasLinkedInAndSocial(b) ? 0 : 1;
+                  if (aRank !== bRank) return aRank - bRank;
+                  const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                  const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                  return tb - ta;
+                });
+              setLeads(scraped);
+              setLeadsTotal(
+                typeof payload.meta?.poolTotal === "number"
+                  ? payload.meta.poolTotal
+                  : scraped.length,
+              );
+              setResult(
+                `Created/reused ${scraped.length} of ${resolvedLeadCount} requested leads for ${industry}.`,
+              );
+
+              if (industrySelect === CUSTOM_INDUSTRY_VALUE && industry) {
+                setIndustrySelect(industry);
+                setCustomIndustry("");
+              }
+
+              await loadNiches();
+              try {
+                const params = new URLSearchParams({ industry, take: "1" });
+                const poolRes = await fetch(`/api/admin/scrape?${params}`);
+                const poolData = await poolRes.json();
+                if (poolRes.ok && typeof poolData.total === "number") {
+                  setLeadsTotal(poolData.total);
+                }
+              } catch {
+                /* keep scraped.length */
+              }
+            } else if (eventType === "error") {
+              throw new Error(payload.error || "Scrape failed");
+            }
+          }
         }
-      } catch {
-        /* keep scraped.length as total */
+      } else {
+        const data = await res.json();
+        const scraped = ((data.leads ?? []) as ScrapeLead[])
+          .slice()
+          .sort((a, b) => {
+            const aRank = hasLinkedInAndSocial(a) ? 0 : 1;
+            const bRank = hasLinkedInAndSocial(b) ? 0 : 1;
+            if (aRank !== bRank) return aRank - bRank;
+            const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return tb - ta;
+          });
+        setLeads(scraped);
+        setLeadsTotal(
+          typeof data.meta?.poolTotal === "number"
+            ? data.meta.poolTotal
+            : scraped.length,
+        );
+        setLeadsIndustry(industry);
+        setResult(
+          `Created/reused ${scraped.length} of ${resolvedLeadCount} requested leads for ${industry}.`,
+        );
+
+        if (industrySelect === CUSTOM_INDUSTRY_VALUE && industry) {
+          setIndustrySelect(industry);
+          setCustomIndustry("");
+        }
+
+        await loadNiches();
+        try {
+          const params = new URLSearchParams({ industry, take: "1" });
+          const poolRes = await fetch(`/api/admin/scrape?${params}`);
+          const poolData = await poolRes.json();
+          if (poolRes.ok && typeof poolData.total === "number") {
+            setLeadsTotal(poolData.total);
+          }
+        } catch {
+          /* keep scraped.length */
+        }
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Scrape failed");
     } finally {
       setLoading(false);
+      setLiveStatus(null);
       stopNavigationProgress();
     }
   }
@@ -508,14 +613,48 @@ export default function AdminScrapePage() {
           </Button>
 
           {loading && (
-            <div className="space-y-2">
-              <div className="h-1.5 overflow-hidden rounded-full bg-brand-50">
-                <div className="shimmer-bar h-full w-2/3 rounded-full" />
+            <div className="space-y-2 rounded-xl border border-brand-500/20 bg-brand-500/05 p-3.5">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+                  </span>
+                  <p className="text-[12px] font-semibold text-ink">
+                    {liveStatus
+                      ? `Live: ${leads.length} of ${liveStatus.target} leads`
+                      : "Scanning Google Places & directories…"}
+                  </p>
+                </div>
+                <span className="text-[11px] font-bold tabular-nums text-brand-700">
+                  {liveStatus && liveStatus.target > 0
+                    ? `${Math.min(100, Math.round((leads.length / liveStatus.target) * 100))}%`
+                    : "Running"}
+                </span>
               </div>
-              <p className="text-[12px] text-ink-muted">
-                Running Places → enrich → score. This can take up to a couple
-                minutes…
-              </p>
+              <div className="h-2 overflow-hidden rounded-full bg-[var(--surface)] ring-1 ring-brand-500/20">
+                <div
+                  className="h-full rounded-full transition-[width] duration-300 ease-out"
+                  style={{
+                    width:
+                      liveStatus && liveStatus.target > 0
+                        ? `${Math.min(100, Math.max(8, Math.round((leads.length / liveStatus.target) * 100)))}%`
+                        : "30%",
+                    background:
+                      "linear-gradient(90deg, #10b981 0%, #06b6d4 50%, #8b5cf6 100%)",
+                  }}
+                />
+              </div>
+              {liveStatus?.placeName ? (
+                <p className="truncate text-[11px] text-ink-muted">
+                  <span className="font-medium text-brand-600">Enriched:</span>{" "}
+                  {liveStatus.placeName}
+                </p>
+              ) : (
+                <p className="text-[11px] text-ink-muted">
+                  Running Places → Yelp/Houzz/Nextdoor → People → Score…
+                </p>
+              )}
             </div>
           )}
 
@@ -634,9 +773,22 @@ export default function AdminScrapePage() {
             </div>
           ) : (
             <div className="rounded-2xl border border-border/80 bg-[var(--surface)] p-10 text-center text-[13px] text-ink-muted shadow-[var(--shadow-card)]">
-              {loadingLeads
-                ? "Loading leads…"
-                : "Pick a niche or run a scrape to see leads here."}
+              {loading ? (
+                <div className="flex flex-col items-center justify-center gap-2">
+                  <div className="relative flex h-3 w-3">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500"></span>
+                  </div>
+                  <p className="font-semibold text-ink">Scraping initial places…</p>
+                  <p className="text-[12px] text-ink-muted">
+                    Leads will start appearing here live (1, 2, 3...) as soon as they are enriched.
+                  </p>
+                </div>
+              ) : loadingLeads ? (
+                "Loading leads…"
+              ) : (
+                "Pick a niche or run a scrape to see leads here."
+              )}
             </div>
           )}
         </div>

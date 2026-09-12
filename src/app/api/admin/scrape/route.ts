@@ -142,6 +142,94 @@ export async function POST(request: Request) {
       targetLeadCount,
     } = resolved.criteria;
 
+    const wantsStream =
+      body.stream === true ||
+      request.headers.get("accept")?.includes("text/event-stream");
+
+    if (wantsStream) {
+      const responseStream = new TransformStream();
+      const writer = responseStream.writable.getWriter();
+      const encoder = new TextEncoder();
+
+      const sendEvent = async (event: string, data: unknown) => {
+        try {
+          await writer.write(
+            encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`),
+          );
+        } catch {
+          /* client disconnected */
+        }
+      };
+
+      (async () => {
+        try {
+          await sendEvent("start", {
+            targetLeadCount,
+            industry,
+            country,
+          });
+
+          const result = await runLeadPipeline({
+            userId: admin.id,
+            industry,
+            country,
+            locationScope,
+            state,
+            city,
+            zip,
+            customLocation,
+            radius,
+            targetLeadCount,
+            onLeadDiscovered: async (lead, progress) => {
+              await sendEvent("lead", {
+                lead,
+                current: progress.current,
+                target: progress.target,
+                placeName: progress.placeName,
+                scanned: progress.scanned,
+              });
+            },
+          });
+
+          await logActivity(
+            admin.id,
+            "admin_scrape",
+            `Admin scraped ${result.leads.length} leads for ${industry}`,
+            { searchId: result.search.id },
+          );
+
+          const credits = await prisma.user.findUnique({
+            where: { id: admin.id },
+            select: { creditsRemaining: true },
+          });
+
+          await sendEvent("done", {
+            search: result.search,
+            leads: result.leads,
+            creditsRemaining: credits?.creditsRemaining,
+            meta: result.meta,
+          });
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Scrape failed";
+          await sendEvent("error", { error: message });
+        } finally {
+          try {
+            await writer.close();
+          } catch {
+            /* ignore stream close */
+          }
+        }
+      })();
+
+      return new Response(responseStream.readable, {
+        headers: {
+          "Content-Type": "text/event-stream; charset=utf-8",
+          "Cache-Control": "no-cache, no-transform",
+          "Connection": "keep-alive",
+        },
+      });
+    }
+
     const result = await runLeadPipeline({
       userId: admin.id,
       industry,
