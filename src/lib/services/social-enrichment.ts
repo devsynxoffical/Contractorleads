@@ -213,14 +213,14 @@ export async function enrichLeadSocial(lead: LeadRecord) {
       team: websitePeople.team.length > 0,
       email: Boolean(!lead.email && websitePeople.email),
       facebook: Boolean(
-        !lead.facebook && (websiteSocial.facebook || facebookPage),
+        !lead.facebook && (websitePack.facebook || facebookPage),
       ),
-      instagram: Boolean(!lead.instagram && websiteSocial.instagram),
-      youtube: Boolean(!lead.youtube && websiteSocial.youtube),
-      tiktok: Boolean(!lead.tiktok && websiteSocial.tiktok),
-      houzz: Boolean(houzz?.url),
-      nextdoor: Boolean(nextdoor?.url),
-      yelp: Boolean(yelp?.url),
+      instagram: Boolean(!lead.instagram && websitePack.instagram),
+      youtube: Boolean(!lead.youtube && websitePack.youtube),
+      tiktok: Boolean(!lead.tiktok && websitePack.tiktok),
+      houzz: Boolean(websitePack.houzz || houzz?.url),
+      nextdoor: Boolean(websitePack.nextdoor || nextdoor?.url),
+      yelp: Boolean(websitePack.yelp || yelp?.url),
     },
   };
 }
