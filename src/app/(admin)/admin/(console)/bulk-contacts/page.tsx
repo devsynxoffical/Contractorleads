@@ -876,7 +876,7 @@ export default function BulkContactsPage() {
               <div className="flex flex-wrap items-center gap-2">
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="secondary"
                   onClick={() => copyAllEmails(false)}
                   disabled={!filteredLeads.length}
                   className="h-8 gap-1.5 text-xs"
@@ -887,7 +887,7 @@ export default function BulkContactsPage() {
 
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="secondary"
                   onClick={() => copyAllPhones(false)}
                   disabled={!filteredLeads.length}
                   className="h-8 gap-1.5 text-xs"
