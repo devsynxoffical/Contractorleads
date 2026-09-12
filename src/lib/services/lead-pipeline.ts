@@ -257,8 +257,15 @@ async function enrichAndPersistPlace(opts: {
   const linkedinHint = pack.linkedinCompany || pack.linkedinOwner || fromWeb.linkedin;
 
   // Automatic light enrichment (short timeouts — no manual Fetch needed)
-  const [companyLi, qualification, facebookPage, websitePeople, yelp] =
-    await Promise.all([
+  const [
+    companyLi,
+    qualification,
+    facebookPage,
+    websitePeople,
+    yelp,
+    houzz,
+    nextdoor,
+  ] = await Promise.all([
       linkedinHint
         ? Promise.resolve({
             url: linkedinHint.includes("/in/") ? null : linkedinHint,
