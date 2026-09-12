@@ -31,7 +31,7 @@ const USER_AGENT =
 const PROFILE_PATH =
   /\b(about|contact|team|our-team|staff|leadership|company|connect|social|footer|who-we-are|meet-the-team)\b/i;
 
-const EMPTY: WebsiteSocialPack = {
+export const EMPTY_WEBSITE_SOCIAL_PACK: WebsiteSocialPack = {
   linkedinCompany: null,
   linkedinOwner: null,
   facebook: null,
@@ -44,6 +44,8 @@ const EMPTY: WebsiteSocialPack = {
   pagesChecked: [],
   audit: emptyWebsiteAudit(),
 };
+
+const EMPTY: WebsiteSocialPack = EMPTY_WEBSITE_SOCIAL_PACK;
 
 async function fetchHtml(url: string): Promise<string | null> {
   try {

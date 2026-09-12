@@ -8,7 +8,10 @@ import {
   type WebsitePeopleResult,
 } from "./website-people";
 import { searchFacebookPage } from "./facebook";
-import { scrapeWebsiteSocialPack } from "./website-social-pack";
+import {
+  scrapeWebsiteSocialPack,
+  EMPTY_WEBSITE_SOCIAL_PACK,
+} from "./website-social-pack";
 import { auditWebsite, emptyWebsiteAudit } from "./website-audit";
 import { matchYelpBusiness } from "./yelp";
 import { matchHouzzBusiness } from "./houzz";
@@ -208,16 +211,7 @@ async function enrichAndPersistPlace(opts: {
   const { place, params, searchId, location, preferRules } = opts;
 
   const website = place.website;
-  const emptyPack = {
-    linkedinCompany: null as string | null,
-    linkedinOwner: null as string | null,
-    facebook: null as string | null,
-    instagram: null as string | null,
-    youtube: null as string | null,
-    tiktok: null as string | null,
-    pagesChecked: [] as string[],
-    audit: emptyWebsiteAudit(),
-  };
+  const emptyPack = EMPTY_WEBSITE_SOCIAL_PACK;
 
   const { discoverSocialProfiles } = await import("./web-search");
 

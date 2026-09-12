@@ -6,7 +6,10 @@ import { matchNextdoorBusiness } from "./nextdoor";
 import { matchYelpBusiness } from "./yelp";
 import { extractWebsitePeople } from "./website-people";
 import { auditWebsite, emptyWebsiteAudit } from "./website-audit";
-import { scrapeWebsiteSocialPack } from "./website-social-pack";
+import {
+  scrapeWebsiteSocialPack,
+  EMPTY_WEBSITE_SOCIAL_PACK,
+} from "./website-social-pack";
 import {
   discoverOwnerFromSearch,
   EMPTY_OWNER_DISCOVERY,
@@ -71,19 +74,7 @@ export async function enrichLeadSocial(lead: LeadRecord) {
     ),
     lead.website
       ? scrapeWebsiteSocialPack(lead.website)
-      : Promise.resolve({
-          linkedinCompany: null,
-          linkedinOwner: null,
-          facebook: null,
-          instagram: null,
-          youtube: null,
-          tiktok: null,
-          houzz: null,
-          yelp: null,
-          nextdoor: null,
-          pagesChecked: [],
-          audit: emptyWebsiteAudit(),
-        }),
+      : Promise.resolve(EMPTY_WEBSITE_SOCIAL_PACK),
     lead.website
       ? extractWebsitePeople(lead.website)
       : Promise.resolve({
