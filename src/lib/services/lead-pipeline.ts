@@ -185,6 +185,72 @@ export async function runLeadPipeline(params: SearchParams) {
     },
   });
 
+  const leads: Awaited<ReturnType<typeof prisma.lead.create>>[] = [];
+  let scanned = 0;
+  let totalPlacesFetched = 0;
+
+  // Real-time progressive enrichment pool: processes places as they arrive from queries
+  const pendingEnrichments: Promise<void>[] = [];
+  const activeEnriching = new Set<Promise<void>>();
+
+  async function enqueuePlaces(incoming: PlaceResult[]) {
+    totalPlacesFetched += incoming.length;
+    // Prefer businesses with websites
+    const sorted = [
+      ...incoming.filter((p) => p.website),
+      ...incoming.filter((p) => !p.website),
+    ];
+
+    for (const place of sorted) {
+      if (leads.length >= targetCount) break;
+
+      // Throttle concurrent enrichment tasks to configured concurrency
+      while (activeEnriching.size >= placeConcurrency && leads.length < targetCount) {
+        await Promise.race(Array.from(activeEnriching));
+      }
+
+      if (leads.length >= targetCount) break;
+
+      scanned += 1;
+      let taskPromise: Promise<void>;
+      taskPromise = (async () => {
+        try {
+          const lead = await enrichAndPersistPlace({
+            place,
+            params,
+            searchId: search.id,
+            location,
+            preferRules,
+            fastContacts,
+          });
+
+          if (lead === "skipped-score") return;
+          if (leads.length >= targetCount) return;
+
+          leads.push(lead);
+
+          if (params.onLeadDiscovered) {
+            try {
+              await params.onLeadDiscovered(lead, {
+                current: leads.length,
+                target: targetCount,
+                placeName: place.name,
+                scanned,
+              });
+            } catch {
+              /* ignore callback errors */
+            }
+          }
+        } finally {
+          activeEnriching.delete(taskPromise);
+        }
+      })();
+
+      activeEnriching.add(taskPromise);
+      pendingEnrichments.push(taskPromise);
+    }
+  }
+
   const places = await searchGooglePlaces({
     industry: params.industry,
     country: params.country,
@@ -195,48 +261,19 @@ export async function runLeadPipeline(params: SearchParams) {
     customLocation: params.customLocation,
     radius: params.radius,
     limit: fetchLimit,
+    onPlacesBatch: async (batch) => {
+      await enqueuePlaces(batch);
+    },
+    shouldStop: () => leads.length >= targetCount,
   });
 
-  const leads: Awaited<ReturnType<typeof prisma.lead.create>>[] = [];
-  let scanned = 0;
+  // If any places were returned synchronously/fallback without batch callback
+  if (totalPlacesFetched === 0 && places.length > 0) {
+    await enqueuePlaces(places);
+  }
 
-  // Prefer businesses with websites so the strongest candidates fill first.
-  const ordered = [
-    ...places.filter((p) => p.website),
-    ...places.filter((p) => !p.website),
-  ];
-
-  await mapPool(ordered, placeConcurrency, async (place) => {
-    if (leads.length >= targetCount) return;
-
-    scanned += 1;
-
-    const lead = await enrichAndPersistPlace({
-      place,
-      params,
-      searchId: search.id,
-      location,
-      preferRules,
-      fastContacts,
-    });
-
-    if (lead === "skipped-score") return;
-    if (leads.length >= targetCount) return;
-    leads.push(lead);
-
-    if (params.onLeadDiscovered) {
-      try {
-        await params.onLeadDiscovered(lead, {
-          current: leads.length,
-          target: targetCount,
-          placeName: place.name,
-          scanned,
-        });
-      } catch {
-        /* ignore callback errors */
-      }
-    }
-  });
+  // Wait for all in-flight enrichment tasks to complete
+  await Promise.all(pendingEnrichments);
 
   // LinkedIn + social leads first, then the rest — each group by score.
   const finalLeads = leads.slice(0, targetCount).sort((a, b) => {

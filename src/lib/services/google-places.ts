@@ -717,6 +717,10 @@ export async function searchGooglePlaces(params: {
   customLocation?: string;
   radius?: number;
   limit?: number;
+  /** Progressive callback: fires immediately as batches of places are discovered */
+  onPlacesBatch?: (places: PlaceResult[]) => Promise<void> | void;
+  /** Optional cancellation signal from caller (e.g. when enough leads are already enriched) */
+  shouldStop?: () => boolean;
 }): Promise<PlaceResult[]> {
   // Allow up to 1000 places so high volume requests (e.g. 400-500) succeed
   const wanted = Math.max(1, Math.min(params.limit ?? 10, 1000));
@@ -724,20 +728,18 @@ export async function searchGooglePlaces(params: {
 
   const pool = buildPlacesQueries(params);
   const isCountryWide = params.locationScope === "country";
-  // Country-wide searches fan across metros — give them a bigger budget so the
-  // regional queries actually run, otherwise results cluster in one big city.
   const queryBudget = isCountryWide
     ? wanted <= 25
       ? 1
       : wanted <= 60
         ? 2
         : wanted <= 120
-          ? 5
+          ? 4
           : wanted <= 250
-            ? 10
+            ? 6
             : wanted <= 500
-              ? 18
-              : 25
+              ? 10
+              : 14
     : wanted <= 25
       ? 1
       : wanted <= 60
@@ -745,10 +747,10 @@ export async function searchGooglePlaces(params: {
         : wanted <= 120
           ? 3
           : wanted <= 250
-            ? 6
+            ? 5
             : wanted <= 500
-              ? 12
-              : 18;
+              ? 8
+              : 12;
   const selectedQueries = selectQueries(pool, queryBudget);
   if (!selectedQueries.length) {
     logGooglePlacesError("scraper", `No search queries built for "${params.industry}"`);
@@ -768,9 +770,21 @@ export async function searchGooglePlaces(params: {
         wanted,
         regionCode: getTierOneCountry(params.country).code,
       });
+      const newBatch: PlaceResult[] = [];
       for (const p of apiPlaces) {
         if (deduped.size >= wanted) break;
-        deduped.set(p.placeId || p.name, p);
+        const key = p.placeId || p.name;
+        if (!deduped.has(key)) {
+          deduped.set(key, p);
+          newBatch.push(p);
+        }
+      }
+      if (newBatch.length > 0 && params.onPlacesBatch) {
+        try {
+          await params.onPlacesBatch(newBatch);
+        } catch {
+          /* ignore callback errors */
+        }
       }
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
@@ -781,61 +795,74 @@ export async function searchGooglePlaces(params: {
     }
   }
 
-  // Fill whatever the Places API couldn't return with the Maps scraper so the
-  // requested count is actually met. Results are merged + deduped by place id.
+  // Fill whatever the Places API couldn't return with the Maps scraper.
+  // Each query batch immediately streams places into the pipeline so leads appear live in seconds.
   const need = wanted - deduped.size;
-  if (need > 0) {
+  if (need > 0 && !params.shouldStop?.()) {
     const perQueryLimit = Math.min(
-      80,
-      Math.max(need, Math.ceil(need / selectedQueries.length) + 10),
+      100,
+      Math.max(40, Math.ceil(need / Math.min(selectedQueries.length, 4)) + 15),
     );
 
     const failures: string[] = [];
-    // Max 2 headless browsers at once — parallel Chromium launches trip Google's
-    // anti-bot checks, which is the main source of flaky empty scrapes.
-    const batches = await mapPool(selectedQueries, 2, async (q) =>
-      runScraper({
-        query: q,
-        workers,
-        limit: perQueryLimit,
-      }).catch((err) => {
+
+    // Run scraper queries with max 2 concurrent browsers to prevent bot flags,
+    // but emit and dedup results incrementally as each query returns.
+    await mapPool(selectedQueries, 2, async (q) => {
+      if (deduped.size >= wanted || params.shouldStop?.()) return;
+
+      try {
+        const rows = await runScraper({
+          query: q,
+          workers,
+          limit: perQueryLimit,
+        });
+
+        const newBatch: PlaceResult[] = [];
+        for (const row of rows) {
+          if (deduped.size >= wanted || params.shouldStop?.()) break;
+          const name = row.name?.trim();
+          if (!name) continue;
+          const mapsUrl = row.google_maps_url?.trim() || "";
+          const placeId =
+            row.place_id?.trim() ||
+            mapsUrl ||
+            `${name}-${row.phone || row.address || ""}`;
+          if (deduped.has(placeId)) continue;
+          const fromUrl = coordsFromMapsUrl(mapsUrl);
+          const item: PlaceResult = {
+            placeId,
+            name,
+            address: row.address?.trim() || "",
+            phone: row.phone?.trim() || undefined,
+            website: normalizeWebsiteUrl(row.website || undefined),
+            rating: row.rating ?? undefined,
+            reviewCount: row.review_count ?? undefined,
+            mapsUrl:
+              mapsUrl ||
+              `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`,
+            latitude: row.latitude ?? fromUrl.lat,
+            longitude: row.longitude ?? fromUrl.lng,
+          };
+          deduped.set(placeId, item);
+          newBatch.push(item);
+        }
+
+        if (newBatch.length > 0 && params.onPlacesBatch) {
+          try {
+            await params.onPlacesBatch(newBatch);
+          } catch {
+            /* ignore callback errors */
+          }
+        }
+      } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         failures.push(`${q} → ${msg}`);
         logGooglePlacesError("scraper-query", `${q} → ${msg}`);
-        return [] as ScraperLead[];
-      }),
-    );
-
-    for (const row of batches.flat()) {
-      if (deduped.size >= wanted) break;
-      const name = row.name?.trim();
-      if (!name) continue;
-      const mapsUrl = row.google_maps_url?.trim() || "";
-      const placeId =
-        row.place_id?.trim() ||
-        mapsUrl ||
-        `${name}-${row.phone || row.address || ""}`;
-      if (deduped.has(placeId)) continue;
-      const fromUrl = coordsFromMapsUrl(mapsUrl);
-      deduped.set(placeId, {
-        placeId,
-        name,
-        address: row.address?.trim() || "",
-        phone: row.phone?.trim() || undefined,
-        website: normalizeWebsiteUrl(row.website || undefined),
-        rating: row.rating ?? undefined,
-        reviewCount: row.review_count ?? undefined,
-        mapsUrl:
-          mapsUrl ||
-          `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`,
-        latitude: row.latitude ?? fromUrl.lat,
-        longitude: row.longitude ?? fromUrl.lng,
-      });
-    }
+      }
+    });
 
     if (!deduped.size && failures.length === selectedQueries.length) {
-      // Every source failed (blocked/timeout) — surface it instead of silently
-      // returning an empty list the user mistakes for "no businesses".
       logGooglePlacesError(
         "scraper",
         `All ${failures.length} queries failed: ${failures.join(" | ")}`,
