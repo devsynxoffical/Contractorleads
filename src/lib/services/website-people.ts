@@ -184,9 +184,9 @@ function deobfuscate(text: string): string {
 function isPlausibleEmail(raw: string): boolean {
   const email = raw.trim().toLowerCase();
   if (!email || email.length > 120) return false;
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return false;
+  if (!/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,24}$/i.test(email)) return false;
   if (BAD_EMAIL.test(email)) return false;
-  if (/\.(png|jpe?g|gif|webp|svg|css|js)$/i.test(email)) return false;
+  if (/\.(png|jpe?g|gif|webp|svg|css|js|woff2?|ico|json|map|min|xml)$/i.test(email)) return false;
   return true;
 }
 

@@ -253,6 +253,7 @@ export async function POST(request: Request) {
             customLocation,
             radius,
             targetLeadCount,
+            fastContactsOnly: true,
             onLeadDiscovered: async (lead, progress) => {
               await sendEvent("lead", {
                 lead,
@@ -320,6 +321,7 @@ export async function POST(request: Request) {
       customLocation,
       radius,
       targetLeadCount,
+      fastContactsOnly: true,
     });
 
     await logActivity(

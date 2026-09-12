@@ -580,7 +580,7 @@ export default function AdminScrapePage() {
                 }
               }}
             >
-              {[10, 25, 50, 100, 250, 500, 1000].map((n) => (
+              {[10, 25, 50, 100, 250, 400, 500, 1000].map((n) => (
                 <option key={n} value={n}>
                   {n} leads
                 </option>

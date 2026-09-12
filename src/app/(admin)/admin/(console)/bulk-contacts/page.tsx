@@ -705,7 +705,7 @@ export default function BulkContactsPage() {
                   Target Contacts Count
                 </span>
                 <div className="flex flex-wrap gap-1.5">
-                  {[25, 50, 100, 200, 500].map((count) => (
+                  {[25, 50, 100, 200, 400, 500].map((count) => (
                     <button
                       key={count}
                       type="button"

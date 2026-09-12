@@ -40,6 +40,8 @@ export type SearchParams = {
   radius?: number;
   /** How many leads the client asked for (10–1000). */
   targetLeadCount?: number;
+  /** Fast contacts mode: extracts core business, owner, phone, email, location without slow external social scrapers */
+  fastContactsOnly?: boolean;
   /** Optional callback fired incrementally as each lead is enriched & persisted */
   onLeadDiscovered?: (
     lead: Awaited<ReturnType<typeof prisma.lead.create>>,
@@ -80,6 +82,41 @@ export function leadHasLinkedInSocialAndOwner(lead: SocialFields): boolean {
   return leadHasLinkedInAndSocial(lead);
 }
 
+function parseAddressComponents(
+  rawAddress?: string | null,
+  fallbackState?: string | null,
+  fallbackCity?: string | null,
+  fallbackZip?: string | null,
+) {
+  let city = fallbackCity || null;
+  let state = fallbackState || null;
+  let zip = fallbackZip || null;
+
+  if (!rawAddress) return { city, state, zip };
+
+  const parts = rawAddress.split(",").map((p) => p.trim());
+  if (parts.length >= 3) {
+    const stateZipCandidate = parts[parts.length - 2];
+    if (!state && stateZipCandidate) {
+      const match = stateZipCandidate.match(/^([A-Za-z\s]+?)\s+([A-Z0-9-]+)$/);
+      if (match) {
+        state = state || match[1].trim();
+        zip = zip || match[2].trim();
+      } else if (/^[A-Z]{2}$/i.test(stateZipCandidate.trim())) {
+        state = state || stateZipCandidate.trim().toUpperCase();
+      }
+    }
+    if (!city && parts.length >= 3) {
+      const cityCandidate = parts[parts.length - 3];
+      if (cityCandidate && !/\d{2,}/.test(cityCandidate)) {
+        city = cityCandidate;
+      }
+    }
+  }
+
+  return { city, state, zip };
+}
+
 async function withTimeout<T>(
   promise: Promise<T>,
   ms: number,
@@ -108,15 +145,20 @@ export async function runLeadPipeline(params: SearchParams) {
   // LinkedIn + social are simply ranked first in the returned list.
   const targetCount = clampTarget(params.targetLeadCount);
   const isCountryWide = params.locationScope === "country";
-  // Country-wide scrapes fan across metros, so give them a bigger fetch budget.
+  const fastContacts = Boolean(params.fastContactsOnly);
+
+  // Allow up to 1000 places so requests for 400-500 leads are satisfied
   const fetchLimit = isCountryWide
-    ? Math.min(300, Math.max(targetCount * 3, targetCount + 40))
-    : Math.min(150, Math.max(targetCount * 2, targetCount + 15));
+    ? Math.min(1000, Math.max(targetCount * 2, targetCount + 60))
+    : Math.min(1000, Math.max(targetCount * 2, targetCount + 30));
 
   const preferRules = true; // keep volume searches fast
-  // Higher concurrency — enrichment is I/O bound
-  const placeConcurrency =
-    targetCount >= 250
+  // Higher concurrency — fast contacts mode is lightweight, full mode is I/O bound
+  const placeConcurrency = fastContacts
+    ? targetCount >= 200
+      ? 28
+      : 18
+    : targetCount >= 250
       ? 22
       : targetCount >= 100
         ? 16
@@ -175,6 +217,7 @@ export async function runLeadPipeline(params: SearchParams) {
       searchId: search.id,
       location,
       preferRules,
+      fastContacts,
     });
 
     if (lead === "skipped-score") return;
@@ -228,13 +271,196 @@ async function enrichAndPersistPlace(opts: {
   searchId: string;
   location: string;
   preferRules: boolean;
+  fastContacts?: boolean;
 }): Promise<
   Awaited<ReturnType<typeof prisma.lead.create>> | "skipped-score"
 > {
-  const { place, params, searchId, location, preferRules } = opts;
+  const { place, params, searchId, location, preferRules, fastContacts } = opts;
 
   const website = place.website;
   const emptyPack = EMPTY_WEBSITE_SOCIAL_PACK;
+
+  const addr = parseAddressComponents(
+    place.address,
+    params.state,
+    params.city,
+    params.zip,
+  );
+
+  if (fastContacts) {
+    // Ultra-fast direct contact mode: Extracts owner/team and public email from website in <2.5s
+    // Skips slow external social network and directory crawlers
+    let websitePeople = EMPTY_PEOPLE;
+    if (website) {
+      websitePeople = await withTimeout(
+        extractWebsitePeople(website, { budgetMs: 2500 }),
+        3000,
+        EMPTY_PEOPLE,
+      );
+    }
+
+    const qualification = await qualifyLead(
+      { ...place, website },
+      params.industry,
+      Boolean(website),
+      {
+        preferRules: true,
+        timeoutMs: 1,
+      },
+    );
+
+    const ownerNameFinal = websitePeople.owner?.name ?? null;
+    const ownerTitle = websitePeople.owner?.role ?? null;
+    const ownerSourceUrl = websitePeople.owner?.sourceUrl ?? null;
+    const ownerConfidence =
+      websitePeople.owner?.confidence ?? (ownerNameFinal ? 90 : null);
+    const emailFinal = websitePeople.email ?? null;
+
+    const existingLead = await findExistingLead({
+      name: place.name,
+      address: place.address,
+      phone: place.phone,
+      website: place.website,
+      mapsUrl: place.mapsUrl,
+    });
+
+    const scored = finalizeLeadScore(qualification.leadScore, {
+      hasWebsite: Boolean(website || existingLead?.website),
+      hasEmail: Boolean(emailFinal || existingLead?.email),
+      hasOwner: Boolean(ownerNameFinal || existingLead?.ownerName),
+      hasLinkedIn: Boolean(existingLead?.linkedinUrl),
+      hasSocial: Boolean(existingLead?.facebook || existingLead?.instagram),
+      hasPhone: Boolean(place.phone ?? existingLead?.phone),
+    });
+
+    if (scored.leadScore < 20) return "skipped-score";
+
+    const sharedData = {
+      searchId,
+      industry: params.industry,
+      country: params.country,
+      state: addr.state ?? existingLead?.state,
+      city: addr.city ?? existingLead?.city,
+      zip: addr.zip ?? existingLead?.zip,
+      phone: place.phone ?? existingLead?.phone,
+      website: website ?? existingLead?.website,
+      googleRating: place.rating ?? existingLead?.googleRating,
+      reviewCount: place.reviewCount ?? existingLead?.reviewCount,
+      ownerName: ownerNameFinal ?? existingLead?.ownerName,
+      ownerTitle: ownerTitle ?? existingLead?.ownerTitle,
+      ownerSourceUrl: ownerSourceUrl ?? existingLead?.ownerSourceUrl,
+      ownerConfidence: ownerConfidence ?? existingLead?.ownerConfidence,
+      teamMembersJson: websitePeople.team.length
+        ? JSON.stringify(websitePeople.team)
+        : existingLead?.teamMembersJson,
+      email: emailFinal ?? existingLead?.email,
+      emailSourceUrl:
+        websitePeople.emailSourceUrl ?? existingLead?.emailSourceUrl,
+      facebook: existingLead?.facebook,
+      instagram: existingLead?.instagram,
+      youtube: existingLead?.youtube,
+      tiktok: existingLead?.tiktok,
+      yelpUrl: existingLead?.yelpUrl,
+      yelpRating: existingLead?.yelpRating,
+      yelpReviews: existingLead?.yelpReviews,
+      houzzUrl: existingLead?.houzzUrl,
+      houzzRating: existingLead?.houzzRating,
+      houzzReviews: existingLead?.houzzReviews,
+      nextdoor: existingLead?.nextdoor,
+      linkedinUrl: existingLead?.linkedinUrl,
+      linkedinCompanyUrl: existingLead?.linkedinCompanyUrl,
+      linkedinOwnerUrl: existingLead?.linkedinOwnerUrl,
+      linkedinConfidenceScore: existingLead?.linkedinConfidenceScore,
+      linkedinOwnerConfidenceScore: existingLead?.linkedinOwnerConfidenceScore,
+      linkedinType: existingLead?.linkedinType,
+      leadScore: scored.leadScore,
+      serviceCategory: qualification.serviceCategory,
+      revenueRangeEstimate: qualification.revenueRangeEstimate || null,
+      websiteQualityScore: qualification.websiteQualityScore,
+      marketingOpportunityScore: qualification.marketingOpportunityScore,
+      ppcOpportunityScore: qualification.ppcOpportunityScore,
+      seoOpportunityScore: qualification.seoOpportunityScore,
+      outreachAngle: qualification.outreachAngle,
+      qualityTier: scored.qualityTier,
+      peopleEnrichedAt:
+        ownerNameFinal || emailFinal
+          ? new Date()
+          : existingLead?.peopleEnrichedAt,
+      latitude: place.latitude ?? existingLead?.latitude ?? undefined,
+      longitude: place.longitude ?? existingLead?.longitude ?? undefined,
+      address: place.address || existingLead?.address,
+      googleMapsLink: place.mapsUrl || existingLead?.googleMapsLink,
+    };
+
+    if (existingLead) {
+      return prisma.lead.update({
+        where: { id: existingLead.id },
+        data: sharedData,
+      });
+    }
+
+    try {
+      return await prisma.lead.create({
+        data: {
+          businessName: place.name,
+          ownerName: ownerNameFinal,
+          ownerTitle,
+          ownerSourceUrl,
+          ownerConfidence,
+          teamMembersJson: websitePeople.team.length
+            ? JSON.stringify(websitePeople.team)
+            : null,
+          peopleEnrichedAt: ownerNameFinal || emailFinal ? new Date() : null,
+          email: emailFinal,
+          emailSourceUrl: websitePeople.emailSourceUrl,
+          phone: place.phone,
+          website: website || null,
+          googleRating: place.rating,
+          reviewCount: place.reviewCount,
+          address: place.address,
+          googleMapsLink: place.mapsUrl,
+          leadScore: scored.leadScore,
+          serviceCategory: qualification.serviceCategory,
+          revenueRangeEstimate: qualification.revenueRangeEstimate || null,
+          websiteQualityScore: qualification.websiteQualityScore,
+          marketingOpportunityScore: qualification.marketingOpportunityScore,
+          ppcOpportunityScore: qualification.ppcOpportunityScore,
+          seoOpportunityScore: qualification.seoOpportunityScore,
+          outreachAngle: qualification.outreachAngle,
+          qualityTier: scored.qualityTier,
+          searchId,
+          industry: params.industry,
+          country: params.country,
+          state: addr.state,
+          city: addr.city,
+          zip: addr.zip,
+          latitude: place.latitude,
+          longitude: place.longitude,
+          verificationStatus: "verified",
+        },
+      });
+    } catch (err) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === "P2002"
+      ) {
+        const winner = await findExistingLead({
+          name: place.name,
+          address: place.address,
+          phone: place.phone,
+          website: place.website,
+          mapsUrl: place.mapsUrl,
+        });
+        if (winner) {
+          return prisma.lead.update({
+            where: { id: winner.id },
+            data: sharedData,
+          });
+        }
+      }
+      throw err;
+    }
+  }
 
   const { discoverSocialProfiles } = await import("./web-search");
 
@@ -277,7 +503,8 @@ async function enrichAndPersistPlace(opts: {
           instagram: null as string | null,
         };
 
-  const linkedinHint = pack.linkedinCompany || pack.linkedinOwner || fromWeb.linkedin;
+  const linkedinHint =
+    pack.linkedinCompany || pack.linkedinOwner || fromWeb.linkedin;
 
   // Automatic light enrichment (short timeouts — no manual Fetch needed)
   const [
@@ -289,49 +516,48 @@ async function enrichAndPersistPlace(opts: {
     houzz,
     nextdoor,
   ] = await Promise.all([
-      linkedinHint
-        ? Promise.resolve({
-            url: linkedinHint.includes("/in/") ? null : linkedinHint,
-            confidence: pack.linkedinCompany || fromWeb.linkedin ? 96 : 90,
-            source: (pack.linkedinCompany
-              ? "website"
-              : fromWeb.linkedin
-                ? "web"
-                : "website") as "website" | "web" | null,
-          })
-        : withTimeout(
-            findLinkedInCompanyUrl(
-              place.name,
-              location,
-              params.industry,
-              website,
-              {
-                websiteCompanyUrl: null,
-                skipWebsiteScrape: true,
-                skipWebSearch: true,
-              },
-            ),
-            3000,
-            { url: null, confidence: 0, source: null },
+    linkedinHint
+      ? Promise.resolve({
+          url: linkedinHint.includes("/in/") ? null : linkedinHint,
+          confidence: pack.linkedinCompany || fromWeb.linkedin ? 96 : 90,
+          source: (pack.linkedinCompany
+            ? "website"
+            : fromWeb.linkedin
+              ? "web"
+              : "website") as "website" | "web" | null,
+        })
+      : withTimeout(
+          findLinkedInCompanyUrl(
+            place.name,
+            location,
+            params.industry,
+            website,
+            {
+              websiteCompanyUrl: null,
+              skipWebsiteScrape: true,
+              skipWebSearch: true,
+            },
           ),
-      qualifyLead({ ...place, website }, params.industry, Boolean(website), {
-        preferRules,
-        timeoutMs: preferRules ? 1 : 8000,
-        websiteAudit: pack.audit,
-        // Timeout without a confirmed HTTP failure → don't claim the site is dead
-        treatUnreachableAsPending:
-          packTimedOut && !pack.audit.reachable,
-      }),
-      !(pack.facebook || fromWeb.facebook)
-        ? withTimeout(searchFacebookPage(place.name), 2500, null)
-        : Promise.resolve(null),
-      website
-        ? withTimeout(extractWebsitePeople(website), 9000, EMPTY_PEOPLE)
-        : Promise.resolve(EMPTY_PEOPLE),
-      withTimeout(matchYelpBusiness(place.name, location), 3000, null),
-      withTimeout(matchHouzzBusiness(place.name, location), 3000, null),
-      withTimeout(matchNextdoorBusiness(place.name, location), 3000, null),
-    ]);
+          3000,
+          { url: null, confidence: 0, source: null },
+        ),
+    qualifyLead({ ...place, website }, params.industry, Boolean(website), {
+      preferRules,
+      timeoutMs: preferRules ? 1 : 8000,
+      websiteAudit: pack.audit,
+      // Timeout without a confirmed HTTP failure → don't claim the site is dead
+      treatUnreachableAsPending: packTimedOut && !pack.audit.reachable,
+    }),
+    !(pack.facebook || fromWeb.facebook)
+      ? withTimeout(searchFacebookPage(place.name), 2500, null)
+      : Promise.resolve(null),
+    website
+      ? withTimeout(extractWebsitePeople(website), 9000, EMPTY_PEOPLE)
+      : Promise.resolve(EMPTY_PEOPLE),
+    withTimeout(matchYelpBusiness(place.name, location), 3000, null),
+    withTimeout(matchHouzzBusiness(place.name, location), 3000, null),
+    withTimeout(matchNextdoorBusiness(place.name, location), 3000, null),
+  ]);
 
   const yelpUrlFinal = pack.yelp || yelp?.url || null;
   const yelpRatingFinal = yelp?.rating ?? null;
@@ -367,8 +593,7 @@ async function enrichAndPersistPlace(opts: {
         EMPTY_OWNER_DISCOVERY,
       );
 
-  const resolvedOwner =
-    ownerUrl || ownerFromSearch.ownerLinkedInUrl || null;
+  const resolvedOwner = ownerUrl || ownerFromSearch.ownerLinkedInUrl || null;
   const primaryLinkedIn = companyUrl || resolvedOwner || fromWeb.linkedin;
   const ownerName = websiteOwnerName ?? ownerFromSearch.ownerName ?? null;
   const ownerTitle =
@@ -385,8 +610,7 @@ async function enrichAndPersistPlace(opts: {
       : 96
     : null;
 
-  const facebook =
-    pack.facebook || facebookPage || fromWeb.facebook || null;
+  const facebook = pack.facebook || facebookPage || fromWeb.facebook || null;
   const instagram = pack.instagram || fromWeb.instagram || null;
 
   if (qualification.leadScore < 25) return "skipped-score";
@@ -448,18 +672,18 @@ async function enrichAndPersistPlace(opts: {
   const linkedinType = companyUrl
     ? "company"
     : resolvedOwner
-      ? "owner"
+      ? "personal"
       : primaryLinkedIn
         ? "company"
-        : "none";
+        : null;
 
   const sharedData = {
     searchId,
     industry: params.industry,
     country: params.country,
-    state: params.state ?? existingLead?.state,
-    city: params.city ?? existingLead?.city,
-    zip: params.zip ?? existingLead?.zip,
+    state: addr.state ?? existingLead?.state,
+    city: addr.city ?? existingLead?.city,
+    zip: addr.zip ?? existingLead?.zip,
     phone: place.phone ?? existingLead?.phone,
     website: websiteFinal,
     googleRating: place.rating ?? existingLead?.googleRating,
@@ -525,67 +749,70 @@ async function enrichAndPersistPlace(opts: {
     return await prisma.lead.create({
       data: {
         businessName: place.name,
-      ownerName: ownerNameFinal,
-      ownerTitle,
-      ownerSourceUrl: ownerSourceUrl,
-      ownerConfidence: ownerConfidence,
-      teamMembersJson: websitePeople.team.length
-        ? JSON.stringify(websitePeople.team)
-        : null,
-      peopleEnrichedAt:
-        websitePeople.owner || ownerFromSearch.ownerName || websitePeople.email
-          ? new Date()
+        ownerName: ownerNameFinal,
+        ownerTitle,
+        ownerSourceUrl,
+        ownerConfidence,
+        teamMembersJson: websitePeople.team.length
+          ? JSON.stringify(websitePeople.team)
           : null,
-      email: emailFinal,
-      emailSourceUrl: websitePeople.emailSourceUrl,
-      facebook,
-      instagram,
-      youtube: pack.youtube,
-      tiktok: pack.tiktok,
-      phone: place.phone,
-      website: websiteFinal,
-      googleRating: place.rating,
-      reviewCount: place.reviewCount,
-      address: place.address,
-      googleMapsLink: place.mapsUrl,
-      leadScore: scored.leadScore,
-      serviceCategory: qualification.serviceCategory,
-      revenueRangeEstimate: qualification.revenueRangeEstimate || null,
-      websiteQualityScore,
-      marketingOpportunityScore: qualification.marketingOpportunityScore,
-      ppcOpportunityScore: qualification.ppcOpportunityScore,
-      seoOpportunityScore: qualification.seoOpportunityScore,
-      outreachAngle: qualification.outreachAngle,
-      yelpUrl: yelp?.url ?? null,
-      yelpRating: yelp?.rating ?? null,
-      yelpReviews: yelp?.reviewCount ?? null,
-      houzzUrl: null,
-      houzzRating: null,
-      houzzReviews: null,
-      nextdoor: null,
-      linkedinUrl: primaryLinkedIn,
-      linkedinCompanyUrl: companyUrl,
-      linkedinOwnerUrl: resolvedOwner,
-      linkedinConfidenceScore: companyLi.confidence || null,
-      linkedinOwnerConfidenceScore: ownerLinkedInConfidence,
-      linkedinType,
-      socialEnrichedAt: new Date(),
-      qualityTier: scored.qualityTier,
-      searchId,
-      industry: params.industry,
-      country: params.country,
-      state: params.state,
-      city: params.city,
-      zip: params.zip,
-      latitude: place.latitude,
-      longitude: place.longitude,
-      verificationStatus: "verified",
-    },
+        peopleEnrichedAt:
+          websitePeople.owner || ownerFromSearch.ownerName || websitePeople.email
+            ? new Date()
+            : null,
+        email: emailFinal,
+        emailSourceUrl: websitePeople.emailSourceUrl,
+        facebook,
+        instagram,
+        youtube: pack.youtube,
+        tiktok: pack.tiktok,
+        phone: place.phone,
+        website: websiteFinal,
+        googleRating: place.rating,
+        reviewCount: place.reviewCount,
+        address: place.address,
+        googleMapsLink: place.mapsUrl,
+        leadScore: scored.leadScore,
+        serviceCategory: qualification.serviceCategory,
+        revenueRangeEstimate: qualification.revenueRangeEstimate || null,
+        websiteQualityScore,
+        marketingOpportunityScore: qualification.marketingOpportunityScore,
+        ppcOpportunityScore: qualification.ppcOpportunityScore,
+        seoOpportunityScore: qualification.seoOpportunityScore,
+        outreachAngle: qualification.outreachAngle,
+        yelpUrl: yelpUrlFinal,
+        yelpRating: yelpRatingFinal,
+        yelpReviews: yelpReviewsFinal,
+        houzzUrl: houzzUrlFinal,
+        houzzRating: houzzRatingFinal,
+        houzzReviews: houzzReviewsFinal,
+        nextdoor: nextdoorUrlFinal,
+        linkedinUrl: primaryLinkedIn,
+        linkedinCompanyUrl: companyUrl,
+        linkedinOwnerUrl: resolvedOwner,
+        linkedinConfidenceScore: companyLi.confidence || null,
+        linkedinOwnerConfidenceScore: ownerLinkedInConfidence,
+        linkedinType,
+        socialEnrichedAt: new Date(),
+        qualityTier: scored.qualityTier,
+        searchId,
+        industry: params.industry,
+        country: params.country,
+        state: addr.state,
+        city: addr.city,
+        zip: addr.zip,
+        latitude: place.latitude,
+        longitude: place.longitude,
+        verificationStatus: "verified",
+      },
     });
   } catch (err) {
     // Lost a create race (duplicate maps link or phone) — merge into the row
     // another worker just created instead of leaving a duplicate.
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === "P2002"
+    ) {
       const winner = await findExistingLead({
         name: place.name,
         address: place.address,

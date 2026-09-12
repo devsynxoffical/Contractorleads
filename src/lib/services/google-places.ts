@@ -664,10 +664,11 @@ async function searchOfficialPlaces(opts: {
   regionCode: string;
 }): Promise<PlaceResult[]> {
   const { queries, wanted, regionCode } = opts;
-  const pagesPerQuery = wanted <= 20 ? 1 : wanted <= 60 ? 2 : 4;
+  const pagesPerQuery = wanted <= 20 ? 1 : wanted <= 60 ? 2 : wanted <= 200 ? 4 : 5;
 
   const failures: string[] = [];
-  const batches = await mapPool(queries, 4, async (q) =>
+  const officialConcurrency = wanted >= 200 ? 6 : 4;
+  const batches = await mapPool(queries, officialConcurrency, async (q) =>
     searchOfficialQuery({
       query: q,
       regionCode,
@@ -717,9 +718,9 @@ export async function searchGooglePlaces(params: {
   radius?: number;
   limit?: number;
 }): Promise<PlaceResult[]> {
-  // Scraper is slower than Places API — keep caps practical for Lead Finder.
-  const wanted = Math.max(1, Math.min(params.limit ?? 10, 300));
-  const workers = wanted >= 100 ? 5 : wanted >= 40 ? 3 : 2;
+  // Allow up to 1000 places so high volume requests (e.g. 400-500) succeed
+  const wanted = Math.max(1, Math.min(params.limit ?? 10, 1000));
+  const workers = wanted >= 200 ? 6 : wanted >= 100 ? 5 : wanted >= 40 ? 3 : 2;
 
   const pool = buildPlacesQueries(params);
   const isCountryWide = params.locationScope === "country";
@@ -732,14 +733,22 @@ export async function searchGooglePlaces(params: {
         ? 2
         : wanted <= 120
           ? 5
-          : 8
+          : wanted <= 250
+            ? 10
+            : wanted <= 500
+              ? 18
+              : 25
     : wanted <= 25
       ? 1
       : wanted <= 60
         ? 2
         : wanted <= 120
           ? 3
-          : 4;
+          : wanted <= 250
+            ? 6
+            : wanted <= 500
+              ? 12
+              : 18;
   const selectedQueries = selectQueries(pool, queryBudget);
   if (!selectedQueries.length) {
     logGooglePlacesError("scraper", `No search queries built for "${params.industry}"`);
