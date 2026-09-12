@@ -411,7 +411,7 @@ async function enrichAndPersistPlace(opts: {
       linkedinOwnerUrl: existingLead?.linkedinOwnerUrl,
       linkedinConfidenceScore: existingLead?.linkedinConfidenceScore,
       linkedinOwnerConfidenceScore: existingLead?.linkedinOwnerConfidenceScore,
-      linkedinType: existingLead?.linkedinType,
+      linkedinType: existingLead?.linkedinType ?? "none",
       leadScore: scored.leadScore,
       serviceCategory: qualification.serviceCategory,
       revenueRangeEstimate: qualification.revenueRangeEstimate || null,
@@ -714,7 +714,7 @@ async function enrichAndPersistPlace(opts: {
       ? "personal"
       : primaryLinkedIn
         ? "company"
-        : null;
+        : "none";
 
   const sharedData = {
     searchId,
@@ -755,7 +755,7 @@ async function enrichAndPersistPlace(opts: {
       companyLi.confidence || existingLead?.linkedinConfidenceScore,
     linkedinOwnerConfidenceScore:
       ownerLinkedInConfidence ?? existingLead?.linkedinOwnerConfidenceScore,
-    linkedinType: linkedinType ?? existingLead?.linkedinType,
+    linkedinType: linkedinType ?? existingLead?.linkedinType ?? "none",
     leadScore: scored.leadScore,
     serviceCategory: qualification.serviceCategory,
     revenueRangeEstimate: qualification.revenueRangeEstimate || null,
@@ -831,7 +831,7 @@ async function enrichAndPersistPlace(opts: {
         linkedinOwnerUrl: resolvedOwner,
         linkedinConfidenceScore: companyLi.confidence || null,
         linkedinOwnerConfidenceScore: ownerLinkedInConfidence,
-        linkedinType,
+        linkedinType: linkedinType ?? "none",
         socialEnrichedAt: new Date(),
         qualityTier: scored.qualityTier,
         searchId,
