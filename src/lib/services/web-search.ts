@@ -59,6 +59,22 @@ function isJunkUrl(url: string): boolean {
     if (host.includes("instagram.com") && (path === "/" || path === "/accounts")) {
       return true;
     }
+    if (host.includes("yelp.")) {
+      if (path === "/" || !path.includes("/biz/")) return true;
+    }
+    if (host.includes("houzz.")) {
+      if (
+        path === "/" ||
+        (!path.includes("/pro/") &&
+          !path.includes("/professionals/") &&
+          !path.includes("/user/"))
+      ) {
+        return true;
+      }
+    }
+    if (host.includes("nextdoor.")) {
+      if (path === "/" || !path.includes("/pages/")) return true;
+    }
     return false;
   } catch {
     return true;
@@ -74,7 +90,9 @@ function pushUnique(
   if (out.length >= limit) return;
   let cleaned = url.replace(/&amp;/g, "&").split("#")[0];
   // Brave sometimes wraps URLs
-  const m = cleaned.match(/https?:\/\/(?:www\.)?(?:linkedin|facebook|instagram|fb)\.com[^"'\s<>]*/i);
+  const m = cleaned.match(
+    /https?:\/\/(?:www\.)?(?:linkedin|facebook|instagram|fb|yelp|houzz|nextdoor)\.[^"'\s<>]*/i,
+  );
   if (m && !cleaned.startsWith("http")) cleaned = m[0];
   if (!/^https?:\/\//i.test(cleaned)) return;
   if (isJunkUrl(cleaned)) return;
@@ -107,17 +125,17 @@ async function searchBrave(
 
     // Prefer result anchors
     for (const m of html.matchAll(
-      /(?:cite|result-header|snippet)[^>]*>[\s\S]{0,200}?https?:\/\/(?:www\.)?(?:linkedin|facebook|fb|instagram)\.com[^"'<\s]*/gi,
+      /(?:cite|result-header|snippet)[^>]*>[\s\S]{0,200}?https?:\/\/(?:www\.)?(?:linkedin|facebook|fb|instagram|yelp|houzz|nextdoor)\.[^"'<\s]*/gi,
     )) {
       const found = m[0].match(
-        /https?:\/\/(?:www\.)?(?:linkedin|facebook|fb|instagram)\.com[^"'<\s]*/i,
+        /https?:\/\/(?:www\.)?(?:linkedin|facebook|fb|instagram|yelp|houzz|nextdoor)\.[^"'<\s]*/i,
       );
       if (found) pushUnique(out, seen, found[0], limit);
     }
 
     // Broad extract of social URLs from the page
     for (const m of html.matchAll(
-      /https?:\/\/(?:[a-z]+\.)?(?:linkedin|facebook|fb|instagram)\.com\/[a-zA-Z0-9._~:/?#[\]@!$&'()*+,;=%-]+/gi,
+      /https?:\/\/(?:[a-z0-9-]+\.)?(?:linkedin|facebook|fb|instagram|yelp|houzz|nextdoor)\.(?:com|co\.uk|ca|com\.au)\/[a-zA-Z0-9._~:/?#[\]@!$&'()*+,;=%-]+/gi,
     )) {
       pushUnique(out, seen, m[0], limit);
     }
