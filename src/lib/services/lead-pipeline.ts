@@ -327,6 +327,16 @@ async function enrichAndPersistPlace(opts: {
     params.zip,
   );
 
+  // Match against the pool by the strongest identity signals so re-scrapes
+  // update the existing row instead of creating a duplicate.
+  const existingLead = await findExistingLead({
+    name: place.name,
+    address: place.address,
+    phone: place.phone,
+    website: place.website,
+    mapsUrl: place.mapsUrl,
+  });
+
   if (fastContacts) {
     // Ultra-fast direct contact mode: Extracts owner/team and public email from website in <2.5s
     // Skips slow external social network and directory crawlers
@@ -647,16 +657,6 @@ async function enrichAndPersistPlace(opts: {
         9000,
         EMPTY_OWNER_DISCOVERY,
       );
-
-  // Match against the pool by the strongest identity signals so re-scrapes
-  // update the existing row instead of creating a duplicate.
-  const existingLead = await findExistingLead({
-    name: place.name,
-    address: place.address,
-    phone: place.phone,
-    website: place.website,
-    mapsUrl: place.mapsUrl,
-  });
 
   const websiteOwnerCandidate =
     websitePeople.owner?.name &&
