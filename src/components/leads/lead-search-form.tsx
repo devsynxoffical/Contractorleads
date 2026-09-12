@@ -1076,6 +1076,7 @@ export function LeadSearchForm() {
           />
           <LeadResultsList
             leads={leads}
+            openInNewTab={true}
             profileHrefFor={(lead) => `/leads/${lead.id}?from=search`}
           />
         </div>

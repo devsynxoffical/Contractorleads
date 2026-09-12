@@ -246,6 +246,7 @@ export default function AdminScrapePage() {
   ]);
 
   function selectNiche(name: string) {
+    if (loading) return;
     const presets = new Set<string>(INDUSTRIES);
     if (presets.has(name)) {
       setIndustrySelect(name);
@@ -766,6 +767,7 @@ export default function AdminScrapePage() {
               <LeadResultsList
                 leads={leads}
                 showPipeline={false}
+                openInNewTab={true}
                 profileHrefFor={(lead) =>
                   `/admin/leads/${lead.id}?from=scrape`
                 }

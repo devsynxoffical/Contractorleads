@@ -101,12 +101,14 @@ export function LeadResultCard({
   index = 0,
   profileHref,
   showPipeline = true,
+  openInNewTab = false,
 }: {
   lead: LeadResult;
   index?: number;
   /** Override the "View full profile" destination (e.g. admin lead detail). */
   profileHref?: string;
   showPipeline?: boolean;
+  openInNewTab?: boolean;
 }) {
   const [pipelineBusy, setPipelineBusy] = useState(false);
   const [inPipeline, setInPipeline] = useState(false);
@@ -148,15 +150,28 @@ export function LeadResultCard({
     }
   }
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest("a, button, input, select")) return;
+    if (openInNewTab) {
+      window.open(detailHref, "_blank", "noopener,noreferrer");
+    } else {
+      router.push(detailHref);
+    }
+  };
+
   return (
     <article
       role="link"
       tabIndex={0}
-      onClick={() => router.push(detailHref)}
+      onClick={handleCardClick}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          router.push(detailHref);
+          if (openInNewTab) {
+            window.open(detailHref, "_blank", "noopener,noreferrer");
+          } else {
+            router.push(detailHref);
+          }
         }
       }}
       className="hover-lift animate-fade-up group cursor-pointer overflow-hidden rounded-2xl border border-brand-500/15 bg-[var(--panel-solid)] shadow-[var(--shadow-card)]"
@@ -267,6 +282,8 @@ export function LeadResultCard({
           >
             <Link
               href={detailHref}
+              target={openInNewTab ? "_blank" : undefined}
+              rel={openInNewTab ? "noopener noreferrer" : undefined}
               className="inline-flex h-9 items-center rounded-xl px-4 text-[12px] font-semibold text-white shadow-sm transition hover:opacity-95"
               style={{ background: LOGO_GRADIENT }}
             >
@@ -388,10 +405,12 @@ export function LeadResultsList({
   leads,
   profileHrefFor,
   showPipeline = true,
+  openInNewTab = false,
 }: {
   leads: LeadResult[];
   profileHrefFor?: (lead: LeadResult) => string;
   showPipeline?: boolean;
+  openInNewTab?: boolean;
 }) {
   if (!leads.length) return null;
   const ranked = [...leads].sort((a, b) => b.leadScore - a.leadScore);
@@ -404,6 +423,7 @@ export function LeadResultsList({
           index={i}
           profileHref={profileHrefFor?.(lead)}
           showPipeline={showPipeline}
+          openInNewTab={openInNewTab}
         />
       ))}
     </div>

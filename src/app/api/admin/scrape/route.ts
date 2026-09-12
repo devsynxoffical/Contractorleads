@@ -161,6 +161,9 @@ export async function POST(request: Request) {
         }
       };
 
+      // Immediate handshake byte flush to prevent reverse-proxy buffering
+      void writer.write(encoder.encode(": connected\n\n"));
+
       (async () => {
         try {
           await sendEvent("start", {
@@ -224,8 +227,9 @@ export async function POST(request: Request) {
       return new Response(responseStream.readable, {
         headers: {
           "Content-Type": "text/event-stream; charset=utf-8",
-          "Cache-Control": "no-cache, no-transform",
+          "Cache-Control": "no-cache, no-transform, no-store",
           "Connection": "keep-alive",
+          "X-Accel-Buffering": "no",
         },
       });
     }
