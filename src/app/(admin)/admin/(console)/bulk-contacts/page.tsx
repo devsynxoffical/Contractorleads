@@ -557,7 +557,7 @@ export default function BulkContactsPage() {
                       <span className="font-medium text-ink-muted">
                         {countryMeta?.regionLabel || "State / Region"}
                       </span>
-                      {countryMeta?.regions && countryMeta.regions.length > 0 ? (
+                      {getRegionsForCountry(country).length > 0 ? (
                         <select
                           value={state}
                           onChange={(e) => setState(e.target.value)}
