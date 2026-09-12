@@ -17,6 +17,9 @@ export type WebsiteSocialPack = {
   instagram: string | null;
   youtube: string | null;
   tiktok: string | null;
+  houzz: string | null;
+  yelp: string | null;
+  nextdoor: string | null;
   pagesChecked: string[];
   /** Live homepage audit used for qualification scores. */
   audit: WebsiteAudit;
@@ -35,6 +38,9 @@ const EMPTY: WebsiteSocialPack = {
   instagram: null,
   youtube: null,
   tiktok: null,
+  houzz: null,
+  yelp: null,
+  nextdoor: null,
   pagesChecked: [],
   audit: emptyWebsiteAudit(),
 };
@@ -136,6 +142,48 @@ function cleanTiktok(url: string): string | null {
   }
 }
 
+function cleanHouzz(url: string): string | null {
+  try {
+    const u = new URL(url.startsWith("http") ? url : `https://${url}`);
+    const host = u.hostname.replace(/^www\./, "").toLowerCase();
+    if (!host.includes("houzz.")) return null;
+    if (
+      !/^\/(?:pro|professionals|hznb\/professionals|user)\/[a-zA-Z0-9_-]+/i.test(
+        u.pathname,
+      )
+    ) {
+      return null;
+    }
+    return `https://${host}${u.pathname.replace(/\/+$/, "")}`;
+  } catch {
+    return null;
+  }
+}
+
+function cleanYelp(url: string): string | null {
+  try {
+    const u = new URL(url.startsWith("http") ? url : `https://${url}`);
+    const host = u.hostname.replace(/^www\./, "").toLowerCase();
+    if (!host.includes("yelp.")) return null;
+    if (!/^\/biz\/[a-zA-Z0-9_-]+/i.test(u.pathname)) return null;
+    return `https://${host}${u.pathname.replace(/\/+$/, "")}`;
+  } catch {
+    return null;
+  }
+}
+
+function cleanNextdoor(url: string): string | null {
+  try {
+    const u = new URL(url.startsWith("http") ? url : `https://${url}`);
+    const host = u.hostname.replace(/^www\./, "").toLowerCase();
+    if (!host.includes("nextdoor.")) return null;
+    if (!/^\/pages\/[a-zA-Z0-9_-]+/i.test(u.pathname)) return null;
+    return `https://${host}${u.pathname.replace(/\/+$/, "")}`;
+  } catch {
+    return null;
+  }
+}
+
 function extractFromHtml(html: string, pageUrl: string) {
   const $ = cheerio.load(html);
   const linkedinCompany = new Set<string>();
@@ -144,6 +192,9 @@ function extractFromHtml(html: string, pageUrl: string) {
   const instagram = new Set<string>();
   const youtube = new Set<string>();
   const tiktok = new Set<string>();
+  const houzz = new Set<string>();
+  const yelp = new Set<string>();
+  const nextdoor = new Set<string>();
   const nextPages: string[] = [];
 
   const consider = (raw: string | undefined | null) => {
@@ -175,6 +226,18 @@ function extractFromHtml(html: string, pageUrl: string) {
     if (lower.includes("tiktok.com")) {
       const tt = cleanTiktok(absolute);
       if (tt) tiktok.add(tt);
+    }
+    if (lower.includes("houzz.")) {
+      const hz = cleanHouzz(absolute);
+      if (hz) houzz.add(hz);
+    }
+    if (lower.includes("yelp.")) {
+      const yp = cleanYelp(absolute);
+      if (yp) yelp.add(yp);
+    }
+    if (lower.includes("nextdoor.")) {
+      const nd = cleanNextdoor(absolute);
+      if (nd) nextdoor.add(nd);
     }
   };
 
@@ -218,6 +281,27 @@ function extractFromHtml(html: string, pageUrl: string) {
         if (n) instagram.add(n);
       },
     ],
+    [
+      /https?:\/\/(?:www\.)?houzz\.(?:com|co\.uk|ca|com\.au)\/(?:pro|professionals|hznb\/professionals|user)\/[a-zA-Z0-9._%-]+/gi,
+      (v) => {
+        const n = cleanHouzz(v);
+        if (n) houzz.add(n);
+      },
+    ],
+    [
+      /https?:\/\/(?:www\.)?yelp\.(?:com|co\.uk|ca|com\.au)\/biz\/[a-zA-Z0-9._%-]+/gi,
+      (v) => {
+        const n = cleanYelp(v);
+        if (n) yelp.add(n);
+      },
+    ],
+    [
+      /https?:\/\/(?:www\.)?nextdoor\.(?:com|co\.uk|ca|com\.au)\/pages\/[a-zA-Z0-9._%-]+/gi,
+      (v) => {
+        const n = cleanNextdoor(v);
+        if (n) nextdoor.add(n);
+      },
+    ],
   ];
 
   for (const [re, add] of patterns) {
@@ -231,6 +315,9 @@ function extractFromHtml(html: string, pageUrl: string) {
     instagram: [...instagram],
     youtube: [...youtube],
     tiktok: [...tiktok],
+    houzz: [...houzz],
+    yelp: [...yelp],
+    nextdoor: [...nextdoor],
     nextPages: [...new Set(nextPages)].slice(0, 5),
   };
 }
@@ -257,13 +344,16 @@ export async function scrapeWebsiteSocialPack(
     instagram: home.instagram[0] ?? null,
     youtube: home.youtube[0] ?? null,
     tiktok: home.tiktok[0] ?? null,
+    houzz: home.houzz[0] ?? null,
+    yelp: home.yelp[0] ?? null,
+    nextdoor: home.nextdoor[0] ?? null,
     pagesChecked: [homepage],
     audit,
   };
 
   const hasLi = Boolean(pack.linkedinCompany || pack.linkedinOwner);
   const hasSocial = Boolean(
-    pack.facebook || pack.instagram || pack.youtube || pack.tiktok,
+    pack.facebook || pack.instagram || pack.youtube || pack.tiktok || pack.houzz || pack.yelp || pack.nextdoor,
   );
   // Homepage already complete — skip slow secondary page fetches
   const maxExtra = opts?.maxExtraPages ?? (hasLi && hasSocial ? 0 : 2);
@@ -285,6 +375,9 @@ export async function scrapeWebsiteSocialPack(
     pack.instagram ||= extra.data.instagram[0] ?? null;
     pack.youtube ||= extra.data.youtube[0] ?? null;
     pack.tiktok ||= extra.data.tiktok[0] ?? null;
+    pack.houzz ||= extra.data.houzz[0] ?? null;
+    pack.yelp ||= extra.data.yelp[0] ?? null;
+    pack.nextdoor ||= extra.data.nextdoor[0] ?? null;
   }
 
   return pack;

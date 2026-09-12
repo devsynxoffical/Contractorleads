@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/prisma";
-import { discoverSocialFromWebsite, searchFacebookPage } from "./facebook";
+import { searchFacebookPage } from "./facebook";
 import { resolveLinkedInProfiles } from "./linkedin";
 import { matchHouzzBusiness } from "./houzz";
 import { matchNextdoorBusiness } from "./nextdoor";
 import { matchYelpBusiness } from "./yelp";
 import { extractWebsitePeople } from "./website-people";
 import { auditWebsite, emptyWebsiteAudit } from "./website-audit";
+import { scrapeWebsiteSocialPack } from "./website-social-pack";
 import {
   discoverOwnerFromSearch,
   EMPTY_OWNER_DISCOVERY,
@@ -53,7 +54,7 @@ export async function enrichLeadSocial(lead: LeadRecord) {
 
   const [
     linkedin,
-    websiteSocial,
+    websitePack,
     websitePeople,
     facebookPage,
     yelp,
@@ -69,12 +70,19 @@ export async function enrichLeadSocial(lead: LeadRecord) {
       lead.website,
     ),
     lead.website
-      ? discoverSocialFromWebsite(lead.website)
+      ? scrapeWebsiteSocialPack(lead.website)
       : Promise.resolve({
+          linkedinCompany: null,
+          linkedinOwner: null,
           facebook: null,
           instagram: null,
           youtube: null,
           tiktok: null,
+          houzz: null,
+          yelp: null,
+          nextdoor: null,
+          pagesChecked: [],
+          audit: emptyWebsiteAudit(),
         }),
     lead.website
       ? extractWebsitePeople(lead.website)
@@ -88,9 +96,9 @@ export async function enrichLeadSocial(lead: LeadRecord) {
     !lead.facebook
       ? searchFacebookPage(lead.businessName)
       : Promise.resolve(null),
-    matchYelpBusiness(lead.businessName, location),
-    matchHouzzBusiness(lead.businessName, location),
-    matchNextdoorBusiness(lead.businessName, location),
+    withTimeout(matchYelpBusiness(lead.businessName, location), 3000, null),
+    withTimeout(matchHouzzBusiness(lead.businessName, location), 3000, null),
+    withTimeout(matchNextdoorBusiness(lead.businessName, location), 3000, null),
     lead.website
       ? auditWebsite(lead.website, { timeoutMs: 12000 })
       : Promise.resolve(emptyWebsiteAudit()),
@@ -133,10 +141,14 @@ export async function enrichLeadSocial(lead: LeadRecord) {
     undefined;
 
   const facebook =
-    lead.facebook ?? websiteSocial.facebook ?? facebookPage ?? null;
-  const instagram = lead.instagram ?? websiteSocial.instagram ?? null;
-  const youtube = lead.youtube ?? websiteSocial.youtube ?? null;
-  const tiktok = lead.tiktok ?? websiteSocial.tiktok ?? null;
+    lead.facebook ?? websitePack.facebook ?? facebookPage ?? null;
+  const instagram = lead.instagram ?? websitePack.instagram ?? null;
+  const youtube = lead.youtube ?? websitePack.youtube ?? null;
+  const tiktok = lead.tiktok ?? websitePack.tiktok ?? null;
+
+  const yelpUrlFinal = websitePack.yelp ?? yelp?.url ?? undefined;
+  const houzzUrlFinal = websitePack.houzz ?? houzz?.url ?? undefined;
+  const nextdoorUrlFinal = websitePack.nextdoor ?? nextdoor?.url ?? undefined;
 
   const auditScores = lead.website
     ? {
@@ -189,13 +201,13 @@ export async function enrichLeadSocial(lead: LeadRecord) {
       instagram,
       youtube,
       tiktok,
-      yelpUrl: yelp?.url ?? undefined,
+      yelpUrl: yelpUrlFinal,
       yelpRating: yelp?.rating ?? undefined,
       yelpReviews: yelp?.reviewCount ?? undefined,
-      houzzUrl: houzz?.url ?? undefined,
+      houzzUrl: houzzUrlFinal,
       houzzRating: houzz?.rating ?? undefined,
       houzzReviews: houzz?.reviewCount ?? undefined,
-      nextdoor: nextdoor?.url ?? undefined,
+      nextdoor: nextdoorUrlFinal,
       socialEnrichedAt: new Date(),
       ...auditScores,
     },

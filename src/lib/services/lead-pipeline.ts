@@ -11,6 +11,8 @@ import { searchFacebookPage } from "./facebook";
 import { scrapeWebsiteSocialPack } from "./website-social-pack";
 import { auditWebsite, emptyWebsiteAudit } from "./website-audit";
 import { matchYelpBusiness } from "./yelp";
+import { matchHouzzBusiness } from "./houzz";
+import { matchNextdoorBusiness } from "./nextdoor";
 import { mapPool } from "@/lib/utils/async-pool";
 import type { PlaceResult } from "./google-places";
 import { findExistingLead } from "./lead-identity";
@@ -302,8 +304,20 @@ async function enrichAndPersistPlace(opts: {
       website
         ? withTimeout(extractWebsitePeople(website), 9000, EMPTY_PEOPLE)
         : Promise.resolve(EMPTY_PEOPLE),
-      withTimeout(matchYelpBusiness(place.name, location), 2500, null),
+      withTimeout(matchYelpBusiness(place.name, location), 3000, null),
+      withTimeout(matchHouzzBusiness(place.name, location), 3000, null),
+      withTimeout(matchNextdoorBusiness(place.name, location), 3000, null),
     ]);
+
+  const yelpUrlFinal = pack.yelp || yelp?.url || null;
+  const yelpRatingFinal = yelp?.rating ?? null;
+  const yelpReviewsFinal = yelp?.reviewCount ?? null;
+
+  const houzzUrlFinal = pack.houzz || houzz?.url || null;
+  const houzzRatingFinal = houzz?.rating ?? null;
+  const houzzReviewsFinal = houzz?.reviewCount ?? null;
+
+  const nextdoorUrlFinal = pack.nextdoor || nextdoor?.url || null;
 
   const companyUrl =
     (companyLi.url && !companyLi.url.includes("/in/")
@@ -373,6 +387,9 @@ async function enrichAndPersistPlace(opts: {
     instagram: instagram ?? existingLead?.instagram,
     youtube: pack.youtube ?? existingLead?.youtube,
     tiktok: pack.tiktok ?? existingLead?.tiktok,
+    yelp: yelpUrlFinal ?? existingLead?.yelpUrl,
+    houzz: houzzUrlFinal ?? existingLead?.houzzUrl,
+    nextdoor: nextdoorUrlFinal ?? existingLead?.nextdoor,
   };
 
   const ownerNameFinal = ownerName ?? existingLead?.ownerName ?? null;
@@ -382,7 +399,10 @@ async function enrichAndPersistPlace(opts: {
     socialSnapshot.facebook ||
       socialSnapshot.instagram ||
       socialSnapshot.youtube ||
-      socialSnapshot.tiktok,
+      socialSnapshot.tiktok ||
+      socialSnapshot.yelp ||
+      socialSnapshot.houzz ||
+      socialSnapshot.nextdoor,
   );
   const hasLinkedIn = Boolean(
     socialSnapshot.linkedinUrl ||
@@ -434,13 +454,13 @@ async function enrichAndPersistPlace(opts: {
     instagram: instagram ?? existingLead?.instagram,
     youtube: pack.youtube ?? existingLead?.youtube,
     tiktok: pack.tiktok ?? existingLead?.tiktok,
-    yelpUrl: yelp?.url ?? existingLead?.yelpUrl,
-    yelpRating: yelp?.rating ?? existingLead?.yelpRating,
-    yelpReviews: yelp?.reviewCount ?? existingLead?.yelpReviews,
-    houzzUrl: existingLead?.houzzUrl ?? null,
-    houzzRating: existingLead?.houzzRating ?? null,
-    houzzReviews: existingLead?.houzzReviews ?? null,
-    nextdoor: existingLead?.nextdoor ?? null,
+    yelpUrl: yelpUrlFinal ?? existingLead?.yelpUrl,
+    yelpRating: yelpRatingFinal ?? existingLead?.yelpRating,
+    yelpReviews: yelpReviewsFinal ?? existingLead?.yelpReviews,
+    houzzUrl: houzzUrlFinal ?? existingLead?.houzzUrl,
+    houzzRating: houzzRatingFinal ?? existingLead?.houzzRating,
+    houzzReviews: houzzReviewsFinal ?? existingLead?.houzzReviews,
+    nextdoor: nextdoorUrlFinal ?? existingLead?.nextdoor,
     linkedinUrl: primaryLinkedIn ?? existingLead?.linkedinUrl,
     linkedinCompanyUrl: companyUrl ?? existingLead?.linkedinCompanyUrl,
     linkedinOwnerUrl: resolvedOwner ?? existingLead?.linkedinOwnerUrl,
