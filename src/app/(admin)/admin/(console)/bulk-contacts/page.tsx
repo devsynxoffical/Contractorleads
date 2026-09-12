@@ -184,7 +184,10 @@ export default function BulkContactsPage() {
     try {
       const res = await fetch("/api/admin/bulk-contacts", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "text/event-stream, application/json",
+        },
         body: JSON.stringify({
           ...industryPayloadForApi(industrySelect, customIndustry),
           country,
@@ -194,31 +197,104 @@ export default function BulkContactsPage() {
           zip: locationScope === "local" ? zip : undefined,
           radius: locationScope === "local" ? radius : undefined,
           targetLeadCount: resolvedTargetCount,
+          stream: true,
         }),
-        signal: AbortSignal.timeout(300000),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Contact search failed");
-
-      const fetchedLeads = (data.leads ?? []) as ContactLead[];
-      setLeads(fetchedLeads);
-
-      const emailCount = fetchedLeads.filter((l) => Boolean(l.email)).length;
-      const phoneCount = fetchedLeads.filter((l) => Boolean(l.phone)).length;
-      const ownerCount = fetchedLeads.filter((l) => Boolean(l.ownerName)).length;
-
-      setResultMessage(
-        `Successfully extracted ${fetchedLeads.length} contacts for ${industry}: ${emailCount} emails, ${phoneCount} phones, ${ownerCount} owner names found.`,
-      );
-
-      // Promote custom niche into select list
-      if (industrySelect === CUSTOM_INDUSTRY_VALUE && industry) {
-        setIndustrySelect(industry);
-        setCustomIndustry("");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Contact search failed");
       }
 
-      void loadNiches();
+      const contentType = res.headers.get("content-type") || "";
+      if (contentType.includes("text/event-stream") && res.body) {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const parts = buffer.split("\n\n");
+          buffer = parts.pop() || "";
+
+          for (const part of parts) {
+            if (!part.trim()) continue;
+            const eventMatch = part.match(/^event:\s*(\w+)/m);
+            const dataMatch = part.match(/^data:\s*(.+)$/m);
+            if (!dataMatch) continue;
+
+            const eventType = eventMatch ? eventMatch[1] : "message";
+            let payload: any;
+            try {
+              payload = JSON.parse(dataMatch[1]);
+            } catch {
+              continue;
+            }
+
+            if (eventType === "lead") {
+              const newLead = payload.lead as ContactLead;
+              setLeads((prev) => {
+                const idx = prev.findIndex((l) => l.id === newLead.id);
+                if (idx >= 0) {
+                  const copy = [...prev];
+                  copy[idx] = newLead;
+                  return copy;
+                }
+                return [newLead, ...prev];
+              });
+            } else if (eventType === "done") {
+              const fetchedLeads = (payload.leads ?? []) as ContactLead[];
+              setLeads(fetchedLeads);
+              const emailCount = fetchedLeads.filter((l) =>
+                Boolean(l.email),
+              ).length;
+              const phoneCount = fetchedLeads.filter((l) =>
+                Boolean(l.phone),
+              ).length;
+              const ownerCount = fetchedLeads.filter((l) =>
+                Boolean(l.ownerName),
+              ).length;
+
+              setResultMessage(
+                `Successfully extracted ${fetchedLeads.length} contacts for ${industry}: ${emailCount} emails, ${phoneCount} phones, ${ownerCount} owner names found.`,
+              );
+
+              if (industrySelect === CUSTOM_INDUSTRY_VALUE && industry) {
+                setIndustrySelect(industry);
+                setCustomIndustry("");
+              }
+
+              void loadNiches();
+            } else if (eventType === "error") {
+              throw new Error(payload.error || "Contact search failed");
+            }
+          }
+        }
+      } else {
+        const data = await res.json();
+        const fetchedLeads = (data.leads ?? []) as ContactLead[];
+        setLeads(fetchedLeads);
+
+        const emailCount = fetchedLeads.filter((l) => Boolean(l.email)).length;
+        const phoneCount = fetchedLeads.filter((l) => Boolean(l.phone)).length;
+        const ownerCount = fetchedLeads.filter((l) =>
+          Boolean(l.ownerName),
+        ).length;
+
+        setResultMessage(
+          `Successfully extracted ${fetchedLeads.length} contacts for ${industry}: ${emailCount} emails, ${phoneCount} phones, ${ownerCount} owner names found.`,
+        );
+
+        if (industrySelect === CUSTOM_INDUSTRY_VALUE && industry) {
+          setIndustrySelect(industry);
+          setCustomIndustry("");
+        }
+
+        void loadNiches();
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Contact discovery failed");
     } finally {

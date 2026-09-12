@@ -152,6 +152,11 @@ export function LeadSearchForm() {
   const [filterNote, setFilterNote] = useState<string | null>(null);
   const [stage, setStage] = useState(0);
   const [progressPct, setProgressPct] = useState(0);
+  const [liveStatus, setLiveStatus] = useState<{
+    current: number;
+    target: number;
+    placeName: string;
+  } | null>(null);
   const [restoring, setRestoring] = useState(true);
   const searchParams = useSearchParams();
 
@@ -371,12 +376,15 @@ export function LeadSearchForm() {
     try {
       const res = await fetch("/api/leads/search", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(criteria),
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "text/event-stream, application/json",
+        },
+        body: JSON.stringify({ ...criteria, stream: true }),
       });
 
-      const data = await res.json();
       if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
         setError(data.error || "Search failed");
         if (typeof data.available === "number") {
           setLeadCapacity(data.available);
@@ -384,55 +392,165 @@ export function LeadSearchForm() {
         setLoading(false);
         setStage(0);
         setProgressPct(0);
+        setLiveStatus(null);
         return;
       }
 
-      setProgressPct(100);
-      const ranked = byLeadScoreDesc(data.leads as Lead[]);
-      setLeads(ranked);
-      setSelected(new Set(ranked.map((l) => l.id)));
-      if (typeof data.capacity?.available === "number") {
-        setLeadCapacity(data.capacity.available);
+      const contentType = res.headers.get("content-type") || "";
+      if (contentType.includes("text/event-stream") && res.body) {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const parts = buffer.split("\n\n");
+          buffer = parts.pop() || "";
+
+          for (const part of parts) {
+            if (!part.trim()) continue;
+            const eventMatch = part.match(/^event:\s*(\w+)/m);
+            const dataMatch = part.match(/^data:\s*(.+)$/m);
+            if (!dataMatch) continue;
+
+            const eventType = eventMatch ? eventMatch[1] : "message";
+            let payload: any;
+            try {
+              payload = JSON.parse(dataMatch[1]);
+            } catch {
+              continue;
+            }
+
+            if (eventType === "start") {
+              setStage(2);
+            } else if (eventType === "lead") {
+              const newLead = payload.lead as Lead;
+              setStage(3);
+              setLiveStatus({
+                current: payload.current,
+                target: payload.target,
+                placeName: payload.placeName,
+              });
+              setLeads((prev) => {
+                const existingIdx = prev.findIndex((l) => l.id === newLead.id);
+                if (existingIdx >= 0) {
+                  const copy = [...prev];
+                  copy[existingIdx] = newLead;
+                  return copy;
+                }
+                return [newLead, ...prev];
+              });
+              setSelected((prev) => new Set([...prev, newLead.id]));
+              if (payload.target > 0) {
+                const pct = Math.min(
+                  96,
+                  Math.round((payload.current / payload.target) * 90) + 10,
+                );
+                setProgressPct(pct);
+              }
+            } else if (eventType === "done") {
+              setProgressPct(100);
+              setLiveStatus(null);
+              const ranked = byLeadScoreDesc(payload.leads as Lead[]);
+              setLeads(ranked);
+              setSelected(new Set(ranked.map((l) => l.id)));
+              if (typeof payload.capacity?.available === "number") {
+                setLeadCapacity(payload.capacity.available);
+              }
+              if (typeof payload.creditsRemaining === "number") {
+                notifyCreditsChanged(payload.creditsRemaining);
+              } else if (typeof payload.capacity?.balance === "number") {
+                notifyCreditsChanged(payload.capacity.balance);
+              }
+              setStage(4);
+              const billed = payload.meta?.billing?.searchCharged;
+              const returned = payload.meta?.leadsReturned ?? ranked.length;
+              const billedCount = payload.meta?.leadsBilled ?? returned;
+              const requested = payload.meta?.requestedLeadCount;
+              if (typeof billed === "number" && billed > 0) {
+                const shortfall =
+                  typeof requested === "number" && requested > billedCount
+                    ? ` Requested ${requested}, billed ${billedCount}.`
+                    : "";
+                setFilterNote(
+                  `Charged ${billed} credits for ${billedCount} lead${billedCount === 1 ? "" : "s"} (${payload.meta.billing.costPerLead} each).${shortfall}`,
+                );
+              } else if (payload.meta?.cappedByLeadLimit) {
+                setFilterNote(
+                  `Requested ${payload.meta.requestedLeadCount} leads — capped to ${payload.meta.targetLeadCount} by your remaining lead limit. Export existing leads or buy credits to raise the cap.`,
+                );
+              }
+              saveFinderSearchCache({
+                searchId: payload.search?.id,
+                leads: ranked,
+                industry: criteria.industry,
+                country: criteria.country,
+                locationScope: criteria.locationScope,
+                state: criteria.state,
+                city: criteria.city ?? "",
+                customLocation: criteria.customLocation ?? "",
+                zip: criteria.zip ?? "",
+                radius: criteria.radius ? String(criteria.radius) : undefined,
+                selectedLeadIds: ranked.map((l) => l.id),
+              });
+            } else if (eventType === "error") {
+              setError(payload.error || "Search failed");
+            }
+          }
+        }
+      } else {
+        const data = await res.json();
+        setProgressPct(100);
+        const ranked = byLeadScoreDesc(data.leads as Lead[]);
+        setLeads(ranked);
+        setSelected(new Set(ranked.map((l) => l.id)));
+        if (typeof data.capacity?.available === "number") {
+          setLeadCapacity(data.capacity.available);
+        }
+        if (typeof data.creditsRemaining === "number") {
+          notifyCreditsChanged(data.creditsRemaining);
+        } else if (typeof data.capacity?.balance === "number") {
+          notifyCreditsChanged(data.capacity.balance);
+        }
+        setStage(4);
+        const billed = data.meta?.billing?.searchCharged;
+        const returned = data.meta?.leadsReturned ?? ranked.length;
+        const billedCount = data.meta?.leadsBilled ?? returned;
+        const requested = data.meta?.requestedLeadCount;
+        if (typeof billed === "number" && billed > 0) {
+          const shortfall =
+            typeof requested === "number" && requested > billedCount
+              ? ` Requested ${requested}, billed ${billedCount}.`
+              : "";
+          setFilterNote(
+            `Charged ${billed} credits for ${billedCount} lead${billedCount === 1 ? "" : "s"} (${data.meta.billing.costPerLead} each).${shortfall}`,
+          );
+        } else if (data.meta?.cappedByLeadLimit) {
+          setFilterNote(
+            `Requested ${data.meta.requestedLeadCount} leads — capped to ${data.meta.targetLeadCount} by your remaining lead limit. Export existing leads or buy credits to raise the cap.`,
+          );
+        }
+        saveFinderSearchCache({
+          searchId: data.search?.id,
+          leads: ranked,
+          industry: criteria.industry,
+          country: criteria.country,
+          locationScope: criteria.locationScope,
+          state: criteria.state,
+          city: criteria.city ?? "",
+          customLocation: criteria.customLocation ?? "",
+          zip: criteria.zip ?? "",
+          radius: criteria.radius ? String(criteria.radius) : undefined,
+          selectedLeadIds: ranked.map((l) => l.id),
+        });
       }
-      if (typeof data.creditsRemaining === "number") {
-        notifyCreditsChanged(data.creditsRemaining);
-      } else if (typeof data.capacity?.balance === "number") {
-        notifyCreditsChanged(data.capacity.balance);
-      }
-      setStage(4);
-      const billed = data.meta?.billing?.searchCharged;
-      const returned = data.meta?.leadsReturned ?? ranked.length;
-      const billedCount = data.meta?.leadsBilled ?? returned;
-      const requested = data.meta?.requestedLeadCount;
-      if (typeof billed === "number" && billed > 0) {
-        const shortfall =
-          typeof requested === "number" && requested > billedCount
-            ? ` Requested ${requested}, billed ${billedCount}.`
-            : "";
-        setFilterNote(
-          `Charged ${billed} credits for ${billedCount} lead${billedCount === 1 ? "" : "s"} (${data.meta.billing.costPerLead} each).${shortfall}`,
-        );
-      } else if (data.meta?.cappedByLeadLimit) {
-        setFilterNote(
-          `Requested ${data.meta.requestedLeadCount} leads — capped to ${data.meta.targetLeadCount} by your remaining lead limit. Export existing leads or buy credits to raise the cap.`,
-        );
-      }
-      saveFinderSearchCache({
-        searchId: data.search?.id,
-        leads: ranked,
-        industry: criteria.industry,
-        country: criteria.country,
-        locationScope: criteria.locationScope,
-        state: criteria.state,
-        city: criteria.city ?? "",
-        customLocation: criteria.customLocation ?? "",
-        zip: criteria.zip ?? "",
-        radius: criteria.radius ? String(criteria.radius) : undefined,
-        selectedLeadIds: ranked.map((l) => l.id),
-      });
     } finally {
       timers.forEach(clearTimeout);
       setLoading(false);
+      setLiveStatus(null);
       setStage(0);
       stopNavigationProgress();
     }
@@ -814,33 +932,45 @@ export function LeadSearchForm() {
               </div>
             )}
             {loading && (
-              <div className="mt-5 space-y-3 rounded-2xl border border-brand-100 bg-brand-50/50 px-4 py-4">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-[13px] font-semibold text-ink">
-                    {
-                      SEARCH_STAGES[
-                        Math.min(Math.max(stage, 1), SEARCH_STAGES.length) - 1
-                      ]?.label
-                    }
-                  </p>
+              <div className="mt-5 space-y-3 rounded-2xl border border-brand-500/20 bg-brand-500/05 p-4 sm:p-5">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <span className="relative flex h-3 w-3">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500"></span>
+                    </span>
+                    <p className="text-[13px] font-semibold text-ink">
+                      {liveStatus
+                        ? `Live Scraping: ${leads.length} of ${liveStatus.target} leads found`
+                        : SEARCH_STAGES[
+                            Math.min(Math.max(stage, 1), SEARCH_STAGES.length) - 1
+                          ]?.label}
+                    </p>
+                  </div>
                   <span className="text-[13px] font-bold tabular-nums text-brand-700">
                     {Math.min(100, Math.round(progressPct))}%
                   </span>
                 </div>
-                <div className="h-2.5 overflow-hidden rounded-full bg-[var(--surface)] ring-1 ring-brand-100">
+                <div className="h-2.5 overflow-hidden rounded-full bg-[var(--surface)] ring-1 ring-brand-500/20">
                   <div
-                    className="h-full rounded-full transition-[width] duration-500 ease-out"
+                    className="h-full rounded-full transition-[width] duration-300 ease-out"
                     style={{
                       width: `${Math.min(100, progressPct)}%`,
                       background:
-                        "linear-gradient(90deg, #c026d3 0%, #a21caf 50%, #7c3aed 100%)",
+                        "linear-gradient(90deg, #10b981 0%, #06b6d4 50%, #8b5cf6 100%)",
                     }}
                   />
                 </div>
-                <p className="text-[12px] text-ink-muted">
-                  Finding and verifying contractors — this can take a minute for
-                  larger searches. Keep this tab open.
-                </p>
+                {liveStatus?.placeName ? (
+                  <p className="truncate text-[12px] text-ink-muted">
+                    <span className="font-medium text-brand-600">Latest discovered:</span>{" "}
+                    {liveStatus.placeName}
+                  </p>
+                ) : (
+                  <p className="text-[12px] text-ink-muted">
+                    Discovering places and verifying owners, emails, phones, and social directories...
+                  </p>
+                )}
               </div>
             )}
           </CardContent>

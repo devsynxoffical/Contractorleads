@@ -63,6 +63,180 @@ export async function POST(request: Request) {
 
     const targetLeadCount = Math.min(requestedCount, capacity.available);
     const capped = targetLeadCount < requestedCount;
+    const wantsStream =
+      body.stream === true ||
+      request.headers.get("accept")?.includes("text/event-stream");
+
+    if (wantsStream) {
+      const responseStream = new TransformStream();
+      const writer = responseStream.writable.getWriter();
+      const encoder = new TextEncoder();
+
+      const sendEvent = async (event: string, data: unknown) => {
+        try {
+          await writer.write(
+            encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`),
+          );
+        } catch {
+          /* client disconnected */
+        }
+      };
+
+      (async () => {
+        try {
+          await sendEvent("start", {
+            targetLeadCount,
+            requestedCount,
+            industry,
+            location: customLocation || city || state || country,
+          });
+
+          const result = await runLeadPipeline({
+            userId: user.id,
+            industry,
+            country,
+            locationScope,
+            state,
+            city,
+            zip,
+            customLocation,
+            radius,
+            targetLeadCount,
+            onLeadDiscovered: async (lead, progress) => {
+              await sendEvent("lead", {
+                lead: {
+                  ...lead,
+                  unlocked: true,
+                },
+                current: progress.current,
+                target: progress.target,
+                placeName: progress.placeName,
+                scanned: progress.scanned,
+              });
+            },
+          });
+
+          let billedCharged = 0;
+          let billedCreditsRemaining: number | null = null;
+          let unlockedIds = new Set<string>();
+          let leadsBilled = 0;
+          let skippedForCredits = 0;
+
+          if (result.leads.length > 0) {
+            try {
+              const billed = await unlockLeads({
+                userId: user.id,
+                leadIds: result.leads.map((l) => l.id),
+                action: "lead_generate",
+                allowPartial: true,
+              });
+              billedCharged = billed.charged;
+              billedCreditsRemaining = billed.creditsRemaining;
+              unlockedIds = new Set(billed.unlockedIds);
+              leadsBilled = billed.newlyUnlocked.length;
+              skippedForCredits = billed.skippedForCredits;
+            } catch (err) {
+              console.error("[leads/search stream] billing error:", err);
+            }
+          }
+
+          const capNote = capped
+            ? ` (capped to ${targetLeadCount} by lead limit)`
+            : "";
+          const billNote =
+            billedCharged > 0
+              ? ` · ${billedCharged} credits for ${leadsBilled} lead${leadsBilled === 1 ? "" : "s"}`
+              : "";
+
+          await logActivity(
+            user.id,
+            "search",
+            `Found ${result.leads.length} leads for ${industry} in ${
+              locationScope === "country" ? country : state || city || country
+            }${capNote}${billNote}`,
+            {
+              searchId: result.search.id,
+              charged: billedCharged,
+              leadsReturned: result.leads.length,
+              leadsBilled,
+              skippedForCredits,
+              requestedLeadCount: requestedCount,
+            },
+          );
+
+          const hotCount = result.leads.filter(
+            (l) => l.qualityTier === "hot",
+          ).length;
+          const warmCount = result.leads.filter(
+            (l) => l.qualityTier === "warm",
+          ).length;
+          void sendLeadScrapeEmail({
+            userId: user.id,
+            to: user.email,
+            name: user.name,
+            industry,
+            locationLabel: formatSearchLabel({
+              industry,
+              country,
+              locationScope,
+              state,
+              city,
+              customLocation,
+            }).replace(`${industry} `, ""),
+            leadCount: result.leads.length,
+            hotCount,
+            warmCount,
+            sampleNames: result.leads.slice(0, 5).map((l) => l.businessName),
+            searchUrl: `${appBaseUrl()}/leads/search`,
+          });
+
+          const freshCapacity = await getLeadGenerationCapacity(user.id);
+          const redacted = result.leads.map((lead) => ({
+            ...lead,
+            unlocked: unlockedIds.has(lead.id),
+          }));
+
+          await sendEvent("done", {
+            search: result.search,
+            leads: redacted,
+            creditsRemaining: billedCreditsRemaining ?? freshCapacity.balance,
+            capacity: freshCapacity,
+            meta: {
+              ...result.meta,
+              requestedLeadCount: requestedCount,
+              targetLeadCount,
+              leadsReturned: result.leads.length,
+              leadsBilled,
+              skippedForCredits,
+              cappedByLeadLimit: capped,
+              billing: {
+                searchCharged: billedCharged,
+                leadsBilled,
+                costPerLead: CREDIT_COSTS.lead,
+                note: `Charged for ${leadsBilled} lead${leadsBilled === 1 ? "" : "s"} returned (${CREDIT_COSTS.lead} credits each). Re-export is free.`,
+              },
+            },
+          });
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Search failed";
+          await sendEvent("error", { error: message });
+        } finally {
+          try {
+            await writer.close();
+          } catch {
+            /* ignore stream close */
+          }
+        }
+      })();
+
+      return new Response(responseStream.readable, {
+        headers: {
+          "Content-Type": "text/event-stream; charset=utf-8",
+          "Cache-Control": "no-cache, no-transform",
+          "Connection": "keep-alive",
+        },
+      });
+    }
 
     const result = await runLeadPipeline({
       userId: user.id,

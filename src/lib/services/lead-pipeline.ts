@@ -40,6 +40,16 @@ export type SearchParams = {
   radius?: number;
   /** How many leads the client asked for (10–1000). */
   targetLeadCount?: number;
+  /** Optional callback fired incrementally as each lead is enriched & persisted */
+  onLeadDiscovered?: (
+    lead: Awaited<ReturnType<typeof prisma.lead.create>>,
+    progress: {
+      current: number;
+      target: number;
+      placeName: string;
+      scanned: number;
+    },
+  ) => void | Promise<void>;
 };
 
 type SocialFields = {
@@ -170,6 +180,19 @@ export async function runLeadPipeline(params: SearchParams) {
     if (lead === "skipped-score") return;
     if (leads.length >= targetCount) return;
     leads.push(lead);
+
+    if (params.onLeadDiscovered) {
+      try {
+        await params.onLeadDiscovered(lead, {
+          current: leads.length,
+          target: targetCount,
+          placeName: place.name,
+          scanned,
+        });
+      } catch {
+        /* ignore callback errors */
+      }
+    }
   });
 
   // LinkedIn + social leads first, then the rest — each group by score.
