@@ -30,6 +30,7 @@ import {
   HiOutlineCreditCard,
   HiOutlineChatBubbleLeftRight,
   HiOutlineSparkles,
+  HiOutlineIdentification,
 } from "react-icons/hi2";
 import { cn } from "@/lib/utils";
 import type { SessionUser } from "@/lib/session-user";
@@ -81,6 +82,7 @@ const NAV_SECTIONS: NavSection[] = [
     title: "Lead ops",
     items: [
       { href: "/admin/leads", label: "All Leads", icon: HiOutlineSquares2X2, permission: "leads" },
+      { href: "/admin/bulk-contacts", label: "Bulk Contact Finder", icon: HiOutlineIdentification, permission: "scrape" },
       { href: "/admin/saved-leads", label: "Saved Leads", icon: HiOutlineStar, permission: "saved_leads" },
       { href: "/admin/searches", label: "All Searches", icon: HiOutlineClipboardDocumentList, permission: "searches" },
       { href: "/admin/scrape", label: "Scrape Leads", icon: HiOutlineMagnifyingGlass, permission: "scrape" },

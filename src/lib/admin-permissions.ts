@@ -76,6 +76,7 @@ export const PATH_PERMISSION: Array<{
   { prefix: "/admin/saved-leads", permission: "saved_leads" },
   { prefix: "/admin/searches", permission: "searches" },
   { prefix: "/admin/scrape", permission: "scrape" },
+  { prefix: "/admin/bulk-contacts", permission: "scrape" },
   { prefix: "/admin/copy-leads", permission: "copy_leads" },
   { prefix: "/admin/revenue", permission: "revenue" },
   { prefix: "/admin/coupons", permission: "revenue" },
