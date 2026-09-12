@@ -334,6 +334,7 @@ const NZ_METROS = [
 const COUNTRY_METROS: Record<string, string[]> = {
   US: US_METROS,
   GB: GB_METROS,
+  UK: GB_METROS,
   CA: CA_METROS,
   AU: AU_METROS,
   NZ: NZ_METROS,

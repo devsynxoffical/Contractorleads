@@ -83,6 +83,7 @@ export async function searchFacebookPage(
   if (!token) return null;
 
   try {
+    const { matchesBusinessName } = await import("./linkedin");
     const url = new URL("https://graph.facebook.com/v21.0/pages/search");
     url.searchParams.set("q", businessName);
     url.searchParams.set("fields", "id,name,link");
@@ -96,7 +97,9 @@ export async function searchFacebookPage(
     const data = (await response.json()) as {
       data?: Array<{ link?: string; name?: string }>;
     };
-    const match = data.data?.[0];
+    const match = data.data?.find((page) =>
+      page.name ? matchesBusinessName(page.name, businessName) : false,
+    );
     return match?.link ?? null;
   } catch {
     return null;

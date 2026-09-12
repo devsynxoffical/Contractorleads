@@ -190,6 +190,46 @@ export async function discoverLinkedInFromWebsite(
   return pack.linkedinCompany || pack.linkedinOwner || null;
 }
 
+export function matchesBusinessName(
+  candidateText: string,
+  businessName: string,
+): boolean {
+  if (!candidateText || !businessName) return false;
+  const candidateLower = candidateText.toLowerCase().replace(/[^a-z0-9]/g, " ");
+  const bizLower = businessName.toLowerCase().trim();
+
+  // Direct inclusion
+  if (candidateLower.includes(bizLower.replace(/[^a-z0-9]/g, " "))) return true;
+
+  const stopWords = new Set([
+    "roofing", "roof", "roofs", "plumbing", "plumber", "electric", "electrical", "hvac",
+    "heating", "cooling", "contractor", "contractors", "services", "service",
+    "company", "co", "ltd", "limited", "inc", "llc", "corp", "corporation", "group", "solutions",
+    "the", "and", "of", "in", "at", "uk", "us", "usa", "ca", "au", "nz",
+  ]);
+
+  const distinctBizWords = bizLower
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length >= 2 && !stopWords.has(w));
+
+  if (distinctBizWords.length > 0) {
+    return distinctBizWords.every((w) => {
+      if (w.length <= 2) {
+        return (
+          new RegExp(`\\b${w}\\b`, "i").test(candidateText) ||
+          candidateLower.includes(`-${w}-`) ||
+          candidateLower.includes(`/${w}-`) ||
+          candidateLower.includes(`-${w}/`)
+        );
+      }
+      return candidateLower.includes(w);
+    });
+  }
+
+  return candidateLower.includes(bizLower.replace(/[^a-z0-9]/g, " "));
+}
+
 async function findLinkedInViaSerper(
   businessName: string,
   location: string,
@@ -201,10 +241,11 @@ async function findLinkedInViaSerper(
     6,
   );
   for (const hit of hits) {
+    const textToMatch = `${hit.url} ${hit.title} ${hit.snippet}`;
+    if (!matchesBusinessName(textToMatch, businessName)) continue;
+
     const company = normalizeLinkedInCompanyUrl(hit.url);
     if (company) return company;
-    const owner = normalizeLinkedInProfileUrl(hit.url);
-    if (owner) return owner;
   }
   return null;
 }

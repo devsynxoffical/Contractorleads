@@ -1,5 +1,5 @@
 import { searchPublicWeb, type WebSearchResult } from "./web-search";
-import { normalizeLinkedInProfileUrl } from "./linkedin";
+import { normalizeLinkedInProfileUrl, matchesBusinessName } from "./linkedin";
 
 export type OwnerDiscoveryResult = {
   ownerName: string | null;
@@ -142,9 +142,12 @@ function scanHit(
   const text = clean(`${hit.title} ${hit.snippet}`);
   const url = hit.url;
   const linkedinUrl = normalizeLinkedInProfileUrl(url);
-  const hasBusiness = text
-    .toLowerCase()
-    .includes(businessName.toLowerCase());
+  const textWithUrl = `${text} ${url}`;
+
+  // Strict check: The snippet/title or URL MUST match the business name
+  if (!matchesBusinessName(textWithUrl, businessName)) {
+    return;
+  }
 
   if (linkedinUrl) {
     for (const match of text.matchAll(NAME_ROLE_RE)) {
@@ -153,19 +156,12 @@ function scanHit(
     for (const match of text.matchAll(ROLE_NAME_RE)) {
       tryAddCandidate(out, match[2], match[1], 80, url, linkedinUrl, businessName);
     }
-    const slugName = slugToName(url);
-    if (
-      slugName &&
-      !out.some(
-        (candidate) => candidate.name.toLowerCase() === slugName.toLowerCase(),
-      )
-    ) {
-      tryAddCandidate(out, slugName, null, 60, url, linkedinUrl, businessName);
+    const copular = COPULA_RE.exec(text);
+    if (copular) {
+      tryAddCandidate(out, copular[1], copular[2], 84, url, linkedinUrl, businessName);
     }
     return;
   }
-
-  if (!hasBusiness) return;
 
   for (const match of text.matchAll(NAME_ROLE_RE)) {
     tryAddCandidate(out, match[1], match[2], 85, url, null, businessName);
@@ -206,12 +202,15 @@ export async function discoverOwnerFromSearch(
   const [businessHits, linkedInHits, aboutHits] = await Promise.all([
     searchPublicWeb(
       `"${name}" ${loc} (owner OR founder OR president OR "founded by")`,
-      10,
+      8,
     ),
-    searchPublicWeb(`site:linkedin.com/in "${name}"`, 10),
     searchPublicWeb(
-      `"${name}" "about us" (owner OR "founded by" OR "run by")`,
-      10,
+      `site:linkedin.com/in "${name}" ${loc} (owner OR founder OR director OR president OR ceo)`,
+      8,
+    ),
+    searchPublicWeb(
+      `"${name}" ${loc} "about us" (owner OR "founded by" OR "run by")`,
+      8,
     ),
   ]);
 
@@ -231,14 +230,16 @@ export async function discoverOwnerFromSearch(
 
   if (!ownerLinkedInUrl && confidence >= 80) {
     const confirm = await searchPublicWeb(
-      `"${best.name}" "${name}" site:linkedin.com/in`,
+      `"${best.name}" "${name}" ${loc} site:linkedin.com/in`,
       5,
     );
     for (const hit of confirm) {
-      const profile = normalizeLinkedInProfileUrl(hit.url);
-      if (profile) {
-        ownerLinkedInUrl = profile;
-        break;
+      if (matchesBusinessName(`${hit.url} ${hit.title} ${hit.snippet}`, name)) {
+        const profile = normalizeLinkedInProfileUrl(hit.url);
+        if (profile) {
+          ownerLinkedInUrl = profile;
+          break;
+        }
       }
     }
     if (ownerLinkedInUrl) confidence = Math.max(confidence, 90);

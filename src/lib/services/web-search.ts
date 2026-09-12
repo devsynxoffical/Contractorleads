@@ -1,4 +1,5 @@
 import { resolvePlatformKey } from "@/lib/platform-keys";
+import { matchesBusinessName } from "./linkedin";
 
 export type WebSearchResult = {
   title: string;
@@ -302,11 +303,14 @@ export async function discoverSocialProfiles(
     `"${name}" ${loc} (site:linkedin.com/company OR site:facebook.com OR site:instagram.com)`,
     10,
   );
-  return pickSocialFromHits(hits);
+  return pickSocialFromHits(hits, name);
 }
 
-/** Parse LinkedIn / FB / IG URLs out of search hits. */
-export function pickSocialFromHits(hits: WebSearchResult[]): {
+/** Parse LinkedIn / FB / IG URLs out of search hits with strict business name validation. */
+export function pickSocialFromHits(
+  hits: WebSearchResult[],
+  businessName?: string,
+): {
   linkedin: string | null;
   facebook: string | null;
   instagram: string | null;
@@ -316,6 +320,15 @@ export function pickSocialFromHits(hits: WebSearchResult[]): {
   let instagram: string | null = null;
   for (const hit of hits) {
     if (isJunkUrl(hit.url)) continue;
+
+    // Validate hit matches the business name if businessName is provided
+    if (businessName) {
+      const textToMatch = `${hit.url} ${hit.title} ${hit.snippet}`;
+      if (!matchesBusinessName(textToMatch, businessName)) {
+        continue;
+      }
+    }
+
     const lower = hit.url.toLowerCase();
     const clean = hit.url.split("?")[0];
     if (

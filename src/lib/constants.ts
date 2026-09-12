@@ -59,9 +59,21 @@ export const TIER_ONE_COUNTRIES = [
 export type TierOneCountryCode = (typeof TIER_ONE_COUNTRIES)[number]["code"];
 
 export function getTierOneCountry(code?: string) {
+  if (!code) return TIER_ONE_COUNTRIES[0];
+  const normalized = code.trim().toUpperCase();
+  if (normalized === "UK") {
+    return TIER_ONE_COUNTRIES.find((c) => c.code === "GB") ?? TIER_ONE_COUNTRIES[0];
+  }
+  if (normalized === "USA") {
+    return TIER_ONE_COUNTRIES.find((c) => c.code === "US") ?? TIER_ONE_COUNTRIES[0];
+  }
   return (
-    TIER_ONE_COUNTRIES.find((country) => country.code === code) ??
-    TIER_ONE_COUNTRIES[0]
+    TIER_ONE_COUNTRIES.find(
+      (country) =>
+        country.code.toUpperCase() === normalized ||
+        country.googleRegion.toUpperCase() === normalized ||
+        country.name.toUpperCase() === normalized,
+    ) ?? TIER_ONE_COUNTRIES[0]
   );
 }
 
