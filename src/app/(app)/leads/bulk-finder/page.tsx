@@ -5,29 +5,29 @@ import {
   PrimaryActionLink,
   SecondaryActionLink,
 } from "@/components/layout/page-header";
-import { EmailFinderView } from "@/components/email/email-finder-view";
-import { HiOutlineShieldCheck, HiOutlineEnvelope } from "react-icons/hi2";
+import { BulkEmailFinderView } from "@/components/leads/bulk-email-finder-view";
+import { HiOutlineEnvelope, HiOutlineShieldCheck, HiOutlineUsers } from "react-icons/hi2";
 
 export const metadata = {
   title: "Bulk Email Finder | Contractor Leads",
-  description: "Find verified business emails, owners, and decision-makers from contractor websites and domains.",
+  description: "Find decision-maker verified emails, owner names, phone numbers, and social profiles for any contractor or business niche.",
 };
 
-export default async function EmailFinderPage() {
+export default async function BulkEmailFinderPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
   return (
     <div className="page-pad space-y-6">
       <PageHeader
-        title="Email Finder"
-        description="Extract verified emails, owners, and contact details from company domains in bulk. 100% free and unlimited for all users."
-        backHref="/inbox"
-        backLabel="Back to Email Workspace"
+        title="Bulk Email Finder"
+        description="Scrape and discover verified contractor emails, owner names, phone numbers, and LinkedIn profiles in bulk."
+        backHref="/dashboard"
+        backLabel="Back to Dashboard"
         crumbs={[
           { label: "Home", href: "/home" },
-          { label: "Email", href: "/inbox" },
-          { label: "Email Finder" },
+          { label: "Leads", href: "/leads" },
+          { label: "Bulk Email Finder" },
         ]}
         actions={
           <>
@@ -37,13 +37,13 @@ export default async function EmailFinderPage() {
             </SecondaryActionLink>
             <PrimaryActionLink href="/inbox?tab=bulk">
               <HiOutlineEnvelope className="h-4 w-4" />
-              Send Bulk Email
+              Bulk Email
             </PrimaryActionLink>
           </>
         }
       />
 
-      <EmailFinderView />
+      <BulkEmailFinderView />
     </div>
   );
 }

@@ -11,7 +11,6 @@ import {
   HiOutlineQueueList,
   HiOutlineUsers,
   HiOutlineShieldCheck,
-  HiOutlineMagnifyingGlass,
 } from "react-icons/hi2";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { MESSAGING_ADDON_PRICE_USD } from "@/lib/messaging-addon";
@@ -223,10 +222,10 @@ export function EmailOverviewPanel({
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <QuickLink
-          icon={HiOutlineMagnifyingGlass}
-          title="Email Finder"
-          body="Extract emails from websites & domains."
-          href="/email-finder"
+          icon={HiOutlineEnvelope}
+          title="Bulk Email Finder"
+          body="Discover verified emails in bulk."
+          href="/leads/bulk-finder"
         />
         <QuickLink
           icon={HiOutlineShieldCheck}

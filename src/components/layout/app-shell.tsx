@@ -79,6 +79,7 @@ function buildSections(user: SessionUser): NavSection[] {
         { href: "/home", label: "Home", icon: HiOutlineHome },
         { href: "/dashboard", label: "Dashboard", icon: HiOutlineChartBar },
         { href: "/leads/search", label: "Lead Finder", icon: HiOutlineMagnifyingGlass },
+        { href: "/leads/bulk-finder", label: "Bulk Email Finder", icon: HiOutlineEnvelope, badge: true },
         { href: "/leads", label: "All Leads", icon: HiOutlineSquares2X2 },
         { href: "/leads/saved", label: "Saved Leads", icon: HiOutlineStar },
         { href: "/leads/hot", label: "Hot Leads", icon: HiOutlineFire, badge: true },
@@ -87,12 +88,12 @@ function buildSections(user: SessionUser): NavSection[] {
       ],
     },
     {
-      title: "AI Assistant",
+      title: "AI & Outreach Tools",
       items: [
         {
-          href: "/email-finder",
-          label: "Email Finder",
-          icon: HiOutlineMagnifyingGlass,
+          href: "/leads/bulk-finder",
+          label: "Bulk Email Finder",
+          icon: HiOutlineEnvelope,
         },
         {
           href: "/email-verifier",

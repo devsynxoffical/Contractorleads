@@ -45,6 +45,7 @@ const sections: NavSection[] = [
     items: [
       { href: "/dashboard", label: "Dashboard", icon: HiOutlineChartBar },
       { href: "/leads/search", label: "Lead Finder", icon: HiOutlineMagnifyingGlass },
+      { href: "/leads/bulk-finder", label: "Bulk Email Finder", icon: HiOutlineEnvelope, badge: true },
       { href: "/leads", label: "All Leads", icon: HiOutlineSquares2X2 },
       { href: "/leads/saved", label: "Saved Leads", icon: HiOutlineStar },
       { href: "/leads/hot", label: "Hot Leads", icon: HiOutlineFire, badge: true },
@@ -55,7 +56,7 @@ const sections: NavSection[] = [
   {
     title: "AI & Outreach Tools",
     items: [
-      { href: "/email-finder", label: "Email Finder", icon: HiOutlineMagnifyingGlass },
+      { href: "/leads/bulk-finder", label: "Bulk Email Finder", icon: HiOutlineEnvelope },
       { href: "/email-verifier", label: "Email Verifier", icon: HiOutlineShieldCheck },
       { href: "/inbox", label: "Email & Sequences", icon: HiOutlineBookOpen },
       { href: "/ask-expert", label: "Ask Contractor Leads", icon: HiOutlineChatBubbleLeftRight },
