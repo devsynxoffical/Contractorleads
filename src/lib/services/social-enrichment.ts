@@ -4,7 +4,7 @@ import { resolveLinkedInProfiles } from "./linkedin";
 import { matchHouzzBusiness } from "./houzz";
 import { matchNextdoorBusiness } from "./nextdoor";
 import { matchYelpBusiness } from "./yelp";
-import { extractWebsitePeople } from "./website-people";
+import { extractWebsitePeople, pickBestEmail } from "./website-people";
 import { auditWebsite, emptyWebsiteAudit } from "./website-audit";
 import {
   scrapeWebsiteSocialPack,
@@ -13,6 +13,7 @@ import {
 import {
   discoverOwnerFromSearch,
   EMPTY_OWNER_DISCOVERY,
+  plausiblePersonName,
 } from "./owner-discovery";
 
 async function withTimeout<T>(
@@ -101,9 +102,18 @@ export async function enrichLeadSocial(lead: LeadRecord) {
     linkedin.owner.confidence >= 90 ? linkedin.owner.url : null;
   const primaryLinkedIn = companyLinkedIn ?? ownerLinkedIn;
 
-  const websiteOwnerName = websitePeople.owner?.name ?? null;
+  const validLeadOwner =
+    lead.ownerName && plausiblePersonName(lead.ownerName, lead.businessName)
+      ? lead.ownerName
+      : null;
+
+  const validWebsiteOwner =
+    websiteOwnerName && plausiblePersonName(websiteOwnerName, lead.businessName)
+      ? websiteOwnerName
+      : null;
+
   const ownerFromSearch =
-    websiteOwnerName || lead.ownerName
+    validWebsiteOwner || validLeadOwner
       ? EMPTY_OWNER_DISCOVERY
       : await withTimeout(
           discoverOwnerFromSearch(lead.businessName, location),
@@ -111,25 +121,53 @@ export async function enrichLeadSocial(lead: LeadRecord) {
           EMPTY_OWNER_DISCOVERY,
         );
 
+  const validSearchOwner =
+    ownerFromSearch.ownerName &&
+    plausiblePersonName(ownerFromSearch.ownerName, lead.businessName)
+      ? ownerFromSearch.ownerName
+      : null;
+
   const ownerLinkedInFromSearch =
     Boolean(ownerFromSearch.ownerLinkedInUrl) && !ownerLinkedIn;
   const ownerLinkedInFinal =
     ownerLinkedIn || ownerFromSearch.ownerLinkedInUrl || null;
+
   const ownerNameFinal =
-    websiteOwnerName ??
-    ownerFromSearch.ownerName ??
-    lead.ownerName ??
-    undefined;
-  const ownerTitleFinal =
-    websitePeople.owner?.role ?? ownerFromSearch.ownerRole ?? undefined;
-  const ownerSourceUrlFinal =
-    websitePeople.owner?.sourceUrl ??
-    ownerFromSearch.sourceUrl ??
-    undefined;
-  const ownerConfidenceFinal =
-    websitePeople.owner?.confidence ??
-    ownerFromSearch.confidence ??
-    undefined;
+    validWebsiteOwner ?? validSearchOwner ?? validLeadOwner ?? null;
+  const ownerTitleFinal = validWebsiteOwner
+    ? websitePeople.owner?.role ?? null
+    : validSearchOwner
+      ? ownerFromSearch.ownerRole ?? null
+      : validLeadOwner
+        ? lead.ownerTitle ?? null
+        : null;
+  const ownerSourceUrlFinal = validWebsiteOwner
+    ? websitePeople.owner?.sourceUrl ?? null
+    : validSearchOwner
+      ? ownerFromSearch.sourceUrl ?? null
+      : validLeadOwner
+        ? lead.ownerSourceUrl ?? null
+        : null;
+  const ownerConfidenceFinal = validWebsiteOwner
+    ? websitePeople.owner?.confidence ?? null
+    : validSearchOwner
+      ? ownerFromSearch.confidence ?? null
+      : validLeadOwner
+        ? lead.ownerConfidence ?? null
+        : null;
+
+  const emailCandidates = [lead.email, websitePeople.email].filter(
+    (e): e is string => Boolean(e),
+  );
+  const emailFinal =
+    pickBestEmail(emailCandidates, ownerNameFinal, lead.website) ??
+    websitePeople.email ??
+    lead.email ??
+    null;
+  const emailSourceUrlFinal =
+    emailFinal === websitePeople.email
+      ? websitePeople.emailSourceUrl ?? undefined
+      : undefined;
 
   const facebook =
     lead.facebook ?? websitePack.facebook ?? facebookPage ?? null;
@@ -174,7 +212,7 @@ export async function enrichLeadSocial(lead: LeadRecord) {
         : ownerLinkedInFinal
           ? "owner"
           : "none",
-      // Prefer freshly extracted owner so refreshes correct stale/bad values
+      // Prefer freshly validated owner
       ownerName: ownerNameFinal,
       ownerTitle: ownerTitleFinal,
       ownerSourceUrl: ownerSourceUrlFinal,
@@ -183,11 +221,11 @@ export async function enrichLeadSocial(lead: LeadRecord) {
         ? JSON.stringify(websitePeople.team)
         : undefined,
       peopleEnrichedAt:
-        lead.website || websiteOwnerName || ownerFromSearch.ownerName
+        lead.website || validWebsiteOwner || validSearchOwner
           ? new Date()
           : undefined,
-      email: lead.email ?? websitePeople.email ?? undefined,
-      emailSourceUrl: websitePeople.emailSourceUrl ?? undefined,
+      email: emailFinal,
+      emailSourceUrl: emailSourceUrlFinal,
       facebook,
       instagram,
       youtube,

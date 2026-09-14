@@ -6,6 +6,7 @@ import { finalizeLeadScore, qualifyLead } from "./qualification";
 import {
   extractWebsitePeople,
   type WebsitePeopleResult,
+  pickBestEmail,
 } from "./website-people";
 import { searchFacebookPage } from "./facebook";
 import {
@@ -387,7 +388,23 @@ async function enrichAndPersistPlace(opts: {
       : existingOwner
         ? existingLead?.ownerConfidence ?? null
         : null;
-    const emailFinal = websitePeople.email ?? existingLead?.email ?? null;
+
+    const emailCandidates = [websitePeople.email, existingLead?.email].filter(
+      (e): e is string => Boolean(e),
+    );
+    const emailFinal =
+      pickBestEmail(
+        emailCandidates,
+        ownerNameFinal,
+        website || existingLead?.website,
+      ) ??
+      websitePeople.email ??
+      existingLead?.email ??
+      null;
+    const emailSourceUrlFinal =
+      emailFinal === websitePeople.email
+        ? websitePeople.emailSourceUrl ?? existingLead?.emailSourceUrl
+        : existingLead?.emailSourceUrl ?? websitePeople.emailSourceUrl;
 
     const scored = finalizeLeadScore(qualification.leadScore, {
       hasWebsite: Boolean(website || existingLead?.website),
@@ -419,8 +436,7 @@ async function enrichAndPersistPlace(opts: {
         ? JSON.stringify(websitePeople.team)
         : existingLead?.teamMembersJson,
       email: emailFinal,
-      emailSourceUrl:
-        websitePeople.emailSourceUrl ?? existingLead?.emailSourceUrl,
+      emailSourceUrl: emailSourceUrlFinal,
       facebook: existingLead?.facebook,
       instagram: existingLead?.instagram,
       youtube: existingLead?.youtube,
@@ -730,7 +746,23 @@ async function enrichAndPersistPlace(opts: {
     nextdoor: nextdoorUrlFinal ?? existingLead?.nextdoor,
   };
 
-  const emailFinal = websitePeople.email ?? existingLead?.email ?? null;
+  const emailCandidates = [websitePeople.email, existingLead?.email].filter(
+    (e): e is string => Boolean(e),
+  );
+  const emailFinal =
+    pickBestEmail(
+      emailCandidates,
+      ownerNameFinal,
+      website ?? existingLead?.website ?? null,
+    ) ??
+    websitePeople.email ??
+    existingLead?.email ??
+    null;
+  const emailSourceUrlFinal =
+    emailFinal === websitePeople.email
+      ? websitePeople.emailSourceUrl ?? existingLead?.emailSourceUrl
+      : existingLead?.emailSourceUrl ?? websitePeople.emailSourceUrl;
+
   const websiteFinal = website ?? existingLead?.website ?? null;
   const hasSocial = Boolean(
     socialSnapshot.facebook ||
@@ -785,8 +817,7 @@ async function enrichAndPersistPlace(opts: {
       ? JSON.stringify(websitePeople.team)
       : existingLead?.teamMembersJson,
     email: emailFinal,
-    emailSourceUrl:
-      websitePeople.emailSourceUrl ?? existingLead?.emailSourceUrl,
+    emailSourceUrl: emailSourceUrlFinal,
     facebook: facebook ?? existingLead?.facebook,
     instagram: instagram ?? existingLead?.instagram,
     youtube: pack.youtube ?? existingLead?.youtube,

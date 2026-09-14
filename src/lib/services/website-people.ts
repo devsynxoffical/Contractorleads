@@ -1,5 +1,6 @@
 import * as cheerio from "cheerio";
 import { safeFetch } from "@/lib/safe-fetch";
+import { plausiblePersonName, NOT_A_PERSON_NAME } from "./owner-discovery";
 
 export type PublicTeamMember = {
   name: string;
@@ -29,11 +30,11 @@ const USER_AGENT =
 
 /** Pages likely to list owners/team OR a public email / contact form. */
 const PEOPLE_PATH =
-  /\b(about|team|our-team|staff|leadership|company|who-we-are|meet-the-team|owner|founder|ceo|bio|contact|contact-us|get-in-touch|reach-us|connect|locations?)\b/i;
+  /\b(about|team|our-team|staff|leadership|company|who-we-are|meet-the-team|owner|founder|ceo|bio|contact|contact-us|get-in-touch|reach-us|connect|locations?|estimates?|quote|quotes)\b/i;
 
 /** Prefer these when ranking follow links for email discovery. */
 const CONTACT_PATH =
-  /\b(contact|contact-us|get-in-touch|reach-us|connect)\b/i;
+  /\b(contact|contact-us|get-in-touch|reach-us|connect|estimates?|quote)\b/i;
 
 const OWNER_ROLE =
   /\b(owner|founder|co-founder|president|principal|managing director|ceo)\b/i;
@@ -43,12 +44,9 @@ const TEAM_ROLE =
 const EMAIL_RE =
   /[a-z0-9][a-z0-9._%+-]*@[a-z0-9][a-z0-9.-]*\.[a-z]{2,}/gi;
 
-/** Throw away tracking / CDN / image / placeholder addresses. */
+/** Throw away tracking / CDN / image / developer / non-lead addresses. */
 const BAD_EMAIL =
-  /(noreply|no-reply|donotreply|do-not-reply|mailer-daemon|postmaster|sentry\.io|wixpress\.com|example\.com|domain\.com|email\.com|yourdomain|placeholder|cloudflare|schema\.org|googleapis|gstatic|w3\.org|jquery|sentry-next)/i;
-
-const PREFERRED_LOCAL =
-  /^(info|contact|hello|office|sales|support|admin|enquiries|inquiry|inquiries|mail|team|jobs|estimates?|quotes?|service|services|booking|book|appointments?)\b/i;
+  /(noreply|no-reply|donotreply|do-not-reply|mailer-daemon|postmaster|sentry|wixpress|squarespace|wordpress|godaddy|cloudflare|schema\.org|googleapis|gstatic|w3\.org|jquery|example\.com|domain\.com|email\.com|yourdomain|placeholder|test@|sample@|user@|name@|email@|billing@|invoices?@|accounting@|careers@|jobs@|hr@|employment@|legal@|privacy@|abuse@|security@|press@|media@|affiliates?@|newsletter@|subscribe@|unsubscribe@|webmaster@|hostmaster@)/i;
 
 /** Common contact paths to try when the homepage has no contact link. */
 const CONTACT_FALLBACKS = [
@@ -58,16 +56,40 @@ const CONTACT_FALLBACKS = [
   "/get-in-touch",
   "/about",
   "/about-us",
+  "/our-team",
+  "/meet-the-team",
+  "/estimates",
+  "/quote",
 ];
 
-import { plausiblePersonName, NOT_A_PERSON_NAME } from "./owner-discovery";
+const COMMON_FIRST_NAMES = new Set([
+  "aaron","adam","alex","alexander","allan","allen","alyssa","amanda","amber","amy","andrew","andy","angela","ann","anna","anthony","antonio","arthur","ashley","austin",
+  "barbara","barry","bart","ben","benjamin","bill","billy","blake","bob","bobby","brad","bradley","brandon","brenda","brent","brian","bryan","bruce",
+  "caleb","cameron","carl","carlos","carol","caroline","carolyn","casey","chad","charles","charlie","charlotte","chase","chelsea","chris","christian","christina","christine","christopher","clay","clayton","cliff","clifford","cody","colin","conner","connor","corey","cory","craig","curtis","cynthia",
+  "dale","damon","dan","dana","daniel","danielle","danny","daren","darin","daryl","dave","david","dawn","dean","debbie","deborah","del","dennis","derek","derrick","devin","diana","diane","dillon","don","donald","donnie","doug","douglas","drew","dustin","dwayne","dwight","dylan",
+  "earl","ed","eddie","edward","elizabeth","ellen","emily","eric","erik","erin","ethan","eugene","evan",
+  "felicia","frank","frankie","franklin","fred","freddie",
+  "garrett","gary","george","gerald","glenn","gordon","grant","greg","gregory","guy",
+  "hank","harold","harry","heath","heather","henry","howard","hunter",
+  "ian","isaac",
+  "jack","jackson","jacob","jake","james","jamie","jared","jarrod","jason","jay","jeff","jeffery","jeffrey","jenna","jennifer","jeremy","jerry","jesse","jessica","jim","jimmy","joe","joel","joey","john","johnathan","johnny","johnson","jon","jonathan","jordan","jose","joseph","josh","joshua","juan","justin",
+  "kareem","karen","karl","keith","kelly","kelsey","ken","kendra","kenneth","kenny","kent","kevin","khalil","kris","kristen","kyle",
+  "lance","larry","laura","lauren","lawrence","lee","leo","leon","leonard","leslie","levi","lewis","linda","lisa","logan","louis","lucas","luke",
+  "marcus","margaret","maria","mario","mark","marshall","martin","mason","mathew","matt","matthew","maurice","max","megan","melissa","michael","micheal","michelle","mick","mike","mitch","mitchell","monica","morgan",
+  "nathan","nathaniel","neal","neil","nicholas","nick","noah","norman",
+  "oliver","omar","orlando","oscar","owen",
+  "patrick","paul","pedro","perry","pete","peter","phil","philip","phillip",
+  "quentin","quincy",
+  "rachel","ralph","randall","randy","ray","raymond","rebecca","reed","reid","rex","rich","richard","rick","ricky","rob","robbie","robert","roberto","robin","rod","rodney","roger","ron","ronald","ronnie","ross","roy","ruben","russ","russell","rusty","ryan",
+  "sam","sammy","samuel","sarah","scott","sean","seth","shane","shannon","shawn","spencer","stan","stanley","stephanie","stephen","steve","steven","stuart",
+  "tammy","tanner","taylor","ted","teddy","terrance","terry","thomas","tim","timmy","timothy","toby","todd","tom","tommy","tony","tracey","tracy","travis","trent","trevor","troy","tyler",
+  "van","vernon","victor","vincent",
+  "wade","walter","warren","wayne","wes","wesley","will","william","willie","wyatt",
+  "zach","zachary","zack"
+]);
 
 function clean(value: string): string {
   return value.replace(/\s+/g, " ").trim();
-}
-
-function plausibleName(value: string): boolean {
-  return plausiblePersonName(value);
 }
 
 function formatRole(role: string): string {
@@ -84,7 +106,7 @@ function formatRole(role: string): string {
 }
 
 function addMember(members: PersonCandidate[], candidate: PersonCandidate) {
-  if (!plausibleName(candidate.name) || !TEAM_ROLE.test(candidate.role)) return;
+  if (!plausiblePersonName(candidate.name) || !TEAM_ROLE.test(candidate.role)) return;
   const normalized = { ...candidate, role: formatRole(candidate.role) };
   const key = normalized.name.toLowerCase();
   const existing = members.find((member) => member.name.toLowerCase() === key);
@@ -96,9 +118,7 @@ function addMember(members: PersonCandidate[], candidate: PersonCandidate) {
 
 /**
  * Find how the visible page labels a person — e.g. "Gregory Noland, Outside
- * Sales" or "Gregory Noland — Outside Sales". Returns the phrase that follows
- * the name up to the next separator. Used to cross-check (and override)
- * metadata-only claims like a JSON-LD "Owner" tag.
+ * Sales" or "Gregory Noland — Outside Sales".
  */
 function visibleRoleForName(bodyText: string, name: string): string | null {
   const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -109,23 +129,16 @@ function visibleRoleForName(bodyText: string, name: string): string | null {
   for (const match of bodyText.matchAll(re)) {
     const role = clean(match[1]);
     if (TEAM_ROLE.test(role)) {
-      // Cut at a trailing separator ("Owners — Noland's Roofing" -> "Owners")
       return clean(role.split(/\s*(?:—|–|-|,|\(|\|)\s*/)[0]).slice(0, 60);
     }
   }
   return null;
 }
 
-/**
- * Visible text is ground truth; JSON-LD is metadata that can be stale or
- * inconsistent. Re-rank candidates so a page-confirmed owner outranks a
- * metadata-only "Owner", and a page that contradicts a JSON-LD claim wins.
- */
 function crossCheckMembers(members: PersonCandidate[], bodyText: string) {
   for (const member of members) {
     const visible = visibleRoleForName(bodyText, member.name);
     if (!visible) {
-      // Metadata-only claim (e.g. JSON-LD founder) never gets "verified" trust
       if (member.source === "jsonld") {
         member.confidence = Math.min(member.confidence, 70);
       }
@@ -134,7 +147,6 @@ function crossCheckMembers(members: PersonCandidate[], bodyText: string) {
     const visibleOwner = OWNER_ROLE.test(visible);
     const claimedOwner = OWNER_ROLE.test(member.role);
     if (claimedOwner && !visibleOwner) {
-      // Page contradicts the owner claim (e.g. "Outside Sales") — trust page
       member.role = visible;
       member.confidence = Math.min(member.confidence, 82);
     } else if (claimedOwner && visibleOwner) {
@@ -143,18 +155,14 @@ function crossCheckMembers(members: PersonCandidate[], bodyText: string) {
   }
 }
 
-/**
- * Cloudflare "email protection" replaces addresses with a hex blob
- * (data-cfemail / #email-protection). First byte is the XOR key.
- */
 function decodeCfEmail(hex: string): string | null {
-  const clean = hex.trim().toLowerCase();
-  if (!/^[0-9a-f]{4,}$/.test(clean) || clean.length % 2 !== 0) return null;
+  const cleanHex = hex.trim().toLowerCase();
+  if (!/^[0-9a-f]{4,}$/.test(cleanHex) || cleanHex.length % 2 !== 0) return null;
   try {
-    const key = parseInt(clean.slice(0, 2), 16);
+    const key = parseInt(cleanHex.slice(0, 2), 16);
     let out = "";
-    for (let i = 2; i < clean.length; i += 2) {
-      out += String.fromCharCode(parseInt(clean.slice(i, i + 2), 16) ^ key);
+    for (let i = 2; i < cleanHex.length; i += 2) {
+      out += String.fromCharCode(parseInt(cleanHex.slice(i, i + 2), 16) ^ key);
     }
     return out;
   } catch {
@@ -162,14 +170,13 @@ function decodeCfEmail(hex: string): string | null {
   }
 }
 
-/** Turn "info (at) acme (dot) com" into a real address. Bracketed forms only. */
 function deobfuscate(text: string): string {
   return text
     .replace(/\s*[([{]\s*at\s*[)\]}]\s*/gi, "@")
     .replace(/\s*[([{]\s*dot\s*[)\]}]\s*/gi, ".");
 }
 
-function isPlausibleEmail(raw: string): boolean {
+export function isPlausibleEmail(raw: string): boolean {
   const email = raw.trim().toLowerCase();
   if (!email || email.length > 120) return false;
   if (!/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,24}$/i.test(email)) return false;
@@ -178,22 +185,176 @@ function isPlausibleEmail(raw: string): boolean {
   return true;
 }
 
-function emailScore(email: string): number {
-  const local = email.split("@")[0] || "";
+export type EmailQualityTier =
+  | "decision_maker"
+  | "executive"
+  | "department"
+  | "catchall"
+  | "invalid";
+
+/**
+ * Score emails prioritizing authentic decision-maker addresses over generic catch-alls.
+ */
+export function evaluateEmailQuality(
+  email: string,
+  ownerName?: string | null,
+  websiteUrl?: string | null,
+): { score: number; tier: EmailQualityTier } {
+  const cleanEmail = email.trim().toLowerCase();
+  if (!cleanEmail || !isPlausibleEmail(cleanEmail)) {
+    return { score: -999, tier: "invalid" };
+  }
+
+  const [localPart, domainPart] = cleanEmail.split("@");
+  if (!localPart || !domainPart) {
+    return { score: -999, tier: "invalid" };
+  }
+
   let score = 0;
-  if (PREFERRED_LOCAL.test(local)) score += 40;
-  score += Math.max(0, 20 - local.length);
-  return score;
+  let tier: EmailQualityTier = "catchall";
+
+  // Check matching with owner name if available
+  if (ownerName) {
+    const nameWords = ownerName
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, "")
+      .split(/\s+/)
+      .filter((w) => w.length >= 2);
+
+    if (nameWords.length >= 2) {
+      const first = nameWords[0];
+      const last = nameWords[nameWords.length - 1];
+      const firstInitial = first.charAt(0);
+      const lastInitial = last.charAt(0);
+
+      // Matches exact full name combos: mike.miller@, mikemiller@, mmiller@, m.miller@, mike_miller@, mike-miller@
+      if (
+        localPart === `${first}.${last}` ||
+        localPart === `${first}${last}` ||
+        localPart === `${firstInitial}${last}` ||
+        localPart === `${firstInitial}.${last}` ||
+        localPart === `${first}_${last}` ||
+        localPart === `${first}-${last}`
+      ) {
+        score = 125;
+        tier = "decision_maker";
+      } else if (
+        localPart === first ||
+        localPart === `${first}${lastInitial}` ||
+        localPart === last
+      ) {
+        score = 120;
+        tier = "decision_maker";
+      }
+    } else if (nameWords.length === 1) {
+      if (localPart === nameWords[0]) {
+        score = 115;
+        tier = "decision_maker";
+      }
+    }
+  }
+
+  if (score === 0) {
+    // If localPart matches a recognized human first name
+    const baseLocal = localPart.replace(/[._\-\d]+/g, "");
+    if (
+      COMMON_FIRST_NAMES.has(localPart) ||
+      (localPart.includes(".") && COMMON_FIRST_NAMES.has(localPart.split(".")[0]))
+    ) {
+      score = 85;
+      tier = "decision_maker";
+    } else if (COMMON_FIRST_NAMES.has(baseLocal) && baseLocal.length >= 3) {
+      score = 80;
+      tier = "decision_maker";
+    }
+    // Executive aliases
+    else if (
+      /^(owner|president|founder|ceo|principal|managingdirector|management|director|gm)\b/i.test(
+        localPart,
+      )
+    ) {
+      score = 75;
+      tier = "executive";
+    }
+    // Estimating & Project aliases
+    else if (
+      /^(estimates?|estimating|estimator|quotes?|bids?|projects?|operations|ops|dispatch|superintendent)\b/i.test(
+        localPart,
+      )
+    ) {
+      score = 50;
+      tier = "department";
+    }
+    // Office & Team aliases
+    else if (
+      /^(office|team|frontdesk|service|services|scheduling|appointments?)\b/i.test(
+        localPart,
+      )
+    ) {
+      score = 35;
+      tier = "department";
+    }
+    // Generic Catch-All Fallback aliases
+    else if (
+      /^(info|contact|contactus|hello|inquiry|inquiries|mail|help|support|admin|sales|enquiries)\b/i.test(
+        localPart,
+      )
+    ) {
+      score = 15;
+      tier = "catchall";
+    } else {
+      if (/^[a-z]{3,15}$/i.test(localPart)) {
+        score = 60;
+        tier = "decision_maker";
+      } else {
+        score = 25;
+        tier = "catchall";
+      }
+    }
+  }
+
+  // Domain Authenticity Bonus:
+  // If the email domain matches the website domain, give +30 bonus over random webmail
+  if (websiteUrl) {
+    try {
+      const siteHost = new URL(
+        websiteUrl.startsWith("http") ? websiteUrl : `https://${websiteUrl}`,
+      ).hostname
+        .replace(/^www\./, "")
+        .toLowerCase();
+      if (
+        domainPart === siteHost ||
+        siteHost.endsWith(`.${domainPart}`) ||
+        domainPart.endsWith(`.${siteHost}`)
+      ) {
+        score += 30;
+      }
+    } catch {
+      // Ignore URL parsing errors
+    }
+  }
+
+  return { score, tier };
 }
 
-function pickBestEmail(emails: Iterable<string>): string | null {
+export function pickBestEmail(
+  emails: Iterable<string>,
+  ownerName?: string | null,
+  websiteUrl?: string | null,
+): string | null {
   const list = [
     ...new Set(
       [...emails].map((e) => e.toLowerCase().trim()).filter(isPlausibleEmail),
     ),
   ];
   if (!list.length) return null;
-  list.sort((a, b) => emailScore(b) - emailScore(a));
+
+  list.sort((a, b) => {
+    const scoreB = evaluateEmailQuality(b, ownerName, websiteUrl).score;
+    const scoreA = evaluateEmailQuality(a, ownerName, websiteUrl).score;
+    return scoreB - scoreA;
+  });
+
   return list[0];
 }
 
@@ -216,13 +377,15 @@ function walkJsonLd(
     const role = clean(
       String(record.jobTitle ?? record.roleName ?? record.description ?? ""),
     );
-    addMember(members, {
-      name,
-      role,
-      sourceUrl,
-      confidence: 95,
-      source: "jsonld",
-    });
+    if (plausiblePersonName(name)) {
+      addMember(members, {
+        name,
+        role: role || "Owner / Executive",
+        sourceUrl,
+        confidence: 95,
+        source: "jsonld",
+      });
+    }
   }
 
   const emailField = record.email;
@@ -299,7 +462,7 @@ function extractFromHtml(html: string, sourceUrl: string) {
   });
 
   $(
-    '[class*="team"], [class*="staff"], [class*="founder"], [class*="owner"], [class*="leadership"], [class*="profile"], [id*="team"], [id*="staff"], [id*="leadership"]',
+    '[class*="team-member"], [class*="staff-member"], [class*="leadership-member"], [class*="profile-card"], [id*="team-member"]',
   ).each((_, element) => {
     const container = $(element);
     const text = clean(container.text());
@@ -307,45 +470,49 @@ function extractFromHtml(html: string, sourceUrl: string) {
     if (!role) return;
     const name = clean(
       container
-        .find("h1,h2,h3,h4,h5,strong,[itemprop='name'],img[alt]")
+        .find("h2,h3,h4,h5,strong,[itemprop='name'],img[alt]")
         .first()
         .attr("alt") ??
-        container.find("h1,h2,h3,h4,h5,strong,[itemprop='name']").first().text(),
+        container.find("h2,h3,h4,h5,strong,[itemprop='name']").first().text(),
     );
-    addMember(members, {
-      name,
-      role,
-      sourceUrl,
-      confidence: 82,
-      source: "container",
-    });
+    if (plausiblePersonName(name)) {
+      addMember(members, {
+        name,
+        role,
+        sourceUrl,
+        confidence: 84,
+        source: "container",
+      });
+    }
   });
 
   const bodyText = clean($("body").text());
 
-  // Visible "Name — Role" / "Name, Role" / "Name: Role" lines — this is what
-  // server-rendered team cards (WordPress, static HTML) actually publish.
+  // Visible "Name — Role" / "Name, Role" lines
   const nameRoleRe =
-    /\b([A-Z][a-zÀ-öø-ÿ'’]+(?:\s+[A-Z][a-zÀ-öø-ÿ'’]+){1,3})\s*(?:,|—|–|-|:|\||│)\s*([A-Za-zÀ-ÖØ-öø-ÿ'’&]+(?:\s+[A-Za-zÀ-ÖØ-öø-ÿ'’&]+){0,8})/g;
+    /\b([A-Z][a-zÀ-öø-ÿ'’]+(?:\s+[A-Z][a-zÀ-öø-ÿ'’]+){1,2})\s*(?:,|—|–|-|:|\||│)\s*([A-Za-zÀ-ÖØ-öø-ÿ'’&]+(?:\s+[A-Za-zÀ-ÖØ-öø-ÿ'’&]+){0,6})/g;
   for (const match of bodyText.matchAll(nameRoleRe)) {
     const name = clean(match[1]);
     const role = clean(match[2]);
     if (!TEAM_ROLE.test(role)) continue;
+    if (!plausiblePersonName(name)) continue;
     addMember(members, {
       name,
       role,
       sourceUrl,
-      confidence: 85,
+      confidence: 86,
       source: "visible",
     });
   }
 
   const roleFirstMatches = bodyText.matchAll(
-    /(owner|founder|co-founder|president|principal|ceo)\s*(?:is|:|-|—)\s*([A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’-]+(?:\s+[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’-]+){1,3})/gi,
+    /(owner|founder|co-founder|president|principal|ceo)\s*(?:is|:|-|—)\s*([A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’-]+(?:\s+[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’-]+){1,2})/gi,
   );
   for (const match of roleFirstMatches) {
+    const name = clean(match[2]);
+    if (!plausiblePersonName(name)) continue;
     addMember(members, {
-      name: clean(match[2]),
+      name,
       role: clean(match[1]),
       sourceUrl,
       confidence: 88,
@@ -354,11 +521,13 @@ function extractFromHtml(html: string, sourceUrl: string) {
   }
 
   const foundedByMatches = bodyText.matchAll(
-    /(?:founded|owned|led)(?:\s+in\s+\d{4})?\s+by\s+(?:(owner|founder|co-founder|president|principal|ceo)\s+)?([A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’-]+(?:\s+[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’-]+){1,3})/gi,
+    /(?:founded|owned|led)(?:\s+in\s+\d{4})?\s+by\s+(?:(owner|founder|co-founder|president|principal|ceo)\s+)?([A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’-]+(?:\s+[A-Z][A-Za-zÀ-ÖØ-öø-ÿ'’-]+){1,2})/gi,
   );
   for (const match of foundedByMatches) {
+    const name = clean(match[2]);
+    if (!plausiblePersonName(name)) continue;
     addMember(members, {
-      name: clean(match[2]),
+      name,
       role: clean(match[1] || "Founder / Owner"),
       sourceUrl,
       confidence: 92,
@@ -366,10 +535,9 @@ function extractFromHtml(html: string, sourceUrl: string) {
     });
   }
 
-  // Metadata (JSON-LD) must not override what the visible page says.
   crossCheckMembers(members, bodyText);
 
-  // Plaintext emails — most contractor sites never use mailto:
+  // Plaintext emails
   for (const match of deobfuscate(bodyText).matchAll(EMAIL_RE)) {
     if (isPlausibleEmail(match[0])) emails.add(match[0].toLowerCase());
   }
@@ -398,7 +566,7 @@ function extractFromHtml(html: string, sourceUrl: string) {
 
   return {
     members,
-    email: pickBestEmail(emails),
+    emails: [...emails],
     links: [...new Set([...contactLinks, ...peopleLinks])],
   };
 }
@@ -413,7 +581,6 @@ async function fetchHtml(
       url,
       {
         headers: { "User-Agent": USER_AGENT, Accept: "text/html" },
-        // Keep per-page fetches snappy so we can check contact pages too
         timeoutMs,
       },
       { allowHttp: true },
@@ -443,8 +610,6 @@ export async function extractWebsitePeople(
   website: string,
   options: { budgetMs?: number } = {},
 ): Promise<WebsitePeopleResult> {
-  // Self-limit so callers that race us with a timeout still get partial data
-  // (homepage email) instead of an empty result.
   const budgetMs = options.budgetMs ?? 8_000;
   const startedAt = Date.now();
   const remaining = () => budgetMs - (Date.now() - startedAt);
@@ -462,19 +627,18 @@ export async function extractWebsitePeople(
   }
 
   const home = extractFromHtml(homeHtml, homepage);
-  // Prefer discovered contact links; if none, try common /contact paths
   const follow = [
     ...home.links,
     ...(home.links.some((l) => CONTACT_PATH.test(l))
       ? []
       : contactFallbacks(homepage)),
   ];
-  const pages = [homepage, ...[...new Set(follow)].slice(0, 4)];
+  const pages = [homepage, ...[...new Set(follow)].slice(0, 5)];
   const members = [...home.members];
-  let email = home.email;
-  let emailSourceUrl = home.email ? homepage : null;
+  const allEmails = new Set<string>(home.emails);
+  const emailSourceMap = new Map<string, string>();
+  home.emails.forEach((e) => emailSourceMap.set(e, homepage));
 
-  // Only chase extra pages while there is time left in the budget.
   const followBudget = remaining();
   const extraPages =
     followBudget < 1_200
@@ -492,18 +656,12 @@ export async function extractWebsitePeople(
   for (const page of extraPages) {
     if (!page) continue;
     page.parsed.members.forEach((member) => addMember(members, member));
-    if (!email && page.parsed.email) {
-      email = page.parsed.email;
-      emailSourceUrl = page.url;
-    } else if (
-      email &&
-      page.parsed.email &&
-      emailScore(page.parsed.email) > emailScore(email)
-    ) {
-      // Prefer info@/contact@ from contact page over a random mailto on home
-      email = page.parsed.email;
-      emailSourceUrl = page.url;
-    }
+    page.parsed.emails.forEach((email) => {
+      allEmails.add(email);
+      if (!emailSourceMap.has(email)) {
+        emailSourceMap.set(email, page.url);
+      }
+    });
   }
 
   members.sort((a, b) => b.confidence - a.confidence);
@@ -515,11 +673,15 @@ export async function extractWebsitePeople(
     confidence: member.confidence,
   });
 
+  const bestEmail = pickBestEmail(allEmails, owner?.name, homepage);
+  const emailSourceUrl = bestEmail ? emailSourceMap.get(bestEmail) ?? homepage : null;
+
   return {
     owner: owner ? stripSource(owner) : null,
     team: members.slice(0, 10).map(stripSource),
-    email,
+    email: bestEmail,
     emailSourceUrl,
     pagesChecked: pages,
   };
 }
+
