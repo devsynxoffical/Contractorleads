@@ -594,7 +594,7 @@ export function EmailVerifierView() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
                     onClick={() => {
                       setBulkInput("");
@@ -734,7 +734,7 @@ export function EmailVerifierView() {
                   />
                   <Button
                     size="sm"
-                    variant="outline"
+                    variant="secondary"
                     onClick={() => exportCleanCsv(true)}
                     className="h-8 text-xs font-semibold text-emerald-700 border-emerald-300 hover:bg-emerald-50"
                   >
