@@ -41,9 +41,6 @@ const OWNER_ROLE =
 const TEAM_ROLE =
   /\b(owner|founder|co-founder|president|principal|ceo|manager|director|partner|supervisor|estimator|sales|operations|technician|specialist)\b/i;
 
-const EMAIL_RE =
-  /[a-z0-9][a-z0-9._%+-]*@[a-z0-9][a-z0-9.-]*\.[a-z]{2,}/gi;
-
 /** Throw away tracking / CDN / image / developer / non-lead addresses. */
 const BAD_EMAIL =
   /(noreply|no-reply|donotreply|do-not-reply|mailer-daemon|postmaster|sentry|wixpress|squarespace|wordpress|godaddy|cloudflare|schema\.org|googleapis|gstatic|w3\.org|jquery|example\.com|domain\.com|email\.com|yourdomain|placeholder|test@|sample@|user@|name@|email@|billing@|invoices?@|accounting@|careers@|jobs@|hr@|employment@|legal@|privacy@|abuse@|security@|press@|media@|affiliates?@|newsletter@|subscribe@|unsubscribe@|webmaster@|hostmaster@)/i;
@@ -358,6 +355,9 @@ export function pickBestEmail(
   return list[0];
 }
 
+const EMAIL_RE =
+  /\b[a-z0-9][a-z0-9._%+-]*@[a-z0-9][a-z0-9.-]*\.(?:com|org|net|co\.uk|co|io|us|ca|gov|edu|info|biz|me|cc|tv|ai|app|pro|live|tech|agency|solutions|solar|energy|construction|roof|plumbing|contractors|services|company|ltd|uk|eu|de|fr|au|nz|[a-z]{2,8})\b/gi;
+
 function walkJsonLd(
   node: unknown,
   sourceUrl: string,
@@ -377,12 +377,13 @@ function walkJsonLd(
     const role = clean(
       String(record.jobTitle ?? record.roleName ?? record.description ?? ""),
     );
+    // Strict person name validation on JSON-LD to discard "UKAE Admin", "Admin", etc.
     if (plausiblePersonName(name)) {
       addMember(members, {
         name,
         role: role || "Owner / Executive",
         sourceUrl,
-        confidence: 95,
+        confidence: 90,
         source: "jsonld",
       });
     }
@@ -416,14 +417,16 @@ function extractFromHtml(html: string, sourceUrl: string) {
   const members: PersonCandidate[] = [];
   const emails = new Set<string>();
 
+  // Direct clean mailto attributes
   $('a[href^="mailto:"]').each((_, element) => {
     const raw = $(element)
       .attr("href")
       ?.replace(/^mailto:/i, "")
       .split("?")[0]
-      ?.split(",")[0];
+      ?.split(",")[0]
+      ?.trim();
     if (raw && isPlausibleEmail(raw)) {
-      emails.add(raw.toLowerCase().trim());
+      emails.add(raw.toLowerCase());
     }
   });
 
@@ -431,9 +434,9 @@ function extractFromHtml(html: string, sourceUrl: string) {
     const raw =
       $(element).attr("data-email") ||
       $(element).attr("content") ||
-      $(element).text();
+      $(element).text()?.trim();
     if (raw && isPlausibleEmail(raw)) {
-      emails.add(raw.toLowerCase().trim());
+      emails.add(raw.toLowerCase());
     }
   });
 
@@ -442,14 +445,14 @@ function extractFromHtml(html: string, sourceUrl: string) {
     const hex = $(element).attr("data-cfemail");
     const decoded = hex ? decodeCfEmail(hex) : null;
     if (decoded && isPlausibleEmail(decoded)) {
-      emails.add(decoded.toLowerCase().trim());
+      emails.add(decoded.toLowerCase());
     }
   });
   $('a[href*="/cdn-cgi/l/email-protection#"]').each((_, element) => {
     const hex = $(element).attr("href")?.split("#")[1];
     const decoded = hex ? decodeCfEmail(hex) : null;
     if (decoded && isPlausibleEmail(decoded)) {
-      emails.add(decoded.toLowerCase().trim());
+      emails.add(decoded.toLowerCase());
     }
   });
 
@@ -486,7 +489,13 @@ function extractFromHtml(html: string, sourceUrl: string) {
     }
   });
 
-  const bodyText = clean($("body").text());
+  // Clone and space out HTML elements so text() doesn't merge words across tags
+  const rootClone = $.root().clone();
+  rootClone.find("script, style, noscript, svg, img").remove();
+  rootClone
+    .find("br, p, div, li, td, th, section, article, header, footer, a, span, h1, h2, h3, h4, h5, h6")
+    .after(" ");
+  const bodyText = clean(rootClone.text());
 
   // Visible "Name — Role" / "Name, Role" lines
   const nameRoleRe =
@@ -537,11 +546,8 @@ function extractFromHtml(html: string, sourceUrl: string) {
 
   crossCheckMembers(members, bodyText);
 
-  // Plaintext emails
+  // Plaintext emails from properly-spaced text
   for (const match of deobfuscate(bodyText).matchAll(EMAIL_RE)) {
-    if (isPlausibleEmail(match[0])) emails.add(match[0].toLowerCase());
-  }
-  for (const match of html.slice(0, 400_000).matchAll(EMAIL_RE)) {
     if (isPlausibleEmail(match[0])) emails.add(match[0].toLowerCase());
   }
 

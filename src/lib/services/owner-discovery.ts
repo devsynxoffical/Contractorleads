@@ -71,7 +71,10 @@ const NON_PERSON_WORD_SET = new Set([
   "emergency", "residential", "commercial", "industrial", "custom", "general", "standard",
   "llc", "inc", "corp", "corporation", "ltd", "limited", "co", "gmbh", "general", "standard",
   "american", "national", "global", "united", "central", "valley", "mountain", "ridge", "island",
-  "metro", "city", "county", "state", "town", "village", "north", "south", "east", "west"
+  "metro", "city", "county", "state", "town", "village", "north", "south", "east", "west",
+  "admin", "administrator", "author", "editor", "webmaster", "user", "superuser", "moderator",
+  "writer", "contributor", "blogger", "post", "poster", "root", "test", "demo", "energy", "solar",
+  "alternative", "ukae", "uk", "usa", "us"
 ]);
 
 type OwnerCandidate = {
@@ -165,10 +168,12 @@ function nameConflictsWithBusiness(name: string, businessName: string): boolean 
 function slugToName(url: string): string | null {
   const match = url.match(/linkedin\.com\/in\/([^/?#]+)/i);
   if (!match?.[1]) return null;
-  const parts = match[1].split(/[-_]/).filter(Boolean);
+  const parts = match[1]
+    .split(/[-_]/)
+    .filter((p) => p.length >= 2 && !/^\d+$/.test(p) && !/^[0-9a-f]{6,}$/i.test(p));
   if (parts.length < 2) return null;
   const words = parts.map((p) => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase());
-  const name = clean(words.slice(0, 2).join(" "));
+  const name = clean(words.slice(0, 3).join(" "));
   return plausiblePersonName(name) ? name : null;
 }
 
@@ -224,17 +229,25 @@ function scanHit(
   if (linkedinUrl) {
     const slugName = slugToName(url);
     if (slugName) {
-      tryAddCandidate(out, slugName, "Owner / Executive", 88, url, linkedinUrl, businessName);
+      tryAddCandidate(
+        out,
+        slugName,
+        "Managing Director / Owner",
+        96,
+        url,
+        linkedinUrl,
+        businessName,
+      );
     }
     for (const match of text.matchAll(NAME_ROLE_RE)) {
-      tryAddCandidate(out, match[1], match[2], 85, url, linkedinUrl, businessName);
+      tryAddCandidate(out, match[1], match[2], 94, url, linkedinUrl, businessName);
     }
     for (const match of text.matchAll(ROLE_NAME_RE)) {
-      tryAddCandidate(out, match[2], match[1], 80, url, linkedinUrl, businessName);
+      tryAddCandidate(out, match[2], match[1], 90, url, linkedinUrl, businessName);
     }
     const copular = COPULA_RE.exec(text);
     if (copular) {
-      tryAddCandidate(out, copular[1], copular[2], 84, url, linkedinUrl, businessName);
+      tryAddCandidate(out, copular[1], copular[2], 92, url, linkedinUrl, businessName);
     }
     return;
   }
