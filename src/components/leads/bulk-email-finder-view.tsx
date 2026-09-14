@@ -617,8 +617,8 @@ export function BulkEmailFinderView() {
                     >
                       <option value="">{getRegionAnyLabel(country)}</option>
                       {getRegionsForCountry(country).map((r) => (
-                        <option key={r} value={r}>
-                          {r}
+                        <option key={r.code} value={r.code}>
+                          {r.name}
                         </option>
                       ))}
                     </select>
