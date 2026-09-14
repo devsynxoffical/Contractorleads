@@ -381,7 +381,7 @@ async function enrichAndPersistPlace(opts: {
     const ownerSourceUrl = ownerCandidate
       ? websitePeople.owner?.sourceUrl ?? null
       : existingOwner
-        ? existingLead?.ownerSourceUrl ?? null
+        ? existingLead?.ownerSourceUrl ?? existingLead?.linkedinOwnerUrl ?? null
         : null;
     const ownerConfidence = ownerCandidate
       ? websitePeople.owner?.confidence ?? 90
@@ -704,9 +704,9 @@ async function enrichAndPersistPlace(opts: {
   const ownerSourceUrl = websiteOwnerCandidate
     ? websitePeople.owner?.sourceUrl ?? null
     : searchOwnerCandidate
-      ? ownerFromSearch.sourceUrl ?? null
+      ? ownerFromSearch.sourceUrl ?? ownerFromSearch.ownerLinkedInUrl ?? null
       : existingOwner
-        ? existingLead?.ownerSourceUrl ?? null
+        ? existingLead?.ownerSourceUrl ?? existingLead?.linkedinOwnerUrl ?? null
         : null;
   const ownerConfidence = websiteOwnerCandidate
     ? websitePeople.owner?.confidence ?? null

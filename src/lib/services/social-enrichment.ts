@@ -42,6 +42,7 @@ type LeadRecord = {
   ownerSourceUrl?: string | null;
   ownerConfidence?: number | null;
   email: string | null;
+  emailSourceUrl?: string | null;
   website: string | null;
   industry: string | null;
   country: string;
@@ -52,6 +53,9 @@ type LeadRecord = {
   instagram: string | null;
   youtube: string | null;
   tiktok: string | null;
+  linkedinUrl?: string | null;
+  linkedinCompanyUrl?: string | null;
+  linkedinOwnerUrl?: string | null;
 };
 
 export async function enrichLeadSocial(lead: LeadRecord) {
@@ -149,10 +153,10 @@ export async function enrichLeadSocial(lead: LeadRecord) {
   const ownerSourceUrlFinal = validWebsiteOwner
     ? websitePeople.owner?.sourceUrl ?? null
     : validSearchOwner
-      ? ownerFromSearch.sourceUrl ?? null
+      ? ownerFromSearch.sourceUrl ?? ownerFromSearch.ownerLinkedInUrl ?? null
       : validLeadOwner
-        ? lead.ownerSourceUrl ?? null
-        : null;
+        ? lead.ownerSourceUrl ?? lead.linkedinOwnerUrl ?? null
+        : ownerLinkedInFinal ?? null;
   const ownerConfidenceFinal = validWebsiteOwner
     ? websitePeople.owner?.confidence ?? null
     : validSearchOwner
@@ -171,8 +175,8 @@ export async function enrichLeadSocial(lead: LeadRecord) {
     null;
   const emailSourceUrlFinal =
     emailFinal === websitePeople.email
-      ? websitePeople.emailSourceUrl ?? undefined
-      : undefined;
+      ? websitePeople.emailSourceUrl ?? (lead.email === emailFinal ? lead.emailSourceUrl : null)
+      : (lead.email === emailFinal ? lead.emailSourceUrl : websitePeople.emailSourceUrl) ?? null;
 
   const facebook =
     lead.facebook ?? websitePack.facebook ?? facebookPage ?? null;

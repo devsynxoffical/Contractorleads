@@ -33,10 +33,14 @@ export async function POST(_request: Request, { params }: Params) {
       city: lead.city,
       zip: lead.zip,
       email: lead.email,
+      emailSourceUrl: lead.emailSourceUrl,
       facebook: lead.facebook,
       instagram: lead.instagram,
       youtube: lead.youtube,
       tiktok: lead.tiktok,
+      linkedinUrl: lead.linkedinUrl,
+      linkedinCompanyUrl: lead.linkedinCompanyUrl,
+      linkedinOwnerUrl: lead.linkedinOwnerUrl,
     });
 
     await logActivity(

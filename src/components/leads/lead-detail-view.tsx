@@ -148,6 +148,56 @@ function parseTeamMembers(raw: string | null): TeamMember[] {
   }
 }
 
+function buildSourceUrl(
+  rawUrl?: string | null,
+  targetText?: string | null,
+  fallbackUrl?: string | null,
+): string | null {
+  const candidate = rawUrl?.trim() || fallbackUrl?.trim();
+  if (!candidate) return null;
+
+  let urlString = candidate;
+  if (!/^https?:\/\//i.test(urlString)) {
+    urlString = `https://${urlString}`;
+  }
+
+  try {
+    const parsed = new URL(urlString);
+    const hostname = parsed.hostname.toLowerCase();
+
+    // If it is LinkedIn, social media, or Companies House, keep direct link
+    if (
+      hostname.includes("linkedin.com") ||
+      hostname.includes("facebook.com") ||
+      hostname.includes("instagram.com") ||
+      hostname.includes("twitter.com") ||
+      hostname.includes("x.com") ||
+      hostname.includes("service.gov.uk") ||
+      hostname.includes("companieshouse.gov.uk") ||
+      hostname.includes("yelp.com") ||
+      hostname.includes("houzz.com")
+    ) {
+      return parsed.toString();
+    }
+
+    // If it already contains an anchor hash or text fragment, keep it
+    if (parsed.hash && parsed.hash.length > 1) {
+      return parsed.toString();
+    }
+
+    // Append URL Text Fragment (e.g. #:~:text=John%20Leighton) to automatically jump to and highlight exact text
+    if (targetText && targetText.trim().length > 1) {
+      const cleanText = targetText.trim();
+      parsed.hash = `:~:text=${encodeURIComponent(cleanText)}`;
+      return parsed.toString();
+    }
+
+    return parsed.toString();
+  } catch {
+    return urlString;
+  }
+}
+
 type FacebookAd = {
   id: string;
   pageName: string;
@@ -1148,16 +1198,23 @@ export function LeadDetailView({
                         : ""}
                     </p>
                   )}
-                  {lead.ownerSourceUrl && (
-                    <a
-                      href={lead.ownerSourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[11px] font-medium text-brand-600 hover:underline"
-                    >
-                      View public source
-                    </a>
-                  )}
+                  {lead.ownerName && (() => {
+                    const ownerUrl = buildSourceUrl(
+                      lead.ownerSourceUrl ?? lead.linkedinOwnerUrl ?? lead.linkedinUrl,
+                      lead.ownerName,
+                      lead.website,
+                    );
+                    return ownerUrl ? (
+                      <a
+                        href={ownerUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[11px] font-medium text-brand-600 hover:underline"
+                      >
+                        View public source
+                      </a>
+                    ) : null;
+                  })()}
                 </div>
               </div>
               <a
@@ -1207,16 +1264,23 @@ export function LeadDetailView({
                   <p className="truncate font-medium text-ink">
                     {lead.email ?? "Not available"}
                   </p>
-                  {lead.emailSourceUrl && (
-                    <a
-                      href={lead.emailSourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[11px] font-medium text-brand-600 hover:underline"
-                    >
-                      View public source
-                    </a>
-                  )}
+                  {lead.email && (() => {
+                    const emailUrl = buildSourceUrl(
+                      lead.emailSourceUrl,
+                      lead.email,
+                      lead.website,
+                    );
+                    return emailUrl ? (
+                      <a
+                        href={emailUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[11px] font-medium text-brand-600 hover:underline"
+                      >
+                        View public source
+                      </a>
+                    ) : null;
+                  })()}
                 </div>
               </div>
               <div className="flex items-center gap-3 rounded-xl border border-border bg-[#faf8fc] px-3.5 py-3 text-sm">
@@ -1310,40 +1374,47 @@ export function LeadDetailView({
                 )}
               </div>
 
-              {lead.ownerName && (
-                <a
-                  href={lead.ownerSourceUrl ?? undefined}
-                  target={lead.ownerSourceUrl ? "_blank" : undefined}
-                  rel={lead.ownerSourceUrl ? "noopener noreferrer" : undefined}
-                  className="flex items-start gap-4 rounded-2xl border border-brand-200 bg-gradient-to-br from-brand-50/90 to-[var(--surface)] p-4 transition hover:border-brand-300"
-                >
-                  <span
-                    className="btn-on-brand flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-base font-bold text-[var(--btn-on-brand)] shadow-sm"
-                    style={{ background: LOGO_GRADIENT }}
+              {lead.ownerName && (() => {
+                const ownerUrl = buildSourceUrl(
+                  lead.ownerSourceUrl ?? lead.linkedinOwnerUrl ?? lead.linkedinUrl,
+                  lead.ownerName,
+                  lead.website,
+                );
+                return (
+                  <a
+                    href={ownerUrl ?? undefined}
+                    target={ownerUrl ? "_blank" : undefined}
+                    rel={ownerUrl ? "noopener noreferrer" : undefined}
+                    className="flex items-start gap-4 rounded-2xl border border-brand-200 bg-gradient-to-br from-brand-50/90 to-[var(--surface)] p-4 transition hover:border-brand-300"
                   >
-                    {lead.ownerName.charAt(0).toUpperCase()}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-600">
-                      Primary decision maker
+                    <span
+                      className="btn-on-brand flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-base font-bold text-[var(--btn-on-brand)] shadow-sm"
+                      style={{ background: LOGO_GRADIENT }}
+                    >
+                      {lead.ownerName.charAt(0).toUpperCase()}
                     </span>
-                    <span className="mt-0.5 block truncate text-base font-semibold text-ink">
-                      {lead.ownerName}
-                    </span>
-                    <span className="block text-[12px] text-ink-muted">
-                      {lead.ownerTitle || "Owner / leadership"}
-                      {lead.ownerConfidence
-                        ? ` · ${lead.ownerConfidence}% confidence`
-                        : ""}
-                    </span>
-                    {lead.ownerSourceUrl && (
-                      <span className="mt-1 block text-[11px] font-medium text-brand-600">
-                        Open public source ↗
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-600">
+                        Primary decision maker
                       </span>
-                    )}
-                  </span>
-                </a>
-              )}
+                      <span className="mt-0.5 block truncate text-base font-semibold text-ink">
+                        {lead.ownerName}
+                      </span>
+                      <span className="block text-[12px] text-ink-muted">
+                        {lead.ownerTitle || "Owner / leadership"}
+                        {lead.ownerConfidence
+                          ? ` · ${lead.ownerConfidence}% confidence`
+                          : ""}
+                      </span>
+                      {ownerUrl && (
+                        <span className="mt-1 block text-[11px] font-medium text-brand-600">
+                          Open public source ↗
+                        </span>
+                      )}
+                    </span>
+                  </a>
+                );
+              })()}
 
               {additionalTeamMembers.length > 0 ? (
                 <div>
@@ -1351,30 +1422,39 @@ export function LeadDetailView({
                     Team members
                   </p>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    {additionalTeamMembers.map((member) => (
-                      <a
-                        key={`${member.name}-${member.role}`}
-                        href={member.sourceUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-start gap-3 rounded-xl border border-border bg-[#faf8fc] px-3.5 py-3 transition hover:border-brand-200"
-                      >
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--surface)] text-brand-600 shadow-sm">
-                          <HiOutlineUser className="h-4 w-4" />
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block truncate text-sm font-semibold text-ink">
-                            {member.name}
+                    {additionalTeamMembers.map((member) => {
+                      const memberUrl = buildSourceUrl(
+                        member.sourceUrl,
+                        member.name,
+                        lead.website,
+                      );
+                      return (
+                        <a
+                          key={`${member.name}-${member.role}`}
+                          href={memberUrl ?? undefined}
+                          target={memberUrl ? "_blank" : undefined}
+                          rel={memberUrl ? "noopener noreferrer" : undefined}
+                          className="flex items-start gap-3 rounded-xl border border-border bg-[#faf8fc] px-3.5 py-3 transition hover:border-brand-200"
+                        >
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--surface)] text-brand-600 shadow-sm">
+                            <HiOutlineUser className="h-4 w-4" />
                           </span>
-                          <span className="block truncate text-[12px] text-ink-muted">
-                            {member.role} · {member.confidence}% confidence
+                          <span className="min-w-0">
+                            <span className="block truncate text-sm font-semibold text-ink">
+                              {member.name}
+                            </span>
+                            <span className="block truncate text-[12px] text-ink-muted">
+                              {member.role} · {member.confidence}% confidence
+                            </span>
+                            {memberUrl && (
+                              <span className="text-[11px] font-medium text-brand-600">
+                                Public website source ↗
+                              </span>
+                            )}
                           </span>
-                          <span className="text-[11px] font-medium text-brand-600">
-                            Public website source ↗
-                          </span>
-                        </span>
-                      </a>
-                    ))}
+                        </a>
+                      );
+                    })}
                   </div>
                 </div>
               ) : !lead.ownerName ? (
