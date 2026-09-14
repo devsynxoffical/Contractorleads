@@ -283,10 +283,19 @@ export async function POST(request: Request) {
             },
           );
 
+          const withEmail = finalLeads.filter((l) => Boolean(l.email)).length;
+          const withPhone = finalLeads.filter((l) => Boolean(l.phone)).length;
+          const withOwner = finalLeads.filter((l) => Boolean(l.ownerName)).length;
+
           await sendEvent("done", {
             message: `Discovered & enriched ${finalLeads.length} contacts for ${industry}`,
             leads: finalLeads,
-            stats: result.stats,
+            stats: {
+              total: finalLeads.length,
+              withEmail,
+              withPhone,
+              withOwner,
+            },
           });
         } catch (err) {
           const message =
@@ -332,6 +341,10 @@ export async function POST(request: Request) {
       select: contactSelect,
     });
 
+    const withEmail = leads.filter((l) => Boolean(l.email)).length;
+    const withPhone = leads.filter((l) => Boolean(l.phone)).length;
+    const withOwner = leads.filter((l) => Boolean(l.ownerName)).length;
+
     await logActivity(
       user.id,
       "bulk_finder",
@@ -343,7 +356,12 @@ export async function POST(request: Request) {
       ok: true,
       message: `Discovered & enriched ${leads.length} contacts`,
       leads,
-      stats: result.stats,
+      stats: {
+        total: leads.length,
+        withEmail,
+        withPhone,
+        withOwner,
+      },
     });
   } catch (error) {
     console.error("[bulk-finder error]", error);
