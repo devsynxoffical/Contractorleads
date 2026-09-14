@@ -102,6 +102,8 @@ export async function enrichLeadSocial(lead: LeadRecord) {
     linkedin.owner.confidence >= 90 ? linkedin.owner.url : null;
   const primaryLinkedIn = companyLinkedIn ?? ownerLinkedIn;
 
+  const websiteOwnerName = websitePeople.owner?.name ?? null;
+
   const validLeadOwner =
     lead.ownerName && plausiblePersonName(lead.ownerName, lead.businessName)
       ? lead.ownerName
