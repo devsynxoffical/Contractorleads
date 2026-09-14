@@ -37,6 +37,7 @@ import {
   HiOutlineXMark,
   HiOutlineLockClosed,
   HiOutlineShieldCheck,
+  HiOutlineEnvelope,
 } from "react-icons/hi2";
 import { FaFacebook } from "react-icons/fa";
 import { cn, formatCredits } from "@/lib/utils";

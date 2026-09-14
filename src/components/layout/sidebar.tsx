@@ -23,6 +23,7 @@ import {
   HiOutlineViewColumns,
   HiOutlineWrenchScrewdriver,
   HiOutlineShieldCheck,
+  HiOutlineEnvelope,
 } from "react-icons/hi2";
 import { cn, formatCredits } from "@/lib/utils";
 import type { SessionUser } from "@/lib/session-user";
