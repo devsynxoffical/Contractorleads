@@ -38,6 +38,9 @@ type LeadRecord = {
   id: string;
   businessName: string;
   ownerName: string | null;
+  ownerTitle?: string | null;
+  ownerSourceUrl?: string | null;
+  ownerConfidence?: number | null;
   email: string | null;
   website: string | null;
   industry: string | null;
