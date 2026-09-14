@@ -2,33 +2,11 @@ import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendBulkLeadEmail } from "@/lib/lead-email";
-import { hasMessagingAddon } from "@/lib/messaging-addon";
 import { listSmtpAccounts, migrateLegacySmtpIfNeeded } from "@/lib/user-smtp";
-
-/** Confirm the user has the Messaging add-on (or is staff). */
-async function requireMessagingAddon(userId: string) {
-  const u = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { role: true, messagingAddonStatus: true, messagingAddonManual: true },
-  });
-  return u ? hasMessagingAddon(u) : false;
-}
 
 export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  if (!(await requireMessagingAddon(user.id))) {
-    return NextResponse.json(
-      {
-        error:
-          "Bulk email requires the Messaging add-on ($15.50/mo). Add it on the Billing page.",
-        locked: true,
-        addon: "messaging",
-      },
-      { status: 403 },
-    );
-  }
 
   const body = await request.json().catch(() => ({}));
   const leadIds = (Array.isArray(body.leadIds)

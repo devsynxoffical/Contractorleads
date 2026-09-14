@@ -10,6 +10,7 @@ import {
   HiOutlinePaperAirplane,
   HiOutlineQueueList,
   HiOutlineUsers,
+  HiOutlineShieldCheck,
 } from "react-icons/hi2";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { MESSAGING_ADDON_PRICE_USD } from "@/lib/messaging-addon";
@@ -64,12 +65,12 @@ export function EmailOverviewPanel({
     },
     {
       n: 3,
-      title: "Bulk email many leads",
-      body: `Select up to 200 saved leads and send one campaign. Requires Messaging add-on ($${MESSAGING_ADDON_PRICE_USD.toFixed(2)}/mo).`,
+      title: "Bulk email many leads (Free for all)",
+      body: "Select up to 200 saved leads and send personalized campaigns directly from your mailbox. 100% free with no add-on needed.",
       tab: "bulk",
-      cta: hasAddon ? "Open bulk send" : "Unlock bulk email",
-      done: hasAddon && smtpReady,
-      warn: !hasAddon,
+      cta: "Open bulk send",
+      done: smtpReady,
+      warn: !smtpReady,
     },
     {
       n: 4,
@@ -107,24 +108,15 @@ export function EmailOverviewPanel({
           }
         />
         <StatusCard
-          label="Bulk & SMS add-on"
-          ok={hasAddon}
-          okText="Active"
-          badText="Not active"
+          label="Bulk Email"
+          ok={true}
+          okText="Free & Unlocked"
+          badText=""
           action={
-            hasAddon ? (
-              <Button size="sm" variant="secondary" onClick={() => onGo("bulk")}>
-                <HiOutlineUsers className="mr-1.5 h-3.5 w-3.5" />
-                Bulk send
-              </Button>
-            ) : (
-              <Link
-                href="/billing"
-                className={buttonVariants({ variant: "default", size: "sm" })}
-              >
-                Unlock · ${MESSAGING_ADDON_PRICE_USD.toFixed(2)}/mo
-              </Link>
-            )
+            <Button size="sm" variant="secondary" onClick={() => onGo("bulk")}>
+              <HiOutlineUsers className="mr-1.5 h-3.5 w-3.5" />
+              Bulk send
+            </Button>
           }
         />
         <StatusCard
@@ -208,13 +200,7 @@ export function EmailOverviewPanel({
                   size="sm"
                   variant={s.warn ? "default" : "secondary"}
                   className="shrink-0"
-                  onClick={() => {
-                    if (s.tab === "bulk" && !hasAddon) {
-                      window.location.href = "/billing";
-                      return;
-                    }
-                    onGo(s.tab!);
-                  }}
+                  onClick={() => onGo(s.tab!)}
                 >
                   {s.cta}
                 </Button>
@@ -234,7 +220,13 @@ export function EmailOverviewPanel({
         </ol>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <QuickLink
+          icon={HiOutlineShieldCheck}
+          title="Email Verifier"
+          body="Check deliverability & MX records."
+          href="/email-verifier"
+        />
         <QuickLink
           icon={HiOutlineEnvelope}
           title="Saved leads"

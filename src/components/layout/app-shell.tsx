@@ -36,6 +36,7 @@ import {
   HiOutlineWrenchScrewdriver,
   HiOutlineXMark,
   HiOutlineLockClosed,
+  HiOutlineShieldCheck,
 } from "react-icons/hi2";
 import { FaFacebook } from "react-icons/fa";
 import { cn, formatCredits } from "@/lib/utils";
@@ -88,6 +89,11 @@ function buildSections(user: SessionUser): NavSection[] {
     {
       title: "AI Assistant",
       items: [
+        {
+          href: "/email-verifier",
+          label: "Email Verifier",
+          icon: HiOutlineShieldCheck,
+        },
         {
           href: "/ask-expert",
           label: "Ask Contractor Leads",

@@ -82,14 +82,14 @@ function FilterSelect({
 export function SavedLeadsManager({
   leads,
   categories,
-  hasAddon,
-  addonPriceUsd,
+  hasAddon = true,
+  addonPriceUsd = 0,
   mailboxes,
 }: {
   leads: SavedLeadRow[];
   categories: string[];
-  hasAddon: boolean;
-  addonPriceUsd: number;
+  hasAddon?: boolean;
+  addonPriceUsd?: number;
   mailboxes: Mailbox[];
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -361,28 +361,18 @@ export function SavedLeadsManager({
                   ? "Select all with email (filtered)"
                   : "Select all with email"}
             </label>
-            {hasAddon ? (
-              <Button
-                size="sm"
-                disabled={selectedCount === 0}
-                onClick={() => {
-                  setResults(null);
-                  setError(null);
-                  setComposeOpen(true);
-                }}
-              >
-                <HiOutlineEnvelope className="h-4 w-4" />
-                Email {selectedCount || ""} lead{selectedCount === 1 ? "" : "s"}
-              </Button>
-            ) : (
-              <Link
-                href="/billing?addon=messaging"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-brand-200 bg-brand-50 px-3 py-1.5 text-[13px] font-semibold text-brand-700 hover:bg-brand-100"
-              >
-                <HiOutlineLockClosed className="h-4 w-4" />
-                Unlock bulk email · ${addonPriceUsd.toFixed(2)}/mo
-              </Link>
-            )}
+            <Button
+              size="sm"
+              disabled={selectedCount === 0}
+              onClick={() => {
+                setResults(null);
+                setError(null);
+                setComposeOpen(true);
+              }}
+            >
+              <HiOutlineEnvelope className="h-4 w-4" />
+              Email {selectedCount || ""} lead{selectedCount === 1 ? "" : "s"} (Free)
+            </Button>
           </div>
         </div>
       ) : null}

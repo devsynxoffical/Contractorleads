@@ -22,6 +22,7 @@ import {
   HiOutlineUserPlus,
   HiOutlineViewColumns,
   HiOutlineWrenchScrewdriver,
+  HiOutlineShieldCheck,
 } from "react-icons/hi2";
 import { cn, formatCredits } from "@/lib/utils";
 import type { SessionUser } from "@/lib/session-user";
@@ -52,8 +53,10 @@ const sections: NavSection[] = [
     ],
   },
   {
-    title: "AI Assistant",
+    title: "AI & Outreach Tools",
     items: [
+      { href: "/email-verifier", label: "Email Verifier", icon: HiOutlineShieldCheck },
+      { href: "/inbox", label: "Email & Sequences", icon: HiOutlineBookOpen },
       { href: "/ask-expert", label: "Ask Contractor Leads", icon: HiOutlineChatBubbleLeftRight },
       { href: "/scripts", label: "My Scripts", icon: HiOutlineBookOpen },
     ],

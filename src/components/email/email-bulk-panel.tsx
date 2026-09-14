@@ -37,11 +37,11 @@ type BulkResult = {
 };
 
 export function EmailBulkPanel({
-  hasAddon,
+  hasAddon = true,
   smtpReady,
   onNeedSetup,
 }: {
-  hasAddon: boolean;
+  hasAddon?: boolean;
   smtpReady: boolean;
   onNeedSetup: () => void;
 }) {
@@ -111,7 +111,6 @@ export function EmailBulkPanel({
   }
 
   async function send() {
-    if (!hasAddon) return;
     setBusy(true);
     setError(null);
     setResults(null);
@@ -140,37 +139,6 @@ export function EmailBulkPanel({
     } finally {
       setBusy(false);
     }
-  }
-
-  if (!hasAddon) {
-    return (
-      <div className="rounded-2xl border border-amber-200 bg-amber-50/70 px-5 py-10 text-center">
-        <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--surface)] text-amber-800 ring-1 ring-amber-200">
-          <HiOutlineLockClosed className="h-5 w-5" />
-        </span>
-        <h3 className="mt-3 text-[16px] font-semibold text-ink">
-          Bulk email needs the Messaging add-on
-        </h3>
-        <p className="mx-auto mt-1.5 max-w-md text-[13px] text-ink-muted">
-          Send one campaign to up to 200 saved leads at once. Single-lead
-          compose stays free with a connected mailbox.
-        </p>
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-          <Link
-            href="/billing"
-            className={buttonVariants({ variant: "default" })}
-          >
-            Unlock bulk email · ${MESSAGING_ADDON_PRICE_USD.toFixed(2)}/mo
-          </Link>
-          <Link
-            href="/leads/saved"
-            className={buttonVariants({ variant: "secondary" })}
-          >
-            Browse saved leads
-          </Link>
-        </div>
-      </div>
-    );
   }
 
   if (!smtpReady) {
