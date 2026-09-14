@@ -89,17 +89,17 @@ function buildSections(user: SessionUser): NavSection[] {
       ],
     },
     {
-      title: "AI & Outreach Tools",
+      title: "AI Assistant",
       items: [
-        {
-          href: "/leads/bulk-finder",
-          label: "Bulk Email Finder",
-          icon: HiOutlineEnvelope,
-        },
         {
           href: "/email-verifier",
           label: "Email Verifier",
           icon: HiOutlineShieldCheck,
+        },
+        {
+          href: "/inbox",
+          label: "Email & Sequences",
+          icon: HiOutlineInbox,
         },
         {
           href: "/ask-expert",
@@ -186,6 +186,8 @@ const LEAD_SECTION_ROUTES = new Set([
   "saved",
   "pipeline",
   "map",
+  "bulk-finder",
+  "industries",
 ]);
 
 function isLeadDetailPath(pathname: string) {

@@ -57,7 +57,6 @@ const sections: NavSection[] = [
   {
     title: "AI & Outreach Tools",
     items: [
-      { href: "/leads/bulk-finder", label: "Bulk Email Finder", icon: HiOutlineEnvelope },
       { href: "/email-verifier", label: "Email Verifier", icon: HiOutlineShieldCheck },
       { href: "/inbox", label: "Email & Sequences", icon: HiOutlineBookOpen },
       { href: "/ask-expert", label: "Ask Contractor Leads", icon: HiOutlineChatBubbleLeftRight },

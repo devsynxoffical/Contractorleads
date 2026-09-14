@@ -453,39 +453,6 @@ export function BulkEmailFinderView() {
 
   return (
     <div className="space-y-6">
-      {/* Top Banner */}
-      <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-r from-brand-900/10 via-[var(--surface)] to-brand-900/5 p-6 shadow-sm">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-brand-500/10 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-brand-700 dark:text-brand-300">
-              <HiOutlineSparkles className="h-3.5 w-3.5" /> 100% Free & Unlimited
-            </div>
-            <h2 className="text-xl font-bold tracking-tight text-ink sm:text-2xl">
-              Bulk Email & Decision-Maker Finder
-            </h2>
-            <p className="max-w-2xl text-[13.5px] leading-relaxed text-ink-muted">
-              Discover decision-maker verified emails, business owner names, direct phone numbers, and social profiles for any contractor or local business niche across the US, UK, Canada, and Australia.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href="/email-verifier"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-[var(--surface)] px-3.5 py-2 text-[13px] font-semibold text-ink shadow-sm transition hover:bg-[var(--input-bg)]"
-            >
-              <HiOutlineShieldCheck className="h-4 w-4 text-brand-600" />
-              Email Verifier
-            </Link>
-            <Link
-              href="/inbox?tab=bulk"
-              className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2 text-[13px] font-semibold text-white shadow-sm transition hover:bg-brand-700"
-            >
-              <HiOutlineEnvelope className="h-4 w-4" />
-              Send Bulk Campaign
-            </Link>
-          </div>
-        </div>
-      </div>
-
       {/* Mode Switcher & Search Config Card */}
       <Card className="border-border bg-[var(--surface)] shadow-[var(--shadow-card)]">
         <CardContent className="p-6 space-y-6">
