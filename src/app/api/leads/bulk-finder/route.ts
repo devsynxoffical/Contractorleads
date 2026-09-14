@@ -259,7 +259,8 @@ export async function POST(request: Request) {
                 lead,
                 current: progress.current,
                 target: progress.target,
-                status: progress.status,
+                placeName: progress.placeName,
+                scanned: progress.scanned,
               });
             },
           });
