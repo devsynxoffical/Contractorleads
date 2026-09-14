@@ -90,6 +90,11 @@ function buildSections(user: SessionUser): NavSection[] {
       title: "AI Assistant",
       items: [
         {
+          href: "/email-finder",
+          label: "Email Finder",
+          icon: HiOutlineMagnifyingGlass,
+        },
+        {
           href: "/email-verifier",
           label: "Email Verifier",
           icon: HiOutlineShieldCheck,
