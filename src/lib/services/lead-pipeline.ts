@@ -43,6 +43,8 @@ export type SearchParams = {
   targetLeadCount?: number;
   /** Fast contacts mode: extracts core business, owner, phone, email, location without slow external social scrapers */
   fastContactsOnly?: boolean;
+  /** When true, continues scanning until targetLeadCount of leads WITH EMAILS are discovered */
+  requireEmail?: boolean;
   /** Optional callback fired incrementally as each lead is enriched & persisted */
   onLeadDiscovered?: (
     lead: Awaited<ReturnType<typeof prisma.lead.create>>,
@@ -143,15 +145,18 @@ function clampTarget(n: number | undefined) {
 
 export async function runLeadPipeline(params: SearchParams) {
   // No hard LinkedIn/social filter — every qualified lead is kept. Leads with
-  // LinkedIn + social are simply ranked first in the returned list.
+  // LinkedIn + social leads ranked first in the returned list.
   const targetCount = clampTarget(params.targetLeadCount);
   const isCountryWide = params.locationScope === "country";
   const fastContacts = Boolean(params.fastContactsOnly);
+  const requireEmail = Boolean(params.requireEmail || params.fastContactsOnly);
 
-  // Allow up to 1000 places so requests for 400-500 leads are satisfied
-  const fetchLimit = isCountryWide
-    ? Math.min(1000, Math.max(targetCount * 2, targetCount + 60))
-    : Math.min(1000, Math.max(targetCount * 2, targetCount + 30));
+  // In requireEmail mode (Bulk Email Finder), fetch up to 4x targetCount places so we guarantee finding requested verified emails
+  const fetchLimit = requireEmail
+    ? Math.min(1000, Math.max(targetCount * 4, 150))
+    : isCountryWide
+      ? Math.min(1000, Math.max(targetCount * 2, targetCount + 60))
+      : Math.min(1000, Math.max(targetCount * 2, targetCount + 30));
 
   const preferRules = true; // keep volume searches fast
   // Higher concurrency — fast contacts mode is lightweight, full mode is I/O bound
@@ -190,27 +195,37 @@ export async function runLeadPipeline(params: SearchParams) {
   let scanned = 0;
   let totalPlacesFetched = 0;
 
+  const getProgressCount = () => {
+    return requireEmail
+      ? leads.filter((l) => Boolean(l.email)).length
+      : leads.length;
+  };
+
+  const isSatisfied = () => {
+    return getProgressCount() >= targetCount;
+  };
+
   // Real-time progressive enrichment pool: processes places as they arrive from queries
   const pendingEnrichments: Promise<void>[] = [];
   const activeEnriching = new Set<Promise<void>>();
 
   async function enqueuePlaces(incoming: PlaceResult[]) {
     totalPlacesFetched += incoming.length;
-    // Prefer businesses with websites
+    // Prefer businesses with websites first as they have highest email probability
     const sorted = [
       ...incoming.filter((p) => p.website),
       ...incoming.filter((p) => !p.website),
     ];
 
     for (const place of sorted) {
-      if (leads.length >= targetCount) break;
+      if (isSatisfied()) break;
 
       // Throttle concurrent enrichment tasks to configured concurrency
-      while (activeEnriching.size >= placeConcurrency && leads.length < targetCount) {
+      while (activeEnriching.size >= placeConcurrency && !isSatisfied()) {
         await Promise.race(Array.from(activeEnriching));
       }
 
-      if (leads.length >= targetCount) break;
+      if (isSatisfied()) break;
 
       scanned += 1;
       const taskPromise = (async () => {
@@ -225,14 +240,18 @@ export async function runLeadPipeline(params: SearchParams) {
           });
 
           if (lead === "skipped-score") return;
-          if (leads.length >= targetCount) return;
+          if (requireEmail && !lead.email) {
+            // Saved to DB for general pool, but not added to required email results
+            return;
+          }
+          if (isSatisfied()) return;
 
           leads.push(lead);
 
           if (params.onLeadDiscovered) {
             try {
               await params.onLeadDiscovered(lead, {
-                current: leads.length,
+                current: getProgressCount(),
                 target: targetCount,
                 placeName: place.name,
                 scanned,
@@ -267,7 +286,7 @@ export async function runLeadPipeline(params: SearchParams) {
     onPlacesBatch: async (batch) => {
       await enqueuePlaces(batch);
     },
-    shouldStop: () => leads.length >= targetCount,
+    shouldStop: () => isSatisfied(),
   });
 
   // If any places were returned synchronously/fallback without batch callback
@@ -279,7 +298,11 @@ export async function runLeadPipeline(params: SearchParams) {
   await Promise.all(pendingEnrichments);
 
   // LinkedIn + social leads first, then the rest — each group by score.
-  const finalLeads = leads.slice(0, targetCount).sort((a, b) => {
+  const candidateLeads = requireEmail
+    ? leads.filter((l) => Boolean(l.email))
+    : leads;
+
+  const finalLeads = candidateLeads.slice(0, targetCount).sort((a, b) => {
     const aRank = leadHasLinkedInAndSocial(a) ? 0 : 1;
     const bRank = leadHasLinkedInAndSocial(b) ? 0 : 1;
     if (aRank !== bRank) return aRank - bRank;

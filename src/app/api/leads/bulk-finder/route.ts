@@ -254,6 +254,7 @@ export async function POST(request: Request) {
             radius,
             targetLeadCount,
             fastContactsOnly: true,
+            requireEmail: true,
             onLeadDiscovered: async (lead, progress) => {
               await sendEvent("lead", {
                 lead,
@@ -333,6 +334,7 @@ export async function POST(request: Request) {
       radius,
       targetLeadCount,
       fastContactsOnly: true,
+      requireEmail: true,
     });
 
     const leads = await prisma.lead.findMany({
