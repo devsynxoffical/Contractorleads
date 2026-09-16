@@ -192,9 +192,9 @@ export async function runLeadPipeline(params: SearchParams) {
   const fastContacts = Boolean(params.fastContactsOnly);
   const requireEmail = Boolean(params.requireEmail || params.fastContactsOnly);
 
-  // In requireEmail mode (Bulk Email Finder), fetch up to 4x targetCount places so we guarantee finding requested verified emails
+  // In requireEmail mode (Bulk Email Finder), fetch ample places so we guarantee finding 100% of requested verified emails
   const fetchLimit = requireEmail
-    ? Math.min(1000, Math.max(targetCount * 4, 150))
+    ? Math.min(1500, Math.max(targetCount * 10, 300))
     : isCountryWide
       ? Math.min(1000, Math.max(targetCount * 2, targetCount + 60))
       : Math.min(1000, Math.max(targetCount * 2, targetCount + 30));

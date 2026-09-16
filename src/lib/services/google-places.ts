@@ -728,29 +728,35 @@ export async function searchGooglePlaces(params: {
 
   const pool = buildPlacesQueries(params);
   const isCountryWide = params.locationScope === "country";
-  const queryBudget = isCountryWide
-    ? wanted <= 25
-      ? 1
-      : wanted <= 60
-        ? 2
-        : wanted <= 120
-          ? 4
-          : wanted <= 250
-            ? 6
-            : wanted <= 500
-              ? 10
-              : 14
-    : wanted <= 25
-      ? 1
-      : wanted <= 60
-        ? 2
-        : wanted <= 120
-          ? 3
-          : wanted <= 250
-            ? 5
-            : wanted <= 500
-              ? 8
-              : 12;
+  const hasCustomStopper = typeof params.shouldStop === "function";
+
+  const queryBudget = hasCustomStopper
+    ? isCountryWide
+      ? 24
+      : 12
+    : isCountryWide
+      ? wanted <= 25
+        ? 1
+        : wanted <= 60
+          ? 2
+          : wanted <= 120
+            ? 4
+            : wanted <= 250
+              ? 6
+              : wanted <= 500
+                ? 10
+                : 14
+      : wanted <= 25
+        ? 1
+        : wanted <= 60
+          ? 2
+          : wanted <= 120
+            ? 3
+            : wanted <= 250
+              ? 5
+              : wanted <= 500
+                ? 8
+                : 12;
   const selectedQueries = selectQueries(pool, queryBudget);
   if (!selectedQueries.length) {
     logGooglePlacesError("scraper", `No search queries built for "${params.industry}"`);
@@ -772,7 +778,8 @@ export async function searchGooglePlaces(params: {
       });
       const newBatch: PlaceResult[] = [];
       for (const p of apiPlaces) {
-        if (deduped.size >= wanted) break;
+        if (!hasCustomStopper && deduped.size >= wanted) break;
+        if (params.shouldStop?.()) break;
         const key = p.placeId || p.name;
         if (!deduped.has(key)) {
           deduped.set(key, p);
@@ -798,18 +805,21 @@ export async function searchGooglePlaces(params: {
   // Fill whatever the Places API couldn't return with the Maps scraper.
   // Each query batch immediately streams places into the pipeline so leads appear live in seconds.
   const need = wanted - deduped.size;
-  if (need > 0 && !params.shouldStop?.()) {
+  if ((need > 0 || hasCustomStopper) && !params.shouldStop?.()) {
     const perQueryLimit = Math.min(
       100,
       Math.max(40, Math.ceil(need / Math.min(selectedQueries.length, 4)) + 15),
     );
 
     const failures: string[] = [];
+    const maxHardPlacesLimit = 1500;
 
     // Run scraper queries concurrently to discover places fast,
     // and emit results incrementally as each query returns.
     await mapPool(selectedQueries, 4, async (q) => {
-      if (deduped.size >= wanted || params.shouldStop?.()) return;
+      if (params.shouldStop?.()) return;
+      if (!hasCustomStopper && deduped.size >= wanted) return;
+      if (deduped.size >= maxHardPlacesLimit) return;
 
       try {
         const rows = await runScraper({
@@ -820,7 +830,9 @@ export async function searchGooglePlaces(params: {
 
         const newBatch: PlaceResult[] = [];
         for (const row of rows) {
-          if (deduped.size >= wanted || params.shouldStop?.()) break;
+          if (params.shouldStop?.()) break;
+          if (!hasCustomStopper && deduped.size >= wanted) break;
+          if (deduped.size >= maxHardPlacesLimit) break;
           const name = row.name?.trim();
           if (!name) continue;
           const mapsUrl = row.google_maps_url?.trim() || "";
