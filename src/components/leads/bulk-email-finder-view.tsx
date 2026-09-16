@@ -137,6 +137,27 @@ export function BulkEmailFinderView() {
     }
   }, []);
 
+  const loadDatabaseLeads = useCallback(async (nicheName: string) => {
+    if (!nicheName.trim()) return;
+    setLoadingPool(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams({
+        industry: nicheName,
+        take: "500",
+      });
+      const res = await fetch(`/api/leads/bulk-finder?${params}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to load contacts");
+      setLeads(data.leads ?? []);
+      setSelectedIds(new Set());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load database contacts");
+    } finally {
+      setLoadingPool(false);
+    }
+  }, []);
+
   useEffect(() => {
     let mounted = true;
     fetch("/api/leads/bulk-finder")
@@ -153,36 +174,10 @@ export function BulkEmailFinderView() {
   }, []);
 
   useEffect(() => {
-    if (mode !== "database" || !activeIndustry) return;
-    let mounted = true;
-    queueMicrotask(() => {
-      if (mounted) {
-        setLoadingPool(true);
-        setError(null);
-      }
-    });
-    const params = new URLSearchParams({ industry: activeIndustry, take: "500" });
-    fetch(`/api/leads/bulk-finder?${params}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (mounted) {
-          if (data.error) setError(data.error);
-          else {
-            setLeads(data.leads ?? []);
-            setSelectedIds(new Set());
-          }
-        }
-      })
-      .catch((e) => {
-        if (mounted) setError(e instanceof Error ? e.message : "Failed to load database contacts");
-      })
-      .finally(() => {
-        if (mounted) setLoadingPool(false);
-      });
-    return () => {
-      mounted = false;
-    };
-  }, [mode, activeIndustry]);
+    if (mode === "database" && activeIndustry) {
+      void loadDatabaseLeads(activeIndustry);
+    }
+  }, [mode, activeIndustry, loadDatabaseLeads]);
 
   // Run live contact finder/scraper
   async function runFinder() {
@@ -244,15 +239,20 @@ export function BulkEmailFinderView() {
             if (!dataMatch) continue;
 
             const eventType = eventMatch ? eventMatch[1] : "message";
-            let payload: Record<string, unknown> = {};
+            let payload: {
+              lead?: ContactLead;
+              leads?: ContactLead[];
+              message?: string;
+              error?: string;
+            } = {};
             try {
               payload = JSON.parse(dataMatch[1]);
             } catch {
               continue;
             }
 
-            if (eventType === "lead") {
-              const newLead = payload.lead as ContactLead;
+            if (eventType === "lead" && payload.lead) {
+              const newLead = payload.lead;
               setLeads((prev) => {
                 const idx = prev.findIndex((l) => l.id === newLead.id);
                 if (idx >= 0) {
@@ -263,7 +263,7 @@ export function BulkEmailFinderView() {
                 return [newLead, ...prev];
               });
             } else if (eventType === "done") {
-              const fetchedLeads = (payload.leads ?? []) as ContactLead[];
+              const fetchedLeads = payload.leads ?? [];
               setLeads(fetchedLeads);
               setResultMessage(payload.message ?? `Found ${fetchedLeads.length} contacts`);
               void loadNiches();
@@ -395,7 +395,6 @@ export function BulkEmailFinderView() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to save leads");
-      setSavedCount(idsToSave.length);
       triggerCopyFeedback(`Saved ${idsToSave.length} leads to CRM!`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to save leads");
