@@ -163,26 +163,37 @@ export function EmailVerifierView() {
     if (!listToExport.length) return;
 
     const headers = ["Email", "Status", "Score", "Verdict", "Domain", "MX Server", "Is Free", "Is Role", "SMTP Handshake"];
+    
+    const escapeCsv = (val: unknown) => {
+      if (val === null || val === undefined) return '""';
+      const str = String(val).replace(/"/g, '""');
+      return `"${str}"`;
+    };
+
     const rows = listToExport.map((r) => [
-      `"${r.email}"`,
-      `"${r.status}"`,
-      r.score,
-      `"${r.verdict.replace(/"/g, '""')}"`,
-      `"${r.domain}"`,
-      `"${r.mxRecords[0]?.host || "none"}"`,
-      r.checks.isFreeProvider ? "Yes" : "No",
-      r.checks.isRoleBased ? "Yes" : "No",
-      `"${r.checks.smtpCheck}"`,
+      escapeCsv(r.email),
+      escapeCsv(r.status),
+      escapeCsv(r.score),
+      escapeCsv(r.verdict),
+      escapeCsv(r.domain),
+      escapeCsv(r.mxRecords[0]?.host || "none"),
+      escapeCsv(r.checks.isFreeProvider ? "Yes" : "No"),
+      escapeCsv(r.checks.isRoleBased ? "Yes" : "No"),
+      escapeCsv(r.checks.smtpCheck),
     ]);
 
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map((e) => e.join(","))].join("\r\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
+    link.setAttribute("href", url);
     link.setAttribute("download", `verified_emails_${onlyValid ? "valid_only_" : ""}${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
+    setTimeout(() => {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }, 150);
   }
 
   // Bulk stats calculation

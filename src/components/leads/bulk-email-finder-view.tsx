@@ -105,14 +105,12 @@ export function BulkEmailFinderView() {
 
   // Saving state
   const [savingLeads, setSavingLeads] = useState(false);
-  const [savedCount, setSavedCount] = useState<number | null>(null);
 
   // UI / View State
   const [viewMode, setViewMode] = useState<"table" | "cards">("table");
   const [activeFilter, setActiveFilter] = useState<FilterTab>("all");
   const [tableSearch, setTableSearch] = useState("");
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
-  const [copiedItemId, setCopiedItemId] = useState<string | null>(null);
 
   const countryMeta = getTierOneCountry(country);
   const knownNicheNames = useMemo(() => niches.map((n) => n.name), [niches]);
@@ -139,36 +137,52 @@ export function BulkEmailFinderView() {
     }
   }, []);
 
-  const loadDatabaseLeads = useCallback(async (nicheName: string) => {
-    if (!nicheName.trim()) return;
-    setLoadingPool(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams({
-        industry: nicheName,
-        take: "500",
-      });
-      const res = await fetch(`/api/leads/bulk-finder?${params}`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to load contacts");
-      setLeads(data.leads ?? []);
-      setSelectedIds(new Set());
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load database contacts");
-    } finally {
-      setLoadingPool(false);
-    }
+  useEffect(() => {
+    let mounted = true;
+    fetch("/api/leads/bulk-finder")
+      .then((r) => r.json())
+      .then((data) => {
+        if (mounted && Array.isArray(data?.niches)) {
+          setNiches(data.niches);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   useEffect(() => {
-    void loadNiches();
-  }, [loadNiches]);
-
-  useEffect(() => {
-    if (mode === "database" && activeIndustry) {
-      void loadDatabaseLeads(activeIndustry);
-    }
-  }, [mode, activeIndustry, loadDatabaseLeads]);
+    if (mode !== "database" || !activeIndustry) return;
+    let mounted = true;
+    queueMicrotask(() => {
+      if (mounted) {
+        setLoadingPool(true);
+        setError(null);
+      }
+    });
+    const params = new URLSearchParams({ industry: activeIndustry, take: "500" });
+    fetch(`/api/leads/bulk-finder?${params}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (mounted) {
+          if (data.error) setError(data.error);
+          else {
+            setLeads(data.leads ?? []);
+            setSelectedIds(new Set());
+          }
+        }
+      })
+      .catch((e) => {
+        if (mounted) setError(e instanceof Error ? e.message : "Failed to load database contacts");
+      })
+      .finally(() => {
+        if (mounted) setLoadingPool(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [mode, activeIndustry]);
 
   // Run live contact finder/scraper
   async function runFinder() {
@@ -230,7 +244,7 @@ export function BulkEmailFinderView() {
             if (!dataMatch) continue;
 
             const eventType = eventMatch ? eventMatch[1] : "message";
-            let payload: any;
+            let payload: Record<string, unknown> = {};
             try {
               payload = JSON.parse(dataMatch[1]);
             } catch {
@@ -396,7 +410,10 @@ export function BulkEmailFinderView() {
       ? leads.filter((l) => selectedIds.has(l.id))
       : filteredLeads;
 
-    if (!target.length) return;
+    if (!target.length) {
+      triggerCopyFeedback("No contacts to export");
+      return;
+    }
 
     const headers = [
       "Business Name",
@@ -413,42 +430,56 @@ export function BulkEmailFinderView() {
       "Industry",
       "Lead Score",
       "Google Rating",
+      "Review Count",
       "LinkedIn",
       "Facebook",
+      "Instagram",
     ];
 
+    const escapeCsv = (val: unknown) => {
+      if (val === null || val === undefined) return '""';
+      const str = String(val).replace(/"/g, '""');
+      return `"${str}"`;
+    };
+
     const rows = target.map((l) => [
-      `"${(l.businessName || "").replace(/"/g, '""')}"`,
-      `"${(l.ownerName || "").replace(/"/g, '""')}"`,
-      `"${(l.ownerTitle || "").replace(/"/g, '""')}"`,
-      `"${l.email || ""}"`,
-      `"${l.phone || ""}"`,
-      `"${l.website || ""}"`,
-      `"${(l.address || "").replace(/"/g, '""')}"`,
-      `"${l.city || ""}"`,
-      `"${l.state || ""}"`,
-      `"${l.zip || ""}"`,
-      `"${l.country || ""}"`,
-      `"${l.industry || ""}"`,
-      l.leadScore ?? "",
-      l.googleRating ?? "",
-      `"${l.linkedinUrl || l.linkedinOwnerUrl || ""}"`,
-      `"${l.facebook || ""}"`,
+      escapeCsv(l.businessName),
+      escapeCsv(l.ownerName),
+      escapeCsv(l.ownerTitle),
+      escapeCsv(l.email),
+      escapeCsv(l.phone),
+      escapeCsv(l.website),
+      escapeCsv(l.address),
+      escapeCsv(l.city),
+      escapeCsv(l.state),
+      escapeCsv(l.zip),
+      escapeCsv(l.country),
+      escapeCsv(l.industry),
+      escapeCsv(l.leadScore ?? ""),
+      escapeCsv(l.googleRating ?? ""),
+      escapeCsv(l.reviewCount ?? ""),
+      escapeCsv(l.linkedinOwnerUrl || l.linkedinUrl || l.linkedinCompanyUrl || ""),
+      escapeCsv(l.facebook || ""),
+      escapeCsv(l.instagram || ""),
     ]);
 
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map((e) => e.join(","))].join("\r\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
+    link.setAttribute("href", url);
+    const cleanNiche = (activeIndustry || "leads").toLowerCase().replace(/[^a-z0-9_-]+/g, "_");
     link.setAttribute(
       "download",
-      `bulk_contacts_${activeIndustry || "leads"}_${new Date().toISOString().slice(0, 10)}.csv`,
+      `bulk_contacts_${cleanNiche}_${new Date().toISOString().slice(0, 10)}.csv`,
     );
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
+    setTimeout(() => {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }, 150);
+    triggerCopyFeedback(`Exported ${target.length} contacts to CSV`);
   }
 
   return (

@@ -1,6 +1,6 @@
 import * as cheerio from "cheerio";
 import { safeFetch } from "@/lib/safe-fetch";
-import { plausiblePersonName, NOT_A_PERSON_NAME } from "./owner-discovery";
+import { plausiblePersonName } from "./owner-discovery";
 
 export type PublicTeamMember = {
   name: string;
@@ -417,16 +417,20 @@ function extractFromHtml(html: string, sourceUrl: string) {
   const members: PersonCandidate[] = [];
   const emails = new Set<string>();
 
-  // Direct clean mailto attributes
-  $('a[href^="mailto:"]').each((_, element) => {
-    const raw = $(element)
-      .attr("href")
-      ?.replace(/^mailto:/i, "")
-      .split("?")[0]
-      ?.split(",")[0]
-      ?.trim();
-    if (raw && isPlausibleEmail(raw)) {
-      emails.add(raw.toLowerCase());
+  // Direct and encoded mailto attributes
+  $('a[href*="mailto:"], a[href*="mailto%3A"]').each((_, element) => {
+    let raw = $(element).attr("href") || "";
+    try {
+      raw = decodeURIComponent(raw);
+    } catch {
+      /* ignore */
+    }
+    const match = raw.match(/mailto:\s*([^\s?"'&<>]+)/i);
+    if (match && match[1]) {
+      const cleaned = match[1].replace(/[<>]/g, "").trim().toLowerCase();
+      if (isPlausibleEmail(cleaned)) {
+        emails.add(cleaned);
+      }
     }
   });
 
@@ -437,6 +441,20 @@ function extractFromHtml(html: string, sourceUrl: string) {
       $(element).text()?.trim();
     if (raw && isPlausibleEmail(raw)) {
       emails.add(raw.toLowerCase());
+    }
+  });
+
+  // Meta tags with email or description containing email
+  $("meta[property='og:email'], meta[name='email'], meta[itemprop='email']").each((_, element) => {
+    const raw = $(element).attr("content")?.trim();
+    if (raw && isPlausibleEmail(raw)) {
+      emails.add(raw.toLowerCase());
+    }
+  });
+  $("meta[name='description'], meta[property='og:description']").each((_, element) => {
+    const raw = $(element).attr("content") || "";
+    for (const match of deobfuscate(raw).matchAll(EMAIL_RE)) {
+      if (isPlausibleEmail(match[0])) emails.add(match[0].toLowerCase());
     }
   });
 
@@ -573,6 +591,8 @@ function extractFromHtml(html: string, sourceUrl: string) {
   return {
     members,
     emails: [...emails],
+    contactLinks: [...new Set(contactLinks)],
+    peopleLinks: [...new Set(peopleLinks)],
     links: [...new Set([...contactLinks, ...peopleLinks])],
   };
 }
@@ -586,7 +606,7 @@ async function fetchHtml(
     const response = await safeFetch(
       url,
       {
-        headers: { "User-Agent": USER_AGENT, Accept: "text/html" },
+        headers: { "User-Agent": USER_AGENT, Accept: "text/html,application/xhtml+xml" },
         timeoutMs,
       },
       { allowHttp: true },
@@ -599,6 +619,28 @@ async function fetchHtml(
     }
     return await response.text();
   } catch {
+    // If HTTPS fails, try HTTP fallback for local contractor sites with SSL issues
+    if (url.startsWith("https://")) {
+      try {
+        const httpUrl = url.replace(/^https:\/\//i, "http://");
+        const fallbackRes = await safeFetch(
+          httpUrl,
+          {
+            headers: { "User-Agent": USER_AGENT, Accept: "text/html,application/xhtml+xml" },
+            timeoutMs: Math.min(timeoutMs, 3500),
+          },
+          { allowHttp: true },
+        );
+        if (
+          fallbackRes.ok &&
+          fallbackRes.headers.get("content-type")?.includes("text/html")
+        ) {
+          return await fallbackRes.text();
+        }
+      } catch {
+        /* ignore */
+      }
+    }
     return null;
   }
 }
@@ -633,13 +675,24 @@ export async function extractWebsitePeople(
   }
 
   const home = extractFromHtml(homeHtml, homepage);
-  const follow = [
-    ...home.links,
-    ...(home.links.some((l) => CONTACT_PATH.test(l))
-      ? []
-      : contactFallbacks(homepage)),
+  
+  // Build a prioritized list of subpages ensuring both contact and about/team pages are included
+  const fallbackUrls = contactFallbacks(homepage);
+  const contactFallbacksList = fallbackUrls.filter((u) => CONTACT_PATH.test(u));
+  const teamFallbacksList = fallbackUrls.filter((u) => !CONTACT_PATH.test(u));
+
+  const prioritizedFollow: string[] = [
+    ...(home.contactLinks.length ? home.contactLinks : contactFallbacksList.slice(0, 3)),
+    ...(home.peopleLinks.length ? home.peopleLinks : teamFallbacksList.slice(0, 3)),
   ];
-  const pages = [homepage, ...[...new Set(follow)].slice(0, 5)];
+
+  const uniquePages = [
+    homepage,
+    ...[...new Set(prioritizedFollow)].filter(
+      (u) => u.replace(/\/$/, "") !== homepage.replace(/\/$/, ""),
+    ),
+  ].slice(0, 6);
+
   const members = [...home.members];
   const allEmails = new Set<string>(home.emails);
   const emailSourceMap = new Map<string, string>();
@@ -647,14 +700,11 @@ export async function extractWebsitePeople(
 
   const followBudget = remaining();
   const extraPages =
-    followBudget < 1_200
+    followBudget < 800
       ? []
       : await Promise.all(
-          pages.slice(1).map(async (url) => {
-            if (url.replace(/\/$/, "") === homepage.replace(/\/$/, "")) {
-              return null;
-            }
-            const html = await fetchHtml(url, Math.min(5_000, followBudget));
+          uniquePages.slice(1).map(async (url) => {
+            const html = await fetchHtml(url, Math.min(4_500, followBudget));
             return html ? { url, parsed: extractFromHtml(html, url) } : null;
           }),
         );
@@ -687,7 +737,7 @@ export async function extractWebsitePeople(
     team: members.slice(0, 10).map(stripSource),
     email: bestEmail,
     emailSourceUrl,
-    pagesChecked: pages,
+    pagesChecked: uniquePages,
   };
 }
 

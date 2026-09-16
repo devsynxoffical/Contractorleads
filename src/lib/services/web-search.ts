@@ -1,3 +1,4 @@
+import * as cheerio from "cheerio";
 import { resolvePlatformKey } from "@/lib/platform-keys";
 import { matchesBusinessName } from "./linkedin";
 
@@ -86,10 +87,11 @@ function pushUnique(
   seen: Set<string>,
   url: string,
   limit: number,
+  title = "",
+  snippet = "",
 ) {
   if (out.length >= limit) return;
   let cleaned = url.replace(/&amp;/g, "&").split("#")[0];
-  // Brave sometimes wraps URLs
   const m = cleaned.match(
     /https?:\/\/(?:www\.)?(?:linkedin|facebook|instagram|fb|yelp|houzz|nextdoor)\.[^"'\s<>]*/i,
   );
@@ -99,10 +101,14 @@ function pushUnique(
   const key = cleaned.split("?")[0].toLowerCase();
   if (seen.has(key)) return;
   seen.add(key);
-  out.push({ title: "", url: cleaned, snippet: "" });
+  out.push({
+    title: title.replace(/\s+/g, " ").trim(),
+    url: cleaned,
+    snippet: snippet.replace(/\s+/g, " ").trim(),
+  });
 }
 
-/** Free: Brave Search HTML — most reliable no-key option right now. */
+/** Free: Brave Search HTML — with full title & snippet parsing. */
 async function searchBrave(
   query: string,
   limit: number,
@@ -123,21 +129,25 @@ async function searchBrave(
     const seen = new Set<string>();
     const out: WebSearchResult[] = [];
 
-    // Prefer result anchors
-    for (const m of html.matchAll(
-      /(?:cite|result-header|snippet)[^>]*>[\s\S]{0,200}?https?:\/\/(?:www\.)?(?:linkedin|facebook|fb|instagram|yelp|houzz|nextdoor)\.[^"'<\s]*/gi,
-    )) {
-      const found = m[0].match(
-        /https?:\/\/(?:www\.)?(?:linkedin|facebook|fb|instagram|yelp|houzz|nextdoor)\.[^"'<\s]*/i,
-      );
-      if (found) pushUnique(out, seen, found[0], limit);
-    }
+    const $ = cheerio.load(html);
+    $(".snippet[data-type='web'], .snippet, .result, .svelte-1vjtx7a").each((_, el) => {
+      if (out.length >= limit) return;
+      const titleEl = $(el).find(".title, .heading-serpresult, h4, h3, .url").first();
+      const title = titleEl.text().trim();
+      const href = titleEl.attr("href") || $(el).find("a[href]").first().attr("href");
+      const snippet = $(el).find(".snippet-content, .snippet-description, .description, p").first().text().trim();
+      if (href && /^https?:\/\//i.test(href) && !isJunkUrl(href)) {
+        pushUnique(out, seen, href, limit, title, snippet);
+      }
+    });
 
-    // Broad extract of social URLs from the page
-    for (const m of html.matchAll(
-      /https?:\/\/(?:[a-z0-9-]+\.)?(?:linkedin|facebook|fb|instagram|yelp|houzz|nextdoor)\.(?:com|co\.uk|ca|com\.au)\/[a-zA-Z0-9._~:/?#[\]@!$&'()*+,;=%-]+/gi,
-    )) {
-      pushUnique(out, seen, m[0], limit);
+    // Fallback link extraction
+    if (out.length === 0) {
+      for (const m of html.matchAll(
+        /https?:\/\/(?:[a-z0-9-]+\.)?(?:linkedin|facebook|fb|instagram|yelp|houzz|nextdoor)\.(?:com|co\.uk|ca|com\.au)\/[a-zA-Z0-9._~:/?#[\]@!$&'()*+,;=%-]+/gi,
+      )) {
+        pushUnique(out, seen, m[0], limit);
+      }
     }
 
     return out;
@@ -146,7 +156,7 @@ async function searchBrave(
   }
 }
 
-/** Free: DuckDuckGo HTML (often bot-challenged under load). */
+/** Free: DuckDuckGo HTML — with full title & snippet parsing. */
 async function searchDuckDuckGo(
   query: string,
   limit: number,
@@ -162,7 +172,6 @@ async function searchDuckDuckGo(
       signal: AbortSignal.timeout(7_000),
       redirect: "follow",
     });
-    // 202 = challenge page
     if (!response.ok || response.status === 202) return [];
     const html = await response.text();
     if (/anomaly|challenge|bots/i.test(html) && !/result__a/i.test(html)) {
@@ -171,12 +180,19 @@ async function searchDuckDuckGo(
     const seen = new Set<string>();
     const out: WebSearchResult[] = [];
 
-    for (const m of html.matchAll(
-      /class="result__a"[^>]*href="([^"]+)"/gi,
-    )) {
-      const decoded = decodeDuckRedirect(m[1]);
-      if (decoded) pushUnique(out, seen, decoded, limit);
-    }
+    const $ = cheerio.load(html);
+    $(".result, .results_links, .result__body").each((_, el) => {
+      if (out.length >= limit) return;
+      const a = $(el).find(".result__a");
+      const title = a.text().trim();
+      const href = a.attr("href");
+      const snippet = $(el).find(".result__snippet").text().trim();
+      const decoded = href ? decodeDuckRedirect(href) : null;
+      if (decoded && !isJunkUrl(decoded)) {
+        pushUnique(out, seen, decoded, limit, title, snippet);
+      }
+    });
+
     if (out.length < limit) {
       for (const m of html.matchAll(/[?&]uddg=([^&"]+)/gi)) {
         try {

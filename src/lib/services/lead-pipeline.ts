@@ -17,7 +17,6 @@ import { auditWebsite, emptyWebsiteAudit } from "./website-audit";
 import { matchYelpBusiness } from "./yelp";
 import { matchHouzzBusiness } from "./houzz";
 import { matchNextdoorBusiness } from "./nextdoor";
-import { mapPool } from "@/lib/utils/async-pool";
 import type { PlaceResult } from "./google-places";
 import { findExistingLead } from "./lead-identity";
 import { plausiblePersonName } from "./owner-discovery";
@@ -339,13 +338,12 @@ async function enrichAndPersistPlace(opts: {
   });
 
   if (fastContacts) {
-    // Ultra-fast direct contact mode: Extracts owner/team and public email from website in <2.5s
-    // Skips slow external social network and directory crawlers
+    // High-performance contact mode: Extracts owner/team and email from website + web search fallback
     let websitePeople = EMPTY_PEOPLE;
     if (website) {
       websitePeople = await withTimeout(
-        extractWebsitePeople(website, { budgetMs: 2500 }),
-        3000,
+        extractWebsitePeople(website, { budgetMs: 6500 }),
+        7500,
         EMPTY_PEOPLE,
       );
     }
@@ -372,27 +370,63 @@ async function enrichAndPersistPlace(opts: {
         ? websitePeople.owner.name
         : null;
 
-    const ownerNameFinal = ownerCandidate ?? existingOwner;
+    // Search web fallback if website did not yield an owner
+    let searchOwnerCandidate: string | null = null;
+    let searchOwnerRole: string | null = null;
+    let searchOwnerSourceUrl: string | null = null;
+    let searchOwnerConfidence = 85;
+    let searchOwnerLinkedIn: string | null = null;
+
+    if (!ownerCandidate && !existingOwner) {
+      const { discoverOwnerFromSearch, EMPTY_OWNER_DISCOVERY } = await import(
+        "./owner-discovery"
+      );
+      const ownerFromSearch = await withTimeout(
+        discoverOwnerFromSearch(place.name, location),
+        3500,
+        EMPTY_OWNER_DISCOVERY,
+      );
+      if (
+        ownerFromSearch.ownerName &&
+        plausiblePersonName(ownerFromSearch.ownerName, place.name)
+      ) {
+        searchOwnerCandidate = ownerFromSearch.ownerName;
+        searchOwnerRole = ownerFromSearch.ownerRole;
+        searchOwnerSourceUrl = ownerFromSearch.sourceUrl;
+        searchOwnerConfidence = ownerFromSearch.confidence || 85;
+        searchOwnerLinkedIn = ownerFromSearch.ownerLinkedInUrl;
+      }
+    }
+
+    const ownerNameFinal =
+      ownerCandidate ?? searchOwnerCandidate ?? existingOwner;
     const ownerTitle = ownerCandidate
       ? websitePeople.owner?.role ?? null
-      : existingOwner
-        ? existingLead?.ownerTitle ?? null
-        : null;
+      : searchOwnerCandidate
+        ? searchOwnerRole ?? null
+        : existingOwner
+          ? existingLead?.ownerTitle ?? null
+          : null;
     const ownerSourceUrl = ownerCandidate
       ? websitePeople.owner?.sourceUrl ?? null
-      : existingOwner
-        ? existingLead?.ownerSourceUrl ?? existingLead?.linkedinOwnerUrl ?? null
-        : null;
+      : searchOwnerCandidate
+        ? searchOwnerSourceUrl ?? null
+        : existingOwner
+          ? existingLead?.ownerSourceUrl ?? existingLead?.linkedinOwnerUrl ?? null
+          : null;
     const ownerConfidence = ownerCandidate
       ? websitePeople.owner?.confidence ?? 90
-      : existingOwner
-        ? existingLead?.ownerConfidence ?? null
-        : null;
+      : searchOwnerCandidate
+        ? searchOwnerConfidence
+        : existingOwner
+          ? existingLead?.ownerConfidence ?? null
+          : null;
 
     const emailCandidates = [websitePeople.email, existingLead?.email].filter(
       (e): e is string => Boolean(e),
     );
-    const emailFinal =
+
+    let emailFinal =
       pickBestEmail(
         emailCandidates,
         ownerNameFinal,
@@ -401,6 +435,35 @@ async function enrichAndPersistPlace(opts: {
       websitePeople.email ??
       existingLead?.email ??
       null;
+
+    // If still no email, search public snippets for contact email
+    if (!emailFinal && place.name) {
+      try {
+        const { searchPublicWeb } = await import("./web-search");
+        const emailHits = await withTimeout(
+          searchPublicWeb(`"${place.name}" ${location} email OR contact`, 4),
+          3000,
+          [],
+        );
+        const snippetEmails = new Set<string>();
+        for (const hit of emailHits) {
+          const text = `${hit.title} ${hit.snippet}`;
+          for (const match of text.matchAll(
+            /\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,24}\b/g,
+          )) {
+            snippetEmails.add(match[0]);
+          }
+        }
+        emailFinal = pickBestEmail(
+          snippetEmails,
+          ownerNameFinal,
+          website || existingLead?.website,
+        );
+      } catch {
+        /* ignore */
+      }
+    }
+
     const emailSourceUrlFinal =
       emailFinal === websitePeople.email
         ? websitePeople.emailSourceUrl ?? existingLead?.emailSourceUrl
@@ -410,7 +473,7 @@ async function enrichAndPersistPlace(opts: {
       hasWebsite: Boolean(website || existingLead?.website),
       hasEmail: Boolean(emailFinal),
       hasOwner: Boolean(ownerNameFinal),
-      hasLinkedIn: Boolean(existingLead?.linkedinUrl),
+      hasLinkedIn: Boolean(searchOwnerLinkedIn || existingLead?.linkedinUrl || existingLead?.linkedinOwnerUrl),
       hasSocial: Boolean(existingLead?.facebook || existingLead?.instagram),
       hasPhone: Boolean(place.phone ?? existingLead?.phone),
     });
@@ -450,10 +513,10 @@ async function enrichAndPersistPlace(opts: {
       nextdoor: existingLead?.nextdoor,
       linkedinUrl: existingLead?.linkedinUrl,
       linkedinCompanyUrl: existingLead?.linkedinCompanyUrl,
-      linkedinOwnerUrl: existingLead?.linkedinOwnerUrl,
+      linkedinOwnerUrl: searchOwnerLinkedIn ?? existingLead?.linkedinOwnerUrl,
       linkedinConfidenceScore: existingLead?.linkedinConfidenceScore,
-      linkedinOwnerConfidenceScore: existingLead?.linkedinOwnerConfidenceScore,
-      linkedinType: existingLead?.linkedinType ?? "none",
+      linkedinOwnerConfidenceScore: searchOwnerLinkedIn ? 90 : existingLead?.linkedinOwnerConfidenceScore,
+      linkedinType: searchOwnerLinkedIn ? "profile" : (existingLead?.linkedinType ?? "none"),
       leadScore: scored.leadScore,
       serviceCategory: qualification.serviceCategory,
       revenueRangeEstimate: qualification.revenueRangeEstimate || null,

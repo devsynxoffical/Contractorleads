@@ -18,7 +18,7 @@ export const EMPTY_OWNER_DISCOVERY: OwnerDiscoveryResult = {
 };
 
 const ROLE_SRC =
-  "[Oo]wner|[Cc]o-?[Oo]wner|[Ff]ounder|[Cc]o-?[Ff]ounder|[Pp]resident|[Pp]rincipal|[Pp]roprietor|[Cc][Ee][Oo]|[Mm]anaging\\s+[Dd]irector";
+  "[Oo]wner|[Cc]o-?[Oo]wner|[Ff]ounder|[Cc]o-?[Ff]ounder|[Pp]resident|[Pp]rincipal|[Pp]roprietor|[Cc][Ee][Oo]|[Mm]anaging\\s+[Dd]irector|[Gg]eneral\\s+[Mm]anager|[Oo]perator|[Pp]artner";
 
 const NAME_WORD = "[A-ZÀ-ÖØ][a-zÀ-öø-ÿ'’-]{1,24}";
 // Real personal names are 2 or 3 words (First + Last, or First + Middle + Last)
@@ -107,27 +107,34 @@ export function plausiblePersonName(
   value: string,
   businessName?: string,
 ): boolean {
-  const name = clean(value)
+  const raw = clean(value)
     .replace(/\b(Jr|Sr|II|III|IV|MD|PhD|Ph\.D\.|Esq|Esq\.|CPA)\.?\b/gi, "")
     .replace(/[()[\]{}"'’]/g, "")
     .trim();
-  if (!name || name.length < 4 || name.length > 45) return false;
+  if (!raw || raw.length < 4 || raw.length > 45) return false;
 
-  const words = name.split(/\s+/);
+  const rawWords = raw.split(/\s+/);
   // Real personal names are between 2 and 4 words (e.g. John Smith, Robert De La Cruz)
-  if (words.length < 2 || words.length > 4) return false;
+  if (rawWords.length < 2 || rawWords.length > 4) return false;
+
+  const words = rawWords.map((w) =>
+    /^(de|la|van|der|von|del|da|dos|du)$/i.test(w)
+      ? w.toLowerCase()
+      : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(),
+  );
+  const normalizedName = words.join(" ");
 
   // Regex check against non-person vocabulary
-  if (NOT_A_PERSON_NAME.test(name)) return false;
+  if (NOT_A_PERSON_NAME.test(normalizedName)) return false;
 
   // Check every individual word
   for (const word of words) {
     const lower = word.toLowerCase();
     if (NON_PERSON_WORD_SET.has(lower)) return false;
     // Word must be capitalized letters or standard surname particles (de, la, van, der, von)
-    const isCapitalWord = /^[A-ZÀ-ÖØ][A-Za-zÀ-ÖØ-öø-ÿ'’-]{1,19}$/.test(word);
+    const isLetterWord = /^[A-ZÀ-ÖØ][a-zÀ-öø-ÿ'’-]{1,19}$/.test(word);
     const isParticleWord = /^(de|la|van|der|von|del|da|dos|du)$/i.test(word);
-    if (!isCapitalWord && !isParticleWord) {
+    if (!isLetterWord && !isParticleWord) {
       return false;
     }
   }
