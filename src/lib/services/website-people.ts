@@ -599,7 +599,7 @@ function extractFromHtml(html: string, sourceUrl: string) {
 
 async function fetchHtml(
   url: string,
-  timeoutMs = 6_000,
+  timeoutMs = 3_000,
 ): Promise<string | null> {
   if (timeoutMs <= 0) return null;
   try {
@@ -627,7 +627,7 @@ async function fetchHtml(
           httpUrl,
           {
             headers: { "User-Agent": USER_AGENT, Accept: "text/html,application/xhtml+xml" },
-            timeoutMs: Math.min(timeoutMs, 3500),
+            timeoutMs: Math.min(timeoutMs, 2000),
           },
           { allowHttp: true },
         );
@@ -658,12 +658,12 @@ export async function extractWebsitePeople(
   website: string,
   options: { budgetMs?: number } = {},
 ): Promise<WebsitePeopleResult> {
-  const budgetMs = options.budgetMs ?? 8_000;
+  const budgetMs = options.budgetMs ?? 4_500;
   const startedAt = Date.now();
   const remaining = () => budgetMs - (Date.now() - startedAt);
 
   const homepage = website.startsWith("http") ? website : `https://${website}`;
-  const homeHtml = await fetchHtml(homepage, Math.min(5_000, remaining()));
+  const homeHtml = await fetchHtml(homepage, Math.min(3_000, remaining()));
   if (!homeHtml) {
     return {
       owner: null,
@@ -691,7 +691,7 @@ export async function extractWebsitePeople(
     ...[...new Set(prioritizedFollow)].filter(
       (u) => u.replace(/\/$/, "") !== homepage.replace(/\/$/, ""),
     ),
-  ].slice(0, 6);
+  ].slice(0, 5);
 
   const members = [...home.members];
   const allEmails = new Set<string>(home.emails);
@@ -700,11 +700,11 @@ export async function extractWebsitePeople(
 
   const followBudget = remaining();
   const extraPages =
-    followBudget < 800
+    followBudget < 600
       ? []
       : await Promise.all(
           uniquePages.slice(1).map(async (url) => {
-            const html = await fetchHtml(url, Math.min(4_500, followBudget));
+            const html = await fetchHtml(url, Math.min(2_500, followBudget));
             return html ? { url, parsed: extractFromHtml(html, url) } : null;
           }),
         );

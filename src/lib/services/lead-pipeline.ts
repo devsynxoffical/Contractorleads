@@ -203,15 +203,15 @@ export async function runLeadPipeline(params: SearchParams) {
   // Higher concurrency — fast contacts mode is lightweight, full mode is I/O bound
   const placeConcurrency = fastContacts
     ? targetCount >= 200
-      ? 28
-      : 18
+      ? 48
+      : 36
     : targetCount >= 250
-      ? 22
+      ? 28
       : targetCount >= 100
-        ? 16
+        ? 20
         : targetCount >= 50
-          ? 12
-          : 8;
+          ? 16
+          : 12;
 
   const location =
     params.customLocation?.trim() ||

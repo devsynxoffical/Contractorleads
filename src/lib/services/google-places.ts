@@ -806,9 +806,9 @@ export async function searchGooglePlaces(params: {
 
     const failures: string[] = [];
 
-    // Run scraper queries with max 2 concurrent browsers to prevent bot flags,
-    // but emit and dedup results incrementally as each query returns.
-    await mapPool(selectedQueries, 2, async (q) => {
+    // Run scraper queries concurrently to discover places fast,
+    // and emit results incrementally as each query returns.
+    await mapPool(selectedQueries, 4, async (q) => {
       if (deduped.size >= wanted || params.shouldStop?.()) return;
 
       try {
