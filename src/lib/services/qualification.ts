@@ -98,6 +98,76 @@ export function finalizeLeadScore(
   return { leadScore: score, qualityTier: tierFromScore(score) };
 }
 
+export type SoloContractorSignals = {
+  reviewCount?: number | null;
+  rating?: number | null;
+  website?: string | null;
+  yelpPriceTier?: string | null;
+  yelpReviews?: number | null;
+  nextdoorRecommendations?: number | null;
+  isUnclaimed?: boolean;
+  hasSingleLocation?: boolean;
+  samePhoneNoSecretary?: boolean;
+  hasLocalDemand?: boolean;
+};
+
+/**
+ * Specialized Scoring for Solo or small owner-operated trade businesses:
+ * - 30%: No website OR free-tier website builder (Wix/GoDaddy/business.site) / Unclaimed profile
+ * - 25%: Review count in 5–40 target band across Google + Yelp
+ * - 20%: Single location & same personal phone (no secretary/PBX system)
+ * - 15%: Yelp "$" budget price tier
+ * - 10%: Active local trade demand signal
+ */
+export function scoreSoloContractor(signals: SoloContractorSignals): number {
+  let score = 0;
+
+  // 1. No-website / Free-tier website builder / Unclaimed profile (30%)
+  const isFreeTierBuilder =
+    !signals.website ||
+    /(\.wixsite\.com|\.squarespace\.com|\.godaddysites\.com|\.weebly\.com|\.business\.site|wix\.com|weebly\.com)/i.test(
+      signals.website || "",
+    );
+  if (!signals.website || isFreeTierBuilder || signals.isUnclaimed) {
+    score += 30;
+  } else {
+    score += 10;
+  }
+
+  // 2. Review count in target band 5–40 across GMB / Yelp (25%)
+  const totalReviews = (signals.reviewCount ?? 0) + (signals.yelpReviews ?? 0);
+  if (totalReviews >= 5 && totalReviews <= 40) {
+    score += 25;
+  } else if (totalReviews < 5) {
+    score += 15;
+  } else if (totalReviews <= 75) {
+    score += 10;
+  } else {
+    score += 5;
+  }
+
+  // 3. Single location & same-phone no-secretary check (20%)
+  if (signals.samePhoneNoSecretary ?? true) {
+    score += 20;
+  } else {
+    score += 10;
+  }
+
+  // 4. Yelp "$" budget/solo price tier (15%)
+  if (signals.yelpPriceTier === "$" || !signals.yelpPriceTier) {
+    score += 15;
+  } else if (signals.yelpPriceTier === "$$") {
+    score += 8;
+  }
+
+  // 5. Active local demand signal (10%)
+  if (signals.hasLocalDemand ?? true) {
+    score += 10;
+  }
+
+  return Math.min(100, Math.max(1, score));
+}
+
 /** Reconstruct Places-style base (≤70) from stored Google fields. */
 export function baseScoreFromStoredSignals(lead: {
   googleRating?: number | null;

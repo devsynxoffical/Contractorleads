@@ -36,6 +36,13 @@ const contactSelect = {
   instagram: true,
   youtube: true,
   tiktok: true,
+  yelpUrl: true,
+  yelpRating: true,
+  yelpReviews: true,
+  nextdoor: true,
+  houzzUrl: true,
+  houzzRating: true,
+  houzzReviews: true,
   createdAt: true,
 } as const;
 

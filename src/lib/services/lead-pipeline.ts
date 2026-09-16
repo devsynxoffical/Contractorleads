@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { searchGooglePlaces } from "./google-places";
 import { findLinkedInCompanyUrl } from "./linkedin";
-import { finalizeLeadScore, qualifyLead } from "./qualification";
+import { finalizeLeadScore, qualifyLead, scoreSoloContractor } from "./qualification";
 import {
   extractWebsitePeople,
   type WebsitePeopleResult,
@@ -14,9 +14,9 @@ import {
   EMPTY_WEBSITE_SOCIAL_PACK,
 } from "./website-social-pack";
 import { auditWebsite, emptyWebsiteAudit } from "./website-audit";
-import { matchYelpBusiness } from "./yelp";
-import { matchHouzzBusiness } from "./houzz";
-import { matchNextdoorBusiness } from "./nextdoor";
+import { matchYelpBusiness, searchYelpDirect, type DirectListingResult } from "./yelp";
+import { matchHouzzBusiness, searchHouzzDirect } from "./houzz";
+import { matchNextdoorBusiness, searchNextdoorDirect } from "./nextdoor";
 import type { PlaceResult } from "./google-places";
 import { findExistingLead } from "./lead-identity";
 import { plausiblePersonName } from "./owner-discovery";
@@ -318,6 +318,64 @@ export async function runLeadPipeline(params: SearchParams) {
     }
   }
 
+  function directListingToPlace(item: DirectListingResult): PlaceResult {
+    return {
+      placeId: `${item.source}:${item.url || item.name}-${item.phone || item.address || ""}`,
+      name: item.name,
+      address: item.address || "",
+      phone: item.phone,
+      website: item.website,
+      rating: item.rating,
+      reviewCount: item.reviewCount,
+      mapsUrl: item.url,
+    };
+  }
+
+  const isSoloTarget = params.companySize === "micro" || params.companySize === "small";
+
+  // Direct Multi-Source Discovery: Concurrently scrape Yelp, Nextdoor, and Houzz alongside Google Places
+  const multiSourceDiscovery = (async () => {
+    try {
+      const [yelpListings, nextdoorListings, houzzListings] = await Promise.allSettled([
+        searchYelpDirect({
+          industry: params.industry,
+          location,
+          limit: Math.min(targetCount, 30),
+          targetSolo: isSoloTarget,
+        }),
+        searchNextdoorDirect({
+          industry: params.industry,
+          location,
+          limit: Math.min(targetCount, 25),
+          targetSolo: isSoloTarget,
+        }),
+        searchHouzzDirect({
+          industry: params.industry,
+          location,
+          limit: Math.min(targetCount, 25),
+          targetSolo: isSoloTarget,
+        }),
+      ]);
+
+      const additionalPlaces: PlaceResult[] = [];
+      if (yelpListings.status === "fulfilled" && yelpListings.value.length > 0) {
+        additionalPlaces.push(...yelpListings.value.map(directListingToPlace));
+      }
+      if (nextdoorListings.status === "fulfilled" && nextdoorListings.value.length > 0) {
+        additionalPlaces.push(...nextdoorListings.value.map(directListingToPlace));
+      }
+      if (houzzListings.status === "fulfilled" && houzzListings.value.length > 0) {
+        additionalPlaces.push(...houzzListings.value.map(directListingToPlace));
+      }
+
+      if (additionalPlaces.length > 0 && !isSatisfied()) {
+        await enqueuePlaces(additionalPlaces);
+      }
+    } catch {
+      /* ignore background direct source errors */
+    }
+  })();
+
   const places = await searchGooglePlaces({
     industry: params.industry,
     country: params.country,
@@ -339,8 +397,8 @@ export async function runLeadPipeline(params: SearchParams) {
     await enqueuePlaces(places);
   }
 
-  // Wait for all in-flight enrichment tasks to complete
-  await Promise.all(pendingEnrichments);
+  // Wait for all in-flight direct sources and enrichment tasks to complete
+  await Promise.allSettled([multiSourceDiscovery, ...pendingEnrichments]);
 
   // LinkedIn + social leads first, then the rest — each group by score.
   const candidateLeads = requireEmail
@@ -546,7 +604,25 @@ async function enrichAndPersistPlace(opts: {
       hasPhone: Boolean(place.phone ?? existingLead?.phone),
     });
 
-    if (scored.leadScore < 20) return "skipped-score";
+    let finalLeadScore = scored.leadScore;
+    let finalQualityTier = scored.qualityTier;
+
+    if (params.companySize === "micro" || params.companySize === "small") {
+      const soloScore = scoreSoloContractor({
+        reviewCount: place.reviewCount ?? existingLead?.reviewCount,
+        rating: place.rating ?? existingLead?.googleRating,
+        website: website || existingLead?.website,
+        isUnclaimed: true,
+        hasSingleLocation: true,
+        samePhoneNoSecretary: Boolean(place.phone || existingLead?.phone),
+        hasLocalDemand: true,
+      });
+      // Blend 60% solo contractor signals + 40% contact completeness
+      finalLeadScore = Math.round(soloScore * 0.6 + scored.leadScore * 0.4);
+      finalQualityTier = finalLeadScore >= 75 ? "hot" : finalLeadScore >= 50 ? "warm" : "nurture";
+    }
+
+    if (finalLeadScore < 20) return "skipped-score";
 
     const sharedData = {
       searchId,
@@ -585,7 +661,7 @@ async function enrichAndPersistPlace(opts: {
       linkedinConfidenceScore: existingLead?.linkedinConfidenceScore,
       linkedinOwnerConfidenceScore: searchOwnerLinkedIn ? 90 : existingLead?.linkedinOwnerConfidenceScore,
       linkedinType: searchOwnerLinkedIn ? "profile" : (existingLead?.linkedinType ?? "none"),
-      leadScore: scored.leadScore,
+      leadScore: finalLeadScore,
       serviceCategory: qualification.serviceCategory,
       revenueRangeEstimate: qualification.revenueRangeEstimate || null,
       websiteQualityScore: qualification.websiteQualityScore,
@@ -593,7 +669,7 @@ async function enrichAndPersistPlace(opts: {
       ppcOpportunityScore: qualification.ppcOpportunityScore,
       seoOpportunityScore: qualification.seoOpportunityScore,
       outreachAngle: qualification.outreachAngle,
-      qualityTier: scored.qualityTier,
+      qualityTier: finalQualityTier,
       peopleEnrichedAt:
         ownerNameFinal || emailFinal
           ? new Date()

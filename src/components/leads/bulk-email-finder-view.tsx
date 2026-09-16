@@ -69,6 +69,13 @@ type ContactLead = {
   instagram?: string | null;
   youtube?: string | null;
   tiktok?: string | null;
+  yelpUrl?: string | null;
+  yelpRating?: number | null;
+  yelpReviews?: number | null;
+  nextdoor?: string | null;
+  houzzUrl?: string | null;
+  houzzRating?: number | null;
+  houzzReviews?: number | null;
   leadScore?: number | null;
   qualityTier?: string | null;
   createdAt?: string;
@@ -437,6 +444,11 @@ export function BulkEmailFinderView() {
       "LinkedIn",
       "Facebook",
       "Instagram",
+      "Yelp URL",
+      "Yelp Reviews",
+      "Nextdoor",
+      "Houzz URL",
+      "Houzz Reviews",
     ];
 
     const escapeCsv = (val: unknown) => {
@@ -464,6 +476,11 @@ export function BulkEmailFinderView() {
       escapeCsv(l.linkedinOwnerUrl || l.linkedinUrl || l.linkedinCompanyUrl || ""),
       escapeCsv(l.facebook || ""),
       escapeCsv(l.instagram || ""),
+      escapeCsv(l.yelpUrl || ""),
+      escapeCsv(l.yelpReviews ?? ""),
+      escapeCsv(l.nextdoor || ""),
+      escapeCsv(l.houzzUrl || ""),
+      escapeCsv(l.houzzReviews ?? ""),
     ]);
 
     const csvContent = "\uFEFF" + [headers.join(","), ...rows.map((e) => e.join(","))].join("\r\n");
@@ -1063,7 +1080,40 @@ export function BulkEmailFinderView() {
                                   <FaInstagram className="h-4 w-4" />
                                 </a>
                               ) : null}
-                              {!l.linkedinUrl && !l.facebook && !l.instagram && (
+                              {l.yelpUrl ? (
+                                <a
+                                  href={l.yelpUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-[#d32323] hover:opacity-80 font-bold text-[11px] px-1 rounded bg-red-50"
+                                  title="Yelp Profile"
+                                >
+                                  Yelp
+                                </a>
+                              ) : null}
+                              {l.nextdoor ? (
+                                <a
+                                  href={l.nextdoor}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-[#00b246] hover:opacity-80 font-bold text-[11px] px-1 rounded bg-emerald-50"
+                                  title="Nextdoor Page"
+                                >
+                                  Nextdoor
+                                </a>
+                              ) : null}
+                              {l.houzzUrl ? (
+                                <a
+                                  href={l.houzzUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-[#4dbc15] hover:opacity-80 font-bold text-[11px] px-1 rounded bg-lime-50"
+                                  title="Houzz Pro"
+                                >
+                                  Houzz
+                                </a>
+                              ) : null}
+                              {!l.linkedinUrl && !l.facebook && !l.instagram && !l.yelpUrl && !l.nextdoor && !l.houzzUrl && (
                                 <span className="text-ink-faint text-xs">—</span>
                               )}
                             </div>

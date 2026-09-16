@@ -3,6 +3,7 @@
  */
 import { searchPublicWeb } from "./web-search";
 import { matchesBusinessName } from "./linkedin";
+import type { DirectListingResult } from "./yelp";
 
 export type NextdoorMatch = {
   url: string;
@@ -72,4 +73,55 @@ export async function matchNextdoorBusiness(
   } catch {
     return null;
   }
+}
+
+export async function searchNextdoorDirect(params: {
+  industry: string;
+  location: string;
+  limit?: number;
+  targetSolo?: boolean;
+}): Promise<DirectListingResult[]> {
+  const limit = Math.min(params.limit ?? 25, 50);
+  const results: DirectListingResult[] = [];
+
+  try {
+    const query = `site:nextdoor.com/pages "${params.industry}" "${params.location}" "recommendations"`;
+    const hits = await searchPublicWeb(query, limit);
+
+    for (const hit of hits) {
+      if (!hit.url.includes("/pages/")) continue;
+      // e.g. "Bob's Plumbing - Dallas, TX - Nextdoor"
+      const name = hit.title
+        .replace(/\s*-\s*Nextdoor.*$/i, "")
+        .replace(/\s*\|\s*Nextdoor.*$/i, "")
+        .replace(/\s*-\s*[A-Za-z\s]+,\s*[A-Z]{2}\s*$/i, "")
+        .trim();
+      if (!name || name.length < 3) continue;
+
+      let reviewCount: number | undefined;
+      const recMatch = hit.snippet.match(/([0-9]+)\s*recommendations?/i);
+      if (recMatch?.[1]) reviewCount = parseInt(recMatch[1], 10);
+
+      if (params.targetSolo && reviewCount && (reviewCount < 1 || reviewCount > 20)) {
+        // Keep in target 1-15 recommendation band for under-marketed contractors
+        continue;
+      }
+
+      const phoneMatch = hit.snippet.match(/(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/);
+      const phone = phoneMatch ? phoneMatch[0].trim() : undefined;
+
+      results.push({
+        source: "nextdoor",
+        name,
+        phone,
+        reviewCount,
+        isClaimed: false,
+        url: hit.url.split("?")[0],
+      });
+    }
+  } catch {
+    /* ignore */
+  }
+
+  return results;
 }
