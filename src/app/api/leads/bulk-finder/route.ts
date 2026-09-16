@@ -126,7 +126,10 @@ export async function GET(request: Request) {
     where.ownerName = { not: null };
   }
 
-  if (companySize === "micro") {
+  if (companySize === "solo_target") {
+    where.reviewCount = { gte: 5, lte: 40 };
+    where.googleRating = { gte: 3.8, lte: 4.8 };
+  } else if (companySize === "micro") {
     where.reviewCount = { lte: 25 };
   } else if (companySize === "small") {
     where.reviewCount = { lte: 55 };

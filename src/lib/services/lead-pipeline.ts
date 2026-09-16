@@ -101,6 +101,12 @@ export function matchesCompanySizeCriteria(
   const reviews = place.reviewCount ?? 0;
 
   switch (filter) {
+    case "solo_target":
+      // Solo / Under-marketed owner-operator: 5–40 reviews, 3.8–4.8 rating, non-franchise
+      const meetsReviews = reviews >= 5 && reviews <= 40;
+      const meetsRating =
+        place.rating == null || (place.rating >= 3.8 && place.rating <= 4.8);
+      return meetsReviews && meetsRating;
     case "micro":
       // Solo / Micro contractor: < $300k revenue, <= 25 Google reviews
       return reviews <= 25;
@@ -331,7 +337,10 @@ export async function runLeadPipeline(params: SearchParams) {
     };
   }
 
-  const isSoloTarget = params.companySize === "micro" || params.companySize === "small";
+  const isSoloTarget =
+    params.companySize === "solo_target" ||
+    params.companySize === "micro" ||
+    params.companySize === "small";
 
   // Direct Multi-Source Discovery: Concurrently scrape Yelp, Nextdoor, and Houzz alongside Google Places
   const multiSourceDiscovery = (async () => {
@@ -607,7 +616,11 @@ async function enrichAndPersistPlace(opts: {
     let finalLeadScore = scored.leadScore;
     let finalQualityTier = scored.qualityTier;
 
-    if (params.companySize === "micro" || params.companySize === "small") {
+    if (
+      params.companySize === "solo_target" ||
+      params.companySize === "micro" ||
+      params.companySize === "small"
+    ) {
       const soloScore = scoreSoloContractor({
         reviewCount: place.reviewCount ?? existingLead?.reviewCount,
         rating: place.rating ?? existingLead?.googleRating,

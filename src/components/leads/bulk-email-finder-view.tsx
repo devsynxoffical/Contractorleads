@@ -538,10 +538,12 @@ export function BulkEmailFinderView() {
               </button>
             </div>
 
-            <div className="text-xs text-ink-muted">
-              {mode === "live"
-                ? "Scrapes live Google places, audits company websites & enriches verified contacts"
-                : "Browse and export instant verified contacts already aggregated in your database"}
+            <div className="flex flex-wrap items-center gap-1.5 text-xs text-ink-muted">
+              <span className="font-medium text-ink-faint">Direct Sources:</span>
+              <span className="rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700">Google Places</span>
+              <span className="rounded-md bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-700">Yelp Fusion</span>
+              <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">Nextdoor</span>
+              <span className="rounded-md bg-lime-50 px-2 py-0.5 text-[11px] font-semibold text-lime-800">Houzz Pro</span>
             </div>
           </div>
 
@@ -562,9 +564,9 @@ export function BulkEmailFinderView() {
             {/* Company Size / Revenue Filter */}
             <div className="sm:col-span-2 lg:col-span-1">
               <label className="mb-1 flex items-center justify-between text-xs font-semibold text-ink">
-                <span>Company Size / Revenue</span>
-                {companySize === "micro" || companySize === "small" ? (
-                  <span className="text-[10px] font-bold text-emerald-600">Minimum Rev</span>
+                <span>Target Profile</span>
+                {companySize === "solo_target" || companySize === "micro" || companySize === "small" ? (
+                  <span className="text-[10px] font-bold text-emerald-600">Solo / Under-Marketed</span>
                 ) : null}
               </label>
               <select
@@ -572,7 +574,8 @@ export function BulkEmailFinderView() {
                 onChange={(e) => setCompanySize(e.target.value as CompanySizeFilter)}
                 className="h-10 w-full rounded-xl border border-border bg-[var(--surface)] px-3 text-xs font-medium text-ink focus:border-brand-500 focus:outline-none"
               >
-                <option value="all">All Company Sizes (Default)</option>
+                <option value="solo_target">Solo / Under-Marketed (5-40 reviews, $ Tier, No Secretary)</option>
+                <option value="all">All Company Sizes</option>
                 <option value="micro">Micro / Solo (&lt;$300k, &le;25 reviews)</option>
                 <option value="small">Small Business ($300k–$750k, &le;55 reviews)</option>
                 <option value="small_medium">Small-to-Mid (&lt;$1.5M, &le;85 reviews)</option>

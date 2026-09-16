@@ -10,6 +10,7 @@ export type LocationScope = "local" | "country";
 
 export type CompanySizeFilter =
   | "all"
+  | "solo_target"
   | "micro"
   | "small"
   | "small_medium"
