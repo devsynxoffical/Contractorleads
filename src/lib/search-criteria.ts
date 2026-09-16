@@ -8,6 +8,14 @@ import {
 export const CUSTOM_INDUSTRY_VALUE = "__custom__";
 export type LocationScope = "local" | "country";
 
+export type CompanySizeFilter =
+  | "all"
+  | "micro"
+  | "small"
+  | "small_medium"
+  | "mid"
+  | "large";
+
 export type SearchCriteriaInput = {
   industry?: string;
   customIndustry?: string;
@@ -20,6 +28,7 @@ export type SearchCriteriaInput = {
   radius?: number | string;
   /** Desired number of leads (10–1000). Default 50. */
   targetLeadCount?: number | string;
+  companySize?: CompanySizeFilter;
 };
 
 export type ResolvedSearchCriteria = {
@@ -32,6 +41,7 @@ export type ResolvedSearchCriteria = {
   customLocation?: string;
   radius?: number;
   targetLeadCount: number;
+  companySize?: CompanySizeFilter;
 };
 
 function extractStateFromText(text: string): string | null {
@@ -70,6 +80,8 @@ export function resolveSearchCriteria(
     ? Math.max(1, Math.min(1000, Math.floor(rawTarget)))
     : 50;
 
+  const companySize: CompanySizeFilter = input.companySize || "all";
+
   if (locationScope === "country") {
     return {
       ok: true,
@@ -78,6 +90,7 @@ export function resolveSearchCriteria(
         country,
         locationScope,
         targetLeadCount,
+        companySize,
       },
     };
   }
@@ -106,6 +119,7 @@ export function resolveSearchCriteria(
         customLocation,
         radius,
         targetLeadCount,
+        companySize,
       },
     };
   }
@@ -131,6 +145,7 @@ export function resolveSearchCriteria(
       zip: zip || undefined,
       radius,
       targetLeadCount,
+      companySize,
     },
   };
 }

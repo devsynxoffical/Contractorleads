@@ -15,6 +15,7 @@ import {
   getRegionAnyLabel,
   getRegionsForCountry,
 } from "@/lib/constants";
+import type { CompanySizeFilter } from "@/lib/search-criteria";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -90,6 +91,7 @@ export function BulkEmailFinderView() {
   const [radius, setRadius] = useState(25);
   const [targetCount, setTargetCount] = useState(50);
   const [customCount, setCustomCount] = useState("");
+  const [companySize, setCompanySize] = useState<CompanySizeFilter>("all");
 
   // Mode: "live" (Real-time live finder) or "database" (Database lead pool)
   const [mode, setMode] = useState<"live" | "database">("live");
@@ -137,7 +139,7 @@ export function BulkEmailFinderView() {
     }
   }, []);
 
-  const loadDatabaseLeads = useCallback(async (nicheName: string) => {
+  const loadDatabaseLeads = useCallback(async (nicheName: string, sizeFilter: CompanySizeFilter = companySize) => {
     if (!nicheName.trim()) return;
     setLoadingPool(true);
     setError(null);
@@ -145,6 +147,7 @@ export function BulkEmailFinderView() {
       const params = new URLSearchParams({
         industry: nicheName,
         take: "500",
+        companySize: sizeFilter,
       });
       const res = await fetch(`/api/leads/bulk-finder?${params}`);
       const data = await res.json();
@@ -156,7 +159,7 @@ export function BulkEmailFinderView() {
     } finally {
       setLoadingPool(false);
     }
-  }, []);
+  }, [companySize]);
 
   useEffect(() => {
     let mounted = true;
@@ -175,9 +178,9 @@ export function BulkEmailFinderView() {
 
   useEffect(() => {
     if (mode === "database" && activeIndustry) {
-      void loadDatabaseLeads(activeIndustry);
+      void loadDatabaseLeads(activeIndustry, companySize);
     }
-  }, [mode, activeIndustry, loadDatabaseLeads]);
+  }, [mode, activeIndustry, companySize, loadDatabaseLeads]);
 
   // Run live contact finder/scraper
   async function runFinder() {
@@ -209,6 +212,7 @@ export function BulkEmailFinderView() {
           zip: locationScope === "local" ? zip : undefined,
           radius: locationScope === "local" ? radius : undefined,
           targetLeadCount: resolvedTargetCount,
+          companySize,
           stream: true,
         }),
       });
@@ -525,9 +529,9 @@ export function BulkEmailFinderView() {
           </div>
 
           {/* Form Fields */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             {/* Industry / Niche Field */}
-            <div className="sm:col-span-2">
+            <div className="sm:col-span-2 lg:col-span-2">
               <AdminIndustryField
                 selectValue={industrySelect}
                 customValue={customIndustry}
@@ -536,6 +540,28 @@ export function BulkEmailFinderView() {
                 knownNiches={knownNicheNames}
                 label="Target Service / Niche"
               />
+            </div>
+
+            {/* Company Size / Revenue Filter */}
+            <div className="sm:col-span-2 lg:col-span-1">
+              <label className="mb-1 flex items-center justify-between text-xs font-semibold text-ink">
+                <span>Company Size / Revenue</span>
+                {companySize === "micro" || companySize === "small" ? (
+                  <span className="text-[10px] font-bold text-emerald-600">Minimum Rev</span>
+                ) : null}
+              </label>
+              <select
+                value={companySize}
+                onChange={(e) => setCompanySize(e.target.value as CompanySizeFilter)}
+                className="h-10 w-full rounded-xl border border-border bg-[var(--surface)] px-3 text-xs font-medium text-ink focus:border-brand-500 focus:outline-none"
+              >
+                <option value="all">All Company Sizes (Default)</option>
+                <option value="micro">Micro / Solo (&lt;$300k, &le;25 reviews)</option>
+                <option value="small">Small Business ($300k–$750k, &le;55 reviews)</option>
+                <option value="small_medium">Small-to-Mid (&lt;$1.5M, &le;85 reviews)</option>
+                <option value="mid">Mid-Sized ($1.5M–$5M, 50-250 reviews)</option>
+                <option value="large">Large Enterprise (&gt;$5M, &gt;150 reviews)</option>
+              </select>
             </div>
 
             {/* Country Selector */}

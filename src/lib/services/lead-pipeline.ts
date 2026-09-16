@@ -20,6 +20,7 @@ import { matchNextdoorBusiness } from "./nextdoor";
 import type { PlaceResult } from "./google-places";
 import { findExistingLead } from "./lead-identity";
 import { plausiblePersonName } from "./owner-discovery";
+import type { CompanySizeFilter } from "@/lib/search-criteria";
 
 const EMPTY_PEOPLE: WebsitePeopleResult = {
   owner: null,
@@ -39,6 +40,8 @@ export type SearchParams = {
   zip?: string;
   customLocation?: string;
   radius?: number;
+  /** Desired company size / revenue target */
+  companySize?: CompanySizeFilter;
   /** How many leads the client asked for (10–1000). */
   targetLeadCount?: number;
   /** Fast contacts mode: extracts core business, owner, phone, email, location without slow external social scrapers */
@@ -78,6 +81,44 @@ export function leadHasLinkedInAndSocial(lead: SocialFields): boolean {
     lead.facebook || lead.instagram || lead.youtube || lead.tiktok,
   );
   return hasLinkedIn && hasSocial;
+}
+
+/** Corporate conglomerates & franchise patterns to exclude when targeting small/micro businesses */
+const CORPORATE_FRANCHISE_REGEX =
+  /\b(roto-?rooter|servpro|servicemaster|mr\.?\s*handyman|1-800-got-junk|stanley\s*steemer|comfort\s*keepers|two\s*men\s*and\s*a\s*truck|national|enterprises?|holdings?|franchise|corporation|corporate|call\s*center)\b/i;
+
+export function matchesCompanySizeCriteria(
+  place: PlaceResult,
+  filter?: CompanySizeFilter,
+): boolean {
+  if (!filter || filter === "all") return true;
+
+  const name = place.name || "";
+  if (filter !== "large" && CORPORATE_FRANCHISE_REGEX.test(name)) {
+    return false;
+  }
+
+  const reviews = place.reviewCount ?? 0;
+
+  switch (filter) {
+    case "micro":
+      // Solo / Micro contractor: < $300k revenue, <= 25 Google reviews
+      return reviews <= 25;
+    case "small":
+      // Small local crew: $300k - $750k revenue, <= 55 Google reviews
+      return reviews <= 55;
+    case "small_medium":
+      // Small to mid contractor: < $1.5M revenue, <= 85 Google reviews
+      return reviews <= 85;
+    case "mid":
+      // Mid-sized contractor: $1.5M - $5M revenue, 50 - 250 reviews
+      return reviews >= 50 && reviews <= 250;
+    case "large":
+      // Large enterprise / multi-crew contractor: > 150 reviews or corporate names
+      return reviews > 150 || CORPORATE_FRANCHISE_REGEX.test(name);
+    default:
+      return true;
+  }
 }
 
 /** @deprecated alias — filter no longer requires owner/email */
@@ -219,6 +260,10 @@ export async function runLeadPipeline(params: SearchParams) {
 
     for (const place of sorted) {
       if (isSatisfied()) break;
+
+      if (!matchesCompanySizeCriteria(place, params.companySize)) {
+        continue;
+      }
 
       // Throttle concurrent enrichment tasks to configured concurrency
       while (activeEnriching.size >= placeConcurrency && !isSatisfied()) {

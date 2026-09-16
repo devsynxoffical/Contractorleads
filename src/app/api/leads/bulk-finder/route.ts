@@ -48,6 +48,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const industry = searchParams.get("industry")?.trim() ?? "";
   const filter = searchParams.get("filter")?.trim() ?? "all";
+  const companySize = searchParams.get("companySize")?.trim() ?? "all";
   const q = searchParams.get("q")?.trim() ?? "";
   const take = Math.min(
     1000,
@@ -116,6 +117,18 @@ export async function GET(request: Request) {
     where.email = { not: null };
     where.phone = { not: null };
     where.ownerName = { not: null };
+  }
+
+  if (companySize === "micro") {
+    where.reviewCount = { lte: 25 };
+  } else if (companySize === "small") {
+    where.reviewCount = { lte: 55 };
+  } else if (companySize === "small_medium") {
+    where.reviewCount = { lte: 85 };
+  } else if (companySize === "mid") {
+    where.reviewCount = { gte: 50, lte: 250 };
+  } else if (companySize === "large") {
+    where.reviewCount = { gt: 150 };
   }
 
   if (q) {
@@ -210,6 +223,7 @@ export async function POST(request: Request) {
       customLocation,
       radius,
       targetLeadCount,
+      companySize,
     } = resolved.criteria;
 
     const wantsStream =
@@ -240,6 +254,7 @@ export async function POST(request: Request) {
             targetLeadCount,
             industry,
             country,
+            companySize,
           });
 
           const result = await runLeadPipeline({
@@ -253,6 +268,7 @@ export async function POST(request: Request) {
             customLocation,
             radius,
             targetLeadCount,
+            companySize,
             fastContactsOnly: true,
             requireEmail: true,
             onLeadDiscovered: async (lead, progress) => {
@@ -281,6 +297,7 @@ export async function POST(request: Request) {
               industry,
               leadCount: finalLeads.length,
               country,
+              companySize,
             },
           );
 
@@ -333,6 +350,7 @@ export async function POST(request: Request) {
       customLocation,
       radius,
       targetLeadCount,
+      companySize,
       fastContactsOnly: true,
       requireEmail: true,
     });
