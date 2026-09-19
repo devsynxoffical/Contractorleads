@@ -112,6 +112,19 @@ export default function AdminCustomerDetailPage() {
   const [latestApiKey, setLatestApiKey] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [systemSmtps, setSystemSmtps] = useState<
+    Array<{
+      id: string;
+      label: string;
+      domain: string;
+      fromEmail: string;
+      fromName: string | null;
+      host: string;
+      port: number;
+    }>
+  >([]);
+  const [selectedSysSmtp, setSelectedSysSmtp] = useState("");
+  const [assignBusy, setAssignBusy] = useState(false);
 
   async function load() {
     const res = await fetch(`/api/admin/customers/${id}`);
@@ -119,6 +132,70 @@ export default function AdminCustomerDetailPage() {
     const next = data.customer ?? null;
     setCustomer(next);
     setReferredByCode(next?.referredBy?.referralCode ?? "");
+
+    try {
+      const smtpRes = await fetch(`/api/admin/customers/${id}/smtp`);
+      const smtpData = await smtpRes.json();
+      if (smtpRes.ok && Array.isArray(smtpData.systemAccounts)) {
+        setSystemSmtps(smtpData.systemAccounts);
+        if (smtpData.systemAccounts[0]) {
+          setSelectedSysSmtp(smtpData.systemAccounts[0].id);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  async function assignHostinger(assignAll = false) {
+    if (!assignAll && !selectedSysSmtp) return;
+    setAssignBusy(true);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/admin/customers/${id}/smtp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          assignAll
+            ? { all: true }
+            : { systemSmtpAccountId: selectedSysSmtp, isDefault: true },
+        ),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage(data.error || "Failed to assign mailbox");
+      } else {
+        setMessage(data.message || "Hostinger mailbox assigned!");
+        await load();
+      }
+    } catch {
+      setMessage("Failed to assign mailbox");
+    } finally {
+      setAssignBusy(false);
+    }
+  }
+
+  async function removeSmtpAccount(accountId: string) {
+    if (!confirm("Remove this mailbox from customer?")) return;
+    setAssignBusy(true);
+    setMessage(null);
+    try {
+      const res = await fetch(
+        `/api/admin/customers/${id}/smtp?accountId=${accountId}`,
+        { method: "DELETE" },
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage(data.error || "Failed to remove mailbox");
+      } else {
+        setMessage(data.message || "Mailbox removed.");
+        await load();
+      }
+    } catch {
+      setMessage("Failed to remove mailbox");
+    } finally {
+      setAssignBusy(false);
+    }
   }
 
   useEffect(() => {
@@ -751,25 +828,103 @@ export default function AdminCustomerDetailPage() {
             </ul>
           </section>
 
-          <section className="space-y-3 rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
-            <h2 className="text-sm font-semibold text-ink">
-              Email setup
-            </h2>
+          <section className="space-y-4 rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-semibold text-ink">
+                  Email &amp; Hostinger setup
+                </h2>
+                <p className="text-[12px] text-ink-muted">
+                  Dedicated mailboxes assigned to this customer
+                </p>
+              </div>
+              <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-[11px] font-semibold text-brand-700">
+                {(customer.smtpAccounts ?? []).length} assigned
+              </span>
+            </div>
+
+            {/* Hostinger Mailbox Assigner */}
+            <div className="rounded-xl border border-brand-200 bg-brand-50/50 p-3.5 space-y-2.5">
+              <p className="text-[12px] font-semibold text-brand-900">
+                ⚡ Assign Hostinger Mailbox to this User
+              </p>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <select
+                  className="saas-input flex-1 text-[12px]"
+                  value={selectedSysSmtp}
+                  onChange={(e) => setSelectedSysSmtp(e.target.value)}
+                  disabled={assignBusy || !systemSmtps.length}
+                >
+                  {systemSmtps.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.fromEmail} ({s.fromName || s.domain})
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  size="sm"
+                  onClick={() => assignHostinger(false)}
+                  disabled={assignBusy || !selectedSysSmtp}
+                  loading={assignBusy}
+                >
+                  Assign mailbox
+                </Button>
+              </div>
+              <div className="flex items-center justify-between pt-1 text-[11px] text-ink-muted">
+                <span>Or assign full 25-mailbox pool:</span>
+                <button
+                  type="button"
+                  className="font-semibold text-brand-700 hover:underline disabled:opacity-50"
+                  onClick={() => assignHostinger(true)}
+                  disabled={assignBusy}
+                >
+                  + Assign All Hostinger Mailboxes
+                </button>
+              </div>
+            </div>
+
             <p className="text-[12px] text-ink-muted">
               Sequence:{" "}
               {customer.emailSequence
                 ? `${customer.emailSequence.name} (${customer.emailSequence.enabled ? "on" : "off"}) · ${customer.emailSequence._count.enrollments} enrollments`
                 : "Not configured"}
             </p>
-            <ul className="max-h-40 space-y-1 overflow-y-auto text-[12px] text-ink-muted">
+
+            <ul className="max-h-52 space-y-1.5 overflow-y-auto text-[12px] text-ink-muted">
               {(customer.smtpAccounts ?? []).length === 0 && (
-                <li>No SMTP accounts.</li>
+                <li className="rounded-lg bg-[#faf8fc] px-3 py-2 text-ink-faint">
+                  No dedicated mailboxes assigned. User falls back to shared rotation pool.
+                </li>
               )}
               {(customer.smtpAccounts ?? []).map((a) => (
-                <li key={a.id} className="rounded-lg bg-[#faf8fc] px-2 py-1.5">
-                  {a.label} · {a.fromEmail} · {a.host}
-                  {a.isDefault ? " · default" : ""}
-                  {!a.enabled ? " · disabled" : ""}
+                <li
+                  key={a.id}
+                  className="flex items-center justify-between gap-2 rounded-lg bg-[#faf8fc] px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <span className="font-medium text-ink">{a.fromEmail}</span>
+                    <span className="ml-1.5 text-[11px] text-ink-muted">
+                      ({a.label})
+                    </span>
+                    {a.isDefault ? (
+                      <span className="ml-1.5 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-800">
+                        default
+                      </span>
+                    ) : null}
+                    {!a.enabled ? (
+                      <span className="ml-1.5 rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-semibold text-rose-800">
+                        disabled
+                      </span>
+                    ) : null}
+                  </div>
+                  <button
+                    type="button"
+                    className="text-[11px] font-medium text-rose-600 hover:underline"
+                    onClick={() => removeSmtpAccount(a.id)}
+                    disabled={assignBusy}
+                  >
+                    Remove
+                  </button>
                 </li>
               ))}
             </ul>
