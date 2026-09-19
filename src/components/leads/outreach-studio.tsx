@@ -253,24 +253,27 @@ export function OutreachStudio({
               </div>
             ) : null}
 
-            {showEmailSend && accounts.length > 0 ? (
+            {showEmailSend && (
               <label className="block text-[12px]">
-                <span className="font-medium text-ink-muted">Send from</span>
+                <span className="font-medium text-ink-muted">Send from (Hostinger / Custom SMTP)</span>
                 <select
                   className="saas-input mt-1"
                   value={smtpAccountId}
                   onChange={(e) => setSmtpAccountId(e.target.value)}
                   disabled={busy}
                 >
+                  <option value="">
+                    ⚡ Auto-Rotate across Hostinger Mailbox Pool (Recommended)
+                  </option>
                   {accounts.map((a) => (
                     <option key={a.id} value={a.id}>
-                      {a.label} · {a.fromEmail}
-                      {a.isDefault ? " (default)" : ""}
+                      {a.label} {a.fromEmail ? `(${a.fromEmail})` : ""}
+                      {a.isDefault ? " · default" : ""}
                     </option>
                   ))}
                 </select>
               </label>
-            ) : null}
+            )}
 
             {showEmailSend && leadEmail ? (
               <p className="text-[12px] text-ink-muted">
@@ -324,7 +327,6 @@ export function OutreachStudio({
                   disabled={
                     busy ||
                     !leadEmail ||
-                    !accounts.length ||
                     !subject.trim() ||
                     !content.trim()
                   }
@@ -366,19 +368,6 @@ export function OutreachStudio({
             {showEmailSend && !leadEmail ? (
               <p className="text-[12px] text-amber-800">
                 No email on this lead — enrich or add an address before sending.
-              </p>
-            ) : null}
-
-            {showEmailSend && leadEmail && accounts.length === 0 ? (
-              <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
-                Add an SMTP mailbox in{" "}
-                <Link
-                  href="/setup/email"
-                  className="font-semibold underline"
-                >
-                  Settings → Email
-                </Link>{" "}
-                first.
               </p>
             ) : null}
 

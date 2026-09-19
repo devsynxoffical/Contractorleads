@@ -150,6 +150,35 @@ export function EmailOverviewPanel({
         />
       </div>
 
+      <div className="rounded-2xl border border-brand-500/25 bg-gradient-to-r from-brand-500/10 via-[var(--surface)] to-[var(--surface)] p-4 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-500/20 text-brand-400">
+              <HiOutlineEnvelope className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="rounded-md bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                  Ready
+                </span>
+                <p className="text-[14px] font-bold text-ink">Hostinger SMTP Outbound Pool Active</p>
+              </div>
+              <p className="mt-0.5 text-[12px] text-ink-muted">
+                25 verified mailboxes across 5 domains are ready for cold email pitch sends with automatic deliverability rotation.
+              </p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => onGo("compose")}
+            className="shrink-0 bg-brand-600 hover:bg-brand-700 text-white gap-1.5 text-xs font-semibold"
+          >
+            <HiOutlinePaperAirplane className="h-3.5 w-3.5" />
+            Compose to Any Lead
+          </Button>
+        </div>
+      </div>
+
       <div>
         <h2 className="text-[16px] font-semibold text-ink">Email workflow</h2>
         <p className="mt-1 text-[13px] text-ink-muted">
