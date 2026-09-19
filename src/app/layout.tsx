@@ -10,11 +10,13 @@ import { MetaPixelTracker } from "@/components/pixel/meta-pixel-tracker";
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-jakarta",
+  display: "swap",
 });
 
 const outfit = Outfit({
   subsets: ["latin"],
   variable: "--font-outfit",
+  display: "swap",
 });
 
 export const metadata: Metadata = {

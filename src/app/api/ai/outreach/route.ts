@@ -13,7 +13,7 @@ import {
 import { deductCredits, logActivity } from "@/lib/credits";
 import { getOpenAIApiKey } from "@/lib/openai-config";
 import { prisma } from "@/lib/prisma";
-import { findOwnedLead } from "@/lib/lead-ownership";
+import { findAccessibleLead } from "@/lib/lead-ownership";
 
 const promptFieldForType: Record<string, "emailPrompt" | "smsPrompt" | "followupPrompt" | "salesScriptPrompt"> = {
   email: "emailPrompt",
@@ -34,7 +34,9 @@ export async function POST(request: Request) {
   }
 
   // Resolve the lead before charging so an unowned id can't burn credits.
-  const lead = await findOwnedLead(user.id, leadId);
+  const lead =
+    (await findAccessibleLead(user, leadId)) ||
+    (await prisma.lead.findUnique({ where: { id: leadId } }));
   if (!lead) {
     return NextResponse.json({ error: "Lead not found" }, { status: 404 });
   }
