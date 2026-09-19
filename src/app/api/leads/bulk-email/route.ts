@@ -39,16 +39,19 @@ export async function POST(request: Request) {
   await migrateLegacySmtpIfNeeded(user.id);
   const accounts = await listSmtpAccounts(user.id);
   const enabledAccounts = accounts.filter((a) => a.enabled);
-  if (!enabledAccounts.length) {
+  const sysAccounts = await prisma.systemSmtpAccount.findMany({ where: { enabled: true } });
+
+  if (!enabledAccounts.length && !sysAccounts.length) {
     return NextResponse.json(
-      { error: "Connect an SMTP mailbox under Setup → Email & SMTP first." },
+      { error: "No active SMTP mailbox found. Connect an SMTP mailbox under Setup → Email & SMTP first." },
       { status: 400 },
     );
   }
 
   if (
     smtpAccountId &&
-    !enabledAccounts.some((a) => a.id === smtpAccountId)
+    !enabledAccounts.some((a) => a.id === smtpAccountId) &&
+    !sysAccounts.some((a) => a.id === smtpAccountId)
   ) {
     return NextResponse.json(
       { error: "Selected mailbox is not available. Choose another or add one under Email & SMTP." },

@@ -7,6 +7,8 @@ import { sendUserResendEmail, verifyResendApiKey } from "@/lib/email";
 import { assertPublicSmtpHost, BlockedUrlError } from "@/lib/safe-fetch";
 import { appBaseUrl } from "@/lib/email-brand";
 
+import { getSystemSenderConfig, pickSystemRotationSender } from "@/lib/system-smtp";
+
 export type SmtpPayload = {
   id?: string;
   label?: string;
@@ -152,6 +154,8 @@ export type SenderConfig = {
   deliveryMode: "platform" | "smtp";
   resendApiKey?: string;
   smtp?: SmtpPayload;
+  isSystem?: boolean;
+  systemSmtpAccountId?: string;
 };
 
 export type SmtpAccountStats = {
@@ -234,6 +238,10 @@ export async function getUserSenderConfig(
       where: { id: accountId, userId, enabled: true },
     });
     if (row) return rowToSenderConfig(row);
+
+    // Check system Hostinger SMTP accounts
+    const sys = await getSystemSenderConfig(accountId);
+    if (sys) return sys;
   }
 
   const preferred = await prisma.smtpAccount.findFirst({
@@ -243,23 +251,27 @@ export async function getUserSenderConfig(
   if (preferred) return rowToSenderConfig(preferred);
 
   const legacy = await prisma.userSmtpSettings.findUnique({ where: { userId } });
-  if (!legacy || !legacy.enabled) return null;
-  return {
-    fromEmail: legacy.fromEmail,
-    fromName: legacy.fromName,
-    deliveryMode: legacy.host.trim() ? "smtp" : "platform",
-    smtp: legacy.host.trim()
-      ? {
-          host: legacy.host,
-          port: legacy.port,
-          secure: legacy.secure,
-          username: legacy.username,
-          password: decryptSecret(legacy.passwordEnc),
-          fromEmail: legacy.fromEmail,
-          fromName: legacy.fromName,
-        }
-      : undefined,
-  };
+  if (legacy && legacy.enabled) {
+    return {
+      fromEmail: legacy.fromEmail,
+      fromName: legacy.fromName,
+      deliveryMode: legacy.host.trim() ? "smtp" : "platform",
+      smtp: legacy.host.trim()
+        ? {
+            host: legacy.host,
+            port: legacy.port,
+            secure: legacy.secure,
+            username: legacy.username,
+            password: decryptSecret(legacy.passwordEnc),
+            fromEmail: legacy.fromEmail,
+            fromName: legacy.fromName,
+          }
+        : undefined,
+    };
+  }
+
+  // Fallback to Super Admin Hostinger mailboxes pool
+  return pickSystemRotationSender();
 }
 
 export async function listSmtpAccounts(userId: string) {
@@ -268,6 +280,45 @@ export async function listSmtpAccounts(userId: string) {
     where: { userId },
     orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
   });
+}
+
+export async function listAvailableSenders(userId: string) {
+  await migrateLegacySmtpIfNeeded(userId);
+  const userAccounts = await prisma.smtpAccount.findMany({
+    where: { userId },
+    orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+  });
+
+  const systemAccounts = await prisma.systemSmtpAccount.findMany({
+    where: { enabled: true },
+    orderBy: [{ domain: "asc" }, { fromName: "asc" }],
+  });
+
+  const maskedUser = userAccounts.map(maskSmtpAccount);
+  const maskedSystem = systemAccounts.map((s) => ({
+    id: s.id,
+    label: `Hostinger: ${s.fromName || s.fromEmail} (${s.domain})`,
+    host: s.host,
+    port: s.port,
+    secure: s.secure,
+    username: s.username,
+    fromEmail: s.fromEmail,
+    fromName: s.fromName,
+    enabled: s.enabled,
+    isDefault: false,
+    lastTestedAt: s.lastTestedAt,
+    deliveryMode: "smtp",
+    sendWeight: s.sendWeight,
+    hasPassword: true,
+    hasResendKey: false,
+    isSystem: true,
+  }));
+
+  return {
+    accounts: [...maskedUser, ...maskedSystem],
+    userAccounts: maskedUser,
+    systemAccounts: maskedSystem,
+  };
 }
 
 /**
@@ -282,7 +333,11 @@ export async function pickRotationSender(userId: string): Promise<SenderConfig |
     where: { userId, enabled: true },
     orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
   });
-  if (!accounts.length) return getUserSenderConfig(userId);
+  if (!accounts.length) {
+    const sys = await pickSystemRotationSender();
+    if (sys) return sys;
+    return getUserSenderConfig(userId);
+  }
 
   const totalWeight = accounts.reduce(
     (sum, a) => sum + Math.max(1, a.sendWeight),
@@ -728,7 +783,13 @@ export async function sendOutboundEmail(opts: {
 
   if (isResendDelivery(sender.deliveryMode)) {
     const sent = await sendViaUserResend(sender, sendOpts);
-    return { ...sent, trackingToken };
+    return {
+      ...sent,
+      trackingToken,
+      isSystem: false,
+      systemSmtpAccountId: null,
+      smtpAccountId: sender.id ?? null,
+    };
   }
 
   if (!sender.smtp) {
@@ -753,11 +814,23 @@ export async function sendOutboundEmail(opts: {
       references: opts.references,
       attachments: opts.attachments,
     });
-    return { ...sent, trackingToken };
+    return {
+      ...sent,
+      trackingToken,
+      isSystem: sender.isSystem ?? false,
+      systemSmtpAccountId: sender.isSystem ? (sender.id ?? null) : null,
+      smtpAccountId: sender.isSystem ? null : (sender.id ?? null),
+    };
   } catch (lastErr) {
     if (sender.resendApiKey) {
       const sent = await sendViaUserResend(sender, sendOpts);
-      return { ...sent, trackingToken };
+      return {
+        ...sent,
+        trackingToken,
+        isSystem: sender.isSystem ?? false,
+        systemSmtpAccountId: sender.isSystem ? (sender.id ?? null) : null,
+        smtpAccountId: sender.isSystem ? null : (sender.id ?? null),
+      };
     }
     throw new Error(formatSmtpError(lastErr));
   }

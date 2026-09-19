@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { AdminPageHeader } from "@/components/admin/admin-shell";
 import { Button } from "@/components/ui/button";
 import type { EnvKeyStatus } from "@/lib/admin";
@@ -387,8 +388,32 @@ export default function AdminSystemPage() {
     <div>
       <AdminPageHeader
         title="System & API Keys"
-        description="Manage Stripe Billing, email, SMS, and platform API keys here. Other host-level secrets stay in Railway / .env."
+        description="Manage Stripe Billing, email, SMS, Hostinger SMTP mailboxes, and platform API keys here. Other host-level secrets stay in Railway / .env."
       />
+
+      <section className="mb-6 rounded-2xl border border-brand-500/30 bg-gradient-to-br from-brand-500/10 via-[var(--surface)] to-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="rounded-md bg-brand-500/20 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-brand-400">
+                Outbound Pool
+              </span>
+              <h2 className="text-sm font-semibold text-ink">
+                Super Admin Hostinger SMTP Pool
+              </h2>
+            </div>
+            <p className="mt-1 max-w-2xl text-[13px] text-ink-muted">
+              25 Hostinger mailboxes across 5 domains (<code>roofingagency.us</code>, <code>roofinggrowth.us</code>, <code>roofingmedia.us</code>, <code>roofingpartners.us</code>, <code>roofingclients.us</code>) available for platform-wide cold email outreach and automatic load rotation.
+            </p>
+          </div>
+          <Link
+            href="/admin/smtp"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-brand-700 transition-colors"
+          >
+            Manage 25 Mailboxes →
+          </Link>
+        </div>
+      </section>
 
       <section className="mb-6 rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] dark:bg-[var(--surface)]">
         <div className="flex flex-wrap items-start justify-between gap-3">

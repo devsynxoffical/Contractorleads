@@ -104,6 +104,12 @@ const NAV_SECTIONS: NavSection[] = [
         icon: HiOutlineDevicePhoneMobile,
         permission: "communications",
       },
+      {
+        href: "/admin/smtp",
+        label: "Hostinger SMTP Pool",
+        icon: HiOutlineEnvelope,
+        permission: "system",
+      },
       { href: "/admin/email-preview", label: "Email Templates", icon: HiOutlineEnvelope, permission: "system" },
       { href: "/admin/ai", label: "AI Training", icon: HiOutlineSparkles, permission: "system" },
       {

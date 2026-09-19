@@ -679,17 +679,43 @@ model SmtpAccount {
   @@index([userId, enabled])
 }
 
+/// System / Super Admin shared SMTP mailboxes pool (Hostinger, etc.) for user outreach
+model SystemSmtpAccount {
+  id           String      @id @default(cuid())
+  label        String      @default("Hostinger")
+  domain       String      @default("")
+  host         String      @default("smtp.hostinger.com")
+  port         Int         @default(465)
+  secure       Boolean     @default(true)
+  username     String
+  passwordEnc  String
+  fromEmail    String      @unique
+  fromName     String?
+  enabled      Boolean     @default(true)
+  isDefault    Boolean     @default(false)
+  sendWeight   Int         @default(1)
+  lastTestedAt DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  emails       LeadEmail[]
+
+  @@index([enabled])
+  @@index([domain])
+}
+
 /// Outbound and inbound emails tied to a lead (send from detail + reply webhook).
 model LeadEmail {
-  id            String       @id @default(cuid())
-  userId        String
-  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  leadId        String
-  lead          Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  savedLeadId   String?
-  savedLead     SavedLead?   @relation(fields: [savedLeadId], references: [id], onDelete: SetNull)
-  smtpAccountId String?
-  smtpAccount   SmtpAccount? @relation(fields: [smtpAccountId], references: [id], onDelete: SetNull)
+  id                  String             @id @default(cuid())
+  userId              String
+  user                User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leadId              String
+  lead                Lead               @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  savedLeadId         String?
+  savedLead           SavedLead?         @relation(fields: [savedLeadId], references: [id], onDelete: SetNull)
+  smtpAccountId       String?
+  smtpAccount         SmtpAccount?       @relation(fields: [smtpAccountId], references: [id], onDelete: SetNull)
+  systemSmtpAccountId String?
+  systemSmtpAccount   SystemSmtpAccount? @relation(fields: [systemSmtpAccountId], references: [id], onDelete: SetNull)
   /// outbound | inbound
   direction     String
   fromEmail     String

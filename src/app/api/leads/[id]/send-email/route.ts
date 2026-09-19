@@ -3,7 +3,7 @@ import { getSessionUser } from "@/lib/auth";
 import { sendLeadEmail } from "@/lib/lead-email";
 import { prisma } from "@/lib/prisma";
 import { LEAD_REPORT_SCRIPT_TYPE } from "@/lib/services/lead-intelligence-report";
-import { listSmtpAccounts, maskSmtpAccount, migrateLegacySmtpIfNeeded } from "@/lib/user-smtp";
+import { listAvailableSenders } from "@/lib/user-smtp";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -18,8 +18,7 @@ export async function GET(_request: Request, { params }: Params) {
     take: 50,
   });
 
-  await migrateLegacySmtpIfNeeded(user.id);
-  const accounts = await listSmtpAccounts(user.id);
+  const { accounts } = await listAvailableSenders(user.id);
 
   const reports = await prisma.script.findMany({
     where: {
@@ -39,7 +38,7 @@ export async function GET(_request: Request, { params }: Params) {
 
   return NextResponse.json({
     emails,
-    accounts: accounts.filter((a) => a.enabled).map(maskSmtpAccount),
+    accounts: accounts.filter((a) => a.enabled),
     reports,
   });
 }

@@ -23,8 +23,34 @@ export async function GET() {
   await migrateLegacySmtpIfNeeded(user.id);
   const rows = await listSmtpAccounts(user.id);
   const performance = await getSmtpAccountPerformance(user.id);
+  const sysAccounts = await prisma.systemSmtpAccount.findMany({
+    where: { enabled: true },
+    orderBy: [{ domain: "asc" }, { fromName: "asc" }],
+  });
+
+  const systemMasked = sysAccounts.map((s) => ({
+    id: s.id,
+    label: `Hostinger: ${s.fromName || s.fromEmail} (${s.domain})`,
+    host: s.host,
+    port: s.port,
+    secure: s.secure,
+    username: s.username,
+    fromEmail: s.fromEmail,
+    fromName: s.fromName,
+    enabled: s.enabled,
+    isDefault: false,
+    lastTestedAt: s.lastTestedAt,
+    deliveryMode: "smtp",
+    sendWeight: s.sendWeight,
+    hasPassword: true,
+    hasResendKey: false,
+    isSystem: true,
+  }));
+
   return NextResponse.json({
-    accounts: rows.map(maskSmtpAccount),
+    accounts: rows.length > 0 ? rows.map(maskSmtpAccount) : systemMasked,
+    userAccounts: rows.map(maskSmtpAccount),
+    systemAccounts: systemMasked,
     performance,
   });
 }

@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { bootstrapHostingerMailboxes } from "../scripts/seed-hostinger-smtp.mjs";
 
 const prisma = new PrismaClient();
 
@@ -225,6 +226,8 @@ async function main() {
     },
   });
 
+  await bootstrapHostingerMailboxes();
+
   console.log("Seed complete:");
   if (SEED_DEMO) {
     console.log("  demo@contractorleads.us / demo12345");
@@ -234,6 +237,7 @@ async function main() {
   }
   console.log("  Role templates: MANAGER, SUB_ADMIN");
   console.log("  Referral rewards config seeded");
+  console.log("  25 Hostinger SMTP mailboxes seeded across 5 domains");
 }
 
 main()

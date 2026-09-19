@@ -99,7 +99,8 @@ export async function sendLeadEmail(opts: {
         userId: opts.userId,
         leadId: opts.leadId,
         savedLeadId: saved.id,
-        smtpAccountId: sent.smtpAccountId,
+        smtpAccountId: sent.smtpAccountId ?? null,
+        systemSmtpAccountId: sent.systemSmtpAccountId ?? null,
         direction: "outbound",
         fromEmail: sent.fromEmail,
         toEmail: to,
@@ -155,12 +156,16 @@ export async function sendLeadEmail(opts: {
     };
   } catch (e) {
     const msg = formatSmtpError(e);
+    const isSystemSmtp = opts.smtpAccountId
+      ? (await prisma.systemSmtpAccount.count({ where: { id: opts.smtpAccountId } })) > 0
+      : false;
     await prisma.leadEmail.create({
       data: {
         userId: opts.userId,
         leadId: opts.leadId,
         savedLeadId: saved.id,
-        smtpAccountId: opts.smtpAccountId || null,
+        smtpAccountId: isSystemSmtp ? null : (opts.smtpAccountId || null),
+        systemSmtpAccountId: isSystemSmtp ? (opts.smtpAccountId || null) : null,
         direction: "outbound",
         fromEmail: "",
         toEmail: to,
