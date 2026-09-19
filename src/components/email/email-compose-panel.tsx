@@ -178,67 +178,59 @@ export function EmailComposePanel() {
   }
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
-      {/* Left Column: Lead Picker or Direct Recipient Mode */}
+    <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)]">
+      {/* Left Column: Quick Lead Picker & Directory */}
       <div className="space-y-3">
-        <div className="flex rounded-xl border border-border bg-[var(--surface)] p-1">
-          <button
-            type="button"
-            onClick={() => setMode("lead")}
-            className={cn(
-              "flex-1 rounded-lg py-1.5 text-xs font-semibold transition",
-              mode === "lead"
-                ? "bg-brand-600 text-white shadow-sm"
-                : "text-ink-muted hover:text-ink",
+        <div className="rounded-2xl border border-border bg-[var(--surface)] p-4 shadow-sm">
+          <div className="flex items-center justify-between pb-2">
+            <div className="flex items-center gap-2 text-ink">
+              <HiOutlineUser className="h-4 w-4 text-brand-600" />
+              <h3 className="text-xs font-bold uppercase tracking-wider">Quick Lead Directory</h3>
+            </div>
+            {selected && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelected(null);
+                  setCustomTo("");
+                }}
+                className="text-[11px] font-medium text-rose-600 hover:underline"
+              >
+                Clear selection
+              </button>
             )}
-          >
-            Select Saved Lead
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setMode("custom");
-              setSelected(null);
-            }}
-            className={cn(
-              "flex-1 rounded-lg py-1.5 text-xs font-semibold transition",
-              mode === "custom"
-                ? "bg-brand-600 text-white shadow-sm"
-                : "text-ink-muted hover:text-ink",
-            )}
-          >
-            Direct Recipient
-          </button>
-        </div>
+          </div>
+          <p className="text-[11px] text-ink-muted">
+            Click any lead below to autofill, or write any custom recipient email directly in the compose window.
+          </p>
 
-        {mode === "lead" ? (
-          <div className="space-y-2">
+          <div className="mt-3 space-y-2">
             <input
               className="saas-input w-full text-xs"
-              placeholder="Search saved leads by name, email, or city…"
+              placeholder="Search leads by name, email, or city…"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
-            <div className="overflow-hidden rounded-2xl border border-border bg-[var(--surface)] shadow-sm">
+            <div className="overflow-hidden rounded-xl border border-border/80 bg-[#faf8fc]">
               {!leads.length ? (
-                <div className="px-4 py-12 text-center text-xs text-ink-muted">
-                  <p className="font-semibold text-ink">No leads found</p>
-                  <p className="mt-1 text-ink-faint">
-                    Save leads with contact emails in Lead Finder to pick them here.
+                <div className="px-4 py-8 text-center text-xs text-ink-muted">
+                  <p className="font-semibold text-ink">No saved leads</p>
+                  <p className="mt-1 text-[11px] text-ink-faint">
+                    You can type any email address directly in the <strong>To:</strong> field on the right.
                   </p>
                 </div>
               ) : (
-                <ul className="max-h-[460px] divide-y divide-border/60 overflow-y-auto">
+                <ul className="max-h-[380px] divide-y divide-border/60 overflow-y-auto">
                   {leads.map((l) => (
                     <li key={l.id}>
                       <button
                         type="button"
                         onClick={() => pick(l)}
                         className={cn(
-                          "w-full px-4 py-3 text-left transition",
+                          "w-full px-3.5 py-2.5 text-left transition",
                           selected?.id === l.id
                             ? "bg-brand-500/10 border-l-4 border-brand-500"
-                            : "hover:bg-white/[0.03]",
+                            : "hover:bg-white/[0.06]",
                         )}
                       >
                         <p className="truncate text-xs font-semibold text-ink">
@@ -255,52 +247,38 @@ export function EmailComposePanel() {
               )}
             </div>
           </div>
-        ) : (
-          <div className="rounded-2xl border border-border bg-[var(--surface)] p-5 shadow-sm space-y-3">
-            <div className="flex items-center gap-2 text-ink">
-              <HiOutlineEnvelope className="h-5 w-5 text-brand-500" />
-              <h3 className="text-sm font-bold">Direct Email Outbound</h3>
-            </div>
-            <p className="text-xs text-ink-muted leading-relaxed">
-              Send an email to any recipient or contractor. If they reply, the conversation will land directly in your Email Inbox.
-            </p>
-            <div>
-              <label className="block text-xs font-semibold text-ink">
-                Recipient Email Address
-              </label>
-              <input
-                type="email"
-                required
-                placeholder="e.g. contact@contractor.com"
-                value={customTo}
-                onChange={(e) => setCustomTo(e.target.value)}
-                className="saas-input mt-1 w-full text-xs"
-              />
-            </div>
-          </div>
-        )}
+        </div>
+
+        {/* Tip Box */}
+        <div className="rounded-xl border border-brand-200 bg-brand-50/60 p-3.5 text-xs text-brand-900 space-y-1">
+          <p className="font-semibold flex items-center gap-1.5">
+            <HiOutlineSparkles className="h-4 w-4 text-brand-600" />
+            Hostinger Delivery Pool
+          </p>
+          <p className="text-[11px] text-brand-800 leading-relaxed">
+            All outbound emails are automatically routed through verified Hostinger mailboxes. You can type any contractor, partner, or client email address to message them directly.
+          </p>
+        </div>
       </div>
 
-      {/* Right Column: Compose Email Form */}
+      {/* Right Column: Complete Email Compose Form */}
       <div className="rounded-2xl border border-border bg-[var(--surface)] p-5 shadow-sm">
         <form onSubmit={handleSend} className="space-y-4">
-          <div className="flex items-center justify-between border-b border-border pb-3">
-            <div>
-              <h3 className="text-sm font-bold text-ink">Compose Message</h3>
-              <p className="text-xs text-ink-muted">
-                {mode === "lead" && selected ? (
-                  <span>
-                    Sending to: <strong className="text-ink">{selected.businessName}</strong> ({selected.email})
-                  </span>
-                ) : mode === "custom" && customTo ? (
-                  <span>
-                    Sending to: <strong className="text-ink">{customTo}</strong>
-                  </span>
-                ) : (
-                  "Select a lead or enter recipient to begin."
-                )}
-              </p>
+          <div className="border-b border-border pb-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-ink flex items-center gap-2">
+                <HiOutlineEnvelope className="h-4 w-4 text-brand-600" />
+                Compose Email to Anyone
+              </h3>
+              {selected && (
+                <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-[11px] font-semibold text-brand-700">
+                  Lead: {selected.businessName}
+                </span>
+              )}
             </div>
+            <p className="mt-0.5 text-xs text-ink-muted">
+              Send an email to any email address using Hostinger mailboxes.
+            </p>
           </div>
 
           {msg && (
@@ -316,6 +294,43 @@ export function EmailComposePanel() {
               <span>{error}</span>
             </div>
           )}
+
+          {/* Direct To: Input Field */}
+          <div>
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-semibold text-ink">
+                To: (Recipient Email Address)
+              </label>
+              {selected && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelected(null);
+                    setCustomTo("");
+                  }}
+                  className="text-[11px] text-brand-600 hover:underline"
+                >
+                  Clear Lead / Type Custom Email
+                </button>
+              )}
+            </div>
+            <input
+              type="email"
+              required
+              placeholder="e.g. contractor@gmail.com, owner@plumbing.com, client@company.com"
+              value={customTo}
+              onChange={(e) => {
+                setCustomTo(e.target.value);
+                if (selected && e.target.value !== selected.email) {
+                  setSelected(null);
+                }
+              }}
+              className="saas-input mt-1 w-full text-xs font-mono"
+            />
+            <p className="mt-1 text-[11px] text-ink-muted">
+              Type any email address manually or select a lead from the directory.
+            </p>
+          </div>
 
           {/* Mailbox Sender Selector (Hostinger Pool + Custom) */}
           <div>
@@ -337,24 +352,24 @@ export function EmailComposePanel() {
               ))}
             </select>
             <p className="mt-1 text-[11px] text-ink-muted">
-              Select a specific Hostinger sender or let the system auto-rotate across all active domains to optimize deliverability.
+              Choose a specific mailbox or auto-rotate across active domains for deliverability.
             </p>
           </div>
 
-          {/* Subject */}
+          {/* Subject Line */}
           <div>
             <label className="block text-xs font-semibold text-ink">Subject Line</label>
             <input
               type="text"
               required
-              placeholder="e.g. Partnership opportunity / Quick inquiry"
+              placeholder="e.g. Partnership opportunity / Quick intro"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               className="saas-input mt-1 w-full text-xs"
             />
           </div>
 
-          {/* Body */}
+          {/* Message Body */}
           <div>
             <div className="flex items-center justify-between">
               <label className="block text-xs font-semibold text-ink">Message Body</label>
@@ -364,7 +379,7 @@ export function EmailComposePanel() {
                   const targetName = selected?.businessName || "there";
                   setSubject(`Quick inquiry — ${targetName}`);
                   setBodyText(
-                    `Hi there,\n\nI came across ${targetName} and wanted to check if you are currently taking on new projects this month.\n\nWe specialize in connecting trade professionals with exclusive local homeowners.\n\nWould you be open to a brief chat this week?\n\nBest regards,`,
+                    `Hi ${targetName},\n\nI wanted to reach out regarding opportunities to collaborate in your area.\n\nWould you be open to a brief 5-minute chat this week?\n\nBest regards,`,
                   );
                 }}
                 className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 hover:text-brand-700"
@@ -375,17 +390,24 @@ export function EmailComposePanel() {
             </div>
             <Textarea
               className="mt-1 min-h-[160px] text-xs font-sans"
-              placeholder="Write your email pitch here…"
+              placeholder="Write your email pitch or message here…"
               value={bodyText}
               onChange={(e) => setBodyText(e.target.value)}
               required
             />
           </div>
 
-          <div className="flex items-center justify-end pt-2">
+          <div className="flex items-center justify-between pt-2 border-t border-border/80">
+            <p className="text-[11px] text-ink-muted">
+              {customTo ? (
+                <span>Sending to: <strong className="font-mono text-ink">{customTo}</strong></span>
+              ) : (
+                <span>Enter a recipient email above</span>
+              )}
+            </p>
             <Button
               type="submit"
-              disabled={busy || (!customTo && !selected?.email) || !subject.trim() || !bodyText.trim()}
+              disabled={busy || !customTo.trim() || !subject.trim() || !bodyText.trim()}
               className="bg-brand-600 hover:bg-brand-700 text-white gap-2 text-xs"
             >
               <HiOutlinePaperAirplane className="h-4 w-4" />
