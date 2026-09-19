@@ -67,7 +67,7 @@ export function EmailBulkPanel({
     setAccounts(accs);
     setSmtpAccountId((prev) => {
       if (prev && accs.some((a) => a.id === prev)) return prev;
-      return accs.find((a) => a.isDefault)?.id || accs[0]?.id || "";
+      return "";
     });
   }, []);
 
@@ -284,35 +284,25 @@ export function EmailBulkPanel({
               </div>
             ) : null}
 
-            {accounts.length ? (
-              <label className="block text-[12px]">
-                <span className="font-medium text-ink-muted">Send from</span>
-                <select
-                  className="saas-input mt-1"
-                  value={smtpAccountId}
-                  onChange={(e) => setSmtpAccountId(e.target.value)}
-                  disabled={busy}
-                >
-                  {accounts.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.label} · {a.fromEmail}
-                      {a.isDefault ? " (default)" : ""}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ) : (
-              <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
-                No mailbox found.{" "}
-                <button
-                  type="button"
-                  className="font-semibold underline"
-                  onClick={onNeedSetup}
-                >
-                  Setup email
-                </button>
-              </p>
-            )}
+            <label className="block text-[12px]">
+              <span className="font-medium text-ink-muted">Send from (Hostinger / Custom SMTP)</span>
+              <select
+                className="saas-input mt-1"
+                value={smtpAccountId}
+                onChange={(e) => setSmtpAccountId(e.target.value)}
+                disabled={busy}
+              >
+                <option value="">
+                  ⚡ Auto-Rotate across Hostinger Mailbox Pool (Recommended)
+                </option>
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.label} · {a.fromEmail}
+                    {a.isDefault ? " (default)" : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
 
             <label className="block text-[12px]">
               <span className="font-medium text-ink-muted">Subject</span>
@@ -343,7 +333,6 @@ export function EmailBulkPanel({
                 disabled={
                   busy ||
                   !selected.size ||
-                  !accounts.length ||
                   !subject.trim() ||
                   !bodyText.trim()
                 }

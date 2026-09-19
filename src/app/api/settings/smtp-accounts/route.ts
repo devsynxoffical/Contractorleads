@@ -48,7 +48,7 @@ export async function GET() {
   }));
 
   return NextResponse.json({
-    accounts: rows.length > 0 ? rows.map(maskSmtpAccount) : systemMasked,
+    accounts: [...rows.map(maskSmtpAccount), ...systemMasked],
     userAccounts: rows.map(maskSmtpAccount),
     systemAccounts: systemMasked,
     performance,

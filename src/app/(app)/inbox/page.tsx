@@ -12,7 +12,7 @@ export default async function InboxPage() {
   if (!user) redirect("/login");
 
   await migrateLegacySmtpIfNeeded(user.id);
-  const [dbUser, accounts] = await Promise.all([
+  const [dbUser, accounts, sysAccountsCount] = await Promise.all([
     prisma.user.findUnique({
       where: { id: user.id },
       select: {
@@ -22,9 +22,11 @@ export default async function InboxPage() {
       },
     }),
     listSmtpAccounts(user.id),
+    prisma.systemSmtpAccount.count({ where: { enabled: true } }),
   ]);
 
-  const smtpReady = accounts.some((a) => a.enabled && a.fromEmail);
+  const smtpReady =
+    accounts.some((a) => a.enabled && a.fromEmail) || sysAccountsCount > 0;
   const hasAddon = hasMessagingAddon(dbUser ?? user);
 
   return (
