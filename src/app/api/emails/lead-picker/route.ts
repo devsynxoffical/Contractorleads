@@ -8,12 +8,37 @@ export async function GET(request: Request) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const url = new URL(request.url);
+  const leadId = url.searchParams.get("leadId")?.trim() || "";
   const q = url.searchParams.get("q")?.trim() || "";
   const rawLimit = Number(url.searchParams.get("limit") || "25");
   const take = Math.min(
     200,
     Math.max(1, Number.isFinite(rawLimit) ? rawLimit : 25),
   );
+
+  if (leadId) {
+    const lead = await prisma.lead.findFirst({
+      where: {
+        id: leadId,
+        OR: [{ search: { userId: user.id } }, { savedBy: { some: { userId: user.id } } }],
+      },
+      select: { id: true, businessName: true, email: true, city: true },
+    });
+
+    if (lead) {
+      return NextResponse.json({
+        leads: [
+          {
+            id: lead.id,
+            businessName: lead.businessName,
+            email: lead.email,
+            city: lead.city,
+            status: "saved",
+          },
+        ],
+      });
+    }
+  }
 
   const saved = await prisma.savedLead.findMany({
     where: {

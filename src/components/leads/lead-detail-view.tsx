@@ -1264,23 +1264,33 @@ export function LeadDetailView({
                   <p className="truncate font-medium text-ink">
                     {lead.email ?? "Not available"}
                   </p>
-                  {lead.email && (() => {
-                    const emailUrl = buildSourceUrl(
-                      lead.emailSourceUrl,
-                      lead.email,
-                      lead.website,
-                    );
-                    return emailUrl ? (
+                  {lead.email && (
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
                       <a
-                        href={emailUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[11px] font-medium text-brand-600 hover:underline"
+                        href={`/inbox?tab=compose&leadId=${lead.id}&to=${encodeURIComponent(lead.email)}&name=${encodeURIComponent(lead.businessName)}`}
+                        className="inline-flex items-center gap-1 rounded-md bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-700 transition hover:bg-brand-100"
                       >
-                        View public source
+                        ⚡ Send Email (Hostinger / SMTP)
                       </a>
-                    ) : null;
-                  })()}
+                      {(() => {
+                        const emailUrl = buildSourceUrl(
+                          lead.emailSourceUrl,
+                          lead.email,
+                          lead.website,
+                        );
+                        return emailUrl ? (
+                          <a
+                            href={emailUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[11px] font-medium text-brand-600 hover:underline"
+                          >
+                            View source
+                          </a>
+                        ) : null;
+                      })()}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-3 rounded-xl border border-border bg-[#faf8fc] px-3.5 py-3 text-sm">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,7 @@ type Mailbox = {
 };
 
 export function EmailComposePanel() {
+  const searchParams = useSearchParams();
   const [mode, setMode] = useState<"lead" | "custom">("lead");
   const [query, setQuery] = useState("");
   const [leads, setLeads] = useState<PickLead[]>([]);
@@ -46,6 +48,45 @@ export function EmailComposePanel() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Read URL query params on mount
+  useEffect(() => {
+    const toParam = searchParams.get("to");
+    const leadIdParam = searchParams.get("leadId");
+    const subjectParam = searchParams.get("subject");
+    const nameParam = searchParams.get("name") || "";
+
+    if (subjectParam) setSubject(subjectParam);
+
+    if (leadIdParam) {
+      setMode("lead");
+      fetch(`/api/emails/lead-picker?leadId=${encodeURIComponent(leadIdParam)}`)
+        .then((res) => res.json())
+        .then((json) => {
+          if (json.leads && json.leads[0]) {
+            const l = json.leads[0];
+            setSelected(l);
+            setCustomTo(l.email || "");
+            if (!subjectParam) {
+              setSubject(`Quick inquiry — ${l.businessName}`);
+            }
+            setBodyText(
+              `Hi there,\n\nI came across ${l.businessName} and wanted to reach out regarding contractor opportunities in your area.\n\nWould you be open to a quick 5-minute chat this week?\n\nBest regards,\n`,
+            );
+          }
+        })
+        .catch(() => {});
+    } else if (toParam) {
+      setMode("custom");
+      setCustomTo(toParam);
+      if (!subjectParam) {
+        setSubject(nameParam ? `Quick intro — ${nameParam}` : "Quick inquiry");
+      }
+      setBodyText(
+        `Hi ${nameParam || "there"},\n\nI wanted to reach out regarding opportunities to collaborate.\n\nWould you be open to a quick chat this week?\n\nBest regards,\n`,
+      );
+    }
+  }, [searchParams]);
 
   // Load available senders / Hostinger accounts
   const loadAccounts = useCallback(async () => {
