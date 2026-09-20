@@ -17,7 +17,7 @@ export async function syncMailboxImap(opts: {
   limit?: number;
 }): Promise<ImapSyncResult> {
   const email = opts.email.toLowerCase().trim();
-  const limit = opts.limit ?? 20;
+  const limit = opts.limit ?? 10;
 
   const client = new ImapFlow({
     host: "imap.hostinger.com",
@@ -31,12 +31,14 @@ export async function syncMailboxImap(opts: {
     tls: { rejectUnauthorized: false },
   });
 
+  // Critical: Attach error listener immediately so socket drop never crashes the Node process
+  client.on("error", () => {});
+
   let synced = 0;
 
   try {
-    // 5s timeout on IMAP connect & fetch
     const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("IMAP timeout")), 5000),
+      setTimeout(() => reject(new Error("IMAP timeout")), 4000),
     );
 
     const syncWork = async () => {
@@ -84,7 +86,6 @@ export async function syncMailboxImap(opts: {
 
           if (existing) continue;
 
-          // Parse text body from source
           let bodyText = "";
           if (msg.source) {
             const raw = msg.source.toString("utf-8");
@@ -128,57 +129,66 @@ export async function syncMailboxImap(opts: {
   }
 }
 
-/** Sync all Hostinger mailboxes for a user */
+/** Sync all Hostinger mailboxes for a user safely in small batches */
 export async function syncUserHostingerMailboxes(userId: string): Promise<{
   totalSynced: number;
   results: ImapSyncResult[];
 }> {
-  // 1. Get user's assigned SMTP accounts
-  const userAccounts = await prisma.smtpAccount.findMany({
-    where: { userId, enabled: true },
-  });
+  try {
+    const userAccounts = await prisma.smtpAccount.findMany({
+      where: { userId, enabled: true },
+    });
 
-  const mailboxesToSync: Array<{ email: string; pass: string }> = [];
+    const mailboxesToSync: Array<{ email: string; pass: string }> = [];
 
-  for (const acc of userAccounts) {
-    const known = HOSTINGER_DEFAULT_MAILBOXES.find(
-      (m) =>
-        m.email.toLowerCase() === acc.fromEmail.toLowerCase() ||
-        m.email.toLowerCase() === acc.username.toLowerCase(),
-    );
-    if (known) {
-      mailboxesToSync.push({ email: known.email, pass: known.pass });
+    for (const acc of userAccounts) {
+      const known = HOSTINGER_DEFAULT_MAILBOXES.find(
+        (m) =>
+          m.email.toLowerCase() === acc.fromEmail.toLowerCase() ||
+          m.email.toLowerCase() === acc.username.toLowerCase(),
+      );
+      if (known) {
+        mailboxesToSync.push({ email: known.email, pass: known.pass });
+      }
     }
-  }
 
-  // If no specific accounts assigned, sync all default Hostinger mailboxes
-  if (!mailboxesToSync.length) {
-    for (const m of HOSTINGER_DEFAULT_MAILBOXES) {
-      mailboxesToSync.push({ email: m.email, pass: m.pass });
+    if (!mailboxesToSync.length) {
+      for (const m of HOSTINGER_DEFAULT_MAILBOXES) {
+        mailboxesToSync.push({ email: m.email, pass: m.pass });
+      }
     }
-  }
 
-  let totalSynced = 0;
-  const results: ImapSyncResult[] = [];
+    let totalSynced = 0;
+    const results: ImapSyncResult[] = [];
 
-  // Sync mailboxes in parallel concurrently for high-speed performance
-  const settled = await Promise.allSettled(
-    mailboxesToSync.slice(0, 15).map((mb) =>
-      syncMailboxImap({
-        userId,
-        email: mb.email,
-        pass: mb.pass,
-        limit: 10,
-      }),
-    ),
-  );
+    // Process in batches of 3 concurrently to preserve container stability
+    const targets = mailboxesToSync.slice(0, 10);
+    for (let i = 0; i < targets.length; i += 3) {
+      const batch = targets.slice(i, i + 3);
+      const settled = await Promise.allSettled(
+        batch.map((mb) =>
+          syncMailboxImap({
+            userId,
+            email: mb.email,
+            pass: mb.pass,
+            limit: 5,
+          }),
+        ),
+      );
 
-  for (const s of settled) {
-    if (s.status === "fulfilled") {
-      results.push(s.value);
-      totalSynced += s.value.synced;
+      for (const s of settled) {
+        if (s.status === "fulfilled") {
+          results.push(s.value);
+          totalSynced += s.value.synced;
+        }
+      }
     }
-  }
 
-  return { totalSynced, results };
+    return { totalSynced, results };
+  } catch (err) {
+    return {
+      totalSynced: 0,
+      results: [{ mailbox: "all", synced: 0, error: String(err) }],
+    };
+  }
 }
