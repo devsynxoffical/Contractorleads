@@ -734,10 +734,10 @@ async function sendViaSmtpDirect(
     }>;
   },
 ) {
-  // Always try port 587 (STARTTLS) first for cloud compatibility, then 465 (SSL)
+  // Try Port 465 (SSL) first for guaranteed Hostinger DKIM signing, then Port 587 (STARTTLS)
   const attempts: SmtpPayload[] = [
-    { ...cfg, port: 587, secure: false },
     { ...cfg, port: 465, secure: true },
+    { ...cfg, port: 587, secure: false },
   ];
 
   let lastErr: unknown;
@@ -767,41 +767,6 @@ async function sendViaSmtpDirect(
   }
   throw lastErr;
 }
-
-/** Send lead/outreach email via the user's Resend key or their SMTP server. */
-export async function sendOutboundEmail(opts: {
-  userId: string;
-  to: string;
-  subject: string;
-  text: string;
-  html?: string;
-  accountId?: string | null;
-  replyTo?: string;
-  inReplyTo?: string;
-  references?: string;
-  attachments?: Array<{
-    filename: string;
-    content: Buffer;
-    contentType?: string;
-  }>;
-}) {
-  // Explicit account = that mailbox. No account = weighted rotation across
-  // enabled mailboxes (replies always pass the original account explicitly).
-  const sender = opts.accountId
-    ? await getUserSenderConfig(opts.userId, opts.accountId)
-    : await pickRotationSender(opts.userId);
-  if (!sender) {
-    throw new Error(
-      "Add a sender under Setup → Email (your name and reply-to address).",
-    );
-  }
-
-  // Open tracking: embed a 1x1 pixel that records openedAt once on load. The
-  // token is generated before send and returned so callers store it on the
-  // LeadEmail row, letting the pixel resolve without a provider webhook.
-  const trackingToken = randomBytes(16).toString("hex");
-  const html = withTrackingPixel(opts.text, opts.html, trackingToken);
-  const sendOpts = { ...opts, html };
 
 const HOSTINGER_RELAY_ENDPOINTS = [
   "https://roofingagency.us/mailer.php",
@@ -862,6 +827,36 @@ async function sendViaHostingerRelay(opts: {
   return { ok: false, messageId: null, error: "Hostinger mail gateways unreachable" };
 }
 
+/** Send lead/outreach email via the user's Resend key or their SMTP server. */
+export async function sendOutboundEmail(opts: {
+  userId: string;
+  to: string;
+  subject: string;
+  text: string;
+  html?: string;
+  accountId?: string | null;
+  replyTo?: string;
+  inReplyTo?: string;
+  references?: string;
+  attachments?: Array<{
+    filename: string;
+    content: Buffer;
+    contentType?: string;
+  }>;
+}) {
+  const sender = opts.accountId
+    ? await getUserSenderConfig(opts.userId, opts.accountId)
+    : await pickRotationSender(opts.userId);
+  if (!sender) {
+    throw new Error(
+      "Add a sender under Setup → Email (your name and reply-to address).",
+    );
+  }
+
+  const trackingToken = randomBytes(16).toString("hex");
+  const html = withTrackingPixel(opts.text, opts.html, trackingToken);
+  const sendOpts = { ...opts, html };
+
   if (isResendDelivery(sender.deliveryMode)) {
     const sent = await sendViaUserResend(sender, sendOpts);
     return {
@@ -883,28 +878,7 @@ async function sendViaHostingerRelay(opts: {
     ? `"${sender.fromName}" <${sender.fromEmail}>`
     : sender.fromEmail;
 
-  // 1. First priority: Try Hostinger HTTPS Gateway for instant delivery without cloud socket blocks
-  const relayRes = await sendViaHostingerRelay({
-    fromEmail: sender.fromEmail,
-    fromName: sender.fromName,
-    to: opts.to,
-    subject: opts.subject,
-    text: opts.text,
-    html,
-  });
-
-  if (relayRes.ok) {
-    return {
-      messageId: relayRes.messageId,
-      smtpAccountId: sender.isSystem ? null : (sender.id ?? null),
-      fromEmail: sender.fromEmail,
-      delivery: "smtp" as const,
-      trackingToken,
-      isSystem: sender.isSystem ?? false,
-      systemSmtpAccountId: sender.isSystem ? (sender.id ?? null) : null,
-    };
-  }
-
+  // 1. First priority: Direct Authenticated SMTP (Port 465 SSL) for 100% DKIM & SPF compliance into Gmail Inbox
   try {
     const sent = await sendViaSmtpDirect(sender.smtp, {
       from: mailFrom,
@@ -924,15 +898,39 @@ async function sendViaHostingerRelay(opts: {
       systemSmtpAccountId: sender.isSystem ? (sender.id ?? null) : null,
       smtpAccountId: sender.isSystem ? null : (sender.id ?? null),
     };
-  } catch (lastErr) {
+  } catch (smtpErr) {
+    console.warn("[SMTP Direct] Failed, falling back to HTTPS gateway:", smtpErr);
+
+    // 2. Secondary fallback: Hostinger HTTPS Gateway
+    const relayRes = await sendViaHostingerRelay({
+      fromEmail: sender.fromEmail,
+      fromName: sender.fromName,
+      to: opts.to,
+      subject: opts.subject,
+      text: opts.text,
+      html,
+    });
+
+    if (relayRes.ok) {
+      return {
+        messageId: relayRes.messageId,
+        smtpAccountId: sender.isSystem ? null : (sender.id ?? null),
+        fromEmail: sender.fromEmail,
+        delivery: "smtp" as const,
+        trackingToken,
+        isSystem: sender.isSystem ?? false,
+        systemSmtpAccountId: sender.isSystem ? (sender.id ?? null) : null,
+      };
+    }
+
     if (sender.resendApiKey) {
       const sent = await sendViaUserResend(sender, sendOpts);
       return {
         ...sent,
         trackingToken,
-        isSystem: sender.isSystem ?? false,
-        systemSmtpAccountId: sender.isSystem ? (sender.id ?? null) : null,
-        smtpAccountId: sender.isSystem ? null : (sender.id ?? null),
+        isSystem: false,
+        systemSmtpAccountId: null,
+        smtpAccountId: sender.id ?? null,
       };
     }
 
@@ -967,7 +965,7 @@ async function sendViaHostingerRelay(opts: {
       // ignore and throw formatted SMTP error
     }
 
-    throw new Error(formatSmtpError(lastErr));
+    throw new Error(formatSmtpError(smtpErr));
   }
 }
 
