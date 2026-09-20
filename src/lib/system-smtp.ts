@@ -184,7 +184,7 @@ export const HOSTINGER_DEFAULT_MAILBOXES: HostingerMailboxSeed[] = [
 ];
 
 const DEFAULT_HOSTINGER_HOST = "smtp.hostinger.com";
-const DEFAULT_HOSTINGER_PORT = 587;
+const DEFAULT_HOSTINGER_PORT = 465;
 
 export type SystemSmtpRow = {
   id: string;
@@ -226,7 +226,7 @@ export async function seedHostingerMailboxes(forceUpdatePasswords = true) {
           domain: item.domain.toLowerCase().trim(),
           host: DEFAULT_HOSTINGER_HOST,
           port: DEFAULT_HOSTINGER_PORT,
-          secure: false,
+          secure: true,
           username: item.email.toLowerCase().trim(),
           passwordEnc,
           fromEmail: item.email.toLowerCase().trim(),
@@ -245,7 +245,7 @@ export async function seedHostingerMailboxes(forceUpdatePasswords = true) {
           domain: item.domain.toLowerCase().trim(),
           host: DEFAULT_HOSTINGER_HOST,
           port: DEFAULT_HOSTINGER_PORT,
-          secure: false,
+          secure: true,
           username: item.email.toLowerCase().trim(),
           passwordEnc,
           fromName: item.name,
@@ -309,8 +309,8 @@ export function systemRowToPayload(row: {
       m.email.toLowerCase() === row.fromEmail.toLowerCase(),
   );
   const host = known ? "smtp.hostinger.com" : (row.host?.trim() || "smtp.hostinger.com");
-  const port = known ? 587 : (row.port || 587);
-  const secure = known ? false : (row.secure ?? false);
+  const port = known ? 465 : (row.port || 465);
+  const secure = known ? true : (row.secure ?? true);
   if (known?.pass) {
     password = known.pass;
   }
@@ -346,6 +346,8 @@ export function systemRowToSenderConfig(row: {
     fromName: row.fromName,
     deliveryMode: "smtp",
     smtp: systemRowToPayload(row),
+    isSystem: true,
+    systemSmtpAccountId: row.id,
   };
 }
 
