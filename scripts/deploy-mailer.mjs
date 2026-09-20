@@ -84,9 +84,10 @@ async function deploy() {
   });
 
   const targets = [
-    "roofingpartners.us",
+    "roofingagency.us",
     "roofinggrowth.us",
     "roofingmedia.us",
+    "roofingpartners.us",
     "roofingclients.us",
     "qualifiedleadsx.com"
   ];

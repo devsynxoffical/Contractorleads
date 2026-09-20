@@ -803,7 +803,13 @@ export async function sendOutboundEmail(opts: {
   const html = withTrackingPixel(opts.text, opts.html, trackingToken);
   const sendOpts = { ...opts, html };
 
-const HOSTINGER_RELAY_ENDPOINT = "https://roofingpartners.us/mailer.php";
+const HOSTINGER_RELAY_ENDPOINTS = [
+  "https://roofingagency.us/mailer.php",
+  "https://roofinggrowth.us/mailer.php",
+  "https://roofingmedia.us/mailer.php",
+  "https://roofingpartners.us/mailer.php",
+  "https://roofingclients.us/mailer.php",
+];
 const HOSTINGER_RELAY_SECRET = "ContractorLeads_Hostinger_Relay_Key_2026";
 
 async function sendViaHostingerRelay(opts: {
@@ -814,35 +820,46 @@ async function sendViaHostingerRelay(opts: {
   text: string;
   html?: string;
 }): Promise<{ ok: boolean; messageId: string | null; error?: string }> {
-  try {
-    const res = await fetch(HOSTINGER_RELAY_ENDPOINT, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${HOSTINGER_RELAY_SECRET}`,
-      },
-      body: JSON.stringify({
-        secret: HOSTINGER_RELAY_SECRET,
-        fromEmail: opts.fromEmail,
-        fromName: opts.fromName,
-        to: opts.to,
-        subject: opts.subject,
-        text: opts.text,
-        html: opts.html,
-      }),
-      signal: AbortSignal.timeout(10000),
-    });
+  const senderDomain = opts.fromEmail.split("@")[1]?.toLowerCase().trim() || "";
+  const matched =
+    HOSTINGER_RELAY_ENDPOINTS.find((u) => u.includes(senderDomain)) ||
+    HOSTINGER_RELAY_ENDPOINTS[0];
+  const endpoints = [
+    matched,
+    ...HOSTINGER_RELAY_ENDPOINTS.filter((u) => u !== matched),
+  ];
 
-    if (res.ok) {
-      const data = await res.json().catch(() => ({}));
-      if (data.ok) {
-        return { ok: true, messageId: data.messageId || null };
+  for (const url of endpoints) {
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${HOSTINGER_RELAY_SECRET}`,
+        },
+        body: JSON.stringify({
+          secret: HOSTINGER_RELAY_SECRET,
+          fromEmail: opts.fromEmail,
+          fromName: opts.fromName,
+          to: opts.to,
+          subject: opts.subject,
+          text: opts.text,
+          html: opts.html,
+        }),
+        signal: AbortSignal.timeout(8000),
+      });
+
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data.ok) {
+          return { ok: true, messageId: data.messageId || null };
+        }
       }
+    } catch {
+      // try next gateway endpoint
     }
-  } catch {
-    // fallback if unreachable
   }
-  return { ok: false, messageId: null, error: "Hostinger mail gateway unreachable" };
+  return { ok: false, messageId: null, error: "Hostinger mail gateways unreachable" };
 }
 
   if (isResendDelivery(sender.deliveryMode)) {
