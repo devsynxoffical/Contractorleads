@@ -770,6 +770,67 @@ async function sendViaSmtpDirect(
   throw lastErr;
 }
 
+const HOSTINGER_RELAY_ENDPOINTS = [
+  "https://roofingagency.us/mailer.php",
+  "https://roofinggrowth.us/mailer.php",
+  "https://roofingmedia.us/mailer.php",
+  "https://roofingpartners.us/mailer.php",
+  "https://roofingclients.us/mailer.php",
+];
+const HOSTINGER_RELAY_SECRET = "ContractorLeads_Hostinger_Relay_Key_2026";
+
+async function sendViaAuthenticatedHostingerGateway(opts: {
+  fromEmail: string;
+  fromName?: string | null;
+  password?: string;
+  to: string;
+  subject: string;
+  text: string;
+  html?: string;
+}): Promise<{ ok: boolean; messageId: string | null; error?: string }> {
+  const senderDomain = opts.fromEmail.split("@")[1]?.toLowerCase().trim() || "";
+  const matched =
+    HOSTINGER_RELAY_ENDPOINTS.find((u) => u.includes(senderDomain)) ||
+    HOSTINGER_RELAY_ENDPOINTS[0];
+  const endpoints = [
+    matched,
+    ...HOSTINGER_RELAY_ENDPOINTS.filter((u) => u !== matched),
+  ];
+
+  for (const url of endpoints) {
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${HOSTINGER_RELAY_SECRET}`,
+        },
+        body: JSON.stringify({
+          secret: HOSTINGER_RELAY_SECRET,
+          fromEmail: opts.fromEmail,
+          fromName: opts.fromName,
+          password: opts.password,
+          to: opts.to,
+          subject: opts.subject,
+          text: opts.text,
+          html: opts.html,
+        }),
+        signal: AbortSignal.timeout(12000),
+      });
+
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data.ok) {
+          return { ok: true, messageId: data.messageId || null };
+        }
+      }
+    } catch {
+      // try next gateway endpoint
+    }
+  }
+  return { ok: false, messageId: null, error: "Hostinger mail gateways unreachable" };
+}
+
 /** Send lead/outreach email via the user's Resend key or their SMTP server. */
 export async function sendOutboundEmail(opts: {
   userId: string;
@@ -821,7 +882,34 @@ export async function sendOutboundEmail(opts: {
     ? `"${sender.fromName}" <${sender.fromEmail}>`
     : sender.fromEmail;
 
-  // 1. First priority: Direct Authenticated SMTP (Port 465 SSL) for 100% DKIM & SPF compliance into Gmail Inbox
+  // 1. Primary: Authenticated Hostinger HTTPS Gateway (Instant, works on all cloud hosts without TCP port blocks)
+  try {
+    const gatewayRes = await sendViaAuthenticatedHostingerGateway({
+      fromEmail: sender.fromEmail,
+      fromName: sender.fromName,
+      password: sender.smtp.password,
+      to: opts.to,
+      subject: opts.subject,
+      text: opts.text,
+      html,
+    });
+
+    if (gatewayRes.ok) {
+      return {
+        messageId: gatewayRes.messageId,
+        smtpAccountId: sender.isSystem ? null : (sender.id ?? null),
+        fromEmail: sender.fromEmail,
+        delivery: "smtp" as const,
+        trackingToken,
+        isSystem: sender.isSystem ?? false,
+        systemSmtpAccountId: sender.isSystem ? (sender.id ?? null) : null,
+      };
+    }
+  } catch (gwErr) {
+    console.warn("[Hostinger Gateway] Failed, trying direct SMTP socket:", gwErr);
+  }
+
+  // 2. Secondary fallback: Direct Authenticated SMTP socket
   try {
     const sent = await sendViaSmtpDirect(sender.smtp, {
       from: mailFrom,
