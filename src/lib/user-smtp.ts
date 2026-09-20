@@ -752,6 +752,7 @@ async function sendViaSmtpDirect(
           contentType: a.contentType,
         })),
       });
+      console.log(`[SMTP Direct OK] Delivered via ${attempt.host}:${attempt.port} - Response:`, info.response);
       return {
         messageId: typeof info.messageId === "string" ? info.messageId : null,
         smtpAccountId: cfg.id ?? null,
@@ -759,6 +760,7 @@ async function sendViaSmtpDirect(
         delivery: "smtp" as const,
       };
     } catch (e) {
+      console.warn(`[SMTP Direct Failed] ${attempt.host}:${attempt.port} ->`, e instanceof Error ? e.message : e);
       lastErr = e;
       if (!isSmtpConnectivityError(e)) {
         throw new Error(formatSmtpError(e));
@@ -766,65 +768,6 @@ async function sendViaSmtpDirect(
     }
   }
   throw lastErr;
-}
-
-const HOSTINGER_RELAY_ENDPOINTS = [
-  "https://roofingagency.us/mailer.php",
-  "https://roofinggrowth.us/mailer.php",
-  "https://roofingmedia.us/mailer.php",
-  "https://roofingpartners.us/mailer.php",
-  "https://roofingclients.us/mailer.php",
-];
-const HOSTINGER_RELAY_SECRET = "ContractorLeads_Hostinger_Relay_Key_2026";
-
-async function sendViaHostingerRelay(opts: {
-  fromEmail: string;
-  fromName?: string | null;
-  to: string;
-  subject: string;
-  text: string;
-  html?: string;
-}): Promise<{ ok: boolean; messageId: string | null; error?: string }> {
-  const senderDomain = opts.fromEmail.split("@")[1]?.toLowerCase().trim() || "";
-  const matched =
-    HOSTINGER_RELAY_ENDPOINTS.find((u) => u.includes(senderDomain)) ||
-    HOSTINGER_RELAY_ENDPOINTS[0];
-  const endpoints = [
-    matched,
-    ...HOSTINGER_RELAY_ENDPOINTS.filter((u) => u !== matched),
-  ];
-
-  for (const url of endpoints) {
-    try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${HOSTINGER_RELAY_SECRET}`,
-        },
-        body: JSON.stringify({
-          secret: HOSTINGER_RELAY_SECRET,
-          fromEmail: opts.fromEmail,
-          fromName: opts.fromName,
-          to: opts.to,
-          subject: opts.subject,
-          text: opts.text,
-          html: opts.html,
-        }),
-        signal: AbortSignal.timeout(8000),
-      });
-
-      if (res.ok) {
-        const data = await res.json().catch(() => ({}));
-        if (data.ok) {
-          return { ok: true, messageId: data.messageId || null };
-        }
-      }
-    } catch {
-      // try next gateway endpoint
-    }
-  }
-  return { ok: false, messageId: null, error: "Hostinger mail gateways unreachable" };
 }
 
 /** Send lead/outreach email via the user's Resend key or their SMTP server. */
@@ -899,29 +842,7 @@ export async function sendOutboundEmail(opts: {
       smtpAccountId: sender.isSystem ? null : (sender.id ?? null),
     };
   } catch (smtpErr) {
-    console.warn("[SMTP Direct] Failed, falling back to HTTPS gateway:", smtpErr);
-
-    // 2. Secondary fallback: Hostinger HTTPS Gateway
-    const relayRes = await sendViaHostingerRelay({
-      fromEmail: sender.fromEmail,
-      fromName: sender.fromName,
-      to: opts.to,
-      subject: opts.subject,
-      text: opts.text,
-      html,
-    });
-
-    if (relayRes.ok) {
-      return {
-        messageId: relayRes.messageId,
-        smtpAccountId: sender.isSystem ? null : (sender.id ?? null),
-        fromEmail: sender.fromEmail,
-        delivery: "smtp" as const,
-        trackingToken,
-        isSystem: sender.isSystem ?? false,
-        systemSmtpAccountId: sender.isSystem ? (sender.id ?? null) : null,
-      };
-    }
+    console.error("[SMTP Direct Error]", smtpErr);
 
     if (sender.resendApiKey) {
       const sent = await sendViaUserResend(sender, sendOpts);
