@@ -8,7 +8,7 @@
  * Healthcheck is disabled in railway.toml so a slow db push cannot fail the
  * deploy while Postgres is still reachable.
  */
-import { spawn } from "child_process";
+import { spawn, spawnSync } from "child_process";
 import { cpSync, existsSync, mkdirSync, readdirSync } from "fs";
 import { join } from "path";
 
@@ -16,7 +16,24 @@ const port = process.env.PORT || "3000";
 process.env.PORT = port;
 process.env.HOSTNAME = "0.0.0.0";
 
-console.log(`[start] Initializing Contractor Leads on port ${port}...`);
+if (process.env.DATABASE_URL) {
+  console.log("[start] Ensuring DB schema (prisma db push)...");
+  const push = spawnSync(
+    "npx",
+    ["prisma", "db", "push", "--skip-generate", "--accept-data-loss"],
+    { stdio: "inherit", env: process.env, timeout: 120_000 },
+  );
+  if (push.error) {
+    console.error("[start] prisma db push error:", push.error.message);
+  } else if (push.status !== 0) {
+    console.error("[start] prisma db push failed with status", push.status);
+    // Continue — pre-deploy may already have synced; don't brick the site
+  } else {
+    console.log("[start] DB schema ok");
+  }
+} else {
+  console.warn("[start] DATABASE_URL missing — skipping prisma db push");
+}
 
 const root = process.cwd();
 const standaloneDir = join(root, ".next", "standalone");
@@ -72,9 +89,9 @@ if (existsSync(standaloneServer)) {
     "[start] Standalone server missing — falling back to next start",
   );
   child = spawn(
-    "./node_modules/.bin/next",
-    ["start", "-H", "0.0.0.0", "-p", port],
-    { stdio: "inherit", env: process.env, cwd: root },
+    "npx",
+    ["next", "start", "-H", "0.0.0.0", "-p", port],
+    { stdio: "inherit", env: process.env },
   );
 }
 

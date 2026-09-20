@@ -163,32 +163,18 @@ export async function revokeUserSessions(userId: string) {
 
 export async function setSessionCookie(token: string) {
   const cookieStore = await cookies();
-  const isProd = process.env.NODE_ENV === "production";
   cookieStore.set(COOKIE_NAME, token, {
     httpOnly: true,
-    secure: isProd,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    ...(isProd ? { domain: ".contractorleads.us" } : {}),
     maxAge: 60 * 60 * 24 * 7,
   });
 }
 
 export async function clearSessionCookie() {
   const cookieStore = await cookies();
-  const isProd = process.env.NODE_ENV === "production";
   cookieStore.delete(COOKIE_NAME);
-  if (isProd) {
-    try {
-      cookieStore.set(COOKIE_NAME, "", {
-        domain: ".contractorleads.us",
-        path: "/",
-        maxAge: 0,
-      });
-    } catch {
-      // ignore
-    }
-  }
 }
 
 /** Session from JWT only — ignores impersonation. */

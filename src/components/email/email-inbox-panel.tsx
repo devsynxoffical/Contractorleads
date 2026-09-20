@@ -71,28 +71,17 @@ export function EmailInboxPanel() {
   const [searchFilter, setSearchFilter] = useState("");
 
   const loadInbox = useCallback(async (currentTab: "all" | "inbound" | "outbound") => {
-    try {
-      setLoading(true);
-      const res = await fetch(`/api/emails/inbox?tab=${currentTab}`);
-      const json = await res.json();
-      if (res.ok) {
-        setEmails(json.emails ?? []);
-        setUnreadCount(json.unreadCount ?? 0);
-        setInboundCount(json.inboundCount ?? 0);
-        setOutboundCount(json.outboundCount ?? 0);
-        setTotalCount(json.totalCount ?? 0);
-      } else {
-        setError(json.error || "Failed to load emails");
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load inbox");
-    } finally {
-      setLoading(false);
-    }
+    const res = await fetch(`/api/emails/inbox?tab=${currentTab}`);
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || "Failed to load inbox");
+    setEmails(json.emails ?? []);
+    setUnreadCount(json.unreadCount ?? 0);
+    setInboundCount(json.inboundCount ?? 0);
+    setOutboundCount(json.outboundCount ?? 0);
+    setTotalCount(json.totalCount ?? 0);
   }, []);
 
   const syncMailboxes = useCallback(async () => {
-    if (syncing) return;
     try {
       setSyncing(true);
       setMsg(null);
@@ -107,25 +96,35 @@ export function EmailInboxPanel() {
     } finally {
       setSyncing(false);
     }
-  }, [loadInbox, tab, syncing]);
+  }, [loadInbox, tab]);
 
-  // Load inbox data on mount and tab changes immediately
   useEffect(() => {
-    void loadInbox(tab);
-  }, [tab, loadInbox]);
+    let cancelled = false;
+    const run = async () => {
+      try {
+        setLoading(true);
+        await loadInbox(tab);
+        // Background sync on initial load
+        void syncMailboxes();
+      } catch (e) {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : "Failed to load inbox");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [tab, loadInbox, syncMailboxes]);
 
   async function openEmail(id: string) {
     setSelectedId(id);
     setMsg(null);
     setError(null);
     setBusy(true);
-
-    // Optimistically mark as read in local list
-    setEmails((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, readAt: e.readAt || new Date().toISOString() } : e)),
-    );
-    setUnreadCount((prev) => Math.max(0, prev - 1));
-
     try {
       const res = await fetch(`/api/emails/${id}`);
       const json = await res.json();
@@ -140,6 +139,7 @@ export function EmailInboxPanel() {
         (json.accounts as Account[] | undefined)?.find((a) => a.isDefault) ||
         json.accounts?.[0];
       setSmtpAccountId(def?.id || "");
+      await loadInbox(tab);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to open email");
     } finally {

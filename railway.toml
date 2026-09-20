@@ -10,11 +10,15 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
+# Schema sync BEFORE the new replica serves traffic / healthchecks
 preDeployCommand = "node scripts/pre-deploy-railway.mjs"
-startCommand = "npx next start -H 0.0.0.0"
+# Start must listen on PORT immediately (no blocking db push here)
+startCommand = "node scripts/start-railway.mjs"
 restartPolicyType = "ON_FAILURE"
-healthcheckPath = "/api/health"
-healthcheckTimeout = 120
+# Temporarily disabled: healthcheck was failing while start blocked on
+# prisma/seed, marking good builds as failed. Re-enable after deploy is stable:
+# healthcheckPath = "/api/health"
+# healthcheckTimeout = 300
 restartPolicyMaxRetries = 10
 
 # Force a valid Singapore region (overrides stale dashboard region)

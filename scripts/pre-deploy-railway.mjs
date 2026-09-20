@@ -1,50 +1,54 @@
 /**
  * Railway pre-deploy: sync Prisma schema + seed baseline config.
- * Runs BEFORE the new container starts serving traffic / healthchecks.
+ * Runs BEFORE the new container starts serving traffic / healthchecks,
+ * so `start-railway.mjs` can boot Next.js immediately.
  */
 import { spawnSync } from "child_process";
-import { existsSync } from "fs";
 
 if (!process.env.DATABASE_URL) {
-  console.warn(
-    "DATABASE_URL is not set. Skipping schema sync.",
+  console.error(
+    "DATABASE_URL is not set. Link Postgres and set DATABASE_URL=${{Postgres.DATABASE_URL}}.",
   );
-  process.exit(0);
+  process.exit(1);
 }
 
 console.log("Pre-deploy: prisma db push...");
-const prismaBin = existsSync("./node_modules/.bin/prisma")
-  ? "./node_modules/.bin/prisma"
-  : "npx";
-const prismaArgs = prismaBin === "npx"
-  ? ["prisma", "db", "push", "--skip-generate", "--accept-data-loss"]
-  : ["db", "push", "--skip-generate", "--accept-data-loss"];
-
-const push = spawnSync(prismaBin, prismaArgs, {
-  stdio: "inherit",
-  env: process.env,
-  timeout: 120_000,
-});
+const push = spawnSync(
+  "npx",
+  ["prisma", "db", "push", "--skip-generate", "--accept-data-loss"],
+  {
+    stdio: "inherit",
+    env: process.env,
+    // Don't hang healthchecks forever if Postgres is unreachable
+    timeout: 120_000,
+  },
+);
 
 if (push.error) {
-  console.warn("prisma db push warning:", push.error.message);
-} else if (push.status !== 0) {
-  console.warn("prisma db push status:", push.status);
+  console.error("prisma db push error:", push.error.message);
+  process.exit(1);
+}
+if (push.status !== 0) {
+  console.error(
+    "prisma db push failed — check DATABASE_URL and that Postgres is running.",
+  );
+  process.exit(push.status ?? 1);
 }
 
 console.log("Pre-deploy: seed baseline config...");
-try {
-  const seed = spawnSync("node", ["prisma/seed.mjs"], {
-    stdio: "inherit",
-    env: process.env,
-    timeout: 60_000,
-  });
-  if (seed.error) {
-    console.warn("seed warning:", seed.error.message);
-  }
-} catch (err) {
-  console.warn("seed caught error:", err);
+const seed = spawnSync("node", ["prisma/seed.mjs"], {
+  stdio: "inherit",
+  env: process.env,
+  timeout: 60_000,
+});
+
+if (seed.error) {
+  console.error("seed error:", seed.error.message);
+  process.exit(1);
+}
+if (seed.status !== 0) {
+  console.error("Seed failed — login may not work until seed succeeds.");
+  process.exit(seed.status ?? 1);
 }
 
 console.log("Pre-deploy complete.");
-
