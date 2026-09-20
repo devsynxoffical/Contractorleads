@@ -67,6 +67,7 @@ export function EmailInboxPanel() {
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [searchFilter, setSearchFilter] = useState("");
 
   const loadInbox = useCallback(async (currentTab: "all" | "inbound" | "outbound") => {
@@ -80,12 +81,31 @@ export function EmailInboxPanel() {
     setTotalCount(json.totalCount ?? 0);
   }, []);
 
+  const syncMailboxes = useCallback(async () => {
+    try {
+      setSyncing(true);
+      setMsg(null);
+      const res = await fetch("/api/emails/inbox/sync", { method: "POST" });
+      const data = await res.json();
+      if (res.ok && data.totalSynced > 0) {
+        setMsg(`Synced ${data.totalSynced} new incoming email(s) from Hostinger.`);
+      }
+      await loadInbox(tab);
+    } catch {
+      // ignore background sync errors
+    } finally {
+      setSyncing(false);
+    }
+  }, [loadInbox, tab]);
+
   useEffect(() => {
     let cancelled = false;
     const run = async () => {
       try {
         setLoading(true);
         await loadInbox(tab);
+        // Background sync on initial load
+        void syncMailboxes();
       } catch (e) {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : "Failed to load inbox");
@@ -98,7 +118,7 @@ export function EmailInboxPanel() {
     return () => {
       cancelled = true;
     };
-  }, [tab, loadInbox]);
+  }, [tab, loadInbox, syncMailboxes]);
 
   async function openEmail(id: string) {
     setSelectedId(id);
@@ -223,8 +243,21 @@ export function EmailInboxPanel() {
           </button>
           <button
             type="button"
+            onClick={() => syncMailboxes()}
+            disabled={syncing}
+            title="Sync Hostinger Mailboxes (Fetch new replies)"
+            className={cn(
+              "flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition border border-brand-200 bg-brand-50 text-brand-700 hover:bg-brand-100",
+              syncing && "opacity-75 cursor-not-allowed",
+            )}
+          >
+            <HiOutlineArrowPath className={cn("h-3.5 w-3.5", syncing && "animate-spin")} />
+            <span>{syncing ? "Syncing…" : "Sync Mailboxes"}</span>
+          </button>
+          <button
+            type="button"
             onClick={() => loadInbox(tab)}
-            title="Refresh Inbox"
+            title="Refresh List"
             className="rounded-lg p-1.5 text-ink-muted hover:bg-[var(--input-bg)] hover:text-ink transition"
           >
             <HiOutlineArrowPath className="h-4 w-4" />

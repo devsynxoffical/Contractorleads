@@ -389,7 +389,7 @@ export async function ingestInboundEmail(opts: {
   }
 
   for (const userId of userIds) {
-    const saved = await prisma.savedLead.findFirst({
+    let saved = await prisma.savedLead.findFirst({
       where: {
         userId,
         lead: { email: { equals: from, mode: "insensitive" } },
@@ -397,7 +397,40 @@ export async function ingestInboundEmail(opts: {
       include: { lead: true },
       orderBy: { updatedAt: "desc" },
     });
-    if (!saved) continue;
+
+    if (!saved) {
+      let targetLead = await prisma.lead.findFirst({
+        where: { email: { equals: from, mode: "insensitive" } },
+      });
+      if (!targetLead) {
+        const defaultName = from.split("@")[0].replace(/[._-]/g, " ");
+        const nameCap = defaultName
+          .split(" ")
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(" ");
+        targetLead = await prisma.lead.create({
+          data: {
+            businessName: nameCap || from,
+            email: from,
+            industry: "General",
+            city: "Unknown",
+            state: "US",
+            country: "US",
+            qualityTier: "Standard",
+            leadScore: 50,
+          },
+        });
+      }
+
+      saved = await prisma.savedLead.create({
+        data: {
+          userId,
+          leadId: targetLead.id,
+          status: "contacted",
+        },
+        include: { lead: true },
+      });
+    }
 
     const email = await prisma.leadEmail.create({
       data: {

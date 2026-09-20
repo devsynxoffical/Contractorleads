@@ -38,7 +38,7 @@ $fromName = trim($data["fromName"] ?? "Contractor Leads");
 
 if (empty($to) || empty($subject) || empty($fromEmail)) {
     http_response_code(400);
-    echo json_encode(["ok" => false, "error" => "Missing required fields: to, subject, fromEmail"]);
+    echo json_encode(["ok" => false, "error" => "Missing required fields"]);
     exit;
 }
 
@@ -50,9 +50,10 @@ $headers[] = "MIME-Version: 1.0";
 $headers[] = "Content-Type: text/html; charset=UTF-8";
 $headers[] = "From: " . ($fromName ? "=?UTF-8?B?" . base64_encode($fromName) . "?= <" . $fromEmail . ">" : $fromEmail);
 $headers[] = "Reply-To: " . $fromEmail;
+$headers[] = "Return-Path: <" . $fromEmail . ">";
 $headers[] = "Message-ID: " . $msgId;
 $headers[] = "Date: " . date("r");
-$headers[] = "X-Mailer: ContractorLeads-Hostinger-Relay/2.0";
+$headers[] = "X-Mailer: ContractorLeads-Hostinger/1.0";
 
 $finalBody = !empty($htmlContent) ? $htmlContent : nl2br(htmlspecialchars($textContent));
 
@@ -69,7 +70,7 @@ if ($sent) {
     http_response_code(500);
     echo json_encode([
         "ok" => false,
-        "error" => "Internal mail delivery failed on Hostinger server"
+        "error" => "Delivery failed"
     ]);
 }
 `;
@@ -97,14 +98,14 @@ async function deploy() {
       const remotePath = `/home/u880916130/domains/${domain}/public_html/mailer.php`;
       console.log(`Uploading mailer.php to ${domain}...`);
       await sftp.put(Buffer.from(phpScript), remotePath);
-      console.log(`[SUCCESS] Deployed to https://${domain}/mailer.php`);
+      console.log(`[SUCCESS] Deployed https://${domain}/mailer.php`);
     } catch (e) {
       console.error(`[FAIL] Could not deploy to ${domain}:`, e.message);
     }
   }
 
   await sftp.end();
-  console.log("Deployment to Hostinger completed!");
+  console.log("All gateways deployed successfully!");
 }
 
 deploy().catch(console.error);
