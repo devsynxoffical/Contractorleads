@@ -49,6 +49,86 @@ type Account = {
   isDefault: boolean;
 };
 
+function cleanMessageBody(raw: string): string {
+  if (!raw) return "";
+
+  let text = raw;
+
+  // 1. Remove raw MIME boundaries and content headers if present
+  text = text.replace(/--[a-f0-9_-]+(?:--)?/gi, "");
+  text = text.replace(/Content-Type:[^\n\r]+/gi, "");
+  text = text.replace(/Content-Transfer-Encoding:[^\n\r]+/gi, "");
+  text = text.replace(/charset="?[^"\r\n]+"?/gi, "");
+
+  // 2. Decode Quoted-Printable artifacts (e.g. =20, =3D, =E2=80=AF)
+  text = text.replace(/=E2=80=AF/gi, " ");
+  text = text.replace(/=E2=80=99/gi, "’");
+  text = text.replace(/=E2=80=9C/gi, "“");
+  text = text.replace(/=E2=80=9D/gi, "”");
+  text = text.replace(/=3D/gi, "=");
+  text = text.replace(/=\r?\n/g, ""); // soft linebreaks in quoted-printable
+
+  // 3. Decode HTML entities
+  text = text
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, " ");
+
+  // 4. Clean extra redundant blank lines
+  text = text.replace(/\n{3,}/g, "\n\n").trim();
+
+  return text || raw;
+}
+
+function renderFormattedThreadBody(rawBody: string) {
+  const cleaned = cleanMessageBody(rawBody);
+  const lines = cleaned.split("\n");
+
+  const mainLines: string[] = [];
+  const quoteLines: string[] = [];
+  let inQuote = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (
+      trimmed.startsWith(">") ||
+      /^On\s+.+wrote:$/i.test(trimmed) ||
+      /^---------- Forwarded message/i.test(trimmed)
+    ) {
+      inQuote = true;
+    }
+
+    if (inQuote) {
+      quoteLines.push(line.replace(/^>\s?/, ""));
+    } else {
+      mainLines.push(line);
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      {mainLines.length > 0 && (
+        <div className="whitespace-pre-wrap text-[13px] leading-relaxed text-ink font-normal">
+          {mainLines.join("\n").trim()}
+        </div>
+      )}
+      {quoteLines.length > 0 && (
+        <details className="mt-2 rounded-lg bg-[var(--surface-muted)]/60 px-3 py-2 text-[11px] text-ink-muted border border-border/60">
+          <summary className="cursor-pointer font-medium select-none text-ink-faint hover:text-ink transition">
+            ⋯ Show quoted history ({quoteLines.length} lines)
+          </summary>
+          <div className="mt-2 border-l-2 border-brand-300 pl-2.5 whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-ink-muted">
+            {quoteLines.join("\n").trim()}
+          </div>
+        </details>
+      )}
+    </div>
+  );
+}
+
 export function EmailInboxPanel() {
   const [tab, setTab] = useState<"all" | "inbound" | "outbound">("all");
   const [emails, setEmails] = useState<InboxItem[]>([]);
@@ -400,35 +480,60 @@ export function EmailInboxPanel() {
                 </div>
               ) : null}
 
-              <ul className="max-h-[300px] space-y-3 overflow-y-auto pr-1">
-                {thread.map((m) => (
-                  <li
-                    key={m.id}
-                    className={cn(
-                      "rounded-xl px-3.5 py-3 text-[13px]",
-                      m.direction === "inbound"
-                        ? "bg-[var(--input-bg)] border border-border/80"
-                        : "bg-brand-50 border border-brand-100",
-                    )}
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-muted">
-                        {m.direction === "inbound" ? "Received from contact" : "You (Sent)"} ·{" "}
-                        {m.status}
-                      </span>
-                      <span className="text-[10px] text-ink-faint">
-                        {new Date(m.createdAt).toLocaleString()}
-                      </span>
-                    </div>
-                    <p className="mt-1 font-semibold text-ink">{m.subject}</p>
-                    <p className="mt-1 whitespace-pre-wrap text-[12px] leading-relaxed text-ink-muted">
-                      {m.body}
-                    </p>
-                    {m.error ? (
-                      <p className="mt-1 text-[12px] text-rose-600">{m.error}</p>
-                    ) : null}
-                  </li>
-                ))}
+              <ul className="max-h-[360px] space-y-3 overflow-y-auto pr-1">
+                {thread.map((m) => {
+                  const isInbound = m.direction === "inbound";
+                  return (
+                    <li
+                      key={m.id}
+                      className={cn(
+                        "rounded-xl p-4 text-[13px] transition border",
+                        isInbound
+                          ? "bg-[var(--input-bg)] border-border/80"
+                          : "bg-brand-50/70 border-brand-200/80",
+                      )}
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/40 pb-2 mb-2.5">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={cn(
+                              "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase",
+                              isInbound
+                                ? "bg-emerald-100 text-emerald-800"
+                                : "bg-brand-100 text-brand-800",
+                            )}
+                          >
+                            {isInbound ? (
+                              <>
+                                <HiOutlineArrowDownLeft className="h-3 w-3" /> Contact Received
+                              </>
+                            ) : (
+                              <>
+                                <HiOutlineArrowUpRight className="h-3 w-3" /> You (Sent)
+                              </>
+                            )}
+                          </span>
+                          <span className="text-[11px] font-medium text-ink-muted">
+                            {isInbound ? m.fromEmail : `to: ${m.toEmail}`}
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-ink-faint">
+                          {new Date(m.createdAt).toLocaleString()}
+                        </span>
+                      </div>
+
+                      <p className="font-semibold text-[13px] text-ink mb-1.5">{m.subject}</p>
+                      
+                      {renderFormattedThreadBody(m.body)}
+
+                      {m.error ? (
+                        <p className="mt-2 rounded bg-rose-50 p-2 text-[11px] font-medium text-rose-700 border border-rose-200">
+                          {m.error}
+                        </p>
+                      ) : null}
+                    </li>
+                  );
+                })}
               </ul>
 
               <form onSubmit={sendReply} className="space-y-3 border-t border-border pt-3">

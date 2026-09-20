@@ -77,26 +77,38 @@ export async function syncMailboxImap(opts: {
 
         if (existing) continue;
 
-        // Parse text body from source
+        // Parse text body with mailparser
         let bodyText = "";
+        let parsedSubject = subject;
         if (msg.source) {
-          const raw = msg.source.toString("utf-8");
-          // Extract text after double newline
-          const parts = raw.split(/\r?\n\r?\n/);
-          if (parts.length > 1) {
-            bodyText = parts.slice(1).join("\n").replace(/<[^>]+>/g, "").slice(0, 4000);
+          try {
+            const { simpleParser } = await import("mailparser");
+            const parsed = await simpleParser(msg.source);
+            bodyText =
+              parsed.text ||
+              (typeof parsed.html === "string"
+                ? parsed.html.replace(/<[^>]+>/g, " ")
+                : "") ||
+              "";
+            if (parsed.subject && (!parsedSubject || parsedSubject === "(no subject)")) {
+              parsedSubject = parsed.subject;
+            }
+          } catch {
+            const raw = msg.source.toString("utf-8");
+            const parts = raw.split(/\r?\n\r?\n/);
+            bodyText = parts.slice(1).join("\n").replace(/<[^>]+>/g, " ").slice(0, 4000);
           }
         }
         if (!bodyText.trim()) {
-          bodyText = `Received message from ${fromAddr}: "${subject}"`;
+          bodyText = `Received message from ${fromAddr}: "${parsedSubject}"`;
         }
 
         await ingestInboundEmail({
           userId: opts.userId,
           fromEmail: fromAddr,
           toEmail: toAddr,
-          subject,
-          body: bodyText,
+          subject: parsedSubject,
+          body: bodyText.trim().slice(0, 5000),
           messageId: messageId || undefined,
           inReplyTo: msg.envelope?.inReplyTo || undefined,
         });
