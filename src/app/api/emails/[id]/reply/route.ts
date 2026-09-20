@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { replyToLeadEmail } from "@/lib/lead-email";
 
+export const maxDuration = 60;
+export const dynamic = "force-dynamic";
+
 type Params = { params: Promise<{ id: string }> };
 
 /** Reply to an inbox / lead email from the agency SMTP mailbox. */

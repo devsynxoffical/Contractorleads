@@ -10,6 +10,9 @@ import {
 } from "@/lib/user-smtp";
 import { prisma } from "@/lib/prisma";
 
+export const maxDuration = 60;
+export const dynamic = "force-dynamic";
+
 /** Legacy single-SMTP API — reads/writes the default SmtpAccount. */
 export async function GET() {
   const user = await getSessionUser();

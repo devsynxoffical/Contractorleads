@@ -5,6 +5,9 @@ import { prisma } from "@/lib/prisma";
 import { LEAD_REPORT_SCRIPT_TYPE } from "@/lib/services/lead-intelligence-report";
 import { listAvailableSenders } from "@/lib/user-smtp";
 
+export const maxDuration = 60;
+export const dynamic = "force-dynamic";
+
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_request: Request, { params }: Params) {

@@ -4,6 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { sendBulkLeadEmail } from "@/lib/lead-email";
 import { listSmtpAccounts, migrateLegacySmtpIfNeeded } from "@/lib/user-smtp";
 
+export const maxDuration = 120;
+export const dynamic = "force-dynamic";
+
 export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

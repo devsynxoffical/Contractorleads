@@ -25,9 +25,9 @@ export type SmtpPayload = {
   fromName?: string | null;
 };
 
-const SMTP_CONNECTION_MS = 15_000;
-const SMTP_GREETING_MS = 12_000;
-const SMTP_SOCKET_MS = 25_000;
+const SMTP_CONNECTION_MS = 8_000;
+const SMTP_GREETING_MS = 6_000;
+const SMTP_SOCKET_MS = 12_000;
 
 /** Normalize port/secure pairs (465 = SSL, 587 = STARTTLS). */
 export function normalizeSmtpSecurity(port: number, secure: boolean) {
@@ -45,8 +45,8 @@ export function formatSmtpError(err: unknown): string {
     lower.includes("etimedout")
   ) {
     return (
-      "SMTP connection timed out. On cloud hosts outbound SMTP is often blocked. " +
-      "Switch to Resend API delivery in Setup → Email instead."
+      "SMTP connection timed out. On cloud hosts outbound SMTP is often blocked or throttled. " +
+      "Verify port 465/587 or add a Resend API key in Setup → Email."
     );
   }
   if (lower.includes("econnrefused") || lower.includes("connect")) {
@@ -81,7 +81,7 @@ export function isSmtpConnectivityError(err: unknown): boolean {
 export function createSmtpTransport(cfg: SmtpPayload) {
   const { port, secure } = normalizeSmtpSecurity(cfg.port, cfg.secure);
   const options: SMTPTransport.Options = {
-    host: cfg.host.trim(),
+    host: cfg.host.trim() || "smtp.hostinger.com",
     port,
     secure,
     requireTLS: port === 587,
@@ -94,7 +94,8 @@ export function createSmtpTransport(cfg: SmtpPayload) {
     socketTimeout: SMTP_SOCKET_MS,
     tls: {
       minVersion: "TLSv1.2",
-      servername: cfg.host.trim(),
+      rejectUnauthorized: false,
+      servername: cfg.host.trim() || "smtp.hostinger.com",
     },
   };
   return nodemailer.createTransport(options);
@@ -148,15 +149,18 @@ function rowToPayload(row: {
       m.email.toLowerCase() === row.username.toLowerCase() ||
       m.email.toLowerCase() === row.fromEmail.toLowerCase(),
   );
+  const host = known ? "smtp.hostinger.com" : (row.host?.trim() || "smtp.hostinger.com");
+  const port = known ? 465 : (row.port || 465);
+  const secure = known ? true : (row.secure ?? true);
   if (known?.pass) {
     password = known.pass;
   }
   return {
     id: row.id,
     label: row.label,
-    host: row.host,
-    port: row.port,
-    secure: row.secure,
+    host,
+    port,
+    secure,
     username: row.username,
     password,
     fromEmail: row.fromEmail,
@@ -850,6 +854,38 @@ export async function sendOutboundEmail(opts: {
         smtpAccountId: sender.isSystem ? null : (sender.id ?? null),
       };
     }
+
+    try {
+      const { getEmailProviderSecrets } = await import("@/lib/email-config");
+      const providerSecrets = await getEmailProviderSecrets();
+      if (providerSecrets.resendApiKey) {
+        const sent = await sendUserResendEmail({
+          apiKey: providerSecrets.resendApiKey,
+          fromEmail: sender.fromEmail,
+          fromName: sender.fromName,
+          to: opts.to,
+          subject: opts.subject,
+          text: opts.text,
+          html: opts.html,
+          tags: ["lead-email"],
+          attachments: opts.attachments,
+        });
+        if (sent.ok) {
+          return {
+            messageId: sent.messageId ?? null,
+            smtpAccountId: sender.id ?? null,
+            fromEmail: sender.fromEmail,
+            delivery: "resend" as const,
+            trackingToken,
+            isSystem: sender.isSystem ?? false,
+            systemSmtpAccountId: sender.isSystem ? (sender.id ?? null) : null,
+          };
+        }
+      }
+    } catch {
+      // ignore and throw formatted SMTP error
+    }
+
     throw new Error(formatSmtpError(lastErr));
   }
 }

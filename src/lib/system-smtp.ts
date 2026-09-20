@@ -308,15 +308,18 @@ export function systemRowToPayload(row: {
       m.email.toLowerCase() === row.username.toLowerCase() ||
       m.email.toLowerCase() === row.fromEmail.toLowerCase(),
   );
+  const host = known ? "smtp.hostinger.com" : (row.host?.trim() || "smtp.hostinger.com");
+  const port = known ? 465 : (row.port || 465);
+  const secure = known ? true : (row.secure ?? true);
   if (known?.pass) {
     password = known.pass;
   }
   return {
     id: row.id,
     label: row.label,
-    host: row.host,
-    port: row.port,
-    secure: row.secure,
+    host,
+    port,
+    secure,
     username: row.username,
     password,
     fromEmail: row.fromEmail,
