@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { listSmtpAccounts, maskSmtpAccount } from "@/lib/user-smtp";
+import { listAvailableSenders } from "@/lib/user-smtp";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -57,8 +57,8 @@ export async function GET(_request: Request, { params }: Params) {
         messageId: true,
       },
     }),
-    listSmtpAccounts(user.id).then((rows) =>
-      rows.filter((r) => r.enabled).map(maskSmtpAccount),
+    listAvailableSenders(user.id).then(({ accounts }) =>
+      accounts.filter((r) => r.enabled),
     ),
   ]);
 

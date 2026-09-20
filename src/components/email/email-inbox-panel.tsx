@@ -5,9 +5,17 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import {
+  HiOutlineArrowDownLeft,
+  HiOutlineArrowUpRight,
+  HiOutlineArrowPath,
+  HiOutlineEnvelope,
+} from "react-icons/hi2";
 
 type InboxItem = {
   id: string;
+  direction: "inbound" | "outbound" | string;
+  status: string;
   subject: string;
   preview: string;
   fromEmail: string;
@@ -42,8 +50,12 @@ type Account = {
 };
 
 export function EmailInboxPanel() {
+  const [tab, setTab] = useState<"all" | "inbound" | "outbound">("all");
   const [emails, setEmails] = useState<InboxItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [inboundCount, setInboundCount] = useState(0);
+  const [outboundCount, setOutboundCount] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [thread, setThread] = useState<ThreadMsg[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -55,20 +67,25 @@ export function EmailInboxPanel() {
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [searchFilter, setSearchFilter] = useState("");
 
-  const loadInbox = useCallback(async () => {
-    const res = await fetch("/api/emails/inbox");
+  const loadInbox = useCallback(async (currentTab: "all" | "inbound" | "outbound") => {
+    const res = await fetch(`/api/emails/inbox?tab=${currentTab}`);
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || "Failed to load inbox");
     setEmails(json.emails ?? []);
     setUnreadCount(json.unreadCount ?? 0);
+    setInboundCount(json.inboundCount ?? 0);
+    setOutboundCount(json.outboundCount ?? 0);
+    setTotalCount(json.totalCount ?? 0);
   }, []);
 
   useEffect(() => {
     let cancelled = false;
     const run = async () => {
       try {
-        await loadInbox();
+        setLoading(true);
+        await loadInbox(tab);
       } catch (e) {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : "Failed to load inbox");
@@ -81,7 +98,7 @@ export function EmailInboxPanel() {
     return () => {
       cancelled = true;
     };
-  }, [loadInbox]);
+  }, [tab, loadInbox]);
 
   async function openEmail(id: string) {
     setSelectedId(id);
@@ -102,7 +119,7 @@ export function EmailInboxPanel() {
         (json.accounts as Account[] | undefined)?.find((a) => a.isDefault) ||
         json.accounts?.[0];
       setSmtpAccountId(def?.id || "");
-      await loadInbox();
+      await loadInbox(tab);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to open email");
     } finally {
@@ -131,7 +148,7 @@ export function EmailInboxPanel() {
       setMsg("Reply sent.");
       setReplyBody("");
       await openEmail(selectedId);
-      await loadInbox();
+      await loadInbox(tab);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Reply failed");
     } finally {
@@ -139,26 +156,79 @@ export function EmailInboxPanel() {
     }
   }
 
-  if (loading) {
+  const filteredEmails = emails.filter((e) => {
+    if (!searchFilter.trim()) return true;
+    const q = searchFilter.toLowerCase();
     return (
-      <p className="animate-pulse text-sm text-ink-muted">Loading inbox…</p>
+      (e.lead?.businessName && e.lead.businessName.toLowerCase().includes(q)) ||
+      e.fromEmail.toLowerCase().includes(q) ||
+      e.toEmail.toLowerCase().includes(q) ||
+      e.subject.toLowerCase().includes(q) ||
+      e.preview.toLowerCase().includes(q)
     );
-  }
+  });
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-end justify-between gap-2">
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-[17px] font-semibold text-ink">Inbox</h2>
-          <p className="mt-1 text-[13px] text-ink-muted">
-            Received replies from leads — open to read and reply from your SMTP
-            mailbox.
+          <h2 className="text-[17px] font-semibold text-ink">Mailbox &amp; Conversations</h2>
+          <p className="mt-0.5 text-[13px] text-ink-muted">
+            Track all sent outreach, incoming replies, and full conversation threads.
+          </p>
+        </div>
+
+        {/* Tab Selector */}
+        <div className="flex items-center gap-1 rounded-xl border border-border bg-[var(--surface)] p-1">
+          <button
+            type="button"
+            onClick={() => setTab("all")}
+            className={cn(
+              "rounded-lg px-3 py-1.5 text-xs font-semibold transition",
+              tab === "all"
+                ? "bg-brand-600 text-white shadow-sm"
+                : "text-ink-muted hover:text-ink",
+            )}
+          >
+            All ({totalCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("inbound")}
+            className={cn(
+              "rounded-lg px-3 py-1.5 text-xs font-semibold transition",
+              tab === "inbound"
+                ? "bg-brand-600 text-white shadow-sm"
+                : "text-ink-muted hover:text-ink",
+            )}
+          >
+            Received ({inboundCount})
             {unreadCount > 0 ? (
-              <span className="ml-1 font-semibold text-brand-600">
-                {unreadCount} unread
+              <span className="ml-1 rounded-full bg-rose-500 px-1.5 py-0.2 text-[10px] text-white">
+                {unreadCount}
               </span>
             ) : null}
-          </p>
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("outbound")}
+            className={cn(
+              "rounded-lg px-3 py-1.5 text-xs font-semibold transition",
+              tab === "outbound"
+                ? "bg-brand-600 text-white shadow-sm"
+                : "text-ink-muted hover:text-ink",
+            )}
+          >
+            Sent ({outboundCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => loadInbox(tab)}
+            title="Refresh Inbox"
+            className="rounded-lg p-1.5 text-ink-muted hover:bg-[var(--input-bg)] hover:text-ink transition"
+          >
+            <HiOutlineArrowPath className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
@@ -173,67 +243,108 @@ export function EmailInboxPanel() {
         </p>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
-        <div className="overflow-hidden rounded-xl border border-border bg-[var(--surface)]">
-          {!emails.length ? (
-            <p className="px-4 py-8 text-center text-sm text-ink-faint">
-              No received emails yet. When a lead replies to your outreach (via
-              the inbound webhook), it shows up here.
-            </p>
-          ) : (
-            <ul className="max-h-[520px] divide-y divide-border overflow-y-auto">
-              {emails.map((e) => {
-                const active = selectedId === e.id;
-                const unread = !e.readAt;
-                return (
-                  <li key={e.id}>
-                    <button
-                      type="button"
-                      onClick={() => openEmail(e.id)}
-                      className={cn(
-                        "w-full px-4 py-3 text-left transition",
-                        active
-                          ? "bg-brand-50"
-                          : "hover:bg-[var(--input-bg)]",
-                      )}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <p
-                          className={cn(
-                            "truncate text-[13px]",
-                            unread
-                              ? "font-semibold text-ink"
-                              : "font-medium text-ink",
-                          )}
-                        >
-                          {e.lead?.businessName || e.fromEmail}
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+        {/* Left Column: Email list with search */}
+        <div className="space-y-2">
+          <input
+            className="saas-input w-full text-xs"
+            placeholder="Filter messages by recipient, subject, or lead…"
+            value={searchFilter}
+            onChange={(e) => setSearchFilter(e.target.value)}
+          />
+
+          <div className="overflow-hidden rounded-xl border border-border bg-[var(--surface)] shadow-sm">
+            {loading ? (
+              <p className="px-4 py-12 text-center text-xs text-ink-muted animate-pulse">
+                Loading messages…
+              </p>
+            ) : !filteredEmails.length ? (
+              <div className="px-4 py-12 text-center text-xs text-ink-muted space-y-1.5">
+                <HiOutlineEnvelope className="mx-auto h-6 w-6 text-ink-faint" />
+                <p className="font-semibold text-ink">
+                  {tab === "inbound"
+                    ? "No received replies yet"
+                    : tab === "outbound"
+                    ? "No sent emails yet"
+                    : "No email activity found"}
+                </p>
+                <p className="text-[11px] text-ink-faint max-w-xs mx-auto">
+                  {tab === "inbound"
+                    ? "When a lead or contractor replies to your outreach, their message will appear here."
+                    : "Send an email using the Compose tab or open any lead to reach out."}
+                </p>
+              </div>
+            ) : (
+              <ul className="max-h-[520px] divide-y divide-border overflow-y-auto">
+                {filteredEmails.map((e) => {
+                  const active = selectedId === e.id;
+                  const isInbound = e.direction === "inbound";
+                  const unread = isInbound && !e.readAt;
+
+                  return (
+                    <li key={e.id}>
+                      <button
+                        type="button"
+                        onClick={() => openEmail(e.id)}
+                        className={cn(
+                          "w-full px-4 py-3 text-left transition",
+                          active
+                            ? "bg-brand-50/80 border-l-4 border-brand-600"
+                            : "hover:bg-[var(--input-bg)]",
+                        )}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              {isInbound ? (
+                                <span className="inline-flex items-center gap-0.5 rounded bg-emerald-100 px-1.5 py-0.2 text-[10px] font-semibold text-emerald-800">
+                                  <HiOutlineArrowDownLeft className="h-3 w-3" /> Received
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-0.5 rounded bg-brand-100 px-1.5 py-0.2 text-[10px] font-semibold text-brand-800">
+                                  <HiOutlineArrowUpRight className="h-3 w-3" /> Sent
+                                </span>
+                              )}
+                              <p
+                                className={cn(
+                                  "truncate text-[13px]",
+                                  unread
+                                    ? "font-bold text-ink"
+                                    : "font-medium text-ink",
+                                )}
+                              >
+                                {e.lead?.businessName || (isInbound ? e.fromEmail : e.toEmail)}
+                              </p>
+                            </div>
+                          </div>
+                          <span className="shrink-0 text-[10px] text-ink-faint">
+                            {new Date(e.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+
+                        <p className="mt-1 truncate text-[12px] font-medium text-ink-muted">
+                          {e.subject || "(no subject)"}
                         </p>
-                        {unread ? (
-                          <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-brand-500" />
-                        ) : null}
-                      </div>
-                      <p className="mt-0.5 truncate text-[12px] text-ink-muted">
-                        {e.subject || "(no subject)"}
-                      </p>
-                      <p className="mt-1 line-clamp-2 text-[12px] text-ink-muted">
-                        {e.preview}
-                      </p>
-                      <p className="mt-1 text-[10px] text-ink-faint">
-                        {new Date(e.createdAt).toLocaleString()}
-                      </p>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+                        <p className="mt-0.5 line-clamp-2 text-[11px] text-ink-faint">
+                          {e.preview}
+                        </p>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-[var(--surface)] p-4 sm:p-5">
+        {/* Right Column: Conversation Thread & Reply */}
+        <div className="rounded-xl border border-border bg-[var(--surface)] p-4 sm:p-5 shadow-sm">
           {!selectedId ? (
-            <p className="py-10 text-center text-sm text-ink-faint">
-              Select a message to view the thread and reply.
-            </p>
+            <div className="py-16 text-center text-xs text-ink-faint space-y-2">
+              <HiOutlineEnvelope className="mx-auto h-8 w-8 text-ink-faint/60" />
+              <p className="font-semibold text-ink">Select a conversation</p>
+              <p>Click any message on the left to view the complete thread history and send replies.</p>
+            </div>
           ) : (
             <div className="space-y-4">
               {lead ? (
@@ -251,32 +362,32 @@ export function EmailInboxPanel() {
                     href={`/leads/${lead.id}?from=saved`}
                     className="text-[12px] font-semibold text-brand-600 hover:underline"
                   >
-                    Open lead →
+                    Open lead profile →
                   </Link>
                 </div>
               ) : null}
 
-              <ul className="max-h-[280px] space-y-3 overflow-y-auto">
+              <ul className="max-h-[300px] space-y-3 overflow-y-auto pr-1">
                 {thread.map((m) => (
                   <li
                     key={m.id}
                     className={cn(
-                      "rounded-xl px-3 py-2.5 text-[13px]",
+                      "rounded-xl px-3.5 py-3 text-[13px]",
                       m.direction === "inbound"
-                        ? "bg-[var(--input-bg)]"
-                        : "bg-brand-50",
+                        ? "bg-[var(--input-bg)] border border-border/80"
+                        : "bg-brand-50 border border-brand-100",
                     )}
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-muted">
-                        {m.direction === "inbound" ? "Received" : "You"} ·{" "}
+                        {m.direction === "inbound" ? "Received from contact" : "You (Sent)"} ·{" "}
                         {m.status}
                       </span>
                       <span className="text-[10px] text-ink-faint">
                         {new Date(m.createdAt).toLocaleString()}
                       </span>
                     </div>
-                    <p className="mt-1 font-medium text-ink">{m.subject}</p>
+                    <p className="mt-1 font-semibold text-ink">{m.subject}</p>
                     <p className="mt-1 whitespace-pre-wrap text-[12px] leading-relaxed text-ink-muted">
                       {m.body}
                     </p>
@@ -288,16 +399,19 @@ export function EmailInboxPanel() {
               </ul>
 
               <form onSubmit={sendReply} className="space-y-3 border-t border-border pt-3">
-                <p className="text-[13px] font-semibold text-ink">Reply</p>
+                <p className="text-[13px] font-semibold text-ink">Reply to conversation</p>
                 {accounts.length > 0 ? (
                   <label className="block text-[12px]">
-                    <span className="font-medium text-ink-muted">Send from</span>
+                    <span className="font-medium text-ink-muted">Send from (Hostinger / Custom SMTP)</span>
                     <select
                       className="saas-input mt-1"
                       value={smtpAccountId}
                       onChange={(e) => setSmtpAccountId(e.target.value)}
                       disabled={busy}
                     >
+                      <option value="">
+                        ⚡ Auto-Rotate across Hostinger Mailboxes (Recommended)
+                      </option>
                       {accounts.map((a) => (
                         <option key={a.id} value={a.id}>
                           {a.label} · {a.fromEmail}
@@ -306,11 +420,7 @@ export function EmailInboxPanel() {
                       ))}
                     </select>
                   </label>
-                ) : (
-                  <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-900">
-                    Add an email sender under Setup → Email to reply.
-                  </p>
-                )}
+                ) : null}
                 <label className="block text-[12px]">
                   <span className="font-medium text-ink-muted">Subject</span>
                   <input
@@ -323,10 +433,10 @@ export function EmailInboxPanel() {
                 <label className="block text-[12px]">
                   <span className="font-medium text-ink-muted">Message</span>
                   <Textarea
-                    className="mt-1 min-h-[110px]"
+                    className="mt-1 min-h-[100px] text-xs"
                     value={replyBody}
                     onChange={(e) => setReplyBody(e.target.value)}
-                    placeholder="Type your reply…"
+                    placeholder="Type your reply message…"
                     disabled={busy}
                     required
                   />
@@ -334,7 +444,8 @@ export function EmailInboxPanel() {
                 <Button
                   type="submit"
                   loading={busy}
-                  disabled={busy || !accounts.length || !replyBody.trim()}
+                  disabled={busy || !replyBody.trim()}
+                  className="text-xs"
                 >
                   Send reply
                 </Button>

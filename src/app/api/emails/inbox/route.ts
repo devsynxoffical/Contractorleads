@@ -12,14 +12,22 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const take = Math.min(Number(url.searchParams.get("take") || 50), 100);
   const unreadOnly = url.searchParams.get("unread") === "1";
+  const tab = url.searchParams.get("tab") || "all";
+
+  const directionFilter =
+    tab === "inbound"
+      ? { direction: "inbound" }
+      : tab === "outbound"
+      ? { direction: "outbound" }
+      : {};
 
   const where = {
     userId: user.id,
-    direction: "inbound",
+    ...directionFilter,
     ...(unreadOnly ? { readAt: null } : {}),
   };
 
-  const [emails, unreadCount] = await Promise.all([
+  const [emails, unreadCount, inboundCount, outboundCount, totalCount] = await Promise.all([
     prisma.leadEmail.findMany({
       where,
       take,
@@ -52,10 +60,30 @@ export async function GET(request: Request) {
         readAt: null,
       },
     }),
+    prisma.leadEmail.count({
+      where: {
+        userId: user.id,
+        direction: "inbound",
+      },
+    }),
+    prisma.leadEmail.count({
+      where: {
+        userId: user.id,
+        direction: "outbound",
+      },
+    }),
+    prisma.leadEmail.count({
+      where: {
+        userId: user.id,
+      },
+    }),
   ]);
 
   return NextResponse.json({
     unreadCount,
+    inboundCount,
+    outboundCount,
+    totalCount,
     emails: emails.map((e) => ({
       ...e,
       preview: e.body.slice(0, 180),
