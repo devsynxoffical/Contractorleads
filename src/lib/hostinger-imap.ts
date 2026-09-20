@@ -149,16 +149,23 @@ export async function syncUserHostingerMailboxes(userId: string): Promise<{
   let totalSynced = 0;
   const results: ImapSyncResult[] = [];
 
-  // Sync up to 5 mailboxes concurrently
-  for (const mb of mailboxesToSync.slice(0, 10)) {
-    const res = await syncMailboxImap({
-      userId,
-      email: mb.email,
-      pass: mb.pass,
-      limit: 10,
-    });
-    results.push(res);
-    totalSynced += res.synced;
+  // Sync mailboxes in parallel concurrently for high-speed performance
+  const settled = await Promise.allSettled(
+    mailboxesToSync.slice(0, 15).map((mb) =>
+      syncMailboxImap({
+        userId,
+        email: mb.email,
+        pass: mb.pass,
+        limit: 10,
+      }),
+    ),
+  );
+
+  for (const s of settled) {
+    if (s.status === "fulfilled") {
+      results.push(s.value);
+      totalSynced += s.value.synced;
+    }
   }
 
   return { totalSynced, results };

@@ -71,17 +71,23 @@ export function EmailInboxPanel() {
   const [searchFilter, setSearchFilter] = useState("");
 
   const loadInbox = useCallback(async (currentTab: "all" | "inbound" | "outbound") => {
-    const res = await fetch(`/api/emails/inbox?tab=${currentTab}`);
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || "Failed to load inbox");
-    setEmails(json.emails ?? []);
-    setUnreadCount(json.unreadCount ?? 0);
-    setInboundCount(json.inboundCount ?? 0);
-    setOutboundCount(json.outboundCount ?? 0);
-    setTotalCount(json.totalCount ?? 0);
+    try {
+      const res = await fetch(`/api/emails/inbox?tab=${currentTab}`);
+      const json = await res.json();
+      if (res.ok) {
+        setEmails(json.emails ?? []);
+        setUnreadCount(json.unreadCount ?? 0);
+        setInboundCount(json.inboundCount ?? 0);
+        setOutboundCount(json.outboundCount ?? 0);
+        setTotalCount(json.totalCount ?? 0);
+      }
+    } catch {
+      // silently handle network errors during tab switches
+    }
   }, []);
 
   const syncMailboxes = useCallback(async () => {
+    if (syncing) return;
     try {
       setSyncing(true);
       setMsg(null);
@@ -96,16 +102,15 @@ export function EmailInboxPanel() {
     } finally {
       setSyncing(false);
     }
-  }, [loadInbox, tab]);
+  }, [loadInbox, tab, syncing]);
 
+  // Load inbox data on mount and tab changes immediately
   useEffect(() => {
     let cancelled = false;
-    const run = async () => {
+    async function init() {
+      setLoading(true);
       try {
-        setLoading(true);
         await loadInbox(tab);
-        // Background sync on initial load
-        void syncMailboxes();
       } catch (e) {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : "Failed to load inbox");
@@ -113,18 +118,34 @@ export function EmailInboxPanel() {
       } finally {
         if (!cancelled) setLoading(false);
       }
-    };
-    void run();
+    }
+    void init();
     return () => {
       cancelled = true;
     };
-  }, [tab, loadInbox, syncMailboxes]);
+  }, [tab, loadInbox]);
+
+  // Single initial background sync on component mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void syncMailboxes();
+    }, 500);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function openEmail(id: string) {
     setSelectedId(id);
     setMsg(null);
     setError(null);
     setBusy(true);
+
+    // Optimistically mark as read in local list
+    setEmails((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, readAt: e.readAt || new Date().toISOString() } : e)),
+    );
+    setUnreadCount((prev) => Math.max(0, prev - 1));
+
     try {
       const res = await fetch(`/api/emails/${id}`);
       const json = await res.json();
@@ -139,7 +160,6 @@ export function EmailInboxPanel() {
         (json.accounts as Account[] | undefined)?.find((a) => a.isDefault) ||
         json.accounts?.[0];
       setSmtpAccountId(def?.id || "");
-      await loadInbox(tab);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to open email");
     } finally {
