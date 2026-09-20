@@ -25,9 +25,9 @@ export type SmtpPayload = {
   fromName?: string | null;
 };
 
-const SMTP_CONNECTION_MS = 8_000;
-const SMTP_GREETING_MS = 6_000;
-const SMTP_SOCKET_MS = 12_000;
+const SMTP_CONNECTION_MS = 5_000;
+const SMTP_GREETING_MS = 5_000;
+const SMTP_SOCKET_MS = 8_000;
 
 /** Normalize port/secure pairs (465 = SSL, 587 = STARTTLS). */
 export function normalizeSmtpSecurity(port: number, secure: boolean) {
@@ -150,8 +150,8 @@ function rowToPayload(row: {
       m.email.toLowerCase() === row.fromEmail.toLowerCase(),
   );
   const host = known ? "smtp.hostinger.com" : (row.host?.trim() || "smtp.hostinger.com");
-  const port = known ? 465 : (row.port || 465);
-  const secure = known ? true : (row.secure ?? true);
+  const port = known ? 587 : (row.port || 587);
+  const secure = known ? false : (row.secure ?? false);
   if (known?.pass) {
     password = known.pass;
   }
@@ -734,11 +734,11 @@ async function sendViaSmtpDirect(
     }>;
   },
 ) {
-  const attempts: SmtpPayload[] = [cfg];
-  const alt = normalizeSmtpSecurity(cfg.port, cfg.secure);
-  if (alt.port === 465) {
-    attempts.push({ ...cfg, port: 587, secure: false });
-  }
+  // Always try port 587 (STARTTLS) first for cloud compatibility, then 465 (SSL)
+  const attempts: SmtpPayload[] = [
+    { ...cfg, port: 587, secure: false },
+    { ...cfg, port: 465, secure: true },
+  ];
 
   let lastErr: unknown;
   for (const attempt of attempts) {
