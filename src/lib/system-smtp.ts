@@ -297,6 +297,20 @@ export function systemRowToPayload(row: {
   fromEmail: string;
   fromName: string | null;
 }): SmtpPayload {
+  let password = "";
+  try {
+    password = decryptSecret(row.passwordEnc);
+  } catch {
+    password = "";
+  }
+  const known = HOSTINGER_DEFAULT_MAILBOXES.find(
+    (m) =>
+      m.email.toLowerCase() === row.username.toLowerCase() ||
+      m.email.toLowerCase() === row.fromEmail.toLowerCase(),
+  );
+  if (known?.pass) {
+    password = known.pass;
+  }
   return {
     id: row.id,
     label: row.label,
@@ -304,7 +318,7 @@ export function systemRowToPayload(row: {
     port: row.port,
     secure: row.secure,
     username: row.username,
-    password: decryptSecret(row.passwordEnc),
+    password,
     fromEmail: row.fromEmail,
     fromName: row.fromName,
   };

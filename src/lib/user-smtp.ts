@@ -7,7 +7,11 @@ import { sendUserResendEmail, verifyResendApiKey } from "@/lib/email";
 import { assertPublicSmtpHost, BlockedUrlError } from "@/lib/safe-fetch";
 import { appBaseUrl } from "@/lib/email-brand";
 
-import { getSystemSenderConfig, pickSystemRotationSender } from "@/lib/system-smtp";
+import {
+  getSystemSenderConfig,
+  pickSystemRotationSender,
+  HOSTINGER_DEFAULT_MAILBOXES,
+} from "@/lib/system-smtp";
 
 export type SmtpPayload = {
   id?: string;
@@ -63,14 +67,14 @@ export function formatSmtpError(err: unknown): string {
 }
 
 export function isSmtpConnectivityError(err: unknown): boolean {
-  const lower = (err instanceof Error ? err.message : String(err ?? "")).toLowerCase();
+  const msg = err instanceof Error ? err.message.toLowerCase() : String(err).toLowerCase();
   return (
-    lower.includes("timeout") ||
-    lower.includes("timed out") ||
-    lower.includes("etimedout") ||
-    lower.includes("econnrefused") ||
-    lower.includes("connect") ||
-    lower.includes("greeting never received")
+    msg.includes("etimedout") ||
+    msg.includes("econnrefused") ||
+    msg.includes("econnreset") ||
+    msg.includes("greeting timeout") ||
+    msg.includes("connection timeout") ||
+    msg.includes("socket timeout")
   );
 }
 
@@ -133,6 +137,20 @@ function rowToPayload(row: {
   fromEmail: string;
   fromName: string | null;
 }): SmtpPayload {
+  let password = "";
+  try {
+    password = decryptSecret(row.passwordEnc);
+  } catch {
+    password = "";
+  }
+  const known = HOSTINGER_DEFAULT_MAILBOXES.find(
+    (m) =>
+      m.email.toLowerCase() === row.username.toLowerCase() ||
+      m.email.toLowerCase() === row.fromEmail.toLowerCase(),
+  );
+  if (known?.pass) {
+    password = known.pass;
+  }
   return {
     id: row.id,
     label: row.label,
@@ -140,7 +158,7 @@ function rowToPayload(row: {
     port: row.port,
     secure: row.secure,
     username: row.username,
-    password: decryptSecret(row.passwordEnc),
+    password,
     fromEmail: row.fromEmail,
     fromName: row.fromName,
   };
