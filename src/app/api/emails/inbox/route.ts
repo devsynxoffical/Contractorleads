@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { cleanEmailBody, getEmailPreviewSnippet } from "@/lib/email-content";
 
 /** Inbox of received (inbound) emails for the logged-in agency. */
 export async function GET(request: Request) {
@@ -84,9 +85,13 @@ export async function GET(request: Request) {
     inboundCount,
     outboundCount,
     totalCount,
-    emails: emails.map((e) => ({
-      ...e,
-      preview: e.body.slice(0, 180),
-    })),
+    emails: emails.map((e) => {
+      const clean = cleanEmailBody(e.body);
+      return {
+        ...e,
+        body: clean,
+        preview: getEmailPreviewSnippet(e.body, 140),
+      };
+    }),
   });
 }

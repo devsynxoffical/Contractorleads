@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { listAvailableSenders } from "@/lib/user-smtp";
+import { cleanEmailBody } from "@/lib/email-content";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -39,7 +40,7 @@ export async function GET(_request: Request, { params }: Params) {
     email.readAt = new Date();
   }
 
-  const [thread, accounts] = await Promise.all([
+  const [rawThread, accounts] = await Promise.all([
     prisma.leadEmail.findMany({
       where: { userId: user.id, leadId: email.leadId },
       orderBy: { createdAt: "asc" },
@@ -62,13 +63,18 @@ export async function GET(_request: Request, { params }: Params) {
     ),
   ]);
 
+  const thread = rawThread.map((m) => ({
+    ...m,
+    body: cleanEmailBody(m.body),
+  }));
+
   return NextResponse.json({
     email: {
       id: email.id,
       direction: email.direction,
       status: email.status,
       subject: email.subject,
-      body: email.body,
+      body: cleanEmailBody(email.body),
       fromEmail: email.fromEmail,
       toEmail: email.toEmail,
       createdAt: email.createdAt,

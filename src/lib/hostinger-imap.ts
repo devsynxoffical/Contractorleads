@@ -2,6 +2,7 @@ import { ImapFlow } from "imapflow";
 import { prisma } from "@/lib/prisma";
 import { HOSTINGER_DEFAULT_MAILBOXES } from "@/lib/system-smtp";
 import { ingestInboundEmail } from "@/lib/lead-email";
+import { cleanEmailBody } from "@/lib/email-content";
 
 export type ImapSyncResult = {
   mailbox: string;
@@ -81,11 +82,7 @@ export async function syncMailboxImap(opts: {
         let bodyText = "";
         if (msg.source) {
           const raw = msg.source.toString("utf-8");
-          // Extract text after double newline
-          const parts = raw.split(/\r?\n\r?\n/);
-          if (parts.length > 1) {
-            bodyText = parts.slice(1).join("\n").replace(/<[^>]+>/g, "").slice(0, 4000);
-          }
+          bodyText = cleanEmailBody(raw);
         }
         if (!bodyText.trim()) {
           bodyText = `Received message from ${fromAddr}: "${subject}"`;
