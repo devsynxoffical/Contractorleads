@@ -72,6 +72,7 @@ export function EmailInboxPanel() {
 
   const loadInbox = useCallback(async (currentTab: "all" | "inbound" | "outbound") => {
     try {
+      setLoading(true);
       const res = await fetch(`/api/emails/inbox?tab=${currentTab}`);
       const json = await res.json();
       if (res.ok) {
@@ -80,9 +81,13 @@ export function EmailInboxPanel() {
         setInboundCount(json.inboundCount ?? 0);
         setOutboundCount(json.outboundCount ?? 0);
         setTotalCount(json.totalCount ?? 0);
+      } else {
+        setError(json.error || "Failed to load emails");
       }
-    } catch {
-      // silently handle network errors during tab switches
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load inbox");
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -106,23 +111,7 @@ export function EmailInboxPanel() {
 
   // Load inbox data on mount and tab changes immediately
   useEffect(() => {
-    let cancelled = false;
-    async function init() {
-      setLoading(true);
-      try {
-        await loadInbox(tab);
-      } catch (e) {
-        if (!cancelled) {
-          setError(e instanceof Error ? e.message : "Failed to load inbox");
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    void init();
-    return () => {
-      cancelled = true;
-    };
+    void loadInbox(tab);
   }, [tab, loadInbox]);
 
   async function openEmail(id: string) {
