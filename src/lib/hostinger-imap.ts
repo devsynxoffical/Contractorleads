@@ -34,80 +34,92 @@ export async function syncMailboxImap(opts: {
   let synced = 0;
 
   try {
-    await client.connect();
-    const lock = await client.getMailboxLock("INBOX");
+    // 5s timeout on IMAP connect & fetch
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("IMAP timeout")), 5000),
+    );
 
-    try {
-      // Search for unseen or recent messages
-      const messages = client.fetch(
-        { seq: "1:*" },
-        { envelope: true, source: true, bodyStructure: true },
-      );
+    const syncWork = async () => {
+      await client.connect();
+      const lock = await client.getMailboxLock("INBOX");
 
-      for await (const msg of messages) {
-        const messageId = msg.envelope?.messageId;
-        const fromAddr = msg.envelope?.from?.[0]?.address?.toLowerCase().trim();
-        const toAddr = msg.envelope?.to?.[0]?.address?.toLowerCase().trim() || email;
-        const subject = msg.envelope?.subject || "(no subject)";
-        const date = msg.envelope?.date || new Date();
+      try {
+        const total = (client.mailbox as { exists?: number })?.exists || 0;
+        if (total === 0) return;
 
-        if (!fromAddr || fromAddr === email) {
-          // Skip if from self
-          continue;
-        }
+        const startSeq = Math.max(1, total - Math.min(limit, 10) + 1);
+        const messages = client.fetch(
+          { seq: `${startSeq}:*` },
+          { envelope: true, source: true },
+        );
 
-        // Check if message was already ingested
-        const existing = await prisma.leadEmail.findFirst({
-          where: {
-            userId: opts.userId,
-            direction: "inbound",
-            OR: [
-              ...(messageId ? [{ messageId }] : []),
-              {
-                fromEmail: fromAddr,
-                toEmail: toAddr,
-                subject,
-                createdAt: {
-                  gte: new Date(new Date(date).getTime() - 60000),
-                  lte: new Date(new Date(date).getTime() + 60000),
+        for await (const msg of messages) {
+          const messageId = msg.envelope?.messageId;
+          const fromAddr = msg.envelope?.from?.[0]?.address?.toLowerCase().trim();
+          const toAddr = msg.envelope?.to?.[0]?.address?.toLowerCase().trim() || email;
+          const subject = msg.envelope?.subject || "(no subject)";
+          const date = msg.envelope?.date || new Date();
+
+          if (!fromAddr || fromAddr === email) continue;
+
+          // Check if message was already ingested
+          const existing = await prisma.leadEmail.findFirst({
+            where: {
+              userId: opts.userId,
+              direction: "inbound",
+              OR: [
+                ...(messageId ? [{ messageId }] : []),
+                {
+                  fromEmail: fromAddr,
+                  toEmail: toAddr,
+                  subject,
+                  createdAt: {
+                    gte: new Date(new Date(date).getTime() - 60000),
+                    lte: new Date(new Date(date).getTime() + 60000),
+                  },
                 },
-              },
-            ],
-          },
-        });
+              ],
+            },
+          });
 
-        if (existing) continue;
+          if (existing) continue;
 
-        // Parse text body from source
-        let bodyText = "";
-        if (msg.source) {
-          const raw = msg.source.toString("utf-8");
-          bodyText = cleanEmailBody(raw);
+          // Parse text body from source
+          let bodyText = "";
+          if (msg.source) {
+            const raw = msg.source.toString("utf-8");
+            bodyText = cleanEmailBody(raw);
+          }
+          if (!bodyText.trim()) {
+            bodyText = `Received message from ${fromAddr}: "${subject}"`;
+          }
+
+          await ingestInboundEmail({
+            userId: opts.userId,
+            fromEmail: fromAddr,
+            toEmail: toAddr,
+            subject,
+            body: bodyText,
+            messageId: messageId || undefined,
+            inReplyTo: msg.envelope?.inReplyTo || undefined,
+          });
+
+          synced++;
         }
-        if (!bodyText.trim()) {
-          bodyText = `Received message from ${fromAddr}: "${subject}"`;
-        }
-
-        await ingestInboundEmail({
-          userId: opts.userId,
-          fromEmail: fromAddr,
-          toEmail: toAddr,
-          subject,
-          body: bodyText,
-          messageId: messageId || undefined,
-          inReplyTo: msg.envelope?.inReplyTo || undefined,
-        });
-
-        synced++;
-        if (synced >= limit) break;
+      } finally {
+        lock.release();
+        await client.logout().catch(() => {});
       }
-    } finally {
-      lock.release();
-    }
+    };
 
-    await client.logout();
+    await Promise.race([syncWork(), timeoutPromise]);
     return { mailbox: email, synced };
   } catch (err) {
+    try {
+      await client.logout().catch(() => {});
+    } catch {
+      // ignore
+    }
     return {
       mailbox: email,
       synced,

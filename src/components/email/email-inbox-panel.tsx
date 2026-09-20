@@ -125,15 +125,6 @@ export function EmailInboxPanel() {
     };
   }, [tab, loadInbox]);
 
-  // Single initial background sync on component mount
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      void syncMailboxes();
-    }, 500);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   async function openEmail(id: string) {
     setSelectedId(id);
     setMsg(null);
