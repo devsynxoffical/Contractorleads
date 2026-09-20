@@ -9,7 +9,7 @@
  * deploy while Postgres is still reachable.
  */
 import { spawn } from "child_process";
-import { cpSync, existsSync, mkdirSync } from "fs";
+import { cpSync, existsSync, mkdirSync, readdirSync } from "fs";
 import { join } from "path";
 
 const port = process.env.PORT || "3000";
