@@ -8,18 +8,7 @@ const APEX_HOST = "contractorleads.us";
  * Send apex traffic to www so Google indexes one preferred host.
  * Localhost / Railway / preview hosts are left alone.
  */
-export function middleware(request: NextRequest) {
-  const hostHeader = request.headers.get("host")?.toLowerCase() ?? "";
-  const hostname = hostHeader.split(":")[0];
-
-  if (hostname === APEX_HOST) {
-    const dest = new URL(request.url);
-    dest.protocol = "https:";
-    dest.hostname = CANONICAL_HOST;
-    dest.port = "";
-    return NextResponse.redirect(dest, 308);
-  }
-
+export function middleware(_request: NextRequest) {
   return NextResponse.next();
 }
 
