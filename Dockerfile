@@ -38,4 +38,4 @@ ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
 
 EXPOSE 3000
-CMD ["node", "scripts/start-railway.mjs"]
+CMD ["npx", "next", "start", "-H", "0.0.0.0"]
