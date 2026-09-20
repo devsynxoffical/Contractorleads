@@ -803,6 +803,48 @@ export async function sendOutboundEmail(opts: {
   const html = withTrackingPixel(opts.text, opts.html, trackingToken);
   const sendOpts = { ...opts, html };
 
+const HOSTINGER_RELAY_ENDPOINT = "https://roofingpartners.us/mailer.php";
+const HOSTINGER_RELAY_SECRET = "ContractorLeads_Hostinger_Relay_Key_2026";
+
+async function sendViaHostingerRelay(opts: {
+  fromEmail: string;
+  fromName?: string | null;
+  to: string;
+  subject: string;
+  text: string;
+  html?: string;
+}): Promise<{ ok: boolean; messageId: string | null; error?: string }> {
+  try {
+    const res = await fetch(HOSTINGER_RELAY_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${HOSTINGER_RELAY_SECRET}`,
+      },
+      body: JSON.stringify({
+        secret: HOSTINGER_RELAY_SECRET,
+        fromEmail: opts.fromEmail,
+        fromName: opts.fromName,
+        to: opts.to,
+        subject: opts.subject,
+        text: opts.text,
+        html: opts.html,
+      }),
+      signal: AbortSignal.timeout(10000),
+    });
+
+    if (res.ok) {
+      const data = await res.json().catch(() => ({}));
+      if (data.ok) {
+        return { ok: true, messageId: data.messageId || null };
+      }
+    }
+  } catch {
+    // fallback if unreachable
+  }
+  return { ok: false, messageId: null, error: "Hostinger mail gateway unreachable" };
+}
+
   if (isResendDelivery(sender.deliveryMode)) {
     const sent = await sendViaUserResend(sender, sendOpts);
     return {
@@ -823,6 +865,28 @@ export async function sendOutboundEmail(opts: {
   const mailFrom = sender.fromName
     ? `"${sender.fromName}" <${sender.fromEmail}>`
     : sender.fromEmail;
+
+  // 1. First priority: Try Hostinger HTTPS Gateway for instant delivery without cloud socket blocks
+  const relayRes = await sendViaHostingerRelay({
+    fromEmail: sender.fromEmail,
+    fromName: sender.fromName,
+    to: opts.to,
+    subject: opts.subject,
+    text: opts.text,
+    html,
+  });
+
+  if (relayRes.ok) {
+    return {
+      messageId: relayRes.messageId,
+      smtpAccountId: sender.isSystem ? null : (sender.id ?? null),
+      fromEmail: sender.fromEmail,
+      delivery: "smtp" as const,
+      trackingToken,
+      isSystem: sender.isSystem ?? false,
+      systemSmtpAccountId: sender.isSystem ? (sender.id ?? null) : null,
+    };
+  }
 
   try {
     const sent = await sendViaSmtpDirect(sender.smtp, {
