@@ -12,6 +12,7 @@ import {
 import { ExportLeadsButtons } from "@/components/leads/export-leads-buttons";
 import { AllLeadsFilters } from "@/components/leads/all-leads-filters";
 import { AllLeadsTableBody } from "@/components/leads/all-leads-table-body";
+import { LeadSegmentBar } from "@/components/leads/lead-segment-bar";
 import { HiOutlineFire, HiOutlineMagnifyingGlass } from "react-icons/hi2";
 import { startOfDaysAgo, startOfToday } from "@/lib/lead-date-filters";
 
@@ -170,6 +171,10 @@ export default async function AllLeadsPage({
         }
       >
         <AllLeadsFilters categories={categories} />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <LeadSegmentBar />
       </Suspense>
 
       <div className="overflow-x-auto rounded-xl border border-border bg-[var(--surface)] shadow-[var(--shadow-card)]">

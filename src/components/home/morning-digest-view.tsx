@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
-import { DailyDigestSettings } from "@/components/home/daily-digest-settings";
+import { DigestEmailSegmentsSettings } from "@/components/home/digest-email-segments-settings";
 import type { DigestLead, MorningDigest } from "@/lib/services/morning-digest";
 
 type SmtpAccount = {
@@ -328,7 +328,7 @@ export function MorningDigestView({ userName }: { userName?: string | null }) {
           </button>
         </div>
 
-        <DailyDigestSettings />
+        <DigestEmailSegmentsSettings />
         {loading && !digest && (
           <div className="rounded-2xl border border-dashed border-border bg-[var(--input-bg)] px-6 py-12 text-center text-[13px] text-ink-muted">
             Building your digest…

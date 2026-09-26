@@ -114,6 +114,8 @@ model User {
   couponRedemptions CouponRedemption[]
   digestSubscription DigestSubscription?
   digestDeliveries   DigestDelivery[]
+  leadSegments       LeadSegment[]
+  digestEmailSegments DigestEmailSegment[]
 }
 
 /// Morning email of fresh verified leads matching the user's saved filters.
@@ -367,6 +369,52 @@ model Export {
   format    String
   leadIds   String
   createdAt DateTime @default(now())
+}
+
+/// Saved filter preset: a named combo of industry/time/tier/strength/sort/q
+/// that the user can one-click apply on the All Leads page and optionally
+/// use as the target for a daily digest subscription.
+model LeadSegment {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  industry  String?
+  when      String?  // all | today | yesterday | week | month | 90days
+  tier      String?  // all | hot | warm | nurture
+  strength  String?  // all | strong | medium | developing
+  q         String?
+  sort      String?  // newest | score | oldest
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// Named email digest subscription — one user can have many, each targeting a
+/// different industry / location / time window. Replaces the single
+/// DigestSubscription for users who want segmented morning emails.
+model DigestEmailSegment {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String   // e.g. "Plumbing – Dallas"
+  enabled       Boolean  @default(true)
+  /// Target industry (e.g. "Plumbing")
+  industry      String
+  country       String   @default("US")
+  locationScope String   @default("local")  // local | country
+  state         String?
+  city          String?
+  /// Daily lead count: 20 | 50 | 100
+  dailyLeadCount Int     @default(20)
+  timezone      String   @default("America/Chicago")
+  lastRunAt     DateTime?
+  lastError     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([enabled, lastRunAt])
 }
 
 /// Editable permission templates for MANAGER and SUB_ADMIN staff roles.
