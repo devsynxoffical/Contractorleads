@@ -9,7 +9,11 @@ import {
   HiOutlineBookmark,
   HiOutlineSparkles,
   HiOutlineUsers,
+  HiOutlineLightBulb,
+  HiOutlineBolt,
+  HiOutlineClock,
 } from "react-icons/hi2";
+import { OUTREACH_HOOKS } from "@/lib/outreach-hooks";
 
 type PickLead = {
   id: string;
@@ -80,13 +84,36 @@ export function EmailBulkPanel({
   const [segments, setSegments] = useState<Segment[]>([]);
   const [selectedSegmentId, setSelectedSegmentId] = useState<string>("");
 
+  // Outreach Hook state
+  const [activeHookId, setActiveHookId] = useState<number | null>(null);
+
+  // Rotation config state
+  const [rotationConfig, setRotationConfig] = useState<{
+    strategy: string;
+    emailsPerDomain: number;
+    delaySeconds: number;
+  }>({
+    strategy: "even-distribution",
+    emailsPerDomain: 2,
+    delaySeconds: 2,
+  });
+
+  function applyHook(hookId: number) {
+    setActiveHookId(hookId);
+    const hook = OUTREACH_HOOKS.find((h) => h.id === hookId);
+    if (!hook) return;
+    setSubject(hook.subject);
+    setBodyText(hook.body);
+  }
+
   const loadSegments = useCallback(async () => {
     try {
-      const res = await fetch("/api/segments");
-      const json = await res.json();
-      if (res.ok && Array.isArray(json.segments)) {
-        setSegments(json.segments);
-      }
+      const [segRes, rotRes] = await Promise.all([
+        fetch("/api/segments").then((r) => r.json()).catch(() => ({})),
+        fetch("/api/settings/email-rotation").then((r) => r.json()).catch(() => ({})),
+      ]);
+      if (Array.isArray(segRes.segments)) setSegments(segRes.segments);
+      if (rotRes.config) setRotationConfig(rotRes.config);
     } catch {
       // ignore
     }
@@ -188,6 +215,9 @@ export function EmailBulkPanel({
           subject,
           body: bodyText,
           smtpAccountId: smtpAccountId || undefined,
+          rotationStrategy: rotationConfig.strategy,
+          emailsPerDomain: rotationConfig.emailsPerDomain,
+          delaySeconds: rotationConfig.delaySeconds,
         }),
       });
       const json = await res.json();
@@ -428,25 +458,119 @@ export function EmailBulkPanel({
               </div>
             ) : null}
 
-            <label className="block text-[12px]">
-              <span className="font-medium text-ink-muted">Send from (Hostinger / Custom SMTP)</span>
-              <select
-                className="saas-input mt-1 text-xs"
-                value={smtpAccountId}
-                onChange={(e) => setSmtpAccountId(e.target.value)}
-                disabled={busy}
-              >
-                <option value="">
-                  ⚡ Auto-Rotate across Hostinger Mailbox Pool (Recommended)
-                </option>
-                {accounts.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.label} · {a.fromEmail}
-                    {a.isDefault ? " (default)" : ""}
+            {/* Mailbox Sender & Rotation */}
+            <div>
+              <label className="block text-[12px]">
+                <span className="font-medium text-ink-muted">Send from (Hostinger / Custom SMTP)</span>
+                <select
+                  className="saas-input mt-1 text-xs"
+                  value={smtpAccountId}
+                  onChange={(e) => setSmtpAccountId(e.target.value)}
+                  disabled={busy}
+                >
+                  <option value="">
+                    ⚡ Auto-Rotate across 25 Hostinger Mailboxes (Even Distribution)
                   </option>
+                  {accounts.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.label} · {a.fromEmail}
+                      {a.isDefault ? " (default)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {!smtpAccountId && (
+                <div className="mt-2 rounded-xl border border-brand-200/80 bg-brand-50/40 p-2.5 space-y-2">
+                  <div className="flex items-center justify-between text-xs font-semibold text-brand-900">
+                    <span className="flex items-center gap-1.5">
+                      <HiOutlineBolt className="h-4 w-4 text-brand-600" />
+                      Rotation &amp; Throttle Engine
+                    </span>
+                    <Link
+                      href="/setup/email"
+                      className="text-[10.5px] font-medium text-brand-700 hover:underline"
+                    >
+                      Configure settings →
+                    </Link>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    <div>
+                      <span className="text-ink-muted">Emails / domain:</span>
+                      <input
+                        type="number"
+                        min={1}
+                        max={100}
+                        value={rotationConfig.emailsPerDomain}
+                        onChange={(e) =>
+                          setRotationConfig({
+                            ...rotationConfig,
+                            emailsPerDomain: Math.max(1, Number(e.target.value) || 1),
+                          })
+                        }
+                        className="saas-input mt-0.5 h-7 w-full text-xs font-semibold"
+                      />
+                    </div>
+                    <div>
+                      <span className="text-ink-muted">Delay between sends:</span>
+                      <select
+                        value={rotationConfig.delaySeconds}
+                        onChange={(e) =>
+                          setRotationConfig({
+                            ...rotationConfig,
+                            delaySeconds: Number(e.target.value),
+                          })
+                        }
+                        className="saas-input mt-0.5 h-7 w-full text-xs font-semibold"
+                      >
+                        <option value={0}>0s (Instant)</option>
+                        <option value={1}>1s delay</option>
+                        <option value={2}>2s delay (Best)</option>
+                        <option value={3}>3s delay</option>
+                        <option value={5}>5s delay</option>
+                        <option value={10}>10s delay</option>
+                      </select>
+                    </div>
+                  </div>
+                  {selected.size > 0 && (
+                    <p className="text-[10.5px] text-brand-800 border-t border-brand-200/60 pt-1.5">
+                      Distributing <strong>{selected.size}</strong> leads across <strong>25 domains</strong> (~
+                      {Math.ceil(selected.size / 25)} emails/domain, ~
+                      {Math.round((selected.size * rotationConfig.delaySeconds) / 60)} min total).
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Outreach Hooks Selector */}
+            <div className="rounded-xl border border-brand-200/80 bg-brand-50/50 p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-brand-900 flex items-center gap-1.5">
+                  <HiOutlineLightBulb className="h-4 w-4 text-amber-500" />
+                  Select Outreach Hook / Angle:
+                </span>
+                <span className="text-[10.5px] text-ink-muted">1-click insert proven angle</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {OUTREACH_HOOKS.map((h) => (
+                  <button
+                    key={h.id}
+                    type="button"
+                    onClick={() => applyHook(h.id)}
+                    className={cn(
+                      "rounded-lg px-2.5 py-1 text-[11px] font-semibold transition border",
+                      activeHookId === h.id
+                        ? "bg-brand-600 text-white border-brand-600 shadow-xs"
+                        : "bg-white text-brand-900 border-brand-200/80 hover:bg-brand-100/70",
+                    )}
+                    title={h.shortDesc}
+                  >
+                    🪝 {h.badge}: {h.label.split(":")[1]?.trim()}
+                  </button>
                 ))}
-              </select>
-            </label>
+              </div>
+            </div>
 
             <label className="block text-[12px]">
               <span className="font-medium text-ink-muted">Subject</span>

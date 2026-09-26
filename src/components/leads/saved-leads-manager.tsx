@@ -18,7 +18,14 @@ import {
   matchesTierFilter,
   matchesWhenFilter,
 } from "@/lib/lead-date-filters";
-import { HiOutlineBookmark, HiOutlineEnvelope, HiOutlineLockClosed, HiXMark } from "react-icons/hi2";
+import {
+  HiOutlineBookmark,
+  HiOutlineEnvelope,
+  HiOutlineLockClosed,
+  HiXMark,
+  HiOutlineLightBulb,
+} from "react-icons/hi2";
+import { OUTREACH_HOOKS } from "@/lib/outreach-hooks";
 
 type SavedLeadRow = {
   id: string;
@@ -112,6 +119,7 @@ export function SavedLeadsManager({
   const [emailFilter, setEmailFilter] = useState("all");
   const [segments, setSegments] = useState<Segment[]>([]);
   const [selectedSegmentId, setSelectedSegmentId] = useState<string>("");
+  const [activeHookId, setActiveHookId] = useState<number | null>(null);
   const [composeOpen, setComposeOpen] = useState(false);
   const [subject, setSubject] = useState("");
   const [bodyText, setBodyText] = useState("");
@@ -127,6 +135,14 @@ export function SavedLeadsManager({
     results: SendResult[];
   } | null>(null);
   const router = useRouter();
+
+  function applyHook(hookId: number) {
+    setActiveHookId(hookId);
+    const hook = OUTREACH_HOOKS.find((h) => h.id === hookId);
+    if (!hook) return;
+    setSubject(hook.subject);
+    setBodyText(hook.body);
+  }
 
   useEffect(() => {
     fetch("/api/segments")
@@ -589,6 +605,35 @@ export function SavedLeadsManager({
                   to send.
                 </p>
               )}
+
+              {/* Outreach Hooks Selector */}
+              <div className="rounded-xl border border-brand-200/80 bg-brand-50/50 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-brand-900 flex items-center gap-1.5">
+                    <HiOutlineLightBulb className="h-4 w-4 text-amber-500" />
+                    Outreach Angle / Hooks:
+                  </span>
+                  <span className="text-[10.5px] text-ink-muted">1-click insert proven angle</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {OUTREACH_HOOKS.map((h) => (
+                    <button
+                      key={h.id}
+                      type="button"
+                      onClick={() => applyHook(h.id)}
+                      className={cn(
+                        "rounded-lg px-2.5 py-1 text-[11px] font-semibold transition border",
+                        activeHookId === h.id
+                          ? "bg-brand-600 text-white border-brand-600 shadow-xs"
+                          : "bg-white text-brand-900 border-brand-200/80 hover:bg-brand-100/70",
+                      )}
+                      title={h.shortDesc}
+                    >
+                      🪝 {h.badge}: {h.label.split(":")[1]?.trim()}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               <label className="block text-[12px]">
                 <span className="font-medium text-ink-muted">Subject</span>

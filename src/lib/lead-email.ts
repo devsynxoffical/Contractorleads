@@ -230,8 +230,11 @@ export async function sendBulkLeadEmail(opts: {
   subject: string;
   body: string;
   smtpAccountId?: string | null;
-  /** ms delay between sends (default 400) */
+  /** ms delay between sends (default from rotation settings or 400ms) */
   throttleMs?: number;
+  delaySeconds?: number;
+  rotationStrategy?: "even-distribution" | "round-robin" | "weighted";
+  emailsPerDomain?: number;
 }): Promise<{ sent: number; skipped: number; failed: number; results: BulkEmailResult[] }> {
   const subjectTpl = opts.subject.trim();
   const bodyTpl = opts.body.trim();
@@ -246,13 +249,32 @@ export async function sendBulkLeadEmail(opts: {
     select: { ownerName: true, companyName: true, name: true },
   });
 
-  const throttle = opts.throttleMs ?? 400;
+  const { getUserRotationConfig } = await import("@/lib/email-rotation");
+  const { listAvailableSenders } = await import("@/lib/user-smtp");
+
+  const rotConfig = await getUserRotationConfig(opts.userId);
+  const strategy = opts.rotationStrategy || rotConfig.strategy || "even-distribution";
+  const delaySec = opts.delaySeconds ?? rotConfig.delaySeconds ?? 2;
+  const throttle = opts.throttleMs ?? Math.max(200, delaySec * 1000);
+
+  // If auto-rotate (no specific mailbox forced), resolve pool of active mailboxes
+  let activeSenders: Array<{ id: string; label: string; fromEmail: string }> = [];
+  if (!opts.smtpAccountId) {
+    const available = await listAvailableSenders(opts.userId);
+    activeSenders = available.accounts.filter((a) => a.enabled);
+  }
+
   const results: BulkEmailResult[] = [];
   let sent = 0;
   let skipped = 0;
   let failed = 0;
 
-  for (const leadId of leadIds) {
+  // Calculate distribution allocation if even-distribution is used
+  const poolSize = activeSenders.length || 1;
+  const perMailboxCap = opts.emailsPerDomain || rotConfig.emailsPerDomain || Math.max(1, Math.ceil(leadIds.length / poolSize));
+
+  for (let idx = 0; idx < leadIds.length; idx++) {
+    const leadId = leadIds[idx];
     const lead = await findOwnedLead(opts.userId, leadId);
     if (!lead) {
       skipped += 1;
@@ -270,6 +292,20 @@ export async function sendBulkLeadEmail(opts: {
       continue;
     }
 
+    // Determine sender for this lead based on rotation strategy
+    let chosenAccountId = opts.smtpAccountId;
+    if (!chosenAccountId && activeSenders.length > 0) {
+      if (strategy === "even-distribution") {
+        // e.g. 50 leads across 25 domains -> 2 leads per domain
+        const mailboxIdx = Math.floor(idx / perMailboxCap) % activeSenders.length;
+        chosenAccountId = activeSenders[mailboxIdx]?.id || null;
+      } else if (strategy === "round-robin") {
+        // 1 by 1 alternating
+        const mailboxIdx = idx % activeSenders.length;
+        chosenAccountId = activeSenders[mailboxIdx]?.id || null;
+      }
+    }
+
     const vars = leadTemplateVars(lead, sender ?? {});
     try {
       await sendLeadEmail({
@@ -277,7 +313,7 @@ export async function sendBulkLeadEmail(opts: {
         leadId,
         subject: renderTemplate(subjectTpl, vars),
         body: renderTemplate(bodyTpl, vars),
-        smtpAccountId: opts.smtpAccountId,
+        smtpAccountId: chosenAccountId,
       });
       sent += 1;
       results.push({ leadId, businessName: lead.businessName, status: "sent" });
@@ -291,14 +327,16 @@ export async function sendBulkLeadEmail(opts: {
       });
     }
 
-    if (throttle > 0) await new Promise((r) => setTimeout(r, throttle));
+    if (throttle > 0 && idx < leadIds.length - 1) {
+      await new Promise((r) => setTimeout(r, throttle));
+    }
   }
 
   await logActivity(
     opts.userId,
     "bulk_email_sent",
-    `Bulk email to ${sent} lead(s)`,
-    { sent, skipped, failed, total: leadIds.length },
+    `Bulk email to ${sent} lead(s) using ${strategy} rotation`,
+    { sent, skipped, failed, total: leadIds.length, strategy, throttleMs: throttle },
   );
 
   return { sent, skipped, failed, results };

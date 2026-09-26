@@ -102,11 +102,29 @@ export function EmailAutomationSettings() {
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // Rotation & Throttling Settings
+  const [rotationConfig, setRotationConfig] = useState({
+    strategy: "even-distribution" as "even-distribution" | "round-robin" | "weighted",
+    emailsPerDomain: 2,
+    autoBalance: true,
+    delaySeconds: 2,
+    dailyLimitPerDomain: 50,
+  });
+  const [totalDomains, setTotalDomains] = useState(25);
+  const [totalMailboxes, setTotalMailboxes] = useState(25);
+  const [simLeads, setSimLeads] = useState(50);
+  const [savingRotation, setSavingRotation] = useState(false);
+  const [rotationSavedMsg, setRotationSavedMsg] = useState<string | null>(null);
+
   async function load() {
-    const [smtpData, seqData] = await Promise.all([
-      fetch("/api/settings/smtp-accounts").then((r) => r.json()),
-      fetch("/api/settings/email-sequence").then((r) => r.json()),
+    const [smtpData, seqData, rotData] = await Promise.all([
+      fetch("/api/settings/smtp-accounts").then((r) => r.json()).catch(() => ({})),
+      fetch("/api/settings/email-sequence").then((r) => r.json()).catch(() => ({})),
+      fetch("/api/settings/email-rotation").then((r) => r.json()).catch(() => ({})),
     ]);
+    if (rotData?.config) setRotationConfig(rotData.config);
+    if (rotData?.totalDomains) setTotalDomains(rotData.totalDomains);
+    if (rotData?.totalMailboxes) setTotalMailboxes(rotData.totalMailboxes);
     setAccounts(
       (smtpData.accounts ?? []).map(
         (a: SmtpAccount & { deliveryMode?: string }) => ({
@@ -286,6 +304,25 @@ export function EmailAutomationSettings() {
       .length;
     setMsg(`Processed queue — ${sent} email(s) sent`);
     await load();
+  }
+
+  async function saveRotationSettings(e: React.FormEvent) {
+    e.preventDefault();
+    setSavingRotation(true);
+    setRotationSavedMsg(null);
+    try {
+      const res = await fetch("/api/settings/email-rotation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(rotationConfig),
+      });
+      if (res.ok) {
+        setRotationSavedMsg("Domain & Mailbox rotation settings saved successfully!");
+        setTimeout(() => setRotationSavedMsg(null), 3500);
+      }
+    } finally {
+      setSavingRotation(false);
+    }
   }
 
   return (
@@ -730,6 +767,171 @@ export function EmailAutomationSettings() {
           </CardContent>
         </Card>
       )}
+
+      {/* Domain & Mailbox Rotation Engine */}
+      <Card className="border-border shadow-[var(--shadow-card)]">
+        <CardHeader>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <span>⚡</span> Domain &amp; Mailbox Rotation Engine
+              </CardTitle>
+              <p className="mt-1 text-[13px] text-ink-muted">
+                Configure how bulk outreach blasts are distributed across your {totalMailboxes} active mailboxes and {totalDomains} domains to guarantee high inbox deliverability.
+              </p>
+            </div>
+            <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-700">
+              {totalMailboxes} Mailboxes across {totalDomains} Domains Active
+            </span>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={saveRotationSettings} className="space-y-4">
+            {rotationSavedMsg && (
+              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs font-semibold text-emerald-700">
+                🎉 {rotationSavedMsg}
+              </div>
+            )}
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label>Rotation Strategy</Label>
+                <select
+                  className="saas-input w-full text-xs font-medium"
+                  value={rotationConfig.strategy}
+                  onChange={(e) =>
+                    setRotationConfig({
+                      ...rotationConfig,
+                      strategy: e.target.value as "even-distribution" | "round-robin" | "weighted",
+                    })
+                  }
+                >
+                  <option value="even-distribution">
+                    ⚡ Even Batch Distribution (e.g. 50 leads across 25 domains = 2 emails per domain) — Recommended
+                  </option>
+                  <option value="round-robin">
+                    🔄 Round-Robin (Cycles 1-by-1 through each mailbox sequentially)
+                  </option>
+                  <option value="weighted">
+                    📊 Health &amp; Deliverability Weighted (Allocates proportional to mailbox score)
+                  </option>
+                </select>
+                <p className="text-[11px] text-ink-muted">
+                  Even distribution splits your recipient list equally across all active domains so no single domain is overused.
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Emails Per Domain / Mailbox (Batch Cap)</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={rotationConfig.emailsPerDomain}
+                  onChange={(e) =>
+                    setRotationConfig({
+                      ...rotationConfig,
+                      emailsPerDomain: Math.max(1, Number(e.target.value) || 1),
+                    })
+                  }
+                />
+                <label className="flex items-center gap-1.5 text-[11px] text-ink-muted pt-1">
+                  <input
+                    type="checkbox"
+                    checked={rotationConfig.autoBalance}
+                    onChange={(e) =>
+                      setRotationConfig({
+                        ...rotationConfig,
+                        autoBalance: e.target.checked,
+                      })
+                    }
+                  />
+                  Auto-balance across total active domains (e.g. Total Leads ÷ {totalDomains} Domains)
+                </label>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Throttle Interval (Delay Between Sends)</Label>
+                <select
+                  className="saas-input w-full text-xs"
+                  value={rotationConfig.delaySeconds}
+                  onChange={(e) =>
+                    setRotationConfig({
+                      ...rotationConfig,
+                      delaySeconds: Number(e.target.value),
+                    })
+                  }
+                >
+                  <option value={0}>⚡ 0s (Instant parallel batch)</option>
+                  <option value={1}>⏱️ 1 second delay between sends</option>
+                  <option value={2}>⏱️ 2 seconds delay (Recommended for cold outreach)</option>
+                  <option value={3}>⏱️ 3 seconds delay</option>
+                  <option value={5}>⏱️ 5 seconds delay (Strict warm-up)</option>
+                  <option value={10}>⏱️ 10 seconds delay</option>
+                  <option value={30}>⏱️ 30 seconds delay (High deliverability)</option>
+                </select>
+                <p className="text-[11px] text-ink-muted">
+                  Paces outbound traffic so mailbox providers don&apos;t trigger velocity spam alerts.
+                </p>
+              </div>
+            </div>
+
+            {/* Interactive Live Rotation Preview Calculator */}
+            <div className="rounded-xl border border-brand-200/80 bg-brand-50/40 p-4 space-y-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs font-bold text-brand-900 flex items-center gap-1.5">
+                  <span>🧮</span> Live Rotation Simulator
+                </span>
+                <div className="flex items-center gap-1.5 text-xs text-brand-800 font-medium">
+                  <span>Simulate send for</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={1000}
+                    value={simLeads}
+                    onChange={(e) => setSimLeads(Math.max(1, Number(e.target.value) || 1))}
+                    className="h-7 w-16 rounded-md border border-brand-300 bg-white px-2 font-mono text-xs font-bold text-ink"
+                  />
+                  <span>leads:</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 text-center">
+                <div className="rounded-lg bg-white p-2.5 border border-brand-200/60 shadow-xs">
+                  <p className="text-[10px] font-semibold uppercase text-ink-muted">Total Leads</p>
+                  <p className="text-sm font-bold text-ink">{simLeads}</p>
+                </div>
+                <div className="rounded-lg bg-white p-2.5 border border-brand-200/60 shadow-xs">
+                  <p className="text-[10px] font-semibold uppercase text-ink-muted">Active Domains</p>
+                  <p className="text-sm font-bold text-brand-700">{totalDomains}</p>
+                </div>
+                <div className="rounded-lg bg-white p-2.5 border border-brand-200/60 shadow-xs">
+                  <p className="text-[10px] font-semibold uppercase text-ink-muted">Sends per Domain</p>
+                  <p className="text-sm font-bold text-emerald-600">
+                    {rotationConfig.strategy === "even-distribution"
+                      ? `${Math.ceil(simLeads / (totalDomains || 1))} emails / domain`
+                      : `~${(simLeads / (totalDomains || 1)).toFixed(1)} emails`}
+                  </p>
+                </div>
+                <div className="rounded-lg bg-white p-2.5 border border-brand-200/60 shadow-xs">
+                  <p className="text-[10px] font-semibold uppercase text-ink-muted">Est. Campaign Time</p>
+                  <p className="text-sm font-bold text-indigo-700">
+                    {rotationConfig.delaySeconds === 0
+                      ? "Instant (~2s)"
+                      : `${Math.round((simLeads * rotationConfig.delaySeconds) / 60)} min (${simLeads * rotationConfig.delaySeconds}s)`}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end pt-2">
+              <Button type="submit" disabled={savingRotation} className="bg-brand-600 hover:bg-brand-700 text-white">
+                {savingRotation ? "Saving Rotation Settings…" : "Save Rotation Settings"}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
 
       {sequence ? (
         <Card className="border-border shadow-[var(--shadow-card)]">

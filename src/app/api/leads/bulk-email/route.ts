@@ -62,6 +62,15 @@ export async function POST(request: Request) {
     );
   }
 
+  const rotationStrategy =
+    body.rotationStrategy === "round-robin" || body.rotationStrategy === "weighted"
+      ? body.rotationStrategy
+      : body.rotationStrategy === "even-distribution"
+        ? "even-distribution"
+        : undefined;
+  const emailsPerDomain = Number(body.emailsPerDomain) > 0 ? Number(body.emailsPerDomain) : undefined;
+  const delaySeconds = Number(body.delaySeconds) >= 0 ? Number(body.delaySeconds) : undefined;
+
   try {
     const result = await sendBulkLeadEmail({
       userId: user.id,
@@ -69,6 +78,9 @@ export async function POST(request: Request) {
       subject,
       body: text,
       smtpAccountId,
+      rotationStrategy,
+      emailsPerDomain,
+      delaySeconds,
     });
     return NextResponse.json({ ok: true, ...result });
   } catch (e) {

@@ -16,7 +16,9 @@ import {
   HiOutlineChevronRight,
   HiOutlineChevronLeft,
   HiOutlineUsers,
+  HiOutlineLightBulb,
 } from "react-icons/hi2";
+import { OUTREACH_HOOKS, compileHookForLead } from "@/lib/outreach-hooks";
 
 type PickLead = {
   id: string;
@@ -86,6 +88,18 @@ export function EmailComposePanel() {
     skipped: number;
     failed: number;
   } | null>(null);
+
+  // Outreach Hook state
+  const [activeHookId, setActiveHookId] = useState<number | null>(null);
+
+  function applyHook(hookId: number) {
+    setActiveHookId(hookId);
+    const hook = OUTREACH_HOOKS.find((h) => h.id === hookId);
+    if (!hook) return;
+    const compiled = compileHookForLead(hook, selected, null);
+    setSubject(compiled.subject);
+    setBodyText(compiled.body);
+  }
 
   // Load saved segments
   const loadSegments = useCallback(async () => {
@@ -621,6 +635,35 @@ export function EmailComposePanel() {
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* Outreach Hooks Selector */}
+          <div className="rounded-xl border border-brand-200/80 bg-brand-50/50 p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-brand-900 flex items-center gap-1.5">
+                <HiOutlineLightBulb className="h-4 w-4 text-amber-500" />
+                Select Outreach Hook / Angle:
+              </span>
+              <span className="text-[10.5px] text-ink-muted">1-click insert proven copy</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {OUTREACH_HOOKS.map((h) => (
+                <button
+                  key={h.id}
+                  type="button"
+                  onClick={() => applyHook(h.id)}
+                  className={cn(
+                    "rounded-lg px-2.5 py-1 text-[11px] font-semibold transition border",
+                    activeHookId === h.id
+                      ? "bg-brand-600 text-white border-brand-600 shadow-xs"
+                      : "bg-white text-brand-900 border-brand-200/80 hover:bg-brand-100/70",
+                  )}
+                  title={h.shortDesc}
+                >
+                  🪝 {h.badge}: {h.label.split(":")[1]?.trim()}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Subject Line */}
