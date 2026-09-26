@@ -6,11 +6,14 @@ import { useSearchParams } from "next/navigation";
 import {
   HiOutlineArrowPath,
   HiOutlineBolt,
+  HiOutlineBookmark,
   HiOutlineChatBubbleLeftRight,
+  HiOutlineCheck,
   HiOutlineCheckBadge,
   HiOutlineCpuChip,
   HiOutlineFire,
   HiOutlineSparkles,
+  HiOutlineXMark,
 } from "react-icons/hi2";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
@@ -158,6 +161,12 @@ export function LeadSearchForm() {
     placeName: string;
   } | null>(null);
   const [restoring, setRestoring] = useState(true);
+  const [showSaveSegmentModal, setShowSaveSegmentModal] = useState(false);
+  const [segmentName, setSegmentName] = useState("");
+  const [segmentWhen, setSegmentWhen] = useState("today");
+  const [savingSegment, setSavingSegment] = useState(false);
+  const [segmentSuccessMsg, setSegmentSuccessMsg] = useState<string | null>(null);
+  const [segmentError, setSegmentError] = useState<string | null>(null);
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -1059,19 +1068,69 @@ export function LeadSearchForm() {
 
       {leads.length > 0 && (
         <div className="mt-8 animate-fade-up">
+          {segmentSuccessMsg && (
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-emerald-900 shadow-sm dark:text-emerald-200">
+              <div className="flex items-center gap-2">
+                <HiOutlineCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                <span className="text-sm font-semibold">{segmentSuccessMsg}</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs font-semibold">
+                <Link
+                  href="/email/compose"
+                  className="rounded-lg bg-emerald-600 px-3 py-1.5 text-white transition hover:bg-emerald-700"
+                >
+                  Reach out in Compose →
+                </Link>
+                <Link
+                  href="/leads"
+                  className="rounded-lg border border-emerald-600/30 bg-[var(--surface)] px-3 py-1.5 text-emerald-700 transition hover:bg-emerald-500/10 dark:text-emerald-300"
+                >
+                  View in All Leads
+                </Link>
+              </div>
+            </div>
+          )}
+
           <LeadResultsHeader
             count={leads.length}
             hotCount={hotCount}
             avgScore={avgScore}
             actions={
-              <ExportLeadsButtons
-                size="sm"
-                leadIds={
-                  selected.size > 0
-                    ? Array.from(selected)
-                    : leads.map((l) => l.id)
-                }
-              />
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const rawIndustry = (industryMode === "preset" ? selectedIndustry : customIndustry).trim();
+                    const ind = rawIndustry || "Leads";
+                    const loc =
+                      locationScope === "country"
+                        ? (getTierOneCountry(selectedCountry)?.name ?? selectedCountry)
+                        : locationMode === "custom" && customLocation
+                        ? customLocation
+                        : city
+                        ? `${city}${selectedState ? `, ${selectedState}` : ""}`
+                        : selectedState || (getTierOneCountry(selectedCountry)?.name ?? selectedCountry);
+
+                    setSegmentName(`${ind} · ${loc}`);
+                    setSegmentWhen("today");
+                    setSegmentError(null);
+                    setShowSaveSegmentModal(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-brand-300 bg-brand-50/80 px-3.5 py-2 text-xs font-semibold text-brand-700 shadow-sm transition hover:bg-brand-100 hover:border-brand-400 dark:border-brand-500/30 dark:bg-brand-950/40 dark:text-brand-300 dark:hover:bg-brand-900/50"
+                  title="Save current search criteria as a segment"
+                >
+                  <HiOutlineBookmark className="h-4 w-4 text-brand-600 dark:text-brand-400" />
+                  Save as Segment
+                </button>
+                <ExportLeadsButtons
+                  size="sm"
+                  leadIds={
+                    selected.size > 0
+                      ? Array.from(selected)
+                      : leads.map((l) => l.id)
+                  }
+                />
+              </div>
             }
           />
           <LeadResultsList
@@ -1079,6 +1138,188 @@ export function LeadSearchForm() {
             openInNewTab={true}
             profileHrefFor={(lead) => `/leads/${lead.id}?from=search`}
           />
+        </div>
+      )}
+
+      {showSaveSegmentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-fade-in">
+          <div
+            className="w-full max-w-md overflow-hidden rounded-2xl border border-border bg-[var(--surface)] shadow-2xl animate-scale-up"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Save segment"
+          >
+            <div className="flex items-center justify-between border-b border-border px-5 py-4">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-950/50 dark:text-brand-400">
+                  <HiOutlineBookmark className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-[15px] font-semibold text-ink">Save as Segment</h3>
+                  <p className="text-[12px] text-ink-muted">
+                    Save this search to target in email outreach and filter leads.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSaveSegmentModal(false)}
+                className="rounded-lg p-1.5 text-ink-muted hover:bg-[var(--input-bg)]"
+              >
+                <HiOutlineXMark className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 px-5 py-4">
+              {/* Summary pill */}
+              <div className="rounded-xl border border-border/70 bg-[var(--input-bg)] p-3 text-xs text-ink-muted">
+                <div className="font-semibold text-ink mb-1.5">Search Criteria:</div>
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="rounded-md bg-[var(--surface)] border border-border px-2 py-0.5 font-medium text-ink">
+                    Industry: {(industryMode === "preset" ? selectedIndustry : customIndustry) || "Any"}
+                  </span>
+                  <span className="rounded-md bg-[var(--surface)] border border-border px-2 py-0.5 font-medium text-ink">
+                    {locationScope === "country"
+                      ? (getTierOneCountry(selectedCountry)?.name ?? selectedCountry)
+                      : city
+                      ? `${city}, ${selectedState || selectedCountry}`
+                      : selectedState || selectedCountry}
+                  </span>
+                  <span className="rounded-md bg-[var(--surface)] border border-border px-2 py-0.5 font-medium text-brand-600 dark:text-brand-400">
+                    {leads.length} leads generated
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[12px] font-medium text-ink mb-1">
+                  Segment Name
+                </label>
+                <input
+                  type="text"
+                  value={segmentName}
+                  onChange={(e) => setSegmentName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !savingSegment && segmentName.trim()) {
+                      void (async () => {
+                        setSavingSegment(true);
+                        setSegmentError(null);
+                        try {
+                          const rawIndustry = (industryMode === "preset" ? selectedIndustry : customIndustry).trim();
+                          const res = await fetch("/api/segments", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              name: segmentName.trim(),
+                              industry: rawIndustry || null,
+                              when: segmentWhen || "today",
+                              tier: null,
+                              strength: null,
+                              q: null,
+                              sort: "newest",
+                            }),
+                          });
+                          const data = await res.json();
+                          if (!res.ok) {
+                            setSegmentError(data.error || "Failed to save segment");
+                            return;
+                          }
+                          setShowSaveSegmentModal(false);
+                          setSegmentSuccessMsg(`Segment "${segmentName.trim()}" saved!`);
+                          setTimeout(() => setSegmentSuccessMsg(null), 7000);
+                        } catch {
+                          setSegmentError("Failed to save segment. Please try again.");
+                        } finally {
+                          setSavingSegment(false);
+                        }
+                      })();
+                    }
+                  }}
+                  placeholder="e.g. Plumbing · California"
+                  maxLength={60}
+                  className="saas-input w-full"
+                  disabled={savingSegment}
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-[12px] font-medium text-ink mb-1">
+                  Timeframe Filter
+                </label>
+                <select
+                  value={segmentWhen}
+                  onChange={(e) => setSegmentWhen(e.target.value)}
+                  className="saas-input w-full"
+                  disabled={savingSegment}
+                >
+                  <option value="today">Today (leads generated today)</option>
+                  <option value="yesterday">Yesterday</option>
+                  <option value="week">Last 7 Days</option>
+                  <option value="month">Last 30 Days</option>
+                  <option value="all">All Time (all matching industry leads)</option>
+                </select>
+              </div>
+
+              {segmentError && (
+                <p className="text-xs font-medium text-rose-600">{segmentError}</p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 border-t border-border px-5 py-3">
+              <button
+                type="button"
+                onClick={() => setShowSaveSegmentModal(false)}
+                className="rounded-xl border border-border px-4 py-2 text-[13px] font-semibold text-ink transition hover:bg-[var(--input-bg)]"
+                disabled={savingSegment}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!segmentName.trim()) {
+                    setSegmentError("Please enter a name for the segment.");
+                    return;
+                  }
+                  setSavingSegment(true);
+                  setSegmentError(null);
+                  try {
+                    const rawIndustry = (industryMode === "preset" ? selectedIndustry : customIndustry).trim();
+                    const res = await fetch("/api/segments", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        name: segmentName.trim(),
+                        industry: rawIndustry || null,
+                        when: segmentWhen || "today",
+                        tier: null,
+                        strength: null,
+                        q: null,
+                        sort: "newest",
+                      }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) {
+                      setSegmentError(data.error || "Failed to save segment");
+                      return;
+                    }
+                    setShowSaveSegmentModal(false);
+                    setSegmentSuccessMsg(`Segment "${segmentName.trim()}" saved!`);
+                    setTimeout(() => setSegmentSuccessMsg(null), 7000);
+                  } catch {
+                    setSegmentError("Failed to save segment. Please try again.");
+                  } finally {
+                    setSavingSegment(false);
+                  }
+                }}
+                disabled={savingSegment || !segmentName.trim()}
+                className="rounded-xl bg-[#1a1224] px-4 py-2 text-[13px] font-semibold text-white transition hover:opacity-90 disabled:opacity-50 dark:bg-brand-600 dark:hover:bg-brand-500"
+              >
+                {savingSegment ? "Saving…" : "Save Segment"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
