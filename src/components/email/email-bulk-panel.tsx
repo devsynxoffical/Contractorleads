@@ -4,16 +4,34 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/input";
-import { MESSAGING_ADDON_PRICE_USD } from "@/lib/messaging-addon";
 import { cn } from "@/lib/utils";
-import { HiOutlineLockClosed } from "react-icons/hi2";
+import {
+  HiOutlineBookmark,
+  HiOutlineSparkles,
+  HiOutlineUsers,
+} from "react-icons/hi2";
 
 type PickLead = {
   id: string;
   businessName: string;
+  ownerName?: string | null;
   email: string | null;
   city: string | null;
-  status: string;
+  industry?: string | null;
+  qualityTier?: string | null;
+  leadScore?: number | null;
+  status?: string;
+};
+
+type Segment = {
+  id: string;
+  name: string;
+  industry: string | null;
+  when: string | null;
+  tier: string | null;
+  strength: string | null;
+  q: string | null;
+  sort: string | null;
 };
 
 type Mailbox = {
@@ -36,8 +54,9 @@ type BulkResult = {
   }>;
 };
 
+const VARS = ["businessName", "city", "industry", "ownerName"];
+
 export function EmailBulkPanel({
-  hasAddon = true,
   smtpReady,
   onNeedSetup,
 }: {
@@ -57,6 +76,26 @@ export function EmailBulkPanel({
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<BulkResult | null>(null);
 
+  // Segments state
+  const [segments, setSegments] = useState<Segment[]>([]);
+  const [selectedSegmentId, setSelectedSegmentId] = useState<string>("");
+
+  const loadSegments = useCallback(async () => {
+    try {
+      const res = await fetch("/api/segments");
+      const json = await res.json();
+      if (res.ok && Array.isArray(json.segments)) {
+        setSegments(json.segments);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadSegments();
+  }, [loadSegments]);
+
   const loadAccounts = useCallback(async () => {
     const res = await fetch("/api/settings/smtp-accounts");
     const json = await res.json();
@@ -71,14 +110,31 @@ export function EmailBulkPanel({
     });
   }, []);
 
-  const search = useCallback(async (q: string) => {
+  const fetchLeads = useCallback(async (q: string, segmentId?: string) => {
     setLoading(true);
     try {
+      if (segmentId) {
+        const res = await fetch(
+          `/api/segments/leads?segmentId=${encodeURIComponent(segmentId)}&limit=200`,
+        );
+        const json = await res.json();
+        if (res.ok && Array.isArray(json.leads)) {
+          setLeads(json.leads);
+          // Auto-select all leads in the segment
+          setSelected(new Set(json.leads.map((l: PickLead) => l.id)));
+          return;
+        }
+      }
+
       const res = await fetch(
         `/api/emails/lead-picker?q=${encodeURIComponent(q)}&limit=200`,
       );
       const json = await res.json();
-      if (res.ok) setLeads(json.leads ?? []);
+      if (res.ok) {
+        const list = json.leads ?? [];
+        setLeads(list);
+        setSelected(new Set(list.map((l: PickLead) => l.id)));
+      }
     } finally {
       setLoading(false);
     }
@@ -89,13 +145,22 @@ export function EmailBulkPanel({
   }, [loadAccounts]);
 
   useEffect(() => {
-    const t = setTimeout(() => void search(query), 250);
-    return () => clearTimeout(t);
-  }, [query, search]);
+    if (selectedSegmentId) {
+      void fetchLeads("", selectedSegmentId);
+    } else {
+      const t = setTimeout(() => void fetchLeads(query), 250);
+      return () => clearTimeout(t);
+    }
+  }, [query, selectedSegmentId, fetchLeads]);
 
   const allIds = useMemo(() => leads.map((l) => l.id), [leads]);
   const allSelected =
     allIds.length > 0 && allIds.every((id) => selected.has(id));
+
+  const selectedSegment = useMemo(
+    () => segments.find((s) => s.id === selectedSegmentId) || null,
+    [segments, selectedSegmentId],
+  );
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -160,35 +225,97 @@ export function EmailBulkPanel({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-border bg-[#faf8fc]/70 px-4 py-3 text-[13px] text-ink-muted">
-        Select saved leads with email addresses, write one subject + message,
-        and send. Personalization uses each lead&apos;s contact — review copy
-        before launching. Cap: 200 per send.
+      {/* Header Banner */}
+      <div className="rounded-2xl border border-border bg-[#faf8fc]/70 px-4 py-3 text-[13px] text-ink-muted flex flex-wrap items-center justify-between gap-2">
+        <span>
+          Select a <strong>Segment</strong> or individual leads to launch an automated email blast. Personalize with variables like <code>{"{{businessName}}"}</code> and <code>{"{{city}}"}</code>.
+        </span>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
         <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <input
-              className="saas-input min-w-0 flex-1"
-              placeholder="Search leads by name, email, or city…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              onClick={toggleAll}
-              disabled={!allIds.length}
+          {/* Segment Selector */}
+          <div className="rounded-xl border border-brand-200/80 bg-brand-50/40 p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-brand-900">
+                <HiOutlineBookmark className="h-4 w-4 text-brand-600" />
+                Target Lead Segment
+              </span>
+              {selectedSegmentId && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedSegmentId("")}
+                  className="text-[11px] font-medium text-brand-700 hover:underline"
+                >
+                  Clear segment
+                </button>
+              )}
+            </div>
+            <select
+              className="saas-input w-full bg-white text-xs font-medium text-ink shadow-sm"
+              value={selectedSegmentId}
+              onChange={(e) => setSelectedSegmentId(e.target.value)}
             >
-              {allSelected ? "Clear all" : "Select all"}
-            </Button>
+              <option value="">📁 All Saved Leads (default)</option>
+              {segments.map((s) => (
+                <option key={s.id} value={s.id}>
+                  🎯 {s.name}
+                  {s.industry ? ` · ${s.industry}` : ""}
+                  {s.when && s.when !== "all" ? ` (${s.when})` : ""}
+                </option>
+              ))}
+            </select>
+
+            {selectedSegment && (
+              <div className="flex items-center justify-between text-[11px] text-brand-900 pt-1">
+                <span>
+                  Targeting segment: <strong className="font-semibold">{selectedSegment.name}</strong>
+                </span>
+                <span className="font-semibold text-brand-700">
+                  {leads.length} leads with email
+                </span>
+              </div>
+            )}
           </div>
-          <p className="text-[12px] text-ink-muted">
-            {selected.size} selected
-            {leads.length ? ` · ${leads.length} shown` : ""}
-          </p>
+
+          {!selectedSegmentId && (
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                className="saas-input min-w-0 flex-1 text-xs"
+                placeholder="Search leads by name, email, or city…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={toggleAll}
+                disabled={!allIds.length}
+              >
+                {allSelected ? "Clear all" : "Select all"}
+              </Button>
+            </div>
+          )}
+
+          {selectedSegmentId && (
+            <div className="flex items-center justify-between px-1">
+              <span className="text-[12px] font-medium text-ink-muted">
+                {selected.size} of {leads.length} leads selected
+              </span>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={toggleAll}
+                disabled={!allIds.length}
+                className="text-xs h-7"
+              >
+                {allSelected ? "Deselect all" : "Select all"}
+              </Button>
+            </div>
+          )}
+
           <div className="overflow-hidden rounded-xl border border-border bg-[var(--surface)]">
             {loading ? (
               <p className="px-4 py-8 text-center text-sm text-ink-faint">
@@ -196,13 +323,19 @@ export function EmailBulkPanel({
               </p>
             ) : !leads.length ? (
               <p className="px-4 py-8 text-center text-sm text-ink-faint">
-                No saved leads with email.{" "}
-                <Link
-                  href="/leads/saved"
-                  className="font-medium text-brand-600 hover:underline"
-                >
-                  Open Saved leads
-                </Link>
+                {selectedSegmentId
+                  ? "No leads with email found in this segment."
+                  : (
+                    <>
+                      No saved leads with email.{" "}
+                      <Link
+                        href="/leads/saved"
+                        className="font-medium text-brand-600 hover:underline"
+                      >
+                        Open Saved leads
+                      </Link>
+                    </>
+                  )}
               </p>
             ) : (
               <ul className="max-h-[420px] divide-y divide-border overflow-y-auto">
@@ -218,18 +351,25 @@ export function EmailBulkPanel({
                       >
                         <input
                           type="checkbox"
-                          className="mt-1"
+                          className="mt-1 accent-brand-600"
                           checked={on}
                           onChange={() => toggle(l.id)}
                         />
-                        <span className="min-w-0">
-                          <span className="block truncate text-[13px] font-medium text-ink">
-                            {l.businessName}
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center gap-2">
+                            <span className="block truncate text-[13px] font-medium text-ink">
+                              {l.businessName}
+                            </span>
+                            {l.qualityTier && (
+                              <span className="rounded bg-brand-100/70 px-1.5 py-0.2 text-[9.5px] font-semibold text-brand-800 capitalize">
+                                {l.qualityTier}
+                              </span>
+                            )}
                           </span>
                           <span className="mt-0.5 block truncate text-[12px] text-ink-muted">
                             {l.email}
                             {l.city ? ` · ${l.city}` : ""}
-                            {l.status ? ` · ${l.status}` : ""}
+                            {l.industry ? ` · ${l.industry}` : ""}
                           </span>
                         </span>
                       </label>
@@ -241,6 +381,7 @@ export function EmailBulkPanel({
           </div>
         </div>
 
+        {/* Campaign Form */}
         <div className="rounded-xl border border-border bg-[var(--surface)] p-4 sm:p-5">
           <form
             className="space-y-3"
@@ -250,9 +391,12 @@ export function EmailBulkPanel({
             }}
           >
             <div>
-              <p className="text-[15px] font-semibold text-ink">Bulk campaign</p>
+              <p className="text-[15px] font-semibold text-ink flex items-center gap-2">
+                <HiOutlineUsers className="h-4 w-4 text-brand-600" />
+                Bulk Outreach Campaign
+              </p>
               <p className="text-[12px] text-ink-muted">
-                Same subject and body to every selected lead.
+                Each selected lead receives a personalized email using their specific contact details.
               </p>
             </div>
 
@@ -263,7 +407,7 @@ export function EmailBulkPanel({
             ) : null}
             {results ? (
               <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3 py-2 text-[13px] text-emerald-900">
-                Sent {results.sent} · skipped {results.skipped} · failed{" "}
+                🎉 Sent {results.sent} · skipped {results.skipped} · failed{" "}
                 {results.failed}
                 {results.results?.some(
                   (r) => r.status === "skipped" || r.status === "failed",
@@ -287,7 +431,7 @@ export function EmailBulkPanel({
             <label className="block text-[12px]">
               <span className="font-medium text-ink-muted">Send from (Hostinger / Custom SMTP)</span>
               <select
-                className="saas-input mt-1"
+                className="saas-input mt-1 text-xs"
                 value={smtpAccountId}
                 onChange={(e) => setSmtpAccountId(e.target.value)}
                 disabled={busy}
@@ -307,7 +451,8 @@ export function EmailBulkPanel({
             <label className="block text-[12px]">
               <span className="font-medium text-ink-muted">Subject</span>
               <input
-                className="saas-input mt-1"
+                className="saas-input mt-1 text-xs"
+                placeholder="e.g. Quick question for {{businessName}}"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 disabled={busy}
@@ -315,18 +460,48 @@ export function EmailBulkPanel({
               />
             </label>
             <label className="block text-[12px]">
-              <span className="font-medium text-ink-muted">Message</span>
+              <div className="flex items-center justify-between">
+                <span className="font-medium text-ink-muted">Message</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSubject("Quick question for {{businessName}}");
+                    setBodyText(
+                      "Hi {{ownerName}},\n\nI came across {{businessName}} in {{city}} and wanted to reach out regarding contractor opportunities in your area.\n\nWould you be open to a quick 5-minute chat this week?\n\nBest regards,\n",
+                    );
+                  }}
+                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 hover:text-brand-700"
+                >
+                  <HiOutlineSparkles className="h-3.5 w-3.5" />
+                  Use Contractor Template
+                </button>
+              </div>
               <Textarea
-                className="mt-1 min-h-[180px]"
+                className="mt-1 min-h-[160px] text-xs font-sans"
                 value={bodyText}
                 onChange={(e) => setBodyText(e.target.value)}
-                placeholder="Write your campaign message…"
+                placeholder={"Hi {{ownerName}},\n\nI came across {{businessName}} in {{city}} and…\n\nBest regards,"}
                 disabled={busy}
                 required
               />
             </label>
 
-            <div className="flex flex-wrap items-center gap-2 pt-1">
+            {/* Variable tags */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[11px] text-ink-muted">Insert tag:</span>
+              {VARS.map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setBodyText((b) => `${b}{{${v}}}`)}
+                  className="rounded-md border border-border bg-[var(--input-bg)] px-2 py-0.5 font-mono text-[10.5px] text-ink-muted hover:border-brand-200 hover:text-brand-600"
+                >
+                  {`{{${v}}}`}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/80">
               <Button
                 type="submit"
                 loading={busy}
@@ -336,6 +511,7 @@ export function EmailBulkPanel({
                   !subject.trim() ||
                   !bodyText.trim()
                 }
+                className="bg-brand-600 hover:bg-brand-700 text-white"
               >
                 Send to {selected.size || 0} lead
                 {selected.size === 1 ? "" : "s"}

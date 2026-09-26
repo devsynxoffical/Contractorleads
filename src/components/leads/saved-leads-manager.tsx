@@ -18,7 +18,7 @@ import {
   matchesTierFilter,
   matchesWhenFilter,
 } from "@/lib/lead-date-filters";
-import { HiOutlineEnvelope, HiOutlineLockClosed, HiXMark } from "react-icons/hi2";
+import { HiOutlineBookmark, HiOutlineEnvelope, HiOutlineLockClosed, HiXMark } from "react-icons/hi2";
 
 type SavedLeadRow = {
   id: string;
@@ -79,6 +79,17 @@ function FilterSelect({
   );
 }
 
+type Segment = {
+  id: string;
+  name: string;
+  industry: string | null;
+  when: string | null;
+  tier: string | null;
+  strength: string | null;
+  q: string | null;
+  sort: string | null;
+};
+
 export function SavedLeadsManager({
   leads,
   categories,
@@ -99,6 +110,8 @@ export function SavedLeadsManager({
   const [strengthFilter, setStrengthFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [emailFilter, setEmailFilter] = useState("all");
+  const [segments, setSegments] = useState<Segment[]>([]);
+  const [selectedSegmentId, setSelectedSegmentId] = useState<string>("");
   const [composeOpen, setComposeOpen] = useState(false);
   const [subject, setSubject] = useState("");
   const [bodyText, setBodyText] = useState("");
@@ -116,6 +129,26 @@ export function SavedLeadsManager({
   const router = useRouter();
 
   useEffect(() => {
+    fetch("/api/segments")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.segments && Array.isArray(d.segments)) setSegments(d.segments);
+      })
+      .catch(() => {});
+  }, []);
+
+  function applySegment(segId: string) {
+    setSelectedSegmentId(segId);
+    if (!segId) return;
+    const seg = segments.find((s) => s.id === segId);
+    if (!seg) return;
+    if (seg.industry) setIndustryFilter(seg.industry);
+    if (seg.when) setWhenFilter(seg.when);
+    if (seg.tier) setTierFilter(seg.tier);
+    if (seg.strength) setStrengthFilter(seg.strength);
+  }
+
+  useEffect(() => {
     if (!mailboxes.length) {
       setSmtpAccountId("");
       return;
@@ -127,6 +160,7 @@ export function SavedLeadsManager({
   }, [mailboxes]);
 
   function clearFilters() {
+    setSelectedSegmentId("");
     setIndustryFilter("all");
     setWhenFilter("all");
     setTierFilter("all");
@@ -227,6 +261,29 @@ export function SavedLeadsManager({
     <div className="space-y-3">
       {leads.length > 0 ? (
         <div className="space-y-3 rounded-xl border border-border bg-[var(--surface)] px-4 py-3">
+          {segments.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5 pb-2 border-b border-border">
+              <span className="text-[11px] font-semibold text-brand-900 flex items-center gap-1">
+                <HiOutlineBookmark className="h-3.5 w-3.5 text-brand-600" />
+                Segments:
+              </span>
+              {segments.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => applySegment(selectedSegmentId === s.id ? "" : s.id)}
+                  className={cn(
+                    "rounded-lg px-2.5 py-1 text-[11px] font-medium transition",
+                    selectedSegmentId === s.id
+                      ? "bg-brand-600 text-white font-semibold shadow-sm"
+                      : "bg-[var(--input-bg)] text-ink-muted hover:text-ink hover:bg-brand-50",
+                  )}
+                >
+                  🎯 {s.name}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="flex flex-col gap-2 lg:flex-row lg:items-end">
             <div className="grid min-w-0 flex-1 grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
               <FilterSelect
@@ -484,6 +541,28 @@ export function SavedLeadsManager({
             </div>
 
             <div className="max-h-[70vh] space-y-4 overflow-y-auto px-5 py-4">
+              {segments.length > 0 && (
+                <label className="block text-[12px]">
+                  <span className="font-medium text-ink-muted flex items-center gap-1">
+                    <HiOutlineBookmark className="h-3.5 w-3.5 text-brand-600" />
+                    Target Lead Segment
+                  </span>
+                  <select
+                    className="saas-input mt-1"
+                    value={selectedSegmentId}
+                    onChange={(e) => applySegment(e.target.value)}
+                    disabled={busy}
+                  >
+                    <option value="">Current Selection ({selectedCount} leads selected)</option>
+                    {segments.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        🎯 {s.name} {s.industry ? `· ${s.industry}` : ""} {s.when && s.when !== "all" ? `(${s.when})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+
               {mailboxes.length ? (
                 <label className="block text-[12px]">
                   <span className="font-medium text-ink-muted">Send from</span>
