@@ -704,19 +704,40 @@ export function CampaignWizard({
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-ink">
+                    <div className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-ink">
                       <span>Wait</span>
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 7, 14].map((d) => (
+                          <button
+                            key={d}
+                            type="button"
+                            onClick={() => {
+                              const next = [...sequenceSteps];
+                              next[idx].dayDelay = d;
+                              setSequenceSteps(next);
+                            }}
+                            className={cn(
+                              "rounded px-1.5 py-0.5 text-[10px] font-bold border transition",
+                              s.dayDelay === d
+                                ? "bg-brand-600 text-white border-brand-600"
+                                : "bg-[var(--surface)] text-ink-muted border-border hover:bg-brand-50"
+                            )}
+                          >
+                            {d}d
+                          </button>
+                        ))}
+                      </div>
                       <input
                         type="number"
                         min={1}
-                        max={30}
+                        max={90}
                         value={s.dayDelay}
                         onChange={(e) => {
                           const next = [...sequenceSteps];
                           next[idx].dayDelay = Math.max(1, parseInt(e.target.value, 10) || 1);
                           setSequenceSteps(next);
                         }}
-                        className="saas-input w-16 text-center font-bold"
+                        className="saas-input w-16 text-center font-bold text-xs"
                       />
                       <span>days after previous email</span>
                     </div>
@@ -812,23 +833,38 @@ export function CampaignWizard({
           {/* Daily Limits & Warmup presets */}
           <div className="grid gap-4 md:grid-cols-2">
             <div className="rounded-xl border border-border bg-[var(--input-bg)] p-4">
-              <label className="block text-xs font-bold text-ink mb-2">
-                Daily Sending Limit Per Mailbox: <span className="text-brand-600">{dailyLimitPerMailbox} emails / day</span>
-              </label>
-              <div className="flex flex-wrap gap-2 mb-3">
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-xs font-bold text-ink">
+                  Daily Sending Limit Per Mailbox
+                </label>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={dailyLimitPerMailbox}
+                    onChange={(e) => setDailyLimitPerMailbox(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                    className="saas-input w-20 text-center font-bold text-xs"
+                  />
+                  <span className="text-xs text-brand-600 font-semibold">/ day</span>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-1.5 mb-3">
                 {[
-                  { label: "Week 1 (2/day)", val: 2 },
-                  { label: "Week 2 (4/day)", val: 4 },
-                  { label: "Week 3 (8/day)", val: 8 },
-                  { label: "Week 4 (10/day)", val: 10 },
-                  { label: "Scale (15/day)", val: 15 },
+                  { label: "2/day (Warmup)", val: 2 },
+                  { label: "4/day", val: 4 },
+                  { label: "8/day", val: 8 },
+                  { label: "10/day (Default)", val: 10 },
+                  { label: "15/day", val: 15 },
+                  { label: "25/day (Scale)", val: 25 },
+                  { label: "50/day (Max)", val: 50 },
                 ].map((preset) => (
                   <button
                     key={preset.val}
                     type="button"
                     onClick={() => setDailyLimitPerMailbox(preset.val)}
                     className={cn(
-                      "rounded-lg px-2.5 py-1 text-xs font-semibold transition",
+                      "rounded-lg px-2.5 py-1 text-[11px] font-semibold transition",
                       dailyLimitPerMailbox === preset.val
                         ? "bg-brand-600 text-white"
                         : "border border-border bg-[var(--surface)] text-ink hover:bg-[var(--input-bg)]"
@@ -857,15 +893,40 @@ export function CampaignWizard({
 
             {/* Human-like interval spacing */}
             <div className="rounded-xl border border-border bg-[var(--input-bg)] p-4">
-              <label className="block text-xs font-bold text-ink mb-2">Human-Like Email Sending Spacing</label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-xs font-bold text-ink">Custom Email Sending Spacing / Jitter</label>
+                <div className="flex gap-1">
+                  <button
+                    type="button"
+                    onClick={() => { setMinDelayMinutes(2); setMaxDelayMinutes(4); }}
+                    className="text-[10px] font-semibold px-2 py-0.5 rounded border border-border bg-[var(--surface)] hover:bg-brand-50"
+                  >
+                    Fast (2-4m)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setMinDelayMinutes(4); setMaxDelayMinutes(7); }}
+                    className="text-[10px] font-semibold px-2 py-0.5 rounded border border-brand-300 bg-brand-50 text-brand-700"
+                  >
+                    Standard (4-7m)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setMinDelayMinutes(8); setMaxDelayMinutes(15); }}
+                    className="text-[10px] font-semibold px-2 py-0.5 rounded border border-border bg-[var(--surface)] hover:bg-brand-50"
+                  >
+                    Safe (8-15m)
+                  </button>
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <span className="text-[11px] text-ink-muted block mb-1">Min Delay</span>
+                  <span className="text-[11px] text-ink-muted block mb-1">Min Delay (Custom)</span>
                   <div className="flex items-center gap-1.5">
                     <input
                       type="number"
                       min={1}
-                      max={30}
+                      max={120}
                       value={minDelayMinutes}
                       onChange={(e) => setMinDelayMinutes(Math.max(1, parseInt(e.target.value, 10) || 1))}
                       className="saas-input w-full font-bold"
@@ -874,12 +935,12 @@ export function CampaignWizard({
                   </div>
                 </div>
                 <div>
-                  <span className="text-[11px] text-ink-muted block mb-1">Max Delay</span>
+                  <span className="text-[11px] text-ink-muted block mb-1">Max Delay (Custom)</span>
                   <div className="flex items-center gap-1.5">
                     <input
                       type="number"
                       min={minDelayMinutes}
-                      max={60}
+                      max={240}
                       value={maxDelayMinutes}
                       onChange={(e) => setMaxDelayMinutes(Math.max(minDelayMinutes, parseInt(e.target.value, 10) || 7))}
                       className="saas-input w-full font-bold"
@@ -889,7 +950,7 @@ export function CampaignWizard({
                 </div>
               </div>
               <p className="mt-3 text-[11px] text-ink-muted">
-                Emails are throttled with randomized jitter between {minDelayMinutes} to {maxDelayMinutes} minutes to simulate human behavior and protect domain reputation.
+                Each email is throttled with randomized human jitter between {minDelayMinutes} to {maxDelayMinutes} minutes to protect mailbox deliverability.
               </p>
             </div>
           </div>
@@ -898,13 +959,15 @@ export function CampaignWizard({
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold text-ink">Connected Domains & Mailboxes ({mailboxes.length} Total)</h3>
-              <button
-                type="button"
-                onClick={toggleSelectAll}
-                className="text-xs font-semibold text-brand-600 hover:underline"
-              >
-                {selectAllMailboxes ? "Deselect All" : "Select All 25 Mailboxes"}
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={toggleSelectAll}
+                  className="text-xs font-semibold text-brand-600 hover:underline"
+                >
+                  {selectAllMailboxes ? "Deselect All" : "Select All 25 Mailboxes"}
+                </button>
+              </div>
             </div>
 
             <div className="space-y-3">
@@ -995,9 +1058,9 @@ export function CampaignWizard({
       {step === 5 && (
         <div className="space-y-6 rounded-2xl border border-border bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]">
           <div>
-            <h2 className="text-lg font-bold text-ink">Step 5: Timezone Scheduling & Sending Window</h2>
+            <h2 className="text-lg font-bold text-ink">Step 5: Timezone Scheduling & Sending Window (Customizable)</h2>
             <p className="mt-1 text-xs text-ink-muted">
-              Define the target market timezone, sending days, and sending hours (DST is automatically handled).
+              Define the target market timezone, custom sending days, custom time windows, and launch schedule.
             </p>
           </div>
 
@@ -1026,9 +1089,9 @@ export function CampaignWizard({
             <div>
               <label className="block text-xs font-semibold text-ink mb-1">Target Market Timezone</label>
               <select
-                value={timezone}
+                value={timezone === "CUSTOM" || !TIMEZONE_OPTIONS.some((t) => t.iana === timezone && t.iana !== "CUSTOM") ? "CUSTOM" : timezone}
                 onChange={(e) => setTimezone(e.target.value)}
-                className="saas-input w-full"
+                className="saas-input w-full font-medium"
               >
                 {TIMEZONE_OPTIONS.map((tz) => (
                   <option key={tz.id} value={tz.iana}>
@@ -1036,6 +1099,19 @@ export function CampaignWizard({
                   </option>
                 ))}
               </select>
+
+              {(timezone === "CUSTOM" || !TIMEZONE_OPTIONS.some((t) => t.iana === timezone && t.iana !== "CUSTOM")) && (
+                <div className="mt-2">
+                  <span className="text-[11px] text-ink-muted block mb-1">Custom IANA Timezone Name</span>
+                  <input
+                    type="text"
+                    value={timezone === "CUSTOM" ? "" : timezone}
+                    onChange={(e) => setTimezone(e.target.value.trim() || "CUSTOM")}
+                    placeholder="e.g. America/Denver, Europe/Paris, Asia/Dubai"
+                    className="saas-input w-full font-mono text-xs"
+                  />
+                </div>
+              )}
             </div>
 
             <div>
@@ -1046,27 +1122,88 @@ export function CampaignWizard({
                 className="saas-input w-full font-semibold"
               >
                 <option value="launch_now">🚀 Launch Immediately</option>
-                <option value="schedule">📅 Schedule for Specific Date & Time</option>
+                <option value="schedule">📅 Schedule for Specific Date & Time (Custom)</option>
                 <option value="draft">💾 Save as Draft (Launch Later)</option>
               </select>
             </div>
           </div>
 
           {scheduleType === "schedule" && (
-            <div className="rounded-xl border border-border bg-[var(--input-bg)] p-4">
-              <label className="block text-xs font-bold text-ink mb-1">Scheduled Start Date & Time</label>
+            <div className="rounded-xl border border-border bg-[var(--input-bg)] p-4 space-y-3">
+              <label className="block text-xs font-bold text-ink">Custom Scheduled Start Date & Time</label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  {
+                    label: "Today +2 Hours",
+                    getVal: () => new Date(Date.now() + 2 * 3600 * 1000).toISOString().slice(0, 16),
+                  },
+                  {
+                    label: "Tomorrow 9:00 AM",
+                    getVal: () => {
+                      const d = new Date(Date.now() + 24 * 3600 * 1000);
+                      d.setHours(9, 0, 0, 0);
+                      return d.toISOString().slice(0, 16);
+                    },
+                  },
+                  {
+                    label: "Next Monday 9:00 AM",
+                    getVal: () => {
+                      const d = new Date();
+                      d.setDate(d.getDate() + ((1 + 7 - d.getDay()) % 7 || 7));
+                      d.setHours(9, 0, 0, 0);
+                      return d.toISOString().slice(0, 16);
+                    },
+                  },
+                ].map((s) => (
+                  <button
+                    key={s.label}
+                    type="button"
+                    onClick={() => setScheduledStartDate(s.getVal())}
+                    className="rounded-lg border border-border bg-[var(--surface)] px-2.5 py-1 text-xs font-semibold text-brand-700 hover:bg-brand-50"
+                  >
+                    ⚡ {s.label}
+                  </button>
+                ))}
+              </div>
               <input
                 type="datetime-local"
                 value={scheduledStartDate}
                 onChange={(e) => setScheduledStartDate(e.target.value)}
-                className="saas-input w-full max-w-sm"
+                className="saas-input w-full max-w-sm font-semibold"
               />
             </div>
           )}
 
           {/* Sending Days */}
           <div>
-            <label className="block text-xs font-semibold text-ink mb-2">Sending Days</label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-xs font-semibold text-ink">Custom Sending Days</label>
+              <div className="flex gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setSendingDays(["mon", "tue", "wed", "thu", "fri"])}
+                  className="text-[11px] font-semibold text-brand-600 hover:underline"
+                >
+                  Weekdays (Mon–Fri)
+                </button>
+                <span className="text-ink-muted">·</span>
+                <button
+                  type="button"
+                  onClick={() => setSendingDays(["mon", "tue", "wed", "thu", "fri", "sat", "sun"])}
+                  className="text-[11px] font-semibold text-brand-600 hover:underline"
+                >
+                  All 7 Days
+                </button>
+                <span className="text-ink-muted">·</span>
+                <button
+                  type="button"
+                  onClick={() => setSendingDays(["mon", "wed", "fri"])}
+                  className="text-[11px] font-semibold text-brand-600 hover:underline"
+                >
+                  Mon/Wed/Fri
+                </button>
+              </div>
+            </div>
             <div className="flex flex-wrap gap-2">
               {[
                 { id: "mon", label: "Monday" },
@@ -1095,24 +1232,54 @@ export function CampaignWizard({
           </div>
 
           {/* Sending Window */}
-          <div className="grid grid-cols-2 gap-4 max-w-md">
-            <div>
-              <label className="block text-xs font-semibold text-ink mb-1">Window Start (Local)</label>
-              <input
-                type="time"
-                value={sendingWindowStart}
-                onChange={(e) => setSendingWindowStart(e.target.value)}
-                className="saas-input w-full font-bold"
-              />
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-xs font-semibold text-ink">Custom Sending Time Window</label>
+              <div className="flex gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => { setSendingWindowStart("09:00"); setSendingWindowEnd("17:00"); }}
+                  className="text-[11px] font-semibold text-brand-600 hover:underline"
+                >
+                  9 AM – 5 PM (Standard)
+                </button>
+                <span className="text-ink-muted">·</span>
+                <button
+                  type="button"
+                  onClick={() => { setSendingWindowStart("08:00"); setSendingWindowEnd("18:00"); }}
+                  className="text-[11px] font-semibold text-brand-600 hover:underline"
+                >
+                  8 AM – 6 PM (Extended)
+                </button>
+                <span className="text-ink-muted">·</span>
+                <button
+                  type="button"
+                  onClick={() => { setSendingWindowStart("00:00"); setSendingWindowEnd("23:59"); }}
+                  className="text-[11px] font-semibold text-brand-600 hover:underline"
+                >
+                  24/7 (No limit)
+                </button>
+              </div>
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-ink mb-1">Window End (Local)</label>
-              <input
-                type="time"
-                value={sendingWindowEnd}
-                onChange={(e) => setSendingWindowEnd(e.target.value)}
-                className="saas-input w-full font-bold"
-              />
+            <div className="grid grid-cols-2 gap-4 max-w-md">
+              <div>
+                <span className="text-[11px] text-ink-muted block mb-1">Window Start Time (Custom)</span>
+                <input
+                  type="time"
+                  value={sendingWindowStart}
+                  onChange={(e) => setSendingWindowStart(e.target.value)}
+                  className="saas-input w-full font-bold"
+                />
+              </div>
+              <div>
+                <span className="text-[11px] text-ink-muted block mb-1">Window End Time (Custom)</span>
+                <input
+                  type="time"
+                  value={sendingWindowEnd}
+                  onChange={(e) => setSendingWindowEnd(e.target.value)}
+                  className="saas-input w-full font-bold"
+                />
+              </div>
             </div>
           </div>
 

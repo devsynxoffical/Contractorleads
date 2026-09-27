@@ -43,6 +43,9 @@ export const TIMEZONE_OPTIONS: TimezoneOption[] = [
 
   // New Zealand
   { id: "nz_auckland", name: "New Zealand (NZST / NZDT) — Auckland, Wellington, Christchurch", market: "NZ", marketLabel: "New Zealand", iana: "Pacific/Auckland", utcOffsetApprox: "UTC+12 / UTC+13" },
+
+  // Custom IANA Timezone
+  { id: "custom", name: "Custom IANA Timezone (Enter any timezone)", market: "CUSTOM", marketLabel: "Custom", iana: "CUSTOM", utcOffsetApprox: "User Defined" },
 ];
 
 /** State to IANA timezone lookup for smart Recipient Local-Time resolution */
