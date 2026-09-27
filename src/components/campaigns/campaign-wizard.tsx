@@ -31,7 +31,7 @@ import {
   DEFAULT_FOLLOWUP_SEQUENCE,
   type CampaignHook,
   type CampaignFollowUpStep,
-} from "@/lib/campaign-engine";
+} from "@/lib/campaign-types";
 import {
   TIMEZONE_OPTIONS,
   type TimezoneOption,

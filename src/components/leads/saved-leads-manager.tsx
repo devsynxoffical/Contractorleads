@@ -434,18 +434,35 @@ export function SavedLeadsManager({
                   ? "Select all with email (filtered)"
                   : "Select all with email"}
             </label>
-            <Button
-              size="sm"
-              disabled={selectedCount === 0}
-              onClick={() => {
-                setResults(null);
-                setError(null);
-                setComposeOpen(true);
-              }}
-            >
-              <HiOutlineEnvelope className="h-4 w-4" />
-              Email {selectedCount || ""} lead{selectedCount === 1 ? "" : "s"} (Free)
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href={
+                  selectedSegmentId
+                    ? `/campaigns/new?segmentId=${selectedSegmentId}`
+                    : `/campaigns/new`
+                }
+              >
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="border border-brand-300 text-brand-700 bg-brand-50/50 hover:bg-brand-100/70"
+                >
+                  🚀 Launch Outreach Campaign
+                </Button>
+              </Link>
+              <Button
+                size="sm"
+                disabled={selectedCount === 0}
+                onClick={() => {
+                  setResults(null);
+                  setError(null);
+                  setComposeOpen(true);
+                }}
+              >
+                <HiOutlineEnvelope className="h-4 w-4" />
+                Email {selectedCount || ""} lead{selectedCount === 1 ? "" : "s"} (Free)
+              </Button>
+            </div>
           </div>
         </div>
       ) : null}
