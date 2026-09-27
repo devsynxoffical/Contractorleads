@@ -6,22 +6,46 @@ const TRANSPARENT_GIF = Buffer.from(
 );
 
 /**
- * Open-tracking pixel. Loaded as an <img> inside outbound lead emails at
- * /api/email/open?t=<trackingToken>. Records openedAt exactly once, then
- * always returns a transparent 1x1 GIF so the recipient never sees a break.
+ * Open-tracking pixel. Loaded as an <img> inside outbound emails at
+ * /api/email/open?t=<trackingToken>. Records openedAt, updates campaign stats,
+ * then returns a transparent 1x1 GIF.
  */
 export async function GET(request: Request) {
   const token = new URL(request.url).searchParams.get("t");
-  if (token && /^[a-f0-9]{32}$/.test(token)) {
+  if (token) {
     try {
-      const row = await prisma.leadEmail.findFirst({
+      const now = new Date();
+
+      // Check LeadEmail
+      const leadEmail = await prisma.leadEmail.findFirst({
         where: { trackingToken: token },
         select: { id: true, openedAt: true },
       });
-      if (row && !row.openedAt) {
+      if (leadEmail && !leadEmail.openedAt) {
         await prisma.leadEmail.update({
-          where: { id: row.id },
-          data: { openedAt: new Date() },
+          where: { id: leadEmail.id },
+          data: { openedAt: now },
+        });
+      }
+
+      // Check CampaignLog
+      const campaignLog = await prisma.campaignLog.findFirst({
+        where: { trackingToken: token },
+        select: { id: true, prospectId: true, openedAt: true },
+      });
+      if (campaignLog) {
+        if (!campaignLog.openedAt) {
+          await prisma.campaignLog.update({
+            where: { id: campaignLog.id },
+            data: { openedAt: now, status: "opened" },
+          });
+        }
+        await prisma.campaignProspect.update({
+          where: { id: campaignLog.prospectId },
+          data: {
+            openedAt: now,
+            openCount: { increment: 1 },
+          },
         });
       }
     } catch {

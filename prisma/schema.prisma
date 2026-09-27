@@ -116,6 +116,7 @@ model User {
   digestDeliveries   DigestDelivery[]
   leadSegments       LeadSegment[]
   digestEmailSegments DigestEmailSegment[]
+  campaigns          Campaign[]
 }
 
 /// Morning email of fresh verified leads matching the user's saved filters.
@@ -266,6 +267,7 @@ model Lead {
   emails  LeadEmail[]
   sms     LeadSms[]
   unlocks LeadUnlock[]
+  campaignProspects CampaignProspect[]
 
   @@unique([googleMapsLink])
   @@unique([phone])
@@ -380,12 +382,19 @@ model LeadSegment {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   name      String
   industry  String?
+  country   String?  @default("US")
+  state     String?
+  city      String?
+  leadCount Int      @default(0)
+  leadIdsJson String?
   when      String?  // all | today | yesterday | week | month | 90days
   tier      String?  // all | hot | warm | nurture
   strength  String?  // all | strong | medium | developing
   q         String?
   sort      String?  // newest | score | oldest
   createdAt DateTime @default(now())
+
+  campaigns Campaign[]
 
   @@index([userId])
 }
@@ -942,3 +951,127 @@ model EnterpriseBookingConfig {
   enabled     Boolean  @default(true)
   updatedAt   DateTime @updatedAt
 }
+
+/// Outreach Campaign with multi-hook Day 0, automated multi-step follow-ups,
+/// mailbox rotation, timezone scheduling, and detailed step/hook analytics.
+model Campaign {
+  id                     String             @id @default(cuid())
+  userId                 String
+  user                   User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name                   String
+  status                 String             @default("draft") // draft | scheduled | active | paused | completed | stopped
+  segmentId              String?
+  segment                LeadSegment?       @relation(fields: [segmentId], references: [id], onDelete: SetNull)
+  industry               String?
+  country                String             @default("US")
+  state                  String?
+  city                   String?
+  leadCount              Int                @default(0)
+  duplicateDetectedCount Int                @default(0)
+  uniqueEmailCount       Int                @default(0)
+  /// Array of Day 0 hooks: [{ id: "A", label: "Hook A", subject: "...", body: "...", active: true }, ...]
+  hooksJson              String?
+  /// Array of follow-up steps: [{ id: "1", label: "Follow-Up 1: Value", dayDelay: 2, subject: "...", body: "...", active: true, sendingTime: "09:00", sendingDays: ["mon","tue","wed","thu","fri"] }, ...]
+  stepsJson              String?
+  /// JSON array of selected mailbox IDs: ["mailbox-1", "mailbox-2"] or "ALL"
+  selectedMailboxIds     String?            @default("\"ALL\"")
+  dailyLimitPerMailbox   Int                @default(10)
+  mailboxLimitsJson      String?            // Custom override map: { [mailboxId: string]: number }
+  minDelayMinutes        Int                @default(4)
+  maxDelayMinutes        Int                @default(7)
+  timezone               String             @default("America/New_York")
+  useRecipientTimezone   Boolean            @default(true)
+  sendingDaysJson        String?            @default("[\"mon\",\"tue\",\"wed\",\"thu\",\"fri\"]")
+  sendingWindowStart     String             @default("09:00")
+  sendingWindowEnd       String             @default("17:00")
+  scheduledStartDate     DateTime?
+  startedAt              DateTime?
+  completedAt            DateTime?
+  stoppedAt              DateTime?
+  stopReason             String?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  prospects              CampaignProspect[]
+  logs                   CampaignLog[]
+
+  @@index([userId, status])
+  @@index([userId, createdAt])
+  @@index([status, scheduledStartDate])
+}
+
+/// Enrolled lead in an outreach campaign with hook assignment and follow-up tracking
+model CampaignProspect {
+  id               String        @id @default(cuid())
+  campaignId       String
+  campaign         Campaign      @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  leadId           String?
+  lead             Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  savedLeadId      String?
+  businessName     String
+  ownerName        String?
+  email            String
+  phone            String?
+  city             String?
+  state            String?
+  country          String        @default("US")
+  timezone         String?
+  status           String        @default("pending") // pending | in_progress | completed | replied | unsubscribed | bounced | failed | paused | stopped
+  assignedHookId   String?       // "A" | "B" | "C" | "D"
+  currentStepIndex Int           @default(0) // 0 = Day 0 hook, 1 = Follow-up 1, etc.
+  lastSentAt       DateTime?
+  nextSendDueAt    DateTime?
+  lastMailboxId    String?
+  lastFromEmail    String?
+  lastSubject      String?
+  openedAt         DateTime?
+  openCount        Int           @default(0)
+  clickedAt        DateTime?
+  clickCount       Int           @default(0)
+  repliedAt        DateTime?
+  bouncedAt        DateTime?
+  unsubscribedAt   DateTime?
+  stopReason       String?       // "replied" | "unsubscribed" | "bounced" | "manual_stop" | "invalid_email"
+  historyJson      String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  logs             CampaignLog[]
+
+  @@index([campaignId, status])
+  @@index([campaignId, assignedHookId])
+  @@index([email])
+  @@index([nextSendDueAt])
+}
+
+/// Event log for every sent email and interaction in a campaign
+model CampaignLog {
+  id            String           @id @default(cuid())
+  campaignId    String
+  campaign      Campaign         @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  prospectId    String
+  prospect      CampaignProspect @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+  stepIndex     Int              // 0 for Day 0, 1 for FU1, etc.
+  hookId        String?          // "A", "B", "C", "D"
+  mailboxId     String?
+  fromEmail     String
+  toEmail       String
+  subject       String
+  body          String
+  status        String           // sent | delivered | opened | clicked | replied | bounced | failed
+  error         String?
+  trackingToken String?          @unique
+  messageId     String?
+  openedAt      DateTime?
+  clickedAt     DateTime?
+  repliedAt     DateTime?
+  bouncedAt     DateTime?
+  sentAt        DateTime         @default(now())
+
+  @@index([campaignId, status])
+  @@index([campaignId, hookId])
+  @@index([mailboxId])
+  @@index([toEmail])
+  @@index([sentAt])
+}
+

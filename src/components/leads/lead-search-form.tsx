@@ -165,6 +165,7 @@ export function LeadSearchForm() {
   const [segmentName, setSegmentName] = useState("");
   const [segmentWhen, setSegmentWhen] = useState("today");
   const [savingSegment, setSavingSegment] = useState(false);
+  const [savedSegmentId, setSavedSegmentId] = useState<string | null>(null);
   const [segmentSuccessMsg, setSegmentSuccessMsg] = useState<string | null>(null);
   const [segmentError, setSegmentError] = useState<string | null>(null);
   const searchParams = useSearchParams();
@@ -1076,8 +1077,14 @@ export function LeadSearchForm() {
               </div>
               <div className="flex items-center gap-2 text-xs font-semibold">
                 <Link
+                  href={savedSegmentId ? `/campaigns/new?segmentId=${savedSegmentId}` : "/campaigns/new"}
+                  className="rounded-lg bg-brand-600 px-3.5 py-1.5 text-white transition hover:bg-brand-700 shadow-sm font-bold"
+                >
+                  Create Email Campaign 🚀
+                </Link>
+                <Link
                   href="/email/compose"
-                  className="rounded-lg bg-emerald-600 px-3 py-1.5 text-white transition hover:bg-emerald-700"
+                  className="rounded-lg border border-emerald-600/30 bg-[var(--surface)] px-3 py-1.5 text-emerald-700 transition hover:bg-emerald-500/10 dark:text-emerald-300"
                 >
                   Reach out in Compose →
                 </Link>
@@ -1292,6 +1299,11 @@ export function LeadSearchForm() {
                       body: JSON.stringify({
                         name: segmentName.trim(),
                         industry: rawIndustry || null,
+                        country: selectedCountry || "US",
+                        state: selectedState || null,
+                        city: city || null,
+                        leadCount: leads.length,
+                        leadIds: leads.map((l) => l.id),
                         when: segmentWhen || "today",
                         tier: null,
                         strength: null,
@@ -1304,9 +1316,12 @@ export function LeadSearchForm() {
                       setSegmentError(data.error || "Failed to save segment");
                       return;
                     }
+                    if (data.segment?.id) {
+                      setSavedSegmentId(data.segment.id);
+                    }
                     setShowSaveSegmentModal(false);
                     setSegmentSuccessMsg(`Segment "${segmentName.trim()}" saved!`);
-                    setTimeout(() => setSegmentSuccessMsg(null), 7000);
+                    setTimeout(() => setSegmentSuccessMsg(null), 8000);
                   } catch {
                     setSegmentError("Failed to save segment. Please try again.");
                   } finally {

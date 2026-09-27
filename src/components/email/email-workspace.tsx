@@ -11,12 +11,14 @@ import {
 } from "@/components/email/email-overview-panel";
 import { EmailMetricsDashboard } from "@/components/email/email-metrics-dashboard";
 import { EmailAutomationSettings } from "@/components/settings/email-automation-settings";
+import { CampaignsDashboard } from "@/components/campaigns/campaigns-dashboard";
 import { cn } from "@/lib/utils";
 import {
   HiOutlineChartBar,
   HiOutlineCog6Tooth,
   HiOutlineHome,
   HiOutlineInbox,
+  HiOutlinePaperAirplane,
   HiOutlinePencilSquare,
   HiOutlineQueueList,
   HiOutlineUsers,
@@ -28,6 +30,7 @@ const TABS: Array<{
   icon: React.ComponentType<{ className?: string }>;
 }> = [
   { id: "overview", label: "Overview", icon: HiOutlineHome },
+  { id: "campaigns", label: "Campaigns", icon: HiOutlinePaperAirplane },
   { id: "inbox", label: "Inbox", icon: HiOutlineInbox },
   { id: "compose", label: "Compose", icon: HiOutlinePencilSquare },
   { id: "bulk", label: "Bulk send", icon: HiOutlineUsers },
@@ -95,6 +98,8 @@ export function EmailWorkspace({
           onGo={go}
         />
       ) : null}
+
+      {tab === "campaigns" ? <CampaignsDashboard /> : null}
 
       {tab === "inbox" ? <EmailInboxPanel /> : null}
 

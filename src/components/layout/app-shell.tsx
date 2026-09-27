@@ -38,6 +38,7 @@ import {
   HiOutlineLockClosed,
   HiOutlineShieldCheck,
   HiOutlineEnvelope,
+  HiOutlinePaperAirplane,
 } from "react-icons/hi2";
 import { FaFacebook } from "react-icons/fa";
 import { cn, formatCredits } from "@/lib/utils";
@@ -91,6 +92,11 @@ function buildSections(user: SessionUser): NavSection[] {
     {
       title: "AI Assistant",
       items: [
+        {
+          href: "/campaigns",
+          label: "Outreach Campaigns",
+          icon: HiOutlinePaperAirplane,
+        },
         {
           href: "/email-verifier",
           label: "Email Verifier",

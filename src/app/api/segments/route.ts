@@ -6,7 +6,7 @@ const ALLOWED_WHEN = ["all", "today", "yesterday", "week", "month", "90days"];
 const ALLOWED_TIER = ["all", "hot", "warm", "nurture"];
 const ALLOWED_STRENGTH = ["all", "strong", "medium", "developing"];
 const ALLOWED_SORT = ["newest", "score", "oldest"];
-const MAX_SEGMENTS = 20;
+const MAX_SEGMENTS = 50;
 
 export async function GET() {
   const user = await getSessionUser();
@@ -14,17 +14,24 @@ export async function GET() {
 
   const segments = await prisma.leadSegment.findMany({
     where: { userId: user.id },
-    orderBy: { createdAt: "asc" },
+    orderBy: { createdAt: "desc" },
     select: {
       id: true,
       name: true,
       industry: true,
+      country: true,
+      state: true,
+      city: true,
+      leadCount: true,
       when: true,
       tier: true,
       strength: true,
       q: true,
       sort: true,
       createdAt: true,
+      _count: {
+        select: { campaigns: true },
+      },
     },
   });
 
@@ -38,7 +45,7 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
   if (!body) return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
 
-  const name = typeof body.name === "string" ? body.name.trim().slice(0, 60) : "";
+  const name = typeof body.name === "string" ? body.name.trim().slice(0, 80) : "";
   if (!name) return NextResponse.json({ error: "Segment name is required." }, { status: 400 });
 
   // Check limit
@@ -51,6 +58,12 @@ export async function POST(request: Request) {
   }
 
   const industry = typeof body.industry === "string" ? body.industry.trim() || null : null;
+  const country = typeof body.country === "string" ? body.country.trim() || "US" : "US";
+  const state = typeof body.state === "string" ? body.state.trim() || null : null;
+  const city = typeof body.city === "string" ? body.city.trim() || null : null;
+  const leadCount = typeof body.leadCount === "number" ? body.leadCount : 0;
+  const leadIdsJson = Array.isArray(body.leadIds) ? JSON.stringify(body.leadIds) : (typeof body.leadIdsJson === "string" ? body.leadIdsJson : null);
+
   const when =
     typeof body.when === "string" && ALLOWED_WHEN.includes(body.when) ? body.when : null;
   const tier =
@@ -68,6 +81,11 @@ export async function POST(request: Request) {
       userId: user.id,
       name,
       industry,
+      country,
+      state,
+      city,
+      leadCount,
+      leadIdsJson,
       when,
       tier,
       strength,

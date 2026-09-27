@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 
 export type EmailHubTab =
   | "overview"
+  | "campaigns"
   | "inbox"
   | "compose"
   | "bulk"

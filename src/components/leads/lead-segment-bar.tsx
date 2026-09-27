@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { HiOutlineBookmark, HiOutlineXMark } from "react-icons/hi2";
+import { HiOutlineBookmark, HiOutlinePaperAirplane, HiOutlineXMark } from "react-icons/hi2";
 import { cn } from "@/lib/utils";
 
 type Segment = {
@@ -163,6 +164,13 @@ export function LeadSegmentBar() {
                 <span className="text-ink-muted">{segmentLabel(seg)}</span>
               )}
             </button>
+            <Link
+              href={`/campaigns/new?segmentId=${seg.id}`}
+              className="border-l border-border px-2 py-1.5 text-brand-600 opacity-80 transition hover:bg-brand-50 hover:opacity-100 dark:hover:bg-brand-950"
+              title="Create Email Outreach Campaign from this segment"
+            >
+              <HiOutlinePaperAirplane className="h-3 w-3" />
+            </Link>
             <button
               type="button"
               onClick={() => deleteSegment(seg.id)}

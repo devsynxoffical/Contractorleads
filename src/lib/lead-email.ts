@@ -492,6 +492,14 @@ export async function ingestInboundEmail(opts: {
       data: { status: "paused", lastError: "Paused — lead replied" },
     });
 
+    // Stop future campaign follow-ups for this prospect immediately
+    try {
+      const { triggerFollowUpStopLogic } = await import("@/lib/campaign-runner");
+      await triggerFollowUpStopLogic(from, "replied");
+    } catch {
+      /* ignore */
+    }
+
     if (saved.status === "new") {
       await prisma.savedLead.update({
         where: { id: saved.id },

@@ -24,6 +24,7 @@ import {
   HiOutlineWrenchScrewdriver,
   HiOutlineShieldCheck,
   HiOutlineEnvelope,
+  HiOutlinePaperAirplane,
 } from "react-icons/hi2";
 import { cn, formatCredits } from "@/lib/utils";
 import type { SessionUser } from "@/lib/session-user";
@@ -57,6 +58,7 @@ const sections: NavSection[] = [
   {
     title: "AI & Outreach Tools",
     items: [
+      { href: "/campaigns", label: "Outreach Campaigns", icon: HiOutlinePaperAirplane, badge: true },
       { href: "/email-verifier", label: "Email Verifier", icon: HiOutlineShieldCheck },
       { href: "/inbox", label: "Email & Sequences", icon: HiOutlineBookOpen },
       { href: "/ask-expert", label: "Ask Contractor Leads", icon: HiOutlineChatBubbleLeftRight },
