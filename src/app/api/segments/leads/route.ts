@@ -37,6 +37,52 @@ export async function GET(request: Request) {
     if (segment.strength) strength = segment.strength;
     if (segment.q) q = segment.q;
     if (segment.sort) sort = segment.sort;
+
+    // If segment has specific lead IDs stored
+    if (segment.leadIdsJson) {
+      try {
+        const leadIds = JSON.parse(segment.leadIdsJson) as string[];
+        if (Array.isArray(leadIds) && leadIds.length > 0) {
+          const directLeads = await prisma.lead.findMany({
+            where: { id: { in: leadIds } },
+            select: {
+              id: true,
+              businessName: true,
+              ownerName: true,
+              email: true,
+              phone: true,
+              city: true,
+              state: true,
+              industry: true,
+              qualityTier: true,
+              leadScore: true,
+              createdAt: true,
+            },
+            take,
+          });
+          return NextResponse.json({
+            segmentId,
+            segmentName,
+            total: directLeads.length,
+            leads: directLeads.map((l) => ({
+              id: l.id,
+              businessName: l.businessName,
+              ownerName: l.ownerName,
+              email: l.email,
+              phone: l.phone,
+              city: l.city,
+              state: l.state,
+              industry: l.industry,
+              qualityTier: l.qualityTier,
+              leadScore: l.leadScore,
+              status: "lead",
+            })),
+          });
+        }
+      } catch {
+        /* fallback to filter */
+      }
+    }
   }
 
   const searchFilter: Prisma.SearchWhereInput = {
