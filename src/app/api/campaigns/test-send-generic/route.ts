@@ -9,11 +9,16 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { testEmail, subject, body: bodyText } = body;
+    const { testEmail, subject, body: bodyText, accountId, mailboxId, mailboxIds } = body;
 
     if (!testEmail?.trim() || !testEmail.includes("@")) {
       return NextResponse.json({ error: "Valid test email is required" }, { status: 400 });
     }
+
+    const targetAccountId =
+      accountId ||
+      mailboxId ||
+      (Array.isArray(mailboxIds) && mailboxIds.length > 0 ? mailboxIds[0] : null);
 
     const sampleProspect = {
       businessName: "Acme Roofing Pros",
@@ -29,12 +34,20 @@ export async function POST(req: Request) {
 
     const result = await sendOutboundEmail({
       userId: user.id,
+      accountId: targetAccountId,
       to: testEmail.trim(),
       subject: renderedSubj,
       text: renderedBody,
     });
 
-    return NextResponse.json({ ok: true, result });
+    return NextResponse.json({
+      ok: true,
+      result: {
+        to: testEmail.trim(),
+        from: result.fromEmail,
+        subject: renderedSubj,
+      },
+    });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Test send failed";
     return NextResponse.json({ error: msg }, { status: 500 });

@@ -25,9 +25,9 @@ export type SmtpPayload = {
   fromName?: string | null;
 };
 
-const SMTP_CONNECTION_MS = 5_000;
-const SMTP_GREETING_MS = 5_000;
-const SMTP_SOCKET_MS = 8_000;
+const SMTP_CONNECTION_MS = 15_000;
+const SMTP_GREETING_MS = 15_000;
+const SMTP_SOCKET_MS = 20_000;
 
 /** Normalize port/secure pairs (465 = SSL, 587 = STARTTLS). */
 export function normalizeSmtpSecurity(port: number, secure: boolean) {
@@ -79,12 +79,23 @@ export function isSmtpConnectivityError(err: unknown): boolean {
 }
 
 export function createSmtpTransport(cfg: SmtpPayload) {
-  const { port, secure } = normalizeSmtpSecurity(cfg.port, cfg.secure);
+  const isHostinger =
+    cfg.host?.includes("hostinger") ||
+    cfg.username?.includes("@roofingagency.us") ||
+    cfg.username?.includes("@roofinggrowth.us") ||
+    cfg.username?.includes("@roofingmedia.us") ||
+    cfg.username?.includes("@roofingpartners.us") ||
+    cfg.username?.includes("@roofingclients.us");
+
+  const port = isHostinger ? (cfg.port || 465) : cfg.port;
+  const secure = isHostinger ? port === 465 : cfg.secure;
+  const { port: normPort, secure: normSecure } = normalizeSmtpSecurity(port, secure);
+
   const options: SMTPTransport.Options = {
     host: cfg.host.trim() || "smtp.hostinger.com",
-    port,
-    secure,
-    requireTLS: port === 587,
+    port: normPort,
+    secure: normSecure,
+    requireTLS: normPort === 587,
     auth: {
       user: cfg.username.trim(),
       pass: cfg.password,
@@ -932,7 +943,8 @@ export async function sendOutboundEmail(opts: {
   } catch (smtpErr) {
     console.error("[SMTP Direct Error]", smtpErr);
 
-    if (sender.resendApiKey) {
+    // Only fallback to user Resend key if this sender is explicitly set up for Resend
+    if (isResendDelivery(sender.deliveryMode) && sender.resendApiKey) {
       const sent = await sendViaUserResend(sender, sendOpts);
       return {
         ...sent,
@@ -941,37 +953,6 @@ export async function sendOutboundEmail(opts: {
         systemSmtpAccountId: null,
         smtpAccountId: sender.id ?? null,
       };
-    }
-
-    try {
-      const { getEmailProviderSecrets } = await import("@/lib/email-config");
-      const providerSecrets = await getEmailProviderSecrets();
-      if (providerSecrets.resendApiKey) {
-        const sent = await sendUserResendEmail({
-          apiKey: providerSecrets.resendApiKey,
-          fromEmail: sender.fromEmail,
-          fromName: sender.fromName,
-          to: opts.to,
-          subject: opts.subject,
-          text: opts.text,
-          html: opts.html,
-          tags: ["lead-email"],
-          attachments: opts.attachments,
-        });
-        if (sent.ok) {
-          return {
-            messageId: sent.messageId ?? null,
-            smtpAccountId: sender.id ?? null,
-            fromEmail: sender.fromEmail,
-            delivery: "resend" as const,
-            trackingToken,
-            isSystem: sender.isSystem ?? false,
-            systemSmtpAccountId: sender.isSystem ? (sender.id ?? null) : null,
-          };
-        }
-      }
-    } catch {
-      // ignore and throw formatted SMTP error
     }
 
     throw new Error(formatSmtpError(smtpErr));

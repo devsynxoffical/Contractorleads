@@ -122,6 +122,7 @@ export function CampaignWizard({
 
   // Test send state
   const [testEmail, setTestEmail] = useState<string>("");
+  const [testMailboxId, setTestMailboxId] = useState<string>("");
   const [testSending, setTestSending] = useState<boolean>(false);
   const [testSuccess, setTestSuccess] = useState<string | null>(null);
 
@@ -308,8 +309,10 @@ export function CampaignWizard({
   async function handleSendTest() {
     if (!testEmail.trim()) return;
     setTestSending(true);
+    setError(null);
     setTestSuccess(null);
     try {
+      const chosenAccountId = testMailboxId || (selectedMailboxIds.length > 0 ? selectedMailboxIds[0] : undefined);
       const res = await fetch(`/api/campaigns/test-send-generic`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -317,11 +320,13 @@ export function CampaignWizard({
           testEmail: testEmail.trim(),
           subject: hooks[0]?.subject || "Test Subject",
           body: hooks[0]?.body || "Test Body",
+          accountId: chosenAccountId,
+          mailboxIds: selectedMailboxIds.length > 0 ? selectedMailboxIds : undefined,
         }),
       });
       const data = await res.json();
       if (res.ok) {
-        setTestSuccess(`Test email sent to ${testEmail}! Check your inbox.`);
+        setTestSuccess(`Test email sent to ${testEmail}${data.result?.from ? ` via ${data.result.from}` : ""}! Check your inbox.`);
       } else {
         setError(data.error || "Test send failed");
       }
@@ -1622,18 +1627,42 @@ export function CampaignWizard({
           </div>
 
           {/* Test Send Section */}
-          <div className="rounded-xl border border-border bg-[var(--input-bg)] p-4">
-            <h4 className="text-xs font-bold text-ink mb-1">Send a Test Email</h4>
-            <p className="text-[11px] text-ink-muted mb-3">
-              Preview how Hook A looks in your inbox with simulated prospect data.
-            </p>
+          <div className="rounded-xl border border-border bg-[var(--input-bg)] p-4 space-y-3">
+            <div>
+              <h4 className="text-xs font-bold text-ink mb-1">Send a Test Email</h4>
+              <p className="text-[11px] text-ink-muted">
+                Preview how Hook A looks in your inbox with simulated prospect data.
+              </p>
+            </div>
+
+            {selectedMailboxIds.length > 1 && (
+              <div className="max-w-md">
+                <label className="block text-[11px] font-semibold text-ink-muted mb-1">
+                  Send From Mailbox:
+                </label>
+                <select
+                  value={testMailboxId || selectedMailboxIds[0] || ""}
+                  onChange={(e) => setTestMailboxId(e.target.value)}
+                  className="saas-input w-full text-xs"
+                >
+                  {mailboxes
+                    .filter((m) => selectedMailboxIds.includes(m.id))
+                    .map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.email} ({m.domain})
+                      </option>
+                    ))}
+                </select>
+              </div>
+            )}
+
             <div className="flex flex-wrap gap-2 max-w-md">
               <input
                 type="email"
                 value={testEmail}
                 onChange={(e) => setTestEmail(e.target.value)}
                 placeholder="your-email@example.com"
-                className="saas-input flex-1 font-medium"
+                className="saas-input flex-1 font-medium text-xs"
               />
               <button
                 type="button"
@@ -1645,7 +1674,7 @@ export function CampaignWizard({
               </button>
             </div>
             {testSuccess && (
-              <p className="mt-2 text-xs font-semibold text-emerald-600">{testSuccess}</p>
+              <p className="mt-1 text-xs font-semibold text-emerald-600">{testSuccess}</p>
             )}
           </div>
 
