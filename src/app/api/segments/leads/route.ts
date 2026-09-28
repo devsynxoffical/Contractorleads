@@ -189,19 +189,6 @@ export async function GET(request: Request) {
 
   const total = leads.length;
 
-  // Auto-heal segment if segmentId provided
-  if (segmentId && leads.length > 0) {
-    void prisma.leadSegment
-      .update({
-        where: { id: segmentId },
-        data: {
-          leadCount: leads.length,
-          leadIdsJson: JSON.stringify(leads.map((l) => l.id)),
-        },
-      })
-      .catch(() => {});
-  }
-
   return NextResponse.json({
     segmentId: segmentId || null,
     segmentName,
