@@ -111,10 +111,38 @@ export function CampaignWizard({
   const [scheduleType, setScheduleType] = useState<"launch_now" | "schedule" | "draft">("launch_now");
   const [scheduledStartDate, setScheduledStartDate] = useState<string>("");
 
+  // Composer View Modes ("edit" | "preview")
+  const [hookViewMode, setHookViewMode] = useState<Record<string, "edit" | "preview">>({
+    A: "edit",
+    B: "edit",
+    C: "edit",
+    D: "edit",
+  });
+  const [stepViewMode, setStepViewMode] = useState<Record<number, "edit" | "preview">>({});
+
   // Test send state
   const [testEmail, setTestEmail] = useState<string>("");
   const [testSending, setTestSending] = useState<boolean>(false);
   const [testSuccess, setTestSuccess] = useState<string | null>(null);
+
+  function renderSimulated(text: string) {
+    const bName = "Apex Roofing Miami";
+    const cCity = city || "Miami";
+    const sState = state || "Florida";
+    const iIndustry = industry || "Roofing";
+    const oName = "John Miller";
+    const fName = "Antigravity Growth Team";
+    return text
+      .replace(/\{\{businessName\}\}/g, bName)
+      .replace(/\{\{firstName\}\}/g, "John")
+      .replace(/\{\{ownerName\}\}/g, oName)
+      .replace(/\{\{city\}\}/g, cCity)
+      .replace(/\{\{state\}\}/g, sState)
+      .replace(/\{\{industry\}\}/g, iIndustry)
+      .replace(/\{\{fromName\}\}/g, fName)
+      .replace(/\{\{website\}\}/g, "apexroofingmiami.com")
+      .replace(/\{\{phone\}\}/g, "(305) 555-0199");
+  }
 
   // Load initial segments & mailboxes
   useEffect(() => {
@@ -537,11 +565,15 @@ export function CampaignWizard({
           {/* Active Hook Editor */}
           {hooks.map((h, idx) => {
             if (h.id !== activeHookTab) return null;
+            const currentMode = hookViewMode[h.id] || "edit";
+            const wordCount = h.body.trim() ? h.body.trim().split(/\s+/).length : 0;
+            const charCount = h.body.length;
+
             return (
-              <div key={h.id} className="space-y-4 rounded-xl border border-border/80 bg-[var(--input-bg)] p-5">
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-md bg-brand-600 text-xs font-bold text-white">
+              <div key={h.id} className="space-y-4 rounded-2xl border border-border bg-[var(--surface)] p-6 shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-600 text-xs font-bold text-white shadow-xs">
                       {h.id}
                     </span>
                     <input
@@ -552,27 +584,62 @@ export function CampaignWizard({
                         next[idx].label = e.target.value;
                         setHooks(next);
                       }}
-                      className="saas-input text-xs font-semibold"
+                      className="saas-input text-xs font-bold max-w-sm"
+                      placeholder="Hook Label (e.g. Local Overflow Angle)"
                     />
                   </div>
 
-                  <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-ink">
-                    <input
-                      type="checkbox"
-                      checked={h.active}
-                      onChange={(e) => {
-                        const next = [...hooks];
-                        next[idx].active = e.target.checked;
-                        setHooks(next);
-                      }}
-                      className="rounded border-border"
-                    />
-                    Include in A/B/C/D Rotation
-                  </label>
+                  <div className="flex items-center gap-4">
+                    {/* Compose vs Preview Tabs */}
+                    <div className="flex items-center rounded-xl border border-border bg-[var(--input-bg)] p-0.5 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setHookViewMode((prev) => ({ ...prev, [h.id]: "edit" }))}
+                        className={cn(
+                          "rounded-lg px-3 py-1.5 font-bold transition",
+                          currentMode === "edit"
+                            ? "bg-[var(--surface)] text-ink shadow-xs"
+                            : "text-ink-muted hover:text-ink"
+                        )}
+                      >
+                        ✍️ Compose Box
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setHookViewMode((prev) => ({ ...prev, [h.id]: "preview" }))}
+                        className={cn(
+                          "rounded-lg px-3 py-1.5 font-bold transition",
+                          currentMode === "preview"
+                            ? "bg-[var(--surface)] text-brand-600 shadow-xs"
+                            : "text-ink-muted hover:text-ink"
+                        )}
+                      >
+                        👁️ Live Prospect Preview
+                      </button>
+                    </div>
+
+                    <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-ink">
+                      <input
+                        type="checkbox"
+                        checked={h.active}
+                        onChange={(e) => {
+                          const next = [...hooks];
+                          next[idx].active = e.target.checked;
+                          setHooks(next);
+                        }}
+                        className="rounded border-border accent-brand-600"
+                      />
+                      Include in Rotation
+                    </label>
+                  </div>
                 </div>
 
+                {/* Subject Line Input */}
                 <div>
-                  <label className="block text-xs font-semibold text-ink mb-1">Subject Line</label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-xs font-bold text-ink">Email Subject Line</label>
+                    <span className="text-[11px] text-ink-muted">Personalized with recipient data</span>
+                  </div>
                   <input
                     type="text"
                     value={h.subject}
@@ -582,42 +649,107 @@ export function CampaignWizard({
                       setHooks(next);
                     }}
                     placeholder="e.g. Quick question for {{businessName}} in {{city}}"
-                    className="saas-input w-full font-medium"
+                    className="saas-input w-full font-semibold text-xs py-2.5"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-ink mb-1">Email Copy</label>
-                  <textarea
-                    rows={8}
-                    value={h.body}
-                    onChange={(e) => {
-                      const next = [...hooks];
-                      next[idx].body = e.target.value;
-                      setHooks(next);
-                    }}
-                    className="saas-input w-full font-mono text-xs leading-relaxed"
-                  />
-                </div>
+                {/* Main Email Box or Preview */}
+                {currentMode === "edit" ? (
+                  <div className="space-y-2.5">
+                    <div className="flex flex-wrap items-center justify-between gap-2 bg-[var(--input-bg)]/80 rounded-xl px-3 py-2 border border-border">
+                      <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                        <span className="font-bold text-ink mr-1">Insert Dynamic Tag:</span>
+                        {[
+                          "{{businessName}}",
+                          "{{firstName}}",
+                          "{{ownerName}}",
+                          "{{city}}",
+                          "{{state}}",
+                          "{{industry}}",
+                          "{{fromName}}",
+                          "{{website}}",
+                          "{{phone}}",
+                        ].map((tag) => (
+                          <button
+                            key={tag}
+                            type="button"
+                            onClick={() => {
+                              const next = [...hooks];
+                              next[idx].body += ` ${tag}`;
+                              setHooks(next);
+                            }}
+                            className="rounded-lg border border-border bg-[var(--surface)] px-2 py-1 font-mono text-[11px] font-semibold text-brand-700 hover:border-brand-500 hover:bg-brand-50 transition dark:text-brand-300 dark:hover:bg-brand-950/40"
+                            title={`Add ${tag}`}
+                          >
+                            + {tag}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
-                {/* Variable chips */}
-                <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-ink-muted">
-                  <span className="font-semibold text-ink">Dynamic Tags:</span>
-                  {["{{businessName}}", "{{firstName}}", "{{ownerName}}", "{{city}}", "{{state}}", "{{industry}}", "{{fromName}}"].map((tag) => (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() => {
-                        const next = [...hooks];
-                        next[idx].body += ` ${tag}`;
-                        setHooks(next);
-                      }}
-                      className="rounded-md border border-border bg-[var(--surface)] px-2 py-0.5 font-mono text-ink transition hover:border-brand-400"
-                    >
-                      + {tag}
-                    </button>
-                  ))}
-                </div>
+                    <div className="relative">
+                      <textarea
+                        rows={14}
+                        value={h.body}
+                        onChange={(e) => {
+                          const next = [...hooks];
+                          next[idx].body = e.target.value;
+                          setHooks(next);
+                        }}
+                        placeholder="Write your email body copy here..."
+                        className="saas-input w-full font-sans text-xs leading-relaxed p-4 rounded-xl resize-y min-h-[300px] border-border shadow-xs focus:ring-2 focus:ring-brand-500/20"
+                      />
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between text-[11px] text-ink-muted px-1">
+                      <div className="flex items-center gap-3 font-medium">
+                        <span>📊 ~{wordCount} words</span>
+                        <span>·</span>
+                        <span>{charCount} characters</span>
+                        <span>·</span>
+                        <span className="text-emerald-600 font-semibold">✓ Human outreach format</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setHookViewMode((prev) => ({ ...prev, [h.id]: "preview" }))}
+                        className="font-semibold text-brand-600 hover:underline"
+                      >
+                        Preview rendered email →
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* LIVE PROSPECT PREVIEW */
+                  <div className="rounded-2xl border border-border bg-[var(--input-bg)] p-5 space-y-4">
+                    <div className="flex items-center justify-between border-b border-border pb-3 text-xs">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-ink-muted">From:</span>
+                          <span className="font-semibold text-ink">Antigravity Growth &lt;team@contractorleads.us&gt;</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-ink-muted">To:</span>
+                          <span className="font-semibold text-ink">John Miller &lt;john@apexroofingmiami.com&gt;</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-ink-muted">Subject:</span>
+                          <span className="font-bold text-brand-700 dark:text-brand-300">
+                            {renderSimulated(h.subject)}
+                          </span>
+                        </div>
+                      </div>
+                      <span className="rounded-full bg-brand-100 px-3 py-1 text-[11px] font-bold text-brand-700 dark:bg-brand-900/60 dark:text-brand-300">
+                        Simulated Prospect View
+                      </span>
+                    </div>
+
+                    <div className="rounded-xl bg-[var(--surface)] p-5 border border-border shadow-xs">
+                      <div className="whitespace-pre-wrap text-xs text-ink leading-relaxed font-sans">
+                        {renderSimulated(h.body)}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -684,11 +816,15 @@ export function CampaignWizard({
           {/* Selected Step Editor */}
           {sequenceSteps.map((s, idx) => {
             if (activeStepTab !== idx + 1) return null;
+            const currentMode = stepViewMode[idx + 1] || "edit";
+            const wordCount = s.body.trim() ? s.body.trim().split(/\s+/).length : 0;
+            const charCount = s.body.length;
+
             return (
-              <div key={s.id} className="space-y-4 rounded-xl border border-border/80 bg-[var(--input-bg)] p-5">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3">
+              <div key={s.id} className="space-y-4 rounded-2xl border border-border bg-[var(--surface)] p-6 shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
                   <div className="flex items-center gap-3">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-600 text-xs font-bold text-white">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-600 text-xs font-bold text-white shadow-xs">
                       {idx + 1}
                     </span>
                     <input
@@ -699,11 +835,13 @@ export function CampaignWizard({
                         next[idx].label = e.target.value;
                         setSequenceSteps(next);
                       }}
-                      className="saas-input text-xs font-semibold"
+                      className="saas-input text-xs font-bold max-w-sm"
+                      placeholder="Follow-Up Label (e.g. Value + Proof Angle)"
                     />
                   </div>
 
                   <div className="flex items-center gap-3">
+                    {/* Delay Picker */}
                     <div className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-ink">
                       <span>Wait</span>
                       <div className="flex items-center gap-1">
@@ -717,10 +855,10 @@ export function CampaignWizard({
                               setSequenceSteps(next);
                             }}
                             className={cn(
-                              "rounded px-1.5 py-0.5 text-[10px] font-bold border transition",
+                              "rounded-lg px-2 py-1 text-[11px] font-bold border transition",
                               s.dayDelay === d
-                                ? "bg-brand-600 text-white border-brand-600"
-                                : "bg-[var(--surface)] text-ink-muted border-border hover:bg-brand-50"
+                                ? "bg-brand-600 text-white border-brand-600 shadow-xs"
+                                : "bg-[var(--input-bg)] text-ink-muted border-border hover:bg-[var(--surface)]"
                             )}
                           >
                             {d}d
@@ -739,7 +877,35 @@ export function CampaignWizard({
                         }}
                         className="saas-input w-16 text-center font-bold text-xs"
                       />
-                      <span>days after previous email</span>
+                      <span>days</span>
+                    </div>
+
+                    {/* Compose vs Preview Tabs */}
+                    <div className="flex items-center rounded-xl border border-border bg-[var(--input-bg)] p-0.5 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setStepViewMode((prev) => ({ ...prev, [idx + 1]: "edit" }))}
+                        className={cn(
+                          "rounded-lg px-2.5 py-1 font-bold transition",
+                          currentMode === "edit"
+                            ? "bg-[var(--surface)] text-ink shadow-xs"
+                            : "text-ink-muted hover:text-ink"
+                        )}
+                      >
+                        ✍️ Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setStepViewMode((prev) => ({ ...prev, [idx + 1]: "preview" }))}
+                        className={cn(
+                          "rounded-lg px-2.5 py-1 font-bold transition",
+                          currentMode === "preview"
+                            ? "bg-[var(--surface)] text-brand-600 shadow-xs"
+                            : "text-ink-muted hover:text-ink"
+                        )}
+                      >
+                        👁️ Preview
+                      </button>
                     </div>
 
                     <label className="flex items-center gap-1.5 cursor-pointer text-xs font-semibold text-ink">
@@ -751,7 +917,7 @@ export function CampaignWizard({
                           next[idx].active = e.target.checked;
                           setSequenceSteps(next);
                         }}
-                        className="rounded border-border"
+                        className="rounded border-border accent-brand-600"
                       />
                       Active
                     </label>
@@ -760,7 +926,7 @@ export function CampaignWizard({
                       <button
                         type="button"
                         onClick={() => handleRemoveStep(idx)}
-                        className="rounded-lg p-1.5 text-ink-muted hover:text-rose-600"
+                        className="rounded-lg p-1.5 text-ink-muted hover:text-rose-600 transition"
                         title="Remove step"
                       >
                         <HiOutlineTrash className="h-4 w-4" />
@@ -770,7 +936,7 @@ export function CampaignWizard({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-ink mb-1">Subject Line</label>
+                  <label className="block text-xs font-bold text-ink mb-1">Subject Line</label>
                   <input
                     type="text"
                     value={s.subject}
@@ -780,23 +946,96 @@ export function CampaignWizard({
                       setSequenceSteps(next);
                     }}
                     placeholder="e.g. Re: {{lastSubject}}"
-                    className="saas-input w-full font-medium"
+                    className="saas-input w-full font-semibold text-xs py-2.5"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-ink mb-1">Email Content</label>
-                  <textarea
-                    rows={7}
-                    value={s.body}
-                    onChange={(e) => {
-                      const next = [...sequenceSteps];
-                      next[idx].body = e.target.value;
-                      setSequenceSteps(next);
-                    }}
-                    className="saas-input w-full font-mono text-xs leading-relaxed"
-                  />
-                </div>
+                {currentMode === "edit" ? (
+                  <div className="space-y-2.5">
+                    <div className="flex flex-wrap items-center justify-between gap-2 bg-[var(--input-bg)]/80 rounded-xl px-3 py-2 border border-border">
+                      <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                        <span className="font-bold text-ink mr-1">Insert Dynamic Tag:</span>
+                        {[
+                          "{{businessName}}",
+                          "{{firstName}}",
+                          "{{ownerName}}",
+                          "{{city}}",
+                          "{{state}}",
+                          "{{industry}}",
+                          "{{fromName}}",
+                          "{{website}}",
+                          "{{phone}}",
+                        ].map((tag) => (
+                          <button
+                            key={tag}
+                            type="button"
+                            onClick={() => {
+                              const next = [...sequenceSteps];
+                              next[idx].body += ` ${tag}`;
+                              setSequenceSteps(next);
+                            }}
+                            className="rounded-lg border border-border bg-[var(--surface)] px-2 py-1 font-mono text-[11px] font-semibold text-brand-700 hover:border-brand-500 hover:bg-brand-50 transition dark:text-brand-300 dark:hover:bg-brand-950/40"
+                          >
+                            + {tag}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="relative">
+                      <textarea
+                        rows={13}
+                        value={s.body}
+                        onChange={(e) => {
+                          const next = [...sequenceSteps];
+                          next[idx].body = e.target.value;
+                          setSequenceSteps(next);
+                        }}
+                        placeholder="Write follow-up email content..."
+                        className="saas-input w-full font-sans text-xs leading-relaxed p-4 rounded-xl resize-y min-h-[280px] border-border shadow-xs focus:ring-2 focus:ring-brand-500/20"
+                      />
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between text-[11px] text-ink-muted px-1">
+                      <div className="flex items-center gap-3 font-medium">
+                        <span>📊 ~{wordCount} words</span>
+                        <span>·</span>
+                        <span>{charCount} characters</span>
+                        <span>·</span>
+                        <span className="text-emerald-600 font-semibold">
+                          ✓ Follow-up #{idx + 1} (halts immediately upon reply)
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  /* LIVE PREVIEW */
+                  <div className="rounded-2xl border border-border bg-[var(--input-bg)] p-5 space-y-4">
+                    <div className="flex items-center justify-between border-b border-border pb-3 text-xs">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-ink-muted">Follow-up:</span>
+                          <span className="font-semibold text-ink">Sent {s.dayDelay} days after previous step</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-ink-muted">Subject:</span>
+                          <span className="font-bold text-brand-700 dark:text-brand-300">
+                            {renderSimulated(s.subject)}
+                          </span>
+                        </div>
+                      </div>
+                      <span className="rounded-full bg-brand-100 px-3 py-1 text-[11px] font-bold text-brand-700 dark:bg-brand-900/60 dark:text-brand-300">
+                        Simulated Follow-up #{idx + 1}
+                      </span>
+                    </div>
+
+                    <div className="rounded-xl bg-[var(--surface)] p-5 border border-border shadow-xs">
+                      <div className="whitespace-pre-wrap text-xs text-ink leading-relaxed font-sans">
+                        {renderSimulated(s.body)}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
