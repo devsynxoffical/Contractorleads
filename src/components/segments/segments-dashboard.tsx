@@ -13,13 +13,15 @@ import {
   HiOutlineUsers,
   HiOutlineEnvelope,
   HiOutlineCheck,
-  HiOutlineFunnel,
+  HiOutlinePencilSquare,
   HiOutlineMapPin,
   HiOutlineCalendar,
   HiOutlineXMark,
   HiOutlineSparkles,
   HiOutlineArrowPath,
-  HiOutlineCheckBadge,
+  HiOutlineArrowDownTray,
+  HiOutlineClipboardDocument,
+  HiOutlineBuildingOffice,
 } from "react-icons/hi2";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +36,7 @@ type SegmentItem = {
   state: string | null;
   city: string | null;
   leadCount: number;
+  leadIdsJson?: string | null;
   when: string | null;
   tier: string | null;
   strength: string | null;
@@ -67,6 +70,7 @@ const COMMON_INDUSTRIES = [
   "Painting",
   "Flooring",
   "Remodeling",
+  "Agency owners",
 ];
 
 export function SegmentsDashboard() {
@@ -82,24 +86,45 @@ export function SegmentsDashboard() {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
-  // Form Fields
+  // Form Fields for Create
   const [newSegmentName, setNewSegmentName] = useState("");
   const [newIndustry, setNewIndustry] = useState("Roofing");
   const [newCountry, setNewCountry] = useState("US");
   const [newState, setNewState] = useState("");
   const [newCity, setNewCity] = useState("");
 
-  // Lead Selection
+  // Edit Segment Modal State
+  const [editSegment, setEditSegment] = useState<SegmentItem | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editIndustry, setEditIndustry] = useState("");
+  const [editCountry, setEditCountry] = useState("US");
+  const [editState, setEditState] = useState("");
+  const [editCity, setEditCity] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  // Lead Selection (for Create)
   const [availableLeads, setAvailableLeads] = useState<LeadPickerItem[]>([]);
   const [leadsLoading, setLeadsLoading] = useState(false);
   const [leadSearch, setLeadSearch] = useState("");
   const [selectedLeadIds, setSelectedLeadIds] = useState<Set<string>>(new Set());
   const [onlyWithEmail, setOnlyWithEmail] = useState(true);
 
-  // View Leads in Segment Modal
+  // View & Manage Leads in Segment Modal
   const [viewSegment, setViewSegment] = useState<SegmentItem | null>(null);
   const [segmentLeads, setSegmentLeads] = useState<LeadPickerItem[]>([]);
   const [segmentLeadsLoading, setSegmentLeadsLoading] = useState(false);
+  const [segmentLeadSearch, setSegmentLeadSearch] = useState("");
+  const [removingLeadId, setRemovingLeadId] = useState<string | null>(null);
+  const [copiedEmails, setCopiedEmails] = useState(false);
+
+  // Add More Leads into Existing Segment Modal
+  const [showAddLeadsModal, setShowAddLeadsModal] = useState(false);
+  const [addLeadsPool, setAddLeadsPool] = useState<LeadPickerItem[]>([]);
+  const [addLeadsLoading, setAddLeadsLoading] = useState(false);
+  const [addLeadSearch, setAddLeadSearch] = useState("");
+  const [selectedAddLeadIds, setSelectedAddLeadIds] = useState<Set<string>>(new Set());
+  const [savingAddedLeads, setSavingAddedLeads] = useState(false);
 
   // Load segments
   async function loadSegments() {
@@ -121,13 +146,11 @@ export function SegmentsDashboard() {
     void loadSegments();
   }, []);
 
-  // Fetch leads for lead picker
+  // Fetch leads for create lead picker
   async function fetchLeadsForPicker() {
     setLeadsLoading(true);
     try {
-      const params = new URLSearchParams({
-        limit: "150",
-      });
+      const params = new URLSearchParams({ limit: "150" });
       if (newIndustry && newIndustry !== "all") params.set("industry", newIndustry);
       if (leadSearch.trim()) params.set("q", leadSearch.trim());
 
@@ -135,7 +158,6 @@ export function SegmentsDashboard() {
       const data = await res.json();
       if (res.ok && Array.isArray(data.leads)) {
         setAvailableLeads(data.leads);
-        // Pre-select all available leads with emails
         const emailable = data.leads.filter((l: LeadPickerItem) => Boolean(l.email)).map((l: LeadPickerItem) => l.id);
         setSelectedLeadIds(new Set(emailable));
       }
@@ -179,7 +201,7 @@ export function SegmentsDashboard() {
     });
   }
 
-  // Toggle all visible leads
+  // Toggle all visible leads in create picker
   function toggleAllVisible() {
     const visibleIds = filteredPickerLeads.map((l) => l.id);
     const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedLeadIds.has(id));
@@ -226,6 +248,79 @@ export function SegmentsDashboard() {
     }
   }
 
+  // Open Edit Segment Modal
+  function handleOpenEdit(seg: SegmentItem) {
+    setEditSegment(seg);
+    setEditName(seg.name);
+    setEditIndustry(seg.industry || "");
+    setEditCountry(seg.country || "US");
+    setEditState(seg.state || "");
+    setEditCity(seg.city || "");
+    setEditError(null);
+  }
+
+  // Save Edit Segment Details
+  async function handleSaveEdit() {
+    if (!editSegment || !editName.trim()) {
+      setEditError("Please enter a segment name.");
+      return;
+    }
+    setSavingEdit(true);
+    setEditError(null);
+    try {
+      const res = await fetch("/api/segments", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editSegment.id,
+          name: editName.trim(),
+          industry: editIndustry.trim() || null,
+          country: editCountry || "US",
+          state: editState.trim() || null,
+          city: editCity.trim() || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update segment");
+
+      setSegments((prev) =>
+        prev.map((s) =>
+          s.id === editSegment.id
+            ? {
+                ...s,
+                name: editName.trim(),
+                industry: editIndustry.trim() || null,
+                country: editCountry || "US",
+                state: editState.trim() || null,
+                city: editCity.trim() || null,
+              }
+            : s,
+        ),
+      );
+
+      if (viewSegment && viewSegment.id === editSegment.id) {
+        setViewSegment((prev) =>
+          prev
+            ? {
+                ...prev,
+                name: editName.trim(),
+                industry: editIndustry.trim() || null,
+                country: editCountry || "US",
+                state: editState.trim() || null,
+                city: editCity.trim() || null,
+              }
+            : null,
+        );
+      }
+
+      setEditSegment(null);
+    } catch (e) {
+      setEditError(e instanceof Error ? e.message : "Failed to update segment");
+    } finally {
+      setSavingEdit(false);
+    }
+  }
+
   // Delete Segment API call
   async function handleDeleteSegment(id: string, name: string) {
     if (!confirm(`Are you sure you want to delete segment "${name}"?`)) return;
@@ -235,6 +330,7 @@ export function SegmentsDashboard() {
       });
       if (res.ok) {
         setSegments((prev) => prev.filter((s) => s.id !== id));
+        if (viewSegment?.id === id) setViewSegment(null);
       }
     } catch {
       /* ignore */
@@ -245,11 +341,18 @@ export function SegmentsDashboard() {
   async function handleViewLeads(seg: SegmentItem) {
     setViewSegment(seg);
     setSegmentLeadsLoading(true);
+    setSegmentLeadSearch("");
     try {
-      const res = await fetch(`/api/segments/leads?segmentId=${encodeURIComponent(seg.id)}&limit=150`);
+      const res = await fetch(`/api/segments/leads?segmentId=${encodeURIComponent(seg.id)}&limit=200`);
       const data = await res.json();
       if (res.ok && Array.isArray(data.leads)) {
         setSegmentLeads(data.leads);
+        // Sync lead count if it was 0 or mismatch
+        if (seg.leadCount !== data.leads.length) {
+          setSegments((prev) =>
+            prev.map((s) => (s.id === seg.id ? { ...s, leadCount: data.leads.length } : s)),
+          );
+        }
       } else {
         setSegmentLeads([]);
       }
@@ -258,6 +361,122 @@ export function SegmentsDashboard() {
     } finally {
       setSegmentLeadsLoading(false);
     }
+  }
+
+  // Remove single lead from segment
+  async function handleRemoveLead(leadId: string) {
+    if (!viewSegment) return;
+    setRemovingLeadId(leadId);
+    try {
+      const res = await fetch("/api/segments", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: viewSegment.id,
+          removeLeadId: leadId,
+        }),
+      });
+      if (res.ok) {
+        const nextLeads = segmentLeads.filter((l) => l.id !== leadId);
+        setSegmentLeads(nextLeads);
+        setViewSegment((prev) => (prev ? { ...prev, leadCount: nextLeads.length } : null));
+        setSegments((prev) =>
+          prev.map((s) => (s.id === viewSegment.id ? { ...s, leadCount: nextLeads.length } : s)),
+        );
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      setRemovingLeadId(null);
+    }
+  }
+
+  // Open "Add Leads to Segment" Modal
+  async function handleOpenAddLeads() {
+    if (!viewSegment) return;
+    setShowAddLeadsModal(true);
+    setAddLeadsLoading(true);
+    setSelectedAddLeadIds(new Set());
+    setAddLeadSearch("");
+    try {
+      const params = new URLSearchParams({ limit: "150" });
+      if (viewSegment.industry && viewSegment.industry !== "all") {
+        params.set("industry", viewSegment.industry);
+      }
+      const res = await fetch(`/api/segments/leads?${params.toString()}`);
+      const data = await res.json();
+      if (res.ok && Array.isArray(data.leads)) {
+        // Exclude leads that already belong to this segment
+        const existingIds = new Set(segmentLeads.map((l) => l.id));
+        const filtered = data.leads.filter((l: LeadPickerItem) => !existingIds.has(l.id));
+        setAddLeadsPool(filtered);
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      setAddLeadsLoading(false);
+    }
+  }
+
+  // Save Added Leads to Segment
+  async function handleSaveAddedLeads() {
+    if (!viewSegment || selectedAddLeadIds.size === 0) return;
+    setSavingAddedLeads(true);
+    try {
+      const addLeadIds = Array.from(selectedAddLeadIds);
+      const res = await fetch("/api/segments", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: viewSegment.id,
+          addLeadIds,
+        }),
+      });
+      if (res.ok) {
+        // Refresh leads in the segment modal
+        await handleViewLeads(viewSegment);
+        setShowAddLeadsModal(false);
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      setSavingAddedLeads(false);
+    }
+  }
+
+  // Copy Emails to Clipboard
+  function copySegmentEmails() {
+    const emails = segmentLeads.map((l) => l.email).filter(Boolean).join("\n");
+    if (emails) {
+      navigator.clipboard.writeText(emails);
+      setCopiedEmails(true);
+      setTimeout(() => setCopiedEmails(false), 3000);
+    }
+  }
+
+  // Export Segment Leads CSV
+  function exportSegmentCSV() {
+    if (!viewSegment || segmentLeads.length === 0) return;
+    const headers = ["Business Name", "Owner Name", "Email", "Phone", "City", "State", "Industry", "Score"];
+    const rows = segmentLeads.map((l) => [
+      `"${(l.businessName || "").replace(/"/g, '""')}"`,
+      `"${(l.ownerName || "").replace(/"/g, '""')}"`,
+      `"${(l.email || "").replace(/"/g, '""')}"`,
+      `"${(l.phone || "").replace(/"/g, '""')}"`,
+      `"${(l.city || "").replace(/"/g, '""')}"`,
+      `"${(l.state || "").replace(/"/g, '""')}"`,
+      `"${(l.industry || "").replace(/"/g, '""')}"`,
+      l.leadScore,
+    ]);
+    const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${viewSegment.name.toLowerCase().replace(/[^a-z0-9]/g, "_")}_leads.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   // Filtered segments list
@@ -295,6 +514,34 @@ export function SegmentsDashboard() {
     });
   }, [availableLeads, onlyWithEmail, leadSearch]);
 
+  // Filtered segment leads in view modal
+  const filteredSegmentLeads = useMemo(() => {
+    if (!segmentLeadSearch.trim()) return segmentLeads;
+    const q = segmentLeadSearch.toLowerCase();
+    return segmentLeads.filter(
+      (l) =>
+        l.businessName.toLowerCase().includes(q) ||
+        (l.ownerName || "").toLowerCase().includes(q) ||
+        (l.email || "").toLowerCase().includes(q) ||
+        (l.phone || "").toLowerCase().includes(q) ||
+        (l.city || "").toLowerCase().includes(q) ||
+        (l.state || "").toLowerCase().includes(q),
+    );
+  }, [segmentLeads, segmentLeadSearch]);
+
+  // Filtered leads in Add More Leads modal
+  const filteredAddLeads = useMemo(() => {
+    if (!addLeadSearch.trim()) return addLeadsPool;
+    const q = addLeadSearch.toLowerCase();
+    return addLeadsPool.filter(
+      (l) =>
+        l.businessName.toLowerCase().includes(q) ||
+        (l.ownerName || "").toLowerCase().includes(q) ||
+        (l.email || "").toLowerCase().includes(q) ||
+        (l.city || "").toLowerCase().includes(q),
+    );
+  }, [addLeadsPool, addLeadSearch]);
+
   const totalLeadsInSegments = segments.reduce((acc, s) => acc + (s.leadCount || 0), 0);
 
   return (
@@ -309,16 +556,12 @@ export function SegmentsDashboard() {
             <h1 className="text-2xl font-bold tracking-tight text-ink">Lead Lists &amp; Segments</h1>
           </div>
           <p className="mt-1 text-xs text-ink-muted">
-            Organize contractor leads into targeted segments, filter lists, and launch multi-hook outreach campaigns.
+            Organize contractor leads into targeted segments, edit details, manage contacts, and launch multi-hook outreach campaigns.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          <Button
-            size="sm"
-            onClick={handleOpenCreate}
-            className="gap-1.5 shadow-sm"
-          >
+          <Button size="sm" onClick={handleOpenCreate} className="gap-1.5 shadow-sm">
             <HiOutlinePlus className="h-4 w-4" />
             Create New Segment
           </Button>
@@ -344,7 +587,7 @@ export function SegmentsDashboard() {
           <div className="mt-1.5 text-2xl font-extrabold text-emerald-600">
             {segments.filter((s) => (s.leadCount || 0) > 0).length}
           </div>
-          <div className="mt-1 text-[11px] text-ink-muted">Ready for multi-hook campaigns</div>
+          <div className="mt-1 text-[11px] text-ink-muted">Lists ready with contacts</div>
         </div>
 
         <div className="rounded-2xl border border-border bg-[var(--surface)] p-4 shadow-xs">
@@ -409,7 +652,6 @@ export function SegmentsDashboard() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filteredSegments.map((seg) => {
             const loc = [seg.city, seg.state, seg.country].filter(Boolean).join(", ");
-            const hasCampaigns = (seg._count?.campaigns ?? 0) > 0;
 
             return (
               <div
@@ -431,14 +673,25 @@ export function SegmentsDashboard() {
                       </p>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteSegment(seg.id, seg.name)}
-                      className="rounded-lg p-1.5 text-ink-muted opacity-0 group-hover:opacity-100 hover:bg-rose-50 hover:text-rose-600 transition"
-                      title="Delete Segment"
-                    >
-                      <HiOutlineTrash className="h-4 w-4" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEdit(seg)}
+                        className="rounded-lg p-1.5 text-ink-muted opacity-80 group-hover:opacity-100 hover:bg-[var(--input-bg)] hover:text-ink transition"
+                        title="Edit Segment Details"
+                      >
+                        <HiOutlinePencilSquare className="h-4 w-4" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteSegment(seg.id, seg.name)}
+                        className="rounded-lg p-1.5 text-ink-muted opacity-80 group-hover:opacity-100 hover:bg-rose-50 hover:text-rose-600 transition"
+                        title="Delete Segment"
+                      >
+                        <HiOutlineTrash className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
 
                   {/* Metadata badges */}
@@ -466,10 +719,10 @@ export function SegmentsDashboard() {
                   <button
                     type="button"
                     onClick={() => handleViewLeads(seg)}
-                    className="inline-flex items-center gap-1 rounded-xl border border-border bg-[var(--input-bg)] px-3 py-1.5 text-xs font-semibold text-ink hover:bg-[var(--surface)] transition"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-[var(--input-bg)] px-3 py-1.5 text-xs font-semibold text-ink hover:bg-[var(--surface)] transition"
                   >
                     <HiOutlineEye className="h-3.5 w-3.5 text-ink-muted" />
-                    View Leads
+                    Manage Leads ({seg.leadCount || 0})
                   </button>
 
                   <Link href={`/campaigns/new?segmentId=${seg.id}`}>
@@ -509,6 +762,119 @@ export function SegmentsDashboard() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* EDIT SEGMENT MODAL */}
+      {editSegment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in">
+          <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-border bg-[var(--surface)] shadow-2xl animate-scale-up">
+            <div className="flex items-center justify-between border-b border-border px-6 py-4">
+              <div className="flex items-center gap-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-950/50">
+                  <HiOutlinePencilSquare className="h-4 w-4" />
+                </span>
+                <div>
+                  <h3 className="text-sm font-bold text-ink">Edit Segment Details</h3>
+                  <p className="text-[11px] text-ink-muted">Modify list name, target trade industry, and geographic criteria.</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditSegment(null)}
+                className="rounded-lg p-1.5 text-ink-muted hover:bg-[var(--input-bg)]"
+              >
+                <HiOutlineXMark className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-3.5 max-h-[75vh] overflow-y-auto">
+              {editError && (
+                <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 p-2.5 text-xs text-rose-700 font-semibold">
+                  {editError}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-ink mb-1">
+                  Segment / List Name <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="e.g. 29 Sep – Roofing – Florida (50 Leads)"
+                  className="saas-input w-full font-semibold text-xs"
+                />
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="block text-xs font-semibold text-ink mb-1">Industry / Trade</label>
+                  <input
+                    type="text"
+                    value={editIndustry}
+                    onChange={(e) => setEditIndustry(e.target.value)}
+                    placeholder="e.g. Roofing, HVAC"
+                    className="saas-input w-full text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-ink mb-1">Target Country</label>
+                  <select
+                    value={editCountry}
+                    onChange={(e) => setEditCountry(e.target.value)}
+                    className="saas-input w-full text-xs font-medium"
+                  >
+                    <option value="US">United States (US)</option>
+                    <option value="CA">Canada (CA)</option>
+                    <option value="GB">United Kingdom (UK)</option>
+                    <option value="AU">Australia (AU)</option>
+                    <option value="NZ">New Zealand (NZ)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="block text-xs font-semibold text-ink mb-1">State / Province</label>
+                  <input
+                    type="text"
+                    value={editState}
+                    onChange={(e) => setEditState(e.target.value)}
+                    placeholder="e.g. Florida, Texas"
+                    className="saas-input w-full text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-ink mb-1">City / Region</label>
+                  <input
+                    type="text"
+                    value={editCity}
+                    onChange={(e) => setEditCity(e.target.value)}
+                    placeholder="e.g. Miami, Dallas"
+                    className="saas-input w-full text-xs"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between border-t border-border px-6 py-3.5 bg-[var(--surface)]">
+              <button
+                type="button"
+                onClick={() => setEditSegment(null)}
+                className="rounded-xl border border-border px-4 py-2 text-xs font-semibold text-ink hover:bg-[var(--input-bg)]"
+              >
+                Cancel
+              </button>
+
+              <Button size="sm" loading={savingEdit} onClick={handleSaveEdit}>
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* CREATE NEW SEGMENT MODAL */}
@@ -553,7 +919,7 @@ export function SegmentsDashboard() {
                       type="text"
                       value={newSegmentName}
                       onChange={(e) => setNewSegmentName(e.target.value)}
-                      placeholder="e.g. 28 Sep – Roofing – Florida 100 Leads"
+                      placeholder="e.g. 29 Sep – Roofing – Florida (50 Leads)"
                       className="saas-input w-full font-semibold"
                     />
                   </div>
@@ -778,51 +1144,132 @@ export function SegmentsDashboard() {
         </div>
       )}
 
-      {/* VIEW LEADS IN SEGMENT MODAL */}
+      {/* VIEW & MANAGE LEADS IN SEGMENT MODAL */}
       {viewSegment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-3xl overflow-hidden rounded-2xl border border-border bg-[var(--surface)] shadow-2xl animate-in fade-in zoom-in-95">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in">
+          <div className="w-full max-w-4xl overflow-hidden rounded-2xl border border-border bg-[var(--surface)] shadow-2xl animate-scale-up">
             <div className="flex items-center justify-between border-b border-border px-6 py-4">
-              <div>
-                <h3 className="text-base font-bold text-ink flex items-center gap-2">
-                  <span>🎯</span>
-                  {viewSegment.name}
-                </h3>
-                <p className="text-xs text-ink-muted">
-                  Showing leads included in this segment ({segmentLeads.length} total)
-                </p>
+              <div className="flex items-center gap-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-950/50">
+                  <HiOutlineBookmark className="h-5 w-5" />
+                </span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-ink">{viewSegment.name}</h3>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEdit(viewSegment)}
+                      className="rounded-md p-1 text-ink-muted hover:bg-[var(--input-bg)] hover:text-ink"
+                      title="Edit Segment Details"
+                    >
+                      <HiOutlinePencilSquare className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <p className="text-xs text-ink-muted flex items-center gap-2 mt-0.5">
+                    <span>{viewSegment.industry || "General Contractors"}</span>
+                    <span>·</span>
+                    <span>{[viewSegment.city, viewSegment.state, viewSegment.country].filter(Boolean).join(", ")}</span>
+                    <span>·</span>
+                    <span className="font-bold text-brand-600">{segmentLeads.length} Total Leads</span>
+                  </p>
+                </div>
               </div>
-              <button
-                type="button"
-                onClick={() => setViewSegment(null)}
-                className="rounded-lg p-1.5 text-ink-muted hover:bg-[var(--input-bg)]"
-              >
-                <HiOutlineXMark className="h-5 w-5" />
-              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleOpenAddLeads}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-brand-300 bg-brand-50/80 px-3 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-100 transition dark:bg-brand-950/40 dark:text-brand-300"
+                >
+                  <HiOutlinePlus className="h-3.5 w-3.5" />
+                  Add Leads
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setViewSegment(null)}
+                  className="rounded-lg p-1.5 text-ink-muted hover:bg-[var(--input-bg)]"
+                >
+                  <HiOutlineXMark className="h-5 w-5" />
+                </button>
+              </div>
             </div>
 
-            <div className="p-6 max-h-[70vh] overflow-y-auto space-y-2">
+            {/* Segment Controls & Search */}
+            <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-3 border-b border-border bg-[var(--input-bg)]/50">
+              <div className="relative flex-1 max-w-sm">
+                <HiOutlineMagnifyingGlass className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-muted" />
+                <input
+                  type="text"
+                  placeholder="Filter leads in this segment..."
+                  value={segmentLeadSearch}
+                  onChange={(e) => setSegmentLeadSearch(e.target.value)}
+                  className="saas-input w-full pl-8 text-xs h-8"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={copySegmentEmails}
+                  className="inline-flex items-center gap-1 rounded-lg border border-border bg-[var(--surface)] px-2.5 py-1 text-xs font-semibold text-ink hover:bg-[var(--input-bg)] transition"
+                  title="Copy all lead emails"
+                >
+                  {copiedEmails ? (
+                    <>
+                      <HiOutlineCheck className="h-3.5 w-3.5 text-emerald-600" />
+                      <span className="text-emerald-600 font-bold">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <HiOutlineClipboardDocument className="h-3.5 w-3.5 text-ink-muted" />
+                      <span>Copy Emails</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={exportSegmentCSV}
+                  className="inline-flex items-center gap-1 rounded-lg border border-border bg-[var(--surface)] px-2.5 py-1 text-xs font-semibold text-ink hover:bg-[var(--input-bg)] transition"
+                  title="Export to CSV"
+                >
+                  <HiOutlineArrowDownTray className="h-3.5 w-3.5 text-ink-muted" />
+                  Export CSV
+                </button>
+              </div>
+            </div>
+
+            {/* Leads List */}
+            <div className="p-6 max-h-[55vh] overflow-y-auto space-y-2">
               {segmentLeadsLoading ? (
                 <div className="py-16 text-center text-xs text-ink-muted flex items-center justify-center gap-2">
                   <HiOutlineArrowPath className="h-4 w-4 animate-spin text-brand-600" />
                   Loading segment leads...
                 </div>
-              ) : segmentLeads.length > 0 ? (
-                segmentLeads.map((lead) => (
+              ) : filteredSegmentLeads.length > 0 ? (
+                filteredSegmentLeads.map((lead) => (
                   <div
                     key={lead.id}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-[var(--input-bg)] p-3 text-xs"
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-[var(--surface)] p-3 text-xs shadow-xs hover:border-brand-300 transition"
                   >
-                    <div>
-                      <div className="font-bold text-ink">{lead.businessName}</div>
-                      <div className="mt-0.5 text-[11px] text-ink-muted">
-                        {[lead.ownerName, lead.city, lead.state].filter(Boolean).join(" · ") || "—"}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-ink truncate">{lead.businessName}</span>
+                        {lead.qualityTier && (
+                          <span className="rounded bg-brand-50 px-1.5 py-0.2 text-[10px] font-semibold text-brand-700 capitalize">
+                            {lead.qualityTier}
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-0.5 text-[11px] text-ink-muted truncate">
+                        {[lead.ownerName, lead.city, lead.state, lead.industry].filter(Boolean).join(" · ") || "—"}
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2.5">
                       {lead.email ? (
-                        <span className="rounded bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                        <span className="rounded bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 truncate max-w-[160px]">
                           ✉️ {lead.email}
                         </span>
                       ) : (
@@ -831,15 +1278,30 @@ export function SegmentsDashboard() {
                         </span>
                       )}
                       {lead.phone && (
-                        <span className="text-[11px] text-ink-muted">📞 {lead.phone}</span>
+                        <span className="text-[11px] text-ink-muted hidden sm:inline">📞 {lead.phone}</span>
                       )}
                       <span className="text-xs font-bold text-brand-600">Score {lead.leadScore}</span>
+
+                      {/* Remove from segment button */}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveLead(lead.id)}
+                        disabled={removingLeadId === lead.id}
+                        className="rounded-lg p-1 text-ink-muted hover:bg-rose-50 hover:text-rose-600 transition"
+                        title="Remove lead from this segment"
+                      >
+                        {removingLeadId === lead.id ? (
+                          <HiOutlineArrowPath className="h-3.5 w-3.5 animate-spin text-rose-500" />
+                        ) : (
+                          <HiOutlineTrash className="h-3.5 w-3.5" />
+                        )}
+                      </button>
                     </div>
                   </div>
                 ))
               ) : (
                 <div className="py-12 text-center text-xs text-ink-muted">
-                  No leads found in this segment.
+                  No leads found matching your search.
                 </div>
               )}
             </div>
@@ -856,9 +1318,128 @@ export function SegmentsDashboard() {
               <Link href={`/campaigns/new?segmentId=${viewSegment.id}`}>
                 <Button size="sm" className="gap-1.5">
                   <HiOutlinePaperAirplane className="h-4 w-4" />
-                  Create Campaign from this Segment
+                  Launch Outreach Campaign ({segmentLeads.length} Leads)
                 </Button>
               </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ADD MORE LEADS MODAL */}
+      {showAddLeadsModal && viewSegment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in">
+          <div className="w-full max-w-xl overflow-hidden rounded-2xl border border-border bg-[var(--surface)] shadow-2xl animate-scale-up">
+            <div className="flex items-center justify-between border-b border-border px-6 py-4">
+              <div>
+                <h3 className="text-sm font-bold text-ink flex items-center gap-2">
+                  <HiOutlinePlus className="h-4 w-4 text-brand-600" />
+                  Add Leads to {viewSegment.name}
+                </h3>
+                <p className="text-[11px] text-ink-muted">
+                  Select contractor leads from your database to append to this segment.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddLeadsModal(false)}
+                className="rounded-lg p-1.5 text-ink-muted hover:bg-[var(--input-bg)]"
+              >
+                <HiOutlineXMark className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-3 max-h-[60vh] overflow-y-auto">
+              <div className="relative">
+                <HiOutlineMagnifyingGlass className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-muted" />
+                <input
+                  type="text"
+                  placeholder="Search available leads..."
+                  value={addLeadSearch}
+                  onChange={(e) => setAddLeadSearch(e.target.value)}
+                  className="saas-input w-full pl-8 text-xs"
+                />
+              </div>
+
+              {addLeadsLoading ? (
+                <div className="py-12 text-center text-xs text-ink-muted flex items-center justify-center gap-2">
+                  <HiOutlineArrowPath className="h-4 w-4 animate-spin text-brand-600" />
+                  Loading database leads...
+                </div>
+              ) : filteredAddLeads.length > 0 ? (
+                <div className="space-y-1.5">
+                  {filteredAddLeads.map((lead) => {
+                    const checked = selectedAddLeadIds.has(lead.id);
+                    return (
+                      <label
+                        key={lead.id}
+                        className={cn(
+                          "flex items-center justify-between gap-3 rounded-xl border p-2.5 text-xs cursor-pointer transition",
+                          checked
+                            ? "border-brand-300 bg-brand-50/60 dark:bg-brand-950/40"
+                            : "border-border bg-[var(--surface)] hover:bg-[var(--input-bg)]"
+                        )}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => {
+                              setSelectedAddLeadIds((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(lead.id)) next.delete(lead.id);
+                                else next.add(lead.id);
+                                return next;
+                              });
+                            }}
+                            className="rounded border-border accent-brand-600"
+                          />
+                          <div className="min-w-0">
+                            <div className="font-bold text-ink truncate">{lead.businessName}</div>
+                            <div className="text-[11px] text-ink-muted truncate">
+                              {[lead.ownerName, lead.city, lead.state].filter(Boolean).join(" · ") || "—"}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          {lead.email && (
+                            <span className="rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 truncate max-w-[130px]">
+                              ✉️ {lead.email}
+                            </span>
+                          )}
+                          <span className="text-[10px] font-bold text-brand-600">
+                            Score {lead.leadScore}
+                          </span>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="py-8 text-center text-xs text-ink-muted">
+                  No additional leads available.
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between border-t border-border px-6 py-3.5 bg-[var(--surface)]">
+              <button
+                type="button"
+                onClick={() => setShowAddLeadsModal(false)}
+                className="rounded-xl border border-border px-4 py-2 text-xs font-semibold text-ink hover:bg-[var(--input-bg)]"
+              >
+                Cancel
+              </button>
+
+              <Button
+                size="sm"
+                loading={savingAddedLeads}
+                disabled={selectedAddLeadIds.size === 0}
+                onClick={handleSaveAddedLeads}
+              >
+                Add {selectedAddLeadIds.size} Leads
+              </Button>
             </div>
           </div>
         </div>

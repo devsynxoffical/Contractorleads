@@ -101,41 +101,26 @@ export async function GET(request: Request) {
     searchFilter.createdAt = { gte: startOfDaysAgo(90) };
   }
 
-  const where: Prisma.LeadWhereInput = {
-    AND: [
-      { email: { not: null } },
-      { email: { not: "" } },
+  const userCondition: Prisma.LeadWhereInput = {
+    OR: [
       { search: searchFilter },
+      { savedBy: { some: { userId: user.id } } },
     ],
   };
 
-  if (q) {
-    where.OR = [
-      { businessName: { contains: q, mode: "insensitive" } },
-      { ownerName: { contains: q, mode: "insensitive" } },
-      { email: { contains: q, mode: "insensitive" } },
-      { phone: { contains: q, mode: "insensitive" } },
-      { city: { contains: q, mode: "insensitive" } },
-      { state: { contains: queryClean(q), mode: "insensitive" } },
-      { industry: { contains: q, mode: "insensitive" } },
-      { address: { contains: q, mode: "insensitive" } },
-    ];
-  }
-
-  if (tier === "hot" || tier === "warm" || tier === "nurture") {
-    where.qualityTier = tier;
-  }
-
-  if (strength === "strong") {
-    where.leadScore = { gte: 75 };
-  } else if (strength === "medium") {
-    where.leadScore = { gte: 50, lt: 75 };
-  } else if (strength === "developing") {
-    where.leadScore = { lt: 50 };
-  }
+  const where: Prisma.LeadWhereInput = {
+    AND: [
+      userCondition,
+    ],
+  };
 
   if (industry && industry !== "all") {
-    where.industry = { equals: industry, mode: "insensitive" };
+    (where.AND as Prisma.LeadWhereInput[]).push({
+      OR: [
+        { industry: { equals: industry, mode: "insensitive" } },
+        { serviceCategory: { equals: industry, mode: "insensitive" } },
+      ],
+    });
   }
 
   const orderBy: Prisma.LeadOrderByWithRelationInput[] =
