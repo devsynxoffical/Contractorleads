@@ -65,8 +65,26 @@ export function LeadSegmentBar() {
 
   const hasFilters = !!(industry || when || tier || strength || q || sort);
 
-  async function save() {
-    if (!name.trim()) { setErr("Enter a name."); return; }
+  const [segIndustry, setSegIndustry] = useState("");
+  const [segCountry, setSegCountry] = useState("US");
+  const [segState, setSegState] = useState("");
+  const [segCity, setSegCity] = useState("");
+
+  const openSaveDialog = () => {
+    const todayStr = new Intl.DateTimeFormat("en-US", { day: "numeric", month: "short" }).format(new Date());
+    const ind = industry || "General Contractors";
+    const loc = q || "United States";
+    setName(`${todayStr} – ${ind} – ${loc}`);
+    setSegIndustry(industry || "");
+    setSegCountry("US");
+    setSegState("");
+    setSegCity(q || "");
+    setErr(null);
+    setShowDialog(true);
+  };
+
+  async function save(andLaunchCampaign = false) {
+    if (!name.trim()) { setErr("Enter a segment name."); return; }
     setSaving(true);
     setErr(null);
     try {
@@ -75,7 +93,10 @@ export function LeadSegmentBar() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: name.trim(),
-          industry,
+          industry: segIndustry.trim() || industry || null,
+          country: segCountry || "US",
+          state: segState.trim() || null,
+          city: segCity.trim() || null,
           when,
           tier,
           strength,
@@ -88,6 +109,9 @@ export function LeadSegmentBar() {
       setSegments((prev) => [...prev, data.segment]);
       setShowDialog(false);
       setName("");
+      if (andLaunchCampaign && data.segment?.id) {
+        router.push(`/campaigns/new?segmentId=${data.segment.id}`);
+      }
     } catch {
       setErr("Save failed");
     } finally {
@@ -213,7 +237,7 @@ export function LeadSegmentBar() {
         {/* Save as segment button (Always visible) */}
         <button
           type="button"
-          onClick={() => { setShowDialog(true); setErr(null); setName(""); }}
+          onClick={openSaveDialog}
           className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-brand-400 bg-brand-50/60 px-3 py-1.5 text-[12px] font-bold text-brand-700 transition hover:bg-brand-100 dark:bg-brand-950/40 dark:text-brand-300 dark:border-brand-500/40"
         >
           <HiOutlineBookmark className="h-3.5 w-3.5" />
@@ -231,18 +255,18 @@ export function LeadSegmentBar() {
 
       {/* Save dialog */}
       {showDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-fade-in">
           <div
-            className="w-full max-w-sm overflow-hidden rounded-2xl border border-border bg-[var(--surface)] shadow-xl"
+            className="w-full max-w-md overflow-hidden rounded-2xl border border-border bg-[var(--surface)] shadow-2xl animate-scale-up"
             role="dialog"
             aria-modal="true"
             aria-label="Save segment"
           >
             <div className="flex items-center justify-between border-b border-border px-5 py-4">
               <div>
-                <h3 className="text-[15px] font-semibold text-ink">Save filter as segment</h3>
+                <h3 className="text-[15px] font-bold text-ink">Save as Lead Segment</h3>
                 <p className="mt-0.5 text-[12px] text-ink-muted">
-                  Give this combination of filters a name so you can jump back to it in one click.
+                  Organize leads into targeted lists with automated duplicate detection.
                 </p>
               </div>
               <button
@@ -254,67 +278,119 @@ export function LeadSegmentBar() {
               </button>
             </div>
 
-            <div className="space-y-3 px-5 py-4">
-              {/* Filter summary */}
-              <div className="rounded-xl border border-border bg-[var(--input-bg)] px-3 py-2 text-[12px] text-ink-muted">
-                {[
-                  industry && `Industry: ${industry}`,
-                  when && when !== "all" && `When: ${when}`,
-                  tier && tier !== "all" && `Tier: ${tier}`,
-                  strength && strength !== "all" && `Score: ${strength}`,
-                  q && `Search: "${q}"`,
-                  sort && sort !== "newest" && `Sort: ${sort}`,
-                ]
-                  .filter(Boolean)
-                  .join("  ·  ") || "All leads (no filters)"}
-              </div>
-
-              <label className="block">
-                <span className="text-[12px] font-medium text-ink-muted">Segment name</span>
+            <div className="space-y-3 px-5 py-4 max-h-[70vh] overflow-y-auto">
+              <div>
+                <label className="block text-[12px] font-bold text-ink mb-1">
+                  Custom List Name <span className="text-rose-500">*</span>
+                </label>
                 <input
                   ref={inputRef}
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") void save(); }}
-                  placeholder={
-                    industry
-                      ? `${industry}${when && when !== "all" ? ` – ${when}` : ""}`
-                      : "My segment"
-                  }
-                  maxLength={60}
-                  className="saas-input mt-1.5 w-full"
+                  placeholder="e.g. 29 Sep – Roofing – Florida"
+                  maxLength={100}
+                  className="saas-input w-full font-semibold text-xs"
                   disabled={saving}
                 />
-              </label>
+              </div>
+
+              <div className="grid gap-2.5 sm:grid-cols-2">
+                <div>
+                  <label className="block text-[11px] font-semibold text-ink mb-1">
+                    Industry / Trade
+                  </label>
+                  <input
+                    type="text"
+                    value={segIndustry}
+                    onChange={(e) => setSegIndustry(e.target.value)}
+                    placeholder="e.g. Roofing, HVAC"
+                    className="saas-input w-full text-xs"
+                    disabled={saving}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-ink mb-1">
+                    Country
+                  </label>
+                  <select
+                    value={segCountry}
+                    onChange={(e) => setSegCountry(e.target.value)}
+                    className="saas-input w-full text-xs font-medium"
+                    disabled={saving}
+                  >
+                    <option value="US">United States (US)</option>
+                    <option value="CA">Canada (CA)</option>
+                    <option value="GB">United Kingdom (UK)</option>
+                    <option value="AU">Australia (AU)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid gap-2.5 sm:grid-cols-2">
+                <div>
+                  <label className="block text-[11px] font-semibold text-ink mb-1">
+                    State / Province
+                  </label>
+                  <input
+                    type="text"
+                    value={segState}
+                    onChange={(e) => setSegState(e.target.value)}
+                    placeholder="e.g. Florida, Texas"
+                    className="saas-input w-full text-xs"
+                    disabled={saving}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-ink mb-1">
+                    City / Location
+                  </label>
+                  <input
+                    type="text"
+                    value={segCity}
+                    onChange={(e) => setSegCity(e.target.value)}
+                    placeholder="e.g. Miami, Dallas"
+                    className="saas-input w-full text-xs"
+                    disabled={saving}
+                  />
+                </div>
+              </div>
 
               {err && (
-                <p className="text-[12px] text-rose-600">{err}</p>
+                <p className="rounded-lg bg-rose-500/10 p-2 text-[12px] font-semibold text-rose-600 dark:text-rose-400">
+                  {err}
+                </p>
               )}
             </div>
 
-            <div className="flex justify-end gap-2 border-t border-border px-5 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-5 py-3.5 bg-[var(--surface)]">
               <button
                 type="button"
                 onClick={() => setShowDialog(false)}
-                className="rounded-xl border border-border px-4 py-2 text-[13px] font-semibold text-ink transition hover:bg-[var(--input-bg)]"
+                className="rounded-xl border border-border px-3.5 py-2 text-[12px] font-semibold text-ink transition hover:bg-[var(--input-bg)]"
                 disabled={saving}
               >
                 Cancel
               </button>
-              <button
-                type="button"
-                onClick={() => void save()}
-                disabled={saving || !name.trim()}
-                className={cn(
-                  "rounded-xl px-4 py-2 text-[13px] font-semibold text-white transition",
-                  saving || !name.trim()
-                    ? "cursor-not-allowed bg-brand-400 opacity-60"
-                    : "bg-[#1a1224] hover:opacity-90",
-                )}
-              >
-                {saving ? "Saving…" : "Save segment"}
-              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => void save(false)}
+                  disabled={saving || !name.trim()}
+                  className="rounded-xl border border-border bg-[var(--input-bg)] px-3.5 py-2 text-[12px] font-semibold text-ink transition hover:bg-[var(--surface)] disabled:opacity-50"
+                >
+                  {saving ? "Saving…" : "Save Segment"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void save(true)}
+                  disabled={saving || !name.trim()}
+                  className="rounded-xl bg-brand-600 px-3.5 py-2 text-[12px] font-bold text-white shadow-sm transition hover:bg-brand-700 disabled:opacity-50"
+                >
+                  🚀 Save &amp; Launch
+                </button>
+              </div>
             </div>
           </div>
         </div>
