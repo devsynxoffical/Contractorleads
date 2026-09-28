@@ -190,8 +190,11 @@ export function CampaignWizard({
         }
 
         if (mbRes.ok && Array.isArray(mbData.mailboxes)) {
-          setMailboxes(mbData.mailboxes);
-          setSelectedMailboxIds(mbData.mailboxes.map((m: MailboxItem) => m.id));
+          const eligibleMailboxes = mbData.mailboxes.filter(
+            (m: MailboxItem) => !m.email.toLowerCase().includes("contractorleads.us")
+          );
+          setMailboxes(eligibleMailboxes);
+          setSelectedMailboxIds(eligibleMailboxes.map((m: MailboxItem) => m.id));
         }
       } catch {
         /* ignore */

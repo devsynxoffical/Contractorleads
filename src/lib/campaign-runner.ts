@@ -110,7 +110,16 @@ export async function processCampaignSends(opts?: {
     // Discover mailboxes for this campaign
     const [userMailboxes, systemMailboxes, todayLogs] = await Promise.all([
       prisma.smtpAccount.findMany({
-        where: { userId: campaign.userId, enabled: true },
+        where: {
+          userId: campaign.userId,
+          enabled: true,
+          NOT: {
+            fromEmail: {
+              contains: "contractorleads.us",
+              mode: "insensitive",
+            },
+          },
+        },
       }),
       prisma.systemSmtpAccount.findMany({
         where: { enabled: true },

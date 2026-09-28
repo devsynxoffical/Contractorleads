@@ -142,8 +142,13 @@ export async function getCampaignMailboxStats(userId: string) {
     sendsTodayMap.set(key, current);
   }
 
+  const eligibleUserAccounts = userAccounts.filter((a) => {
+    const domain = (a.fromEmail.split("@")[1] || "").toLowerCase().trim();
+    return domain !== "contractorleads.us" && !domain.endsWith(".contractorleads.us");
+  });
+
   const allMailboxes = [
-    ...userAccounts.map((a) => ({
+    ...eligibleUserAccounts.map((a) => ({
       id: a.id,
       label: a.label || a.fromEmail,
       email: a.fromEmail,
