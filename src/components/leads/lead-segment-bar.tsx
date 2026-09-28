@@ -133,60 +133,100 @@ export function LeadSegmentBar() {
 
   if (loading) return null;
 
+  const isAllActive = !hasFilters;
+
   return (
     <>
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        {/* Save button (only when filters are active) */}
-        {hasFilters && (
-          <button
-            type="button"
-            onClick={() => { setShowDialog(true); setErr(null); setName(""); }}
-            className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-brand-400 bg-brand-50/60 px-3 py-1.5 text-[12px] font-semibold text-brand-700 transition hover:bg-brand-100"
-          >
-            <HiOutlineBookmark className="h-3.5 w-3.5" />
-            Save as segment
-          </button>
-        )}
+      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-border/80 bg-[var(--surface)] p-3 shadow-xs">
+        <span className="text-[12px] font-bold text-ink flex items-center gap-1.5 mr-1">
+          <HiOutlineBookmark className="h-4 w-4 text-brand-600" />
+          Segments:
+        </span>
+
+        {/* All Leads default chip */}
+        <button
+          type="button"
+          onClick={() => {
+            startTransition(() => {
+              router.push(pathname);
+            });
+          }}
+          className={cn(
+            "rounded-full px-3 py-1.5 text-[12px] font-bold transition",
+            isAllActive
+              ? "bg-[#1a1930] text-white shadow-xs dark:bg-brand-600"
+              : "border border-border bg-[var(--input-bg)] text-ink-muted hover:bg-[var(--surface)] hover:text-ink"
+          )}
+        >
+          All Leads
+        </button>
 
         {/* Saved segment pills */}
-        {segments.map((seg) => (
-          <div
-            key={seg.id}
-            className="group inline-flex items-center overflow-hidden rounded-full border border-border bg-[var(--surface)] shadow-[var(--shadow-soft)] transition hover:border-brand-300"
-          >
-            <button
-              type="button"
-              onClick={() => applySegment(seg)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-ink transition group-hover:text-brand-700"
-            >
-              <span className="font-semibold">{seg.name}</span>
-              {segmentLabel(seg) !== seg.name && (
-                <span className="text-ink-muted">{segmentLabel(seg)}</span>
-              )}
-            </button>
-            <Link
-              href={`/campaigns/new?segmentId=${seg.id}`}
-              className="border-l border-border px-2 py-1.5 text-brand-600 opacity-80 transition hover:bg-brand-50 hover:opacity-100 dark:hover:bg-brand-950"
-              title="Create Email Outreach Campaign from this segment"
-            >
-              <HiOutlinePaperAirplane className="h-3 w-3" />
-            </Link>
-            <button
-              type="button"
-              onClick={() => deleteSegment(seg.id)}
-              className="border-l border-border px-1.5 py-1.5 text-ink-faint opacity-0 transition hover:text-rose-500 group-hover:opacity-100"
-              title="Delete segment"
-            >
-              <HiOutlineXMark className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        ))}
+        {segments.map((seg) => {
+          const isSelected =
+            (seg.industry ? industry === seg.industry : true) &&
+            (seg.when && seg.when !== "all" ? when === seg.when : true) &&
+            (seg.tier && seg.tier !== "all" ? tier === seg.tier : true) &&
+            (seg.strength && seg.strength !== "all" ? strength === seg.strength : true) &&
+            (seg.q ? q === seg.q : true) &&
+            hasFilters;
 
-        {!hasFilters && !segments.length && (
-          <p className="text-[12px] text-ink-faint">
-            Set filters above then click <strong>Save as segment</strong> to create a one-click shortcut.
-          </p>
-        )}
+          return (
+            <div
+              key={seg.id}
+              className={cn(
+                "group inline-flex items-center overflow-hidden rounded-full border shadow-xs transition",
+                isSelected
+                  ? "border-brand-500 bg-brand-50 text-brand-900 font-bold dark:bg-brand-950/60 dark:text-brand-300 dark:border-brand-500/50"
+                  : "border-border bg-[var(--surface)] text-ink hover:border-brand-300"
+              )}
+            >
+              <button
+                type="button"
+                onClick={() => applySegment(seg)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold transition"
+              >
+                <span>🎯 {seg.name}</span>
+                {segmentLabel(seg) !== seg.name && (
+                  <span className="text-[11px] text-ink-muted font-normal">({segmentLabel(seg)})</span>
+                )}
+              </button>
+              <Link
+                href={`/campaigns/new?segmentId=${seg.id}`}
+                className="border-l border-border px-2.5 py-1.5 text-brand-600 opacity-80 transition hover:bg-brand-100 hover:opacity-100 dark:hover:bg-brand-900"
+                title="Launch Email Outreach Campaign"
+              >
+                <HiOutlinePaperAirplane className="h-3.5 w-3.5" />
+              </Link>
+              <button
+                type="button"
+                onClick={() => deleteSegment(seg.id)}
+                className="border-l border-border px-1.5 py-1.5 text-ink-muted opacity-0 transition hover:text-rose-500 group-hover:opacity-100"
+                title="Delete segment"
+              >
+                <HiOutlineXMark className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          );
+        })}
+
+        {/* Save as segment button (Always visible) */}
+        <button
+          type="button"
+          onClick={() => { setShowDialog(true); setErr(null); setName(""); }}
+          className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-brand-400 bg-brand-50/60 px-3 py-1.5 text-[12px] font-bold text-brand-700 transition hover:bg-brand-100 dark:bg-brand-950/40 dark:text-brand-300 dark:border-brand-500/40"
+        >
+          <HiOutlineBookmark className="h-3.5 w-3.5" />
+          Save as segment
+        </button>
+
+        {/* Manage Segments link */}
+        <Link
+          href="/segments"
+          className="ml-auto text-[11px] font-semibold text-brand-600 hover:underline px-2 py-1"
+        >
+          Manage All Segments ({segments.length}) →
+        </Link>
       </div>
 
       {/* Save dialog */}
