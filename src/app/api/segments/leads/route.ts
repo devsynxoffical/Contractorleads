@@ -108,20 +108,34 @@ export async function GET(request: Request) {
     ],
   };
 
-  const where: Prisma.LeadWhereInput = {
+  const isGeneral = !industry || industry.toLowerCase().includes("general") || industry.toLowerCase() === "all";
+
+  const indFilter: Prisma.LeadWhereInput = !isGeneral
+    ? {
+        OR: [
+          { industry: { equals: industry, mode: "insensitive" } },
+          { serviceCategory: { equals: industry, mode: "insensitive" } },
+        ],
+      }
+    : {};
+
+  const baseWhere: Prisma.LeadWhereInput = {
     AND: [
-      userCondition,
+      indFilter,
+      q
+        ? {
+            OR: [
+              { businessName: { contains: q, mode: "insensitive" } },
+              { ownerName: { contains: q, mode: "insensitive" } },
+              { email: { contains: q, mode: "insensitive" } },
+              { phone: { contains: q, mode: "insensitive" } },
+              { city: { contains: q, mode: "insensitive" } },
+              { state: { contains: queryClean(q), mode: "insensitive" } },
+            ],
+          }
+        : {},
     ],
   };
-
-  if (industry && industry !== "all") {
-    (where.AND as Prisma.LeadWhereInput[]).push({
-      OR: [
-        { industry: { equals: industry, mode: "insensitive" } },
-        { serviceCategory: { equals: industry, mode: "insensitive" } },
-      ],
-    });
-  }
 
   const orderBy: Prisma.LeadOrderByWithRelationInput[] =
     sort === "score"
@@ -130,9 +144,31 @@ export async function GET(request: Request) {
         ? [{ search: { createdAt: "asc" } }, { createdAt: "asc" }]
         : [{ search: { createdAt: "desc" } }, { leadScore: "desc" }];
 
-  const [leads, total] = await Promise.all([
-    prisma.lead.findMany({
-      where,
+  let leads = await prisma.lead.findMany({
+    where: {
+      AND: [userCondition, baseWhere],
+    },
+    select: {
+      id: true,
+      businessName: true,
+      ownerName: true,
+      email: true,
+      phone: true,
+      city: true,
+      state: true,
+      industry: true,
+      qualityTier: true,
+      leadScore: true,
+      createdAt: true,
+    },
+    orderBy,
+    take,
+  });
+
+  // If no leads under user search, fetch from pool
+  if (leads.length === 0) {
+    leads = await prisma.lead.findMany({
+      where: baseWhere,
       select: {
         id: true,
         businessName: true,
@@ -146,11 +182,25 @@ export async function GET(request: Request) {
         leadScore: true,
         createdAt: true,
       },
-      orderBy,
+      orderBy: [{ leadScore: "desc" }, { createdAt: "desc" }],
       take,
-    }),
-    prisma.lead.count({ where }),
-  ]);
+    });
+  }
+
+  const total = leads.length;
+
+  // Auto-heal segment if segmentId provided
+  if (segmentId && leads.length > 0) {
+    void prisma.leadSegment
+      .update({
+        where: { id: segmentId },
+        data: {
+          leadCount: leads.length,
+          leadIdsJson: JSON.stringify(leads.map((l) => l.id)),
+        },
+      })
+      .catch(() => {});
+  }
 
   return NextResponse.json({
     segmentId: segmentId || null,

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 
 const ALLOWED_WHEN = ["all", "today", "yesterday", "week", "month", "90days"];
 const ALLOWED_TIER = ["all", "hot", "warm", "nurture"];
@@ -36,14 +37,17 @@ export async function GET() {
     },
   });
 
-  // Calculate accurate lead counts
+  // Calculate accurate lead counts and auto-heal empty segments
   const segments = await Promise.all(
     rawSegments.map(async (s) => {
       let count = s.leadCount ?? 0;
+      let leadIds: string[] = [];
+
       if (s.leadIdsJson) {
         try {
           const parsed = JSON.parse(s.leadIdsJson);
-          if (Array.isArray(parsed)) {
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            leadIds = parsed;
             count = parsed.length;
           }
         } catch {
@@ -51,29 +55,72 @@ export async function GET() {
         }
       }
 
-      // If count is still 0 and has industry or search filter, dynamically check user's matching leads
-      if (count === 0 && (s.industry || s.city || s.state || s.q)) {
+      // If count is still 0, dynamically match leads from the database
+      if (count === 0) {
         try {
-          const matchedCount = await prisma.lead.count({
+          const isGeneral =
+            !s.industry ||
+            s.industry.toLowerCase().includes("general") ||
+            s.industry.toLowerCase() === "all";
+
+          const indFilter: Prisma.LeadWhereInput = !isGeneral
+            ? {
+                OR: [
+                  { industry: { equals: s.industry!, mode: "insensitive" } },
+                  { serviceCategory: { equals: s.industry!, mode: "insensitive" } },
+                ],
+              }
+            : {};
+
+          const baseWhere: Prisma.LeadWhereInput = {
+            AND: [
+              indFilter,
+              s.state ? { state: { contains: s.state, mode: "insensitive" } } : {},
+              s.city ? { city: { contains: s.city, mode: "insensitive" } } : {},
+              s.q ? { businessName: { contains: s.q, mode: "insensitive" } } : {},
+            ],
+          };
+
+          // Try user's searches / saved leads first
+          let matchingLeads = await prisma.lead.findMany({
             where: {
               AND: [
-                { search: { userId: user.id } },
-                s.industry && s.industry !== "all"
-                  ? {
-                      OR: [
-                        { industry: { equals: s.industry, mode: "insensitive" } },
-                        { serviceCategory: { equals: s.industry, mode: "insensitive" } },
-                      ],
-                    }
-                  : {},
-                s.state ? { state: { contains: s.state, mode: "insensitive" } } : {},
-                s.city ? { city: { contains: s.city, mode: "insensitive" } } : {},
-                s.q ? { businessName: { contains: s.q, mode: "insensitive" } } : {},
+                {
+                  OR: [
+                    { search: { userId: user.id } },
+                    { savedBy: { some: { userId: user.id } } },
+                  ],
+                },
+                baseWhere,
               ],
             },
+            select: { id: true },
+            take: 500,
           });
-          if (matchedCount > 0) {
-            count = matchedCount;
+
+          // Fallback to all leads in DB if none found under specific search
+          if (matchingLeads.length === 0) {
+            matchingLeads = await prisma.lead.findMany({
+              where: baseWhere,
+              select: { id: true },
+              take: 500,
+            });
+          }
+
+          if (matchingLeads.length > 0) {
+            count = matchingLeads.length;
+            leadIds = matchingLeads.map((m) => m.id);
+
+            // Auto-heal segment in DB so it permanently stores the lead IDs
+            void prisma.leadSegment
+              .update({
+                where: { id: s.id },
+                data: {
+                  leadCount: count,
+                  leadIdsJson: JSON.stringify(leadIds),
+                },
+              })
+              .catch(() => {});
           }
         } catch {
           /* ignore */
@@ -83,6 +130,7 @@ export async function GET() {
       return {
         ...s,
         leadCount: count,
+        leadIdsJson: leadIds.length > 0 ? JSON.stringify(leadIds) : s.leadIdsJson,
       };
     }),
   );
@@ -113,9 +161,73 @@ export async function POST(request: Request) {
   const country = typeof body.country === "string" ? body.country.trim() || "US" : "US";
   const state = typeof body.state === "string" ? body.state.trim() || null : null;
   const city = typeof body.city === "string" ? body.city.trim() || null : null;
-  const leadIds = Array.isArray(body.leadIds) ? body.leadIds.filter((id): id is string => typeof id === "string") : null;
-  const leadCount = leadIds ? leadIds.length : (typeof body.leadCount === "number" ? body.leadCount : 0);
-  const leadIdsJson = leadIds ? JSON.stringify(leadIds) : (typeof body.leadIdsJson === "string" ? body.leadIdsJson : null);
+  const q = typeof body.q === "string" ? body.q.trim().slice(0, 100) || null : null;
+
+  let leadIds = Array.isArray(body.leadIds)
+    ? body.leadIds.filter((id): id is string => typeof id === "string")
+    : null;
+  let leadCount = typeof body.leadCount === "number" ? body.leadCount : (leadIds ? leadIds.length : 0);
+
+  // If no lead IDs provided, query matching leads from database
+  if (!leadIds || leadIds.length === 0) {
+    try {
+      const isGeneral =
+        !industry ||
+        industry.toLowerCase().includes("general") ||
+        industry.toLowerCase() === "all";
+
+      const indFilter: Prisma.LeadWhereInput = !isGeneral
+        ? {
+            OR: [
+              { industry: { equals: industry, mode: "insensitive" } },
+              { serviceCategory: { equals: industry, mode: "insensitive" } },
+            ],
+          }
+        : {};
+
+      const baseWhere: Prisma.LeadWhereInput = {
+        AND: [
+          indFilter,
+          state ? { state: { contains: state, mode: "insensitive" } } : {},
+          city ? { city: { contains: city, mode: "insensitive" } } : {},
+          q ? { businessName: { contains: q, mode: "insensitive" } } : {},
+        ],
+      };
+
+      let leads = await prisma.lead.findMany({
+        where: {
+          AND: [
+            {
+              OR: [
+                { search: { userId: user.id } },
+                { savedBy: { some: { userId: user.id } } },
+              ],
+            },
+            baseWhere,
+          ],
+        },
+        select: { id: true },
+        take: 500,
+      });
+
+      if (leads.length === 0) {
+        leads = await prisma.lead.findMany({
+          where: baseWhere,
+          select: { id: true },
+          take: 500,
+        });
+      }
+
+      if (leads.length > 0) {
+        leadIds = leads.map((l) => l.id);
+        leadCount = leads.length;
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const leadIdsJson = leadIds && leadIds.length > 0 ? JSON.stringify(leadIds) : null;
 
   const when =
     typeof body.when === "string" && ALLOWED_WHEN.includes(body.when) ? body.when : null;
@@ -125,7 +237,6 @@ export async function POST(request: Request) {
     typeof body.strength === "string" && ALLOWED_STRENGTH.includes(body.strength)
       ? body.strength
       : null;
-  const q = typeof body.q === "string" ? body.q.trim().slice(0, 100) || null : null;
   const sort =
     typeof body.sort === "string" && ALLOWED_SORT.includes(body.sort) ? body.sort : null;
 

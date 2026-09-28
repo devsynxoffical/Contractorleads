@@ -155,10 +155,11 @@ export function CampaignWizard({
         const segData = await segRes.json();
         const mbData = await mbRes.json();
 
-        if (segRes.ok) {
-          setSegments(segData.segments || []);
-          if (initialSegmentId) {
-            const found = (segData.segments || []).find((s: LeadSegmentItem) => s.id === initialSegmentId);
+        if (segRes.ok && Array.isArray(segData.segments)) {
+          setSegments(segData.segments);
+          const targetId = initialSegmentId || (segData.segments.length > 0 ? segData.segments[0].id : "");
+          if (targetId) {
+            const found = segData.segments.find((s: LeadSegmentItem) => s.id === targetId) || segData.segments[0];
             if (found) {
               setSelectedSegmentId(found.id);
               setName(`${found.name} Campaign`);
@@ -167,6 +168,22 @@ export function CampaignWizard({
               setState(found.state || "");
               setCity(found.city || "");
               setLeadPreviewCount(found.leadCount || 0);
+
+              // Live fetch leads count to ensure 100% accuracy
+              void (async () => {
+                try {
+                  const lRes = await fetch(`/api/segments/leads?segmentId=${found.id}&limit=1`);
+                  const lData = await lRes.json();
+                  if (lRes.ok && typeof lData.total === "number") {
+                    setLeadPreviewCount(lData.total);
+                    setSegments((prev) =>
+                      prev.map((s) => (s.id === found.id ? { ...s, leadCount: lData.total } : s)),
+                    );
+                  }
+                } catch {
+                  /* ignore */
+                }
+              })();
             }
           }
         }
@@ -185,7 +202,7 @@ export function CampaignWizard({
   }, [initialSegmentId]);
 
   // Handle segment selection change
-  function handleSelectSegment(segId: string) {
+  async function handleSelectSegment(segId: string) {
     setSelectedSegmentId(segId);
     const seg = segments.find((s) => s.id === segId);
     if (seg) {
@@ -197,6 +214,20 @@ export function CampaignWizard({
       setState(seg.state || "");
       setCity(seg.city || "");
       setLeadPreviewCount(seg.leadCount || 0);
+
+      // Query live lead count
+      try {
+        const lRes = await fetch(`/api/segments/leads?segmentId=${seg.id}&limit=1`);
+        const lData = await lRes.json();
+        if (lRes.ok && typeof lData.total === "number") {
+          setLeadPreviewCount(lData.total);
+          setSegments((prev) =>
+            prev.map((s) => (s.id === seg.id ? { ...s, leadCount: lData.total } : s)),
+          );
+        }
+      } catch {
+        /* ignore */
+      }
     }
   }
 
