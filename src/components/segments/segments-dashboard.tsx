@@ -347,16 +347,22 @@ export function SegmentsDashboard() {
     setSegmentLeadsLoading(true);
     setSegmentLeadSearch("");
     try {
-      const res = await fetch(`/api/segments/leads?segmentId=${encodeURIComponent(seg.id)}&limit=200`);
+      const res = await fetch(`/api/segments/leads?segmentId=${encodeURIComponent(seg.id)}&limit=2500`);
       const data = await res.json();
       if (res.ok && Array.isArray(data.leads)) {
         setSegmentLeads(data.leads);
-        // Sync lead count if it was 0 or mismatch
-        if (seg.leadCount !== data.leads.length) {
-          setSegments((prev) =>
-            prev.map((s) => (s.id === seg.id ? { ...s, leadCount: data.leads.length } : s)),
-          );
-        }
+        // Correctly calculate total: prefer data.total from API, then seg.leadCount, then data.leads.length
+        const resolvedTotal =
+          typeof data.total === "number" && data.total > 0
+            ? data.total
+            : seg.leadCount > 0
+            ? seg.leadCount
+            : data.leads.length;
+
+        setViewSegment((prev) => (prev && prev.id === seg.id ? { ...prev, leadCount: resolvedTotal } : prev));
+        setSegments((prev) =>
+          prev.map((s) => (s.id === seg.id ? { ...s, leadCount: resolvedTotal } : s)),
+        );
       } else {
         setSegmentLeads([]);
       }
@@ -1255,7 +1261,9 @@ export function SegmentsDashboard() {
                     <span>·</span>
                     <span>{[viewSegment.city, viewSegment.state, viewSegment.country].filter(Boolean).join(", ")}</span>
                     <span>·</span>
-                    <span className="font-bold text-brand-600">{segmentLeads.length} Total Leads</span>
+                    <span className="font-bold text-brand-600">
+                      {viewSegment.leadCount || segmentLeads.length} Total Leads
+                    </span>
                   </p>
                 </div>
               </div>
@@ -1444,7 +1452,7 @@ export function SegmentsDashboard() {
               <Link href={`/campaigns/new?segmentId=${viewSegment.id}`}>
                 <Button size="sm" className="gap-1.5">
                   <HiOutlinePaperAirplane className="h-4 w-4" />
-                  Launch Outreach Campaign ({segmentLeads.length} Leads)
+                  Launch Outreach Campaign ({viewSegment.leadCount || segmentLeads.length} Leads)
                 </Button>
               </Link>
             </div>
