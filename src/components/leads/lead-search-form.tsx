@@ -12,6 +12,7 @@ import {
   HiOutlineCheckBadge,
   HiOutlineCpuChip,
   HiOutlineFire,
+  HiOutlineShieldCheck,
   HiOutlineSparkles,
   HiOutlineXMark,
 } from "react-icons/hi2";
@@ -172,8 +173,72 @@ export function LeadSearchForm() {
   const [savedSegmentId, setSavedSegmentId] = useState<string | null>(null);
   const [segmentSuccessMsg, setSegmentSuccessMsg] = useState<string | null>(null);
   const [segmentError, setSegmentError] = useState<string | null>(null);
+  const [verifyingEmails, setVerifyingEmails] = useState(false);
+  const [verifyResultMsg, setVerifyResultMsg] = useState<{
+    type: "success" | "error" | "info";
+    text: string;
+  } | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  async function handleTripleCheckEmails() {
+    if (leads.length === 0 || verifyingEmails) return;
+    setVerifyingEmails(true);
+    setVerifyResultMsg(null);
+    try {
+      const res = await fetch("/api/segments/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          leadIds: leads.map((l) => l.id),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setVerifyResultMsg({
+          type: "error",
+          text: data.error || "Email verification failed. Please try again.",
+        });
+        return;
+      }
+
+      const invalidSet = new Set<string>(data.invalidLeadIds || []);
+      const nextLeads = leads.filter((l) => !invalidSet.has(l.id));
+      setLeads(nextLeads);
+      setSelected((prev) => {
+        const next = new Set(prev);
+        invalidSet.forEach((id) => next.delete(id));
+        return next;
+      });
+
+      saveFinderSearchCache({
+        leads: nextLeads,
+        industry: selectedIndustry || "",
+        country: selectedCountry || "US",
+        locationScope,
+        state: selectedState,
+        city,
+        customLocation,
+        zip: "",
+        selectedLeadIds: nextLeads.map((l) => l.id),
+      });
+
+      const invalidCount = data.invalidCount ?? invalidSet.size;
+      const validCount = data.validCount ?? nextLeads.length;
+
+      setVerifyResultMsg({
+        type: "success",
+        text: `Triple-check complete: ${validCount} working deliverable leads verified! Removed ${invalidCount} invalid / dead email leads from the list.`,
+      });
+    } catch {
+      setVerifyResultMsg({
+        type: "error",
+        text: "Network error while verifying emails. Please try again.",
+      });
+    } finally {
+      setVerifyingEmails(false);
+    }
+  }
 
   useEffect(() => {
     if (!loading) {
@@ -1139,6 +1204,20 @@ export function LeadSearchForm() {
                   <HiOutlineBookmark className="h-4 w-4 text-brand-600 dark:text-brand-400" />
                   Save as Segment
                 </button>
+                <button
+                  type="button"
+                  onClick={() => void handleTripleCheckEmails()}
+                  disabled={verifyingEmails || leads.length === 0}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50/80 px-3.5 py-2 text-xs font-semibold text-emerald-800 shadow-sm transition hover:bg-emerald-100 hover:border-emerald-400 dark:border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-900/50 disabled:opacity-50"
+                  title="Triple-check all emails (Syntax, MX records, SMTP mailbox handshake) and remove invalid ones"
+                >
+                  {verifyingEmails ? (
+                    <HiOutlineArrowPath className="h-4 w-4 animate-spin text-emerald-600 dark:text-emerald-400" />
+                  ) : (
+                    <HiOutlineShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  )}
+                  {verifyingEmails ? "Verifying Leads..." : "Triple-Check & Clean Emails"}
+                </button>
                 <ExportLeadsButtons
                   size="sm"
                   leadIds={
@@ -1150,6 +1229,27 @@ export function LeadSearchForm() {
               </div>
             }
           />
+          {verifyResultMsg && (
+            <div
+              className={`mb-4 flex items-center justify-between rounded-xl border p-3 text-xs ${
+                verifyResultMsg.type === "error"
+                  ? "border-rose-500/30 bg-rose-500/10 text-rose-800 dark:text-rose-300"
+                  : "border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <HiOutlineShieldCheck className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                <span className="font-semibold">{verifyResultMsg.text}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setVerifyResultMsg(null)}
+                className="ml-2 text-sm font-bold text-ink-muted hover:text-ink"
+              >
+                ✕
+              </button>
+            </div>
+          )}
           <LeadResultsList
             leads={leads}
             openInNewTab={true}
@@ -1264,6 +1364,24 @@ export function LeadSearchForm() {
                     <span className="text-emerald-700 dark:text-emerald-400">
                       {duplicateCount > 0 ? `🛡️ ${duplicateCount} Duplicate(s) Filtered` : "🛡️ 0 Duplicates Detected"}
                     </span>
+                  </div>
+                  <div className="mt-2.5 flex items-center justify-between border-t border-emerald-500/20 pt-2">
+                    <span className="text-[11px] text-ink-muted">
+                      Triple-check mailboxes &amp; drop dead emails before saving:
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => void handleTripleCheckEmails()}
+                      disabled={verifyingEmails}
+                      className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white shadow-xs transition hover:bg-emerald-700 disabled:opacity-50"
+                    >
+                      {verifyingEmails ? (
+                        <HiOutlineArrowPath className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <HiOutlineShieldCheck className="h-3 w-3" />
+                      )}
+                      {verifyingEmails ? "Verifying..." : "Triple-Check & Clean"}
+                    </button>
                   </div>
                 </div>
 

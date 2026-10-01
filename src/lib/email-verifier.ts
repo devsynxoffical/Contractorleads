@@ -558,8 +558,8 @@ export async function verifyEmailBatch(
   deliverabilityRate: number;
   results: EmailVerificationResult[];
 }> {
-  const cleanList = [...new Set(emails.map((e) => e.trim()).filter(Boolean))].slice(0, 200);
-  const concurrency = options?.concurrency ?? 5;
+  const cleanList = [...new Set(emails.map((e) => e.trim()).filter(Boolean))].slice(0, 2500);
+  const concurrency = options?.concurrency ?? 8;
   const results: EmailVerificationResult[] = [];
 
   for (let i = 0; i < cleanList.length; i += concurrency) {

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   HiOutlineArrowLeft,
+  HiOutlineArrowPath,
   HiOutlineArrowRight,
   HiOutlineBookmark,
   HiOutlineCheck,
@@ -86,6 +87,8 @@ export function CampaignWizard({
   const [state, setState] = useState<string>("");
   const [city, setCity] = useState<string>("");
   const [leadPreviewCount, setLeadPreviewCount] = useState<number>(0);
+  const [verifyingSegment, setVerifyingSegment] = useState<boolean>(false);
+  const [verifyMsg, setVerifyMsg] = useState<{ text: string; type: "success" | "error" } | null>(null);
 
   // Wizard state: Step 2 - Day 0 Hooks
   const [hooks, setHooks] = useState<CampaignHook[]>(DEFAULT_DAY0_HOOKS);
@@ -232,6 +235,42 @@ export function CampaignWizard({
       } catch {
         /* ignore */
       }
+    }
+  }
+
+  // Triple-check and clean emails from selected segment
+  async function handleTripleCheckSegment() {
+    if (!selectedSegmentId || verifyingSegment) return;
+    setVerifyingSegment(true);
+    setVerifyMsg(null);
+    try {
+      const res = await fetch("/api/segments/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ segmentId: selectedSegmentId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setVerifyMsg({ type: "error", text: data.error || "Email verification failed." });
+        return;
+      }
+
+      const cleanCount = data.remainingCount ?? data.validCount ?? 0;
+      const removedCount = data.removedCount ?? data.invalidCount ?? 0;
+
+      setLeadPreviewCount(cleanCount);
+      setSegments((prev) =>
+        prev.map((s) => (s.id === selectedSegmentId ? { ...s, leadCount: cleanCount } : s)),
+      );
+
+      setVerifyMsg({
+        type: "success",
+        text: `Triple-check complete: Verified ${data.totalChecked} leads. Removed ${removedCount} dead / invalid emails! (${cleanCount} clean leads ready for this campaign)`,
+      });
+    } catch {
+      setVerifyMsg({ type: "error", text: "Network error during email verification." });
+    } finally {
+      setVerifyingSegment(false);
     }
   }
 
@@ -529,16 +568,52 @@ export function CampaignWizard({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
                     <HiOutlineShieldCheck className="h-3.5 w-3.5" />
                     Duplicate Protection Active
                   </span>
+                  <button
+                    type="button"
+                    onClick={() => void handleTripleCheckSegment()}
+                    disabled={verifyingSegment}
+                    className="inline-flex items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 transition dark:border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-300 disabled:opacity-50"
+                    title="Triple-check emails (Syntax, MX records, SMTP handshake) and drop non-working emails"
+                  >
+                    {verifyingSegment ? (
+                      <HiOutlineArrowPath className="h-3.5 w-3.5 animate-spin text-emerald-600" />
+                    ) : (
+                      <HiOutlineShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                    )}
+                    <span>{verifyingSegment ? "Verifying..." : "Triple-Check & Clean Segment"}</span>
+                  </button>
                   <span className="rounded-full bg-brand-600 px-3 py-1 text-xs font-bold text-white">
                     {leadPreviewCount || segments.find((s) => s.id === selectedSegmentId)?.leadCount || 0} Total Leads
                   </span>
                 </div>
               </div>
+
+              {verifyMsg && (
+                <div
+                  className={`mt-3 flex items-center justify-between rounded-xl border p-2.5 text-xs font-medium ${
+                    verifyMsg.type === "error"
+                      ? "border-rose-500/30 bg-rose-500/10 text-rose-800 dark:text-rose-300"
+                      : "border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <HiOutlineShieldCheck className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                    <span>{verifyMsg.text}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setVerifyMsg(null)}
+                    className="ml-2 text-xs font-bold text-ink-muted hover:text-ink"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
