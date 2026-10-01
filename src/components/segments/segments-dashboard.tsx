@@ -23,6 +23,7 @@ import {
   HiOutlineClipboardDocument,
   HiOutlineBuildingOffice,
   HiOutlineShieldCheck,
+  HiOutlineArrowTopRightOnSquare,
 } from "react-icons/hi2";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -1350,13 +1351,24 @@ export function SegmentsDashboard() {
                 filteredSegmentLeads.map((lead) => (
                   <div
                     key={lead.id}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-[var(--surface)] p-3 text-xs shadow-xs hover:border-brand-300 transition"
+                    onClick={() => window.open(`/leads/${lead.id}?from=segment`, "_blank", "noopener,noreferrer")}
+                    className="group/lead flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-[var(--surface)] p-3 text-xs shadow-xs hover:border-brand-400 hover:bg-brand-50/20 dark:hover:bg-brand-950/20 transition cursor-pointer"
+                    title="Click anywhere to view full lead details in a new tab"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-ink truncate">{lead.businessName}</span>
+                        <Link
+                          href={`/leads/${lead.id}?from=segment`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="font-bold text-ink group-hover/lead:text-brand-600 transition truncate flex items-center gap-1.5 hover:underline"
+                        >
+                          <span>{lead.businessName}</span>
+                          <HiOutlineArrowTopRightOnSquare className="h-3.5 w-3.5 text-ink-muted group-hover/lead:text-brand-600 shrink-0 opacity-0 group-hover/lead:opacity-100 transition" />
+                        </Link>
                         {lead.qualityTier && (
-                          <span className="rounded bg-brand-50 px-1.5 py-0.2 text-[10px] font-semibold text-brand-700 capitalize">
+                          <span className="rounded bg-brand-50 px-1.5 py-0.2 text-[10px] font-semibold text-brand-700 capitalize shrink-0">
                             {lead.qualityTier}
                           </span>
                         )}
@@ -1368,23 +1380,38 @@ export function SegmentsDashboard() {
 
                     <div className="flex items-center gap-2.5">
                       {lead.email ? (
-                        <span className="rounded bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 truncate max-w-[160px]">
+                        <a
+                          href={`mailto:${lead.email}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="rounded bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 truncate max-w-[170px] transition"
+                          title={`Send email to ${lead.email}`}
+                        >
                           ✉️ {lead.email}
-                        </span>
+                        </a>
                       ) : (
                         <span className="rounded bg-amber-50 px-2 py-0.5 text-[10px] text-amber-700">
                           No email
                         </span>
                       )}
                       {lead.phone && (
-                        <span className="text-[11px] text-ink-muted hidden sm:inline">📞 {lead.phone}</span>
+                        <a
+                          href={`tel:${lead.phone}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-[11px] text-ink-muted hover:text-brand-600 hover:underline hidden sm:inline transition"
+                          title={`Call ${lead.phone}`}
+                        >
+                          📞 {lead.phone}
+                        </a>
                       )}
                       <span className="text-xs font-bold text-brand-600">Score {lead.leadScore}</span>
 
                       {/* Remove from segment button */}
                       <button
                         type="button"
-                        onClick={() => handleRemoveLead(lead.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void handleRemoveLead(lead.id);
+                        }}
                         disabled={removingLeadId === lead.id}
                         className="rounded-lg p-1 text-ink-muted hover:bg-rose-50 hover:text-rose-600 transition"
                         title="Remove lead from this segment"
@@ -1494,7 +1521,19 @@ export function SegmentsDashboard() {
                             className="rounded border-border accent-brand-600"
                           />
                           <div className="min-w-0">
-                            <div className="font-bold text-ink truncate">{lead.businessName}</div>
+                            <div className="flex items-center gap-1.5">
+                              <Link
+                                href={`/leads/${lead.id}?from=segment`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="font-bold text-ink hover:text-brand-600 hover:underline truncate inline-flex items-center gap-1"
+                                title="Preview lead details in a new tab"
+                              >
+                                <span>{lead.businessName}</span>
+                                <HiOutlineArrowTopRightOnSquare className="h-3 w-3 text-ink-muted hover:text-brand-600 shrink-0" />
+                              </Link>
+                            </div>
                             <div className="text-[11px] text-ink-muted truncate">
                               {[lead.ownerName, lead.city, lead.state].filter(Boolean).join(" · ") || "—"}
                             </div>
