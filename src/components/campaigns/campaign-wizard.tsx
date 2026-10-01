@@ -258,14 +258,21 @@ export function CampaignWizard({
       const cleanCount = data.remainingCount ?? data.validCount ?? 0;
       const removedCount = data.removedCount ?? data.invalidCount ?? 0;
 
+      if (data.newSegment) {
+        setSegments((prev) => {
+          const exists = prev.some((s) => s.id === data.newSegment.id);
+          if (exists) {
+            return prev.map((s) => (s.id === data.newSegment.id ? { ...s, ...data.newSegment } : s));
+          }
+          return [data.newSegment, ...prev];
+        });
+        setSelectedSegmentId(data.newSegment.id);
+      }
       setLeadPreviewCount(cleanCount);
-      setSegments((prev) =>
-        prev.map((s) => (s.id === selectedSegmentId ? { ...s, leadCount: cleanCount } : s)),
-      );
 
       setVerifyMsg({
         type: "success",
-        text: `Triple-check complete: Verified ${data.totalChecked} leads. Removed ${removedCount} dead / invalid emails! (${cleanCount} clean leads ready for this campaign)`,
+        text: `Created new verified segment "${data.newSegmentName || "Verified Segment"}" (${cleanCount} clean leads)! Selected for this campaign. Original segment is preserved with all phone numbers.`,
       });
     } catch {
       setVerifyMsg({ type: "error", text: "Network error during email verification." });

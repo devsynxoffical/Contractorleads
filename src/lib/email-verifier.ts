@@ -223,21 +223,62 @@ function checkSyntax(email: string): { valid: boolean; user: string; domain: str
   return { valid: regex.test(trimmed), user, domain: domain.toLowerCase() };
 }
 
+// In-memory MX cache (domain -> records) with 1-hour TTL
+const mxCache = new Map<
+  string,
+  { mxRecords: Array<{ host: string; priority: number }>; domainExists: boolean; timestamp: number }
+>();
+
+// Circuit breaker for outbound port 25
+let smtpOutboundBlocked = false;
+let smtpBlockedSince = 0;
+let consecutiveSmtpFailures = 0;
+
 /**
- * Resolve MX records with A-record fallback.
+ * Resolve MX records with A-record fallback and in-memory cache.
  */
 async function resolveDomainMx(
   domain: string,
 ): Promise<{ mxRecords: Array<{ host: string; priority: number }>; domainExists: boolean }> {
+  const normDomain = domain.toLowerCase().trim();
+  const cached = mxCache.get(normDomain);
+  if (cached && Date.now() - cached.timestamp < 1000 * 60 * 60) {
+    return { mxRecords: cached.mxRecords, domainExists: cached.domainExists };
+  }
+
+  // Common provider fast-path
+  if (normDomain === "gmail.com" || normDomain === "googlemail.com") {
+    const res = { mxRecords: [{ host: "gmail-smtp-in.l.google.com", priority: 5 }], domainExists: true };
+    mxCache.set(normDomain, { ...res, timestamp: Date.now() });
+    return res;
+  }
+  if (normDomain === "yahoo.com" || normDomain === "aol.com") {
+    const res = { mxRecords: [{ host: "mta5.am0.yahoodns.net", priority: 10 }], domainExists: true };
+    mxCache.set(normDomain, { ...res, timestamp: Date.now() });
+    return res;
+  }
+  if (normDomain === "outlook.com" || normDomain === "hotmail.com" || normDomain === "live.com") {
+    const res = { mxRecords: [{ host: "outlook-com.olc.protection.outlook.com", priority: 10 }], domainExists: true };
+    mxCache.set(normDomain, { ...res, timestamp: Date.now() });
+    return res;
+  }
+  if (normDomain === "icloud.com" || normDomain === "me.com" || normDomain === "mac.com") {
+    const res = { mxRecords: [{ host: "mx1.mail.icloud.com", priority: 10 }], domainExists: true };
+    mxCache.set(normDomain, { ...res, timestamp: Date.now() });
+    return res;
+  }
+
   try {
-    const records = await dns.promises.resolveMx(domain);
+    const records = await dns.promises.resolveMx(normDomain);
     if (records && records.length > 0) {
       records.sort((a, b) => a.priority - b.priority);
       const normalizedMx = records.map((r) => ({
         host: r.exchange || (r as unknown as { host?: string }).host || "",
         priority: r.priority,
       }));
-      return { mxRecords: normalizedMx, domainExists: true };
+      const res = { mxRecords: normalizedMx, domainExists: true };
+      mxCache.set(normDomain, { ...res, timestamp: Date.now() });
+      return res;
     }
   } catch (err: unknown) {
     const error = err as { code?: string };
@@ -248,40 +289,65 @@ async function resolveDomainMx(
 
   // Fallback to checking A/AAAA record
   try {
-    const aRecords = await dns.promises.resolve4(domain);
+    const aRecords = await dns.promises.resolve4(normDomain);
     if (aRecords && aRecords.length > 0) {
-      return {
+      const res = {
         mxRecords: [{ host: aRecords[0], priority: 10 }],
         domainExists: true,
       };
+      mxCache.set(normDomain, { ...res, timestamp: Date.now() });
+      return res;
     }
   } catch {
     // domain does not exist
   }
 
-  return { mxRecords: [], domainExists: false };
+  const res = { mxRecords: [], domainExists: false };
+  mxCache.set(normDomain, { ...res, timestamp: Date.now() });
+  return res;
 }
 
 /**
  * Perform a lightweight SMTP handshake check (HELO -> MAIL FROM -> RCPT TO)
- * with strict timeouts so it runs swiftly without blocking.
+ * with strict 1000ms timeout and circuit breaker so it never freezes execution.
  */
 async function checkSmtpMailbox(
   email: string,
   mxHost: string,
-  timeoutMs = 3000,
+  timeoutMs = 1000,
 ): Promise<"passed" | "failed" | "unreachable" | "skipped"> {
   if (!mxHost) return "unreachable";
 
+  // Check circuit breaker (if outbound port 25 is blocked on server)
+  if (smtpOutboundBlocked) {
+    if (Date.now() - smtpBlockedSince > 1000 * 60 * 5) {
+      smtpOutboundBlocked = false;
+      consecutiveSmtpFailures = 0;
+    } else {
+      return "unreachable";
+    }
+  }
+
   return new Promise<"passed" | "failed" | "unreachable" | "skipped">((resolve) => {
     let resolved = false;
+    let socket: net.Socket;
+
     const finish = (result: "passed" | "failed" | "unreachable" | "skipped") => {
       if (!resolved) {
         resolved = true;
+        if (result === "passed") {
+          consecutiveSmtpFailures = 0;
+        } else if (result === "unreachable") {
+          consecutiveSmtpFailures++;
+          if (consecutiveSmtpFailures >= 3) {
+            smtpOutboundBlocked = true;
+            smtpBlockedSince = Date.now();
+          }
+        }
         try {
-          socket.destroy();
+          socket?.destroy();
         } catch {
-          // ignore socket destroy error
+          // ignore
         }
         resolve(result);
       }
@@ -291,91 +357,90 @@ async function checkSmtpMailbox(
       finish("unreachable");
     }, timeoutMs);
 
-    const socket = net.createConnection({ host: mxHost, port: 25 });
-    socket.setTimeout(timeoutMs);
+    try {
+      socket = net.createConnection({ host: mxHost, port: 25 });
+      socket.setTimeout(timeoutMs);
 
-    let step = 0;
-    let buffer = "";
+      let step = 0;
+      let buffer = "";
 
-    socket.on("connect", () => {
-      // Wait for server 220 banner
-    });
+      socket.on("connect", () => {
+        // Connected, wait for 220 banner
+      });
 
-    socket.on("data", (data) => {
-      buffer += data.toString();
-      const lines = buffer.split("\r\n");
-      // Keep last incomplete segment if any
-      buffer = lines.pop() || "";
+      socket.on("data", (data) => {
+        buffer += data.toString();
+        const lines = buffer.split("\r\n");
+        buffer = lines.pop() || "";
 
-      for (const line of lines) {
-        if (!line.trim()) continue;
-        const code = parseInt(line.slice(0, 3), 10);
-        const isLastLine = line.charAt(3) === " ";
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          const code = parseInt(line.slice(0, 3), 10);
+          const isLastLine = line.charAt(3) === " ";
 
-        if (!isLastLine) continue;
+          if (!isLastLine) continue;
 
-        if (step === 0) {
-          // Server 220 greeting
-          if (code === 220) {
-            step = 1;
-            socket.write("HELO contractorleads.co\r\n");
-          } else {
+          if (step === 0) {
+            if (code === 220) {
+              step = 1;
+              socket.write("HELO contractorleads.co\r\n");
+            } else {
+              clearTimeout(timer);
+              return finish("unreachable");
+            }
+          } else if (step === 1) {
+            if (code === 250) {
+              step = 2;
+              socket.write("MAIL FROM:<verify@contractorleads.co>\r\n");
+            } else {
+              clearTimeout(timer);
+              return finish("unreachable");
+            }
+          } else if (step === 2) {
+            if (code === 250) {
+              step = 3;
+              socket.write(`RCPT TO:<${email}>\r\n`);
+            } else {
+              clearTimeout(timer);
+              return finish("unreachable");
+            }
+          } else if (step === 3) {
             clearTimeout(timer);
-            return finish("unreachable");
-          }
-        } else if (step === 1) {
-          // HELO response (250)
-          if (code === 250) {
-            step = 2;
-            socket.write("MAIL FROM:<verify@contractorleads.co>\r\n");
-          } else {
-            clearTimeout(timer);
-            return finish("unreachable");
-          }
-        } else if (step === 2) {
-          // MAIL FROM response (250)
-          if (code === 250) {
-            step = 3;
-            socket.write(`RCPT TO:<${email}>\r\n`);
-          } else {
-            clearTimeout(timer);
-            return finish("unreachable");
-          }
-        } else if (step === 3) {
-          // RCPT TO response: 250/251 = valid mailbox, 550/551/552/553/554 = invalid mailbox
-          clearTimeout(timer);
-          try {
-            socket.write("QUIT\r\n");
-          } catch {
-            // ignore
-          }
+            try {
+              socket.write("QUIT\r\n");
+            } catch {
+              // ignore
+            }
 
-          if (code === 250 || code === 251) {
-            return finish("passed");
-          } else if (code >= 500 && code < 600) {
-            return finish("failed");
-          } else {
-            // Greylisted (450/451) or strict anti-spam policy
-            return finish("unreachable");
+            if (code === 250 || code === 251) {
+              return finish("passed");
+            } else if (code >= 500 && code < 600) {
+              return finish("failed");
+            } else {
+              return finish("unreachable");
+            }
           }
         }
-      }
-    });
+      });
 
-    socket.on("error", () => {
+      socket.on("error", () => {
+        clearTimeout(timer);
+        finish("unreachable");
+      });
+
+      socket.on("timeout", () => {
+        clearTimeout(timer);
+        finish("unreachable");
+      });
+
+      socket.on("close", () => {
+        clearTimeout(timer);
+        if (!resolved) finish("unreachable");
+      });
+    } catch {
       clearTimeout(timer);
       finish("unreachable");
-    });
-
-    socket.on("timeout", () => {
-      clearTimeout(timer);
-      finish("unreachable");
-    });
-
-    socket.on("close", () => {
-      clearTimeout(timer);
-      if (!resolved) finish("unreachable");
-    });
+    }
   });
 }
 
@@ -477,13 +542,18 @@ export async function verifyEmailAddress(
     };
   }
 
-  // SMTP Check
+  // SMTP Check (fast path for free providers & short timeout)
   let smtpCheck: "passed" | "failed" | "unreachable" | "skipped" = "skipped";
   if (!options?.skipSmtp && mxRecords.length > 0) {
-    try {
-      smtpCheck = await checkSmtpMailbox(normalizedEmail, mxRecords[0].host, 2800);
-    } catch {
-      smtpCheck = "unreachable";
+    if (isFreeProvider) {
+      // Free providers (Gmail, Outlook, Yahoo) are already validated by MX + syntax
+      smtpCheck = "skipped";
+    } else {
+      try {
+        smtpCheck = await checkSmtpMailbox(normalizedEmail, mxRecords[0].host, 1000);
+      } catch {
+        smtpCheck = "unreachable";
+      }
     }
   }
 
@@ -559,7 +629,7 @@ export async function verifyEmailBatch(
   results: EmailVerificationResult[];
 }> {
   const cleanList = [...new Set(emails.map((e) => e.trim()).filter(Boolean))].slice(0, 2500);
-  const concurrency = options?.concurrency ?? 8;
+  const concurrency = options?.concurrency ?? 30;
   const results: EmailVerificationResult[] = [];
 
   for (let i = 0; i < cleanList.length; i += concurrency) {

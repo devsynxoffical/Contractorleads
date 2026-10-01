@@ -59,7 +59,11 @@ import {
   type SearchSessionLead,
 } from "@/lib/client/search-session";
 
-type Lead = SearchSessionLead & { phone: string | null; industry: string | null };
+type Lead = SearchSessionLead & {
+  phone: string | null;
+  industry: string | null;
+  verificationStatus?: "verified" | "invalid" | string | null;
+};
 
 function hasLinkedInAndSocial(lead: Lead): boolean {
   const linkedin = Boolean(
@@ -203,13 +207,14 @@ export function LeadSearchForm() {
       }
 
       const invalidSet = new Set<string>(data.invalidLeadIds || []);
-      const nextLeads = leads.filter((l) => !invalidSet.has(l.id));
-      setLeads(nextLeads);
-      setSelected((prev) => {
-        const next = new Set(prev);
-        invalidSet.forEach((id) => next.delete(id));
-        return next;
+      // Preserve all leads so phone numbers remain accessible for calls & SMS!
+      const nextLeads = leads.map((l) => {
+        if (invalidSet.has(l.id)) {
+          return { ...l, verificationStatus: "invalid" as const };
+        }
+        return { ...l, verificationStatus: "verified" as const };
       });
+      setLeads(nextLeads);
 
       saveFinderSearchCache({
         leads: nextLeads,
@@ -224,11 +229,11 @@ export function LeadSearchForm() {
       });
 
       const invalidCount = data.invalidCount ?? invalidSet.size;
-      const validCount = data.validCount ?? nextLeads.length;
+      const validCount = data.validCount ?? (nextLeads.length - invalidCount);
 
       setVerifyResultMsg({
         type: "success",
-        text: `Triple-check complete: ${validCount} working deliverable leads verified! Removed ${invalidCount} invalid / dead email leads from the list.`,
+        text: `Triple-check complete: ${validCount} deliverable emails verified! ${invalidCount} non-working emails flagged (phone numbers preserved for calling/SMS).`,
       });
     } catch {
       setVerifyResultMsg({
@@ -1266,7 +1271,7 @@ export function LeadSearchForm() {
         const uniqueEmailCount = uniqueEmailSet.size;
         const duplicateCount = validEmailLeads.length - uniqueEmailCount;
 
-        async function submitSegment(andLaunchCampaign: boolean = false) {
+        async function submitSegment(andLaunchCampaign: boolean = false, verifiedOnly: boolean = false) {
           if (!segmentName.trim()) {
             setSegmentError("Please enter a name for the segment.");
             return;
@@ -1274,17 +1279,25 @@ export function LeadSearchForm() {
           setSavingSegment(true);
           setSegmentError(null);
           try {
-            const leadIds = leads.map((l) => l.id);
+            const leadsToSave = verifiedOnly
+              ? leads.filter((l) => l.verificationStatus !== "invalid" && Boolean(l.email && l.email.includes("@")))
+              : leads;
+            const leadIds = leadsToSave.map((l) => l.id);
+            const count = leadsToSave.length;
+            const finalName = verifiedOnly
+              ? `${segmentName.replace(/_verified$/i, "").trim()}_verified`
+              : segmentName.trim();
+
             const res = await fetch("/api/segments", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                name: segmentName.trim(),
+                name: finalName,
                 industry: segmentIndustry.trim() || null,
                 country: segmentCountry || "US",
                 state: segmentState.trim() || null,
                 city: segmentCity.trim() || null,
-                leadCount: totalScraped,
+                leadCount: count,
                 leadIds,
                 when: segmentWhen || "today",
                 tier: null,
@@ -1302,7 +1315,11 @@ export function LeadSearchForm() {
               setSavedSegmentId(data.segment.id);
             }
             setShowSaveSegmentModal(false);
-            setSegmentSuccessMsg(`Segment "${segmentName.trim()}" saved with ${totalScraped} leads!`);
+            setSegmentSuccessMsg(
+              verifiedOnly
+                ? `Verified segment "${finalName}" saved with ${count} leads! (Full list with phone numbers is preserved)`
+                : `Segment "${finalName}" saved with ${count} leads!`,
+            );
             setTimeout(() => setSegmentSuccessMsg(null), 8000);
 
             if (andLaunchCampaign && data.segment?.id) {
@@ -1367,7 +1384,7 @@ export function LeadSearchForm() {
                   </div>
                   <div className="mt-2.5 flex items-center justify-between border-t border-emerald-500/20 pt-2">
                     <span className="text-[11px] text-ink-muted">
-                      Triple-check mailboxes &amp; drop dead emails before saving:
+                      Triple-check mailboxes &amp; flag dead emails:
                     </span>
                     <button
                       type="button"
@@ -1380,7 +1397,7 @@ export function LeadSearchForm() {
                       ) : (
                         <HiOutlineShieldCheck className="h-3 w-3" />
                       )}
-                      {verifyingEmails ? "Verifying..." : "Triple-Check & Clean"}
+                      {verifyingEmails ? "Verifying..." : "Triple-Check Now"}
                     </button>
                   </div>
                 </div>
@@ -1487,19 +1504,31 @@ export function LeadSearchForm() {
                   Cancel
                 </button>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => void submitSegment(false)}
+                    onClick={() => void submitSegment(false, false)}
                     disabled={savingSegment || !segmentName.trim()}
-                    className="rounded-xl border border-border bg-[var(--input-bg)] px-3.5 py-2 text-[12px] font-semibold text-ink transition hover:bg-[var(--surface)] disabled:opacity-50"
+                    className="rounded-xl border border-border bg-[var(--input-bg)] px-3 py-2 text-[12px] font-semibold text-ink transition hover:bg-[var(--surface)] disabled:opacity-50"
+                    title="Save all leads with phone numbers preserved for calls & SMS"
                   >
-                    {savingSegment ? "Saving…" : "Save Segment"}
+                    {savingSegment ? "Saving…" : `Save Full List (${totalScraped})`}
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => void submitSegment(true)}
+                    onClick={() => void submitSegment(false, true)}
+                    disabled={savingSegment || !segmentName.trim()}
+                    className="inline-flex items-center gap-1 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-[12px] font-semibold text-emerald-800 transition hover:bg-emerald-100 dark:border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-300 disabled:opacity-50"
+                    title="Save verified deliverable leads as a _verified segment"
+                  >
+                    <HiOutlineShieldCheck className="h-3.5 w-3.5" />
+                    {savingSegment ? "Saving…" : "Save Verified (_verified)"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => void submitSegment(true, true)}
                     disabled={savingSegment || !segmentName.trim()}
                     className="rounded-xl bg-brand-600 px-4 py-2 text-[12px] font-bold text-white shadow-sm transition hover:bg-brand-700 disabled:opacity-50"
                   >

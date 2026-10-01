@@ -413,20 +413,20 @@ export function SegmentsDashboard() {
       const cleanCount = data.remainingCount ?? data.validCount ?? 0;
       const removedCount = data.removedCount ?? data.invalidCount ?? 0;
 
-      // Update segment count in list
-      setSegments((prev) =>
-        prev.map((s) => (s.id === segmentId ? { ...s, leadCount: cleanCount } : s)),
-      );
-
-      // If viewing this segment, update view state and reload its lead list
-      if (viewSegment && viewSegment.id === segmentId) {
-        setViewSegment((prev) => (prev ? { ...prev, leadCount: cleanCount } : null));
-        await handleViewLeads({ ...viewSegment, leadCount: cleanCount });
+      // Add or update the new verified segment in the list, KEEPING the original segment intact!
+      if (data.newSegment) {
+        setSegments((prev) => {
+          const exists = prev.some((s) => s.id === data.newSegment.id);
+          if (exists) {
+            return prev.map((s) => (s.id === data.newSegment.id ? { ...s, ...data.newSegment } : s));
+          }
+          return [data.newSegment, ...prev];
+        });
       }
 
       setVerifyMsg({
         type: "success",
-        text: `Triple-check complete: ${data.totalChecked} leads examined. Removed ${removedCount} dead / invalid emails! (${cleanCount} verified leads ready for outreach)`,
+        text: `Created new verified segment "${data.newSegmentName || data.segmentName}" (${cleanCount} clean leads)! Original segment "${data.originalSegmentName || ""}" is preserved with all phone numbers.`,
       });
     } catch {
       setVerifyMsg({ type: "error", text: "Network error during segment email verification." });

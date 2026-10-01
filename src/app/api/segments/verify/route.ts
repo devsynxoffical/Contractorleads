@@ -112,28 +112,81 @@ export async function POST(request: Request) {
       }).catch(() => {});
     }
 
-    // Update the segment with only verified working leads
-    const updatedSegment = await prisma.leadSegment.update({
-      where: { id: segment.id },
-      data: {
-        leadCount: validLeadIds.length,
-        leadIdsJson: JSON.stringify(validLeadIds),
-      },
-      select: {
-        id: true,
-        name: true,
-        leadCount: true,
-        industry: true,
-        country: true,
-        state: true,
-        city: true,
-      },
+    // DO NOT touch or delete the original segment so the user retains all leads & phone numbers!
+    // Instead, create a brand new segment with "_verified" appended to its name.
+    const baseName = segment.name.replace(/_verified$/i, "");
+    const verifiedName = `${baseName}_verified`;
+
+    const existingVerified = await prisma.leadSegment.findFirst({
+      where: { userId: user.id, name: verifiedName },
     });
+
+    let verifiedSegment;
+    if (existingVerified) {
+      verifiedSegment = await prisma.leadSegment.update({
+        where: { id: existingVerified.id },
+        data: {
+          leadCount: validLeadIds.length,
+          leadIdsJson: JSON.stringify(validLeadIds),
+          industry: segment.industry,
+          country: segment.country,
+          state: segment.state,
+          city: segment.city,
+          tier: segment.tier,
+          strength: segment.strength,
+          when: segment.when,
+          sort: segment.sort,
+          q: segment.q,
+        },
+        select: {
+          id: true,
+          name: true,
+          leadCount: true,
+          industry: true,
+          country: true,
+          state: true,
+          city: true,
+          createdAt: true,
+        },
+      });
+    } else {
+      verifiedSegment = await prisma.leadSegment.create({
+        data: {
+          userId: user.id,
+          name: verifiedName,
+          leadCount: validLeadIds.length,
+          leadIdsJson: JSON.stringify(validLeadIds),
+          industry: segment.industry,
+          country: segment.country,
+          state: segment.state,
+          city: segment.city,
+          tier: segment.tier,
+          strength: segment.strength,
+          when: segment.when,
+          sort: segment.sort,
+          q: segment.q,
+        },
+        select: {
+          id: true,
+          name: true,
+          leadCount: true,
+          industry: true,
+          country: true,
+          state: true,
+          city: true,
+          createdAt: true,
+        },
+      });
+    }
 
     return NextResponse.json({
       ok: true,
-      segmentId: segment.id,
-      segmentName: segment.name,
+      segmentId: verifiedSegment.id,
+      segmentName: verifiedSegment.name,
+      newSegmentId: verifiedSegment.id,
+      newSegmentName: verifiedSegment.name,
+      originalSegmentId: segment.id,
+      originalSegmentName: segment.name,
       totalChecked: leadsToVerify.length,
       validCount: validLeadIds.length,
       invalidCount: removedLeadIds.length,
@@ -141,7 +194,9 @@ export async function POST(request: Request) {
       remainingCount: validLeadIds.length,
       invalidEmails: invalidEmails.slice(0, 50),
       summary,
-      segment: updatedSegment,
+      segment: verifiedSegment,
+      newSegment: verifiedSegment,
+      originalSegment: segment,
     });
   }
 
@@ -157,7 +212,7 @@ export async function POST(request: Request) {
 
     const summary = await verifyEmailBatch(emailList, {
       skipSmtp,
-      concurrency: 8,
+      concurrency: 30,
     });
 
     const resultMap = new Map<string, EmailVerificationResult>();
