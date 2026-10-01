@@ -166,6 +166,7 @@ function buildPlacesQueries(params: {
   zip?: string;
   customLocation?: string;
   radius?: number;
+  wanted?: number;
 }): string[] {
   const country = getTierOneCountry(params.country);
   const loc =
@@ -176,6 +177,7 @@ function buildPlacesQueries(params: {
   if (!phrases.length) return [];
 
   const queries = new Set<string>();
+  const isHighVolume = (params.wanted ?? 10) >= 200;
 
   for (const phrase of phrases) {
     if (loc) {
@@ -187,14 +189,50 @@ function buildPlacesQueries(params: {
     }
   }
 
-  // Local: state-wide + postal-code variants for volume/diversity.
-  const topPhrases = phrases.slice(0, 2);
-  if (params.locationScope === "local" && params.state && params.city) {
-    for (const phrase of topPhrases) {
-      queries.add(`${phrase} in ${params.state}, ${country.name}`);
-      queries.add(`${phrase} near ${params.state}`);
+  // Local: state-wide, city sub-areas, and postal-code variants for volume/diversity.
+  const topPhrases = phrases.slice(0, 3);
+  if (params.locationScope === "local") {
+    // If state is provided, fan out across major cities in that state to hit volume targets
+    const stateKey = params.state?.trim().toUpperCase();
+    if (stateKey && US_STATE_CITIES[stateKey]) {
+      const stateCities = US_STATE_CITIES[stateKey];
+      for (const stCity of stateCities) {
+        for (const phrase of topPhrases) {
+          queries.add(`${phrase} in ${stCity} ${stateKey}`);
+          queries.add(`${phrase} ${stCity} ${stateKey}`);
+        }
+      }
+    }
+
+    if (params.state) {
+      for (const phrase of phrases) {
+        queries.add(`${phrase} in ${params.state}, ${country.name}`);
+        queries.add(`${phrase} near ${params.state}`);
+        queries.add(`${phrase} contractors in ${params.state}`);
+        queries.add(`${phrase} companies in ${params.state}`);
+      }
+    }
+
+    // Directional and trade keyword variants for city / local search
+    const baseCity = params.city?.trim();
+    if (baseCity) {
+      const subAreas = ["North", "South", "East", "West", "Central", "Greater", "Downtown"];
+      for (const area of subAreas) {
+        queries.add(`${topPhrases[0]} in ${area} ${baseCity}`);
+      }
+      queries.add(`commercial ${params.industry} in ${baseCity}`);
+      queries.add(`residential ${params.industry} in ${baseCity}`);
+      queries.add(`emergency ${params.industry} in ${baseCity}`);
+      queries.add(`${params.industry} contractor in ${baseCity}`);
+      queries.add(`${params.industry} contractors in ${baseCity}`);
+      queries.add(`${params.industry} repair in ${baseCity}`);
+      queries.add(`${params.industry} installation in ${baseCity}`);
+      queries.add(`${params.industry} services in ${baseCity}`);
+      queries.add(`${params.industry} company in ${baseCity}`);
+      queries.add(`best ${params.industry} companies in ${baseCity}`);
     }
   }
+
   if (params.zip) {
     for (const phrase of topPhrases) {
       queries.add(`${phrase} ${params.zip}`);
@@ -209,11 +247,69 @@ function buildPlacesQueries(params: {
     for (const metro of metros) {
       queries.add(`${topPhrases[0]} in ${metro}`);
       queries.add(`${topPhrases[0]} near ${metro}`);
+      if (isHighVolume && topPhrases[1]) {
+        queries.add(`${topPhrases[1]} in ${metro}`);
+        queries.add(`${topPhrases[0]} contractors in ${metro}`);
+      }
     }
   }
 
   return [...queries];
 }
+
+/** Top cities per US state to enable reaching high lead volumes (up to 1000) on local/state searches */
+const US_STATE_CITIES: Record<string, string[]> = {
+  AL: ["Birmingham", "Huntsville", "Montgomery", "Mobile", "Tuscaloosa", "Hoover", "Auburn", "Dothan"],
+  AK: ["Anchorage", "Fairbanks", "Juneau", "Wasilla"],
+  AZ: ["Phoenix", "Tucson", "Mesa", "Chandler", "Scottsdale", "Glendale", "Gilbert", "Tempe", "Peoria", "Surprise"],
+  AR: ["Little Rock", "Fort Smith", "Fayetteville", "Springdale", "Jonesboro", "Rogers", "Conway", "Bentonville"],
+  CA: ["Los Angeles", "San Diego", "San Jose", "San Francisco", "Fresno", "Sacramento", "Long Beach", "Oakland", "Bakersfield", "Anaheim", "Santa Ana", "Riverside", "Irvine", "Stockton", "Chula Vista", "Fremont"],
+  CO: ["Denver", "Colorado Springs", "Aurora", "Fort Collins", "Lakewood", "Thornton", "Arvada", "Westminster", "Pueblo", "Greeley", "Boulder"],
+  CT: ["Bridgeport", "Stamford", "New Haven", "Hartford", "Waterbury", "Norwalk", "Danbury", "New Britain", "Greenwich"],
+  DE: ["Wilmington", "Dover", "Newark", "Middletown"],
+  FL: ["Miami", "Orlando", "Tampa", "Jacksonville", "St. Petersburg", "Hialeah", "Tallahassee", "Fort Lauderdale", "Cape Coral", "Pembroke Pines", "Hollywood", "Gainesville", "Miramar", "Coral Springs", "Clearwater"],
+  GA: ["Atlanta", "Augusta", "Columbus", "Macon", "Savannah", "Athens", "Sandy Springs", "Roswell", "Johns Creek", "Alpharetta", "Marietta"],
+  HI: ["Honolulu", "Pearl City", "Hilo", "Kailua"],
+  ID: ["Boise", "Meridian", "Nampa", "Idaho Falls", "Caldwell", "Pocatello", "Coeur d'Alene"],
+  IL: ["Chicago", "Aurora", "Naperville", "Joliet", "Rockford", "Springfield", "Elgin", "Peoria", "Champaign", "Waukegan", "Cicero"],
+  IN: ["Indianapolis", "Fort Wayne", "Evansville", "South Bend", "Carmel", "Fishers", "Bloomington", "Hammond", "Gary", "Lafayette"],
+  IA: ["Des Moines", "Cedar Rapids", "Davenport", "Sioux City", "Iowa City", "Waterloo", "Ames", "West Des Moines"],
+  KS: ["Wichita", "Overland Park", "Kansas City", "Olathe", "Topeka", "Lawrence", "Shawnee", "Manhattan"],
+  KY: ["Louisville", "Lexington", "Bowling Green", "Owensboro", "Covington", "Richmond", "Georgetown", "Florence"],
+  LA: ["New Orleans", "Baton Rouge", "Shreveport", "Lafayette", "Lake Charles", "Kenner", "Bossier City", "Monroe"],
+  ME: ["Portland", "Lewiston", "Bangor", "South Portland", "Auburn"],
+  MD: ["Baltimore", "Columbia", "Germantown", "Silver Spring", "Waldorf", "Frederick", "Ellicott City", "Glen Burnie", "Gaithersburg", "Rockville"],
+  MA: ["Boston", "Worcester", "Springfield", "Cambridge", "Lowell", "Brockton", "Quincy", "Lynn", "New Bedford", "Newton"],
+  MI: ["Detroit", "Grand Rapids", "Warren", "Sterling Heights", "Ann Arbor", "Lansing", "Dearborn", "Livonia", "Troy", "Westland"],
+  MN: ["Minneapolis", "St. Paul", "Rochester", "Bloomington", "Duluth", "Brooklyn Park", "Plymouth", "Woodbury", "Lakeville", "St. Cloud"],
+  MS: ["Jackson", "Gulfport", "Southaven", "Hattiesburg", "Biloxi", "Meridian", "Tupelo"],
+  MO: ["Kansas City", "St. Louis", "Springfield", "Columbia", "Independence", "Lee's Summit", "O'Fallon", "St. Joseph", "St. Charles"],
+  MT: ["Billings", "Missoula", "Great Falls", "Bozeman", "Helena"],
+  NE: ["Omaha", "Lincoln", "Bellevue", "Grand Island", "Kearney"],
+  NV: ["Las Vegas", "Henderson", "Reno", "North Las Vegas", "Sparks", "Carson City"],
+  NH: ["Manchester", "Nashua", "Concord", "Dover", "Rochester"],
+  NJ: ["Newark", "Jersey City", "Paterson", "Elizabeth", "Edison", "Woodbridge", "Lakewood", "Toms River", "Hamilton", "Trenton", "Clifton", "Camden"],
+  NM: ["Albuquerque", "Las Cruces", "Rio Rancho", "Santa Fe", "Roswell", "Farmington"],
+  NY: ["New York", "Buffalo", "Rochester", "Yonkers", "Syracuse", "Albany", "New Rochelle", "Mount Vernon", "Schenectady", "Utica", "White Plains"],
+  NC: ["Charlotte", "Raleigh", "Greensboro", "Durham", "Winston-Salem", "Fayetteville", "Cary", "Wilmington", "High Point", "Concord", "Asheville"],
+  ND: ["Fargo", "Bismarck", "Grand Forks", "Minot"],
+  OH: ["Columbus", "Cleveland", "Cincinnati", "Toledo", "Akron", "Dayton", "Parma", "Canton", "Youngstown", "Lorain", "Hamilton"],
+  OK: ["Oklahoma City", "Tulsa", "Norman", "Broken Arrow", "Edmond", "Lawton", "Moore", "Midwest City", "Stillwater"],
+  OR: ["Portland", "Salem", "Eugene", "Gresham", "Hillsboro", "Beaverton", "Bend", "Medford", "Springfield", "Corvallis"],
+  PA: ["Philadelphia", "Pittsburgh", "Allentown", "Reading", "Erie", "Scranton", "Bethlehem", "Lancaster", "Harrisburg", "York"],
+  RI: ["Providence", "Cranston", "Warwick", "Pawtucket", "East Providence"],
+  SC: ["Charleston", "Columbia", "North Charleston", "Mount Pleasant", "Rock Hill", "Greenville", "Summerville", "Goose Creek", "Spartanburg"],
+  SD: ["Sioux Falls", "Rapid City", "Aberdeen", "Brookings"],
+  TN: ["Nashville", "Memphis", "Knoxville", "Chattanooga", "Clarksville", "Murfreesboro", "Franklin", "Johnson City", "Jackson"],
+  TX: ["Houston", "Dallas", "Austin", "San Antonio", "Fort Worth", "El Paso", "Arlington", "Plano", "Lubbock", "Corpus Christi", "Irving", "Garland", "Frisco", "McKinney", "Amarillo", "Grand Prairie"],
+  UT: ["Salt Lake City", "West Valley City", "Provo", "West Jordan", "Orem", "Sandy", "St. George", "Ogden", "Layton"],
+  VT: ["Burlington", "South Burlington", "Rutland", "Barre"],
+  VA: ["Virginia Beach", "Norfolk", "Chesapeake", "Richmond", "Newport News", "Alexandria", "Hampton", "Roanoke", "Portsmouth", "Suffolk"],
+  WA: ["Seattle", "Spokane", "Tacoma", "Vancouver", "Bellevue", "Kent", "Everett", "Renton", "Spokane Valley", "Federal Way", "Yakima", "Bellingham"],
+  WV: ["Charleston", "Huntington", "Morgantown", "Parkersburg", "Wheeling"],
+  WI: ["Milwaukee", "Madison", "Green Bay", "Kenosha", "Racine", "Appleton", "Waukesha", "Eau Claire", "Oshkosh", "Janesville"],
+  WY: ["Cheyenne", "Casper", "Gillette", "Laramie"],
+};
 
 const US_METROS = [
   "New York NY",
@@ -227,15 +323,65 @@ const US_METROS = [
   "Dallas TX",
   "Austin TX",
   "Jacksonville FL",
-  "Miami FL",
-  "Atlanta GA",
-  "Denver CO",
-  "Seattle WA",
-  "Boston MA",
-  "Nashville TN",
+  "Fort Worth TX",
+  "San Jose CA",
+  "Columbus OH",
   "Charlotte NC",
+  "Indianapolis IN",
+  "San Francisco CA",
+  "Seattle WA",
+  "Denver CO",
+  "Washington DC",
+  "Boston MA",
+  "El Paso TX",
+  "Nashville TN",
   "Detroit MI",
+  "Oklahoma City OK",
+  "Portland OR",
   "Las Vegas NV",
+  "Memphis TN",
+  "Louisville KY",
+  "Baltimore MD",
+  "Milwaukee WI",
+  "Albuquerque NM",
+  "Tucson AZ",
+  "Fresno CA",
+  "Sacramento CA",
+  "Mesa AZ",
+  "Kansas City MO",
+  "Atlanta GA",
+  "Omaha NE",
+  "Colorado Springs CO",
+  "Raleigh NC",
+  "Long Beach CA",
+  "Virginia Beach VA",
+  "Miami FL",
+  "Oakland CA",
+  "Minneapolis MN",
+  "Tulsa OK",
+  "Bakersfield CA",
+  "Tampa FL",
+  "Wichita KS",
+  "Arlington TX",
+  "Aurora CO",
+  "New Orleans LA",
+  "Cleveland OH",
+  "Anaheim CA",
+  "Honolulu HI",
+  "Henderson NV",
+  "Stockton CA",
+  "Riverside CA",
+  "Corpus Christi TX",
+  "Lexington KY",
+  "Santa Ana CA",
+  "Orlando FL",
+  "Irvine CA",
+  "Cincinnati OH",
+  "Pittsburgh PA",
+  "St. Louis MO",
+  "Greensboro NC",
+  "Plano TX",
+  "Newark NJ",
 ];
 
 const GB_METROS = [
@@ -667,7 +813,7 @@ async function searchOfficialPlaces(opts: {
   const pagesPerQuery = wanted <= 20 ? 1 : wanted <= 60 ? 2 : wanted <= 200 ? 4 : 5;
 
   const failures: string[] = [];
-  const officialConcurrency = wanted >= 200 ? 6 : 4;
+  const officialConcurrency = wanted >= 500 ? 8 : wanted >= 200 ? 6 : 4;
   const batches = await mapPool(queries, officialConcurrency, async (q) =>
     searchOfficialQuery({
       query: q,
@@ -722,41 +868,41 @@ export async function searchGooglePlaces(params: {
   /** Optional cancellation signal from caller (e.g. when enough leads are already enriched) */
   shouldStop?: () => boolean;
 }): Promise<PlaceResult[]> {
-  // Allow up to 1000 places so high volume requests (e.g. 400-500) succeed
-  const wanted = Math.max(1, Math.min(params.limit ?? 10, 1000));
-  const workers = wanted >= 200 ? 6 : wanted >= 100 ? 5 : wanted >= 40 ? 3 : 2;
+  // Allow up to 2500 places so high volume requests (e.g. 1000 leads) succeed
+  const wanted = Math.max(1, Math.min(params.limit ?? 10, 2500));
+  const workers = wanted >= 500 ? 8 : wanted >= 200 ? 6 : wanted >= 100 ? 5 : wanted >= 40 ? 3 : 2;
 
-  const pool = buildPlacesQueries(params);
+  const pool = buildPlacesQueries({ ...params, wanted });
   const isCountryWide = params.locationScope === "country";
   const hasCustomStopper = typeof params.shouldStop === "function";
 
   const queryBudget = hasCustomStopper
     ? isCountryWide
-      ? 24
-      : 12
+      ? wanted >= 800 ? 120 : wanted >= 400 ? 80 : wanted >= 200 ? 50 : 25
+      : wanted >= 800 ? 100 : wanted >= 400 ? 60 : wanted >= 200 ? 40 : 20
     : isCountryWide
       ? wanted <= 25
-        ? 1
+        ? 2
         : wanted <= 60
-          ? 2
+          ? 4
           : wanted <= 120
-            ? 4
+            ? 8
             : wanted <= 250
-              ? 6
+              ? 16
               : wanted <= 500
-                ? 10
-                : 14
+                ? 30
+                : 60
       : wanted <= 25
-        ? 1
+        ? 2
         : wanted <= 60
-          ? 2
+          ? 4
           : wanted <= 120
-            ? 3
+            ? 6
             : wanted <= 250
-              ? 5
+              ? 12
               : wanted <= 500
-                ? 8
-                : 12;
+                ? 25
+                : 50;
   const selectedQueries = selectQueries(pool, queryBudget);
   if (!selectedQueries.length) {
     logGooglePlacesError("scraper", `No search queries built for "${params.industry}"`);
@@ -807,16 +953,16 @@ export async function searchGooglePlaces(params: {
   const need = wanted - deduped.size;
   if ((need > 0 || hasCustomStopper) && !params.shouldStop?.()) {
     const perQueryLimit = Math.min(
-      100,
-      Math.max(40, Math.ceil(need / Math.min(selectedQueries.length, 4)) + 15),
+      150,
+      Math.max(50, Math.ceil(need / Math.max(1, Math.min(selectedQueries.length, 8))) + 25),
     );
 
     const failures: string[] = [];
-    const maxHardPlacesLimit = 1500;
+    const maxHardPlacesLimit = 3500;
 
     // Run scraper queries concurrently to discover places fast,
     // and emit results incrementally as each query returns.
-    await mapPool(selectedQueries, 4, async (q) => {
+    await mapPool(selectedQueries, wanted >= 500 ? 6 : 4, async (q) => {
       if (params.shouldStop?.()) return;
       if (!hasCustomStopper && deduped.size >= wanted) return;
       if (deduped.size >= maxHardPlacesLimit) return;

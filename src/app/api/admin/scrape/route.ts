@@ -5,6 +5,8 @@ import { logActivity } from "@/lib/credits";
 import { runLeadPipeline } from "@/lib/services/lead-pipeline";
 import { resolveSearchCriteria } from "@/lib/search-criteria";
 
+export const maxDuration = 300;
+
 // Mirrors what the agency-side Lead Finder cards render so admin scrape
 // results can use the exact same result cards.
 const leadSelect = {

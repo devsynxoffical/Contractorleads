@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const segmentId = url.searchParams.get("segmentId") || url.searchParams.get("id");
   const limitParam = Number(url.searchParams.get("limit") || "200");
-  const take = Math.min(500, Math.max(1, Number.isFinite(limitParam) ? limitParam : 200));
+  const take = Math.min(2500, Math.max(1, Number.isFinite(limitParam) ? limitParam : 200));
 
   let industry = url.searchParams.get("industry") || url.searchParams.get("category");
   let when = url.searchParams.get("when") || "all";
@@ -43,27 +43,35 @@ export async function GET(request: Request) {
       try {
         const leadIds = JSON.parse(segment.leadIdsJson) as string[];
         if (Array.isArray(leadIds) && leadIds.length > 0) {
-          const directLeads = await prisma.lead.findMany({
-            where: { id: { in: leadIds } },
-            select: {
-              id: true,
-              businessName: true,
-              ownerName: true,
-              email: true,
-              phone: true,
-              city: true,
-              state: true,
-              industry: true,
-              qualityTier: true,
-              leadScore: true,
-              createdAt: true,
-            },
-            take,
-          });
+          const [totalCount, directLeads] = await Promise.all([
+            prisma.lead.count({
+              where: { id: { in: leadIds } },
+            }),
+            prisma.lead.findMany({
+              where: { id: { in: leadIds } },
+              select: {
+                id: true,
+                businessName: true,
+                ownerName: true,
+                email: true,
+                phone: true,
+                city: true,
+                state: true,
+                industry: true,
+                qualityTier: true,
+                leadScore: true,
+                createdAt: true,
+              },
+              take,
+            }),
+          ]);
+
+          const total = Math.max(totalCount, leadIds.length, segment.leadCount ?? 0);
+
           return NextResponse.json({
             segmentId,
             segmentName,
-            total: directLeads.length,
+            total,
             leads: directLeads.map((l) => ({
               id: l.id,
               businessName: l.businessName,
@@ -144,31 +152,16 @@ export async function GET(request: Request) {
         ? [{ search: { createdAt: "asc" } }, { createdAt: "asc" }]
         : [{ search: { createdAt: "desc" } }, { leadScore: "desc" }];
 
-  let leads = await prisma.lead.findMany({
-    where: {
-      AND: [userCondition, baseWhere],
-    },
-    select: {
-      id: true,
-      businessName: true,
-      ownerName: true,
-      email: true,
-      phone: true,
-      city: true,
-      state: true,
-      industry: true,
-      qualityTier: true,
-      leadScore: true,
-      createdAt: true,
-    },
-    orderBy,
-    take,
-  });
-
-  // If no leads under user search, fetch from pool
-  if (leads.length === 0) {
-    leads = await prisma.lead.findMany({
-      where: baseWhere,
+  const [userTotal, userLeads] = await Promise.all([
+    prisma.lead.count({
+      where: {
+        AND: [userCondition, baseWhere],
+      },
+    }),
+    prisma.lead.findMany({
+      where: {
+        AND: [userCondition, baseWhere],
+      },
       select: {
         id: true,
         businessName: true,
@@ -182,12 +175,42 @@ export async function GET(request: Request) {
         leadScore: true,
         createdAt: true,
       },
-      orderBy: [{ leadScore: "desc" }, { createdAt: "desc" }],
+      orderBy,
       take,
-    });
-  }
+    }),
+  ]);
 
-  const total = leads.length;
+  let leads = userLeads;
+  let total = userTotal;
+
+  // If no leads under user search, fetch from pool
+  if (leads.length === 0) {
+    const [poolTotal, poolLeads] = await Promise.all([
+      prisma.lead.count({
+        where: baseWhere,
+      }),
+      prisma.lead.findMany({
+        where: baseWhere,
+        select: {
+          id: true,
+          businessName: true,
+          ownerName: true,
+          email: true,
+          phone: true,
+          city: true,
+          state: true,
+          industry: true,
+          qualityTier: true,
+          leadScore: true,
+          createdAt: true,
+        },
+        orderBy: [{ leadScore: "desc" }, { createdAt: "desc" }],
+        take,
+      }),
+    ]);
+    leads = poolLeads;
+    total = poolTotal;
+  }
 
   return NextResponse.json({
     segmentId: segmentId || null,

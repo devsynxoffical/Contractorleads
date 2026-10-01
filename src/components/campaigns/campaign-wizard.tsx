@@ -175,7 +175,7 @@ export function CampaignWizard({
                 try {
                   const lRes = await fetch(`/api/segments/leads?segmentId=${found.id}&limit=1`);
                   const lData = await lRes.json();
-                  if (lRes.ok && typeof lData.total === "number") {
+                  if (lRes.ok && typeof lData.total === "number" && lData.total > 0) {
                     setLeadPreviewCount(lData.total);
                     setSegments((prev) =>
                       prev.map((s) => (s.id === found.id ? { ...s, leadCount: lData.total } : s)),
@@ -223,7 +223,7 @@ export function CampaignWizard({
       try {
         const lRes = await fetch(`/api/segments/leads?segmentId=${seg.id}&limit=1`);
         const lData = await lRes.json();
-        if (lRes.ok && typeof lData.total === "number") {
+        if (lRes.ok && typeof lData.total === "number" && lData.total > 0) {
           setLeadPreviewCount(lData.total);
           setSegments((prev) =>
             prev.map((s) => (s.id === seg.id ? { ...s, leadCount: lData.total } : s)),
@@ -535,7 +535,7 @@ export function CampaignWizard({
                     Duplicate Protection Active
                   </span>
                   <span className="rounded-full bg-brand-600 px-3 py-1 text-xs font-bold text-white">
-                    {leadPreviewCount} Total Leads
+                    {leadPreviewCount || segments.find((s) => s.id === selectedSegmentId)?.leadCount || 0} Total Leads
                   </span>
                 </div>
               </div>

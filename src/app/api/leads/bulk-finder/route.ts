@@ -5,6 +5,8 @@ import { logActivity } from "@/lib/credits";
 import { runLeadPipeline } from "@/lib/services/lead-pipeline";
 import { resolveSearchCriteria } from "@/lib/search-criteria";
 
+export const maxDuration = 300;
+
 const contactSelect = {
   id: true,
   businessName: true,

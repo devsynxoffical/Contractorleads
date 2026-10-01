@@ -8,9 +8,9 @@ HEADLESS = True
 BROWSER_TIMEOUT = 60_000
 
 # ─── Scraping Volume ─────────────────────────────────────────────────
-MAX_SCROLLS = 100                    # scroll until end-of-list or this cap
+MAX_SCROLLS = 150                    # scroll until end-of-list or this cap
 SCROLL_PAUSE = 1.5                   # seconds between scrolls
-MAX_LEADS_PER_SEARCH = 1000          # hard cap per query
+MAX_LEADS_PER_SEARCH = 2500          # hard cap per query
 MAX_SCROLL_ROUNDS = 8                # collect+extract rounds to reach the requested count
 DETAIL_RETRIES = 1                   # extra attempts per listing detail page
 DETAIL_DELAY_MIN = 0.25              # min seconds between detail extractions

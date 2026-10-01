@@ -236,7 +236,7 @@ export async function POST(req: Request) {
 
           const matching = await prisma.lead.findMany({
             where: whereClause,
-            take: 200,
+            take: 2500,
             orderBy: { createdAt: "desc" },
           });
           rawLeads = matching;

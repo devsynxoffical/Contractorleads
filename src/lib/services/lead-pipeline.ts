@@ -200,24 +200,26 @@ export async function runLeadPipeline(params: SearchParams) {
 
   // In requireEmail mode (Bulk Email Finder), fetch ample places so we guarantee finding 100% of requested verified emails
   const fetchLimit = requireEmail
-    ? Math.min(1500, Math.max(targetCount * 10, 300))
+    ? Math.min(3000, Math.max(targetCount * 10, 300))
     : isCountryWide
-      ? Math.min(1000, Math.max(targetCount * 2, targetCount + 60))
-      : Math.min(1000, Math.max(targetCount * 2, targetCount + 30));
+      ? Math.min(2500, Math.max(targetCount * 2, targetCount + 100))
+      : Math.min(2500, Math.max(targetCount * 2, targetCount + 60));
 
   const preferRules = true; // keep volume searches fast
   // Higher concurrency — fast contacts mode is lightweight, full mode is I/O bound
   const placeConcurrency = fastContacts
     ? targetCount >= 200
-      ? 48
+      ? 54
       : 36
-    : targetCount >= 250
-      ? 28
-      : targetCount >= 100
-        ? 20
-        : targetCount >= 50
-          ? 16
-          : 12;
+    : targetCount >= 500
+      ? 36
+      : targetCount >= 250
+        ? 28
+        : targetCount >= 100
+          ? 20
+          : targetCount >= 50
+            ? 16
+            : 12;
 
   const location =
     params.customLocation?.trim() ||
@@ -349,19 +351,19 @@ export async function runLeadPipeline(params: SearchParams) {
         searchYelpDirect({
           industry: params.industry,
           location,
-          limit: Math.min(targetCount, 30),
+          limit: Math.min(targetCount, 80),
           targetSolo: isSoloTarget,
         }),
         searchNextdoorDirect({
           industry: params.industry,
           location,
-          limit: Math.min(targetCount, 25),
+          limit: Math.min(targetCount, 60),
           targetSolo: isSoloTarget,
         }),
         searchHouzzDirect({
           industry: params.industry,
           location,
-          limit: Math.min(targetCount, 25),
+          limit: Math.min(targetCount, 60),
           targetSolo: isSoloTarget,
         }),
       ]);
@@ -404,6 +406,34 @@ export async function runLeadPipeline(params: SearchParams) {
   // If any places were returned synchronously/fallback without batch callback
   if (totalPlacesFetched === 0 && places.length > 0) {
     await enqueuePlaces(places);
+  }
+
+  // If initial search completed but did not yet reach the user's requested lead target,
+  // execute an expansion sweep across adjacent metros / state-wide to guarantee reaching targetCount!
+  if (!isSatisfied()) {
+    const remainingTarget = targetCount - getProgressCount();
+    const expansionLimit = Math.min(2500, Math.max(remainingTarget * 2, 500));
+    try {
+      const expansionPlaces = await searchGooglePlaces({
+        industry: params.industry,
+        country: params.country,
+        locationScope: params.locationScope === "local" && !params.state ? "local" : "country",
+        state: params.state,
+        city: undefined, // remove single-city restriction to fan across broader state/country
+        customLocation: params.customLocation,
+        radius: params.radius ? Math.max(params.radius * 2, 50) : undefined,
+        limit: expansionLimit,
+        onPlacesBatch: async (batch) => {
+          await enqueuePlaces(batch);
+        },
+        shouldStop: () => isSatisfied(),
+      });
+      if (totalPlacesFetched === 0 && expansionPlaces.length > 0) {
+        await enqueuePlaces(expansionPlaces);
+      }
+    } catch {
+      /* ignore expansion errors */
+    }
   }
 
   // Wait for all in-flight direct sources and enrichment tasks to complete
