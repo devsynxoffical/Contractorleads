@@ -1915,7 +1915,7 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                     )}
 
                     {/* Step Title / Label & Delay Grid */}
-                    <div className="grid gap-3 sm:grid-cols-2">
+                    <div className={cn("grid gap-3", selectedCopyPreview.type === "step" ? "sm:grid-cols-2" : "grid-cols-1")}>
                       <div>
                         <label className="block text-xs font-bold text-ink mb-1">
                           Template / Step Label
@@ -2117,16 +2117,21 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
 
                     {/* Email Body Textarea Editor */}
                     <div>
-                      <label className="block text-xs font-bold text-ink mb-1">
-                        Email Body Copy Template
-                      </label>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs font-bold text-ink">
+                          Email Body Copy Template
+                        </label>
+                        <span className="text-[11px] text-ink-muted hidden sm:inline">
+                          Supports Markdown (**bold**, *italic*, <u>underline</u>, [links](url)) and variable merge tags
+                        </span>
+                      </div>
                       <textarea
                         id="copy-edit-textarea"
                         value={editBody}
                         onChange={(e) => setEditBody(e.target.value)}
-                        rows={12}
                         placeholder="Write your email body template here..."
-                        className="saas-input w-full font-mono text-xs leading-relaxed"
+                        style={{ minHeight: "320px", height: "340px" }}
+                        className="w-full rounded-2xl border border-border bg-[var(--input-bg)] p-4 font-mono text-xs leading-relaxed text-ink outline-none transition focus:border-brand-500 focus:bg-[var(--surface)] focus:ring-4 focus:ring-brand-500/10 resize-y shadow-xs"
                       />
                     </div>
 
