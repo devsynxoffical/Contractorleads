@@ -226,16 +226,158 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
   const [actionLoading, setActionLoading] = useState(false);
   const [processMsg, setProcessMsg] = useState<string | null>(null);
 
-  // Selected copy preview modal (Day 0 hooks and Follow-Up steps)
+  // Selected copy preview & edit modal (Day 0 hooks and Follow-Up steps)
   const [selectedCopyPreview, setSelectedCopyPreview] = useState<CopyPreviewModalState | null>(null);
-  const [previewMode, setPreviewMode] = useState<"rendered" | "raw">("rendered");
+  const [previewMode, setPreviewMode] = useState<"rendered" | "raw" | "edit">("rendered");
   const [copied, setCopied] = useState(false);
+  const [editSubject, setEditSubject] = useState("");
+  const [editBody, setEditBody] = useState("");
+  const [savingCopy, setSavingCopy] = useState(false);
+  const [editSuccessMsg, setEditSuccessMsg] = useState<string | null>(null);
+
+  function openCopyModal(item: CopyPreviewModalState, mode: "rendered" | "raw" | "edit" = "rendered") {
+    setSelectedCopyPreview(item);
+    setEditSubject(item.subject);
+    setEditBody(item.body);
+    setPreviewMode(mode);
+    setEditSuccessMsg(null);
+  }
 
   function handleCopyToClipboard(text: string) {
     if (typeof navigator !== "undefined" && navigator.clipboard) {
       void navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  }
+
+  function insertVariableIntoEdit(varTag: string) {
+    const el = document.getElementById("copy-edit-textarea") as HTMLTextAreaElement | null;
+    if (!el) {
+      setEditBody((prev) => prev + " " + varTag);
+      return;
+    }
+    const start = el.selectionStart ?? el.value.length;
+    const end = el.selectionEnd ?? el.value.length;
+    const next = el.value.slice(0, start) + varTag + el.value.slice(end);
+    setEditBody(next);
+    setTimeout(() => {
+      el.focus();
+      el.setSelectionRange(start + varTag.length, start + varTag.length);
+    }, 0);
+  }
+
+  function applyFormattingToEdit(type: "bold" | "italic" | "underline") {
+    const el = document.getElementById("copy-edit-textarea") as HTMLTextAreaElement | null;
+    if (!el) return;
+    const start = el.selectionStart ?? 0;
+    const end = el.selectionEnd ?? 0;
+    const selected = el.value.slice(start, end) || "text";
+    let wrapped = selected;
+    if (type === "bold") wrapped = `**${selected}**`;
+    if (type === "italic") wrapped = `*${selected}*`;
+    if (type === "underline") wrapped = `<u>${selected}</u>`;
+
+    const next = el.value.slice(0, start) + wrapped + el.value.slice(end);
+    setEditBody(next);
+    setTimeout(() => {
+      el.focus();
+      el.setSelectionRange(start, start + wrapped.length);
+    }, 0);
+  }
+
+  async function handleSaveCopyChanges() {
+    if (!selectedCopyPreview || !campaign) return;
+    setSavingCopy(true);
+    setEditSuccessMsg(null);
+    try {
+      if (selectedCopyPreview.type === "hook") {
+        const baseHooks = campaign.hooks && campaign.hooks.length > 0 ? campaign.hooks : DEFAULT_DAY0_HOOKS;
+        let found = false;
+        const nextHooks = baseHooks.map((h) => {
+          if (h.id.toLowerCase() === selectedCopyPreview.id.toLowerCase()) {
+            found = true;
+            return {
+              ...h,
+              subject: editSubject,
+              body: editBody,
+            };
+          }
+          return h;
+        });
+
+        if (!found) {
+          nextHooks.push({
+            id: selectedCopyPreview.id,
+            badge: selectedCopyPreview.badge,
+            label: selectedCopyPreview.label,
+            subject: editSubject,
+            body: editBody,
+            active: true,
+          });
+        }
+
+        const res = await fetch(`/api/campaigns/${campaignId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ hooks: nextHooks }),
+        });
+
+        if (res.ok) {
+          setCampaign((prev) => (prev ? { ...prev, hooks: nextHooks } : prev));
+          setSelectedCopyPreview((prev) =>
+            prev ? { ...prev, subject: editSubject, body: editBody } : null
+          );
+          setEditSuccessMsg("Hook copy updated successfully! All future scheduled sends will use this copy.");
+          await loadData();
+        }
+      } else {
+        const stepNum = parseInt(selectedCopyPreview.id, 10);
+        const baseSteps = campaign.steps && campaign.steps.length > 0 ? campaign.steps : DEFAULT_FOLLOWUP_SEQUENCE;
+        let found = false;
+        const nextSteps = baseSteps.map((s) => {
+          if (s.stepNumber === stepNum || s.id === selectedCopyPreview.id) {
+            found = true;
+            return {
+              ...s,
+              subject: editSubject,
+              body: editBody,
+            };
+          }
+          return s;
+        });
+
+        if (!found) {
+          nextSteps.push({
+            id: String(stepNum),
+            stepNumber: stepNum,
+            label: selectedCopyPreview.label,
+            dayDelay: selectedCopyPreview.dayDelay || 2,
+            subject: editSubject,
+            body: editBody,
+            active: true,
+          });
+        }
+
+        const res = await fetch(`/api/campaigns/${campaignId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ steps: nextSteps }),
+        });
+
+        if (res.ok) {
+          setCampaign((prev) => (prev ? { ...prev, steps: nextSteps } : prev));
+          setSelectedCopyPreview((prev) =>
+            prev ? { ...prev, subject: editSubject, body: editBody } : null
+          );
+          setEditSuccessMsg(`Follow-Up Step ${stepNum} updated successfully! All future scheduled sends will use this copy.`);
+          await loadData();
+        }
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      setSavingCopy(false);
     }
   }
 
@@ -637,28 +779,50 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                       <span className="text-ink-muted">({h.replyRate}%)</span>
                     </td>
                     <td className="py-3 px-3 text-right">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedCopyPreview({
-                            type: "hook",
-                            id: hookObj.id,
-                            badge: hookObj.badge || `Hook ${hookObj.id}`,
-                            label: hookObj.label || `Hook ${hookObj.id}`,
-                            subject: hookObj.subject || "Quick inquiry",
-                            body: hookObj.body || "",
-                            attachments: (hookObj as any).attachments,
-                            enableUnsubscribe: (hookObj as any).enableUnsubscribe,
-                            unsubscribeText: (hookObj as any).unsubscribeText,
-                          });
-                          setPreviewMode("rendered");
-                        }}
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-700 hover:underline"
-                        title="View email copy and preview template"
-                      >
-                        <HiOutlineEye className="h-3.5 w-3.5" />
-                        View Copy
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            openCopyModal({
+                              type: "hook",
+                              id: hookObj.id,
+                              badge: hookObj.badge || `Hook ${hookObj.id}`,
+                              label: hookObj.label || `Hook ${hookObj.id}`,
+                              subject: hookObj.subject || "Quick inquiry",
+                              body: hookObj.body || "",
+                              attachments: (hookObj as any).attachments,
+                              enableUnsubscribe: (hookObj as any).enableUnsubscribe,
+                              unsubscribeText: (hookObj as any).unsubscribeText,
+                            }, "rendered");
+                          }}
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-700 hover:underline"
+                          title="Preview hook email template"
+                        >
+                          <HiOutlineEye className="h-3.5 w-3.5" />
+                          View
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            openCopyModal({
+                              type: "hook",
+                              id: hookObj.id,
+                              badge: hookObj.badge || `Hook ${hookObj.id}`,
+                              label: hookObj.label || `Hook ${hookObj.id}`,
+                              subject: hookObj.subject || "Quick inquiry",
+                              body: hookObj.body || "",
+                              attachments: (hookObj as any).attachments,
+                              enableUnsubscribe: (hookObj as any).enableUnsubscribe,
+                              unsubscribeText: (hookObj as any).unsubscribeText,
+                            }, "edit");
+                          }}
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-ink-muted hover:text-brand-600 hover:underline"
+                          title="Edit this hook's subject and body"
+                        >
+                          <HiOutlinePencilSquare className="h-3.5 w-3.5" />
+                          Edit
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -729,44 +893,69 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                       <span className="text-ink-muted">({s.replyRate}%)</span>
                     </td>
                     <td className="py-3 px-3 text-right">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (isDay0) {
-                            const h0 = campaign.hooks?.[0] || DEFAULT_DAY0_HOOKS[0];
-                            setSelectedCopyPreview({
-                              type: "hook",
-                              id: h0.id,
-                              badge: "Day 0",
-                              label: h0.label || "Day 0 Initial Email",
-                              subject: h0.subject,
-                              body: h0.body,
-                              attachments: (h0 as any).attachments,
-                              enableUnsubscribe: (h0 as any).enableUnsubscribe,
-                              unsubscribeText: (h0 as any).unsubscribeText,
-                            });
-                          } else if (stepObj) {
-                            setSelectedCopyPreview({
-                              type: "step",
-                              id: String(stepObj.stepNumber),
-                              badge: `Follow-Up ${stepObj.stepNumber}`,
-                              label: stepObj.label || `Follow-Up Step ${stepObj.stepNumber}`,
-                              subject: stepObj.subject,
-                              body: stepObj.body,
-                              dayDelay: stepObj.dayDelay,
-                              attachments: (stepObj as any).attachments,
-                              enableUnsubscribe: (stepObj as any).enableUnsubscribe,
-                              unsubscribeText: (stepObj as any).unsubscribeText,
-                            });
-                          }
-                          setPreviewMode("rendered");
-                        }}
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-700 hover:underline"
-                        title="View email copy for this sequence step"
-                      >
-                        <HiOutlineEye className="h-3.5 w-3.5" />
-                        View Copy
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (isDay0) {
+                              const h0 = campaign.hooks?.[0] || DEFAULT_DAY0_HOOKS[0];
+                              openCopyModal({
+                                type: "hook",
+                                id: h0.id,
+                                badge: "Day 0",
+                                label: h0.label || "Day 0 Initial Email",
+                                subject: h0.subject,
+                                body: h0.body,
+                                attachments: (h0 as any).attachments,
+                                enableUnsubscribe: (h0 as any).enableUnsubscribe,
+                                unsubscribeText: (h0 as any).unsubscribeText,
+                              }, "rendered");
+                            } else if (stepObj) {
+                              openCopyModal({
+                                type: "step",
+                                id: String(stepObj.stepNumber),
+                                badge: `Follow-Up ${stepObj.stepNumber}`,
+                                label: stepObj.label || `Follow-Up Step ${stepObj.stepNumber}`,
+                                subject: stepObj.subject,
+                                body: stepObj.body,
+                                dayDelay: stepObj.dayDelay,
+                                attachments: (stepObj as any).attachments,
+                                enableUnsubscribe: (stepObj as any).enableUnsubscribe,
+                                unsubscribeText: (stepObj as any).unsubscribeText,
+                              }, "rendered");
+                            }
+                          }}
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-700 hover:underline"
+                          title="View email copy for this sequence step"
+                        >
+                          <HiOutlineEye className="h-3.5 w-3.5" />
+                          View
+                        </button>
+                        {!isDay0 && stepObj && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              openCopyModal({
+                                type: "step",
+                                id: String(stepObj.stepNumber),
+                                badge: `Follow-Up ${stepObj.stepNumber}`,
+                                label: stepObj.label || `Follow-Up Step ${stepObj.stepNumber}`,
+                                subject: stepObj.subject,
+                                body: stepObj.body,
+                                dayDelay: stepObj.dayDelay,
+                                attachments: (stepObj as any).attachments,
+                                enableUnsubscribe: (stepObj as any).enableUnsubscribe,
+                                unsubscribeText: (stepObj as any).unsubscribeText,
+                              }, "edit");
+                            }}
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-ink-muted hover:text-brand-600 hover:underline"
+                            title="Edit this step's subject and body"
+                          >
+                            <HiOutlinePencilSquare className="h-3.5 w-3.5" />
+                            Edit
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -1161,26 +1350,60 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                     <HiOutlineDocumentDuplicate className="h-3.5 w-3.5" />
                     Raw Template Source
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewMode("edit")}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 rounded-lg px-3 py-1 font-semibold transition",
+                      previewMode === "edit"
+                        ? "bg-brand-600 text-white shadow-sm"
+                        : "text-ink-muted hover:text-ink"
+                    )}
+                  >
+                    <HiOutlinePencilSquare className="h-3.5 w-3.5" />
+                    Edit Template
+                  </button>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => handleCopyToClipboard(fullCopyForClipboard)}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-[var(--input-bg)] px-3 py-1.5 text-xs font-semibold text-ink hover:bg-[var(--surface)] transition"
-                  title="Copy subject and body to clipboard"
-                >
-                  {copied ? (
-                    <>
-                      <HiOutlineCheck className="h-3.5 w-3.5 text-emerald-600" />
-                      <span className="text-emerald-600 font-bold">Copied!</span>
-                    </>
-                  ) : (
-                    <>
-                      <HiOutlineDocumentDuplicate className="h-3.5 w-3.5" />
-                      <span>Copy Template</span>
-                    </>
-                  )}
-                </button>
+                {previewMode !== "edit" ? (
+                  <button
+                    type="button"
+                    onClick={() => handleCopyToClipboard(fullCopyForClipboard)}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-[var(--input-bg)] px-3 py-1.5 text-xs font-semibold text-ink hover:bg-[var(--surface)] transition"
+                    title="Copy subject and body to clipboard"
+                  >
+                    {copied ? (
+                      <>
+                        <HiOutlineCheck className="h-3.5 w-3.5 text-emerald-600" />
+                        <span className="text-emerald-600 font-bold">Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <HiOutlineDocumentDuplicate className="h-3.5 w-3.5" />
+                        <span>Copy Template</span>
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleSaveCopyChanges}
+                    disabled={savingCopy}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-brand-700 disabled:opacity-50"
+                  >
+                    {savingCopy ? (
+                      <>
+                        <HiOutlineSparkles className="h-3.5 w-3.5 animate-spin" />
+                        Saving…
+                      </>
+                    ) : (
+                      <>
+                        <HiOutlineCheck className="h-3.5 w-3.5" />
+                        Save Changes
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
 
               {/* Modal Body */}
@@ -1214,7 +1437,7 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                       />
                     </div>
                   </div>
-                ) : (
+                ) : previewMode === "raw" ? (
                   /* RAW TEMPLATE SOURCE WITH VARIABLE PILLS */
                   <div className="space-y-3">
                     <div>
@@ -1281,21 +1504,168 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                       </div>
                     )}
                   </div>
+                ) : (
+                  /* LIVE EDIT TEMPLATE MODE */
+                  <div className="space-y-4">
+                    {/* Notice for scheduled / active campaigns */}
+                    <div className="rounded-xl border border-blue-500/30 bg-blue-50/60 dark:bg-blue-950/40 p-3 text-xs text-blue-900 dark:text-blue-200 flex items-start gap-2">
+                      <HiOutlineClock className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
+                      <div>
+                        <strong className="block font-bold">Live Template Editing</strong>
+                        <span>
+                          {campaign.status === "scheduled"
+                            ? "This campaign is scheduled. Any modifications saved here will immediately apply to all upcoming automated emails when the campaign launches."
+                            : "Modifications saved here will immediately apply to all future automated emails dispatched for this campaign."}
+                        </span>
+                      </div>
+                    </div>
+
+                    {editSuccessMsg && (
+                      <div className="rounded-xl border border-emerald-500/30 bg-emerald-50/80 dark:bg-emerald-950/50 p-3 text-xs font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                        <HiOutlineCheck className="h-4 w-4 text-emerald-600" />
+                        <span>{editSuccessMsg}</span>
+                      </div>
+                    )}
+
+                    {/* Subject Line Editor */}
+                    <div>
+                      <label className="block text-xs font-bold text-ink mb-1">
+                        Email Subject Line
+                      </label>
+                      <input
+                        type="text"
+                        value={editSubject}
+                        onChange={(e) => setEditSubject(e.target.value)}
+                        placeholder="Subject line with {{variables}}..."
+                        className="saas-input w-full text-xs font-semibold"
+                      />
+                    </div>
+
+                    {/* Personalization Tags Toolbar */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[11px] font-bold text-ink-muted uppercase">
+                          Insert Personalization Variable (at cursor)
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[
+                          "{{firstName}}",
+                          "{{businessName}}",
+                          "{{city}}",
+                          "{{state}}",
+                          "{{industry}}",
+                          "{{fromName}}",
+                          "{{lastSubject}}",
+                          "{{unsubscribe}}",
+                        ].map((tag) => (
+                          <button
+                            key={tag}
+                            type="button"
+                            onClick={() => insertVariableIntoEdit(tag)}
+                            className="rounded-lg border border-border bg-[var(--surface)] px-2 py-1 font-mono text-[11px] font-semibold text-brand-700 hover:border-brand-500 hover:bg-brand-50 transition dark:text-brand-300 dark:hover:bg-brand-950/40"
+                            title={`Insert ${tag} into email body`}
+                          >
+                            + {tag}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Rich Formatting Toolbar */}
+                    <div className="flex items-center gap-1.5 bg-[var(--input-bg)]/80 border border-border rounded-xl px-2.5 py-1.5 text-xs">
+                      <span className="text-[11px] font-bold text-ink-muted mr-1">Format:</span>
+                      <button
+                        type="button"
+                        onClick={() => applyFormattingToEdit("bold")}
+                        className="p-1 px-2 font-bold rounded hover:bg-[var(--surface)] border border-transparent hover:border-border text-ink"
+                        title="Bold (**text**)"
+                      >
+                        B
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => applyFormattingToEdit("italic")}
+                        className="p-1 px-2 italic font-serif rounded hover:bg-[var(--surface)] border border-transparent hover:border-border text-ink"
+                        title="Italic (*text*)"
+                      >
+                        I
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => applyFormattingToEdit("underline")}
+                        className="p-1 px-2 underline rounded hover:bg-[var(--surface)] border border-transparent hover:border-border text-ink"
+                        title="Underline (<u>text</u>)"
+                      >
+                        U
+                      </button>
+                    </div>
+
+                    {/* Email Body Textarea Editor */}
+                    <div>
+                      <label className="block text-xs font-bold text-ink mb-1">
+                        Email Body Copy
+                      </label>
+                      <textarea
+                        id="copy-edit-textarea"
+                        value={editBody}
+                        onChange={(e) => setEditBody(e.target.value)}
+                        rows={11}
+                        placeholder="Write your email body template here..."
+                        className="saas-input w-full font-mono text-xs leading-relaxed"
+                      />
+                    </div>
+                  </div>
                 )}
               </div>
 
               {/* Modal Footer */}
               <div className="flex items-center justify-between border-t border-border p-3.5 bg-[var(--input-bg)]/40 text-xs">
                 <span className="text-[11px] text-ink-muted">
-                  💡 All tags are dynamically replaced with each contractor's verified info during sending cycles.
+                  {previewMode === "edit"
+                    ? "Click 'Save Changes' to update this template in the database."
+                    : "💡 All tags are dynamically replaced with each contractor's verified info during sending cycles."}
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setSelectedCopyPreview(null)}
-                  className="rounded-xl bg-[#1a1224] px-4 py-2 text-xs font-bold text-white transition hover:opacity-90 dark:bg-brand-600"
-                >
-                  Done
-                </button>
+
+                <div className="flex items-center gap-2">
+                  {previewMode === "edit" ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setPreviewMode("rendered")}
+                        className="rounded-xl border border-border px-3.5 py-2 text-xs font-semibold text-ink hover:bg-[var(--surface)] transition"
+                      >
+                        Back to Preview
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveCopyChanges}
+                        disabled={savingCopy}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-brand-700 disabled:opacity-50"
+                      >
+                        {savingCopy ? (
+                          <>
+                            <HiOutlineSparkles className="h-4 w-4 animate-spin" />
+                            Saving Changes…
+                          </>
+                        ) : (
+                          <>
+                            <HiOutlineCheck className="h-4 w-4" />
+                            Save Copy Changes
+                          </>
+                        )}
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCopyPreview(null)}
+                      className="rounded-xl bg-[#1a1224] px-4 py-2 text-xs font-bold text-white transition hover:opacity-90 dark:bg-brand-600"
+                    >
+                      Done
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
