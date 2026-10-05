@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -249,6 +249,11 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
   const [addingItem, setAddingItem] = useState(false);
   const [editSuccessMsg, setEditSuccessMsg] = useState<string | null>(null);
 
+  // Active cursor tracking for Subject Line & Body Textarea
+  const activeEditFieldRef = useRef<"subject" | "body">("body");
+  const cursorSubjectRef = useRef<{ start: number; end: number }>({ start: 0, end: 0 });
+  const cursorBodyRef = useRef<{ start: number; end: number }>({ start: 0, end: 0 });
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -278,6 +283,9 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
     setNewAttachmentUrl("");
     setPreviewMode(mode);
     setEditSuccessMsg(null);
+    activeEditFieldRef.current = "body";
+    cursorSubjectRef.current = { start: item.subject?.length || 0, end: item.subject?.length || 0 };
+    cursorBodyRef.current = { start: item.body?.length || 0, end: item.body?.length || 0 };
   }
 
   function handleCopyToClipboard(text: string) {
@@ -289,26 +297,45 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
   }
 
   function insertVariableIntoEdit(varTag: string) {
-    const el = document.getElementById("copy-edit-textarea") as HTMLTextAreaElement | null;
-    if (!el) {
-      setEditBody((prev) => prev + " " + varTag);
+    // If the user's cursor or focus was in the Subject Line:
+    if (activeEditFieldRef.current === "subject") {
+      const el = document.getElementById("copy-edit-subject") as HTMLInputElement | null;
+      const curStart = el?.selectionStart ?? cursorSubjectRef.current.start ?? editSubject.length;
+      const curEnd = el?.selectionEnd ?? cursorSubjectRef.current.end ?? editSubject.length;
+      const next = editSubject.slice(0, curStart) + varTag + editSubject.slice(curEnd);
+      setEditSubject(next);
+      const newPos = curStart + varTag.length;
+      cursorSubjectRef.current = { start: newPos, end: newPos };
+      setTimeout(() => {
+        if (el) {
+          el.focus();
+          el.setSelectionRange(newPos, newPos);
+        }
+      }, 0);
       return;
     }
-    const start = el.selectionStart ?? el.value.length;
-    const end = el.selectionEnd ?? el.value.length;
-    const next = el.value.slice(0, start) + varTag + el.value.slice(end);
+
+    // Otherwise insert into the Body textarea at the exact cursor position:
+    const el = document.getElementById("copy-edit-textarea") as HTMLTextAreaElement | null;
+    const curStart = el?.selectionStart ?? cursorBodyRef.current.start ?? editBody.length;
+    const curEnd = el?.selectionEnd ?? cursorBodyRef.current.end ?? editBody.length;
+    const next = editBody.slice(0, curStart) + varTag + editBody.slice(curEnd);
     setEditBody(next);
+    const newPos = curStart + varTag.length;
+    cursorBodyRef.current = { start: newPos, end: newPos };
     setTimeout(() => {
-      el.focus();
-      el.setSelectionRange(start + varTag.length, start + varTag.length);
+      if (el) {
+        el.focus();
+        el.setSelectionRange(newPos, newPos);
+      }
     }, 0);
   }
 
   function applyFormattingToEdit(type: "bold" | "italic" | "underline") {
     const el = document.getElementById("copy-edit-textarea") as HTMLTextAreaElement | null;
     if (!el) return;
-    const start = el.selectionStart ?? 0;
-    const end = el.selectionEnd ?? 0;
+    const start = el.selectionStart ?? cursorBodyRef.current.start ?? 0;
+    const end = el.selectionEnd ?? cursorBodyRef.current.end ?? 0;
     const selected = el.value.slice(start, end) || "text";
     let wrapped = selected;
     if (type === "bold") wrapped = `**${selected}**`;
@@ -317,24 +344,28 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
 
     const next = el.value.slice(0, start) + wrapped + el.value.slice(end);
     setEditBody(next);
+    const newPos = start + wrapped.length;
+    cursorBodyRef.current = { start, end: newPos };
     setTimeout(() => {
       el.focus();
-      el.setSelectionRange(start, start + wrapped.length);
+      el.setSelectionRange(start, newPos);
     }, 0);
   }
 
   function handleInsertLink() {
     const el = document.getElementById("copy-edit-textarea") as HTMLTextAreaElement | null;
     if (!el) return;
-    const start = el.selectionStart ?? 0;
-    const end = el.selectionEnd ?? 0;
+    const start = el.selectionStart ?? cursorBodyRef.current.start ?? 0;
+    const end = el.selectionEnd ?? cursorBodyRef.current.end ?? 0;
     const selected = el.value.slice(start, end) || "link text";
     const formatted = `[${selected}](https://example.com)`;
     const next = el.value.slice(0, start) + formatted + el.value.slice(end);
     setEditBody(next);
+    const newPos = start + formatted.length;
+    cursorBodyRef.current = { start, end: newPos };
     setTimeout(() => {
       el.focus();
-      el.setSelectionRange(start, start + formatted.length);
+      el.setSelectionRange(start, newPos);
     }, 0);
   }
 
@@ -1955,9 +1986,42 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                         Email Subject Line
                       </label>
                       <input
+                        id="copy-edit-subject"
                         type="text"
                         value={editSubject}
-                        onChange={(e) => setEditSubject(e.target.value)}
+                        onChange={(e) => {
+                          setEditSubject(e.target.value);
+                          cursorSubjectRef.current = {
+                            start: e.target.selectionStart ?? e.target.value.length,
+                            end: e.target.selectionEnd ?? e.target.value.length,
+                          };
+                        }}
+                        onFocus={(e) => {
+                          activeEditFieldRef.current = "subject";
+                          cursorSubjectRef.current = {
+                            start: e.currentTarget.selectionStart ?? e.currentTarget.value.length,
+                            end: e.currentTarget.selectionEnd ?? e.currentTarget.value.length,
+                          };
+                        }}
+                        onClick={(e) => {
+                          activeEditFieldRef.current = "subject";
+                          cursorSubjectRef.current = {
+                            start: e.currentTarget.selectionStart ?? e.currentTarget.value.length,
+                            end: e.currentTarget.selectionEnd ?? e.currentTarget.value.length,
+                          };
+                        }}
+                        onKeyUp={(e) => {
+                          cursorSubjectRef.current = {
+                            start: e.currentTarget.selectionStart ?? e.currentTarget.value.length,
+                            end: e.currentTarget.selectionEnd ?? e.currentTarget.value.length,
+                          };
+                        }}
+                        onSelect={(e) => {
+                          cursorSubjectRef.current = {
+                            start: e.currentTarget.selectionStart ?? e.currentTarget.value.length,
+                            end: e.currentTarget.selectionEnd ?? e.currentTarget.value.length,
+                          };
+                        }}
                         placeholder="Subject line with {{variables}}..."
                         className="saas-input w-full text-xs font-semibold"
                       />
@@ -1967,7 +2031,7 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
                         <span className="text-[11px] font-bold text-ink-muted uppercase">
-                          Insert Personalization Variable (at cursor)
+                          Insert Personalization Variable (at cursor in Subject or Body)
                         </span>
                       </div>
                       <div className="flex flex-wrap gap-1.5">
@@ -1985,9 +2049,13 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                           <button
                             key={tag}
                             type="button"
+                            onMouseDown={(e) => {
+                              // Prevents blurring the input/textarea so the exact cursor position is preserved
+                              e.preventDefault();
+                            }}
                             onClick={() => insertVariableIntoEdit(tag)}
                             className="rounded-lg border border-border bg-[var(--surface)] px-2 py-1 font-mono text-[11px] font-semibold text-brand-700 hover:border-brand-500 hover:bg-brand-50 transition dark:text-brand-300 dark:hover:bg-brand-950/40"
-                            title={`Insert ${tag} into email body`}
+                            title={`Insert ${tag} at cursor`}
                           >
                             + {tag}
                           </button>
@@ -2000,6 +2068,7 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                       <span className="text-[11px] font-bold text-ink-muted mr-1">Formatting:</span>
                       <button
                         type="button"
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() => applyFormattingToEdit("bold")}
                         className="p-1 px-2.5 font-bold rounded-lg hover:bg-[var(--surface)] border border-transparent hover:border-border text-ink transition"
                         title="Bold (**text**)"
@@ -2008,6 +2077,7 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                       </button>
                       <button
                         type="button"
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() => applyFormattingToEdit("italic")}
                         className="p-1 px-2.5 italic font-serif rounded-lg hover:bg-[var(--surface)] border border-transparent hover:border-border text-ink transition"
                         title="Italic (*text*)"
@@ -2016,6 +2086,7 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                       </button>
                       <button
                         type="button"
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() => applyFormattingToEdit("underline")}
                         className="p-1 px-2.5 underline rounded-lg hover:bg-[var(--surface)] border border-transparent hover:border-border text-ink transition"
                         title="Underline (<u>text</u>)"
@@ -2024,6 +2095,7 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                       </button>
                       <button
                         type="button"
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={handleInsertLink}
                         className="inline-flex items-center gap-1 p-1 px-2.5 rounded-lg hover:bg-[var(--surface)] border border-transparent hover:border-border text-ink transition"
                         title="Insert hyperlink [text](url)"
@@ -2128,7 +2200,39 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                       <textarea
                         id="copy-edit-textarea"
                         value={editBody}
-                        onChange={(e) => setEditBody(e.target.value)}
+                        onChange={(e) => {
+                          setEditBody(e.target.value);
+                          cursorBodyRef.current = {
+                            start: e.target.selectionStart ?? e.target.value.length,
+                            end: e.target.selectionEnd ?? e.target.value.length,
+                          };
+                        }}
+                        onFocus={(e) => {
+                          activeEditFieldRef.current = "body";
+                          cursorBodyRef.current = {
+                            start: e.currentTarget.selectionStart ?? e.currentTarget.value.length,
+                            end: e.currentTarget.selectionEnd ?? e.currentTarget.value.length,
+                          };
+                        }}
+                        onClick={(e) => {
+                          activeEditFieldRef.current = "body";
+                          cursorBodyRef.current = {
+                            start: e.currentTarget.selectionStart ?? e.currentTarget.value.length,
+                            end: e.currentTarget.selectionEnd ?? e.currentTarget.value.length,
+                          };
+                        }}
+                        onKeyUp={(e) => {
+                          cursorBodyRef.current = {
+                            start: e.currentTarget.selectionStart ?? e.currentTarget.value.length,
+                            end: e.currentTarget.selectionEnd ?? e.currentTarget.value.length,
+                          };
+                        }}
+                        onSelect={(e) => {
+                          cursorBodyRef.current = {
+                            start: e.currentTarget.selectionStart ?? e.currentTarget.value.length,
+                            end: e.currentTarget.selectionEnd ?? e.currentTarget.value.length,
+                          };
+                        }}
                         placeholder="Write your email body template here..."
                         style={{ minHeight: "320px", height: "340px" }}
                         className="w-full rounded-2xl border border-border bg-[var(--input-bg)] p-4 font-mono text-xs leading-relaxed text-ink outline-none transition focus:border-brand-500 focus:bg-[var(--surface)] focus:ring-4 focus:ring-brand-500/10 resize-y shadow-xs"
