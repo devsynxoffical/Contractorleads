@@ -33,6 +33,7 @@ export type SearchCriteriaInput = {
   /** SME Decision-Maker & Sizing Engine options */
   smeTeamSize?: string;
   smeBusinessAge?: string;
+  smeMinScore?: number;
   smeRequireDecisionMaker?: boolean;
   smeExcludeEnterprise?: boolean;
 };
@@ -50,6 +51,7 @@ export type ResolvedSearchCriteria = {
   companySize?: CompanySizeFilter;
   smeTeamSize?: string;
   smeBusinessAge?: string;
+  smeMinScore?: number;
   smeRequireDecisionMaker?: boolean;
   smeExcludeEnterprise?: boolean;
 };
@@ -93,12 +95,14 @@ export function resolveSearchCriteria(
   const companySize: CompanySizeFilter = input.companySize || "all";
   const smeTeamSize = input.smeTeamSize?.trim() || undefined;
   const smeBusinessAge = input.smeBusinessAge?.trim() || undefined;
+  const smeMinScore = typeof input.smeMinScore === "number" ? input.smeMinScore : undefined;
   const smeRequireDecisionMaker = input.smeRequireDecisionMaker ?? undefined;
   const smeExcludeEnterprise = input.smeExcludeEnterprise ?? undefined;
 
   const smeExtras = {
     smeTeamSize,
     smeBusinessAge,
+    smeMinScore,
     smeRequireDecisionMaker,
     smeExcludeEnterprise,
   };

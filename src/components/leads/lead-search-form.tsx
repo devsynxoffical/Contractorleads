@@ -156,8 +156,9 @@ export function LeadSearchForm() {
   const [selectedState, setSelectedState] = useState("");
   const [city, setCity] = useState("");
   const [targetLeadCount, setTargetLeadCount] = useState(50);
-  const [smeTeamSize, setSmeTeamSize] = useState<string>("all");
+  const [smeTeamSize, setSmeTeamSize] = useState<string>("1-15");
   const [smeBusinessAge, setSmeBusinessAge] = useState<string>("all");
+  const [smeMinScore, setSmeMinScore] = useState<number>(0);
   const [smeRequireDecisionMaker, setSmeRequireDecisionMaker] = useState<boolean>(true);
   const [smeExcludeEnterprise, setSmeExcludeEnterprise] = useState<boolean>(true);
   const [leadCapacity, setLeadCapacity] = useState<number | null>(null);
@@ -442,6 +443,7 @@ export function LeadSearchForm() {
     targetLeadCount?: number;
     smeTeamSize?: string;
     smeBusinessAge?: string;
+    smeMinScore?: number;
     smeRequireDecisionMaker?: boolean;
     smeExcludeEnterprise?: boolean;
   }) {
@@ -681,6 +683,7 @@ export function LeadSearchForm() {
       targetLeadCount,
       smeTeamSize,
       smeBusinessAge,
+      smeMinScore,
       smeRequireDecisionMaker,
       smeExcludeEnterprise,
     });
@@ -975,14 +978,13 @@ export function LeadSearchForm() {
                   </span>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   <div className="space-y-1.5">
                     <Label className="text-[12px] font-semibold text-ink">Target Team Size</Label>
                     <Select
                       value={smeTeamSize}
                       onChange={(e) => setSmeTeamSize(e.target.value)}
                     >
-                      <option value="all">Any Team Size</option>
                       <option value="1-15">🎯 1–15 Employees (Prime SME Target)</option>
                       <option value="11-15">⭐ 11–15 Employees (Growing Mid-Contractor)</option>
                       <option value="6-10">6–10 Employees</option>
@@ -990,9 +992,10 @@ export function LeadSearchForm() {
                       <option value="solo">Solo / 1 Person</option>
                       <option value="16-20">16–20 Employees</option>
                       <option value="21+">21+ Employees (Large)</option>
+                      <option value="all">Any Team Size</option>
                     </Select>
                     <p className="text-[11px] text-ink-muted">
-                      Crawler filters candidates during live scrape to match this team size.
+                      Filters candidates live during crawl to deliver exact team size.
                     </p>
                   </div>
 
@@ -1006,38 +1009,57 @@ export function LeadSearchForm() {
                       <option value="2-15">🎯 2–15 Years (Prime SME Target)</option>
                       <option value="0-2">0–2 Years (Emerging / New)</option>
                       <option value="2-5">2–5 Years (Growing)</option>
-                      <option value="5-15">5–15 Years (Established)</option>
-                      <option value="15-30">15–30 Years (Mature)</option>
+                      <option value="5-10">5–10 Years (Established)</option>
+                      <option value="10-15">10–15 Years (Established)</option>
+                      <option value="15-20">15–20 Years (Mature)</option>
+                      <option value="20-30">20–30 Years (Mature)</option>
+                      <option value="30+">30+ Years (Highly Established)</option>
                     </Select>
                     <p className="text-[11px] text-ink-muted">
-                      Calculated from claimed operating establishment records.
+                      From official registration & claimed operating records.
                     </p>
                   </div>
 
-                  <div className="space-y-2 sm:col-span-2 lg:col-span-1 pt-1">
-                    <label className="flex items-start gap-2.5 cursor-pointer">
+                  <div className="space-y-1.5">
+                    <Label className="text-[12px] font-semibold text-ink">Min SME Quality Score</Label>
+                    <Select
+                      value={String(smeMinScore)}
+                      onChange={(e) => setSmeMinScore(Number(e.target.value))}
+                    >
+                      <option value="0">Any Quality Score</option>
+                      <option value="60">🛡️ 60+ (Qualified SME)</option>
+                      <option value="75">⭐ 75+ (High Quality SME)</option>
+                      <option value="85">💎 85+ (Elite Decision-Maker)</option>
+                    </Select>
+                    <p className="text-[11px] text-ink-muted">
+                      100-pt validation score across WHOIS, website, & owner signals.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2 pt-1">
+                    <label className="flex items-start gap-2 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={smeRequireDecisionMaker}
                         onChange={(e) => setSmeRequireDecisionMaker(e.target.checked)}
                         className="mt-0.5 h-4 w-4 rounded accent-brand-600"
                       />
-                      <span className="text-[12px] leading-tight font-medium text-ink">
-                        <strong className="block text-brand-800 font-semibold">Require Verified Decision-Maker</strong>
-                        Skip gatekeepers (receptionists, dispatchers). Only collect leads with verified Owner/CEO/Founder.
+                      <span className="text-[11px] leading-tight font-medium text-ink">
+                        <strong className="block text-brand-800 font-semibold">Require Decision-Maker</strong>
+                        Skip gatekeepers (receptionist/dispatcher). Only Owner/CEO/Founder.
                       </span>
                     </label>
 
-                    <label className="flex items-start gap-2.5 cursor-pointer pt-1">
+                    <label className="flex items-start gap-2 cursor-pointer pt-1">
                       <input
                         type="checkbox"
                         checked={smeExcludeEnterprise}
                         onChange={(e) => setSmeExcludeEnterprise(e.target.checked)}
                         className="mt-0.5 h-4 w-4 rounded accent-rose-600"
                       />
-                      <span className="text-[12px] leading-tight font-medium text-ink">
-                        <strong className="block text-rose-800 font-semibold">Exclude 30+ yr & Large Enterprises</strong>
-                        Skip 30+ year old companies, franchises, and enterprise operations.
+                      <span className="text-[11px] leading-tight font-medium text-ink">
+                        <strong className="block text-rose-800 font-semibold">Exclude 30+ yr & Enterprise</strong>
+                        Skip 30+ yr companies and multi-branch franchises.
                       </span>
                     </label>
                   </div>

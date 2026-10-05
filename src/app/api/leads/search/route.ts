@@ -61,6 +61,7 @@ export async function POST(request: Request) {
       targetLeadCount: requestedCount,
       smeTeamSize,
       smeBusinessAge,
+      smeMinScore,
       smeRequireDecisionMaker,
       smeExcludeEnterprise,
     } = resolved.criteria;
@@ -98,6 +99,7 @@ export async function POST(request: Request) {
             location: customLocation || city || state || country,
             smeTeamSize,
             smeBusinessAge,
+            smeMinScore,
             smeRequireDecisionMaker,
           });
 
@@ -114,6 +116,7 @@ export async function POST(request: Request) {
             targetLeadCount,
             smeTeamSize,
             smeBusinessAge,
+            smeMinScore,
             smeRequireDecisionMaker,
             smeExcludeEnterprise,
             onLeadDiscovered: async (lead, progress) => {
@@ -266,6 +269,7 @@ export async function POST(request: Request) {
       targetLeadCount,
       smeTeamSize,
       smeBusinessAge,
+      smeMinScore,
       smeRequireDecisionMaker,
       smeExcludeEnterprise,
     });

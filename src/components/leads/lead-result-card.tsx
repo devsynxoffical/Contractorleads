@@ -47,6 +47,25 @@ export type LeadResult = {
   yelpRating?: number | null;
   googleMapsLink?: string | null;
   unlocked?: boolean;
+  // SME Decision-Maker & Validation Fields
+  smeQualityScore?: number | null;
+  businessMaturity?: string | null;
+  businessAgeYears?: number | null;
+  companySizeCategory?: string | null;
+  employeeCount?: number | null;
+  decisionMakerFound?: boolean | null;
+  decisionMakerRole?: string | null;
+  decisionMakerTitle?: string | null;
+  decisionMakerName?: string | null;
+  decisionMakerEmail?: string | null;
+  decisionMakerEmailType?: string | null;
+  decisionMakerDirectPhone?: string | null;
+  decisionMakerPhoneType?: string | null;
+  domainAgeYears?: number | null;
+  domainRegistrar?: string | null;
+  isLowPriorityOrExcluded?: boolean | null;
+  exclusionReasonsJson?: string | null;
+  sourcesCount?: number | null;
 };
 
 function tierVariant(tier?: string | null) {
@@ -195,13 +214,35 @@ export function LeadResultCard({
                 <Badge variant={tierVariant(lead.qualityTier)}>
                   {lead.qualityTier ?? "nurture"}
                 </Badge>
-                <Badge variant="verified">AI verified</Badge>
-                {hasPublicPeople && (
+                {lead.decisionMakerFound ? (
+                  <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700 ring-1 ring-emerald-300 dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-emerald-400/30">
+                    <HiOutlineCheckBadge className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                    {lead.decisionMakerRole ? `Verified ${lead.decisionMakerRole}` : "Verified Decision-Maker"}
+                  </span>
+                ) : hasPublicPeople ? (
                   <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-emerald-400/30">
                     <HiOutlineUser className="h-3 w-3" />
                     {lead.ownerName
-                      ? "Decision maker found"
+                      ? "Owner identified"
                       : `${teamCount} team member${teamCount === 1 ? "" : "s"}`}
+                  </span>
+                ) : null}
+                {lead.smeQualityScore != null && lead.smeQualityScore > 0 && (
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-bold ring-1 ${
+                      lead.smeQualityScore >= 75
+                        ? "bg-purple-50 text-purple-700 ring-purple-300 dark:bg-purple-900/30 dark:text-purple-300"
+                        : lead.smeQualityScore >= 50
+                        ? "bg-brand-50 text-brand-700 ring-brand-300 dark:bg-brand-900/30 dark:text-brand-300"
+                        : "bg-amber-50 text-amber-800 ring-amber-300 dark:bg-amber-900/30 dark:text-amber-300"
+                    }`}
+                  >
+                    SME {lead.smeQualityScore}/100
+                  </span>
+                )}
+                {lead.isLowPriorityOrExcluded && (
+                  <span className="inline-flex items-center gap-1 rounded-lg bg-rose-50 px-2 py-1 text-[10px] font-bold text-rose-700 ring-1 ring-rose-200 dark:bg-rose-900/30 dark:text-rose-300">
+                    Excluded / Enterprise
                   </span>
                 )}
               </div>
@@ -221,6 +262,26 @@ export function LeadResultCard({
                 {lead.industry || lead.serviceCategory}
               </span>
             )}
+            {lead.companySizeCategory && (
+              <span className="rounded-lg bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700 ring-1 ring-blue-100">
+                Team: {lead.companySizeCategory === "1-15" ? "1–15 members" : lead.companySizeCategory === "11-15" ? "11–15 members" : lead.companySizeCategory === "solo" ? "Solo (1)" : `${lead.companySizeCategory} members`}
+              </span>
+            )}
+            {lead.businessAgeYears != null && (
+              <span className="rounded-lg bg-indigo-50 px-2.5 py-1 text-[11px] font-semibold text-indigo-700 ring-1 ring-indigo-100">
+                Est. {new Date().getFullYear() - lead.businessAgeYears} ({lead.businessAgeYears}y · {lead.businessMaturity || "active"})
+              </span>
+            )}
+            {lead.domainAgeYears != null && (
+              <span className="rounded-lg bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200">
+                Domain: {lead.domainAgeYears}y {lead.domainRegistrar ? `· ${lead.domainRegistrar}` : ""}
+              </span>
+            )}
+            {lead.sourcesCount && lead.sourcesCount > 1 ? (
+              <span className="rounded-lg bg-teal-50 px-2.5 py-1 text-[11px] font-semibold text-teal-700 ring-1 ring-teal-100">
+                {lead.sourcesCount} Verified Sources
+              </span>
+            ) : null}
             {lead.googleRating != null && (
               <span className="inline-flex items-center gap-1 rounded-lg bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-800 ring-1 ring-amber-100">
                 <HiStar className="h-3.5 w-3.5 text-amber-400" />
@@ -243,8 +304,14 @@ export function LeadResultCard({
             <div className="flex items-center gap-2 rounded-xl bg-[#faf8fc] px-3 py-2 text-[12px] text-ink-muted">
               <HiOutlineUser className="h-3.5 w-3.5 shrink-0 text-brand-500" />
               <span className="truncate">
-                {lead.ownerName
-                  ? `${lead.ownerName}${lead.ownerTitle ? ` · ${lead.ownerTitle}` : ""}`
+                {lead.decisionMakerName || lead.ownerName
+                  ? `${lead.decisionMakerName || lead.ownerName}${
+                      lead.decisionMakerRole
+                        ? ` · ${lead.decisionMakerRole}`
+                        : lead.ownerTitle
+                          ? ` · ${lead.ownerTitle}`
+                          : ""
+                    }`
                   : teamCount
                     ? `${teamCount} public team member${teamCount === 1 ? "" : "s"}`
                     : lead.peopleEnrichedAt
@@ -254,7 +321,10 @@ export function LeadResultCard({
             </div>
             <div className="flex items-center gap-2 rounded-xl bg-[#faf8fc] px-3 py-2 text-[12px] text-ink-muted">
               <HiOutlinePhone className="h-3.5 w-3.5 shrink-0 text-brand-500" />
-              <span className="truncate">{lead.phone || "Phone N/A"}</span>
+              <span className="truncate">
+                {lead.decisionMakerDirectPhone || lead.phone || "Phone N/A"}
+                {lead.decisionMakerPhoneType === "direct_mobile" && " (Direct Mobile)"}
+              </span>
             </div>
             <div className="flex items-center gap-2 rounded-xl bg-[#faf8fc] px-3 py-2 text-[12px] text-ink-muted">
               <HiOutlineGlobeAlt className="h-3.5 w-3.5 shrink-0 text-brand-500" />
@@ -264,7 +334,11 @@ export function LeadResultCard({
             </div>
             <div className="flex items-center gap-2 rounded-xl bg-[#faf8fc] px-3 py-2 text-[12px] text-ink-muted">
               <HiOutlineEnvelope className="h-3.5 w-3.5 shrink-0 text-brand-500" />
-              <span className="truncate">{lead.email || "Email N/A"}</span>
+              <span className="truncate">
+                {lead.decisionMakerEmail || lead.email || "Email N/A"}
+                {lead.decisionMakerEmailType === "decision_maker" && " (Direct DM)"}
+                {lead.decisionMakerEmailType === "generic" && " (Generic Inbox)"}
+              </span>
             </div>
           </div>
 

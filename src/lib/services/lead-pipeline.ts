@@ -30,6 +30,8 @@ import {
   splitFullName,
   extractEstablishedYear,
   classifyBusinessMaturity,
+  cleanDomain,
+  fetchDomainRdapInfo,
 } from "./sme-intelligence";
 
 const EMPTY_PEOPLE: WebsitePeopleResult = {
@@ -55,6 +57,7 @@ export type SearchParams = {
   /** SME Decision-Maker & Sizing Engine options */
   smeTeamSize?: string;
   smeBusinessAge?: string;
+  smeMinScore?: number;
   smeRequireDecisionMaker?: boolean;
   smeExcludeEnterprise?: boolean;
   /** How many leads the client asked for (10–1000). */
@@ -691,42 +694,67 @@ async function enrichAndPersistPlace(opts: {
     const roleCheck = classifyRole(ownerTitle);
     const emailClass = classifyEmail(emailFinal, website);
     const phoneClass = classifyPhone(place.phone);
-    const sizeEst = estimateCompanySize({
-      teamCount: websitePeople.team.length,
-      reviewCount: place.reviewCount,
-    });
     const dmFound = Boolean(ownerNameFinal && !roleCheck.isGatekeeper);
     const { firstName: dmFirstName, lastName: dmLastName } = splitFullName(ownerNameFinal);
-    const smeScoring = calculateSmeQualityScore({
-      businessVerified: Boolean(place.name && (place.phone || website)),
-      hasWebsite: Boolean(website),
-      registrationVerified: false,
-      businessAgeVerified: false,
-      domainAgeVerified: false,
-      decisionMakerIdentified: dmFound,
-      decisionMakerMultiSourceVerified: Boolean(ownerNameFinal && (searchOwnerLinkedIn || existingLead?.linkedinUrl)),
-      decisionMakerEmailVerified: Boolean(emailFinal && emailClass.emailType !== "generic"),
-      directPhoneFound: Boolean(place.phone),
-      businessAgeYears: null,
-      employeeCount: sizeEst.employeeCount,
-      isFranchiseOrEnterprise: sizeEst.isFranchiseOrEnterprise,
-      isGenericEmailOnly: emailClass.isGeneric,
-    });
 
+    // Stage 4: Extract Established / Operating Year
     const estInfo = extractEstablishedYear(
       (websitePeople.pagesChecked?.join(" ") || "") + " " + place.name
     );
     const estYears = estInfo.establishedYear
       ? new Date().getFullYear() - estInfo.establishedYear
-      : null;
+      : (existingLead?.yearsInBusiness ?? null);
     const maturity = classifyBusinessMaturity(estYears);
 
-    // 1. SME Scraper Control: Require Verified Decision-Maker (skip receptionist / gatekeeper only)
+    // Stage 5: Domain RDAP / WHOIS Intelligence
+    let rdapInfo: Awaited<ReturnType<typeof fetchDomainRdapInfo>> | null = null;
+    const domainClean = cleanDomain(website);
+    if (domainClean) {
+      try {
+        rdapInfo = await fetchDomainRdapInfo(domainClean);
+      } catch {
+        rdapInfo = null;
+      }
+    }
+
+    // Stage 6: Multi-Signal Company Sizing
+    const sizeEst = estimateCompanySize({
+      teamCount: websitePeople.team.length,
+      reviewCount: place.reviewCount,
+      yearsInBusiness: estYears,
+      snippetText: (websitePeople.pagesChecked?.join(" ") || "") + " " + place.name,
+    });
+
+    // Multi-source tracking
+    const sourcesUsed: string[] = ["Google Places"];
+    if (website) sourcesUsed.push("Official Website");
+    if (rdapInfo?.createdDate) sourcesUsed.push("RDAP / WHOIS");
+    if (dmFound) sourcesUsed.push("Owner Discovery");
+    if (searchOwnerLinkedIn || existingLead?.linkedinUrl) sourcesUsed.push("LinkedIn");
+
+    // Stage 10: 100-Point SME Lead Scoring
+    const smeScoring = calculateSmeQualityScore({
+      businessVerified: Boolean(place.name && (place.phone || website)),
+      hasWebsite: Boolean(website),
+      registrationVerified: Boolean(existingLead?.registrationNumber),
+      businessAgeVerified: estYears !== null,
+      domainAgeVerified: Boolean(rdapInfo?.createdDate),
+      decisionMakerIdentified: dmFound,
+      decisionMakerMultiSourceVerified: Boolean(dmFound && (searchOwnerLinkedIn || existingLead?.linkedinUrl)),
+      decisionMakerEmailVerified: Boolean(emailFinal && emailClass.emailType !== "generic"),
+      directPhoneFound: Boolean(place.phone),
+      businessAgeYears: estYears,
+      employeeCount: sizeEst.employeeCount,
+      isFranchiseOrEnterprise: sizeEst.isFranchiseOrEnterprise,
+      isGenericEmailOnly: emailClass.isGeneric && emailClass.emailType === "generic",
+    });
+
+    // 1. SME Scraper Live Filter: Require Verified Decision-Maker (skip receptionist / gatekeeper only)
     if (params.smeRequireDecisionMaker && !dmFound) {
       return "skipped-no-dm";
     }
 
-    // 2. SME Scraper Control: Exclude 30+ yr old companies & large corporate enterprises/franchises
+    // 2. SME Scraper Live Filter: Exclude 30+ yr old companies & large corporate enterprises/franchises
     if (
       params.smeExcludeEnterprise &&
       (smeScoring.isExcluded || sizeEst.isFranchiseOrEnterprise || maturity === "highly_established")
@@ -734,7 +762,12 @@ async function enrichAndPersistPlace(opts: {
       return "skipped-enterprise";
     }
 
-    // 3. SME Scraper Control: Exact Team Size constraint (e.g. 11-15, 1-15, 2-5, 6-10, solo, etc.)
+    // 3. SME Scraper Live Filter: Minimum SME Quality Score threshold
+    if (params.smeMinScore && params.smeMinScore > 0 && smeScoring.score < params.smeMinScore) {
+      return "skipped-min-score";
+    }
+
+    // 4. SME Scraper Live Filter: Exact Team Size constraint (e.g. 11-15, 1-15, 2-5, 6-10, solo, etc.)
     if (params.smeTeamSize && params.smeTeamSize !== "all") {
       const targetSize = params.smeTeamSize;
       const count = sizeEst.employeeCount;
@@ -762,45 +795,80 @@ async function enrichAndPersistPlace(opts: {
       }
     }
 
-    // 4. SME Scraper Control: Business Age bracket requested by user
+    // 5. SME Scraper Live Filter: Business Age bracket requested by user
     if (params.smeBusinessAge && params.smeBusinessAge !== "all") {
       const targetAge = params.smeBusinessAge;
       const years = estYears;
       if (years != null) {
         if (targetAge === "0-2" && years > 2) return "skipped-age";
         if (targetAge === "2-5" && (years < 2 || years > 5)) return "skipped-age";
+        if (targetAge === "5-10" && (years < 5 || years > 10)) return "skipped-age";
+        if (targetAge === "10-15" && (years < 10 || years > 15)) return "skipped-age";
         if (targetAge === "5-15" && (years < 5 || years > 15)) return "skipped-age";
         if (targetAge === "2-15" && (years < 2 || years > 15)) return "skipped-age";
+        if (targetAge === "15-20" && (years < 15 || years > 20)) return "skipped-age";
+        if (targetAge === "20-30" && (years < 20 || years > 30)) return "skipped-age";
         if (targetAge === "15-30" && (years < 15 || years > 30)) return "skipped-age";
         if (targetAge === "30+" && years < 30) return "skipped-age";
       }
     }
 
     const smeData = {
+      // Domain Information (WHOIS / RDAP)
+      domainName: domainClean || existingLead?.domainName,
+      domainCreatedDate: rdapInfo?.createdDate ?? existingLead?.domainCreatedDate,
+      domainUpdatedDate: rdapInfo?.updatedDate ?? existingLead?.domainUpdatedDate,
+      domainExpiryDate: rdapInfo?.expiryDate ?? existingLead?.domainExpiryDate,
+      domainAgeYears: rdapInfo?.domainAgeYears ?? existingLead?.domainAgeYears,
+      domainRegistrar: rdapInfo?.registrar ?? existingLead?.domainRegistrar,
+      domainRegistrationCountry: rdapInfo?.registrationCountry ?? existingLead?.domainRegistrationCountry,
+      domainSource: rdapInfo?.createdDate ? "RDAP / WHOIS" : existingLead?.domainSource,
+      domainConfidence: rdapInfo?.confidence ?? existingLead?.domainConfidence,
+      domainPrivacyStatus: rdapInfo?.privacyStatus ?? existingLead?.domainPrivacyStatus ?? "unknown",
+
+      // Business Age
+      businessEstablishedDate: estInfo.claimedOperatingDate ?? existingLead?.businessEstablishedDate,
+      businessAgeYears: estYears ?? existingLead?.businessAgeYears,
+      businessAgeSource: estInfo.sourceSnippet ?? existingLead?.businessAgeSource,
+      businessAgeConfidence: estInfo.confidence || (estYears ? 60 : 0),
+      businessAgeLastVerified: new Date(),
+      businessMaturity: maturity,
+
+      // Company Size & Signals
+      employeeCount: sizeEst.employeeCount,
+      employeeCountSource: websitePeople.team.length > 0 ? "website_team_page" : "multi_signal_estimate",
+      employeeCountConfidence: sizeEst.confidence,
+      employeeCountLastVerified: new Date(),
+      companySizeCategory: sizeEst.category,
+      locationCount: 1,
+      isFranchiseOrEnterprise: sizeEst.isFranchiseOrEnterprise,
+
+      // Decision Maker (Strict Non-Generic)
       decisionMakerFound: dmFound,
       decisionMakerName: dmFound ? ownerNameFinal : null,
       decisionMakerFirstName: dmFound ? dmFirstName : null,
       decisionMakerLastName: dmFound ? dmLastName : null,
       decisionMakerTitle: dmFound ? ownerTitle : null,
       decisionMakerRole: dmFound ? (roleCheck.normalizedRole || "Owner") : null,
-      decisionMakerEmail: emailClass.emailType !== "generic" ? emailFinal : null,
+      decisionMakerLinkedIn: searchOwnerLinkedIn ?? existingLead?.linkedinOwnerUrl ?? null,
+      decisionMakerEmail: (dmFound && emailClass.emailType !== "generic") ? emailFinal : null,
       decisionMakerEmailType: emailClass.emailType,
+      decisionMakerEmailVerification: (emailFinal && emailClass.emailType !== "generic") ? "verified" : "unverified",
       decisionMakerDirectPhone: place.phone || null,
       decisionMakerPhoneType: phoneClass.phoneType,
-      employeeCount: sizeEst.employeeCount,
-      companySizeCategory: sizeEst.category,
-      isFranchiseOrEnterprise: sizeEst.isFranchiseOrEnterprise,
-      businessEstablishedDate: estInfo.claimedOperatingDate
-        ? estInfo.claimedOperatingDate.toISOString().split("T")[0]
-        : estInfo.establishedYear
-          ? String(estInfo.establishedYear)
-          : null,
-      businessAgeYears: estYears,
-      businessAgeSource: estInfo.sourceSnippet,
-      businessMaturity: maturity,
+      decisionMakerSource: dmFound ? "Cross-Source Discovery" : null,
+      decisionMakerVerified: Boolean(dmFound && (searchOwnerLinkedIn || existingLead?.linkedinUrl)),
+      decisionMakerVerificationDate: dmFound ? new Date() : null,
+      decisionMakerConfidence: dmFound ? (searchOwnerLinkedIn ? 90 : 75) : 0,
+
+      // Multi-Source Validation & 100-Point Scoring
+      sourcesCount: sourcesUsed.length,
+      sourcesUsedJson: JSON.stringify(sourcesUsed),
+      businessVerified: true,
       smeQualityScore: smeScoring.score,
       isLowPriorityOrExcluded: smeScoring.isExcluded,
       exclusionReasonsJson: JSON.stringify(smeScoring.exclusionReasons),
+      lastVerifiedAt: new Date(),
     };
 
     const sharedData = {
