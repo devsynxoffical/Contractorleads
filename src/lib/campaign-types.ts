@@ -1,3 +1,13 @@
+export type CampaignAttachment = {
+  id: string;
+  name: string;
+  size?: number; // size in bytes
+  type?: string; // MIME type or extension like "pdf"
+  url?: string;
+  contentBase64?: string;
+  placement?: "top" | "bottom" | "custom";
+};
+
 export type CampaignHook = {
   id: string; // "A" | "B" | "C" | "D"
   label: string; // "Hook A: Local Overflow & Territory"
@@ -5,6 +15,9 @@ export type CampaignHook = {
   subject: string;
   body: string;
   active: boolean;
+  attachments?: CampaignAttachment[];
+  enableUnsubscribe?: boolean;
+  unsubscribeText?: string;
 };
 
 export type CampaignFollowUpStep = {
@@ -17,6 +30,9 @@ export type CampaignFollowUpStep = {
   active: boolean;
   sendingTime?: string; // "09:00"
   sendingDays?: string[]; // ["mon", "tue", "wed", "thu", "fri"]
+  attachments?: CampaignAttachment[];
+  enableUnsubscribe?: boolean;
+  unsubscribeText?: string;
 };
 
 export const DEFAULT_DAY0_HOOKS: CampaignHook[] = [
@@ -235,6 +251,18 @@ export function parseCampaignSteps(stepsJson?: string | null): CampaignFollowUpS
   return DEFAULT_FOLLOWUP_SEQUENCE;
 }
 
+export type CampaignWeeklyRampUp = {
+  enabled: boolean;
+  startDailyLimit: number; // e.g. 5 emails/day
+  increasePerWeek: number; // e.g. 5 emails/day every week
+  maxDailyCeiling: number; // e.g. 35 emails/day
+};
+
+export type CampaignMailboxLimitsConfig = {
+  customLimits?: Record<string, number>;
+  rampUp?: CampaignWeeklyRampUp;
+};
+
 /** Render campaign email template with prospect variables */
 export function renderCampaignTemplate(
   template: string,
@@ -270,4 +298,176 @@ export function renderCampaignTemplate(
     rendered = rendered.replace(regex, value);
   }
   return rendered;
+}
+
+export function formatBytes(bytes?: number): string {
+  if (!bytes || bytes <= 0) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/**
+ * Converts rich text / markdown into email-safe, high-deliverability HTML.
+ * Supports bold (**text**), italics (*text*), underline (<u>text</u>),
+ * strikethrough (~~text~~), hyperlinks ([label](url)), quotes (> quote),
+ * lists (- item or 1. item), attachments (top/bottom/custom), and unsubscribe.
+ */
+export function formatEmailBodyToHtml(
+  rawBody: string,
+  options?: {
+    attachments?: CampaignAttachment[];
+    enableUnsubscribe?: boolean;
+    unsubscribeText?: string;
+    unsubscribeUrl?: string;
+  }
+): string {
+  let content = rawBody || "";
+
+  // 1. Handle Custom Inline Attachments: {{attachment:filename}} or {{attachment:id}}
+  const attachments = options?.attachments || [];
+  const topAttachments: CampaignAttachment[] = [];
+  const bottomAttachments: CampaignAttachment[] = [];
+
+  for (const att of attachments) {
+    const placement = att.placement || "bottom";
+    const attTagRegex = new RegExp(
+      `{{\\s*attachment:(${att.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}|${att.id})\\s*}}`,
+      "gi"
+    );
+
+    const attBadgeHtml = `<div style="display:inline-flex;align-items:center;gap:6px;background:#f8fafc;border:1px solid #cbd5e1;padding:6px 12px;border-radius:8px;font-size:12px;color:#1e293b;margin:6px 0;">📎 <strong>${att.name}</strong>${att.size ? ` <span style="color:#64748b;font-size:11px;">(${formatBytes(att.size)})</span>` : ""}</div>`;
+
+    if (placement === "custom" && attTagRegex.test(content)) {
+      content = content.replace(attTagRegex, attBadgeHtml);
+    } else if (placement === "top") {
+      topAttachments.push(att);
+    } else {
+      bottomAttachments.push(att);
+    }
+  }
+
+  // 2. Unsubscribe inline tag {{unsubscribe}}
+  const unsubText =
+    options?.unsubscribeText?.trim() ||
+    "If you do not wish to receive further emails from us, click here to unsubscribe or reply STOP.";
+  const unsubUrl = options?.unsubscribeUrl || "#unsubscribe";
+
+  const hasUnsubTag = /{{\\s*unsubscribe\\s*}}/gi.test(content);
+  if (hasUnsubTag) {
+    const unsubLinkHtml = `<a href="${unsubUrl}" style="color:#64748b;text-decoration:underline;">${unsubText}</a>`;
+    content = content.replace(/{{\\s*unsubscribe\\s*}}/gi, unsubLinkHtml);
+  }
+
+  // 3. Markdown Formatting
+  // Escape angle brackets that are NOT part of allowed HTML tags
+  content = content
+    .replace(/&/g, "&amp;")
+    .replace(/<(?!\/?(u|strong|em|s|a|div|span|br|p|blockquote|ul|ol|li)\b[^>]*>)/gi, "&lt;");
+
+  // Bold: **text**
+  content = content.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+
+  // Italic: *text* (excluding bold)
+  content = content.replace(/(^|[^*])\*([^*\n]+)\*([^*]|$)/g, "$1<em>$2</em>$3");
+
+  // Strikethrough: ~~text~~
+  content = content.replace(/~~([^~]+)~~/g, "<s>$1</s>");
+
+  // Hyperlinks: [label](url)
+  content = content.replace(
+    /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+    '<a href="$2" target="_blank" rel="noopener noreferrer" style="color:#2563eb;text-decoration:underline;font-weight:500;">$1</a>'
+  );
+
+  // Monospace inline code: `code`
+  content = content.replace(
+    /`([^`\n]+)`/g,
+    '<code style="background:#f1f5f9;border:1px solid #e2e8f0;padding:2px 5px;border-radius:4px;font-family:monospace;font-size:12px;color:#0f172a;">$1</code>'
+  );
+
+  // Convert line breaks and paragraphs
+  const paragraphs = content.split(/\n{2,}/);
+  const formattedParagraphs = paragraphs.map((para) => {
+    const lines = para.split("\n");
+    // Check blockquote
+    if (lines.every((l) => l.trim().startsWith("&gt;") || l.trim().startsWith(">"))) {
+      const qText = lines
+        .map((l) => l.replace(/^(&gt;|>)\s?/, ""))
+        .join("<br/>");
+      return `<blockquote style="border-left:3px solid #cbd5e1;padding-left:12px;margin:8px 0;color:#64748b;font-style:italic;">${qText}</blockquote>`;
+    }
+    // Check bullet list
+    if (lines.every((l) => l.trim().startsWith("- ") || l.trim().startsWith("* "))) {
+      const items = lines
+        .map((l) => `<li style="margin-bottom:4px;">${l.replace(/^[-*]\s+/, "")}</li>`)
+        .join("");
+      return `<ul style="margin:8px 0 12px 20px;padding:0;">${items}</ul>`;
+    }
+    // Check numbered list
+    if (lines.every((l) => /^\d+\.\s+/.test(l.trim()))) {
+      const items = lines
+        .map((l) => `<li style="margin-bottom:4px;">${l.replace(/^\d+\.\s+/, "")}</li>`)
+        .join("");
+      return `<ol style="margin:8px 0 12px 20px;padding:0;">${items}</ol>`;
+    }
+    return `<p style="margin:0 0 12px 0;line-height:1.5;">${lines.join("<br/>")}</p>`;
+  });
+
+  let fullHtml = formattedParagraphs.join("");
+
+  // Prepend Top Attachments
+  if (topAttachments.length > 0) {
+    const topHtml = `
+      <div style="margin-bottom:16px;padding:10px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;">
+        <div style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">📎 Attached Files (${topAttachments.length})</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          ${topAttachments
+            .map(
+              (a) =>
+                `<span style="display:inline-flex;align-items:center;gap:6px;background:#ffffff;border:1px solid #cbd5e1;padding:5px 10px;border-radius:6px;font-size:12px;color:#1e293b;font-weight:600;">📎 ${a.name} <span style="color:#64748b;font-size:11px;font-weight:400;">(${formatBytes(a.size)})</span></span>`
+            )
+            .join("")}
+        </div>
+      </div>
+    `;
+    fullHtml = topHtml + fullHtml;
+  }
+
+  // Append Bottom Attachments
+  if (bottomAttachments.length > 0) {
+    const bottomHtml = `
+      <div style="margin-top:20px;padding:12px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;">
+        <div style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">📎 Attachments (${bottomAttachments.length})</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          ${bottomAttachments
+            .map(
+              (a) =>
+                `<span style="display:inline-flex;align-items:center;gap:6px;background:#ffffff;border:1px solid #cbd5e1;padding:6px 12px;border-radius:6px;font-size:12px;color:#1e293b;font-weight:600;">📄 ${a.name} <span style="color:#64748b;font-size:11px;font-weight:400;">(${formatBytes(a.size)})</span></span>`
+            )
+            .join("")}
+        </div>
+      </div>
+    `;
+    fullHtml = fullHtml + bottomHtml;
+  }
+
+  // Append Unsubscribe Footer if enabled and not already placed via {{unsubscribe}}
+  if (options?.enableUnsubscribe && !hasUnsubTag) {
+    const footerTextWithLink = unsubText.includes("click here to unsubscribe")
+      ? unsubText.replace(
+          /click here to unsubscribe/i,
+          `<a href="${unsubUrl}" style="color:#64748b;text-decoration:underline;">click here to unsubscribe</a>`
+        )
+      : `${unsubText} · <a href="${unsubUrl}" style="color:#64748b;text-decoration:underline;">Unsubscribe</a>`;
+
+    const footerHtml = `
+      <div style="margin-top:28px;padding-top:14px;border-top:1px solid #e2e8f0;font-size:11px;color:#64748b;line-height:1.4;">
+        ${footerTextWithLink}
+      </div>
+    `;
+    fullHtml = fullHtml + footerHtml;
+  }
+
+  return `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:14px;color:#1e293b;line-height:1.6;">${fullHtml}</div>`;
 }

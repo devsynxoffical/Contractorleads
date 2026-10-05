@@ -4,9 +4,12 @@ import {
   parseCampaignHooks,
   parseCampaignSteps,
   renderCampaignTemplate,
+  formatEmailBodyToHtml,
   DEFAULT_DAY0_HOOKS,
   type CampaignHook,
   type CampaignFollowUpStep,
+  type CampaignAttachment,
+  type CampaignWeeklyRampUp,
 } from "@/lib/campaign-engine";
 import {
   isWithinSendingWindow,
@@ -152,12 +155,33 @@ export async function processCampaignSends(opts?: {
     }
 
     let customLimitsMap: Record<string, number> = {};
+    let rampUpConfig: CampaignWeeklyRampUp | null = null;
     try {
       if (campaign.mailboxLimitsJson) {
-        customLimitsMap = JSON.parse(campaign.mailboxLimitsJson);
+        const parsed = JSON.parse(campaign.mailboxLimitsJson);
+        if (parsed && typeof parsed === "object") {
+          if (parsed.customLimits && typeof parsed.customLimits === "object") {
+            customLimitsMap = parsed.customLimits;
+          } else if (!parsed.rampUp) {
+            customLimitsMap = parsed;
+          }
+          if (parsed.rampUp && parsed.rampUp.enabled) {
+            rampUpConfig = parsed.rampUp;
+          }
+        }
       }
     } catch {
       customLimitsMap = {};
+    }
+
+    // Weekly increasing sending volume (ramp-up) calculation
+    let effectiveBaseDailyLimit = campaign.dailyLimitPerMailbox ?? 10;
+    if (rampUpConfig && rampUpConfig.enabled) {
+      const startDate = campaign.startedAt || campaign.createdAt || now;
+      const elapsedMs = Math.max(0, now.getTime() - new Date(startDate).getTime());
+      const weeksElapsed = Math.floor(elapsedMs / (7 * 24 * 60 * 60 * 1000));
+      const ramped = rampUpConfig.startDailyLimit + weeksElapsed * rampUpConfig.increasePerWeek;
+      effectiveBaseDailyLimit = Math.min(rampUpConfig.maxDailyCeiling, Math.max(1, ramped));
     }
 
     const availableMailboxes = [...userMailboxes, ...systemMailboxes]
@@ -166,7 +190,7 @@ export async function processCampaignSends(opts?: {
         if (Array.isArray(selectedIds) && !selectedIds.includes(m.id) && !selectedIds.includes(m.fromEmail)) {
           return false;
         }
-        const limit = customLimitsMap[m.id] ?? campaign.dailyLimitPerMailbox ?? 10;
+        const limit = customLimitsMap[m.id] ?? effectiveBaseDailyLimit;
         const sentToday = sendsTodayMap.get(m.id) || 0;
         return sentToday < limit;
       });
@@ -237,6 +261,9 @@ export async function processCampaignSends(opts?: {
       let subject = "";
       let bodyTemplate = "";
       let hookId: string | null = null;
+      let stepAttachments: CampaignAttachment[] = [];
+      let stepEnableUnsub = false;
+      let stepUnsubText: string | undefined = undefined;
 
       if (stepIdx === 0) {
         // Day 0 Outreach Hook
@@ -248,6 +275,9 @@ export async function processCampaignSends(opts?: {
         subject = assignedHook.subject;
         bodyTemplate = assignedHook.body;
         hookId = assignedHook.id;
+        stepAttachments = assignedHook.attachments || [];
+        stepEnableUnsub = Boolean(assignedHook.enableUnsubscribe);
+        stepUnsubText = assignedHook.unsubscribeText;
       } else {
         // Follow-up Step
         const followUpStep = steps[stepIdx - 1];
@@ -261,6 +291,9 @@ export async function processCampaignSends(opts?: {
         }
         subject = followUpStep.subject.replace("{{lastSubject}}", prospect.lastSubject || "Our conversation");
         bodyTemplate = followUpStep.body;
+        stepAttachments = followUpStep.attachments || [];
+        stepEnableUnsub = Boolean(followUpStep.enableUnsubscribe);
+        stepUnsubText = followUpStep.unsubscribeText;
       }
 
       // Render email content with personalizations
@@ -283,6 +316,28 @@ export async function processCampaignSends(opts?: {
       mailboxIndex++;
 
       const trackingToken = randomBytes(24).toString("hex");
+      const baseAppUrl = appBaseUrl();
+      const unsubUrl = `${baseAppUrl}/unsubscribe?token=${trackingToken}&campaign=${campaign.id}`;
+
+      // Render rich HTML with formatting, attachments, and unsubscribe
+      const renderedHtml = formatEmailBodyToHtml(renderedBody, {
+        attachments: stepAttachments,
+        enableUnsubscribe: stepEnableUnsub,
+        unsubscribeText: stepUnsubText,
+        unsubscribeUrl: unsubUrl,
+      });
+
+      // Prepare MIME attachments for SMTP/Resend
+      const outboundAttachments = stepAttachments
+        .filter((a) => a.contentBase64)
+        .map((a) => ({
+          filename: a.name,
+          content: Buffer.from(
+            a.contentBase64!.replace(/^data:[^;]+;base64,/, ""),
+            "base64"
+          ),
+          contentType: a.type,
+        }));
 
       try {
         const sentResult = await sendOutboundEmail({
@@ -290,7 +345,9 @@ export async function processCampaignSends(opts?: {
           to: prospect.email,
           subject: renderedSubject,
           text: renderedBody,
+          html: renderedHtml,
           accountId: mailbox.id,
+          attachments: outboundAttachments.length > 0 ? outboundAttachments : undefined,
         });
 
         // Log campaign email

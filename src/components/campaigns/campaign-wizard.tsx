@@ -25,6 +25,14 @@ import {
   HiOutlineTrash,
   HiOutlineUsers,
   HiOutlineXMark,
+  HiOutlinePaperClip,
+  HiOutlineLink,
+  HiOutlineFolder,
+  HiOutlineFolderOpen,
+  HiOutlineChevronDown,
+  HiOutlineChevronRight,
+  HiOutlineArrowTrendingUp,
+  HiOutlineDocumentText,
 } from "react-icons/hi2";
 import { cn } from "@/lib/utils";
 import {
@@ -32,6 +40,9 @@ import {
   DEFAULT_FOLLOWUP_SEQUENCE,
   type CampaignHook,
   type CampaignFollowUpStep,
+  type CampaignAttachment,
+  formatEmailBodyToHtml,
+  formatBytes,
 } from "@/lib/campaign-types";
 import {
   TIMEZONE_OPTIONS,
@@ -104,6 +115,14 @@ export function CampaignWizard({
   const [dailyLimitPerMailbox, setDailyLimitPerMailbox] = useState<number>(10);
   const [minDelayMinutes, setMinDelayMinutes] = useState<number>(4);
   const [maxDelayMinutes, setMaxDelayMinutes] = useState<number>(7);
+  const [customMailboxLimits, setCustomMailboxLimits] = useState<Record<string, number>>({});
+  const [collapsedDomains, setCollapsedDomains] = useState<Record<string, boolean>>({});
+
+  // Weekly ramp-up warmup settings
+  const [enableWeeklyRampUp, setEnableWeeklyRampUp] = useState<boolean>(false);
+  const [rampUpStartLimit, setRampUpStartLimit] = useState<number>(5);
+  const [rampUpIncreasePerWeek, setRampUpIncreasePerWeek] = useState<number>(5);
+  const [rampUpMaxCeiling, setRampUpMaxCeiling] = useState<number>(30);
 
   // Wizard state: Step 5 - Scheduling & Timezones
   const [timezone, setTimezone] = useState<string>("America/New_York");
@@ -146,6 +165,169 @@ export function CampaignWizard({
       .replace(/\{\{fromName\}\}/g, fName)
       .replace(/\{\{website\}\}/g, "apexroofingmiami.com")
       .replace(/\{\{phone\}\}/g, "(305) 555-0199");
+  }
+
+  function renderSimulatedHtml(
+    body: string,
+    attachments?: CampaignAttachment[],
+    enableUnsubscribe?: boolean,
+    unsubscribeText?: string
+  ) {
+    const simulatedText = renderSimulated(body);
+    return formatEmailBodyToHtml(simulatedText, {
+      attachments,
+      enableUnsubscribe,
+      unsubscribeText,
+      unsubscribeUrl: "#unsubscribe-preview",
+    });
+  }
+
+  // Helper to insert dynamic tag or text exactly at the cursor selection
+  function insertTextIntoTextarea(
+    elementId: string,
+    currentVal: string,
+    toInsert: string,
+    onUpdate: (nextText: string) => void
+  ) {
+    const el = document.getElementById(elementId) as HTMLTextAreaElement | null;
+    if (!el) {
+      onUpdate(currentVal ? `${currentVal} ${toInsert}` : toInsert);
+      return;
+    }
+    const start = el.selectionStart ?? currentVal.length;
+    const end = el.selectionEnd ?? currentVal.length;
+    const before = currentVal.substring(0, start);
+    const after = currentVal.substring(end);
+    const nextVal = before + toInsert + after;
+    onUpdate(nextVal);
+    requestAnimationFrame(() => {
+      el.focus();
+      const newPos = start + toInsert.length;
+      el.setSelectionRange(newPos, newPos);
+    });
+  }
+
+  // Helper to apply rich-text formatting (bold, italic, underline, link, list, quote)
+  function applyFormattingToTextarea(
+    elementId: string,
+    currentVal: string,
+    formatType: "bold" | "italic" | "underline" | "strike" | "link" | "bullet" | "number" | "quote" | "code",
+    onUpdate: (nextText: string) => void
+  ) {
+    const el = document.getElementById(elementId) as HTMLTextAreaElement | null;
+    if (!el) return;
+    const start = el.selectionStart ?? 0;
+    const end = el.selectionEnd ?? 0;
+    const selectedText = currentVal.substring(start, end);
+    let replacement = "";
+    let cursorOffset = 0;
+
+    switch (formatType) {
+      case "bold":
+        replacement = `**${selectedText || "bold text"}**`;
+        cursorOffset = selectedText ? replacement.length : 2;
+        break;
+      case "italic":
+        replacement = `*${selectedText || "italic text"}*`;
+        cursorOffset = selectedText ? replacement.length : 1;
+        break;
+      case "underline":
+        replacement = `<u>${selectedText || "underlined text"}</u>`;
+        cursorOffset = selectedText ? replacement.length : 3;
+        break;
+      case "strike":
+        replacement = `~~${selectedText || "strikethrough"}~~`;
+        cursorOffset = selectedText ? replacement.length : 2;
+        break;
+      case "code":
+        replacement = `\`${selectedText || "code"}\``;
+        cursorOffset = selectedText ? replacement.length : 1;
+        break;
+      case "link": {
+        const url = window.prompt("Enter link URL (e.g. https://apexroofing.com):", "https://");
+        if (!url) return;
+        replacement = `[${selectedText || "Click here"}](${url})`;
+        cursorOffset = replacement.length;
+        break;
+      }
+      case "bullet": {
+        if (selectedText) {
+          replacement = selectedText
+            .split("\n")
+            .map((line) => (line.trim().startsWith("- ") ? line : `- ${line}`))
+            .join("\n");
+        } else {
+          replacement = "\n- Key point 1\n- Key point 2\n";
+        }
+        cursorOffset = replacement.length;
+        break;
+      }
+      case "number": {
+        if (selectedText) {
+          replacement = selectedText
+            .split("\n")
+            .map((line, idx) => (/^\d+\.\s+/.test(line.trim()) ? line : `${idx + 1}. ${line}`))
+            .join("\n");
+        } else {
+          replacement = "\n1. Step one\n2. Step two\n";
+        }
+        cursorOffset = replacement.length;
+        break;
+      }
+      case "quote": {
+        if (selectedText) {
+          replacement = selectedText
+            .split("\n")
+            .map((line) => (line.trim().startsWith(">") ? line : `> ${line}`))
+            .join("\n");
+        } else {
+          replacement = "\n> Verified homeowner quote or reference\n";
+        }
+        cursorOffset = replacement.length;
+        break;
+      }
+    }
+
+    const before = currentVal.substring(0, start);
+    const after = currentVal.substring(end);
+    const nextVal = before + replacement + after;
+    onUpdate(nextVal);
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start + cursorOffset, start + cursorOffset);
+    });
+  }
+
+  // File upload to Base64 reader
+  async function handleFilesUpload(
+    files: FileList | null,
+    onAdd: (newAttachments: CampaignAttachment[]) => void
+  ) {
+    if (!files || files.length === 0) return;
+    const added: CampaignAttachment[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.size > 15 * 1024 * 1024) {
+        alert(`File ${file.name} is larger than the 15MB limit.`);
+        continue;
+      }
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+      added.push({
+        id: Math.random().toString(36).slice(2, 9),
+        name: file.name,
+        size: file.size,
+        type: file.type || "application/octet-stream",
+        contentBase64: base64,
+        placement: "bottom",
+      });
+    }
+    if (added.length > 0) {
+      onAdd(added);
+    }
   }
 
   // Load initial segments & mailboxes
@@ -362,13 +544,17 @@ export function CampaignWizard({
     setTestSuccess(null);
     try {
       const chosenAccountId = testMailboxId || (selectedMailboxIds.length > 0 ? selectedMailboxIds[0] : undefined);
+      const activeHook = hooks.find((h) => h.id === activeHookTab) || hooks[0];
       const res = await fetch(`/api/campaigns/test-send-generic`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           testEmail: testEmail.trim(),
-          subject: hooks[0]?.subject || "Test Subject",
-          body: hooks[0]?.body || "Test Body",
+          subject: activeHook?.subject || "Test Subject",
+          body: activeHook?.body || "Test Body",
+          attachments: activeHook?.attachments || [],
+          enableUnsubscribe: activeHook?.enableUnsubscribe,
+          unsubscribeText: activeHook?.unsubscribeText,
           accountId: chosenAccountId,
           mailboxIds: selectedMailboxIds.length > 0 ? selectedMailboxIds : undefined,
         }),
@@ -416,6 +602,15 @@ export function CampaignWizard({
         steps: sequenceSteps.filter((s) => s.active),
         selectedMailboxIds: selectAllMailboxes ? "ALL" : selectedMailboxIds,
         dailyLimitPerMailbox,
+        mailboxLimits: Object.keys(customMailboxLimits).length > 0 ? customMailboxLimits : undefined,
+        weeklyRampUp: enableWeeklyRampUp
+          ? {
+              enabled: true,
+              startDailyLimit: rampUpStartLimit,
+              increasePerWeek: rampUpIncreasePerWeek,
+              maxDailyCeiling: rampUpMaxCeiling,
+            }
+          : undefined,
         minDelayMinutes,
         maxDelayMinutes,
         timezone,
@@ -795,12 +990,19 @@ export function CampaignWizard({
                             key={tag}
                             type="button"
                             onClick={() => {
-                              const next = [...hooks];
-                              next[idx].body += ` ${tag}`;
-                              setHooks(next);
+                              insertTextIntoTextarea(
+                                `hook-body-${h.id}`,
+                                h.body,
+                                tag,
+                                (newVal) => {
+                                  const next = [...hooks];
+                                  next[idx].body = newVal;
+                                  setHooks(next);
+                                }
+                              );
                             }}
                             className="rounded-lg border border-border bg-[var(--surface)] px-2 py-1 font-mono text-[11px] font-semibold text-brand-700 hover:border-brand-500 hover:bg-brand-50 transition dark:text-brand-300 dark:hover:bg-brand-950/40"
-                            title={`Add ${tag}`}
+                            title={`Insert ${tag} at cursor position`}
                           >
                             + {tag}
                           </button>
@@ -808,9 +1010,128 @@ export function CampaignWizard({
                       </div>
                     </div>
 
+                    {/* Rich Text Toolbar */}
+                    <div className="flex flex-wrap items-center gap-1 bg-[var(--surface)] border border-border rounded-xl px-2.5 py-1.5 text-xs shadow-xs">
+                      <span className="text-[11px] font-bold text-ink-muted mr-1.5">Format:</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          applyFormattingToTextarea(`hook-body-${h.id}`, h.body, "bold", (nextVal) => {
+                            const next = [...hooks];
+                            next[idx].body = nextVal;
+                            setHooks(next);
+                          })
+                        }
+                        className="p-1 px-2 font-bold rounded hover:bg-[var(--input-bg)] border border-transparent hover:border-border text-ink"
+                        title="Bold (**text**)"
+                      >
+                        B
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          applyFormattingToTextarea(`hook-body-${h.id}`, h.body, "italic", (nextVal) => {
+                            const next = [...hooks];
+                            next[idx].body = nextVal;
+                            setHooks(next);
+                          })
+                        }
+                        className="p-1 px-2 italic font-serif rounded hover:bg-[var(--input-bg)] border border-transparent hover:border-border text-ink"
+                        title="Italic (*text*)"
+                      >
+                        I
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          applyFormattingToTextarea(`hook-body-${h.id}`, h.body, "underline", (nextVal) => {
+                            const next = [...hooks];
+                            next[idx].body = nextVal;
+                            setHooks(next);
+                          })
+                        }
+                        className="p-1 px-2 underline rounded hover:bg-[var(--input-bg)] border border-transparent hover:border-border text-ink"
+                        title="Underline (<u>text</u>)"
+                      >
+                        U
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          applyFormattingToTextarea(`hook-body-${h.id}`, h.body, "strike", (nextVal) => {
+                            const next = [...hooks];
+                            next[idx].body = nextVal;
+                            setHooks(next);
+                          })
+                        }
+                        className="p-1 px-2 line-through rounded hover:bg-[var(--input-bg)] border border-transparent hover:border-border text-ink"
+                        title="Strikethrough (~~text~~)"
+                      >
+                        S
+                      </button>
+                      <div className="h-4 w-px bg-border mx-1" />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          applyFormattingToTextarea(`hook-body-${h.id}`, h.body, "link", (nextVal) => {
+                            const next = [...hooks];
+                            next[idx].body = nextVal;
+                            setHooks(next);
+                          })
+                        }
+                        className="inline-flex items-center gap-1 p-1 px-2 rounded hover:bg-[var(--input-bg)] border border-transparent hover:border-border text-ink"
+                        title="Insert Hyperlink"
+                      >
+                        <HiOutlineLink className="h-3.5 w-3.5" /> Link
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          applyFormattingToTextarea(`hook-body-${h.id}`, h.body, "bullet", (nextVal) => {
+                            const next = [...hooks];
+                            next[idx].body = nextVal;
+                            setHooks(next);
+                          })
+                        }
+                        className="p-1 px-2 rounded hover:bg-[var(--input-bg)] border border-transparent hover:border-border text-ink"
+                        title="Bullet List (- item)"
+                      >
+                        • List
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          applyFormattingToTextarea(`hook-body-${h.id}`, h.body, "number", (nextVal) => {
+                            const next = [...hooks];
+                            next[idx].body = nextVal;
+                            setHooks(next);
+                          })
+                        }
+                        className="p-1 px-2 rounded hover:bg-[var(--input-bg)] border border-transparent hover:border-border text-ink"
+                        title="Numbered List (1. item)"
+                      >
+                        1. List
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          applyFormattingToTextarea(`hook-body-${h.id}`, h.body, "quote", (nextVal) => {
+                            const next = [...hooks];
+                            next[idx].body = nextVal;
+                            setHooks(next);
+                          })
+                        }
+                        className="p-1 px-2 rounded hover:bg-[var(--input-bg)] border border-transparent hover:border-border text-ink"
+                        title="Blockquote (> quote)"
+                      >
+                        ❝ Quote
+                      </button>
+                    </div>
+
                     <div className="relative">
                       <textarea
-                        rows={14}
+                        id={`hook-body-${h.id}`}
+                        rows={13}
                         value={h.body}
                         onChange={(e) => {
                           const next = [...hooks];
@@ -818,8 +1139,168 @@ export function CampaignWizard({
                           setHooks(next);
                         }}
                         placeholder="Write your email body copy here..."
-                        className="saas-input w-full font-sans text-xs leading-relaxed p-4 rounded-xl resize-y min-h-[300px] border-border shadow-xs focus:ring-2 focus:ring-brand-500/20"
+                        className="saas-input w-full font-sans text-xs leading-relaxed p-4 rounded-xl resize-y min-h-[280px] border-border shadow-xs focus:ring-2 focus:ring-brand-500/20"
                       />
+                    </div>
+
+                    {/* Attachments Section */}
+                    <div className="rounded-xl border border-border bg-[var(--input-bg)]/60 p-3 space-y-2.5">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <HiOutlinePaperClip className="h-4 w-4 text-brand-600" />
+                          <span className="text-xs font-bold text-ink">
+                            Attachments ({h.attachments?.length || 0})
+                          </span>
+                        </div>
+                        <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border border-border bg-[var(--surface)] text-[11px] font-semibold text-brand-700 hover:border-brand-500 hover:bg-brand-50 transition dark:text-brand-300">
+                          <HiOutlinePlus className="h-3.5 w-3.5" /> Attach File (PDF, DOCX, Image)
+                          <input
+                            type="file"
+                            multiple
+                            className="hidden"
+                            onChange={(e) => {
+                              void handleFilesUpload(e.target.files, (newAtts) => {
+                                const next = [...hooks];
+                                next[idx].attachments = [...(next[idx].attachments || []), ...newAtts];
+                                setHooks(next);
+                              });
+                            }}
+                          />
+                        </label>
+                      </div>
+
+                      {h.attachments && h.attachments.length > 0 && (
+                        <div className="space-y-2 pt-1">
+                          {h.attachments.map((att, attIdx) => (
+                            <div
+                              key={att.id || attIdx}
+                              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-[var(--surface)] p-2 text-xs"
+                            >
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <span className="text-base">📄</span>
+                                <div className="min-w-0">
+                                  <div className="font-semibold text-ink truncate">{att.name}</div>
+                                  <div className="text-[10px] text-ink-muted">{formatBytes(att.size)}</div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <select
+                                  value={att.placement || "bottom"}
+                                  onChange={(e) => {
+                                    const next = [...hooks];
+                                    next[idx].attachments![attIdx].placement = e.target.value as any;
+                                    setHooks(next);
+                                  }}
+                                  className="saas-input text-[11px] py-1 px-2 font-medium"
+                                >
+                                  <option value="bottom">Placement: Bottom of Email</option>
+                                  <option value="top">Placement: Top of Email</option>
+                                  <option value="custom">Placement: Custom Tag in Body</option>
+                                </select>
+
+                                {att.placement === "custom" && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const tag = `{{attachment:${att.name}}}`;
+                                      insertTextIntoTextarea(
+                                        `hook-body-${h.id}`,
+                                        h.body,
+                                        tag,
+                                        (newVal) => {
+                                          const next = [...hooks];
+                                          next[idx].body = newVal;
+                                          setHooks(next);
+                                        }
+                                      );
+                                    }}
+                                    className="rounded border border-brand-300 bg-brand-50 px-2 py-1 text-[10px] font-bold text-brand-700 hover:bg-brand-100"
+                                    title="Insert {{attachment:filename}} at cursor position"
+                                  >
+                                    + Insert Tag at Cursor
+                                  </button>
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const next = [...hooks];
+                                    next[idx].attachments = next[idx].attachments!.filter((_, i) => i !== attIdx);
+                                    setHooks(next);
+                                  }}
+                                  className="p-1 text-ink-muted hover:text-rose-600 transition"
+                                  title="Remove attachment"
+                                >
+                                  <HiOutlineTrash className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Unsubscribe & Opt-Out Settings */}
+                    <div className="rounded-xl border border-border bg-[var(--input-bg)]/60 p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-ink">
+                          <input
+                            type="checkbox"
+                            checked={h.enableUnsubscribe ?? true}
+                            onChange={(e) => {
+                              const next = [...hooks];
+                              next[idx].enableUnsubscribe = e.target.checked;
+                              setHooks(next);
+                            }}
+                            className="rounded border-border"
+                          />
+                          Include 1-Click Unsubscribe & Compliance Opt-Out
+                        </label>
+                        {(h.enableUnsubscribe ?? true) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              insertTextIntoTextarea(
+                                `hook-body-${h.id}`,
+                                h.body,
+                                "{{unsubscribe}}",
+                                (newVal) => {
+                                  const next = [...hooks];
+                                  next[idx].body = newVal;
+                                  setHooks(next);
+                                }
+                              );
+                            }}
+                            className="text-[11px] font-semibold text-brand-600 hover:underline"
+                            title="Place unsubscribe link at cursor location"
+                          >
+                            + Insert {"{{unsubscribe}}"} at Cursor
+                          </button>
+                        )}
+                      </div>
+
+                      {(h.enableUnsubscribe ?? true) && (
+                        <div>
+                          <input
+                            type="text"
+                            value={
+                              h.unsubscribeText ??
+                              "If you do not wish to receive further emails from us, click here to unsubscribe or reply STOP."
+                            }
+                            onChange={(e) => {
+                              const next = [...hooks];
+                              next[idx].unsubscribeText = e.target.value;
+                              setHooks(next);
+                            }}
+                            placeholder="Custom unsubscribe message..."
+                            className="saas-input w-full text-[11px] py-1.5"
+                          />
+                          <p className="mt-1 text-[10px] text-ink-muted">
+                            Automatically appends a clean CAN-SPAM compliant opt-out footer, or places it wherever you put {"{{unsubscribe}}"}.
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex flex-wrap items-center justify-between text-[11px] text-ink-muted px-1">
@@ -865,9 +1346,17 @@ export function CampaignWizard({
                     </div>
 
                     <div className="rounded-xl bg-[var(--surface)] p-5 border border-border shadow-xs">
-                      <div className="whitespace-pre-wrap text-xs text-ink leading-relaxed font-sans">
-                        {renderSimulated(h.body)}
-                      </div>
+                      <div
+                        className="text-xs text-ink leading-relaxed font-sans"
+                        dangerouslySetInnerHTML={{
+                          __html: renderSimulatedHtml(
+                            h.body,
+                            h.attachments,
+                            h.enableUnsubscribe ?? true,
+                            h.unsubscribeText
+                          ),
+                        }}
+                      />
                     </div>
                   </div>
                 )}
@@ -1091,11 +1580,19 @@ export function CampaignWizard({
                             key={tag}
                             type="button"
                             onClick={() => {
-                              const next = [...sequenceSteps];
-                              next[idx].body += ` ${tag}`;
-                              setSequenceSteps(next);
+                              insertTextIntoTextarea(
+                                `step-body-${s.id}`,
+                                s.body,
+                                tag,
+                                (newVal) => {
+                                  const next = [...sequenceSteps];
+                                  next[idx].body = newVal;
+                                  setSequenceSteps(next);
+                                }
+                              );
                             }}
                             className="rounded-lg border border-border bg-[var(--surface)] px-2 py-1 font-mono text-[11px] font-semibold text-brand-700 hover:border-brand-500 hover:bg-brand-50 transition dark:text-brand-300 dark:hover:bg-brand-950/40"
+                            title={`Insert ${tag} at cursor position`}
                           >
                             + {tag}
                           </button>
@@ -1103,8 +1600,127 @@ export function CampaignWizard({
                       </div>
                     </div>
 
+                    {/* Rich Text Toolbar */}
+                    <div className="flex flex-wrap items-center gap-1 bg-[var(--surface)] border border-border rounded-xl px-2.5 py-1.5 text-xs shadow-xs">
+                      <span className="text-[11px] font-bold text-ink-muted mr-1.5">Format:</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          applyFormattingToTextarea(`step-body-${s.id}`, s.body, "bold", (nextVal) => {
+                            const next = [...sequenceSteps];
+                            next[idx].body = nextVal;
+                            setSequenceSteps(next);
+                          })
+                        }
+                        className="p-1 px-2 font-bold rounded hover:bg-[var(--input-bg)] border border-transparent hover:border-border text-ink"
+                        title="Bold (**text**)"
+                      >
+                        B
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          applyFormattingToTextarea(`step-body-${s.id}`, s.body, "italic", (nextVal) => {
+                            const next = [...sequenceSteps];
+                            next[idx].body = nextVal;
+                            setSequenceSteps(next);
+                          })
+                        }
+                        className="p-1 px-2 italic font-serif rounded hover:bg-[var(--input-bg)] border border-transparent hover:border-border text-ink"
+                        title="Italic (*text*)"
+                      >
+                        I
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          applyFormattingToTextarea(`step-body-${s.id}`, s.body, "underline", (nextVal) => {
+                            const next = [...sequenceSteps];
+                            next[idx].body = nextVal;
+                            setSequenceSteps(next);
+                          })
+                        }
+                        className="p-1 px-2 underline rounded hover:bg-[var(--input-bg)] border border-transparent hover:border-border text-ink"
+                        title="Underline (<u>text</u>)"
+                      >
+                        U
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          applyFormattingToTextarea(`step-body-${s.id}`, s.body, "strike", (nextVal) => {
+                            const next = [...sequenceSteps];
+                            next[idx].body = nextVal;
+                            setSequenceSteps(next);
+                          })
+                        }
+                        className="p-1 px-2 line-through rounded hover:bg-[var(--input-bg)] border border-transparent hover:border-border text-ink"
+                        title="Strikethrough (~~text~~)"
+                      >
+                        S
+                      </button>
+                      <div className="h-4 w-px bg-border mx-1" />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          applyFormattingToTextarea(`step-body-${s.id}`, s.body, "link", (nextVal) => {
+                            const next = [...sequenceSteps];
+                            next[idx].body = nextVal;
+                            setSequenceSteps(next);
+                          })
+                        }
+                        className="inline-flex items-center gap-1 p-1 px-2 rounded hover:bg-[var(--input-bg)] border border-transparent hover:border-border text-ink"
+                        title="Insert Hyperlink"
+                      >
+                        <HiOutlineLink className="h-3.5 w-3.5" /> Link
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          applyFormattingToTextarea(`step-body-${s.id}`, s.body, "bullet", (nextVal) => {
+                            const next = [...sequenceSteps];
+                            next[idx].body = nextVal;
+                            setSequenceSteps(next);
+                          })
+                        }
+                        className="p-1 px-2 rounded hover:bg-[var(--input-bg)] border border-transparent hover:border-border text-ink"
+                        title="Bullet List (- item)"
+                      >
+                        • List
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          applyFormattingToTextarea(`step-body-${s.id}`, s.body, "number", (nextVal) => {
+                            const next = [...sequenceSteps];
+                            next[idx].body = nextVal;
+                            setSequenceSteps(next);
+                          })
+                        }
+                        className="p-1 px-2 rounded hover:bg-[var(--input-bg)] border border-transparent hover:border-border text-ink"
+                        title="Numbered List (1. item)"
+                      >
+                        1. List
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          applyFormattingToTextarea(`step-body-${s.id}`, s.body, "quote", (nextVal) => {
+                            const next = [...sequenceSteps];
+                            next[idx].body = nextVal;
+                            setSequenceSteps(next);
+                          })
+                        }
+                        className="p-1 px-2 rounded hover:bg-[var(--input-bg)] border border-transparent hover:border-border text-ink"
+                        title="Blockquote (> quote)"
+                      >
+                        ❝ Quote
+                      </button>
+                    </div>
+
                     <div className="relative">
                       <textarea
+                        id={`step-body-${s.id}`}
                         rows={13}
                         value={s.body}
                         onChange={(e) => {
@@ -1115,6 +1731,163 @@ export function CampaignWizard({
                         placeholder="Write follow-up email content..."
                         className="saas-input w-full font-sans text-xs leading-relaxed p-4 rounded-xl resize-y min-h-[280px] border-border shadow-xs focus:ring-2 focus:ring-brand-500/20"
                       />
+                    </div>
+
+                    {/* Step Attachments */}
+                    <div className="rounded-xl border border-border bg-[var(--input-bg)]/60 p-3 space-y-2.5">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <HiOutlinePaperClip className="h-4 w-4 text-brand-600" />
+                          <span className="text-xs font-bold text-ink">
+                            Follow-Up Attachments ({s.attachments?.length || 0})
+                          </span>
+                        </div>
+                        <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border border-border bg-[var(--surface)] text-[11px] font-semibold text-brand-700 hover:border-brand-500 hover:bg-brand-50 transition dark:text-brand-300">
+                          <HiOutlinePlus className="h-3.5 w-3.5" /> Attach File
+                          <input
+                            type="file"
+                            multiple
+                            className="hidden"
+                            onChange={(e) => {
+                              void handleFilesUpload(e.target.files, (newAtts) => {
+                                const next = [...sequenceSteps];
+                                next[idx].attachments = [...(next[idx].attachments || []), ...newAtts];
+                                setSequenceSteps(next);
+                              });
+                            }}
+                          />
+                        </label>
+                      </div>
+
+                      {s.attachments && s.attachments.length > 0 && (
+                        <div className="space-y-2 pt-1">
+                          {s.attachments.map((att, attIdx) => (
+                            <div
+                              key={att.id || attIdx}
+                              className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-[var(--surface)] p-2 text-xs"
+                            >
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <span className="text-base">📄</span>
+                                <div className="min-w-0">
+                                  <div className="font-semibold text-ink truncate">{att.name}</div>
+                                  <div className="text-[10px] text-ink-muted">{formatBytes(att.size)}</div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <select
+                                  value={att.placement || "bottom"}
+                                  onChange={(e) => {
+                                    const next = [...sequenceSteps];
+                                    next[idx].attachments![attIdx].placement = e.target.value as any;
+                                    setSequenceSteps(next);
+                                  }}
+                                  className="saas-input text-[11px] py-1 px-2 font-medium"
+                                >
+                                  <option value="bottom">Placement: Bottom of Email</option>
+                                  <option value="top">Placement: Top of Email</option>
+                                  <option value="custom">Placement: Custom Tag in Body</option>
+                                </select>
+
+                                {att.placement === "custom" && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const tag = `{{attachment:${att.name}}}`;
+                                      insertTextIntoTextarea(
+                                        `step-body-${s.id}`,
+                                        s.body,
+                                        tag,
+                                        (newVal) => {
+                                          const next = [...sequenceSteps];
+                                          next[idx].body = newVal;
+                                          setSequenceSteps(next);
+                                        }
+                                      );
+                                    }}
+                                    className="rounded border border-brand-300 bg-brand-50 px-2 py-1 text-[10px] font-bold text-brand-700 hover:bg-brand-100"
+                                    title="Insert {{attachment:filename}} at cursor position"
+                                  >
+                                    + Insert Tag at Cursor
+                                  </button>
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const next = [...sequenceSteps];
+                                    next[idx].attachments = next[idx].attachments!.filter((_, i) => i !== attIdx);
+                                    setSequenceSteps(next);
+                                  }}
+                                  className="p-1 text-ink-muted hover:text-rose-600 transition"
+                                  title="Remove attachment"
+                                >
+                                  <HiOutlineTrash className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Step Unsubscribe */}
+                    <div className="rounded-xl border border-border bg-[var(--input-bg)]/60 p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-ink">
+                          <input
+                            type="checkbox"
+                            checked={s.enableUnsubscribe ?? true}
+                            onChange={(e) => {
+                              const next = [...sequenceSteps];
+                              next[idx].enableUnsubscribe = e.target.checked;
+                              setSequenceSteps(next);
+                            }}
+                            className="rounded border-border"
+                          />
+                          Include 1-Click Unsubscribe & Compliance Opt-Out
+                        </label>
+                        {(s.enableUnsubscribe ?? true) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              insertTextIntoTextarea(
+                                `step-body-${s.id}`,
+                                s.body,
+                                "{{unsubscribe}}",
+                                (newVal) => {
+                                  const next = [...sequenceSteps];
+                                  next[idx].body = newVal;
+                                  setSequenceSteps(next);
+                                }
+                              );
+                            }}
+                            className="text-[11px] font-semibold text-brand-600 hover:underline"
+                            title="Place unsubscribe link at cursor location"
+                          >
+                            + Insert {"{{unsubscribe}}"} at Cursor
+                          </button>
+                        )}
+                      </div>
+
+                      {(s.enableUnsubscribe ?? true) && (
+                        <div>
+                          <input
+                            type="text"
+                            value={
+                              s.unsubscribeText ??
+                              "If you do not wish to receive further emails from us, click here to unsubscribe or reply STOP."
+                            }
+                            onChange={(e) => {
+                              const next = [...sequenceSteps];
+                              next[idx].unsubscribeText = e.target.value;
+                              setSequenceSteps(next);
+                            }}
+                            placeholder="Custom unsubscribe message..."
+                            className="saas-input w-full text-[11px] py-1.5"
+                          />
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex flex-wrap items-center justify-between text-[11px] text-ink-muted px-1">
@@ -1151,9 +1924,17 @@ export function CampaignWizard({
                     </div>
 
                     <div className="rounded-xl bg-[var(--surface)] p-5 border border-border shadow-xs">
-                      <div className="whitespace-pre-wrap text-xs text-ink leading-relaxed font-sans">
-                        {renderSimulated(s.body)}
-                      </div>
+                      <div
+                        className="text-xs text-ink leading-relaxed font-sans"
+                        dangerouslySetInnerHTML={{
+                          __html: renderSimulatedHtml(
+                            s.body,
+                            s.attachments,
+                            s.enableUnsubscribe ?? true,
+                            s.unsubscribeText
+                          ),
+                        }}
+                      />
                     </div>
                   </div>
                 )}
@@ -1184,18 +1965,18 @@ export function CampaignWizard({
       {step === 4 && (
         <div className="space-y-6 rounded-2xl border border-border bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]">
           <div>
-            <h2 className="text-lg font-bold text-ink">Step 4: Mailbox & Domain Selection & Sending Limits</h2>
+            <h2 className="text-lg font-bold text-ink">Step 4: Mailbox & Domain Folders & Sending Limits</h2>
             <p className="mt-1 text-xs text-ink-muted">
-              Select which domains and mailboxes to distribute emails across (e.g. 5 domains × 5 mailboxes = 25 mailboxes).
+              Organize mailboxes by domain folders, customize individual send quotas, and enable weekly ramp-up warmup.
             </p>
           </div>
 
-          {/* Daily Limits & Warmup presets */}
+          {/* Daily Limits & Weekly Ramp-Up */}
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-xl border border-border bg-[var(--input-bg)] p-4">
-              <div className="flex items-center justify-between mb-2">
+            <div className="rounded-xl border border-border bg-[var(--input-bg)] p-4 space-y-3">
+              <div className="flex items-center justify-between">
                 <label className="block text-xs font-bold text-ink">
-                  Daily Sending Limit Per Mailbox
+                  Default Daily Limit Per Mailbox
                 </label>
                 <div className="flex items-center gap-1.5">
                   <input
@@ -1209,7 +1990,8 @@ export function CampaignWizard({
                   <span className="text-xs text-brand-600 font-semibold">/ day</span>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-1.5 mb-3">
+
+              <div className="flex flex-wrap gap-1.5">
                 {[
                   { label: "2/day (Warmup)", val: 2 },
                   { label: "4/day", val: 4 },
@@ -1234,6 +2016,7 @@ export function CampaignWizard({
                   </button>
                 ))}
               </div>
+
               <input
                 type="range"
                 min={1}
@@ -1242,18 +2025,19 @@ export function CampaignWizard({
                 onChange={(e) => setDailyLimitPerMailbox(parseInt(e.target.value, 10))}
                 className="w-full accent-brand-600"
               />
-              <p className="mt-2 text-[11px] text-ink-muted">
+
+              <div className="rounded-lg bg-[var(--surface)] p-2.5 border border-border text-[11px] text-ink">
                 Total daily campaign capacity:{" "}
-                <strong className="text-ink">
+                <strong className="text-brand-600">
                   {selectedMailboxIds.length} mailboxes × {dailyLimitPerMailbox} ={" "}
                   {selectedMailboxIds.length * dailyLimitPerMailbox} emails/day
                 </strong>
-              </p>
+              </div>
             </div>
 
-            {/* Human-like interval spacing */}
-            <div className="rounded-xl border border-border bg-[var(--input-bg)] p-4">
-              <div className="flex items-center justify-between mb-2">
+            {/* Custom Delay / Jitter */}
+            <div className="rounded-xl border border-border bg-[var(--input-bg)] p-4 space-y-3">
+              <div className="flex items-center justify-between">
                 <label className="block text-xs font-bold text-ink">Custom Email Sending Spacing / Jitter</label>
                 <div className="flex gap-1">
                   <button
@@ -1279,6 +2063,7 @@ export function CampaignWizard({
                   </button>
                 </div>
               </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <span className="text-[11px] text-ink-muted block mb-1">Min Delay (Custom)</span>
@@ -1309,82 +2094,269 @@ export function CampaignWizard({
                   </div>
                 </div>
               </div>
-              <p className="mt-3 text-[11px] text-ink-muted">
+
+              <p className="text-[11px] text-ink-muted">
                 Each email is throttled with randomized human jitter between {minDelayMinutes} to {maxDelayMinutes} minutes to protect mailbox deliverability.
               </p>
             </div>
           </div>
 
-          {/* Mailboxes Grouped by Domain */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-bold text-ink">Connected Domains & Mailboxes ({mailboxes.length} Total)</h3>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={toggleSelectAll}
-                  className="text-xs font-semibold text-brand-600 hover:underline"
-                >
-                  {selectAllMailboxes ? "Deselect All" : "Select All 25 Mailboxes"}
-                </button>
-              </div>
+          {/* Weekly Increasing Sending Volume (Ramp-Up / Warmup) Card */}
+          <div className="rounded-xl border border-brand-300 bg-brand-50/50 p-4 dark:border-brand-500/30 dark:bg-brand-950/30 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={enableWeeklyRampUp}
+                  onChange={(e) => setEnableWeeklyRampUp(e.target.checked)}
+                  className="rounded border-border accent-brand-600 h-4 w-4"
+                />
+                <div className="flex items-center gap-1.5">
+                  <HiOutlineArrowTrendingUp className="h-4 w-4 text-brand-600" />
+                  <span className="text-xs font-bold text-ink">
+                    Weekly Increasing Sending Volume (Warmup & Scaled Ramp-Up)
+                  </span>
+                </div>
+              </label>
+              <span className="text-[11px] font-semibold text-brand-700 bg-brand-100 dark:bg-brand-900/60 dark:text-brand-300 px-2 py-0.5 rounded-full">
+                {enableWeeklyRampUp ? "Ramp-Up Enabled" : "Off (Flat Sending)"}
+              </span>
             </div>
 
-            <div className="space-y-3">
-              {Object.entries(mailboxesByDomain).map(([domain, mList]) => (
-                <div key={domain} className="rounded-xl border border-border/80 bg-[var(--surface)] p-4 shadow-sm">
-                  <div className="flex items-center justify-between border-b border-border/60 pb-2 mb-3">
-                    <span className="text-xs font-bold text-ink">
-                      🌐 Domain: <span className="text-brand-700 dark:text-brand-300">{domain}</span> ({mList.length} mailboxes)
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const domainIds = mList.map((m) => m.id);
-                        const allSelected = domainIds.every((id) => selectedMailboxIds.includes(id));
-                        if (allSelected) {
-                          setSelectedMailboxIds(selectedMailboxIds.filter((id) => !domainIds.includes(id)));
-                          setSelectAllMailboxes(false);
-                        } else {
-                          const merged = Array.from(new Set([...selectedMailboxIds, ...domainIds]));
-                          setSelectedMailboxIds(merged);
-                        }
-                      }}
-                      className="text-[11px] font-semibold text-ink-muted hover:text-brand-600"
-                    >
-                      Toggle Domain
-                    </button>
+            <p className="text-[11px] text-ink-muted">
+              Protects inbox placement and domain health by starting at a conservative daily volume and automatically scaling up week-over-week until reaching the target ceiling.
+            </p>
+
+            {enableWeeklyRampUp && (
+              <div className="space-y-3 pt-2 border-t border-brand-200 dark:border-brand-900/60">
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-ink mb-1">
+                      Starting Volume (Week 1)
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min={1}
+                        max={50}
+                        value={rampUpStartLimit}
+                        onChange={(e) => setRampUpStartLimit(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                        className="saas-input w-full text-xs font-bold"
+                      />
+                      <span className="text-[11px] text-ink-muted">/day</span>
+                    </div>
                   </div>
 
-                  <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3">
-                    {mList.map((mb) => {
-                      const isSelected = selectedMailboxIds.includes(mb.id);
+                  <div>
+                    <label className="block text-[11px] font-bold text-ink mb-1">
+                      Weekly Increase Amount
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min={1}
+                        max={50}
+                        value={rampUpIncreasePerWeek}
+                        onChange={(e) => setRampUpIncreasePerWeek(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                        className="saas-input w-full text-xs font-bold"
+                      />
+                      <span className="text-[11px] text-ink-muted">/week</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-ink mb-1">
+                      Max Volume Ceiling
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min={rampUpStartLimit}
+                        max={100}
+                        value={rampUpMaxCeiling}
+                        onChange={(e) => setRampUpMaxCeiling(Math.max(rampUpStartLimit, parseInt(e.target.value, 10) || 30))}
+                        className="saas-input w-full text-xs font-bold"
+                      />
+                      <span className="text-[11px] text-ink-muted">/day max</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4-Week Ramp Projection */}
+                <div className="rounded-lg bg-[var(--surface)] p-3 border border-border">
+                  <div className="text-[11px] font-bold text-ink mb-2">📈 Live 4-Week Ramp-Up Projection:</div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+                    {[1, 2, 3, 4].map((wk) => {
+                      const perMb = Math.min(rampUpMaxCeiling, rampUpStartLimit + (wk - 1) * rampUpIncreasePerWeek);
+                      const totalDaily = perMb * selectedMailboxIds.length;
                       return (
-                        <label
-                          key={mb.id}
-                          className={cn(
-                            "flex items-center gap-2.5 rounded-xl border p-2.5 cursor-pointer text-xs transition",
-                            isSelected
-                              ? "border-brand-400 bg-brand-50/60 dark:bg-brand-950/40"
-                              : "border-border/70 bg-[var(--input-bg)] opacity-70"
-                          )}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => toggleMailbox(mb.id)}
-                            className="rounded border-border"
-                          />
-                          <div className="min-w-0 flex-1">
-                            <div className="font-semibold text-ink truncate">{mb.label}</div>
-                            <div className="text-[11px] text-ink-muted truncate">{mb.email}</div>
-                          </div>
-                        </label>
+                        <div key={wk} className="rounded-lg bg-[var(--input-bg)] p-2 border border-border/70">
+                          <div className="text-[10px] font-semibold text-ink-muted uppercase">Week {wk}</div>
+                          <div className="text-sm font-bold text-brand-600 mt-0.5">{perMb} <span className="text-[10px] text-ink-muted">/mb/day</span></div>
+                          <div className="text-[10px] text-ink-muted mt-0.5">~{totalDaily} total/day</div>
+                        </div>
                       );
                     })}
                   </div>
                 </div>
-              ))}
+              </div>
+            )}
+          </div>
+
+          {/* Folder for Domains & Connected Mailboxes */}
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 className="text-xs font-bold text-ink">
+                  Domain Folders & Mailboxes ({mailboxes.length} Total Mailboxes)
+                </h3>
+                <p className="text-[11px] text-ink-muted">
+                  Grouped into folders by domain. You can expand folders and set custom per-mailbox quotas.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={toggleSelectAll}
+                  className="rounded-lg border border-border bg-[var(--surface)] px-3 py-1 text-xs font-semibold text-brand-600 hover:bg-brand-50 transition"
+                >
+                  {selectAllMailboxes ? "Deselect All Mailboxes" : `Select All ${mailboxes.length} Mailboxes`}
+                </button>
+              </div>
+            </div>
+
+            {/* Collapsible Domain Folders List */}
+            <div className="space-y-3">
+              {Object.entries(mailboxesByDomain).map(([domain, mList]) => {
+                const isCollapsed = Boolean(collapsedDomains[domain]);
+                const domainIds = mList.map((m) => m.id);
+                const selectedInDomain = domainIds.filter((id) => selectedMailboxIds.includes(id));
+                const allDomainSelected = selectedInDomain.length === domainIds.length;
+                const domainDailyCapacity = selectedInDomain.reduce((sum, id) => {
+                  return sum + (customMailboxLimits[id] ?? dailyLimitPerMailbox);
+                }, 0);
+
+                return (
+                  <div key={domain} className="rounded-xl border border-border bg-[var(--surface)] shadow-xs overflow-hidden">
+                    {/* Folder Header */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-[var(--input-bg)]/60 border-b border-border">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCollapsedDomains((prev) => ({ ...prev, [domain]: !prev[domain] }))
+                          }
+                          className="flex items-center gap-1.5 font-bold text-xs text-ink hover:text-brand-600 transition"
+                        >
+                          {isCollapsed ? (
+                            <HiOutlineFolder className="h-4 w-4 text-amber-500" />
+                          ) : (
+                            <HiOutlineFolderOpen className="h-4 w-4 text-amber-500" />
+                          )}
+                          <span>📁 {domain}</span>
+                          {isCollapsed ? (
+                            <HiOutlineChevronRight className="h-3.5 w-3.5 text-ink-muted" />
+                          ) : (
+                            <HiOutlineChevronDown className="h-3.5 w-3.5 text-ink-muted" />
+                          )}
+                        </button>
+
+                        <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-bold text-brand-700 dark:bg-brand-950/40 dark:text-brand-300">
+                          {selectedInDomain.length}/{domainIds.length} Active
+                        </span>
+
+                        <span className="text-[11px] text-ink-muted hidden sm:inline">
+                          · {domainDailyCapacity} emails/day
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (allDomainSelected) {
+                              setSelectedMailboxIds(selectedMailboxIds.filter((id) => !domainIds.includes(id)));
+                              setSelectAllMailboxes(false);
+                            } else {
+                              const merged = Array.from(new Set([...selectedMailboxIds, ...domainIds]));
+                              setSelectedMailboxIds(merged);
+                            }
+                          }}
+                          className="text-[11px] font-semibold text-brand-600 hover:underline"
+                        >
+                          {allDomainSelected ? "Deselect Folder" : `Select All in ${domain}`}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Folder Contents (Individual Mailboxes) */}
+                    {!isCollapsed && (
+                      <div className="p-3 grid gap-2.5 sm:grid-cols-2 md:grid-cols-3">
+                        {mList.map((mb) => {
+                          const isSelected = selectedMailboxIds.includes(mb.id);
+                          const customLimit = customMailboxLimits[mb.id];
+
+                          return (
+                            <div
+                              key={mb.id}
+                              className={cn(
+                                "flex flex-col justify-between rounded-xl border p-3 text-xs transition",
+                                isSelected
+                                  ? "border-brand-400 bg-brand-50/50 dark:bg-brand-950/30"
+                                  : "border-border/70 bg-[var(--input-bg)] opacity-70"
+                              )}
+                            >
+                              <div className="flex items-start gap-2.5">
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => toggleMailbox(mb.id)}
+                                  className="mt-0.5 rounded border-border"
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <div className="font-semibold text-ink truncate">{mb.label}</div>
+                                  <div className="text-[11px] text-ink-muted truncate">{mb.email}</div>
+                                  <div className="mt-1 flex items-center gap-1.5 text-[10px] text-ink-muted">
+                                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                    <span>Sent today: {mb.sendsToday}</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Custom Per-Mailbox Limit */}
+                              {isSelected && (
+                                <div className="mt-2.5 pt-2 border-t border-border/60 flex items-center justify-between text-[11px]">
+                                  <span className="text-ink-muted">Custom Cap:</span>
+                                  <div className="flex items-center gap-1">
+                                    <input
+                                      type="number"
+                                      min={1}
+                                      max={100}
+                                      placeholder={String(dailyLimitPerMailbox)}
+                                      value={customLimit ?? ""}
+                                      onChange={(e) => {
+                                        const val = e.target.value ? parseInt(e.target.value, 10) : undefined;
+                                        setCustomMailboxLimits((prev) => {
+                                          const next = { ...prev };
+                                          if (val) next[mb.id] = val;
+                                          else delete next[mb.id];
+                                          return next;
+                                        });
+                                      }}
+                                      className="saas-input w-14 py-0.5 px-1.5 text-center text-[11px] font-bold"
+                                    />
+                                    <span className="text-ink-muted">/day</span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -1593,37 +2565,61 @@ export function CampaignWizard({
 
           {/* Sending Window */}
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-xs font-semibold text-ink">Custom Sending Time Window</label>
-              <div className="flex gap-1.5">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <label className="block text-xs font-semibold text-ink">Granular Sending Time Window</label>
+              <div className="flex flex-wrap gap-1.5 text-[11px]">
                 <button
                   type="button"
                   onClick={() => { setSendingWindowStart("09:00"); setSendingWindowEnd("17:00"); }}
-                  className="text-[11px] font-semibold text-brand-600 hover:underline"
+                  className="font-semibold text-brand-600 hover:underline"
                 >
                   9 AM – 5 PM (Standard)
                 </button>
                 <span className="text-ink-muted">·</span>
                 <button
                   type="button"
+                  onClick={() => { setSendingWindowStart("08:00"); setSendingWindowEnd("12:00"); }}
+                  className="font-semibold text-brand-600 hover:underline"
+                >
+                  8 AM – 12 PM (Morning Peak)
+                </button>
+                <span className="text-ink-muted">·</span>
+                <button
+                  type="button"
+                  onClick={() => { setSendingWindowStart("13:00"); setSendingWindowEnd("17:00"); }}
+                  className="font-semibold text-brand-600 hover:underline"
+                >
+                  1 PM – 5 PM (Afternoon)
+                </button>
+                <span className="text-ink-muted">·</span>
+                <button
+                  type="button"
                   onClick={() => { setSendingWindowStart("08:00"); setSendingWindowEnd("18:00"); }}
-                  className="text-[11px] font-semibold text-brand-600 hover:underline"
+                  className="font-semibold text-brand-600 hover:underline"
                 >
                   8 AM – 6 PM (Extended)
                 </button>
                 <span className="text-ink-muted">·</span>
                 <button
                   type="button"
-                  onClick={() => { setSendingWindowStart("00:00"); setSendingWindowEnd("23:59"); }}
-                  className="text-[11px] font-semibold text-brand-600 hover:underline"
+                  onClick={() => { setSendingWindowStart("17:00"); setSendingWindowEnd("20:00"); }}
+                  className="font-semibold text-brand-600 hover:underline"
                 >
-                  24/7 (No limit)
+                  5 PM – 8 PM (Evening)
+                </button>
+                <span className="text-ink-muted">·</span>
+                <button
+                  type="button"
+                  onClick={() => { setSendingWindowStart("00:00"); setSendingWindowEnd("23:59"); }}
+                  className="font-semibold text-brand-600 hover:underline"
+                >
+                  24/7 (Anytime)
                 </button>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4 max-w-md">
               <div>
-                <span className="text-[11px] text-ink-muted block mb-1">Window Start Time (Custom)</span>
+                <span className="text-[11px] text-ink-muted block mb-1">Window Start Time</span>
                 <input
                   type="time"
                   value={sendingWindowStart}
@@ -1632,7 +2628,7 @@ export function CampaignWizard({
                 />
               </div>
               <div>
-                <span className="text-[11px] text-ink-muted block mb-1">Window End Time (Custom)</span>
+                <span className="text-[11px] text-ink-muted block mb-1">Window End Time</span>
                 <input
                   type="time"
                   value={sendingWindowEnd}
@@ -1640,6 +2636,13 @@ export function CampaignWizard({
                   className="saas-input w-full font-bold"
                 />
               </div>
+            </div>
+
+            <div className="mt-3 rounded-lg bg-[var(--input-bg)] p-3 border border-border text-xs text-ink flex items-center gap-2">
+              <HiOutlineClock className="h-4 w-4 text-brand-600 shrink-0" />
+              <span>
+                Emails will be dispatched between <strong>{sendingWindowStart}</strong> and <strong>{sendingWindowEnd}</strong> across <strong>{sendingDays.length} selected days</strong> ({useRecipientTimezone ? "in the recipient's local time zone" : timezone}).
+              </span>
             </div>
           </div>
 

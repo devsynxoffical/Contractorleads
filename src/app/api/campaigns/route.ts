@@ -294,7 +294,13 @@ export async function POST(req: Request) {
         stepsJson: JSON.stringify(campaignSteps),
         selectedMailboxIds: typeof selectedMailboxIds === "string" ? selectedMailboxIds : JSON.stringify(selectedMailboxIds),
         dailyLimitPerMailbox: Math.max(1, Number(dailyLimitPerMailbox) || 10),
-        mailboxLimitsJson: mailboxLimits ? JSON.stringify(mailboxLimits) : null,
+        mailboxLimitsJson:
+          mailboxLimits || body.weeklyRampUp
+            ? JSON.stringify({
+                customLimits: mailboxLimits || {},
+                rampUp: body.weeklyRampUp || null,
+              })
+            : null,
         minDelayMinutes: Math.max(1, Number(minDelayMinutes) || 4),
         maxDelayMinutes: Math.max(minDelayMinutes, Number(maxDelayMinutes) || 7),
         timezone,
