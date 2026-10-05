@@ -31,6 +31,31 @@ export type ExportLead = {
   linkedinUrl: string | null;
   youtube: string | null;
   qualityTier: string | null;
+
+  // SME Intelligence Fields
+  decisionMakerFound?: boolean | null;
+  decisionMakerName?: string | null;
+  decisionMakerRole?: string | null;
+  decisionMakerEmail?: string | null;
+  decisionMakerEmailType?: string | null;
+  decisionMakerDirectPhone?: string | null;
+  decisionMakerPhoneType?: string | null;
+  decisionMakerLinkedIn?: string | null;
+  decisionMakerVerified?: boolean | null;
+  businessEstablishedDate?: string | null;
+  businessRegistrationDate?: string | null;
+  businessAgeYears?: number | null;
+  businessMaturity?: string | null;
+  domainName?: string | null;
+  domainCreatedDate?: string | null;
+  domainAgeYears?: number | null;
+  domainRegistrar?: string | null;
+  domainRegistrationCountry?: string | null;
+  employeeCount?: number | null;
+  companySizeCategory?: string | null;
+  locationCount?: number | null;
+  smeQualityScore?: number | null;
+  isLowPriorityOrExcluded?: boolean | null;
 };
 
 const HEADERS = [
@@ -39,6 +64,26 @@ const HEADERS = [
   "Phone",
   "Email",
   "Website",
+  "Verified Decision Maker",
+  "Decision Maker Role",
+  "Direct DM Email",
+  "Direct DM Phone",
+  "DM LinkedIn",
+  "DM Multi-Source Verified",
+  "Established Date (Operating)",
+  "Legal Registration Date",
+  "Business Age (Years)",
+  "Business Maturity",
+  "Domain Name",
+  "Domain Created Date",
+  "Domain Age (Years)",
+  "Domain Registrar",
+  "Domain Country",
+  "Estimated Team Size",
+  "Company Size Category",
+  "Location Count",
+  "SME Quality Score",
+  "Excluded / 30+ Yr Flag",
   "Google Rating",
   "Review Count",
   "Address",
@@ -72,10 +117,30 @@ function rowFromLead(lead: ExportLead) {
 
   return [
     lead.businessName,
-    lead.ownerName ?? "",
+    lead.decisionMakerName ?? lead.ownerName ?? "",
     lead.phone ?? "",
     lead.email ?? "",
     lead.website ?? "",
+    lead.decisionMakerFound ? "YES" : "NO",
+    lead.decisionMakerRole ?? "",
+    lead.decisionMakerEmail ?? "",
+    lead.decisionMakerDirectPhone ?? "",
+    lead.decisionMakerLinkedIn ?? "",
+    lead.decisionMakerVerified ? "YES" : "NO",
+    lead.businessEstablishedDate ?? "",
+    lead.businessRegistrationDate ?? "",
+    lead.businessAgeYears ?? lead.yearsInBusiness ?? "",
+    lead.businessMaturity ?? "",
+    lead.domainName ?? "",
+    lead.domainCreatedDate ?? "",
+    lead.domainAgeYears ?? "",
+    lead.domainRegistrar ?? "",
+    lead.domainRegistrationCountry ?? "",
+    lead.employeeCount ?? "",
+    lead.companySizeCategory ?? "",
+    lead.locationCount ?? 1,
+    lead.smeQualityScore ?? lead.leadScore,
+    lead.isLowPriorityOrExcluded ? "YES" : "NO",
     lead.googleRating ?? "",
     lead.reviewCount ?? "",
     lead.address ?? "",

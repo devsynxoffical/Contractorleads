@@ -112,6 +112,7 @@ export default async function AllLeadsPage({
       ...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []),
       {
         OR: [
+          { country: { equals: country, mode: "insensitive" } },
           { registeredCountry: { equals: country, mode: "insensitive" } },
           { domainRegistrationCountry: { equals: country, mode: "insensitive" } },
           { address: { contains: country, mode: "insensitive" } },
