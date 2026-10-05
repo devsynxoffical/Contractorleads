@@ -1,5 +1,6 @@
 import { searchPublicWeb, type WebSearchResult } from "./web-search";
 import { normalizeLinkedInProfileUrl, matchesBusinessName } from "./linkedin";
+import { classifyRole } from "./sme-intelligence";
 
 export type OwnerDiscoveryResult = {
   ownerName: string | null;
@@ -196,6 +197,12 @@ function tryAddCandidate(
   const name = clean(rawName);
   if (!plausiblePersonName(name, businessName)) return;
   if (nameConflictsWithBusiness(name, businessName)) return;
+
+  if (role) {
+    const roleCheck = classifyRole(role);
+    if (roleCheck.isGatekeeper) return;
+  }
+
   const existing = out.find(
     (candidate) => candidate.name.toLowerCase() === name.toLowerCase(),
   );

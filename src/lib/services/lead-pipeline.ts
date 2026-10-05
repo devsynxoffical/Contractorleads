@@ -21,6 +21,14 @@ import type { PlaceResult } from "./google-places";
 import { findExistingLead } from "./lead-identity";
 import { plausiblePersonName } from "./owner-discovery";
 import type { CompanySizeFilter } from "@/lib/search-criteria";
+import {
+  classifyRole,
+  classifyEmail,
+  classifyPhone,
+  estimateCompanySize,
+  calculateSmeQualityScore,
+  splitFullName,
+} from "./sme-intelligence";
 
 const EMPTY_PEOPLE: WebsitePeopleResult = {
   owner: null,
@@ -667,6 +675,50 @@ async function enrichAndPersistPlace(opts: {
 
     if (finalLeadScore < 20) return "skipped-score";
 
+    const roleCheck = classifyRole(ownerTitle);
+    const emailClass = classifyEmail(emailFinal, website);
+    const phoneClass = classifyPhone(place.phone);
+    const sizeEst = estimateCompanySize({
+      teamCount: websitePeople.team.length,
+      reviewCount: place.reviewCount,
+    });
+    const dmFound = Boolean(ownerNameFinal && !roleCheck.isGatekeeper);
+    const { firstName: dmFirstName, lastName: dmLastName } = splitFullName(ownerNameFinal);
+    const smeScoring = calculateSmeQualityScore({
+      businessVerified: Boolean(place.name && (place.phone || website)),
+      hasWebsite: Boolean(website),
+      registrationVerified: false,
+      businessAgeVerified: false,
+      domainAgeVerified: false,
+      decisionMakerIdentified: dmFound,
+      decisionMakerMultiSourceVerified: Boolean(ownerNameFinal && (searchOwnerLinkedIn || existingLead?.linkedinUrl)),
+      decisionMakerEmailVerified: Boolean(emailFinal && emailClass.emailType !== "generic"),
+      directPhoneFound: Boolean(place.phone),
+      businessAgeYears: null,
+      employeeCount: sizeEst.employeeCount,
+      isFranchiseOrEnterprise: sizeEst.isFranchiseOrEnterprise,
+      isGenericEmailOnly: emailClass.isGeneric,
+    });
+
+    const smeData = {
+      decisionMakerFound: dmFound,
+      decisionMakerName: dmFound ? ownerNameFinal : null,
+      decisionMakerFirstName: dmFound ? dmFirstName : null,
+      decisionMakerLastName: dmFound ? dmLastName : null,
+      decisionMakerTitle: dmFound ? ownerTitle : null,
+      decisionMakerRole: dmFound ? (roleCheck.normalizedRole || "Owner") : null,
+      decisionMakerEmail: emailClass.emailType !== "generic" ? emailFinal : null,
+      decisionMakerEmailType: emailClass.emailType,
+      decisionMakerDirectPhone: place.phone || null,
+      decisionMakerPhoneType: phoneClass.phoneType,
+      employeeCount: sizeEst.employeeCount,
+      companySizeCategory: sizeEst.category,
+      isFranchiseOrEnterprise: sizeEst.isFranchiseOrEnterprise,
+      smeQualityScore: smeScoring.score,
+      isLowPriorityOrExcluded: smeScoring.isExcluded,
+      exclusionReasonsJson: JSON.stringify(smeScoring.exclusionReasons),
+    };
+
     const sharedData = {
       searchId,
       industry: params.industry,
@@ -721,6 +773,7 @@ async function enrichAndPersistPlace(opts: {
       longitude: place.longitude ?? existingLead?.longitude ?? undefined,
       address: place.address || existingLead?.address,
       googleMapsLink: place.mapsUrl || existingLead?.googleMapsLink,
+      ...smeData,
     };
 
     if (existingLead) {
@@ -768,6 +821,7 @@ async function enrichAndPersistPlace(opts: {
           latitude: place.latitude,
           longitude: place.longitude,
           verificationStatus: "verified",
+          ...smeData,
         },
       });
     } catch (err) {

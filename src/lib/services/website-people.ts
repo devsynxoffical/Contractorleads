@@ -1,6 +1,7 @@
 import * as cheerio from "cheerio";
 import { safeFetch } from "@/lib/safe-fetch";
 import { plausiblePersonName } from "./owner-discovery";
+import { classifyRole } from "./sme-intelligence";
 
 export type PublicTeamMember = {
   name: string;
@@ -721,7 +722,11 @@ export async function extractWebsitePeople(
   }
 
   members.sort((a, b) => b.confidence - a.confidence);
-  const owner = members.find((member) => OWNER_ROLE.test(member.role)) ?? null;
+  const owner =
+    members.find((member) => {
+      const check = classifyRole(member.role);
+      return check.isDecisionMaker && !check.isGatekeeper;
+    }) ?? null;
   const stripSource = (member: PersonCandidate): PublicTeamMember => ({
     name: member.name,
     role: member.role,

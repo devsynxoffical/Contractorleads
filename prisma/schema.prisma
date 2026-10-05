@@ -263,6 +263,76 @@ model Lead {
   search                    Search?  @relation(fields: [searchId], references: [id], onDelete: SetNull)
   createdAt                 DateTime @default(now())
 
+  // --- SME Business Data Extraction & Validation ---
+  businessEstablishedDate   DateTime?
+  businessRegistrationDate  DateTime?
+  businessAgeYears          Int?
+  businessAgeSource         String?
+  businessAgeConfidence     Int?
+  businessAgeLastVerified   DateTime?
+  businessMaturity          String?  @default("growing") // emerging | growing | established | mature | highly_established
+
+  // --- Domain / WHOIS / RDAP Intelligence ---
+  domainName                String?
+  domainCreatedDate         DateTime?
+  domainUpdatedDate         DateTime?
+  domainExpiryDate          DateTime?
+  domainAgeYears            Int?
+  domainRegistrar           String?
+  domainRegistrationCountry String?
+  domainSource              String?
+  domainConfidence          Int?
+  domainPrivacyStatus       String?  @default("unknown") // protected | public | unknown
+
+  // --- Business Registration Information ---
+  legalBusinessName         String?
+  tradingDbaName            String?
+  registrationNumber        String?
+  registrationJurisdiction  String?
+  registeredState           String?
+  registeredCountry         String?
+  entityType                String?
+  registrationStatus        String?
+  registrationSourceUrl     String?
+  registrationLastVerified  DateTime?
+
+  // --- Company Size / Team Size Signals ---
+  employeeCount             Int?
+  employeeCountSource       String?
+  employeeCountConfidence   Int?
+  employeeCountLastVerified DateTime?
+  companySizeCategory       String?  @default("2-5") // solo | 2-5 | 6-10 | 11-15 | 16-20 | 21-50 | 51-100 | 100+
+  locationCount             Int?     @default(1)
+  isFranchiseOrEnterprise   Boolean  @default(false)
+
+  // --- Decision-Maker Identification (Strict Non-Generic) ---
+  decisionMakerFound        Boolean  @default(false)
+  decisionMakerName         String?
+  decisionMakerFirstName    String?
+  decisionMakerLastName     String?
+  decisionMakerTitle        String?
+  decisionMakerRole         String?  // owner | founder | ceo | president | managing_director | partner | principal | general_manager
+  decisionMakerLinkedIn     String?
+  decisionMakerProfessionalProfile String?
+  decisionMakerEmail        String?
+  decisionMakerEmailType    String?  @default("generic") // decision_maker | personal_business | generic
+  decisionMakerEmailVerification String? @default("unverified") // verified | unverified | invalid | risky
+  decisionMakerDirectPhone  String?
+  decisionMakerPhoneType    String?  @default("main_company") // direct_mobile | direct_office | main_company
+  decisionMakerSource       String?
+  decisionMakerVerified     Boolean  @default(false)
+  decisionMakerVerificationDate DateTime?
+  decisionMakerConfidence   Int?     @default(0)
+
+  // --- Multi-Source Validation & SME Quality Scoring ---
+  sourcesCount              Int      @default(1)
+  sourcesUsedJson           String?
+  businessVerified          Boolean  @default(false)
+  smeQualityScore           Int      @default(0) // 100-point rubric
+  isLowPriorityOrExcluded   Boolean  @default(false)
+  exclusionReasonsJson      String?  // JSON array of exclusion flags
+  lastVerifiedAt            DateTime?
+
   savedBy SavedLead[]
   emails  LeadEmail[]
   sms     LeadSms[]
@@ -274,6 +344,10 @@ model Lead {
   @@index([industry])
   @@index([country])
   @@index([createdAt])
+  @@index([businessMaturity])
+  @@index([companySizeCategory])
+  @@index([decisionMakerFound])
+  @@index([isLowPriorityOrExcluded])
 }
 
 /// Paid unlock — contact/export fields stay redacted until this exists.

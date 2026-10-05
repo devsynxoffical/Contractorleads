@@ -14,6 +14,17 @@ export type AllLeadsTableRow = {
   leadScore: number;
   qualityTier: string | null;
   foundAt: Date;
+  decisionMakerFound?: boolean;
+  decisionMakerName?: string | null;
+  decisionMakerRole?: string | null;
+  decisionMakerEmail?: string | null;
+  decisionMakerDirectPhone?: string | null;
+  businessAgeYears?: number | null;
+  businessMaturity?: string | null;
+  employeeCount?: number | null;
+  companySizeCategory?: string | null;
+  smeQualityScore?: number | null;
+  isLowPriorityOrExcluded?: boolean;
 };
 
 export function AllLeadsTableBody({
@@ -122,15 +133,16 @@ export function AllLeadsTableBody({
         </div>
       ) : null}
 
-      <table className="w-full min-w-[640px] text-left text-sm">
+      <table className="w-full min-w-[800px] text-left text-sm">
         <thead className="border-b border-border bg-[#faf8fb] text-xs uppercase tracking-wide text-ink-muted">
           <tr>
             <th className="w-10 px-4 py-3 font-medium" aria-label="Select" />
-            <th className="px-4 py-3 font-medium">Business</th>
-            <th className="px-4 py-3 font-medium">Industry</th>
-            <th className="px-4 py-3 font-medium">Score</th>
+            <th className="px-4 py-3 font-medium">Business & Industry</th>
+            <th className="px-4 py-3 font-medium">Verified Decision-Maker</th>
+            <th className="px-4 py-3 font-medium">Business Age</th>
+            <th className="px-4 py-3 font-medium">Team Size</th>
+            <th className="px-4 py-3 font-medium">SME Score</th>
             <th className="px-4 py-3 font-medium">Tier</th>
-            <th className="px-4 py-3 font-medium">Found</th>
             <th className="px-4 py-3 font-medium" />
           </tr>
         </thead>
@@ -139,6 +151,9 @@ export function AllLeadsTableBody({
             const href = `/leads/${lead.id}?from=all`;
             const inPipeline = pipelineSet.has(lead.id);
             const checked = selected.has(lead.id);
+            const dmFound = Boolean(lead.decisionMakerFound || lead.decisionMakerName);
+            const displayScore = lead.smeQualityScore ?? lead.leadScore;
+
             return (
               <tr
                 key={lead.id}
@@ -169,21 +184,107 @@ export function AllLeadsTableBody({
                   />
                 </td>
                 <td className="px-4 py-3.5 font-medium text-ink">
-                  <span className="inline-flex flex-wrap items-center gap-2">
-                    {lead.businessName}
-                    {inPipeline ? (
-                      <Badge variant="brand" className="text-[10px] uppercase">
-                        Saved
-                      </Badge>
-                    ) : null}
-                  </span>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="inline-flex flex-wrap items-center gap-2">
+                      <span className="font-semibold text-ink hover:text-brand-600">
+                        {lead.businessName}
+                      </span>
+                      {inPipeline ? (
+                        <Badge variant="brand" className="text-[10px] uppercase">
+                          Saved
+                        </Badge>
+                      ) : null}
+                      {lead.isLowPriorityOrExcluded ? (
+                        <span className="rounded bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700">
+                          Excluded / 30+ yr
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="text-[12px] text-ink-muted">
+                      {lead.industry ?? "General Contractor"}
+                    </span>
+                  </div>
                 </td>
-                <td className="px-4 py-3.5 text-ink-muted">
-                  {lead.industry ?? "—"}
+
+                {/* Verified Decision-Maker column */}
+                <td className="px-4 py-3.5">
+                  {dmFound && lead.decisionMakerName ? (
+                    <div className="flex flex-col">
+                      <span className="inline-flex items-center gap-1.5 font-semibold text-ink">
+                        <span>{lead.decisionMakerName}</span>
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 text-[11px] text-ink-muted">
+                        <span className="rounded bg-emerald-50 px-1.5 py-0.2 font-medium text-emerald-800">
+                          {lead.decisionMakerRole ?? "Decision-Maker"}
+                        </span>
+                        {lead.decisionMakerEmail ? (
+                          <span title="Direct email available" className="text-emerald-600 font-semibold">
+                            ✉️ Direct
+                          </span>
+                        ) : null}
+                        {lead.decisionMakerDirectPhone ? (
+                          <span title="Direct phone available" className="text-emerald-600 font-semibold">
+                            📞 Direct
+                          </span>
+                        ) : null}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded bg-amber-50/80 px-2 py-0.5 text-[11px] font-medium text-amber-800">
+                      <span>⚠️ Gatekeeper only</span>
+                    </span>
+                  )}
                 </td>
-                <td className="px-4 py-3.5 tabular-nums font-medium">
-                  {lead.leadScore}
+
+                {/* Business Age */}
+                <td className="px-4 py-3.5 text-[13px]">
+                  {lead.businessAgeYears != null ? (
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-ink">
+                        {lead.businessAgeYears} yr{lead.businessAgeYears === 1 ? "" : "s"}
+                      </span>
+                      <span className="text-[11px] capitalize text-ink-muted">
+                        {lead.businessMaturity?.replace("_", " ") ?? "Operating"}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-[12px] text-ink-muted">—</span>
+                  )}
                 </td>
+
+                {/* Company Size */}
+                <td className="px-4 py-3.5 text-[13px]">
+                  {lead.companySizeCategory ? (
+                    <span className="inline-flex rounded-md bg-[#f4f2f7] px-2 py-0.5 text-[12px] font-medium text-ink">
+                      {lead.companySizeCategory} team
+                    </span>
+                  ) : lead.employeeCount != null ? (
+                    <span className="font-medium text-ink">
+                      ~{lead.employeeCount} team
+                    </span>
+                  ) : (
+                    <span className="text-[12px] text-ink-muted">—</span>
+                  )}
+                </td>
+
+                {/* SME Quality Score */}
+                <td className="px-4 py-3.5">
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`inline-flex items-center justify-center rounded-md px-2 py-0.5 text-[12px] font-bold tabular-nums ${
+                        displayScore >= 75
+                          ? "bg-emerald-50 text-emerald-700"
+                          : displayScore >= 50
+                            ? "bg-amber-50 text-amber-700"
+                            : "bg-rose-50 text-rose-700"
+                      }`}
+                    >
+                      {displayScore}/100
+                    </span>
+                  </div>
+                </td>
+
+                {/* Quality Tier */}
                 <td className="px-4 py-3.5">
                   <Badge
                     variant={
@@ -197,9 +298,8 @@ export function AllLeadsTableBody({
                     {lead.qualityTier ?? "nurture"}
                   </Badge>
                 </td>
-                <td className="px-4 py-3.5 text-[12px] tabular-nums text-ink-muted">
-                  {lead.foundAt.toLocaleDateString()}
-                </td>
+
+                {/* Actions */}
                 <td className="px-4 py-3.5 text-right">
                   <Link
                     href={href}

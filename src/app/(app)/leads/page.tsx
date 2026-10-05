@@ -26,6 +26,12 @@ export default async function AllLeadsPage({
     strength?: string;
     category?: string;
     sort?: string;
+    country?: string;
+    age?: string;
+    size?: string;
+    dm?: string;
+    targetSme?: string;
+    excludeEnterprise?: string;
   }>;
 }) {
   const user = await getSessionUser();
@@ -38,6 +44,14 @@ export default async function AllLeadsPage({
   const strength = params.strength ?? "all";
   const category = params.category ?? "all";
   const sort = params.sort ?? "newest";
+
+  // SME Intelligence parameters
+  const country = params.country ?? "all";
+  const age = params.age ?? "all";
+  const size = params.size ?? "all";
+  const dm = params.dm ?? "all";
+  const targetSme = params.targetSme === "1";
+  const excludeEnterprise = params.excludeEnterprise === "1";
 
   const searchFilter: Prisma.SearchWhereInput = {
     userId: user.id,
@@ -65,7 +79,9 @@ export default async function AllLeadsPage({
     where.OR = [
       { businessName: { contains: query, mode: "insensitive" } },
       { ownerName: { contains: query, mode: "insensitive" } },
+      { decisionMakerName: { contains: query, mode: "insensitive" } },
       { email: { contains: query, mode: "insensitive" } },
+      { decisionMakerEmail: { contains: query, mode: "insensitive" } },
       { phone: { contains: query, mode: "insensitive" } },
       { city: { contains: query, mode: "insensitive" } },
       { state: { contains: query, mode: "insensitive" } },
@@ -88,6 +104,88 @@ export default async function AllLeadsPage({
 
   if (category && category !== "all") {
     where.industry = { equals: category, mode: "insensitive" };
+  }
+
+  // Country filtering (US, GB, CA, AU, NZ)
+  if (country && country !== "all") {
+    where.AND = [
+      ...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []),
+      {
+        OR: [
+          { registeredCountry: { equals: country, mode: "insensitive" } },
+          { domainRegistrationCountry: { equals: country, mode: "insensitive" } },
+          { address: { contains: country, mode: "insensitive" } },
+        ],
+      },
+    ];
+  }
+
+  // Business Age filtering
+  if (age === "0-2") {
+    where.OR = [
+      { businessAgeYears: { lte: 2 } },
+      { businessMaturity: "emerging" },
+    ];
+  } else if (age === "2-5") {
+    where.OR = [
+      { businessAgeYears: { gte: 2, lte: 5 } },
+      { businessMaturity: "growing" },
+    ];
+  } else if (age === "5-15") {
+    where.OR = [
+      { businessAgeYears: { gte: 5, lte: 15 } },
+      { businessMaturity: "established" },
+    ];
+  } else if (age === "15-30") {
+    where.OR = [
+      { businessAgeYears: { gte: 15, lte: 30 } },
+      { businessMaturity: "mature" },
+    ];
+  } else if (age === "30+") {
+    where.OR = [
+      { businessAgeYears: { gte: 30 } },
+      { businessMaturity: "highly_established" },
+    ];
+  }
+
+  // Company Size filtering
+  if (size && size !== "all") {
+    where.companySizeCategory = size;
+  }
+
+  // Decision Maker filtering
+  if (dm === "verified") {
+    where.decisionMakerFound = true;
+  } else if (dm === "email") {
+    where.AND = [
+      ...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []),
+      { decisionMakerEmail: { not: null } },
+      { decisionMakerEmail: { not: "" } },
+    ];
+  } else if (dm === "phone") {
+    where.AND = [
+      ...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []),
+      { decisionMakerDirectPhone: { not: null } },
+      { decisionMakerDirectPhone: { not: "" } },
+    ];
+  } else if (dm === "missing") {
+    where.decisionMakerFound = false;
+  }
+
+  // Target SME Profile toggle (1-15 team, 2-15 yrs, DM found, not excluded)
+  if (targetSme) {
+    where.decisionMakerFound = true;
+    where.isLowPriorityOrExcluded = false;
+    where.isFranchiseOrEnterprise = false;
+    where.companySizeCategory = { in: ["solo", "2-5", "6-10", "11-15"] };
+  }
+
+  // Exclude Enterprise toggle
+  if (excludeEnterprise) {
+    where.isLowPriorityOrExcluded = false;
+    where.isFranchiseOrEnterprise = false;
+    where.businessMaturity = { not: "highly_established" };
+    where.companySizeCategory = { notIn: ["21-50", "51-100", "100+"] };
   }
 
   const orderBy: Prisma.LeadOrderByWithRelationInput[] =
@@ -132,7 +230,13 @@ export default async function AllLeadsPage({
     when !== "all" ||
     tier !== "all" ||
     strength !== "all" ||
-    category !== "all";
+    category !== "all" ||
+    country !== "all" ||
+    age !== "all" ||
+    size !== "all" ||
+    dm !== "all" ||
+    targetSme ||
+    excludeEnterprise;
 
   return (
     <div className="page-pad">
@@ -187,6 +291,17 @@ export default async function AllLeadsPage({
             leadScore: lead.leadScore,
             qualityTier: lead.qualityTier,
             foundAt: lead.search?.createdAt ?? lead.createdAt,
+            decisionMakerFound: lead.decisionMakerFound,
+            decisionMakerName: lead.decisionMakerName ?? lead.ownerName,
+            decisionMakerRole: lead.decisionMakerRole ?? lead.ownerTitle,
+            decisionMakerEmail: lead.decisionMakerEmail,
+            decisionMakerDirectPhone: lead.decisionMakerDirectPhone,
+            businessAgeYears: lead.businessAgeYears ?? lead.yearsInBusiness,
+            businessMaturity: lead.businessMaturity,
+            employeeCount: lead.employeeCount,
+            companySizeCategory: lead.companySizeCategory,
+            smeQualityScore: lead.smeQualityScore ?? lead.leadScore,
+            isLowPriorityOrExcluded: lead.isLowPriorityOrExcluded,
           }))}
         />
         {!leads.length && (
