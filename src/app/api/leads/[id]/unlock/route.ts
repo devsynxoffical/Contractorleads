@@ -8,6 +8,7 @@ import {
   unlockLeads,
 } from "@/lib/lead-access";
 import { CREDIT_COSTS } from "@/lib/constants";
+import { findAccessibleLead } from "@/lib/lead-ownership";
 
 export async function POST(
   _request: Request,
@@ -22,7 +23,7 @@ export async function POST(
 
   try {
     if (await isLeadUnlocked(user.id, id)) {
-      const lead = await prisma.lead.findFirst({
+      let lead = await prisma.lead.findFirst({
         where: {
           id,
           OR: [
@@ -37,6 +38,20 @@ export async function POST(
           },
         },
       });
+      if (!lead) {
+        const accessible = await findAccessibleLead(user, id);
+        if (accessible) {
+          lead = await prisma.lead.findUnique({
+            where: { id },
+            include: {
+              savedBy: {
+                where: { userId: user.id },
+                include: { notes: { orderBy: { createdAt: "desc" } } },
+              },
+            },
+          });
+        }
+      }
       if (!lead) {
         return NextResponse.json({ error: "Lead not found" }, { status: 404 });
       }

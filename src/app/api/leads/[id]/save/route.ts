@@ -16,7 +16,7 @@ export async function POST(
 
   const { id } = await params;
 
-  if (!(await userOwnsLead(user.id, id))) {
+  if (!(await userOwnsLead(user, id))) {
     return NextResponse.json({ error: "Lead not found" }, { status: 404 });
   }
 

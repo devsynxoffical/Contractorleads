@@ -12,6 +12,7 @@ export const LEAD_FROM_VALUES = [
   "pipeline",
   "search",
   "dashboard",
+  "segment",
   "scrape",
 ] as const;
 
@@ -28,6 +29,7 @@ const APP_FROM_SET = new Set<string>([
   "pipeline",
   "search",
   "dashboard",
+  "segment",
 ]);
 
 export function parseLeadFrom(
@@ -55,6 +57,7 @@ export const LEAD_FROM_HREF: Record<AppLeadFrom, string> = {
   pipeline: "/leads/pipeline",
   search: "/leads/search",
   dashboard: "/dashboard",
+  segment: "/segments",
 };
 
 export const LEAD_FROM_LABEL: Record<AppLeadFrom, string> = {
@@ -66,6 +69,7 @@ export const LEAD_FROM_LABEL: Record<AppLeadFrom, string> = {
   pipeline: "Back to pipeline",
   search: "Back to Lead Finder",
   dashboard: "Back to dashboard",
+  segment: "Back to lead segments",
 };
 
 export const LEAD_FROM_CRUMB: Record<AppLeadFrom, string> = {
@@ -77,6 +81,7 @@ export const LEAD_FROM_CRUMB: Record<AppLeadFrom, string> = {
   pipeline: "Pipeline",
   search: "Lead Finder",
   dashboard: "Dashboard",
+  segment: "Lead Segments",
 };
 
 export function leadDetailHref(id: string, from: AppLeadFrom = "all") {

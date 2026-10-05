@@ -469,6 +469,7 @@ export function LeadDetailView({
   variant = "app",
   backHref,
   backLabel,
+  segmentId,
 }: {
   leadId: string;
   from?: LeadFrom;
@@ -476,6 +477,7 @@ export function LeadDetailView({
   variant?: "app" | "admin";
   backHref?: string;
   backLabel?: string;
+  segmentId?: string;
 }) {
   const isAdmin = variant === "admin";
   const router = useRouter();
@@ -627,7 +629,8 @@ export function LeadDetailView({
       return;
     }
 
-    const res = await fetch(`/api/leads/${leadId}?from=${from}`);
+    const segParam = segmentId ? `&segmentId=${encodeURIComponent(segmentId)}` : "";
+    const res = await fetch(`/api/leads/${leadId}?from=${from}${segParam}`);
     const data = await res.json();
     if (!res.ok || !data.lead) {
       setLead(null);
@@ -646,7 +649,7 @@ export function LeadDetailView({
     setPopup(null);
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when lead or list scope changes
-  }, [leadId, from, isAdmin]);
+  }, [leadId, from, isAdmin, segmentId]);
 
   useEffect(() => {
     if (lead && verificationScore === null) {
@@ -974,7 +977,7 @@ export function LeadDetailView({
   const detailHref = (id: string) =>
     isAdmin
       ? `/admin/leads/${id}?from=${navFrom === "scrape" ? "scrape" : "all"}`
-      : `/leads/${id}?from=${appFrom}`;
+      : `/leads/${id}?from=${appFrom}${appFrom === "segment" && segmentId ? `&segmentId=${encodeURIComponent(segmentId)}` : ""}`;
   const qualHref = (scoreKey: string) =>
     isAdmin
       ? `/admin/leads/${leadId}/qualification/${scoreKey}`

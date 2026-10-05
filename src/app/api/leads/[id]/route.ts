@@ -3,8 +3,40 @@ import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { CREDIT_COSTS } from "@/lib/constants";
 import { parseLeadFrom, type AppLeadFrom } from "@/lib/nav-context";
+import { findAccessibleLead } from "@/lib/lead-ownership";
 
-async function orderedIdsForFrom(userId: string, from: AppLeadFrom) {
+async function orderedIdsForFrom(
+  userId: string,
+  from: AppLeadFrom,
+  segmentId?: string | null,
+) {
+  if (from === "segment") {
+    if (segmentId) {
+      const seg = await prisma.leadSegment.findFirst({
+        where: { id: segmentId, userId },
+      });
+      if (seg?.leadIdsJson) {
+        try {
+          const ids = JSON.parse(seg.leadIdsJson);
+          if (Array.isArray(ids) && ids.length) return ids as string[];
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+    const recentSeg = await prisma.leadSegment.findFirst({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+    });
+    if (recentSeg?.leadIdsJson) {
+      try {
+        const ids = JSON.parse(recentSeg.leadIdsJson);
+        if (Array.isArray(ids) && ids.length) return ids as string[];
+      } catch {
+        /* ignore */
+      }
+    }
+  }
   if (from === "hot") {
     const rows = await prisma.lead.findMany({
       where: { qualityTier: "hot", search: { userId } },
@@ -50,9 +82,11 @@ export async function GET(
   }
 
   const { id } = await params;
-  const from = parseLeadFrom(new URL(request.url).searchParams.get("from"));
+  const url = new URL(request.url);
+  const from = parseLeadFrom(url.searchParams.get("from"));
+  const segmentId = url.searchParams.get("segmentId");
 
-  const lead = await prisma.lead.findFirst({
+  let lead = await prisma.lead.findFirst({
     where: {
       id,
       OR: [
@@ -69,10 +103,25 @@ export async function GET(
   });
 
   if (!lead) {
+    const accessible = await findAccessibleLead(user, id);
+    if (accessible) {
+      lead = await prisma.lead.findUnique({
+        where: { id },
+        include: {
+          savedBy: {
+            where: { userId: user.id },
+            include: { notes: { orderBy: { createdAt: "desc" } } },
+          },
+        },
+      });
+    }
+  }
+
+  if (!lead) {
     return NextResponse.json({ error: "Lead not found" }, { status: 404 });
   }
 
-  let orderedIds = await orderedIdsForFrom(user.id, from);
+  let orderedIds = await orderedIdsForFrom(user.id, from, segmentId);
 
   if (!orderedIds.includes(id) && from !== "all") {
     orderedIds = await orderedIdsForFrom(user.id, "all");

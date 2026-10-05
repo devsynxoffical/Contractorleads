@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { LEAD_REPORT_SCRIPT_TYPE } from "@/lib/services/lead-intelligence-report-meta";
+import { findAccessibleLead } from "@/lib/lead-ownership";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -23,7 +24,7 @@ export async function GET(_request: Request, { params }: Params) {
 
   const { id: leadId } = await params;
 
-  const lead = await prisma.lead.findFirst({
+  let lead = await prisma.lead.findFirst({
     where: {
       id: leadId,
       OR: [
@@ -37,6 +38,17 @@ export async function GET(_request: Request, { params }: Params) {
       businessName: true,
     },
   });
+
+  if (!lead) {
+    const accessible = await findAccessibleLead(user, leadId);
+    if (accessible) {
+      lead = {
+        id: accessible.id,
+        email: accessible.email,
+        businessName: accessible.businessName,
+      };
+    }
+  }
 
   if (!lead) {
     return NextResponse.json({ error: "Lead not found" }, { status: 404 });

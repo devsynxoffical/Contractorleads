@@ -1359,14 +1359,14 @@ export function SegmentsDashboard() {
                 filteredSegmentLeads.map((lead) => (
                   <div
                     key={lead.id}
-                    onClick={() => window.open(`/leads/${lead.id}?from=segment`, "_blank", "noopener,noreferrer")}
+                    onClick={() => window.open(`/leads/${lead.id}?from=segment&segmentId=${viewSegment.id}`, "_blank", "noopener,noreferrer")}
                     className="group/lead flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-[var(--surface)] p-3 text-xs shadow-xs hover:border-brand-400 hover:bg-brand-50/20 dark:hover:bg-brand-950/20 transition cursor-pointer"
                     title="Click anywhere to view full lead details in a new tab"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <Link
-                          href={`/leads/${lead.id}?from=segment`}
+                          href={`/leads/${lead.id}?from=segment&segmentId=${viewSegment.id}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
@@ -1531,7 +1531,7 @@ export function SegmentsDashboard() {
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
                               <Link
-                                href={`/leads/${lead.id}?from=segment`}
+                                href={`/leads/${lead.id}?from=segment${viewSegment ? `&segmentId=${viewSegment.id}` : ""}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
