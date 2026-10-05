@@ -41,6 +41,7 @@ export async function GET(
           assignedHookId: true,
           currentStepIndex: true,
           lastSentAt: true,
+          nextSendDueAt: true,
           lastFromEmail: true,
           lastSubject: true,
           openedAt: true,

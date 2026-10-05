@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   HiOutlineArrowPath,
   HiOutlineBookmark,
+  HiOutlineCalendar,
   HiOutlineChartBar,
   HiOutlineCheckBadge,
   HiOutlineClock,
@@ -41,6 +42,9 @@ type CampaignItem = {
   startedAt: string | null;
   completedAt: string | null;
   createdAt: string;
+  sendingWindowStart?: string;
+  sendingWindowEnd?: string;
+  sendingDays?: string[];
   leadCount: number;
   uniqueEmailCount: number;
   duplicateDetectedCount: number;
@@ -339,6 +343,39 @@ export function CampaignsDashboard() {
                         <span>
                           Timezone: <strong className="text-ink">{c.useRecipientTimezone ? "Recipient Local Time" : c.timezone.split("/").pop()?.replace(/_/g, " ")}</strong>
                         </span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-ink-muted pt-0.5">
+                        <span className="inline-flex items-center gap-1">
+                          <HiOutlineCalendar className="h-3.5 w-3.5 text-brand-600" />
+                          Created: <strong className="text-ink">{new Date(c.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })} at {new Date(c.createdAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}</strong>
+                        </span>
+                        {c.status === "scheduled" && c.scheduledStartDate && (
+                          <>
+                            <span>•</span>
+                            <span className="inline-flex items-center gap-1 text-blue-700 dark:text-blue-300">
+                              <HiOutlineClock className="h-3.5 w-3.5" />
+                              Scheduled: <strong>{new Date(c.scheduledStartDate).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</strong>
+                            </span>
+                          </>
+                        )}
+                        {c.startedAt && (
+                          <>
+                            <span>•</span>
+                            <span className="inline-flex items-center gap-1">
+                              <HiOutlineClock className="h-3.5 w-3.5 text-emerald-600" />
+                              Launched: <strong className="text-ink">{new Date(c.startedAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</strong>
+                            </span>
+                          </>
+                        )}
+                        {c.sendingWindowStart && c.sendingWindowEnd && (
+                          <>
+                            <span>•</span>
+                            <span className="inline-flex items-center gap-1">
+                              <HiOutlineClock className="h-3.5 w-3.5 text-amber-600" />
+                              Window: <strong className="text-ink">{c.sendingWindowStart} – {c.sendingWindowEnd}</strong>
+                            </span>
+                          </>
+                        )}
                       </div>
                     </div>
 

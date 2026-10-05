@@ -8,6 +8,7 @@ import {
   HiOutlineArrowPath,
   HiOutlineBolt,
   HiOutlineBookmark,
+  HiOutlineCalendar,
   HiOutlineChartBar,
   HiOutlineCheck,
   HiOutlineCheckBadge,
@@ -31,6 +32,15 @@ import {
   HiOutlineXMark,
 } from "react-icons/hi2";
 import { cn } from "@/lib/utils";
+import {
+  DEFAULT_DAY0_HOOKS,
+  DEFAULT_FOLLOWUP_SEQUENCE,
+  renderCampaignTemplate,
+  formatEmailBodyToHtml,
+  type CampaignAttachment,
+  type CampaignHook,
+  type CampaignFollowUpStep,
+} from "@/lib/campaign-types";
 
 type CampaignDetail = {
   id: string;
@@ -55,8 +65,8 @@ type CampaignDetail = {
   dailyLimitPerMailbox: number;
   minDelayMinutes: number;
   maxDelayMinutes: number;
-  hooks: Array<{ id: string; label: string; badge: string; subject: string; body: string; active: boolean }>;
-  steps: Array<{ id: string; stepNumber: number; label: string; dayDelay: number; subject: string; body: string; active: boolean }>;
+  hooks: CampaignHook[];
+  steps: CampaignFollowUpStep[];
   segment?: { id: string; name: string; industry: string | null; leadCount: number } | null;
 };
 
@@ -139,6 +149,7 @@ type ProspectItem = {
   assignedHookId: string | null;
   currentStepIndex: number;
   lastSentAt: string | null;
+  nextSendDueAt?: string | null;
   lastFromEmail: string | null;
   lastSubject: string | null;
   openedAt: string | null;
@@ -151,6 +162,51 @@ type ProspectItem = {
   stopReason: string | null;
   createdAt: string;
 };
+
+type CopyPreviewModalState = {
+  type: "hook" | "step";
+  id: string;
+  badge: string;
+  label: string;
+  subject: string;
+  body: string;
+  dayDelay?: number;
+  attachments?: CampaignAttachment[];
+  enableUnsubscribe?: boolean;
+  unsubscribeText?: string;
+  prospect?: {
+    businessName: string;
+    ownerName?: string | null;
+    city?: string | null;
+    state?: string | null;
+    country?: string | null;
+    email?: string | null;
+  };
+};
+
+function formatDateTime(val?: string | null): string {
+  if (!val) return "—";
+  try {
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return "—";
+    return d.toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return "—";
+  }
+}
+
+function formatDays(days?: string[]): string {
+  if (!days || days.length === 0) return "Mon–Fri";
+  if (days.length === 7) return "Every day (Mon–Sun)";
+  if (days.length === 5 && !days.includes("sat") && !days.includes("sun")) return "Mon–Fri (Weekdays)";
+  return days.map((d) => d.slice(0, 3).toUpperCase()).join(", ");
+}
 
 export function CampaignDetailView({ campaignId }: { campaignId: string }) {
   const router = useRouter();
@@ -170,8 +226,18 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
   const [actionLoading, setActionLoading] = useState(false);
   const [processMsg, setProcessMsg] = useState<string | null>(null);
 
-  // Selected hook preview modal
-  const [selectedHookPreview, setSelectedHookPreview] = useState<{ id: string; subject: string; body: string } | null>(null);
+  // Selected copy preview modal (Day 0 hooks and Follow-Up steps)
+  const [selectedCopyPreview, setSelectedCopyPreview] = useState<CopyPreviewModalState | null>(null);
+  const [previewMode, setPreviewMode] = useState<"rendered" | "raw">("rendered");
+  const [copied, setCopied] = useState(false);
+
+  function handleCopyToClipboard(text: string) {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      void navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }
 
   async function loadData() {
     try {
@@ -372,6 +438,67 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
           </div>
         </div>
 
+        {/* Date, Time & Scheduling Grid */}
+        <div className="mt-4 grid grid-cols-1 gap-2.5 border-t border-border/80 pt-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-xl border border-border bg-[var(--input-bg)]/80 p-3">
+            <div className="flex items-center gap-1.5 text-ink-muted mb-1">
+              <HiOutlineCalendar className="h-4 w-4 text-brand-600 shrink-0" />
+              <span className="text-[10px] font-bold uppercase tracking-wider">Date Created</span>
+            </div>
+            <div className="text-xs font-bold text-ink">
+              {formatDateTime(campaign.createdAt)}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-border bg-[var(--input-bg)]/80 p-3">
+            <div className="flex items-center gap-1.5 text-ink-muted mb-1">
+              <HiOutlineClock className="h-4 w-4 text-blue-600 shrink-0" />
+              <span className="text-[10px] font-bold uppercase tracking-wider">
+                {campaign.status === "scheduled"
+                  ? "Scheduled Launch Time"
+                  : campaign.startedAt
+                  ? "Launched / Started At"
+                  : "Launch Date & Time"}
+              </span>
+            </div>
+            <div className="text-xs font-bold text-ink">
+              {campaign.status === "scheduled" && campaign.scheduledStartDate
+                ? formatDateTime(campaign.scheduledStartDate)
+                : campaign.startedAt
+                ? formatDateTime(campaign.startedAt)
+                : campaign.completedAt
+                ? formatDateTime(campaign.completedAt)
+                : "Not launched yet (Draft)"}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-border bg-[var(--input-bg)]/80 p-3">
+            <div className="flex items-center gap-1.5 text-ink-muted mb-1">
+              <HiOutlineClock className="h-4 w-4 text-amber-600 shrink-0" />
+              <span className="text-[10px] font-bold uppercase tracking-wider">Sending Time Window</span>
+            </div>
+            <div className="text-xs font-bold text-ink">
+              {campaign.sendingWindowStart} – {campaign.sendingWindowEnd}
+            </div>
+            <div className="text-[10px] text-ink-muted mt-0.5 font-medium">
+              Active: {formatDays(campaign.sendingDays)}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-border bg-[var(--input-bg)]/80 p-3">
+            <div className="flex items-center gap-1.5 text-ink-muted mb-1">
+              <HiOutlineGlobeAmericas className="h-4 w-4 text-emerald-600 shrink-0" />
+              <span className="text-[10px] font-bold uppercase tracking-wider">Market Timezone</span>
+            </div>
+            <div className="text-xs font-bold text-ink truncate" title={campaign.timezone}>
+              {campaign.useRecipientTimezone ? "Recipient Local Time" : campaign.timezone}
+            </div>
+            <div className="text-[10px] text-ink-muted mt-0.5 font-medium">
+              {campaign.minDelayMinutes}–{campaign.maxDelayMinutes}m jitter throttle
+            </div>
+          </div>
+        </div>
+
         {processMsg && (
           <div className="mt-4 flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs font-bold text-emerald-800 dark:text-emerald-300">
             <HiOutlineCheck className="h-4 w-4" />
@@ -466,7 +593,17 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
             </thead>
             <tbody className="divide-y divide-border/60 font-medium">
               {hookPerformance.map((h) => {
-                const hookObj = campaign.hooks.find((hook) => hook.id === h.hookId);
+                const hookObj =
+                  campaign.hooks?.find((hook) => hook.id?.toLowerCase() === h.hookId?.toLowerCase()) ||
+                  DEFAULT_DAY0_HOOKS.find((dh) => dh.id?.toLowerCase() === h.hookId?.toLowerCase()) ||
+                  {
+                    id: h.hookId,
+                    badge: `Hook ${h.hookId}`,
+                    label: h.label || `Hook ${h.hookId}`,
+                    subject: `Quick question for {{businessName}} in {{city}}`,
+                    body: `Hi {{firstName}},\n\nI came across {{businessName}} while researching top {{industry}} contractors in {{city}}.\n\nAre you currently taking on new projects in {{city}}, or is your schedule completely booked up?\n\nBest regards,\n{{fromName}}`,
+                    active: true,
+                  };
                 const isWinner = h.replyRate > 0 && h.replyRate === Math.max(...hookPerformance.map((item) => item.replyRate));
                 return (
                   <tr key={h.hookId} className="hover:bg-[var(--input-bg)]/50 transition">
@@ -500,15 +637,28 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                       <span className="text-ink-muted">({h.replyRate}%)</span>
                     </td>
                     <td className="py-3 px-3 text-right">
-                      {hookObj && (
-                        <button
-                          type="button"
-                          onClick={() => setSelectedHookPreview(hookObj)}
-                          className="text-xs font-semibold text-brand-600 hover:underline"
-                        >
-                          View Copy
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedCopyPreview({
+                            type: "hook",
+                            id: hookObj.id,
+                            badge: hookObj.badge || `Hook ${hookObj.id}`,
+                            label: hookObj.label || `Hook ${hookObj.id}`,
+                            subject: hookObj.subject || "Quick inquiry",
+                            body: hookObj.body || "",
+                            attachments: (hookObj as any).attachments,
+                            enableUnsubscribe: (hookObj as any).enableUnsubscribe,
+                            unsubscribeText: (hookObj as any).unsubscribeText,
+                          });
+                          setPreviewMode("rendered");
+                        }}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-700 hover:underline"
+                        title="View email copy and preview template"
+                      >
+                        <HiOutlineEye className="h-3.5 w-3.5" />
+                        View Copy
+                      </button>
                     </td>
                   </tr>
                 );
@@ -541,28 +691,86 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                 <th className="py-2.5 px-3 font-bold uppercase">Sent</th>
                 <th className="py-2.5 px-3 font-bold uppercase">Opens (%)</th>
                 <th className="py-2.5 px-3 font-bold uppercase">Replies (%)</th>
+                <th className="py-2.5 px-3 font-bold uppercase text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60 font-medium">
-              {stepPerformance.map((s) => (
-                <tr key={s.stepIndex} className="hover:bg-[var(--input-bg)]/50 transition">
-                  <td className="py-3 px-3">
-                    <span className="rounded-md bg-[var(--input-bg)] border border-border px-2 py-0.5 font-bold text-ink">
-                      {s.stepIndex === 0 ? "Day 0" : `Step ${s.stepIndex}`}
-                    </span>
-                  </td>
-                  <td className="py-3 px-3 font-semibold text-ink">{s.label}</td>
-                  <td className="py-3 px-3 font-bold text-ink">{s.sent}</td>
-                  <td className="py-3 px-3">
-                    <span className="font-bold text-brand-600">{s.opened}</span>{" "}
-                    <span className="text-ink-muted">({s.openRate}%)</span>
-                  </td>
-                  <td className="py-3 px-3">
-                    <span className="font-bold text-purple-600">{s.replied}</span>{" "}
-                    <span className="text-ink-muted">({s.replyRate}%)</span>
-                  </td>
-                </tr>
-              ))}
+              {stepPerformance.map((s) => {
+                const isDay0 = s.stepIndex === 0;
+                const stepObj = isDay0
+                  ? null
+                  : campaign.steps?.find((st) => st.stepNumber === s.stepIndex || st.id === String(s.stepIndex)) ||
+                    DEFAULT_FOLLOWUP_SEQUENCE.find((ds) => ds.stepNumber === s.stepIndex || ds.id === String(s.stepIndex)) ||
+                    {
+                      id: String(s.stepIndex),
+                      stepNumber: s.stepIndex,
+                      label: s.label || `Follow-Up ${s.stepIndex}`,
+                      dayDelay: 2,
+                      subject: `Re: {{lastSubject}}`,
+                      body: `Hi {{firstName}},\n\nFollowing up on my previous note regarding {{industry}} projects in {{city}}.\n\nBest,\n{{fromName}}`,
+                      active: true,
+                    };
+
+                return (
+                  <tr key={s.stepIndex} className="hover:bg-[var(--input-bg)]/50 transition">
+                    <td className="py-3 px-3">
+                      <span className="rounded-md bg-[var(--input-bg)] border border-border px-2 py-0.5 font-bold text-ink">
+                        {isDay0 ? "Day 0" : `Step ${s.stepIndex}`}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 font-semibold text-ink">{s.label}</td>
+                    <td className="py-3 px-3 font-bold text-ink">{s.sent}</td>
+                    <td className="py-3 px-3">
+                      <span className="font-bold text-brand-600">{s.opened}</span>{" "}
+                      <span className="text-ink-muted">({s.openRate}%)</span>
+                    </td>
+                    <td className="py-3 px-3">
+                      <span className="font-bold text-purple-600">{s.replied}</span>{" "}
+                      <span className="text-ink-muted">({s.replyRate}%)</span>
+                    </td>
+                    <td className="py-3 px-3 text-right">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (isDay0) {
+                            const h0 = campaign.hooks?.[0] || DEFAULT_DAY0_HOOKS[0];
+                            setSelectedCopyPreview({
+                              type: "hook",
+                              id: h0.id,
+                              badge: "Day 0",
+                              label: h0.label || "Day 0 Initial Email",
+                              subject: h0.subject,
+                              body: h0.body,
+                              attachments: (h0 as any).attachments,
+                              enableUnsubscribe: (h0 as any).enableUnsubscribe,
+                              unsubscribeText: (h0 as any).unsubscribeText,
+                            });
+                          } else if (stepObj) {
+                            setSelectedCopyPreview({
+                              type: "step",
+                              id: String(stepObj.stepNumber),
+                              badge: `Follow-Up ${stepObj.stepNumber}`,
+                              label: stepObj.label || `Follow-Up Step ${stepObj.stepNumber}`,
+                              subject: stepObj.subject,
+                              body: stepObj.body,
+                              dayDelay: stepObj.dayDelay,
+                              attachments: (stepObj as any).attachments,
+                              enableUnsubscribe: (stepObj as any).enableUnsubscribe,
+                              unsubscribeText: (stepObj as any).unsubscribeText,
+                            });
+                          }
+                          setPreviewMode("rendered");
+                        }}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-700 hover:underline"
+                        title="View email copy for this sequence step"
+                      >
+                        <HiOutlineEye className="h-3.5 w-3.5" />
+                        View Copy
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -700,6 +908,7 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                 <th className="py-2.5 px-3 font-bold uppercase">Hook</th>
                 <th className="py-2.5 px-3 font-bold uppercase">Current Step</th>
                 <th className="py-2.5 px-3 font-bold uppercase">Activity</th>
+                <th className="py-2.5 px-3 font-bold uppercase">Date & Time</th>
                 <th className="py-2.5 px-3 font-bold uppercase">Status</th>
                 <th className="py-2.5 px-3 font-bold uppercase text-right">Actions</th>
               </tr>
@@ -707,13 +916,13 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
             <tbody className="divide-y divide-border/60 font-medium">
               {prospectsLoading ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-xs text-ink-muted">
+                  <td colSpan={9} className="py-8 text-center text-xs text-ink-muted">
                     Loading prospects…
                   </td>
                 </tr>
               ) : prospects.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-xs text-ink-muted">
+                  <td colSpan={9} className="py-8 text-center text-xs text-ink-muted">
                     No prospects match the filter.
                   </td>
                 </tr>
@@ -760,19 +969,93 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                       </div>
                     </td>
                     <td className="py-3 px-3">
+                      {p.lastSentAt ? (
+                        <div>
+                          <span className="text-xs font-semibold text-ink block whitespace-nowrap">
+                            {formatDateTime(p.lastSentAt)}
+                          </span>
+                          <span className="text-[10px] text-ink-muted">Last email sent</span>
+                        </div>
+                      ) : p.nextSendDueAt ? (
+                        <div>
+                          <span className="text-xs font-semibold text-amber-700 dark:text-amber-300 block whitespace-nowrap">
+                            {formatDateTime(p.nextSendDueAt)}
+                          </span>
+                          <span className="text-[10px] text-ink-muted">Next send due</span>
+                        </div>
+                      ) : (
+                        <div>
+                          <span className="text-xs text-ink-muted block whitespace-nowrap">
+                            {p.createdAt ? formatDateTime(p.createdAt) : "Pending"}
+                          </span>
+                          <span className="text-[10px] text-ink-muted">Enrolled</span>
+                        </div>
+                      )}
+                    </td>
+                    <td className="py-3 px-3">
                       <ProspectStatusBadge status={p.status} />
                     </td>
                     <td className="py-3 px-3 text-right">
-                      {p.status !== "stopped" && p.status !== "replied" && (
+                      <div className="flex items-center justify-end gap-2">
                         <button
                           type="button"
-                          onClick={() => handleStopProspect(p.id)}
-                          className="text-[11px] font-semibold text-rose-600 hover:underline"
-                          title="Stop further automated follow-ups for this lead"
+                          onClick={() => {
+                            if (p.currentStepIndex === 0) {
+                              const hookId = p.assignedHookId || "A";
+                              const hObj =
+                                campaign.hooks?.find((hk) => hk.id?.toLowerCase() === hookId.toLowerCase()) ||
+                                DEFAULT_DAY0_HOOKS.find((dh) => dh.id?.toLowerCase() === hookId.toLowerCase()) ||
+                                DEFAULT_DAY0_HOOKS[0];
+                              setSelectedCopyPreview({
+                                type: "hook",
+                                id: hObj.id,
+                                badge: `Hook ${hObj.id}`,
+                                label: hObj.label,
+                                subject: hObj.subject,
+                                body: hObj.body,
+                                attachments: (hObj as any).attachments,
+                                enableUnsubscribe: (hObj as any).enableUnsubscribe,
+                                unsubscribeText: (hObj as any).unsubscribeText,
+                                prospect: p,
+                              });
+                            } else {
+                              const sObj =
+                                campaign.steps?.find((st) => st.stepNumber === p.currentStepIndex || st.id === String(p.currentStepIndex)) ||
+                                DEFAULT_FOLLOWUP_SEQUENCE.find((ds) => ds.stepNumber === p.currentStepIndex || ds.id === String(p.currentStepIndex)) ||
+                                DEFAULT_FOLLOWUP_SEQUENCE[0];
+                              setSelectedCopyPreview({
+                                type: "step",
+                                id: String(sObj.stepNumber),
+                                badge: `Step ${sObj.stepNumber}`,
+                                label: sObj.label,
+                                subject: sObj.subject,
+                                body: sObj.body,
+                                dayDelay: sObj.dayDelay,
+                                attachments: (sObj as any).attachments,
+                                enableUnsubscribe: (sObj as any).enableUnsubscribe,
+                                unsubscribeText: (sObj as any).unsubscribeText,
+                                prospect: p,
+                              });
+                            }
+                            setPreviewMode("rendered");
+                          }}
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 hover:underline"
+                          title="Preview personalized email for this lead"
                         >
-                          Stop Follow-Up
+                          <HiOutlineEye className="h-3 w-3" /> Copy
                         </button>
-                      )}
+
+                        {p.status !== "stopped" && p.status !== "replied" && (
+                          <button
+                            type="button"
+                            onClick={() => handleStopProspect(p.id)}
+                            className="text-[11px] font-semibold text-rose-600 hover:underline"
+                            title="Stop further automated follow-ups for this lead"
+                          >
+                            Stop
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -782,42 +1065,242 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
         </div>
       </div>
 
-      {/* Hook Preview Modal */}
-      {selectedHookPreview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-lg rounded-2xl border border-border bg-[var(--surface)] p-5 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <h3 className="font-bold text-sm text-ink">Hook {selectedHookPreview.id} Email Preview</h3>
-              <button
-                type="button"
-                onClick={() => setSelectedHookPreview(null)}
-                className="rounded-lg p-1 text-ink-muted hover:bg-[var(--input-bg)]"
-              >
-                <HiOutlineXMark className="h-5 w-5" />
-              </button>
-            </div>
-            <div>
-              <span className="text-[11px] font-bold text-ink-muted uppercase block">Subject</span>
-              <span className="font-semibold text-xs text-ink block mt-0.5">{selectedHookPreview.subject}</span>
-            </div>
-            <div>
-              <span className="text-[11px] font-bold text-ink-muted uppercase block mb-1">Email Body</span>
-              <div className="rounded-xl border border-border bg-[var(--input-bg)] p-3 text-xs font-mono leading-relaxed whitespace-pre-wrap text-ink">
-                {selectedHookPreview.body}
+      {/* Copy Preview Modal (Day 0 Hooks & Follow-Up Steps) */}
+      {selectedCopyPreview && (() => {
+        const sampleLead = selectedCopyPreview.prospect || {
+          businessName: campaign.name ? `${campaign.industry || "Apex"} Contractor Co` : "Apex Roofing Experts",
+          ownerName: "John Miller",
+          city: campaign.city || "Miami",
+          state: campaign.state || "FL",
+          country: campaign.country || "US",
+          email: "john@apexcontracting.com",
+        };
+
+        const renderedSubject = renderCampaignTemplate(
+          selectedCopyPreview.subject || "Quick question for {{businessName}}",
+          sampleLead,
+          "Alex Turner",
+          { lastSubject: "Quick question for " + sampleLead.businessName }
+        );
+
+        const renderedBody = renderCampaignTemplate(
+          selectedCopyPreview.body || "(No email body template provided)",
+          sampleLead,
+          "Alex Turner",
+          { lastSubject: "Quick question for " + sampleLead.businessName }
+        );
+
+        const renderedHtml = formatEmailBodyToHtml(renderedBody, {
+          attachments: selectedCopyPreview.attachments,
+          enableUnsubscribe: selectedCopyPreview.enableUnsubscribe ?? true,
+          unsubscribeText: selectedCopyPreview.unsubscribeText,
+          unsubscribeUrl: "#",
+        });
+
+        const fullCopyForClipboard = `Subject: ${selectedCopyPreview.subject}\n\n${selectedCopyPreview.body}`;
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in">
+            <div className="w-full max-w-2xl rounded-2xl border border-border bg-[var(--surface)] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between border-b border-border p-4 bg-[var(--input-bg)]/50">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-600 text-xs font-bold text-white shadow-sm">
+                    {selectedCopyPreview.type === "hook" ? selectedCopyPreview.id : `#${selectedCopyPreview.id}`}
+                  </span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-sm text-ink">{selectedCopyPreview.label}</h3>
+                      <span className="rounded-md bg-brand-50 border border-brand-200 px-2 py-0.5 text-[10px] font-bold text-brand-700 dark:bg-brand-950 dark:text-brand-300">
+                        {selectedCopyPreview.type === "hook" ? "Day 0 Hook Angle" : `Follow-Up Step (+${selectedCopyPreview.dayDelay || 2}d)`}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-ink-muted">
+                      {selectedCopyPreview.prospect
+                        ? `Personalized preview for ${sampleLead.businessName} (${sampleLead.email})`
+                        : "Email template preview with automated variable personalization"}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedCopyPreview(null)}
+                  className="rounded-lg p-1.5 text-ink-muted hover:bg-[var(--input-bg)] hover:text-ink transition"
+                >
+                  <HiOutlineXMark className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Toolbar: View Mode Tabs & Copy Button */}
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2.5 bg-[var(--surface)] text-xs">
+                <div className="flex items-center gap-1 rounded-xl bg-[var(--input-bg)] p-1 border border-border">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewMode("rendered")}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 rounded-lg px-3 py-1 font-semibold transition",
+                      previewMode === "rendered"
+                        ? "bg-brand-600 text-white shadow-sm"
+                        : "text-ink-muted hover:text-ink"
+                    )}
+                  >
+                    <HiOutlineEye className="h-3.5 w-3.5" />
+                    Simulated Recipient View
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewMode("raw")}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 rounded-lg px-3 py-1 font-semibold transition",
+                      previewMode === "raw"
+                        ? "bg-brand-600 text-white shadow-sm"
+                        : "text-ink-muted hover:text-ink"
+                    )}
+                  >
+                    <HiOutlineDocumentDuplicate className="h-3.5 w-3.5" />
+                    Raw Template Source
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleCopyToClipboard(fullCopyForClipboard)}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-[var(--input-bg)] px-3 py-1.5 text-xs font-semibold text-ink hover:bg-[var(--surface)] transition"
+                  title="Copy subject and body to clipboard"
+                >
+                  {copied ? (
+                    <>
+                      <HiOutlineCheck className="h-3.5 w-3.5 text-emerald-600" />
+                      <span className="text-emerald-600 font-bold">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <HiOutlineDocumentDuplicate className="h-3.5 w-3.5" />
+                      <span>Copy Template</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {previewMode === "rendered" ? (
+                  /* SIMULATED EMAIL CLIENT WINDOW */
+                  <div className="rounded-xl border border-border bg-[var(--input-bg)]/40 p-4 space-y-3">
+                    {/* Simulated Email Envelope Header */}
+                    <div className="rounded-lg border border-border bg-[var(--surface)] p-3 text-xs space-y-1.5 shadow-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-ink-muted w-14 shrink-0">From:</span>
+                        <span className="text-ink font-semibold">Alex Turner &lt;alex@yourdomain.com&gt;</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-ink-muted w-14 shrink-0">To:</span>
+                        <span className="text-ink">
+                          {sampleLead.ownerName || "Business Owner"} &lt;{sampleLead.email || "lead@example.com"}&gt;
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-ink-muted w-14 shrink-0">Subject:</span>
+                        <span className="font-bold text-ink">{renderedSubject}</span>
+                      </div>
+                    </div>
+
+                    {/* Email Body Content */}
+                    <div className="rounded-xl border border-border bg-white dark:bg-zinc-950 p-5 shadow-xs">
+                      <div
+                        className="text-xs leading-relaxed text-zinc-900 dark:text-zinc-100"
+                        dangerouslySetInnerHTML={{ __html: renderedHtml }}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  /* RAW TEMPLATE SOURCE WITH VARIABLE PILLS */
+                  <div className="space-y-3">
+                    <div>
+                      <span className="text-[11px] font-bold text-ink-muted uppercase block mb-1">
+                        Subject Line Template
+                      </span>
+                      <div className="rounded-xl border border-border bg-[var(--input-bg)] p-3 text-xs font-mono font-semibold text-ink">
+                        {selectedCopyPreview.subject || "(Empty subject line)"}
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className="text-[11px] font-bold text-ink-muted uppercase block mb-1">
+                        Body Content Template
+                      </span>
+                      <pre className="rounded-xl border border-border bg-[var(--input-bg)] p-3.5 text-xs font-mono leading-relaxed whitespace-pre-wrap text-ink overflow-x-auto max-h-[300px]">
+                        {selectedCopyPreview.body || "(Empty email body copy)"}
+                      </pre>
+                    </div>
+
+                    {/* Available Template Variables */}
+                    <div className="rounded-xl border border-border bg-[var(--input-bg)]/50 p-3 space-y-1.5">
+                      <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block">
+                        Supported Personalization Tags
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {[
+                          "{{firstName}}",
+                          "{{businessName}}",
+                          "{{city}}",
+                          "{{state}}",
+                          "{{country}}",
+                          "{{industry}}",
+                          "{{fromName}}",
+                          "{{lastSubject}}",
+                          "{{unsubscribe}}",
+                        ].map((v) => (
+                          <span
+                            key={v}
+                            className="rounded-md border border-border bg-[var(--surface)] px-2 py-0.5 font-mono text-[10px] font-bold text-brand-700 dark:text-brand-300"
+                          >
+                            {v}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Attachments if any */}
+                    {selectedCopyPreview.attachments && selectedCopyPreview.attachments.length > 0 && (
+                      <div className="rounded-xl border border-border bg-[var(--input-bg)]/50 p-3 space-y-1">
+                        <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block">
+                          Attached Documents ({selectedCopyPreview.attachments.length})
+                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedCopyPreview.attachments.map((att, idx) => (
+                            <span
+                              key={idx}
+                              className="inline-flex items-center gap-1 rounded-lg border border-border bg-[var(--surface)] px-2.5 py-1 text-xs font-medium text-ink"
+                            >
+                              📎 {att.name} ({att.placement || "bottom"})
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex items-center justify-between border-t border-border p-3.5 bg-[var(--input-bg)]/40 text-xs">
+                <span className="text-[11px] text-ink-muted">
+                  💡 All tags are dynamically replaced with each contractor's verified info during sending cycles.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedCopyPreview(null)}
+                  className="rounded-xl bg-[#1a1224] px-4 py-2 text-xs font-bold text-white transition hover:opacity-90 dark:bg-brand-600"
+                >
+                  Done
+                </button>
               </div>
             </div>
-            <div className="flex justify-end pt-2 border-t border-border">
-              <button
-                type="button"
-                onClick={() => setSelectedHookPreview(null)}
-                className="rounded-xl bg-[#1a1224] px-4 py-2 text-xs font-bold text-white dark:bg-brand-600"
-              >
-                Close
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

@@ -142,6 +142,9 @@ export async function GET() {
       leadCount: c.leadCount || s.total,
       uniqueEmailCount: c.uniqueEmailCount || s.total,
       duplicateDetectedCount: c.duplicateDetectedCount,
+      sendingWindowStart: c.sendingWindowStart,
+      sendingWindowEnd: c.sendingWindowEnd,
+      sendingDays: c.sendingDaysJson ? JSON.parse(c.sendingDaysJson) : ["mon", "tue", "wed", "thu", "fri"],
       stats: s,
     };
   });
