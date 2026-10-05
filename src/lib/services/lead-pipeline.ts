@@ -28,6 +28,8 @@ import {
   estimateCompanySize,
   calculateSmeQualityScore,
   splitFullName,
+  extractEstablishedYear,
+  classifyBusinessMaturity,
 } from "./sme-intelligence";
 
 const EMPTY_PEOPLE: WebsitePeopleResult = {
@@ -50,6 +52,11 @@ export type SearchParams = {
   radius?: number;
   /** Desired company size / revenue target */
   companySize?: CompanySizeFilter;
+  /** SME Decision-Maker & Sizing Engine options */
+  smeTeamSize?: string;
+  smeBusinessAge?: string;
+  smeRequireDecisionMaker?: boolean;
+  smeExcludeEnterprise?: boolean;
   /** How many leads the client asked for (10–1000). */
   targetLeadCount?: number;
   /** Fast contacts mode: extracts core business, owner, phone, email, location without slow external social scrapers */
@@ -206,9 +213,15 @@ export async function runLeadPipeline(params: SearchParams) {
   const fastContacts = Boolean(params.fastContactsOnly);
   const requireEmail = Boolean(params.requireEmail || params.fastContactsOnly);
 
-  // In requireEmail mode (Bulk Email Finder), fetch ample places so we guarantee finding 100% of requested verified emails
-  const fetchLimit = requireEmail
-    ? Math.min(3000, Math.max(targetCount * 10, 300))
+  const hasSmeConstraints = Boolean(
+    (params.smeTeamSize && params.smeTeamSize !== "all") ||
+    params.smeRequireDecisionMaker ||
+    params.smeExcludeEnterprise
+  );
+
+  // In requireEmail or strict SME filtering mode, fetch ample places so we guarantee finding requested matching leads
+  const fetchLimit = requireEmail || hasSmeConstraints
+    ? Math.min(3500, Math.max(targetCount * 8, 300))
     : isCountryWide
       ? Math.min(2500, Math.max(targetCount * 2, targetCount + 100))
       : Math.min(2500, Math.max(targetCount * 2, targetCount + 60));
@@ -300,7 +313,7 @@ export async function runLeadPipeline(params: SearchParams) {
             fastContacts,
           });
 
-          if (lead === "skipped-score") return;
+          if (typeof lead === "string") return;
           if (requireEmail && !lead.email) {
             // Saved to DB for general pool, but not added to required email results
             return;
@@ -486,7 +499,7 @@ async function enrichAndPersistPlace(opts: {
   preferRules: boolean;
   fastContacts?: boolean;
 }): Promise<
-  Awaited<ReturnType<typeof prisma.lead.create>> | "skipped-score"
+  Awaited<ReturnType<typeof prisma.lead.create>> | `skipped-${string}`
 > {
   const { place, params, searchId, location, preferRules, fastContacts } = opts;
 
@@ -700,6 +713,69 @@ async function enrichAndPersistPlace(opts: {
       isGenericEmailOnly: emailClass.isGeneric,
     });
 
+    const estInfo = extractEstablishedYear(
+      (websitePeople.pagesChecked?.join(" ") || "") + " " + place.name
+    );
+    const estYears = estInfo.establishedYear
+      ? new Date().getFullYear() - estInfo.establishedYear
+      : null;
+    const maturity = classifyBusinessMaturity(estYears);
+
+    // 1. SME Scraper Control: Require Verified Decision-Maker (skip receptionist / gatekeeper only)
+    if (params.smeRequireDecisionMaker && !dmFound) {
+      return "skipped-no-dm";
+    }
+
+    // 2. SME Scraper Control: Exclude 30+ yr old companies & large corporate enterprises/franchises
+    if (
+      params.smeExcludeEnterprise &&
+      (smeScoring.isExcluded || sizeEst.isFranchiseOrEnterprise || maturity === "highly_established")
+    ) {
+      return "skipped-enterprise";
+    }
+
+    // 3. SME Scraper Control: Exact Team Size constraint (e.g. 11-15, 1-15, 2-5, 6-10, solo, etc.)
+    if (params.smeTeamSize && params.smeTeamSize !== "all") {
+      const targetSize = params.smeTeamSize;
+      const count = sizeEst.employeeCount;
+      const cat = sizeEst.category;
+      let matches = false;
+
+      if (targetSize === "11-15") {
+        matches = cat === "11-15" || (count >= 11 && count <= 15);
+      } else if (targetSize === "1-15") {
+        matches = ["solo", "2-5", "6-10", "11-15"].includes(cat) || count <= 15;
+      } else if (targetSize === "2-5") {
+        matches = cat === "2-5" || (count >= 2 && count <= 5);
+      } else if (targetSize === "6-10") {
+        matches = cat === "6-10" || (count >= 6 && count <= 10);
+      } else if (targetSize === "solo") {
+        matches = cat === "solo" || count === 1;
+      } else if (targetSize === "16-20") {
+        matches = cat === "16-20" || (count >= 16 && count <= 20);
+      } else if (targetSize === "21+") {
+        matches = ["21-50", "51-100", "100+"].includes(cat) || count >= 21;
+      }
+
+      if (!matches) {
+        return "skipped-sme-size";
+      }
+    }
+
+    // 4. SME Scraper Control: Business Age bracket requested by user
+    if (params.smeBusinessAge && params.smeBusinessAge !== "all") {
+      const targetAge = params.smeBusinessAge;
+      const years = estYears;
+      if (years != null) {
+        if (targetAge === "0-2" && years > 2) return "skipped-age";
+        if (targetAge === "2-5" && (years < 2 || years > 5)) return "skipped-age";
+        if (targetAge === "5-15" && (years < 5 || years > 15)) return "skipped-age";
+        if (targetAge === "2-15" && (years < 2 || years > 15)) return "skipped-age";
+        if (targetAge === "15-30" && (years < 15 || years > 30)) return "skipped-age";
+        if (targetAge === "30+" && years < 30) return "skipped-age";
+      }
+    }
+
     const smeData = {
       decisionMakerFound: dmFound,
       decisionMakerName: dmFound ? ownerNameFinal : null,
@@ -714,6 +790,14 @@ async function enrichAndPersistPlace(opts: {
       employeeCount: sizeEst.employeeCount,
       companySizeCategory: sizeEst.category,
       isFranchiseOrEnterprise: sizeEst.isFranchiseOrEnterprise,
+      businessEstablishedDate: estInfo.claimedOperatingDate
+        ? estInfo.claimedOperatingDate.toISOString().split("T")[0]
+        : estInfo.establishedYear
+          ? String(estInfo.establishedYear)
+          : null,
+      businessAgeYears: estYears,
+      businessAgeSource: estInfo.sourceSnippet,
+      businessMaturity: maturity,
       smeQualityScore: smeScoring.score,
       isLowPriorityOrExcluded: smeScoring.isExcluded,
       exclusionReasonsJson: JSON.stringify(smeScoring.exclusionReasons),
@@ -730,6 +814,7 @@ async function enrichAndPersistPlace(opts: {
       website: website ?? existingLead?.website,
       googleRating: place.rating ?? existingLead?.googleRating,
       reviewCount: place.reviewCount ?? existingLead?.reviewCount,
+      yearsInBusiness: estYears ?? existingLead?.yearsInBusiness,
       ownerName: ownerNameFinal,
       ownerTitle: ownerTitle,
       ownerSourceUrl: ownerSourceUrl,

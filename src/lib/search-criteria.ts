@@ -30,6 +30,11 @@ export type SearchCriteriaInput = {
   /** Desired number of leads (10–1000). Default 50. */
   targetLeadCount?: number | string;
   companySize?: CompanySizeFilter;
+  /** SME Decision-Maker & Sizing Engine options */
+  smeTeamSize?: string;
+  smeBusinessAge?: string;
+  smeRequireDecisionMaker?: boolean;
+  smeExcludeEnterprise?: boolean;
 };
 
 export type ResolvedSearchCriteria = {
@@ -43,6 +48,10 @@ export type ResolvedSearchCriteria = {
   radius?: number;
   targetLeadCount: number;
   companySize?: CompanySizeFilter;
+  smeTeamSize?: string;
+  smeBusinessAge?: string;
+  smeRequireDecisionMaker?: boolean;
+  smeExcludeEnterprise?: boolean;
 };
 
 function extractStateFromText(text: string): string | null {
@@ -82,6 +91,17 @@ export function resolveSearchCriteria(
     : 50;
 
   const companySize: CompanySizeFilter = input.companySize || "all";
+  const smeTeamSize = input.smeTeamSize?.trim() || undefined;
+  const smeBusinessAge = input.smeBusinessAge?.trim() || undefined;
+  const smeRequireDecisionMaker = input.smeRequireDecisionMaker ?? undefined;
+  const smeExcludeEnterprise = input.smeExcludeEnterprise ?? undefined;
+
+  const smeExtras = {
+    smeTeamSize,
+    smeBusinessAge,
+    smeRequireDecisionMaker,
+    smeExcludeEnterprise,
+  };
 
   if (locationScope === "country") {
     return {
@@ -92,6 +112,7 @@ export function resolveSearchCriteria(
         locationScope,
         targetLeadCount,
         companySize,
+        ...smeExtras,
       },
     };
   }
@@ -121,6 +142,7 @@ export function resolveSearchCriteria(
         radius,
         targetLeadCount,
         companySize,
+        ...smeExtras,
       },
     };
   }
@@ -147,6 +169,7 @@ export function resolveSearchCriteria(
       radius,
       targetLeadCount,
       companySize,
+      ...smeExtras,
     },
   };
 }

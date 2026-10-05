@@ -156,6 +156,10 @@ export function LeadSearchForm() {
   const [selectedState, setSelectedState] = useState("");
   const [city, setCity] = useState("");
   const [targetLeadCount, setTargetLeadCount] = useState(50);
+  const [smeTeamSize, setSmeTeamSize] = useState<string>("all");
+  const [smeBusinessAge, setSmeBusinessAge] = useState<string>("all");
+  const [smeRequireDecisionMaker, setSmeRequireDecisionMaker] = useState<boolean>(true);
+  const [smeExcludeEnterprise, setSmeExcludeEnterprise] = useState<boolean>(true);
   const [leadCapacity, setLeadCapacity] = useState<number | null>(null);
   const [filterNote, setFilterNote] = useState<string | null>(null);
   const [stage, setStage] = useState(0);
@@ -436,6 +440,10 @@ export function LeadSearchForm() {
     customLocation?: string;
     radius?: string | number;
     targetLeadCount?: number;
+    smeTeamSize?: string;
+    smeBusinessAge?: string;
+    smeRequireDecisionMaker?: boolean;
+    smeExcludeEnterprise?: boolean;
   }) {
     const resolved = resolveSearchCriteria(payload);
     if (!resolved.ok) {
@@ -671,6 +679,10 @@ export function LeadSearchForm() {
           ? String(form.get("radius") || "25")
           : undefined,
       targetLeadCount,
+      smeTeamSize,
+      smeBusinessAge,
+      smeRequireDecisionMaker,
+      smeExcludeEnterprise,
     });
   }
 
@@ -946,6 +958,91 @@ export function LeadSearchForm() {
                 </Select>
               </div>
               )}
+
+              {/* SME Decision-Maker & Company Sizing Engine */}
+              <div className="rounded-xl border border-brand-200/80 bg-gradient-to-br from-brand-50/50 via-[var(--surface)] to-brand-50/20 p-4 space-y-3 sm:col-span-2 lg:col-span-3">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-md bg-brand-600 text-white shadow-xs">
+                      <HiOutlineShieldCheck className="h-4 w-4" />
+                    </span>
+                    <span className="text-[13px] font-bold text-ink">
+                      SME Decision-Maker & Sizing Engine
+                    </span>
+                  </div>
+                  <span className="rounded bg-brand-100 px-2.5 py-0.5 text-[10px] font-bold text-brand-800">
+                    Live Scraper Filtering Active
+                  </span>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-[12px] font-semibold text-ink">Target Team Size</Label>
+                    <Select
+                      value={smeTeamSize}
+                      onChange={(e) => setSmeTeamSize(e.target.value)}
+                    >
+                      <option value="all">Any Team Size</option>
+                      <option value="1-15">🎯 1–15 Employees (Prime SME Target)</option>
+                      <option value="11-15">⭐ 11–15 Employees (Growing Mid-Contractor)</option>
+                      <option value="6-10">6–10 Employees</option>
+                      <option value="2-5">2–5 Employees (Small Contractor)</option>
+                      <option value="solo">Solo / 1 Person</option>
+                      <option value="16-20">16–20 Employees</option>
+                      <option value="21+">21+ Employees (Large)</option>
+                    </Select>
+                    <p className="text-[11px] text-ink-muted">
+                      Crawler filters candidates during live scrape to match this team size.
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-[12px] font-semibold text-ink">Business Age Range</Label>
+                    <Select
+                      value={smeBusinessAge}
+                      onChange={(e) => setSmeBusinessAge(e.target.value)}
+                    >
+                      <option value="all">Any Business Age</option>
+                      <option value="2-15">🎯 2–15 Years (Prime SME Target)</option>
+                      <option value="0-2">0–2 Years (Emerging / New)</option>
+                      <option value="2-5">2–5 Years (Growing)</option>
+                      <option value="5-15">5–15 Years (Established)</option>
+                      <option value="15-30">15–30 Years (Mature)</option>
+                    </Select>
+                    <p className="text-[11px] text-ink-muted">
+                      Calculated from claimed operating establishment records.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2 sm:col-span-2 lg:col-span-1 pt-1">
+                    <label className="flex items-start gap-2.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={smeRequireDecisionMaker}
+                        onChange={(e) => setSmeRequireDecisionMaker(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded accent-brand-600"
+                      />
+                      <span className="text-[12px] leading-tight font-medium text-ink">
+                        <strong className="block text-brand-800 font-semibold">Require Verified Decision-Maker</strong>
+                        Skip gatekeepers (receptionists, dispatchers). Only collect leads with verified Owner/CEO/Founder.
+                      </span>
+                    </label>
+
+                    <label className="flex items-start gap-2.5 cursor-pointer pt-1">
+                      <input
+                        type="checkbox"
+                        checked={smeExcludeEnterprise}
+                        onChange={(e) => setSmeExcludeEnterprise(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded accent-rose-600"
+                      />
+                      <span className="text-[12px] leading-tight font-medium text-ink">
+                        <strong className="block text-rose-800 font-semibold">Exclude 30+ yr & Large Enterprises</strong>
+                        Skip 30+ year old companies, franchises, and enterprise operations.
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </div>
 
               <div className="space-y-2">
                 <Label>How many leads</Label>

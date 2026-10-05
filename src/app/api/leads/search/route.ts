@@ -59,6 +59,10 @@ export async function POST(request: Request) {
       customLocation,
       radius,
       targetLeadCount: requestedCount,
+      smeTeamSize,
+      smeBusinessAge,
+      smeRequireDecisionMaker,
+      smeExcludeEnterprise,
     } = resolved.criteria;
 
     const targetLeadCount = Math.min(requestedCount, capacity.available);
@@ -92,6 +96,9 @@ export async function POST(request: Request) {
             requestedCount,
             industry,
             location: customLocation || city || state || country,
+            smeTeamSize,
+            smeBusinessAge,
+            smeRequireDecisionMaker,
           });
 
           const result = await runLeadPipeline({
@@ -105,6 +112,10 @@ export async function POST(request: Request) {
             customLocation,
             radius,
             targetLeadCount,
+            smeTeamSize,
+            smeBusinessAge,
+            smeRequireDecisionMaker,
+            smeExcludeEnterprise,
             onLeadDiscovered: async (lead, progress) => {
               await sendEvent("lead", {
                 lead: {
@@ -253,6 +264,10 @@ export async function POST(request: Request) {
       customLocation,
       radius,
       targetLeadCount,
+      smeTeamSize,
+      smeBusinessAge,
+      smeRequireDecisionMaker,
+      smeExcludeEnterprise,
     });
 
     // Bill only for leads actually returned (e.g. request 50 → get 48 → charge 48).
