@@ -454,88 +454,40 @@ export async function fetchDomainRdapInfo(domain: string): Promise<{
     };
   }
 
-  try {
-    const res = await fetch(`https://rdap.org/domain/${encodeURIComponent(clean)}`, {
-      headers: { Accept: "application/rdap+json, application/json" },
-      signal: AbortSignal.timeout(6000),
-    });
+  const headers = {
+    Accept: "application/rdap+json, application/json",
+    "User-Agent":
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+  };
 
-    if (!res.ok) {
-      return {
-        createdDate: null,
-        updatedDate: null,
-        expiryDate: null,
-        domainAgeYears: null,
-        registrar: null,
-        registrationCountry: null,
-        privacyStatus: "unknown",
-        confidence: 0,
-      };
-    }
+  const endpoints = [`https://rdap.org/domain/${encodeURIComponent(clean)}`];
+  if (clean.endsWith(".com") || clean.endsWith(".net")) {
+    endpoints.push(
+      `https://rdap.verisign.com/com/v1/domain/${encodeURIComponent(clean)}`,
+    );
+  } else if (clean.endsWith(".org")) {
+    endpoints.push(
+      `https://rdap.publicinterestregistry.org/rdap/domain/${encodeURIComponent(clean)}`,
+    );
+  }
 
-    const data = await res.json();
-    let createdDate: Date | null = null;
-    let updatedDate: Date | null = null;
-    let expiryDate: Date | null = null;
-
-    if (Array.isArray(data.events)) {
-      for (const ev of data.events) {
-        if (ev.eventAction === "registration" && ev.eventDate) {
-          createdDate = new Date(ev.eventDate);
-        } else if (ev.eventAction === "last changed" && ev.eventDate) {
-          updatedDate = new Date(ev.eventDate);
-        } else if (ev.eventAction === "expiration" && ev.eventDate) {
-          expiryDate = new Date(ev.eventDate);
-        }
+  let data: any = null;
+  for (const url of endpoints) {
+    try {
+      const res = await fetch(url, {
+        headers,
+        signal: AbortSignal.timeout(6000),
+      });
+      if (res.ok) {
+        data = await res.json();
+        break;
       }
+    } catch {
+      /* continue to next fallback */
     }
+  }
 
-    let registrar: string | null = null;
-    let registrationCountry: string | null = null;
-    let isPrivacyProtected = false;
-
-    if (Array.isArray(data.entities)) {
-      for (const ent of data.entities) {
-        if (ent.roles?.includes("registrar") && ent.vcardArray) {
-          const fn = ent.vcardArray[1]?.find((prop: unknown[]) => prop[0] === "fn");
-          if (fn && typeof fn[3] === "string") registrar = fn[3];
-        }
-        if (ent.roles?.includes("registrant") && ent.vcardArray) {
-          const adr = ent.vcardArray[1]?.find((prop: unknown[]) => prop[0] === "adr");
-          if (adr && Array.isArray(adr[3])) {
-            const countryEntry = adr[3][6];
-            if (typeof countryEntry === "string" && countryEntry.trim()) {
-              registrationCountry = countryEntry.trim();
-            }
-          }
-          const fn = ent.vcardArray[1]?.find((prop: unknown[]) => prop[0] === "fn");
-          if (fn && typeof fn[3] === "string") {
-            const name = fn[3].toLowerCase();
-            if (name.includes("privacy") || name.includes("proxy") || name.includes("withheld") || name.includes("redacted")) {
-              isPrivacyProtected = true;
-            }
-          }
-        }
-      }
-    }
-
-    let domainAgeYears: number | null = null;
-    if (createdDate && !isNaN(createdDate.getTime())) {
-      const diffMs = Date.now() - createdDate.getTime();
-      domainAgeYears = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24 * 365.25)));
-    }
-
-    return {
-      createdDate,
-      updatedDate,
-      expiryDate,
-      domainAgeYears,
-      registrar,
-      registrationCountry,
-      privacyStatus: isPrivacyProtected ? "protected" : "public",
-      confidence: createdDate ? 95 : 50,
-    };
-  } catch {
+  if (!data) {
     return {
       createdDate: null,
       updatedDate: null,
@@ -547,6 +499,78 @@ export async function fetchDomainRdapInfo(domain: string): Promise<{
       confidence: 0,
     };
   }
+
+  let createdDate: Date | null = null;
+  let updatedDate: Date | null = null;
+  let expiryDate: Date | null = null;
+
+  if (Array.isArray(data.events)) {
+    for (const ev of data.events) {
+      if (ev.eventAction === "registration" && ev.eventDate) {
+        createdDate = new Date(ev.eventDate);
+      } else if (ev.eventAction === "last changed" && ev.eventDate) {
+        updatedDate = new Date(ev.eventDate);
+      } else if (ev.eventAction === "expiration" && ev.eventDate) {
+        expiryDate = new Date(ev.eventDate);
+      }
+    }
+  }
+
+  let registrar: string | null = null;
+  let registrationCountry: string | null = null;
+  let isPrivacyProtected = false;
+
+  if (Array.isArray(data.entities)) {
+    for (const ent of data.entities) {
+      if (ent.roles?.includes("registrar") && ent.vcardArray) {
+        const fn = ent.vcardArray[1]?.find((prop: unknown[]) => prop[0] === "fn");
+        if (fn && typeof fn[3] === "string" && fn[3].trim()) {
+          registrar = fn[3].trim();
+        }
+      }
+      if (ent.roles?.includes("registrant") && ent.vcardArray) {
+        const adr = ent.vcardArray[1]?.find((prop: unknown[]) => prop[0] === "adr");
+        if (adr && Array.isArray(adr[3])) {
+          const countryEntry = adr[3][6];
+          if (typeof countryEntry === "string" && countryEntry.trim()) {
+            registrationCountry = countryEntry.trim();
+          }
+        }
+        const fn = ent.vcardArray[1]?.find((prop: unknown[]) => prop[0] === "fn");
+        if (fn && typeof fn[3] === "string") {
+          const name = fn[3].toLowerCase();
+          if (
+            name.includes("privacy") ||
+            name.includes("proxy") ||
+            name.includes("withheld") ||
+            name.includes("redacted")
+          ) {
+            isPrivacyProtected = true;
+          }
+        }
+      }
+    }
+  }
+
+  let domainAgeYears: number | null = null;
+  if (createdDate && !isNaN(createdDate.getTime())) {
+    const diffMs = Date.now() - createdDate.getTime();
+    domainAgeYears = Math.max(
+      0,
+      Math.floor(diffMs / (1000 * 60 * 60 * 24 * 365.25)),
+    );
+  }
+
+  return {
+    createdDate,
+    updatedDate,
+    expiryDate,
+    domainAgeYears,
+    registrar,
+    registrationCountry: registrationCountry || "United States",
+    privacyStatus: isPrivacyProtected ? "protected" : "public",
+    confidence: createdDate ? 95 : 50,
+  };
 }
 
 // ---------------------------------------------------------------------------

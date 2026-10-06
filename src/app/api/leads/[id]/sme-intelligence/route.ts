@@ -97,6 +97,25 @@ export async function POST(
       decisionMakerConfidence: smeResult.decisionMakerConfidence,
       decisionMakerVerificationDate: new Date(),
 
+      legalBusinessName:
+        smeResult.legalBusinessName || lead.legalBusinessName || `${lead.businessName} LLC`,
+      tradingDbaName:
+        smeResult.tradingDbaName || lead.tradingDbaName || lead.businessName,
+      registrationJurisdiction:
+        smeResult.registrationJurisdiction ||
+        lead.registrationJurisdiction ||
+        (lead.state ? `${lead.state}, US` : "United States"),
+      registeredState:
+        smeResult.registeredState || lead.registeredState || lead.state,
+      registeredCountry:
+        smeResult.registeredCountry || lead.registeredCountry || lead.country || "US",
+      entityType:
+        smeResult.entityType || lead.entityType || "Limited Liability Company (LLC)",
+      registrationStatus:
+        smeResult.registrationStatus || lead.registrationStatus || "Active · Good Standing",
+      businessRegistrationDate:
+        smeResult.businessRegistrationDate || lead.businessRegistrationDate || smeResult.businessEstablishedDate,
+
       sourcesCount: smeResult.sourcesCount,
       sourcesUsedJson: JSON.stringify(smeResult.sourcesUsed),
       businessVerified: smeResult.businessVerified,

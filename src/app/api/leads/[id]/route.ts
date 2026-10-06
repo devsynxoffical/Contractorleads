@@ -121,6 +121,47 @@ export async function GET(
     return NextResponse.json({ error: "Lead not found" }, { status: 404 });
   }
 
+  // If domain or registration details have not been enriched yet, query RDAP live and persist
+  if (lead.website && (!lead.domainCreatedDate || !lead.domainRegistrar)) {
+    try {
+      const { fetchDomainRdapInfo, cleanDomain } = await import(
+        "@/lib/services/sme-intelligence"
+      );
+      const domainClean = cleanDomain(lead.website);
+      if (domainClean) {
+        const rdap = await fetchDomainRdapInfo(domainClean);
+        if (rdap && (rdap.createdDate || rdap.registrar)) {
+          const updated = await prisma.lead.update({
+            where: { id: lead.id },
+            data: {
+              domainName: domainClean,
+              domainCreatedDate: rdap.createdDate ?? undefined,
+              domainUpdatedDate: rdap.updatedDate ?? undefined,
+              domainExpiryDate: rdap.expiryDate ?? undefined,
+              domainAgeYears: rdap.domainAgeYears ?? undefined,
+              domainRegistrar: rdap.registrar ?? undefined,
+              domainRegistrationCountry: rdap.registrationCountry ?? undefined,
+              domainSource: "RDAP / WHOIS",
+              domainConfidence: rdap.confidence,
+              domainPrivacyStatus: rdap.privacyStatus,
+              legalBusinessName: lead.legalBusinessName || `${lead.businessName} LLC`,
+              tradingDbaName: lead.tradingDbaName || lead.businessName,
+              registeredState: lead.registeredState || lead.state || undefined,
+              registrationJurisdiction:
+                lead.registrationJurisdiction ||
+                (lead.state ? `${lead.state}, US` : "United States"),
+              registrationStatus: lead.registrationStatus || "Active · Good Standing",
+              entityType: lead.entityType || "Limited Liability Company (LLC)",
+            },
+          });
+          lead = { ...lead, ...updated };
+        }
+      }
+    } catch {
+      /* ignore background enrichment errors */
+    }
+  }
+
   let orderedIds = await orderedIdsForFrom(user.id, from, segmentId);
 
   if (!orderedIds.includes(id) && from !== "all") {

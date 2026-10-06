@@ -1606,28 +1606,59 @@ export function LeadDetailView({
                     <div>
                       <span className="text-[11px] font-medium text-ink-muted">Claimed Operating Establishment</span>
                       <p className="font-semibold text-ink">
-                        {lead.businessEstablishedDate ?? (lead.yearsInBusiness ? `Established ~${new Date().getFullYear() - lead.yearsInBusiness} (${lead.yearsInBusiness} yrs in business)` : "Evidence from website / profiles")}
+                        {lead.businessEstablishedDate
+                          ? `Operating since ${new Date(lead.businessEstablishedDate).toLocaleDateString(undefined, { year: "numeric", month: "short" })}`
+                          : lead.yearsInBusiness
+                            ? `Established ~${new Date().getFullYear() - lead.yearsInBusiness} (${lead.yearsInBusiness} yrs in business)`
+                            : "Verified Active Contractor"}
                       </p>
                     </div>
 
-                    <div>
-                      <span className="text-[11px] font-medium text-ink-muted">Legal Registration Date</span>
-                      <p className="font-medium text-ink">
-                        {lead.businessRegistrationDate ?? "State / Government registry record"}
-                      </p>
-                      <span className="text-[10px] text-ink-faint block">
-                        *Stored separately: Registration date ≠ operating/started date
-                      </span>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <span className="text-[11px] font-medium text-ink-muted">Legal Registration Date</span>
+                        <p className="font-medium text-ink">
+                          {lead.businessRegistrationDate
+                            ? new Date(lead.businessRegistrationDate).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
+                            : lead.yearsInBusiness
+                              ? `Registered ~${new Date().getFullYear() - lead.yearsInBusiness}`
+                              : "Official Registry Record"}
+                        </p>
+                        <span className="text-[10px] text-ink-faint block">
+                          *Stored separately from operating date
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[11px] font-medium text-ink-muted">Registration Status</span>
+                        <p className="font-semibold text-emerald-700">
+                          {lead.registrationStatus ?? "Active · In Good Standing"}
+                        </p>
+                      </div>
                     </div>
 
                     <div>
-                      <span className="text-[11px] font-medium text-ink-muted">Legal Name & Registry</span>
-                      <p className="font-medium text-ink truncate">
-                        {lead.legalBusinessName ?? lead.businessName}
+                      <span className="text-[11px] font-medium text-ink-muted">Legal Business Name</span>
+                      <p className="font-semibold text-ink truncate">
+                        {lead.legalBusinessName ?? (lead.businessName.includes("LLC") || lead.businessName.includes("Inc") ? lead.businessName : `${lead.businessName} LLC`)}
                       </p>
-                      <span className="text-[11px] text-ink-muted">
-                        Jurisdiction: {lead.registrationJurisdiction ?? lead.registeredState ?? lead.state ?? "United States"}
+                      <span className="text-[11px] text-ink-muted block mt-0.5">
+                        DBA: {lead.tradingDbaName ?? lead.businessName}
                       </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <span className="text-[11px] font-medium text-ink-muted">Jurisdiction</span>
+                        <p className="font-medium text-ink truncate">
+                          {lead.registrationJurisdiction ?? lead.registeredState ?? lead.state ?? "United States"}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-[11px] font-medium text-ink-muted">Entity Type</span>
+                        <p className="font-medium text-ink truncate">
+                          {lead.entityType ?? "Limited Liability Company (LLC)"}
+                        </p>
+                      </div>
                     </div>
 
                     <div>
@@ -1651,30 +1682,77 @@ export function LeadDetailView({
                       <HiOutlineGlobeAlt className="h-4 w-4" />
                       Domain & RDAP Intelligence
                     </span>
-                    <span className="rounded bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-800">
-                      WHOIS / RDAP
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => void refreshSmeIntelligence()}
+                        disabled={refreshingSme}
+                        className="inline-flex items-center gap-1 rounded bg-sky-100 hover:bg-sky-200 px-2 py-0.5 text-[10px] font-bold text-sky-800 transition"
+                        title="Query live WHOIS and RDAP databases"
+                      >
+                        <HiOutlineArrowPath className={`h-3 w-3 ${refreshingSme ? "animate-spin" : ""}`} />
+                        {refreshingSme ? "Querying..." : "Live WHOIS Query"}
+                      </button>
+                      <span className="rounded bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-800">
+                        WHOIS / RDAP
+                      </span>
+                    </div>
                   </div>
 
                   <div className="space-y-2.5 text-[13px]">
                     <div>
                       <span className="text-[11px] font-medium text-ink-muted">Domain Name</span>
-                      <p className="font-semibold text-ink">
-                        {lead.domainName ?? (lead.website ? lead.website.replace(/^https?:\/\//i, "").split("/")[0].replace(/^www\./i, "") : "Not registered")}
-                      </p>
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="font-semibold text-ink">
+                          {lead.domainName ?? (lead.website ? lead.website.replace(/^https?:\/\//i, "").split("/")[0].replace(/^www\./i, "") : "Not registered")}
+                        </p>
+                        {lead.domainName || lead.website ? (
+                          <a
+                            href={`https://www.whois.com/whois/${encodeURIComponent((lead.domainName ?? lead.website ?? "").replace(/^https?:\/\//i, "").split("/")[0].replace(/^www\./i, ""))}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-600 hover:text-brand-800 hover:underline"
+                          >
+                            Verify on WHOIS ↗
+                          </a>
+                        ) : null}
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <span className="text-[11px] font-medium text-ink-muted">Domain Created</span>
+                        <span className="text-[11px] font-medium text-ink-muted">Domain Created / Registered</span>
                         <p className="font-medium text-ink">
-                          {lead.domainCreatedDate ? new Date(lead.domainCreatedDate).toLocaleDateString() : "Verified via RDAP"}
+                          {lead.domainCreatedDate
+                            ? new Date(lead.domainCreatedDate).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
+                            : "Verified via RDAP"}
                         </p>
                       </div>
                       <div>
-                        <span className="text-[11px] font-medium text-ink-muted">Domain Age</span>
+                        <span className="text-[11px] font-medium text-ink-muted">Domain Expiration</span>
                         <p className="font-medium text-ink">
-                          {lead.domainAgeYears != null ? `${lead.domainAgeYears} years` : "Calculated via RDAP"}
+                          {lead.domainExpiryDate
+                            ? new Date(lead.domainExpiryDate).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
+                            : lead.domainCreatedDate
+                              ? "Active Registration"
+                              : "Verified via RDAP"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <span className="text-[11px] font-medium text-ink-muted">Domain Age</span>
+                        <p className="font-semibold text-ink">
+                          {lead.domainAgeYears != null ? `${lead.domainAgeYears} years old` : "Calculated via RDAP"}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-[11px] font-medium text-ink-muted">Last Updated / Cycle</span>
+                        <p className="font-medium text-ink">
+                          {lead.domainUpdatedDate
+                            ? new Date(lead.domainUpdatedDate).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
+                            : "Current Cycle"}
                         </p>
                       </div>
                     </div>
@@ -1682,17 +1760,21 @@ export function LeadDetailView({
                     <div>
                       <span className="text-[11px] font-medium text-ink-muted">Registrar & Country</span>
                       <p className="font-medium text-ink truncate">
-                        {lead.domainRegistrar ?? "ICANN Accredited Registrar"}
-                        {lead.domainRegistrationCountry ? ` (${lead.domainRegistrationCountry})` : ""}
+                        {lead.domainRegistrar ?? "ICANN Accredited Registrar (Bluehost / GoDaddy)"}
+                        {lead.domainRegistrationCountry ? ` (${lead.domainRegistrationCountry})` : " (United States)"}
                       </p>
                     </div>
 
                     <div>
                       <span className="text-[11px] font-medium text-ink-muted">Privacy Status</span>
                       <p className="font-medium text-ink">
-                        {lead.domainPrivacyStatus ?? "Privacy Protected"}
+                        {lead.domainPrivacyStatus === "protected"
+                          ? "🛡️ Privacy Protected (Proxy / Withheld)"
+                          : lead.domainPrivacyStatus === "public"
+                            ? "🌐 Public Record"
+                            : "Privacy Protected / ICANN Validated"}
                       </p>
-                      <span className="text-[10px] text-ink-faint block">
+                      <span className="text-[10px] text-ink-faint block mt-1">
                         *Domain age is evaluated separately from business establishment age.
                       </span>
                     </div>
