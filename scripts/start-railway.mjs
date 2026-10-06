@@ -106,6 +106,29 @@ child.on("error", (err) => {
   process.exit(1);
 });
 
+// Background automated campaign runner: executes outreach cycle every 2 minutes
+const cronInterval = setInterval(async () => {
+  try {
+    const url = `http://127.0.0.1:${port}/api/cron/campaigns`;
+    const headers = {};
+    if (process.env.CRON_SECRET) {
+      headers["Authorization"] = `Bearer ${process.env.CRON_SECRET}`;
+    }
+    const res = await fetch(url, { headers });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.totalSent > 0) {
+        console.log(`[cron] Automated outreach cycle dispatched ${data.totalSent} emails.`);
+      }
+    }
+  } catch {
+    // server might still be booting or restarting, ignore gracefully
+  }
+}, 120_000);
+
 for (const sig of ["SIGTERM", "SIGINT"]) {
-  process.on(sig, () => child.kill(sig));
+  process.on(sig, () => {
+    clearInterval(cronInterval);
+    child.kill(sig);
+  });
 }

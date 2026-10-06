@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   HiOutlineArrowPath,
+  HiOutlineBolt,
   HiOutlineBookmark,
   HiOutlineCalendar,
   HiOutlineChartBar,
@@ -27,6 +28,10 @@ import {
   HiOutlineUsers,
 } from "react-icons/hi2";
 import { cn } from "@/lib/utils";
+import {
+  getLocalTimeInTimezone,
+  isWithinSendingWindow,
+} from "@/lib/campaign-timezone";
 
 type CampaignItem = {
   id: string;
@@ -134,6 +139,54 @@ export function CampaignsDashboard() {
       }
     } catch {
       /* ignore */
+    } finally {
+      setActionLoadingId(null);
+    }
+  }
+
+  async function handleTriggerProcess(c: CampaignItem, force = false) {
+    const tz = c.timezone || "America/New_York";
+    const localTimeInfo = getLocalTimeInTimezone(new Date(), tz);
+    const inWindow = isWithinSendingWindow(
+      new Date(),
+      tz,
+      c.sendingDays || ["mon", "tue", "wed", "thu", "fri"],
+      c.sendingWindowStart || "09:00",
+      c.sendingWindowEnd || "17:00"
+    );
+
+    if (!force && !inWindow) {
+      const confirmForce = confirm(
+        `Recipient local time is currently ${localTimeInfo.formatted} (outside the ${c.sendingWindowStart || "10:30"} – ${c.sendingWindowEnd || "21:00"} sending window).\n\nDo you want to FORCE-SEND an immediate batch of up to 50 leads right now anyway?`
+      );
+      if (!confirmForce) return;
+      force = true;
+    }
+
+    setActionLoadingId(c.id);
+    try {
+      const res = await fetch(`/api/campaigns/${c.id}/process`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ force }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const sentCount = (data.results || []).reduce((sum: number, r: any) => sum + (r.sent || 0), 0);
+        const allErrors = (data.results || []).flatMap((r: any) => r.errors || []);
+        if (sentCount > 0) {
+          alert(`✅ Batch sent successfully: ${sentCount} emails dispatched across your verified mailboxes.`);
+        } else if (allErrors.length > 0) {
+          alert(`Notice: ${allErrors[0]}`);
+        } else {
+          alert("0 emails dispatched. No prospects are currently eligible or due.");
+        }
+        await loadCampaigns();
+      } else {
+        alert(data.error || "Batch execution failed.");
+      }
+    } catch {
+      alert("Network error executing batch send.");
     } finally {
       setActionLoadingId(null);
     }
@@ -310,6 +363,16 @@ export function CampaignsDashboard() {
             const replyRate = c.stats.sent > 0 ? Math.round((c.stats.replied / c.stats.sent) * 100) : 0;
             const bounceRate = c.stats.sent > 0 ? Math.round((c.stats.bounced / c.stats.sent) * 100) : 0;
 
+            const cardTz = c.timezone || "America/New_York";
+            const cardTimeInfo = getLocalTimeInTimezone(new Date(), cardTz);
+            const cardInWindow = isWithinSendingWindow(
+              new Date(),
+              cardTz,
+              c.sendingDays || ["mon", "tue", "wed", "thu", "fri"],
+              c.sendingWindowStart || "09:00",
+              c.sendingWindowEnd || "17:00"
+            );
+
             return (
               <div
                 key={c.id}
@@ -374,6 +437,16 @@ export function CampaignsDashboard() {
                               <HiOutlineClock className="h-3.5 w-3.5 text-amber-600" />
                               Window: <strong className="text-ink">{c.sendingWindowStart} – {c.sendingWindowEnd}</strong>
                             </span>
+                            {c.status === "active" && (
+                              <span className={cn(
+                                "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold",
+                                cardInWindow
+                                  ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                                  : "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+                              )}>
+                                {cardInWindow ? "🟢 Active Window" : `⏰ Standby (${cardTimeInfo.formatted})`}
+                              </span>
+                            )}
                           </>
                         )}
                       </div>
@@ -382,14 +455,26 @@ export function CampaignsDashboard() {
                     {/* Quick Action Controls */}
                     <div className="flex items-center gap-1.5">
                       {c.status === "active" && (
-                        <button
-                          type="button"
-                          onClick={() => handleCampaignAction(c.id, "pause")}
-                          disabled={isLoading}
-                          className="inline-flex items-center gap-1 rounded-xl border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
-                        >
-                          <HiOutlinePause className="h-3.5 w-3.5" /> Pause
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => void handleTriggerProcess(c, false)}
+                            disabled={isLoading}
+                            className="inline-flex items-center gap-1 rounded-xl border border-brand-300 bg-brand-50 px-3 py-1.5 text-xs font-bold text-brand-700 shadow-sm transition hover:bg-brand-100 disabled:opacity-50 dark:border-brand-500/30 dark:bg-brand-950/40 dark:text-brand-300"
+                            title="Execute send cycle right now"
+                          >
+                            <HiOutlineBolt className="h-3.5 w-3.5 text-brand-600" /> Send Batch Now
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleCampaignAction(c.id, "pause")}
+                            disabled={isLoading}
+                            className="inline-flex items-center gap-1 rounded-xl border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+                          >
+                            <HiOutlinePause className="h-3.5 w-3.5" /> Pause
+                          </button>
+                        </>
                       )}
 
                       {(c.status === "paused" || c.status === "draft" || c.status === "scheduled") && (
