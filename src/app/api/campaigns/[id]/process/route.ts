@@ -21,10 +21,14 @@ export async function POST(
       return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
     }
 
+    const body = await req.json().catch(() => ({}));
+    const force = Boolean(body?.force);
+
     const results = await processCampaignSends({
       campaignId: id,
       userId: user.id,
       limitPerCampaign: 50,
+      ignoreTimeWindow: force,
     });
 
     return NextResponse.json({ ok: true, results });

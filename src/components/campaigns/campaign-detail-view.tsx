@@ -45,6 +45,10 @@ import {
   type CampaignHook,
   type CampaignFollowUpStep,
 } from "@/lib/campaign-types";
+import {
+  getLocalTimeInTimezone,
+  isWithinSendingWindow,
+} from "@/lib/campaign-timezone";
 
 type CampaignDetail = {
   id: string;
@@ -676,23 +680,54 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
     }
   }
 
-  async function handleTriggerProcess() {
+  const sampleTimezone = campaign?.timezone || "America/New_York";
+  const localTimeInfo = campaign ? getLocalTimeInTimezone(new Date(), sampleTimezone) : null;
+  const isWindowActive = campaign
+    ? isWithinSendingWindow(
+        new Date(),
+        sampleTimezone,
+        campaign.sendingDays || ["mon", "tue", "wed", "thu", "fri"],
+        campaign.sendingWindowStart || "09:00",
+        campaign.sendingWindowEnd || "17:00"
+      )
+    : false;
+
+  async function handleTriggerProcess(force: boolean = false) {
+    if (!force && campaign?.status === "active" && !isWindowActive) {
+      const confirmForce = confirm(
+        `Recipient local time is currently ${localTimeInfo?.formatted || "off-hours"} (outside the ${campaign?.sendingWindowStart} – ${campaign?.sendingWindowEnd} sending window).\n\nDo you want to FORCE-SEND an immediate batch of up to 50 leads right now anyway?`
+      );
+      if (!confirmForce) return;
+      force = true;
+    }
+
     setActionLoading(true);
     setProcessMsg(null);
     try {
       const res = await fetch(`/api/campaigns/${campaignId}/process`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ force }),
       });
       const data = await res.json();
       if (res.ok) {
         const sentCount = (data.results || []).reduce((sum: number, r: any) => sum + (r.sent || 0), 0);
-        setProcessMsg(`Processed cycle successfully: ${sentCount} emails dispatched.`);
+        const allErrors = (data.results || []).flatMap((r: any) => r.errors || []);
+        if (sentCount > 0) {
+          setProcessMsg(`Processed cycle successfully: ${sentCount} emails dispatched.`);
+        } else if (allErrors.length > 0) {
+          setProcessMsg(`0 emails dispatched: ${allErrors[0]}`);
+        } else {
+          setProcessMsg(`0 emails dispatched. Leads are either outside the time window or no leads are currently due.`);
+        }
         await loadData();
         await loadProspects();
-        setTimeout(() => setProcessMsg(null), 6000);
+        setTimeout(() => setProcessMsg(null), 10000);
+      } else {
+        setProcessMsg(data.error || "Send cycle execution failed");
       }
     } catch {
-      /* ignore */
+      setProcessMsg("Network error executing send cycle");
     } finally {
       setActionLoading(false);
     }
@@ -762,7 +797,7 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={handleTriggerProcess}
+              onClick={() => void handleTriggerProcess(false)}
               disabled={actionLoading || campaign.status !== "active"}
               className="inline-flex items-center gap-1.5 rounded-xl border border-brand-300 bg-brand-50 px-3.5 py-2 text-xs font-bold text-brand-700 shadow-sm transition hover:bg-brand-100 disabled:opacity-50 dark:border-brand-500/30 dark:bg-brand-950/40 dark:text-brand-300"
               title="Execute an immediate send cycle"
@@ -873,6 +908,50 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
             </div>
           </div>
         </div>
+
+        {/* Live Recipient Timezone & Sending Window Status Banner */}
+        {campaign.status === "active" && localTimeInfo && (
+          <div className="mt-4">
+            {!isWindowActive ? (
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-xs text-amber-900 dark:text-amber-200">
+                <div className="flex items-start gap-2.5">
+                  <HiOutlineClock className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-bold">
+                      Recipient Window Standby: Currently {localTimeInfo.formatted} (Outside {campaign.sendingWindowStart} – {campaign.sendingWindowEnd} Window)
+                    </div>
+                    <div className="text-[11px] text-amber-700 dark:text-amber-300/80 mt-0.5">
+                      Your campaign is <strong className="font-semibold text-amber-900 dark:text-amber-100">Active</strong> and all {metrics.totalLeads} leads are safely queued. To protect deliverability and avoid spam flags during off-hours/night-time, automated sending will start automatically at {campaign.sendingWindowStart} recipient time.
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void handleTriggerProcess(true)}
+                  disabled={actionLoading}
+                  className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-700 transition shadow-sm"
+                  title="Force send right now even outside the time window"
+                >
+                  <HiOutlineBolt className="h-3.5 w-3.5" />
+                  Force Send 50 Now
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs">
+                <span className="flex h-2.5 w-2.5 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                </span>
+                <span className="font-bold text-emerald-900 dark:text-emerald-200">
+                  Sending Window Active ({campaign.sendingWindowStart} – {campaign.sendingWindowEnd}):
+                </span>
+                <span className="text-emerald-800 dark:text-emerald-300">
+                  Current recipient local time is {localTimeInfo.formatted}. Automated outreach is running in compliance with scheduled jitter.
+                </span>
+              </div>
+            )}
+          </div>
+        )}
 
         {processMsg && (
           <div className="mt-4 flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs font-bold text-emerald-800 dark:text-emerald-300">

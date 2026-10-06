@@ -18,6 +18,7 @@ import {
 } from "@/lib/campaign-timezone";
 import { sendOutboundEmail } from "@/lib/user-smtp";
 import { appBaseUrl } from "@/lib/email-brand";
+import { ensureSystemSmtpSeeded } from "@/lib/system-smtp";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -28,6 +29,7 @@ export async function processCampaignSends(opts?: {
   campaignId?: string;
   userId?: string;
   limitPerCampaign?: number;
+  ignoreTimeWindow?: boolean;
 }) {
   const now = new Date();
   const limitPerCampaign = opts?.limitPerCampaign ?? 30;
@@ -95,7 +97,7 @@ export async function processCampaignSends(opts?: {
     const windowEnd = campaign.sendingWindowEnd || "17:00";
 
     // Check if campaign level timezone is currently within window (if not using recipient tz)
-    if (!campaign.useRecipientTimezone) {
+    if (!campaign.useRecipientTimezone && !opts?.ignoreTimeWindow) {
       const inWindow = isWithinSendingWindow(
         now,
         campaign.timezone || "America/New_York",
@@ -105,12 +107,17 @@ export async function processCampaignSends(opts?: {
       );
       if (!inWindow) {
         campaignResult.skipped++;
+        campaignResult.errors.push(
+          `Campaign timezone (${campaign.timezone || "America/New_York"}) is currently outside the active sending window (${windowStart} – ${windowEnd}). Automated sends will resume when the window opens.`
+        );
         results.push(campaignResult);
         continue;
       }
     }
 
     // Discover mailboxes for this campaign
+    await ensureSystemSmtpSeeded();
+
     const [userMailboxes, systemMailboxes, todayLogs] = await Promise.all([
       prisma.smtpAccount.findMany({
         where: {
@@ -234,6 +241,7 @@ export async function processCampaignSends(opts?: {
     }
 
     let mailboxIndex = 0;
+    let skippedTimeWindowCount = 0;
     const senderName =
       campaign.user.ownerName ||
       campaign.user.name ||
@@ -242,7 +250,7 @@ export async function processCampaignSends(opts?: {
 
     for (const prospect of dueProspects) {
       // If using recipient timezone, verify prospect's local time is in window
-      if (campaign.useRecipientTimezone) {
+      if (campaign.useRecipientTimezone && !opts?.ignoreTimeWindow) {
         const prospectTz = prospect.timezone || campaign.timezone || "America/New_York";
         const inWindow = isWithinSendingWindow(
           now,
@@ -252,6 +260,7 @@ export async function processCampaignSends(opts?: {
           windowEnd
         );
         if (!inWindow) {
+          skippedTimeWindowCount++;
           continue;
         }
       }
@@ -432,6 +441,12 @@ export async function processCampaignSends(opts?: {
           });
         }
       }
+    }
+
+    if (campaignResult.sent === 0 && skippedTimeWindowCount > 0) {
+      campaignResult.errors.push(
+        `Skipped ${skippedTimeWindowCount} leads: current recipient local time is outside the sending window (${windowStart} – ${windowEnd}). Automated sends will resume when the window opens.`
+      );
     }
 
     results.push(campaignResult);
