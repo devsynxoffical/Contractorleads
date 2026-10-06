@@ -18,7 +18,7 @@ import {
 } from "@/lib/campaign-timezone";
 import { sendOutboundEmail } from "@/lib/user-smtp";
 import { appBaseUrl } from "@/lib/email-brand";
-import { ensureSystemSmtpSeeded } from "@/lib/system-smtp";
+import { ensureSystemSmtpSeeded, seedHostingerMailboxes } from "@/lib/system-smtp";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -118,7 +118,7 @@ export async function processCampaignSends(opts?: {
     // Discover mailboxes for this campaign
     await ensureSystemSmtpSeeded();
 
-    const [userMailboxes, systemMailboxes, todayLogs] = await Promise.all([
+    let [userMailboxes, systemMailboxes, todayLogs] = await Promise.all([
       prisma.smtpAccount.findMany({
         where: {
           userId: campaign.userId,
@@ -144,11 +144,20 @@ export async function processCampaignSends(opts?: {
       }),
     ]);
 
+    if (systemMailboxes.length === 0) {
+      await seedHostingerMailboxes(true);
+      systemMailboxes = await prisma.systemSmtpAccount.findMany({ where: { enabled: true } });
+    }
+
     // Count sends today per mailbox
     const sendsTodayMap = new Map<string, number>();
     for (const log of todayLogs) {
-      const key = log.mailboxId || log.fromEmail;
-      sendsTodayMap.set(key, (sendsTodayMap.get(key) || 0) + 1);
+      if (log.mailboxId) {
+        sendsTodayMap.set(log.mailboxId, (sendsTodayMap.get(log.mailboxId) || 0) + 1);
+      }
+      if (log.fromEmail) {
+        sendsTodayMap.set(log.fromEmail, (sendsTodayMap.get(log.fromEmail) || 0) + 1);
+      }
     }
 
     // Filter by campaign's selectedMailboxIds
@@ -201,14 +210,25 @@ export async function processCampaignSends(opts?: {
       }
     }
 
+    if (eligibleMailboxes.length === 0 && systemMailboxes.length > 0) {
+      eligibleMailboxes = systemMailboxes.filter((m) => m.enabled);
+    }
+
     const availableMailboxes = eligibleMailboxes.filter((m) => {
+      if (opts?.ignoreTimeWindow) {
+        return true;
+      }
       const limit = customLimitsMap[m.id] ?? effectiveBaseDailyLimit;
-      const sentToday = sendsTodayMap.get(m.id) || 0;
+      const sentToday = sendsTodayMap.get(m.id) || sendsTodayMap.get(m.fromEmail) || 0;
       return sentToday < limit;
     });
 
     if (availableMailboxes.length === 0) {
-      campaignResult.errors.push("All eligible mailboxes have reached their daily sending limit today.");
+      if (eligibleMailboxes.length === 0) {
+        campaignResult.errors.push("No active sender mailboxes found. Please configure SMTP or ensure system mailboxes are active.");
+      } else {
+        campaignResult.errors.push("All eligible mailboxes have reached their daily sending limit today.");
+      }
       results.push(campaignResult);
       continue;
     }
