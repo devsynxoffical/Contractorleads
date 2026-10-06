@@ -191,19 +191,24 @@ export async function processCampaignSends(opts?: {
       effectiveBaseDailyLimit = Math.min(rampUpConfig.maxDailyCeiling, Math.max(1, ramped));
     }
 
-    const availableMailboxes = [...userMailboxes, ...systemMailboxes]
-      .filter((m) => {
-        if (!m.enabled) return false;
-        if (Array.isArray(selectedIds) && !selectedIds.includes(m.id) && !selectedIds.includes(m.fromEmail)) {
-          return false;
-        }
-        const limit = customLimitsMap[m.id] ?? effectiveBaseDailyLimit;
-        const sentToday = sendsTodayMap.get(m.id) || 0;
-        return sentToday < limit;
-      });
+    let eligibleMailboxes = [...userMailboxes, ...systemMailboxes].filter((m) => m.enabled);
+    if (Array.isArray(selectedIds) && selectedIds.length > 0) {
+      const filtered = eligibleMailboxes.filter(
+        (m) => selectedIds.includes(m.id) || selectedIds.includes(m.fromEmail)
+      );
+      if (filtered.length > 0) {
+        eligibleMailboxes = filtered;
+      }
+    }
+
+    const availableMailboxes = eligibleMailboxes.filter((m) => {
+      const limit = customLimitsMap[m.id] ?? effectiveBaseDailyLimit;
+      const sentToday = sendsTodayMap.get(m.id) || 0;
+      return sentToday < limit;
+    });
 
     if (availableMailboxes.length === 0) {
-      campaignResult.errors.push("All selected mailboxes have reached their daily sending limit today.");
+      campaignResult.errors.push("All eligible mailboxes have reached their daily sending limit today.");
       results.push(campaignResult);
       continue;
     }

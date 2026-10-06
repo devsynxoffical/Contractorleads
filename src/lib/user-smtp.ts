@@ -893,34 +893,7 @@ export async function sendOutboundEmail(opts: {
     ? `"${sender.fromName}" <${sender.fromEmail}>`
     : sender.fromEmail;
 
-  // 1. Primary: Authenticated Hostinger HTTPS Gateway (Instant, works on all cloud hosts without TCP port blocks)
-  try {
-    const gatewayRes = await sendViaAuthenticatedHostingerGateway({
-      fromEmail: sender.fromEmail,
-      fromName: sender.fromName,
-      password: sender.smtp.password,
-      to: opts.to,
-      subject: opts.subject,
-      text: opts.text,
-      html,
-    });
-
-    if (gatewayRes.ok) {
-      return {
-        messageId: gatewayRes.messageId,
-        smtpAccountId: sender.isSystem ? null : (sender.id ?? null),
-        fromEmail: sender.fromEmail,
-        delivery: "smtp" as const,
-        trackingToken,
-        isSystem: sender.isSystem ?? false,
-        systemSmtpAccountId: sender.isSystem ? (sender.id ?? null) : null,
-      };
-    }
-  } catch (gwErr) {
-    console.warn("[Hostinger Gateway] Failed, trying direct SMTP socket:", gwErr);
-  }
-
-  // 2. Secondary fallback: Direct Authenticated SMTP socket
+  // 1. Primary: Direct Authenticated SMTP socket (smtp.hostinger.com:465 SSL)
   try {
     const sent = await sendViaSmtpDirect(sender.smtp, {
       from: mailFrom,
@@ -941,7 +914,34 @@ export async function sendOutboundEmail(opts: {
       smtpAccountId: sender.isSystem ? null : (sender.id ?? null),
     };
   } catch (smtpErr) {
-    console.error("[SMTP Direct Error]", smtpErr);
+    console.warn("[SMTP Direct] Error sending email via direct socket, attempting fallback:", smtpErr);
+
+    // 2. Secondary fallback: Authenticated Hostinger HTTPS Gateway
+    try {
+      const gatewayRes = await sendViaAuthenticatedHostingerGateway({
+        fromEmail: sender.fromEmail,
+        fromName: sender.fromName,
+        password: sender.smtp.password,
+        to: opts.to,
+        subject: opts.subject,
+        text: opts.text,
+        html,
+      });
+
+      if (gatewayRes.ok) {
+        return {
+          messageId: gatewayRes.messageId,
+          smtpAccountId: sender.isSystem ? null : (sender.id ?? null),
+          fromEmail: sender.fromEmail,
+          delivery: "smtp" as const,
+          trackingToken,
+          isSystem: sender.isSystem ?? false,
+          systemSmtpAccountId: sender.isSystem ? (sender.id ?? null) : null,
+        };
+      }
+    } catch (gwErr) {
+      console.warn("[Hostinger Gateway] Fallback also failed:", gwErr);
+    }
 
     // Only fallback to user Resend key if this sender is explicitly set up for Resend
     if (isResendDelivery(sender.deliveryMode) && sender.resendApiKey) {

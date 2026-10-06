@@ -714,20 +714,19 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
         const sentCount = (data.results || []).reduce((sum: number, r: any) => sum + (r.sent || 0), 0);
         const allErrors = (data.results || []).flatMap((r: any) => r.errors || []);
         if (sentCount > 0) {
-          setProcessMsg(`Processed cycle successfully: ${sentCount} emails dispatched.`);
+          setProcessMsg(`✅ Batch sent successfully: ${sentCount} emails dispatched across verified Hostinger mailboxes.`);
         } else if (allErrors.length > 0) {
-          setProcessMsg(`0 emails dispatched: ${allErrors[0]}`);
+          setProcessMsg(`⚠️ Notice: ${allErrors[0]}`);
         } else {
-          setProcessMsg(`0 emails dispatched. Leads are either outside the time window or no leads are currently due.`);
+          setProcessMsg(`⚠️ 0 emails dispatched. Leads are either outside the time window or no leads are currently due.`);
         }
         await loadData();
         await loadProspects();
-        setTimeout(() => setProcessMsg(null), 10000);
       } else {
-        setProcessMsg(data.error || "Send cycle execution failed");
+        setProcessMsg(`❌ ${data.error || "Send cycle execution failed"}`);
       }
-    } catch {
-      setProcessMsg("Network error executing send cycle");
+    } catch (err) {
+      setProcessMsg(`❌ Network error executing send cycle: ${err instanceof Error ? err.message : "Request failed"}`);
     } finally {
       setActionLoading(false);
     }
@@ -929,11 +928,20 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                   type="button"
                   onClick={() => void handleTriggerProcess(true)}
                   disabled={actionLoading}
-                  className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-700 transition shadow-sm"
+                  className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-700 transition shadow-sm disabled:opacity-50"
                   title="Force send right now even outside the time window"
                 >
-                  <HiOutlineBolt className="h-3.5 w-3.5" />
-                  Force Send 50 Now
+                  {actionLoading ? (
+                    <>
+                      <HiOutlineArrowPath className="h-3.5 w-3.5 animate-spin" />
+                      Sending Batch...
+                    </>
+                  ) : (
+                    <>
+                      <HiOutlineBolt className="h-3.5 w-3.5" />
+                      Force Send 50 Now
+                    </>
+                  )}
                 </button>
               </div>
             ) : (
@@ -954,9 +962,26 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
         )}
 
         {processMsg && (
-          <div className="mt-4 flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs font-bold text-emerald-800 dark:text-emerald-300">
-            <HiOutlineCheck className="h-4 w-4" />
-            <span>{processMsg}</span>
+          <div
+            className={cn(
+              "mt-4 flex items-center justify-between gap-2 rounded-xl border p-3.5 text-xs font-bold",
+              processMsg.startsWith("✅")
+                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-900 dark:text-emerald-200"
+                : processMsg.startsWith("❌")
+                ? "border-rose-500/30 bg-rose-500/10 text-rose-900 dark:text-rose-200"
+                : "border-amber-500/30 bg-amber-500/10 text-amber-900 dark:text-amber-200"
+            )}
+          >
+            <div className="flex items-center gap-2">
+              <span>{processMsg}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setProcessMsg(null)}
+              className="text-ink-muted hover:text-ink text-xs underline ml-auto shrink-0"
+            >
+              Dismiss
+            </button>
           </div>
         )}
       </div>
