@@ -3,6 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
 import { processCampaignSends } from "@/lib/campaign-runner";
 
+export const maxDuration = 60;
+export const dynamic = "force-dynamic";
+
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -23,11 +26,12 @@ export async function POST(
 
     const body = await req.json().catch(() => ({}));
     const force = Boolean(body?.force);
+    const limit = Math.min(25, Math.max(1, Number(body?.limit) || 25));
 
     const results = await processCampaignSends({
       campaignId: id,
       userId: user.id,
-      limitPerCampaign: 50,
+      limitPerCampaign: limit,
       ignoreTimeWindow: force,
     });
 

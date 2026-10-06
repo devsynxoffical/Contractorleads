@@ -274,199 +274,206 @@ export async function processCampaignSends(opts?: {
       campaign.user.companyName ||
       "Our Team";
 
-    for (const prospect of dueProspects) {
-      // If using recipient timezone, verify prospect's local time is in window
-      if (campaign.useRecipientTimezone && !opts?.ignoreTimeWindow) {
-        const prospectTz = prospect.timezone || campaign.timezone || "America/New_York";
-        const inWindow = isWithinSendingWindow(
-          now,
-          prospectTz,
-          sendingDays,
-          windowStart,
-          windowEnd
-        );
-        if (!inWindow) {
-          skippedTimeWindowCount++;
-          continue;
-        }
-      }
+    // Process prospects in concurrent chunks of 5 to avoid HTTP request timeouts
+    const CHUNK_SIZE = 5;
+    for (let i = 0; i < dueProspects.length; i += CHUNK_SIZE) {
+      const chunk = dueProspects.slice(i, i + CHUNK_SIZE);
+      await Promise.all(
+        chunk.map(async (prospect) => {
+          // If using recipient timezone, verify prospect's local time is in window
+          if (campaign.useRecipientTimezone && !opts?.ignoreTimeWindow) {
+            const prospectTz = prospect.timezone || campaign.timezone || "America/New_York";
+            const inWindow = isWithinSendingWindow(
+              now,
+              prospectTz,
+              sendingDays,
+              windowStart,
+              windowEnd
+            );
+            if (!inWindow) {
+              skippedTimeWindowCount++;
+              return;
+            }
+          }
 
-      // Check current step
-      const stepIdx = prospect.currentStepIndex;
-      let subject = "";
-      let bodyTemplate = "";
-      let hookId: string | null = null;
-      let stepAttachments: CampaignAttachment[] = [];
-      let stepEnableUnsub = false;
-      let stepUnsubText: string | undefined = undefined;
+          // Check current step
+          const stepIdx = prospect.currentStepIndex;
+          let subject = "";
+          let bodyTemplate = "";
+          let hookId: string | null = null;
+          let stepAttachments: CampaignAttachment[] = [];
+          let stepEnableUnsub = false;
+          let stepUnsubText: string | undefined = undefined;
 
-      if (stepIdx === 0) {
-        // Day 0 Outreach Hook
-        const assignedHook =
-          hooks.find((h) => h.id === prospect.assignedHookId && h.active) ||
-          hooks.find((h) => h.active) ||
-          DEFAULT_DAY0_HOOKS[0];
+          if (stepIdx === 0) {
+            // Day 0 Outreach Hook
+            const assignedHook =
+              hooks.find((h) => h.id === prospect.assignedHookId && h.active) ||
+              hooks.find((h) => h.active) ||
+              DEFAULT_DAY0_HOOKS[0];
 
-        subject = assignedHook.subject;
-        bodyTemplate = assignedHook.body;
-        hookId = assignedHook.id;
-        stepAttachments = assignedHook.attachments || [];
-        stepEnableUnsub = Boolean(assignedHook.enableUnsubscribe);
-        stepUnsubText = assignedHook.unsubscribeText;
-      } else {
-        // Follow-up Step
-        const followUpStep = steps[stepIdx - 1];
-        if (!followUpStep) {
-          // No more steps -> mark completed
-          await prisma.campaignProspect.update({
-            where: { id: prospect.id },
-            data: { status: "completed" },
+            subject = assignedHook.subject;
+            bodyTemplate = assignedHook.body;
+            hookId = assignedHook.id;
+            stepAttachments = assignedHook.attachments || [];
+            stepEnableUnsub = Boolean(assignedHook.enableUnsubscribe);
+            stepUnsubText = assignedHook.unsubscribeText;
+          } else {
+            // Follow-up Step
+            const followUpStep = steps[stepIdx - 1];
+            if (!followUpStep) {
+              // No more steps -> mark completed
+              await prisma.campaignProspect.update({
+                where: { id: prospect.id },
+                data: { status: "completed" },
+              });
+              return;
+            }
+            subject = followUpStep.subject.replace("{{lastSubject}}", prospect.lastSubject || "Our conversation");
+            bodyTemplate = followUpStep.body;
+            stepAttachments = followUpStep.attachments || [];
+            stepEnableUnsub = Boolean(followUpStep.enableUnsubscribe);
+            stepUnsubText = followUpStep.unsubscribeText;
+          }
+
+          // Render email content with personalizations
+          const renderedSubject = renderCampaignTemplate(
+            subject,
+            prospect,
+            senderName
+          );
+          const renderedBody = renderCampaignTemplate(
+            bodyTemplate,
+            prospect,
+            senderName,
+            {
+              lastSubject: prospect.lastSubject || "",
+            }
+          );
+
+          // Select mailbox
+          const assignedMailboxIdx = mailboxIndex++;
+          const mailbox = availableMailboxes[assignedMailboxIdx % availableMailboxes.length];
+
+          const trackingToken = randomBytes(24).toString("hex");
+          const baseAppUrl = appBaseUrl();
+          const unsubUrl = `${baseAppUrl}/unsubscribe?token=${trackingToken}&campaign=${campaign.id}`;
+
+          // Render rich HTML with formatting, attachments, and unsubscribe
+          const renderedHtml = formatEmailBodyToHtml(renderedBody, {
+            attachments: stepAttachments,
+            enableUnsubscribe: stepEnableUnsub,
+            unsubscribeText: stepUnsubText,
+            unsubscribeUrl: unsubUrl,
           });
-          continue;
-        }
-        subject = followUpStep.subject.replace("{{lastSubject}}", prospect.lastSubject || "Our conversation");
-        bodyTemplate = followUpStep.body;
-        stepAttachments = followUpStep.attachments || [];
-        stepEnableUnsub = Boolean(followUpStep.enableUnsubscribe);
-        stepUnsubText = followUpStep.unsubscribeText;
-      }
 
-      // Render email content with personalizations
-      const renderedSubject = renderCampaignTemplate(
-        subject,
-        prospect,
-        senderName
+          // Prepare MIME attachments for SMTP/Resend
+          const outboundAttachments = stepAttachments
+            .filter((a) => a.contentBase64)
+            .map((a) => ({
+              filename: a.name,
+              content: Buffer.from(
+                a.contentBase64!.replace(/^data:[^;]+;base64,/, ""),
+                "base64"
+              ),
+              contentType: a.type,
+            }));
+
+          try {
+            const sentResult = await sendOutboundEmail({
+              userId: campaign.userId,
+              to: prospect.email,
+              subject: renderedSubject,
+              text: renderedBody,
+              html: renderedHtml,
+              accountId: mailbox.id,
+              attachments: outboundAttachments.length > 0 ? outboundAttachments : undefined,
+            });
+
+            // Log campaign email
+            await prisma.campaignLog.create({
+              data: {
+                campaignId: campaign.id,
+                prospectId: prospect.id,
+                stepIndex: stepIdx,
+                hookId,
+                mailboxId: mailbox.id,
+                fromEmail: sentResult.fromEmail || mailbox.fromEmail,
+                toEmail: prospect.email,
+                subject: renderedSubject,
+                body: renderedBody,
+                status: "sent",
+                messageId: sentResult.messageId ?? null,
+                trackingToken,
+              },
+            });
+
+            // Calculate next step due date
+            const nextStepIdx = stepIdx + 1;
+            let nextDue: Date | null = null;
+            let nextStatus = "in_progress";
+
+            if (nextStepIdx <= steps.length) {
+              const nextFollowUp = steps[nextStepIdx - 1];
+              const delayDays = nextFollowUp ? Math.max(1, nextFollowUp.dayDelay) : 2;
+              nextDue = new Date(Date.now() + delayDays * DAY_MS);
+            } else {
+              nextStatus = "completed";
+            }
+
+            // Update prospect state
+            await prisma.campaignProspect.update({
+              where: { id: prospect.id },
+              data: {
+                status: nextStatus,
+                currentStepIndex: nextStepIdx,
+                lastSentAt: now,
+                nextSendDueAt: nextDue,
+                lastMailboxId: mailbox.id,
+                lastFromEmail: sentResult.fromEmail || mailbox.fromEmail,
+                lastSubject: renderedSubject,
+              },
+            });
+
+            // Update send count for mailbox
+            sendsTodayMap.set(mailbox.id, (sendsTodayMap.get(mailbox.id) || 0) + 1);
+            campaignResult.sent++;
+          } catch (err) {
+            const errMsg = err instanceof Error ? err.message : "Send failure";
+            campaignResult.errors.push(`Prospect ${prospect.email}: ${errMsg}`);
+
+            await prisma.campaignLog.create({
+              data: {
+                campaignId: campaign.id,
+                prospectId: prospect.id,
+                stepIndex: stepIdx,
+                hookId,
+                mailboxId: mailbox.id,
+                fromEmail: mailbox.fromEmail,
+                toEmail: prospect.email,
+                subject: renderedSubject,
+                body: renderedBody,
+                status: "failed",
+                error: errMsg,
+              },
+            });
+
+            // If email bounced or hard error, stop follow-ups for this prospect
+            const isHardBounce = errMsg.toLowerCase().includes("invalid") || errMsg.toLowerCase().includes("not exist") || errMsg.toLowerCase().includes("550");
+            if (isHardBounce) {
+              await prisma.campaignProspect.update({
+                where: { id: prospect.id },
+                data: {
+                  status: "bounced",
+                  stopReason: "bounced",
+                  bouncedAt: now,
+                  nextSendDueAt: null,
+                },
+              });
+            }
+          }
+        })
       );
-      const renderedBody = renderCampaignTemplate(
-        bodyTemplate,
-        prospect,
-        senderName,
-        {
-          lastSubject: prospect.lastSubject || "",
-        }
-      );
-
-      // Select mailbox
-      const mailbox = availableMailboxes[mailboxIndex % availableMailboxes.length];
-      mailboxIndex++;
-
-      const trackingToken = randomBytes(24).toString("hex");
-      const baseAppUrl = appBaseUrl();
-      const unsubUrl = `${baseAppUrl}/unsubscribe?token=${trackingToken}&campaign=${campaign.id}`;
-
-      // Render rich HTML with formatting, attachments, and unsubscribe
-      const renderedHtml = formatEmailBodyToHtml(renderedBody, {
-        attachments: stepAttachments,
-        enableUnsubscribe: stepEnableUnsub,
-        unsubscribeText: stepUnsubText,
-        unsubscribeUrl: unsubUrl,
-      });
-
-      // Prepare MIME attachments for SMTP/Resend
-      const outboundAttachments = stepAttachments
-        .filter((a) => a.contentBase64)
-        .map((a) => ({
-          filename: a.name,
-          content: Buffer.from(
-            a.contentBase64!.replace(/^data:[^;]+;base64,/, ""),
-            "base64"
-          ),
-          contentType: a.type,
-        }));
-
-      try {
-        const sentResult = await sendOutboundEmail({
-          userId: campaign.userId,
-          to: prospect.email,
-          subject: renderedSubject,
-          text: renderedBody,
-          html: renderedHtml,
-          accountId: mailbox.id,
-          attachments: outboundAttachments.length > 0 ? outboundAttachments : undefined,
-        });
-
-        // Log campaign email
-        await prisma.campaignLog.create({
-          data: {
-            campaignId: campaign.id,
-            prospectId: prospect.id,
-            stepIndex: stepIdx,
-            hookId,
-            mailboxId: mailbox.id,
-            fromEmail: sentResult.fromEmail || mailbox.fromEmail,
-            toEmail: prospect.email,
-            subject: renderedSubject,
-            body: renderedBody,
-            status: "sent",
-            messageId: sentResult.messageId ?? null,
-            trackingToken,
-          },
-        });
-
-        // Calculate next step due date
-        const nextStepIdx = stepIdx + 1;
-        let nextDue: Date | null = null;
-        let nextStatus = "in_progress";
-
-        if (nextStepIdx <= steps.length) {
-          const nextFollowUp = steps[nextStepIdx - 1];
-          const delayDays = nextFollowUp ? Math.max(1, nextFollowUp.dayDelay) : 2;
-          nextDue = new Date(Date.now() + delayDays * DAY_MS);
-        } else {
-          nextStatus = "completed";
-        }
-
-        // Update prospect state
-        await prisma.campaignProspect.update({
-          where: { id: prospect.id },
-          data: {
-            status: nextStatus,
-            currentStepIndex: nextStepIdx,
-            lastSentAt: now,
-            nextSendDueAt: nextDue,
-            lastMailboxId: mailbox.id,
-            lastFromEmail: sentResult.fromEmail || mailbox.fromEmail,
-            lastSubject: renderedSubject,
-          },
-        });
-
-        // Update send count for mailbox
-        sendsTodayMap.set(mailbox.id, (sendsTodayMap.get(mailbox.id) || 0) + 1);
-        campaignResult.sent++;
-      } catch (err) {
-        const errMsg = err instanceof Error ? err.message : "Send failure";
-        campaignResult.errors.push(`Prospect ${prospect.email}: ${errMsg}`);
-
-        await prisma.campaignLog.create({
-          data: {
-            campaignId: campaign.id,
-            prospectId: prospect.id,
-            stepIndex: stepIdx,
-            hookId,
-            mailboxId: mailbox.id,
-            fromEmail: mailbox.fromEmail,
-            toEmail: prospect.email,
-            subject: renderedSubject,
-            body: renderedBody,
-            status: "failed",
-            error: errMsg,
-          },
-        });
-
-        // If email bounced or hard error, stop follow-ups for this prospect
-        const isHardBounce = errMsg.toLowerCase().includes("invalid") || errMsg.toLowerCase().includes("not exist") || errMsg.toLowerCase().includes("550");
-        if (isHardBounce) {
-          await prisma.campaignProspect.update({
-            where: { id: prospect.id },
-            data: {
-              status: "bounced",
-              stopReason: "bounced",
-              bouncedAt: now,
-              nextSendDueAt: null,
-            },
-          });
-        }
-      }
     }
 
     if (campaignResult.sent === 0 && skippedTimeWindowCount > 0) {

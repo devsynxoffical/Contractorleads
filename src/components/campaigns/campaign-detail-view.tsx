@@ -939,7 +939,7 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                   ) : (
                     <>
                       <HiOutlineBolt className="h-3.5 w-3.5" />
-                      Force Send 50 Now
+                      Force Send Batch Now
                     </>
                   )}
                 </button>
