@@ -139,6 +139,7 @@ export async function processCampaignSends(opts?: {
           sentAt: {
             gte: new Date(new Date().setHours(0, 0, 0, 0)),
           },
+          status: { not: "failed" },
         },
         select: { mailboxId: true, fromEmail: true },
       }),

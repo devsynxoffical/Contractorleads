@@ -259,8 +259,10 @@ export async function GET(
       };
       mailboxStatsMap.set(mbKey, ms);
     }
-    ms.totalSent++;
-    if (new Date(log.sentAt) >= startOfToday) ms.sentToday++;
+    if (log.status !== "failed") {
+      ms.totalSent++;
+      if (new Date(log.sentAt) >= startOfToday) ms.sentToday++;
+    }
     if (log.status !== "failed" && log.status !== "bounced") ms.delivered++;
     if (log.bouncedAt || log.status === "bounced") ms.bounced++;
     if (log.openedAt || log.status === "opened") ms.opened++;
