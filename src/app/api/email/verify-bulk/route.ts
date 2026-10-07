@@ -17,9 +17,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Provide at least one email address" }, { status: 400 });
   }
 
-  if (emails.length > 200) {
+  // No strict 200 cap — handle bulk batches smoothly (chunking handled by frontend)
+  if (emails.length > 5000) {
     return NextResponse.json(
-      { error: "You can verify up to 200 emails per batch" },
+      { error: "Maximum 5,000 emails per single bulk request" },
       { status: 400 },
     );
   }

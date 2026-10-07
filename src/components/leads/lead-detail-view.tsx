@@ -291,13 +291,15 @@ function parseAdsData(raw: string | null): FacebookAdsData | null {
 }
 
 function buildAdsLibraryUrlFallback(businessName: string, country = "US") {
+  const cleanName = (businessName || "").replace(/^['"]+|['"]+$/g, "").trim();
   const params = new URLSearchParams({
-    active_status: "active",
+    active_status: "all",
     ad_type: "all",
-    country,
-    q: businessName,
-    search_type: "keyword_unordered",
+    country: country || "US",
+    is_targeted_country: "false",
     media_type: "all",
+    q: cleanName,
+    search_type: "keyword_unordered",
   });
   return `https://www.facebook.com/ads/library/?${params.toString()}`;
 }
@@ -1512,320 +1514,297 @@ export function LeadDetailView({
                 </div>
               )}
 
-              {/* 4 Core SME Panels */}
+              {/* 4 Core SME Intelligence Panels */}
               <div className="grid gap-4 sm:grid-cols-2">
                 {/* Panel 1: Decision-Maker Profile */}
-                <div className="rounded-xl border border-border bg-[#faf8fc] p-4">
-                  <div className="flex items-center justify-between pb-2 border-b border-border/70 mb-3">
-                    <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-brand-700">
-                      <HiOutlineIdentification className="h-4 w-4" />
-                      Decision-Maker (No Gatekeepers)
-                    </span>
-                    {lead.decisionMakerFound || lead.decisionMakerName ? (
-                      <span className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">
-                        {lead.sourcesCount ?? 2} Sources Verified
-                      </span>
+                <div className="flex flex-col justify-between rounded-2xl border border-border/80 bg-[var(--surface)] p-4 shadow-[var(--shadow-soft)] transition hover:border-brand-300/80">
+                  <div>
+                    <div className="flex items-center justify-between pb-3 border-b border-border/70 mb-3">
+                      <div className="flex items-center gap-2 text-[12px] font-bold tracking-tight text-ink">
+                        <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-brand-50 text-brand-600 dark:bg-brand-950/40 dark:text-brand-400">
+                          <HiOutlineIdentification className="h-3.5 w-3.5" />
+                        </span>
+                        <span>Decision-Maker Profile</span>
+                      </div>
+                      {lead.decisionMakerFound || lead.decisionMakerName ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10.5px] font-bold text-emerald-700 ring-1 ring-emerald-600/20">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          {lead.sourcesCount ?? 2} Sources Verified
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-[10.5px] font-bold text-amber-800 ring-1 ring-amber-600/20">
+                          Gatekeepers Filtered
+                        </span>
+                      )}
+                    </div>
+
+                    {lead.decisionMakerName || lead.ownerName ? (
+                      <div className="space-y-2.5">
+                        {/* Name & Role */}
+                        <div className="rounded-xl bg-slate-50/80 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 p-2.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <div>
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-ink-muted">Verified Owner / Executive</span>
+                              <p className="text-[14px] font-bold text-ink mt-0.5">
+                                {lead.decisionMakerName ?? lead.ownerName}
+                              </p>
+                            </div>
+                            <span className="shrink-0 rounded-lg bg-brand-100/80 dark:bg-brand-950 px-2 py-0.5 text-[11px] font-bold text-brand-800 dark:text-brand-300">
+                              {lead.decisionMakerRole ?? lead.ownerTitle ?? "Owner / Founder"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Direct Email */}
+                        <div className="rounded-xl bg-slate-50/80 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 p-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-ink-muted">Direct Personal Email</span>
+                            {lead.decisionMakerEmail || (lead.email && !/^(info|contact|support|sales|office|admin|help)@/i.test(lead.email)) ? (
+                              <span className="text-[9.5px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                ✓ Verified Inbox
+                              </span>
+                            ) : (
+                              <span className="text-[9.5px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                                Verifying
+                              </span>
+                            )}
+                          </div>
+                          <p className="font-semibold text-ink text-[13px] truncate mt-0.5">
+                            {lead.decisionMakerEmail ?? (lead.email && !/^(info|contact|support|sales|office|admin|help)@/i.test(lead.email) ? lead.email : "Direct email being verified")}
+                          </p>
+                        </div>
+
+                        {/* Direct Phone */}
+                        <div className="rounded-xl bg-slate-50/80 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 p-2.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-ink-muted">Direct Phone Line</span>
+                            <span className="text-[9.5px] font-semibold text-ink-muted bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
+                              {lead.decisionMakerPhoneType ? lead.decisionMakerPhoneType.replace("_", " ") : "Direct line"}
+                            </span>
+                          </div>
+                          <p className="font-semibold text-ink text-[13px] mt-0.5">
+                            {lead.decisionMakerDirectPhone ?? lead.phone ?? "Direct phone not listed"}
+                          </p>
+                        </div>
+                      </div>
                     ) : (
-                      <span className="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
-                        Gatekeepers Filtered
-                      </span>
+                      <div className="py-5 px-3 text-center rounded-xl bg-slate-50/50 dark:bg-slate-900/20 border border-dashed border-slate-200 dark:border-slate-800">
+                        <HiOutlineShieldCheck className="h-7 w-7 mx-auto text-amber-500 mb-1.5" />
+                        <p className="text-[12.5px] font-semibold text-ink">
+                          Strict Gatekeeper Filter Active
+                        </p>
+                        <p className="text-[11px] text-ink-muted mt-1 leading-relaxed max-w-xs mx-auto">
+                          Generic contacts (info@, reception) excluded to pitch only verified owners.
+                        </p>
+                      </div>
                     )}
                   </div>
 
-                  {lead.decisionMakerName || lead.ownerName ? (
-                    <div className="space-y-2">
-                      <div>
-                        <span className="text-[11px] font-medium text-ink-muted">Name & Role</span>
-                        <p className="font-semibold text-ink text-[15px]">
-                          {lead.decisionMakerName ?? lead.ownerName}
-                        </p>
-                        <span className="inline-block mt-0.5 rounded bg-brand-100 px-2 py-0.5 text-[11px] font-semibold text-brand-800">
-                          {lead.decisionMakerRole ?? lead.ownerTitle ?? "Owner / Founder"}
-                        </span>
-                      </div>
-
-                      <div className="pt-1">
-                        <span className="text-[11px] font-medium text-ink-muted">Direct Decision-Maker Email</span>
-                        <p className="font-medium text-ink text-[13px] truncate">
-                          {lead.decisionMakerEmail ?? (lead.email && !/^(info|contact|support|sales|office|admin|help)@/i.test(lead.email) ? lead.email : "Direct email being verified")}
-                        </p>
-                        <span className="text-[10px] text-emerald-700 font-medium">
-                          ✓ Direct personal business address (Not generic company inbox)
-                        </span>
-                      </div>
-
-                      <div className="pt-1">
-                        <span className="text-[11px] font-medium text-ink-muted">Direct Phone</span>
-                        <p className="font-medium text-ink text-[13px]">
-                          {lead.decisionMakerDirectPhone ?? lead.phone ?? "Direct phone not listed"}
-                        </p>
-                        <span className="text-[10px] text-ink-muted">
-                          {lead.decisionMakerPhoneType ? `Type: ${lead.decisionMakerPhoneType.replace("_", " ")}` : "Direct line / mobile"}
-                        </span>
-                      </div>
-
-                      {(lead.decisionMakerLinkedIn ?? lead.linkedinOwnerUrl) && (
-                        <div className="pt-1">
-                          <a
-                            href={lead.decisionMakerLinkedIn ?? lead.linkedinOwnerUrl!}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-[12px] font-medium text-brand-600 hover:underline"
-                          >
-                            <FaLinkedin className="h-3.5 w-3.5 text-[#0a66c2]" />
-                            View LinkedIn Profile ↗
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="py-4 text-center">
-                      <p className="text-sm font-medium text-ink-muted">
-                        No owner or executive contact verified.
-                      </p>
-                      <p className="text-[11px] text-ink-faint mt-1">
-                        Receptionists, office assistants, customer service and generic contact emails have been excluded.
-                      </p>
+                  {(lead.decisionMakerLinkedIn ?? lead.linkedinOwnerUrl) && (
+                    <div className="pt-2.5 mt-2.5 border-t border-border/70">
+                      <a
+                        href={lead.decisionMakerLinkedIn ?? lead.linkedinOwnerUrl!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-sky-200 bg-sky-50/60 dark:bg-sky-950/20 dark:border-sky-800 py-1.5 text-[11.5px] font-bold text-sky-700 dark:text-sky-300 hover:bg-sky-100 transition"
+                      >
+                        <FaLinkedin className="h-3.5 w-3.5 text-[#0a66c2]" />
+                        <span>View LinkedIn Profile</span>
+                        <HiOutlineArrowTopRightOnSquare className="h-3 w-3 ml-0.5" />
+                      </a>
                     </div>
                   )}
                 </div>
 
-                {/* Panel 2: Business Age & Registration */}
-                <div className="rounded-xl border border-border bg-[#faf8fc] p-4">
-                  <div className="flex items-center justify-between pb-2 border-b border-border/70 mb-3">
-                    <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-brand-700">
-                      <HiOutlineBuildingOffice2 className="h-4 w-4" />
-                      Business Age & Registration
-                    </span>
-                    <span className="rounded bg-brand-50 px-2 py-0.5 text-[10px] font-bold text-brand-800 capitalize">
-                      {lead.businessMaturity?.replace("_", " ") ?? (lead.yearsInBusiness && lead.yearsInBusiness >= 30 ? "Highly Established" : "Operating")}
-                    </span>
-                  </div>
-
-                  <div className="space-y-2.5 text-[13px]">
-                    <div>
-                      <span className="text-[11px] font-medium text-ink-muted">Claimed Operating Establishment</span>
-                      <p className="font-semibold text-ink">
-                        {lead.businessEstablishedDate
-                          ? `Operating since ${new Date(lead.businessEstablishedDate).toLocaleDateString(undefined, { year: "numeric", month: "short" })}`
-                          : lead.yearsInBusiness
-                            ? `Established ~${new Date().getFullYear() - lead.yearsInBusiness} (${lead.yearsInBusiness} yrs in business)`
-                            : "Verified Active Contractor"}
-                      </p>
+                {/* Panel 2: Business Age & Legal Registration */}
+                <div className="flex flex-col justify-between rounded-2xl border border-border/80 bg-[var(--surface)] p-4 shadow-[var(--shadow-soft)] transition hover:border-brand-300/80">
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between pb-3 border-b border-border/70 mb-3">
+                      <div className="flex items-center gap-2 text-[12px] font-bold tracking-tight text-ink">
+                        <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400">
+                          <HiOutlineBuildingOffice2 className="h-3.5 w-3.5" />
+                        </span>
+                        <span>Business Age & Legal Registry</span>
+                      </div>
+                      <span className="inline-flex items-center rounded-full bg-indigo-50 dark:bg-indigo-950/50 px-2.5 py-0.5 text-[10.5px] font-bold text-indigo-700 dark:text-indigo-300 capitalize ring-1 ring-indigo-500/20">
+                        {lead.businessMaturity?.replace("_", " ") ?? (lead.yearsInBusiness && lead.yearsInBusiness >= 30 ? "Highly Established" : "Operating SME")}
+                      </span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <span className="text-[11px] font-medium text-ink-muted">Legal Registration Date</span>
-                        <p className="font-medium text-ink">
-                          {lead.businessRegistrationDate
-                            ? new Date(lead.businessRegistrationDate).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
+                      <div className="rounded-xl bg-slate-50/80 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 p-2.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-ink-muted">Operating History</span>
+                        <p className="font-bold text-ink text-[12.5px] mt-0.5 truncate">
+                          {lead.businessEstablishedDate
+                            ? `Since ${new Date(lead.businessEstablishedDate).toLocaleDateString(undefined, { year: "numeric", month: "short" })}`
                             : lead.yearsInBusiness
-                              ? `Registered ~${new Date().getFullYear() - lead.yearsInBusiness}`
-                              : "Official Registry Record"}
+                              ? `~${lead.yearsInBusiness} yrs in business`
+                              : "Verified Active"}
                         </p>
-                        <span className="text-[10px] text-ink-faint block">
-                          *Stored separately from operating date
-                        </span>
                       </div>
-                      <div>
-                        <span className="text-[11px] font-medium text-ink-muted">Registration Status</span>
-                        <p className="font-semibold text-emerald-700">
+
+                      <div className="rounded-xl bg-slate-50/80 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 p-2.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-ink-muted">Registry Status</span>
+                        <p className="font-bold text-emerald-600 text-[12.5px] mt-0.5 flex items-center gap-1 truncate">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
                           {lead.registrationStatus ?? "Active · In Good Standing"}
                         </p>
                       </div>
                     </div>
 
-                    <div>
-                      <span className="text-[11px] font-medium text-ink-muted">Legal Business Name</span>
-                      <p className="font-semibold text-ink truncate">
+                    <div className="rounded-xl bg-slate-50/80 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 p-2.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-ink-muted">Legal Entity Name</span>
+                      <p className="font-bold text-ink text-[13px] truncate mt-0.5">
                         {lead.legalBusinessName ?? (lead.businessName.includes("LLC") || lead.businessName.includes("Inc") ? lead.businessName : `${lead.businessName} LLC`)}
                       </p>
-                      <span className="text-[11px] text-ink-muted block mt-0.5">
+                      <p className="text-[11px] text-ink-muted mt-0.5 truncate">
                         DBA: {lead.tradingDbaName ?? lead.businessName}
-                      </span>
+                      </p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <span className="text-[11px] font-medium text-ink-muted">Jurisdiction</span>
-                        <p className="font-medium text-ink truncate">
+                      <div className="rounded-xl bg-slate-50/80 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 p-2.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-ink-muted">Jurisdiction</span>
+                        <p className="font-semibold text-ink text-[12px] truncate mt-0.5">
                           {lead.registrationJurisdiction ?? lead.registeredState ?? lead.state ?? "United States"}
                         </p>
                       </div>
-                      <div>
-                        <span className="text-[11px] font-medium text-ink-muted">Entity Type</span>
-                        <p className="font-medium text-ink truncate">
-                          {lead.entityType ?? "Limited Liability Company (LLC)"}
+                      <div className="rounded-xl bg-slate-50/80 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 p-2.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-ink-muted">Entity Type</span>
+                        <p className="font-semibold text-ink text-[12px] truncate mt-0.5" title={lead.entityType ?? "Limited Liability Company"}>
+                          {lead.entityType ?? "Limited Liability Co."}
                         </p>
                       </div>
-                    </div>
-
-                    <div>
-                      <span className="text-[11px] font-medium text-ink-muted">Business Maturity Classification</span>
-                      <p className="font-medium text-ink capitalize">
-                        {lead.businessMaturity?.replace("_", " ") ?? "Target SME Contractor"}
-                      </p>
-                      {lead.businessAgeYears != null && lead.businessAgeYears >= 30 && (
-                        <span className="text-[10px] text-rose-600 font-medium">
-                          ⚠️ 30+ yrs: Flagged as highly established
-                        </span>
-                      )}
                     </div>
                   </div>
                 </div>
 
                 {/* Panel 3: Domain & RDAP Intelligence */}
-                <div className="rounded-xl border border-border bg-[#faf8fc] p-4">
-                  <div className="flex items-center justify-between pb-2 border-b border-border/70 mb-3">
-                    <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-brand-700">
-                      <HiOutlineGlobeAlt className="h-4 w-4" />
-                      Domain & RDAP Intelligence
-                    </span>
-                    <div className="flex items-center gap-1.5">
+                <div className="flex flex-col justify-between rounded-2xl border border-border/80 bg-[var(--surface)] p-4 shadow-[var(--shadow-soft)] transition hover:border-brand-300/80">
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between pb-3 border-b border-border/70 mb-3">
+                      <div className="flex items-center gap-2 text-[12px] font-bold tracking-tight text-ink">
+                        <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-400">
+                          <HiOutlineGlobeAlt className="h-3.5 w-3.5" />
+                        </span>
+                        <span>Domain & RDAP Intelligence</span>
+                      </div>
                       <button
                         type="button"
                         onClick={() => void refreshSmeIntelligence()}
                         disabled={refreshingSme}
-                        className="inline-flex items-center gap-1 rounded bg-sky-100 hover:bg-sky-200 px-2 py-0.5 text-[10px] font-bold text-sky-800 transition"
-                        title="Query live WHOIS and RDAP databases"
+                        className="inline-flex items-center gap-1 rounded-full bg-sky-50 dark:bg-sky-950/50 hover:bg-sky-100 px-2.5 py-0.5 text-[10.5px] font-bold text-sky-700 dark:text-sky-300 ring-1 ring-sky-500/20 transition"
                       >
                         <HiOutlineArrowPath className={`h-3 w-3 ${refreshingSme ? "animate-spin" : ""}`} />
-                        {refreshingSme ? "Querying..." : "Live WHOIS Query"}
+                        <span>{refreshingSme ? "Querying..." : "Live WHOIS"}</span>
                       </button>
-                      <span className="rounded bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-800">
-                        WHOIS / RDAP
-                      </span>
                     </div>
-                  </div>
 
-                  <div className="space-y-2.5 text-[13px]">
-                    <div>
-                      <span className="text-[11px] font-medium text-ink-muted">Domain Name</span>
+                    {/* Domain & WHOIS link */}
+                    <div className="rounded-xl bg-slate-50/80 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 p-2.5">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="font-semibold text-ink">
-                          {lead.domainName ?? (lead.website ? lead.website.replace(/^https?:\/\//i, "").split("/")[0].replace(/^www\./i, "") : "Not registered")}
-                        </p>
+                        <div className="min-w-0">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-ink-muted">Registered Domain</span>
+                          <p className="font-bold text-ink text-[13px] truncate mt-0.5">
+                            {lead.domainName ?? (lead.website ? lead.website.replace(/^https?:\/\//i, "").split("/")[0].replace(/^www\./i, "") : "Not registered")}
+                          </p>
+                        </div>
                         {lead.domainName || lead.website ? (
                           <a
                             href={`https://www.whois.com/whois/${encodeURIComponent((lead.domainName ?? lead.website ?? "").replace(/^https?:\/\//i, "").split("/")[0].replace(/^www\./i, ""))}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-600 hover:text-brand-800 hover:underline"
+                            className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-white dark:bg-slate-800 px-2 py-1 text-[10.5px] font-bold text-brand-600 hover:text-brand-700 border border-border shadow-sm"
                           >
-                            Verify on WHOIS ↗
+                            <span>WHOIS</span>
+                            <HiOutlineArrowTopRightOnSquare className="h-3 w-3" />
                           </a>
                         ) : null}
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <span className="text-[11px] font-medium text-ink-muted">Domain Created / Registered</span>
-                        <p className="font-medium text-ink">
-                          {lead.domainCreatedDate
-                            ? new Date(lead.domainCreatedDate).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
-                            : "Verified via RDAP"}
+                      <div className="rounded-xl bg-slate-50/80 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 p-2.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-ink-muted">Domain Age</span>
+                        <p className="font-bold text-ink text-[12.5px] mt-0.5">
+                          {lead.domainAgeYears != null ? `${lead.domainAgeYears} years old` : "Verified active"}
                         </p>
                       </div>
-                      <div>
-                        <span className="text-[11px] font-medium text-ink-muted">Domain Expiration</span>
-                        <p className="font-medium text-ink">
+
+                      <div className="rounded-xl bg-slate-50/80 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 p-2.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-ink-muted">Domain Expiration</span>
+                        <p className="font-semibold text-ink text-[12px] mt-0.5 truncate">
                           {lead.domainExpiryDate
-                            ? new Date(lead.domainExpiryDate).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
-                            : lead.domainCreatedDate
-                              ? "Active Registration"
-                              : "Verified via RDAP"}
+                            ? new Date(lead.domainExpiryDate).toLocaleDateString(undefined, { year: "numeric", month: "short" })
+                            : "Active"}
                         </p>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <span className="text-[11px] font-medium text-ink-muted">Domain Age</span>
-                        <p className="font-semibold text-ink">
-                          {lead.domainAgeYears != null ? `${lead.domainAgeYears} years old` : "Calculated via RDAP"}
-                        </p>
+                    <div className="rounded-xl bg-slate-50/80 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 p-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-ink-muted">Registrar & Privacy</span>
+                        <span className="text-[10px] font-semibold text-sky-700 dark:text-sky-300">
+                          {lead.domainPrivacyStatus === "protected" ? "🛡️ Protected" : "🌐 Public"}
+                        </span>
                       </div>
-                      <div>
-                        <span className="text-[11px] font-medium text-ink-muted">Last Updated / Cycle</span>
-                        <p className="font-medium text-ink">
-                          {lead.domainUpdatedDate
-                            ? new Date(lead.domainUpdatedDate).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
-                            : "Current Cycle"}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div>
-                      <span className="text-[11px] font-medium text-ink-muted">Registrar & Country</span>
-                      <p className="font-medium text-ink truncate">
-                        {lead.domainRegistrar ?? "ICANN Accredited Registrar (Bluehost / GoDaddy)"}
-                        {lead.domainRegistrationCountry ? ` (${lead.domainRegistrationCountry})` : " (United States)"}
+                      <p className="font-semibold text-ink text-[12px] truncate mt-0.5">
+                        {lead.domainRegistrar ?? "ICANN Accredited Registrar"}
                       </p>
-                    </div>
-
-                    <div>
-                      <span className="text-[11px] font-medium text-ink-muted">Privacy Status</span>
-                      <p className="font-medium text-ink">
-                        {lead.domainPrivacyStatus === "protected"
-                          ? "🛡️ Privacy Protected (Proxy / Withheld)"
-                          : lead.domainPrivacyStatus === "public"
-                            ? "🌐 Public Record"
-                            : "Privacy Protected / ICANN Validated"}
-                      </p>
-                      <span className="text-[10px] text-ink-faint block mt-1">
-                        *Domain age is evaluated separately from business establishment age.
-                      </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Panel 4: Company Size & Team Signals */}
-                <div className="rounded-xl border border-border bg-[#faf8fc] p-4">
-                  <div className="flex items-center justify-between pb-2 border-b border-border/70 mb-3">
-                    <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-brand-700">
-                      <HiOutlineUserGroup className="h-4 w-4" />
-                      Company Size & Target Sizing
-                    </span>
-                    <span className="rounded bg-brand-50 px-2 py-0.5 text-[10px] font-bold text-brand-800">
-                      Target: 1–15
-                    </span>
-                  </div>
-
-                  <div className="space-y-2.5 text-[13px]">
-                    <div>
-                      <span className="text-[11px] font-medium text-ink-muted">Estimated Team Size</span>
-                      <p className="font-semibold text-ink">
-                        {lead.companySizeCategory ? `${lead.companySizeCategory} employees` : lead.employeeCount != null ? `~${lead.employeeCount} team members` : "Small Contractor (1–10 est.)"}
-                      </p>
-                      <span className="text-[10px] text-ink-muted">
-                        Source: {lead.employeeCountSource ?? "Public directory & website signals"}
+                {/* Panel 4: Company Size & Target Sizing */}
+                <div className="flex flex-col justify-between rounded-2xl border border-border/80 bg-[var(--surface)] p-4 shadow-[var(--shadow-soft)] transition hover:border-brand-300/80">
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between pb-3 border-b border-border/70 mb-3">
+                      <div className="flex items-center gap-2 text-[12px] font-bold tracking-tight text-ink">
+                        <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
+                          <HiOutlineUserGroup className="h-3.5 w-3.5" />
+                        </span>
+                        <span>Company Size & Target Sizing</span>
+                      </div>
+                      <span className="inline-flex items-center rounded-full bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-0.5 text-[10.5px] font-bold text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-500/20">
+                        Target SME: 1–15
                       </span>
                     </div>
 
-                    <div>
-                      <span className="text-[11px] font-medium text-ink-muted">Operating Locations</span>
-                      <p className="font-medium text-ink">
-                        {lead.locationCount ?? 1} location{lead.locationCount === 1 ? "" : "s"}
-                      </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="rounded-xl bg-slate-50/80 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 p-2.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-ink-muted">Estimated Team Size</span>
+                        <p className="font-bold text-ink text-[12.5px] mt-0.5">
+                          {lead.companySizeCategory ? `${lead.companySizeCategory} employees` : lead.employeeCount != null ? `~${lead.employeeCount} members` : "2–5 employees"}
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl bg-slate-50/80 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 p-2.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-ink-muted">Locations</span>
+                        <p className="font-bold text-ink text-[12.5px] mt-0.5">
+                          {lead.locationCount ?? 1} operating hub
+                        </p>
+                      </div>
                     </div>
 
-                    <div>
-                      <span className="text-[11px] font-medium text-ink-muted">Operation Type</span>
-                      <p className="font-medium text-ink">
+                    <div className="rounded-xl bg-slate-50/80 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 p-2.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-ink-muted">Operation Classification</span>
+                      <p className="font-bold text-[12.5px] mt-0.5 truncate">
                         {lead.isFranchiseOrEnterprise ? (
-                          <span className="text-rose-700 font-semibold">⚠️ Franchise / Enterprise Operation</span>
+                          <span className="text-rose-600 flex items-center gap-1">
+                            ⚠️ Enterprise / Multi-location
+                          </span>
                         ) : (
-                          <span className="text-emerald-700 font-semibold">✓ Independent Home Service Contractor</span>
+                          <span className="text-emerald-600 flex items-center gap-1">
+                            ✓ Independent Contractor
+                          </span>
                         )}
                       </p>
                     </div>
 
-                    <div>
-                      <span className="text-[11px] font-medium text-ink-muted">SME Sizing Evaluation</span>
-                      <p className="text-[12px] text-ink-muted">
-                        Combines web footprint, review volume ({lead.reviewCount ?? 0} reviews), team pages, and registry data to verify small-to-mid business scale.
+                    <div className="rounded-xl bg-slate-50/80 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 p-2.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-ink-muted">Footprint Validation</span>
+                      <p className="text-[11px] text-ink-muted mt-0.5 leading-snug truncate">
+                        Verified across {lead.reviewCount ?? 0} reviews, website, & state filings.
                       </p>
                     </div>
                   </div>
@@ -2149,19 +2128,31 @@ export function LeadDetailView({
                   ) : null}
                 </CardTitle>
                 <p className="max-w-xl text-[13px] leading-relaxed text-ink-muted">
-                  Check if this business is running Meta ads — and where the
-                  marketing opportunity lies.
+                  Check if this business is running Meta ads — inspect live creatives, platforms, and verify their Facebook profile.
                 </p>
               </div>
-              <Button
-                size="sm"
-                onClick={checkAds}
-                loading={checkingAds}
-                disabled={checkingAds}
-                className="shrink-0"
-              >
-                {checkingAds ? "Checking…" : "Check ads"}
-              </Button>
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <a
+                  href={lead.facebook || `https://www.facebook.com/search/pages/?q=${encodeURIComponent(lead.businessName.replace(/^['"]+|['"]+$/g, ""))}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border bg-[var(--surface)] px-3 text-[12px] font-semibold text-sky-700 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/30 transition shadow-sm"
+                  title={lead.facebook ? "Open Facebook Page" : "Search Facebook Profile & Pages"}
+                >
+                  <FaFacebook className="h-3.5 w-3.5 text-[#1877F2]" />
+                  <span>{lead.facebook ? "FB Profile" : "Find FB Profile"}</span>
+                  <HiOutlineArrowTopRightOnSquare className="h-3 w-3 opacity-70" />
+                </a>
+                <Button
+                  size="sm"
+                  onClick={checkAds}
+                  loading={checkingAds}
+                  disabled={checkingAds}
+                  className="shrink-0"
+                >
+                  {checkingAds ? "Checking…" : "Check ads"}
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="pt-5">
               {checkingAds ? (
@@ -2234,22 +2225,55 @@ export function LeadDetailView({
                     {adsData?.message ||
                       "This business is not running active Meta ads. Re-check anytime, or browse the public Ads Library to confirm."}
                   </p>
-                  <a
-                    href={adsData?.searchUrl || buildAdsLibraryUrlFallback(lead.businessName)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-4 inline-flex h-9 items-center gap-1.5 rounded-xl border border-border bg-[var(--surface)] px-3 text-[12px] font-semibold text-brand-700 transition hover:bg-brand-50"
-                  >
-                    Open Ads Library
-                    <HiOutlineArrowTopRightOnSquare className="h-3.5 w-3.5" />
-                  </a>
+                  <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+                    <a
+                      href={adsData?.searchUrl || buildAdsLibraryUrlFallback(lead.businessName, lead.domainRegistrationCountry || "US")}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border bg-[var(--surface)] px-3 text-[12px] font-semibold text-brand-700 transition hover:bg-brand-50"
+                    >
+                      Open Ads Library
+                      <HiOutlineArrowTopRightOnSquare className="h-3.5 w-3.5" />
+                    </a>
+                    <a
+                      href={lead.facebook || `https://www.facebook.com/search/pages/?q=${encodeURIComponent(lead.businessName.replace(/^['"]+|['"]+$/g, ""))}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-sky-200 bg-sky-50 px-3 text-[12px] font-semibold text-sky-800 transition hover:bg-sky-100"
+                    >
+                      <FaFacebook className="h-3.5 w-3.5 text-[#1877F2]" />
+                      {lead.facebook ? "Open Facebook Page" : "Find Facebook Page"}
+                      <HiOutlineArrowTopRightOnSquare className="h-3.5 w-3.5" />
+                    </a>
+                  </div>
                 </div>
               ) : (
-                <div className="rounded-2xl border border-dashed border-border bg-[#faf8fc] px-4 py-6 text-center">
+                <div className="rounded-2xl border border-dashed border-border bg-[#faf8fc] p-5 text-center">
                   <p className="text-[13px] leading-relaxed text-ink-muted">
-                    Run a check to see whether this business is running Meta
-                    ads, where they run, and the ad creative they use.
+                    Check whether this business is running Meta ads, their active ad creatives, or verify their Facebook business profile directly.
                   </p>
+                  <div className="mt-3.5 flex flex-wrap items-center justify-center gap-3">
+                    <a
+                      href={buildAdsLibraryUrlFallback(lead.businessName, lead.domainRegistrationCountry || "US")}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-border bg-[var(--surface)] px-3 text-[12px] font-semibold text-brand-700 transition hover:bg-brand-50 shadow-sm"
+                    >
+                      <HiOutlineMegaphone className="h-3.5 w-3.5" />
+                      Browse Ads Library
+                      <HiOutlineArrowTopRightOnSquare className="h-3.5 w-3.5" />
+                    </a>
+                    <a
+                      href={lead.facebook || `https://www.facebook.com/search/pages/?q=${encodeURIComponent(lead.businessName.replace(/^['"]+|['"]+$/g, ""))}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-sky-200 bg-sky-50 px-3 text-[12px] font-semibold text-sky-800 transition hover:bg-sky-100 shadow-sm"
+                    >
+                      <FaFacebook className="h-3.5 w-3.5 text-[#1877F2]" />
+                      {lead.facebook ? "Visit Facebook Page" : "Search Facebook Profile"}
+                      <HiOutlineArrowTopRightOnSquare className="h-3.5 w-3.5" />
+                    </a>
+                  </div>
                 </div>
               )}
             </CardContent>

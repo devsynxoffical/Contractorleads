@@ -96,19 +96,15 @@ export function EmailVerifierView() {
       return;
     }
 
-    if (uniqueEmails.length > 200) {
-      setBulkError("Maximum 200 emails per batch. Please reduce your list.");
-      return;
-    }
-
+    // Removed 200 limit — batches of 20 emails are sent to API seamlessly with progress tracking
     setBulkLoading(true);
     setBulkError(null);
     setBulkResults([]);
     setProgress({ current: 0, total: uniqueEmails.length });
 
     try {
-      // Process in small batches of 15 for live progress feeling
-      const batchSize = 15;
+      // Process in batches of 20 for live progress and responsive UI
+      const batchSize = 20;
       const allResults: EmailVerificationResult[] = [];
 
       for (let i = 0; i < uniqueEmails.length; i += batchSize) {
@@ -548,7 +544,7 @@ export function EmailVerifierView() {
                     Paste Email List or Upload CSV
                   </label>
                   <p className="text-[12.5px] text-ink-muted">
-                    Paste one email per line (or comma/tab separated), up to 200 emails at a time.
+                    Paste one email per line (or comma/tab separated) with no batch limit, or upload a CSV file.
                   </p>
                 </div>
                 <div>

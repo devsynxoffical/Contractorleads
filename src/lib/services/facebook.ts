@@ -49,13 +49,15 @@ export function classifyAdPlacements(platforms: string[] | null | undefined) {
 }
 
 export function buildAdsLibraryUrl(businessName: string, country = "US") {
+  const cleanName = (businessName || "").replace(/^['"]+|['"]+$/g, "").trim();
   const params = new URLSearchParams({
-    active_status: "active",
+    active_status: "all",
     ad_type: "all",
-    country,
-    q: businessName,
-    search_type: "keyword_unordered",
+    country: country || "US",
+    is_targeted_country: "false",
     media_type: "all",
+    q: cleanName,
+    search_type: "keyword_unordered",
   });
   return `https://www.facebook.com/ads/library/?${params.toString()}`;
 }
