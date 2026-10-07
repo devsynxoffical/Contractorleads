@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { HiOutlineChartBarSquare, HiOutlineCheckCircle } from "react-icons/hi2";
+import { openRazorpayModal } from "@/lib/client/razorpay-checkout";
 
 type LatestReport = {
   id: string;
@@ -25,6 +26,10 @@ export function SeoReportAddonCard({
   const [error, setError] = useState<string | null>(null);
 
   async function buyReport() {
+    if (!website.trim()) {
+      setError("Please enter a valid website URL.");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -34,8 +39,48 @@ export function SeoReportAddonCard({
         body: JSON.stringify({ website }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Could not start checkout");
-      if (json.url) window.location.href = json.url;
+      if (!res.ok || !json.orderId || !json.keyId) {
+        throw new Error(json.error || "Could not start checkout");
+      }
+
+      await openRazorpayModal({
+        keyId: json.keyId,
+        orderId: json.orderId,
+        amount: json.amount,
+        currency: json.currency || "USD",
+        name: "Contractor Leads",
+        description: `AI Website + SEO Report for ${website}`,
+        prefill: {
+          name: json.user?.name,
+          email: json.user?.email,
+          contact: json.user?.phone,
+        },
+        onSuccess: async (payResponse) => {
+          try {
+            const verifyRes = await fetch("/api/billing/seo-report", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                ...payResponse,
+                website,
+              }),
+            });
+            const verifyData = await verifyRes.json();
+            if (verifyRes.ok && verifyData.ok) {
+              window.location.reload();
+            } else {
+              setError(verifyData.error || "Payment verification failed");
+              setBusy(false);
+            }
+          } catch {
+            setError("Error verifying payment");
+            setBusy(false);
+          }
+        },
+        onDismiss: () => {
+          setBusy(false);
+        },
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not start checkout");
       setBusy(false);
@@ -91,12 +136,12 @@ export function SeoReportAddonCard({
             />
           </label>
           {available ? (
-            <Button size="sm" onClick={buyReport} loading={busy}>
+            <Button size="sm" onClick={buyReport} loading={busy} className="font-bold">
               Buy report for ${priceUsd.toFixed(2)}
             </Button>
           ) : (
             <p className="text-right text-[12px] text-ink-faint">
-              Coming soon - ask admin to configure Stripe price.
+              Configure Razorpay keys to enable.
             </p>
           )}
         </div>

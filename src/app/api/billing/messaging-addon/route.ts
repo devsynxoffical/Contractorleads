@@ -1,34 +1,13 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import {
-  appBaseUrl,
-  getStripe,
-  isMessagingAddonConfigured,
-  messagingAddonPriceId,
-} from "@/lib/stripe";
+import { getRazorpayClient, isRazorpayConfigured, verifyRazorpaySignature } from "@/lib/razorpay";
+import { getRazorpayBillingSecrets } from "@/lib/razorpay-config";
 import {
   MESSAGING_ADDON_PRICE_USD,
   hasMessagingAddon,
 } from "@/lib/messaging-addon";
-
-function isNoSuchCustomer(err: unknown): boolean {
-  const msg =
-    err && typeof err === "object" && "message" in err
-      ? String((err as { message?: string }).message)
-      : "";
-  return /no such customer/i.test(msg);
-}
-
-function stripeErrorMessage(err: unknown): string {
-  if (!err || typeof err !== "object") return "Stripe request failed";
-  const e = err as { message?: string; raw?: { message?: string }; type?: string };
-  const raw = e.raw?.message || e.message || "Stripe request failed";
-  if (/no such price/i.test(raw)) {
-    return "The Messaging add-on price is not configured correctly. Ask an admin to check Admin → System & API Keys.";
-  }
-  return raw;
-}
+import { activateMessagingAddonWithRazorpay } from "@/lib/billing-razorpay";
 
 export async function GET() {
   const user = await getSessionUser();
@@ -40,7 +19,6 @@ export async function GET() {
       role: true,
       messagingAddonStatus: true,
       messagingAddonManual: true,
-      messagingAddonSubId: true,
     },
   });
 
@@ -49,7 +27,7 @@ export async function GET() {
     status: dbUser?.messagingAddonStatus ?? "inactive",
     comped: Boolean(dbUser?.messagingAddonManual),
     priceUsd: MESSAGING_ADDON_PRICE_USD,
-    available: await isMessagingAddonConfigured(),
+    available: await isRazorpayConfigured(),
   });
 }
 
@@ -57,20 +35,9 @@ export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  if (!(await isMessagingAddonConfigured())) {
+  if (!(await isRazorpayConfigured())) {
     return NextResponse.json(
-      {
-        error:
-          "The Messaging add-on is not available yet. Ask an admin to configure its Stripe price.",
-      },
-      { status: 503 },
-    );
-  }
-
-  const priceId = await messagingAddonPriceId();
-  if (!priceId) {
-    return NextResponse.json(
-      { error: "Messaging add-on price is not configured." },
+      { error: "Razorpay is not configured. Ask an admin to check Admin → System & API Keys." },
       { status: 503 },
     );
   }
@@ -82,11 +49,10 @@ export async function POST(request: Request) {
       email: true,
       name: true,
       companyName: true,
+      phone: true,
       role: true,
-      stripeCustomerId: true,
       messagingAddonStatus: true,
       messagingAddonManual: true,
-      messagingAddonSubId: true,
     },
   });
   if (!dbUser) return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -99,58 +65,81 @@ export async function POST(request: Request) {
   }
 
   try {
-    const stripe = await getStripe();
+    const { client, keyId } = await getRazorpayClient();
+    const amountCents = Math.round(MESSAGING_ADDON_PRICE_USD * 100); // $30.00 -> 3000
+    const receipt = `addon_msg_${user.id.slice(-6)}_${Date.now()}`;
 
-    let customerId = dbUser.stripeCustomerId;
-    if (customerId) {
-      try {
-        const existing = await stripe.customers.retrieve(customerId);
-        if ((existing as { deleted?: boolean }).deleted) customerId = null;
-      } catch (err) {
-        if (isNoSuchCustomer(err)) customerId = null;
-        else throw err;
-      }
-    }
-    if (!customerId) {
-      const customer = await stripe.customers.create({
-        email: dbUser.email,
-        name: dbUser.name || dbUser.companyName || undefined,
-        metadata: { userId: dbUser.id },
-      });
-      customerId = customer.id;
-      await prisma.user.update({
-        where: { id: dbUser.id },
-        data: { stripeCustomerId: customerId },
-      });
-    }
-
-    const base = appBaseUrl(request);
-    const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      customer: customerId,
-      client_reference_id: dbUser.id,
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${base}/billing?addon=active&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${base}/billing?addon=canceled`,
-      allow_promotion_codes: true,
-      metadata: { userId: dbUser.id, addon: "messaging" },
-      subscription_data: {
-        metadata: { userId: dbUser.id, addon: "messaging" },
+    const order = await client.orders.create({
+      amount: amountCents,
+      currency: "USD",
+      receipt,
+      notes: {
+        userId: dbUser.id,
+        addon: "messaging",
+        userEmail: dbUser.email,
       },
     });
 
-    if (!session.url) {
-      return NextResponse.json(
-        { error: "Could not create Checkout session" },
-        { status: 500 },
-      );
-    }
-
-    return NextResponse.json({ url: session.url, sessionId: session.id });
+    return NextResponse.json({
+      provider: "razorpay",
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      keyId,
+      name: "Messaging Add-on ($30/mo)",
+      description: "Unlocks bulk automated email and SMS outreach",
+      user: {
+        name: dbUser.name || dbUser.companyName || "Customer",
+        email: dbUser.email,
+        phone: dbUser.phone || "",
+      },
+    });
   } catch (err) {
     console.error("[billing/messaging-addon]", err);
-    return NextResponse.json({ error: stripeErrorMessage(err) }, { status: 502 });
+    const msg = err instanceof Error ? err.message : "Razorpay order creation failed";
+    return NextResponse.json({ error: msg }, { status: 502 });
   }
+}
+
+export async function PUT(request: Request) {
+  // Verification handler for Messaging Add-on
+  const user = await getSessionUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const body = await request.json().catch(() => ({}));
+  const orderId = String(body.razorpay_order_id || "").trim();
+  const paymentId = String(body.razorpay_payment_id || "").trim();
+  const signature = String(body.razorpay_signature || "").trim();
+
+  if (!orderId || !paymentId || !signature) {
+    return NextResponse.json(
+      { error: "Incomplete payment verification payload from Razorpay." },
+      { status: 400 },
+    );
+  }
+
+  const secrets = await getRazorpayBillingSecrets();
+  const isValid = verifyRazorpaySignature({
+    orderId,
+    paymentId,
+    signature,
+    keySecret: secrets.keySecret,
+  });
+
+  if (!isValid) {
+    return NextResponse.json(
+      { error: "Invalid payment signature. Verification failed." },
+      { status: 400 },
+    );
+  }
+
+  await activateMessagingAddonWithRazorpay({
+    userId: user.id,
+    orderId,
+    paymentId,
+  });
+
+  return NextResponse.json({ ok: true, active: true });
 }
 
 export async function DELETE() {
@@ -159,7 +148,7 @@ export async function DELETE() {
 
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { id: true, messagingAddonSubId: true, messagingAddonManual: true },
+    select: { id: true, messagingAddonManual: true },
   });
   if (!dbUser) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
@@ -170,22 +159,10 @@ export async function DELETE() {
     );
   }
 
-  if (!dbUser.messagingAddonSubId) {
-    await prisma.user.update({
-      where: { id: dbUser.id },
-      data: { messagingAddonStatus: "canceled" },
-    });
-    return NextResponse.json({ ok: true, status: "canceled" });
-  }
+  await prisma.user.update({
+    where: { id: dbUser.id },
+    data: { messagingAddonStatus: "canceled" },
+  });
 
-  try {
-    const stripe = await getStripe();
-    await stripe.subscriptions.update(dbUser.messagingAddonSubId, {
-      cancel_at_period_end: true,
-    });
-    return NextResponse.json({ ok: true, status: "canceling" });
-  } catch (err) {
-    console.error("[billing/messaging-addon DELETE]", err);
-    return NextResponse.json({ error: stripeErrorMessage(err) }, { status: 502 });
-  }
+  return NextResponse.json({ ok: true, status: "canceled" });
 }

@@ -1,21 +1,13 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { appBaseUrl, getStripe, isSeoReportAddonConfigured, seoReportAddonPriceId } from "@/lib/stripe";
+import { getRazorpayClient, isRazorpayConfigured, verifyRazorpaySignature } from "@/lib/razorpay";
+import { getRazorpayBillingSecrets } from "@/lib/razorpay-config";
 import {
+  generateSeoAnalysisReport,
   normalizeWebsiteInput,
   SEO_REPORT_ADDON_PRICE_USD,
 } from "@/lib/seo-report-addon";
-
-function stripeErrorMessage(err: unknown): string {
-  if (!err || typeof err !== "object") return "Stripe request failed";
-  const e = err as { message?: string; raw?: { message?: string } };
-  const raw = e.raw?.message || e.message || "Stripe request failed";
-  if (/no such price/i.test(raw)) {
-    return "The AI Website + SEO Report price is not configured correctly. Ask an admin to check Admin -> System & API Keys.";
-  }
-  return raw;
-}
 
 export async function GET() {
   const user = await getSessionUser();
@@ -28,7 +20,7 @@ export async function GET() {
   });
 
   return NextResponse.json({
-    available: await isSeoReportAddonConfigured(),
+    available: await isRazorpayConfigured(),
     priceUsd: SEO_REPORT_ADDON_PRICE_USD,
     latest,
   });
@@ -38,12 +30,9 @@ export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  if (!(await isSeoReportAddonConfigured())) {
+  if (!(await isRazorpayConfigured())) {
     return NextResponse.json(
-      {
-        error:
-          "The AI Website + SEO Report add-on is not available yet. Ask an admin to configure its Stripe price.",
-      },
+      { error: "Razorpay is not configured. Ask an admin to check Admin → System & API Keys." },
       { status: 503 },
     );
   }
@@ -58,14 +47,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const priceId = await seoReportAddonPriceId();
-  if (!priceId) {
-    return NextResponse.json(
-      { error: "AI Website + SEO Report price is not configured." },
-      { status: 503 },
-    );
-  }
-
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },
     select: {
@@ -73,54 +54,95 @@ export async function POST(request: Request) {
       email: true,
       name: true,
       companyName: true,
-      stripeCustomerId: true,
+      phone: true,
     },
   });
   if (!dbUser) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
   try {
-    const stripe = await getStripe();
-    let customerId = dbUser.stripeCustomerId;
+    const { client, keyId } = await getRazorpayClient();
+    const amountCents = Math.round(SEO_REPORT_ADDON_PRICE_USD * 100); // $15.00 -> 1500
+    const receipt = `addon_seo_${user.id.slice(-6)}_${Date.now()}`;
 
-    if (!customerId) {
-      const customer = await stripe.customers.create({
-        email: dbUser.email,
-        name: dbUser.name || dbUser.companyName || undefined,
-        metadata: { userId: dbUser.id },
-      });
-      customerId = customer.id;
-      await prisma.user.update({
-        where: { id: dbUser.id },
-        data: { stripeCustomerId: customerId },
-      });
-    }
-
-    const base = appBaseUrl(request);
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      customer: customerId,
-      client_reference_id: dbUser.id,
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${base}/billing?seo=active&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${base}/billing?seo=canceled`,
-      allow_promotion_codes: true,
-      metadata: {
+    const order = await client.orders.create({
+      amount: amountCents,
+      currency: "USD",
+      receipt,
+      notes: {
         userId: dbUser.id,
         addon: "seo_report",
         website,
+        userEmail: dbUser.email,
       },
     });
 
-    if (!session.url) {
-      return NextResponse.json(
-        { error: "Could not create Checkout session" },
-        { status: 500 },
-      );
-    }
-
-    return NextResponse.json({ url: session.url, sessionId: session.id });
+    return NextResponse.json({
+      provider: "razorpay",
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      keyId,
+      name: "AI Website + SEO Report ($15)",
+      description: `In-depth SEO report for ${website}`,
+      website,
+      user: {
+        name: dbUser.name || dbUser.companyName || "Customer",
+        email: dbUser.email,
+        phone: dbUser.phone || "",
+      },
+    });
   } catch (err) {
     console.error("[billing/seo-report]", err);
-    return NextResponse.json({ error: stripeErrorMessage(err) }, { status: 502 });
+    const msg = err instanceof Error ? err.message : "Razorpay order creation failed";
+    return NextResponse.json({ error: msg }, { status: 502 });
   }
+}
+
+export async function PUT(request: Request) {
+  const user = await getSessionUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const body = await request.json().catch(() => ({}));
+  const orderId = String(body.razorpay_order_id || "").trim();
+  const paymentId = String(body.razorpay_payment_id || "").trim();
+  const signature = String(body.razorpay_signature || "").trim();
+  const website = normalizeWebsiteInput(body.website || "");
+
+  if (!orderId || !paymentId || !signature) {
+    return NextResponse.json(
+      { error: "Incomplete payment verification payload from Razorpay." },
+      { status: 400 },
+    );
+  }
+
+  const secrets = await getRazorpayBillingSecrets();
+  const isValid = verifyRazorpaySignature({
+    orderId,
+    paymentId,
+    signature,
+    keySecret: secrets.keySecret,
+  });
+
+  if (!isValid) {
+    return NextResponse.json(
+      { error: "Invalid payment signature. Verification failed." },
+      { status: 400 },
+    );
+  }
+
+  let report = null;
+  if (website) {
+    const reportText = await generateSeoAnalysisReport(website);
+    report = await prisma.script.create({
+      data: {
+        userId: user.id,
+        type: "seo_website_report",
+        title: `SEO Report for ${website}`,
+        content: reportText,
+      },
+      select: { id: true, title: true, content: true, createdAt: true },
+    });
+  }
+
+  return NextResponse.json({ ok: true, report });
 }

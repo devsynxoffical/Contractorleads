@@ -10,25 +10,14 @@ import {
   stopNavigationProgress,
 } from "@/components/layout/navigation-progress";
 
-type StripeStatus = {
-  secretKeyConfigured: boolean;
-  secretKeyHint: string | null;
-  publishableKeyConfigured: boolean;
-  publishableKeyHint: string | null;
-  webhookSecretConfigured: boolean;
-  webhookSecretHint: string | null;
-  priceStarter: string;
-  priceStarterAnnual: string;
-  priceGrowth: string;
-  priceGrowthAnnual: string;
-  priceAgency: string;
-  priceAgencyAnnual: string;
-  priceMessaging: string;
-  priceSeoReport: string;
-  checkoutReady: boolean;
-  messagingReady: boolean;
-  seoReportReady: boolean;
+type RazorpayStatus = {
+  configured: boolean;
+  liveReady: boolean;
   source: string;
+  keyIdMasked: string | null;
+  keySecretConfigured: boolean;
+  webhookSecretConfigured: boolean;
+  mode: "live" | "test" | "none";
   updatedAt: string | null;
   webhookUrl: string;
 };
@@ -134,18 +123,12 @@ const PLATFORM_GROUPS = ["Lead sources", "AI", "Enrichment", "Meta"] as const;
 export default function AdminSystemPage() {
   const [keys, setKeys] = useState<EnvKeyStatus[]>([]);
   const [note, setNote] = useState("");
-  const [stripe, setStripe] = useState<StripeStatus | null>(null);
-  const [secretKey, setSecretKey] = useState("");
-  const [publishableKey, setPublishableKey] = useState("");
-  const [webhookSecret, setWebhookSecret] = useState("");
-  const [priceStarter, setPriceStarter] = useState("");
-  const [priceStarterAnnual, setPriceStarterAnnual] = useState("");
-  const [priceGrowth, setPriceGrowth] = useState("");
-  const [priceGrowthAnnual, setPriceGrowthAnnual] = useState("");
-  const [priceAgency, setPriceAgency] = useState("");
-  const [priceAgencyAnnual, setPriceAgencyAnnual] = useState("");
-  const [priceMessaging, setPriceMessaging] = useState("");
-  const [priceSeoReport, setPriceSeoReport] = useState("");
+  const [razorpay, setRazorpay] = useState<RazorpayStatus | null>(null);
+  const [razorpayKeyId, setRazorpayKeyId] = useState("");
+  const [razorpayKeySecret, setRazorpayKeySecret] = useState("");
+  const [razorpayWebhookSecret, setRazorpayWebhookSecret] = useState("");
+  const [razorpayBusy, setRazorpayBusy] = useState(false);
+  const [razorpayMessage, setRazorpayMessage] = useState<string | null>(null);
   const [email, setEmail] = useState<EmailStatus | null>(null);
   const [resendApiKey, setResendApiKey] = useState("");
   const [fromEmail, setFromEmail] = useState("");
@@ -164,32 +147,22 @@ export default function AdminSystemPage() {
   );
   const [platformBusy, setPlatformBusy] = useState(false);
   const [platformMessage, setPlatformMessage] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
 
   async function load() {
-    const [sys, stripeRes, emailRes, twilioRes, platformRes] =
+    const [sys, razorpayRes, emailRes, twilioRes, platformRes] =
       await Promise.all([
         fetch("/api/admin/system").then((r) => r.json()),
-        fetch("/api/admin/stripe").then((r) => r.json()),
+        fetch("/api/admin/razorpay").then((r) => r.json()),
         fetch("/api/admin/email-provider").then((r) => r.json()),
         fetch("/api/admin/twilio").then((r) => r.json()),
         fetch("/api/admin/platform-keys").then((r) => r.json()),
       ]);
     setKeys(sys.keys ?? []);
     setNote(sys.note ?? "");
-    setStripe(stripeRes);
-    setSecretKey("");
-    setPublishableKey("");
-    setWebhookSecret("");
-    setPriceStarter(stripeRes.priceStarter || "");
-    setPriceStarterAnnual(stripeRes.priceStarterAnnual || "");
-    setPriceGrowth(stripeRes.priceGrowth || "");
-    setPriceGrowthAnnual(stripeRes.priceGrowthAnnual || "");
-    setPriceAgency(stripeRes.priceAgency || "");
-    setPriceAgencyAnnual(stripeRes.priceAgencyAnnual || "");
-    setPriceMessaging(stripeRes.priceMessaging || "");
-    setPriceSeoReport(stripeRes.priceSeoReport || "");
+    setRazorpay(razorpayRes);
+    setRazorpayKeyId("");
+    setRazorpayKeySecret("");
+    setRazorpayWebhookSecret("");
     setEmail(emailRes);
     setFromEmail(emailRes.fromEmail || "");
     setResendApiKey("");
@@ -317,68 +290,60 @@ export default function AdminSystemPage() {
     }
   }
 
-  async function saveStripe(e: React.FormEvent) {
+  async function saveRazorpay(e: React.FormEvent) {
     e.preventDefault();
-    setBusy(true);
+    setRazorpayBusy(true);
     startNavigationProgress();
-    setMessage(null);
+    setRazorpayMessage(null);
     try {
-      const res = await fetch("/api/admin/stripe", {
+      const res = await fetch("/api/admin/razorpay", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          secretKey: secretKey.trim() || undefined,
-          publishableKey: publishableKey.trim() || undefined,
-          webhookSecret: webhookSecret.trim() || undefined,
-          priceStarter,
-          priceStarterAnnual,
-          priceGrowth,
-          priceGrowthAnnual,
-          priceAgency,
-          priceAgencyAnnual,
-          priceMessaging,
-          priceSeoReport,
+          keyId: razorpayKeyId.trim() || undefined,
+          keySecret: razorpayKeySecret.trim() || undefined,
+          webhookSecret: razorpayWebhookSecret.trim() || undefined,
         }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Save failed");
-      setMessage(
-        json.checkoutReady
-          ? "Stripe settings saved. Checkout is ready."
-          : "Saved. Add secret key + monthly/annual price IDs for Starter, Growth, and Agency to enable Checkout.",
+      setRazorpayMessage(
+        json.configured
+          ? `Razorpay settings saved (${json.mode.toUpperCase()} mode). Checkout is ready.`
+          : "Saved, but Key ID or Secret is incomplete.",
       );
       await load();
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Save failed");
+      setRazorpayMessage(err instanceof Error ? err.message : "Save failed");
     } finally {
-      setBusy(false);
+      setRazorpayBusy(false);
       stopNavigationProgress();
     }
   }
 
-  async function clearSecret(
-    which: "secretKey" | "publishableKey" | "webhookSecret",
+  async function clearRazorpaySecret(
+    which: "keyId" | "keySecret" | "webhookSecret",
   ) {
-    setBusy(true);
-    setMessage(null);
+    setRazorpayBusy(true);
+    setRazorpayMessage(null);
     try {
-      const res = await fetch("/api/admin/stripe", {
+      const res = await fetch("/api/admin/razorpay", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          clearSecretKey: which === "secretKey",
-          clearPublishableKey: which === "publishableKey",
+          clearKeyId: which === "keyId",
+          clearKeySecret: which === "keySecret",
           clearWebhookSecret: which === "webhookSecret",
         }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Clear failed");
-      setMessage("Cleared. Env fallback still applies if set.");
+      setRazorpayMessage("Cleared. Default credentials still apply.");
       await load();
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : "Clear failed");
+      setRazorpayMessage(err instanceof Error ? err.message : "Clear failed");
     } finally {
-      setBusy(false);
+      setRazorpayBusy(false);
     }
   }
 
@@ -601,232 +566,127 @@ export default function AdminSystemPage() {
       <section className="mb-6 rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] dark:bg-[var(--surface)]">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-sm font-semibold text-ink">Stripe Billing</h2>
+            <h2 className="text-sm font-semibold text-ink">Razorpay Payment Gateway</h2>
             <p className="mt-1 max-w-2xl text-[13px] text-ink-muted">
-              Use live keys with live price IDs (or test with test). Mixing
-              modes causes “No such price” errors on upgrade.
+              Live and test payment processing for subscriptions, credits, and add-ons.
             </p>
           </div>
-          {stripe ? (
+          {razorpay ? (
             <span
               className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${
-                stripe.checkoutReady
-                  ? "bg-emerald-500/15 text-emerald-700"
-                  : "bg-amber-500/15 text-amber-800"
+                razorpay?.liveReady
+                  ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                  : razorpay?.configured
+                    ? "bg-amber-500/15 text-amber-800 dark:text-amber-300"
+                    : "bg-rose-500/15 text-rose-800"
               }`}
             >
-              {stripe.checkoutReady ? "Checkout ready" : "Incomplete"}
+              {razorpay?.liveReady
+                ? "Live Mode Ready"
+                : razorpay?.configured
+                  ? "Test Mode Active"
+                  : "Incomplete"}
             </span>
           ) : null}
         </div>
 
-        {stripe ? (
+        {razorpay ? (
           <p className="mt-3 text-[12px] text-ink-faint">
-            Source: {stripe.source}
-            {stripe.updatedAt
-              ? ` · Updated ${new Date(stripe.updatedAt).toLocaleString()}`
+            Source: {razorpay.source}
+            {razorpay.updatedAt
+              ? ` · Updated ${new Date(razorpay.updatedAt).toLocaleString()}`
               : ""}
             {" · "}
             Webhook URL:{" "}
-            <code className="font-mono text-ink-muted">{stripe.webhookUrl}</code>
+            <code className="font-mono text-ink-muted">{razorpay.webhookUrl}</code>
           </p>
         ) : null}
 
-        <form onSubmit={saveStripe} className="mt-4 space-y-3">
+        <form onSubmit={saveRazorpay} className="mt-4 space-y-3">
           <label className="block text-[12px] font-medium text-ink-muted">
-            Secret API key (sk_live_… / sk_test_…)
+            Razorpay Key ID (rzp_live_… / rzp_test_…)
             <input
-              type="password"
+              type="text"
               autoComplete="off"
               className="saas-input mt-1.5 font-mono text-[13px]"
               placeholder={
-                stripe?.secretKeyConfigured
-                  ? `Configured ${stripe.secretKeyHint || ""} — paste to replace`
-                  : "sk_…"
+                razorpay?.keyIdMasked
+                  ? `Configured ${razorpay.keyIdMasked} — paste to replace`
+                  : "rzp_live_…"
               }
-              value={secretKey}
-              onChange={(e) => setSecretKey(e.target.value)}
+              value={razorpayKeyId}
+              onChange={(e) => setRazorpayKeyId(e.target.value)}
             />
           </label>
-          {stripe?.secretKeyConfigured ? (
+          {razorpay?.configured ? (
             <button
               type="button"
               className="text-[12px] font-semibold text-brand-600 hover:underline"
-              onClick={() => void clearSecret("secretKey")}
-              disabled={busy}
+              onClick={() => void clearRazorpaySecret("keyId")}
+              disabled={razorpayBusy}
             >
-              Clear saved secret key
+              Reset to default Key ID
             </button>
           ) : null}
 
           <label className="block text-[12px] font-medium text-ink-muted">
-            Publishable key (pk_live_… / pk_test_…)
+            Razorpay Key Secret
             <input
               type="password"
               autoComplete="off"
               className="saas-input mt-1.5 font-mono text-[13px]"
               placeholder={
-                stripe?.publishableKeyConfigured
-                  ? `Configured ${stripe.publishableKeyHint || ""} — paste to replace`
-                  : "pk_…"
+                razorpay?.keySecretConfigured
+                  ? "Configured (Live Secret Active) — paste to replace"
+                  : "Paste your Razorpay Key Secret"
               }
-              value={publishableKey}
-              onChange={(e) => setPublishableKey(e.target.value)}
+              value={razorpayKeySecret}
+              onChange={(e) => setRazorpayKeySecret(e.target.value)}
             />
           </label>
-          {stripe?.publishableKeyConfigured ? (
+          {razorpay?.keySecretConfigured ? (
             <button
               type="button"
               className="text-[12px] font-semibold text-brand-600 hover:underline"
-              onClick={() => void clearSecret("publishableKey")}
-              disabled={busy}
+              onClick={() => void clearRazorpaySecret("keySecret")}
+              disabled={razorpayBusy}
             >
-              Clear saved publishable key
+              Reset to default Key Secret
             </button>
           ) : null}
 
           <label className="block text-[12px] font-medium text-ink-muted">
-            Webhook signing secret (optional)
+            Webhook Secret (optional, for signature verification)
             <input
               type="password"
               autoComplete="off"
               className="saas-input mt-1.5 font-mono text-[13px]"
               placeholder={
-                stripe?.webhookSecretConfigured
-                  ? `Configured ${stripe.webhookSecretHint || ""} — paste to replace`
-                  : "whsec_…"
+                razorpay?.webhookSecretConfigured
+                  ? "Configured — paste to replace"
+                  : "Webhook secret from Razorpay Dashboard → Webhooks"
               }
-              value={webhookSecret}
-              onChange={(e) => setWebhookSecret(e.target.value)}
+              value={razorpayWebhookSecret}
+              onChange={(e) => setRazorpayWebhookSecret(e.target.value)}
             />
           </label>
-          {stripe?.webhookSecretConfigured ? (
+          {razorpay?.webhookSecretConfigured ? (
             <button
               type="button"
               className="text-[12px] font-semibold text-brand-600 hover:underline"
-              onClick={() => void clearSecret("webhookSecret")}
-              disabled={busy}
+              onClick={() => void clearRazorpaySecret("webhookSecret")}
+              disabled={razorpayBusy}
             >
               Clear saved webhook secret
             </button>
           ) : null}
 
-          <p className="pt-2 text-[12px] font-semibold text-ink">
-            Plan price IDs (from Stripe → Products, Live mode)
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <label className="block text-[12px] font-medium text-ink-muted">
-              Starter monthly price ID
-              <input
-                className="saas-input mt-1.5 font-mono text-[13px]"
-                placeholder="price_…"
-                value={priceStarter}
-                onChange={(e) => setPriceStarter(e.target.value)}
-              />
-            </label>
-            <label className="block text-[12px] font-medium text-ink-muted">
-              Starter annual price ID
-              <input
-                className="saas-input mt-1.5 font-mono text-[13px]"
-                placeholder="price_…"
-                value={priceStarterAnnual}
-                onChange={(e) => setPriceStarterAnnual(e.target.value)}
-              />
-            </label>
-            <label className="block text-[12px] font-medium text-ink-muted">
-              Growth monthly price ID
-              <input
-                className="saas-input mt-1.5 font-mono text-[13px]"
-                placeholder="price_…"
-                value={priceGrowth}
-                onChange={(e) => setPriceGrowth(e.target.value)}
-              />
-            </label>
-            <label className="block text-[12px] font-medium text-ink-muted">
-              Growth annual price ID
-              <input
-                className="saas-input mt-1.5 font-mono text-[13px]"
-                placeholder="price_…"
-                value={priceGrowthAnnual}
-                onChange={(e) => setPriceGrowthAnnual(e.target.value)}
-              />
-            </label>
-            <label className="block text-[12px] font-medium text-ink-muted">
-              Agency monthly price ID
-              <input
-                className="saas-input mt-1.5 font-mono text-[13px]"
-                placeholder="price_…"
-                value={priceAgency}
-                onChange={(e) => setPriceAgency(e.target.value)}
-              />
-            </label>
-            <label className="block text-[12px] font-medium text-ink-muted">
-              Agency annual price ID
-              <input
-                className="saas-input mt-1.5 font-mono text-[13px]"
-                placeholder="price_…"
-                value={priceAgencyAnnual}
-                onChange={(e) => setPriceAgencyAnnual(e.target.value)}
-              />
-            </label>
-          </div>
-
-          <p className="pt-2 text-[12px] font-semibold text-ink">
-            Messaging add-on price ID ($15.50/mo — unlocks bulk email + SMS)
-          </p>
-          <label className="block text-[12px] font-medium text-ink-muted">
-            Messaging add-on price ID
-            <input
-              className="saas-input mt-1.5 font-mono text-[13px]"
-              placeholder="price_…"
-              value={priceMessaging}
-              onChange={(e) => setPriceMessaging(e.target.value)}
-            />
-            <span className="mt-1 block text-[12px] text-ink-muted">
-              Create a $15.50/mo recurring price in Stripe and paste its price ID here.
-              {stripe ? (
-                stripe.messagingReady ? (
-                  <span className="ml-1 font-semibold text-emerald-600">Add-on ready.</span>
-                ) : (
-                  <span className="ml-1 font-semibold text-amber-600">
-                    Add-on not configured yet.
-                  </span>
-                )
-              ) : null}
-            </span>
-          </label>
-
-          <p className="pt-2 text-[12px] font-semibold text-ink">
-            AI Website + SEO report add-on price ID ($15 one-time checkout)
-          </p>
-          <label className="block text-[12px] font-medium text-ink-muted">
-            SEO report add-on price ID
-            <input
-              className="saas-input mt-1.5 font-mono text-[13px]"
-              placeholder="price_…"
-              value={priceSeoReport}
-              onChange={(e) => setPriceSeoReport(e.target.value)}
-            />
-            <span className="mt-1 block text-[12px] text-ink-muted">
-              Create a $15 one-time price in Stripe and paste its price ID here.
-              {stripe ? (
-                stripe.seoReportReady ? (
-                  <span className="ml-1 font-semibold text-emerald-600">Add-on ready.</span>
-                ) : (
-                  <span className="ml-1 font-semibold text-amber-600">
-                    Add-on not configured yet.
-                  </span>
-                )
-              ) : null}
-            </span>
-          </label>
-
-          <div className="flex flex-wrap items-center gap-3 pt-1">
-            <Button type="submit" disabled={busy} size="sm">
-              {busy ? "Saving…" : "Save Stripe settings"}
+          <div className="flex flex-wrap items-center gap-3 pt-2">
+            <Button type="submit" disabled={razorpayBusy} size="sm">
+              {razorpayBusy ? "Saving…" : "Save Razorpay settings"}
             </Button>
-            {message ? (
-              <p className="text-[13px] text-ink-muted">{message}</p>
+            {razorpayMessage ? (
+              <p className="text-[13px] text-ink-muted font-medium">{razorpayMessage}</p>
             ) : null}
           </div>
         </form>

@@ -1,83 +1,9 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import {
-  extractSubscriptionPriceId,
-  syncUserSubscription,
-} from "@/lib/billing-stripe";
-import {
-  appBaseUrl,
-  getStripe,
-  type StripeBillingPeriod,
-  isStripeCheckoutPlan,
-  isStripeConfigured,
-  priceIdForPlan,
-  type StripeCheckoutPlan,
-} from "@/lib/stripe";
-import {
-  recordCouponRedemption,
-  validateCouponForCheckout,
-} from "@/lib/coupons";
-import type Stripe from "stripe";
-const ACTIVE_SUB_STATUSES = new Set([
-  "active",
-  "trialing",
-  "past_due",
-  "paused",
-]);
-
-function stripeErrorMessage(err: unknown): string {
-  if (!err || typeof err !== "object") return "Stripe request failed";
-  const e = err as {
-    message?: string;
-    raw?: { message?: string };
-    type?: string;
-  };
-  const raw = e.raw?.message || e.message || "Stripe request failed";
-
-  // Translate the most common misconfigurations into actionable messages.
-  if (/invalid api key|api_key/i.test(raw) || e.type === "StripeAuthenticationError") {
-    return "Stripe API key is invalid. Update it under Admin → System & API Keys.";
-  }
-  if (/no such price/i.test(raw)) {
-    return "A Stripe price ID for this plan is wrong or from a different Stripe mode (test vs live). Fix it under Admin → System & API Keys.";
-  }
-  if (/similar object exists in (live|test) mode/i.test(raw)) {
-    return "Your Stripe keys and price IDs are from different modes (test vs live). Make sure they all come from the same Stripe mode.";
-  }
-  if (/at least one recurring price in subscription mode/i.test(raw)) {
-    return "The selected Stripe price is one-time, but this checkout is a subscription. Use recurring monthly/yearly price IDs in Admin → System & API Keys.";
-  }
-  return raw;
-}
-
-async function assertRecurringPriceForPeriod(opts: {
-  stripe: Stripe;
-  priceId: string;
-  plan: string;
-  billingPeriod: "monthly" | "annual";
-}): Promise<string | null> {
-  const price = await opts.stripe.prices.retrieve(opts.priceId);
-  if (!price || typeof price !== "object" || (price as { deleted?: boolean }).deleted) {
-    return `Stripe price not found for ${opts.plan} (${opts.billingPeriod}): ${opts.priceId}`;
-  }
-  if (price.type !== "recurring" || !price.recurring) {
-    return `Stripe price ${opts.priceId} for ${opts.plan} (${opts.billingPeriod}) is one-time. Create a recurring ${opts.billingPeriod === "annual" ? "yearly" : "monthly"} price.`;
-  }
-  const expected = opts.billingPeriod === "annual" ? "year" : "month";
-  if (price.recurring.interval !== expected) {
-    return `Stripe price ${opts.priceId} for ${opts.plan} (${opts.billingPeriod}) has interval '${price.recurring.interval}', expected '${expected}'.`;
-  }
-  return null;
-}
-
-function isNoSuchCustomer(err: unknown): boolean {
-  const msg =
-    err && typeof err === "object" && "message" in err
-      ? String((err as { message?: string }).message)
-      : "";
-  return /no such customer/i.test(msg);
-}
+import { normalizePlan, getPlanMonthlyPrice, type PlanId } from "@/lib/plans";
+import { validateCouponForCheckout } from "@/lib/coupons";
+import { getRazorpayClient, isRazorpayConfigured } from "@/lib/razorpay";
 
 export async function POST(request: Request) {
   const user = await getSessionUser();
@@ -85,30 +11,53 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!(await isStripeConfigured())) {
+  if (!(await isRazorpayConfigured())) {
     return NextResponse.json(
       {
         error:
-          "Stripe is not configured. Ask an admin to add keys under Admin → System & API Keys.",
+          "Razorpay is not configured. Ask an admin to add keys under Admin → System & API Keys.",
       },
       { status: 503 },
     );
   }
 
   const body = await request.json().catch(() => ({}));
-  const plan = String(body.plan || "").toLowerCase().trim();
+  const rawPlan = String(body.plan || "").toLowerCase().trim();
+  const plan = normalizePlan(rawPlan);
   const billingPeriod = body.billingPeriod === "annual" ? "annual" : "monthly";
   const couponCode = String(body.couponCode || "").trim();
-  if (!isStripeCheckoutPlan(plan)) {
+
+  if (plan === "enterprise") {
     return NextResponse.json(
-      { error: "Choose starter, growth, or agency." },
+      { error: "Contact sales for Enterprise plans." },
       { status: 400 },
     );
   }
 
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      phone: true,
+      companyName: true,
+      plan: true,
+      subscriptionStatus: true,
+    },
+  });
+  if (!dbUser) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+
+  // Calculate base price in USD
+  const monthlyPrice = await getPlanMonthlyPrice(plan);
+  let basePriceUsd = billingPeriod === "annual" ? monthlyPrice * 10 : monthlyPrice; // 2 months free on annual
+
   let appliedCoupon: Awaited<
     ReturnType<typeof validateCouponForCheckout>
   > | null = null;
+
   if (couponCode) {
     appliedCoupon = await validateCouponForCheckout({
       code: couponCode,
@@ -121,273 +70,51 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
+
+    if (appliedCoupon.coupon.percentOff) {
+      basePriceUsd = Math.max(0, basePriceUsd * (1 - appliedCoupon.coupon.percentOff / 100));
+    } else if (appliedCoupon.coupon.amountOffCents) {
+      basePriceUsd = Math.max(0, basePriceUsd - appliedCoupon.coupon.amountOffCents / 100);
+    }
   }
 
-  const priceId = await priceIdForPlan(
-    plan as StripeCheckoutPlan,
-    billingPeriod as StripeBillingPeriod,
-  );
-  if (!priceId) {
-    return NextResponse.json(
-      {
-        error: `Missing Stripe ${billingPeriod} price for ${plan}. Add it under Admin → System & API Keys.`,
-      },
-      { status: 503 },
-    );
-  }
-
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      companyName: true,
-      plan: true,
-      stripeCustomerId: true,
-      stripeSubscriptionId: true,
-      subscriptionStatus: true,
-    },
-  });
-  if (!dbUser) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
-  }
+  const amountCents = Math.max(100, Math.round(basePriceUsd * 100)); // Minimum 100 cents ($1)
 
   try {
-    const stripe = await getStripe();
-    const recurringError = await assertRecurringPriceForPeriod({
-      stripe,
-      priceId,
-      plan,
-      billingPeriod,
-    });
-    if (recurringError) {
-      return NextResponse.json({ error: recurringError }, { status: 400 });
-    }
+    const { client, keyId } = await getRazorpayClient();
+    const receipt = `rcpt_${user.id.slice(-6)}_${Date.now()}`;
 
-    // Validate the stored customer — a stale ID (e.g. created with test keys,
-    // now running live keys) breaks every Stripe call after it.
-    let customerId = dbUser.stripeCustomerId;
-    if (customerId) {
-      try {
-        const existing = await stripe.customers.retrieve(customerId);
-        if ((existing as { deleted?: boolean }).deleted) customerId = null;
-      } catch (err) {
-        if (isNoSuchCustomer(err)) customerId = null;
-        else throw err;
-      }
-    }
-    if (!customerId) {
-      const customer = await stripe.customers.create({
-        email: dbUser.email,
-        name: dbUser.name || dbUser.companyName || undefined,
-        metadata: { userId: dbUser.id },
-      });
-      customerId = customer.id;
-      await prisma.user.update({
-        where: { id: dbUser.id },
-        data: { stripeCustomerId: customerId, stripeSubscriptionId: null },
-      });
-    }
-
-    // Keep Stripe customer email in sync so invoices / receipts reach the user
-    await stripe.customers.update(customerId, {
-      email: dbUser.email,
-      name: dbUser.name || dbUser.companyName || undefined,
-    });
-
-    // Existing paid subscriber → change price on the current subscription
-    // (new Checkout would fail or create a second subscription).
-    let subscriptionId =
-      customerId === dbUser.stripeCustomerId
-        ? dbUser.stripeSubscriptionId
-        : null;
-
-    // Recover if DB lost the subscription id but Stripe still has one.
-    if (!subscriptionId) {
-      const listed = await stripe.subscriptions.list({
-        customer: customerId,
-        status: "all",
-        limit: 10,
-      });
-      const live = listed.data.find((s) => ACTIVE_SUB_STATUSES.has(s.status));
-      if (live) subscriptionId = live.id;
-    }
-
-    if (subscriptionId) {
-      let existing;
-      try {
-        existing = await stripe.subscriptions.retrieve(subscriptionId);
-      } catch {
-        existing = null;
-        subscriptionId = null;
-      }
-
-      if (existing && ACTIVE_SUB_STATUSES.has(existing.status)) {
-        const item = existing.items.data[0];
-        if (!item?.id) {
-          return NextResponse.json(
-            { error: "Could not find your current Stripe subscription item." },
-            { status: 500 },
-          );
-        }
-
-        const currentPriceId = extractSubscriptionPriceId(existing);
-        if (currentPriceId === priceId) {
-          return NextResponse.json(
-            { error: `You are already on the ${plan} plan.` },
-            { status: 400 },
-          );
-        }
-
-        const updateParams: Stripe.SubscriptionUpdateParams = {
-          items: [{ id: item.id, price: priceId }],
-          proration_behavior: "create_prorations",
-          metadata: {
-            ...(existing.metadata || {}),
-            userId: dbUser.id,
-            plan,
-            ...(appliedCoupon?.ok
-              ? { couponCode: appliedCoupon.coupon.code }
-              : {}),
-            billingPeriod,
-          },
-          cancel_at_period_end: false,
-        };
-
-        if (appliedCoupon?.ok) {
-          if (appliedCoupon.coupon.stripePromotionCodeId) {
-            updateParams.discounts = [
-              {
-                promotion_code: appliedCoupon.coupon.stripePromotionCodeId,
-              },
-            ];
-          } else if (appliedCoupon.coupon.stripeCouponId) {
-            updateParams.discounts = [
-              { coupon: appliedCoupon.coupon.stripeCouponId },
-            ];
-          }
-        }
-
-        const updated = await stripe.subscriptions.update(
-          existing.id,
-          updateParams,
-        );
-
-        await syncUserSubscription({
-          userId: dbUser.id,
-          plan,
-          subscriptionStatus: updated.status,
-          stripeCustomerId: customerId,
-          stripeSubscriptionId: updated.id,
-          stripePriceId: priceId,
-          // Credits refresh on invoice.paid webhook for the prorated invoice.
-          grantMonthlyCredits: false,
-        });
-
-        if (appliedCoupon?.ok) {
-          await recordCouponRedemption({
-            couponId: appliedCoupon.coupon.id,
-            userId: dbUser.id,
-            plan,
-          });
-        }
-
-        return NextResponse.json({
-          updated: true,
-          plan,
-          coupon: appliedCoupon?.ok
-            ? appliedCoupon.coupon.discountLabel
-            : undefined,
-          redirectUrl: `${appBaseUrl(request)}/billing?checkout=active`,
-        });
-      }
-    }
-
-    // No active subscription → Stripe Checkout for a new subscription
-    const base = appBaseUrl(request);
-
-    // If a coupon was validated but never synced to Stripe, try once more.
-    if (
-      appliedCoupon?.ok &&
-      !appliedCoupon.coupon.stripePromotionCodeId &&
-      !appliedCoupon.coupon.stripeCouponId
-    ) {
-      try {
-        const { syncCouponToStripe } = await import("@/lib/coupons");
-        const synced = await syncCouponToStripe(appliedCoupon.coupon.id);
-        appliedCoupon.coupon.stripePromotionCodeId =
-          synced.stripePromotionCodeId;
-        appliedCoupon.coupon.stripeCouponId = synced.stripeCouponId;
-      } catch (err) {
-        console.error("[billing/checkout] late coupon sync", err);
-      }
-    }
-
-    const sessionParams: Stripe.Checkout.SessionCreateParams = {
-      mode: "subscription",
-      customer: customerId,
-      client_reference_id: dbUser.id,
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${base}/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${base}/billing?checkout=canceled&session_id={CHECKOUT_SESSION_ID}`,
-      metadata: {
-        userId: dbUser.id,
+    const order = await client.orders.create({
+      amount: amountCents,
+      currency: "USD",
+      receipt,
+      notes: {
+        userId: user.id,
         plan,
-        ...(appliedCoupon?.ok
-          ? {
-              couponId: appliedCoupon.coupon.id,
-              couponCode: appliedCoupon.coupon.code,
-            }
-          : {}),
         billingPeriod,
+        couponCode: appliedCoupon?.ok ? appliedCoupon.coupon.code : "",
+        userEmail: dbUser.email,
       },
-      subscription_data: {
-        metadata: {
-          userId: dbUser.id,
-          plan,
-          billingPeriod,
-          ...(appliedCoupon?.ok
-            ? { couponCode: appliedCoupon.coupon.code }
-            : {}),
-        },
-      },
-    };
-
-    if (appliedCoupon?.ok && appliedCoupon.coupon.stripePromotionCodeId) {
-      sessionParams.discounts = [
-        { promotion_code: appliedCoupon.coupon.stripePromotionCodeId },
-      ];
-    } else if (appliedCoupon?.ok && appliedCoupon.coupon.stripeCouponId) {
-      sessionParams.discounts = [
-        { coupon: appliedCoupon.coupon.stripeCouponId },
-      ];
-    } else {
-      // Let the customer still type a Stripe promo code at Checkout.
-      sessionParams.allow_promotion_codes = true;
-    }
-
-    const session = await stripe.checkout.sessions.create(sessionParams);
-
-    if (!session.url) {
-      return NextResponse.json(
-        { error: "Could not create Checkout session" },
-        { status: 500 },
-      );
-    }
+    });
 
     return NextResponse.json({
-      url: session.url,
-      sessionId: session.id,
-      coupon: appliedCoupon?.ok
-        ? appliedCoupon.coupon.discountLabel
-        : undefined,
+      provider: "razorpay",
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      keyId,
+      plan,
+      billingPeriod,
+      user: {
+        name: dbUser.name || dbUser.companyName || "Customer",
+        email: dbUser.email,
+        phone: dbUser.phone || "",
+      },
+      coupon: appliedCoupon?.ok ? appliedCoupon.coupon.discountLabel : undefined,
     });
   } catch (err) {
-    console.error("[billing/checkout]", err);
-    return NextResponse.json(
-      { error: stripeErrorMessage(err) },
-      { status: 502 },
-    );
+    console.error("[billing/checkout/razorpay]", err);
+    const msg = err instanceof Error ? err.message : "Razorpay order creation failed";
+    return NextResponse.json({ error: msg }, { status: 502 });
   }
 }

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
 import { readBillingCouponCode } from "@/components/billing/billing-coupon-field";
+import { openRazorpayModal } from "@/lib/client/razorpay-checkout";
 
 export function BillingCheckoutButton({
   planId,
@@ -19,7 +20,7 @@ export function BillingCheckoutButton({
   billingPeriod?: "monthly" | "annual";
   popular?: boolean;
   disabled?: boolean;
-  /** Open Stripe Customer Portal instead of Checkout */
+  /** Open subscription management */
   manage?: boolean;
   className?: string;
 }) {
@@ -30,44 +31,76 @@ export function BillingCheckoutButton({
     setLoading(true);
     setError(null);
     try {
-      const couponCode = manage ? "" : readBillingCouponCode();
-      const res = await fetch(
-        manage ? "/api/billing/portal" : "/api/billing/checkout",
-        {
-          method: "POST",
-          headers: manage ? undefined : { "Content-Type": "application/json" },
-          body: manage
-            ? undefined
-            : JSON.stringify({
-                plan: planId,
-              billingPeriod,
-                ...(couponCode ? { couponCode } : {}),
-              }),
-        },
-      );
+      const couponCode = readBillingCouponCode();
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          plan: planId,
+          billingPeriod,
+          ...(couponCode ? { couponCode } : {}),
+        }),
+      });
+
       const data = (await res.json().catch(() => ({}))) as {
         error?: string;
-        url?: string;
-        updated?: boolean;
+        orderId?: string;
+        amount?: number;
+        currency?: string;
+        keyId?: string;
+        plan?: string;
+        user?: { name?: string; email?: string; phone?: string };
         redirectUrl?: string;
       };
-      if (!res.ok) {
-        setError(data.error || "Something went wrong");
+
+      if (!res.ok || !data.orderId || !data.keyId) {
+        setError(data.error || "Failed to initialize payment");
+        setLoading(false);
         return;
       }
-      if (data.url) {
-        window.location.href = data.url;
-        return;
-      }
-      if (data.updated) {
-        window.location.href =
-          data.redirectUrl || "/billing?checkout=active";
-        return;
-      }
-      setError(data.error || "No checkout URL returned");
-    } catch {
-      setError("Network error");
-    } finally {
+
+      await openRazorpayModal({
+        keyId: data.keyId,
+        orderId: data.orderId,
+        amount: data.amount || 0,
+        currency: data.currency || "USD",
+        name: "Contractor Leads",
+        description: `${label} (${billingPeriod === "annual" ? "Annual" : "Monthly"})`,
+        prefill: {
+          name: data.user?.name,
+          email: data.user?.email,
+          contact: data.user?.phone,
+        },
+        onSuccess: async (payResponse) => {
+          try {
+            const verifyRes = await fetch("/api/billing/checkout/verify", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                ...payResponse,
+                plan: planId,
+                billingPeriod,
+                couponCode,
+              }),
+            });
+            const verifyData = await verifyRes.json();
+            if (verifyRes.ok && verifyData.ok) {
+              window.location.href = verifyData.redirectUrl || "/billing?checkout=active";
+            } else {
+              setError(verifyData.error || "Payment verification failed");
+              setLoading(false);
+            }
+          } catch {
+            setError("Error verifying payment");
+            setLoading(false);
+          }
+        },
+        onDismiss: () => {
+          setLoading(false);
+        },
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Network error");
       setLoading(false);
     }
   }
@@ -77,19 +110,19 @@ export function BillingCheckoutButton({
       <Button
         variant="secondary"
         size="sm"
-        className="h-9 w-full"
+        className="h-9 w-full font-bold"
         disabled={disabled || loading}
         onClick={() => void onClick()}
         style={
-          popular && !disabled && !manage
+          popular && !disabled
             ? { background: LOGO_GRADIENT, color: "white", border: 0 }
             : undefined
         }
       >
-        {loading ? (manage ? "Opening…" : "Updating…") : label}
+        {loading ? "Processing…" : label}
       </Button>
       {error ? (
-        <p className="text-[11px] leading-snug text-red-600">{error}</p>
+        <p className="text-[11px] leading-snug text-red-600 font-medium">{error}</p>
       ) : null}
     </div>
   );
