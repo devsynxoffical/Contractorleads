@@ -109,7 +109,6 @@ export async function GET(
         sentAt: true,
       },
       orderBy: { sentAt: "desc" },
-      take: 1000,
     }),
     prisma.campaignProspect.groupBy({
       by: ["assignedHookId"],
@@ -220,25 +219,32 @@ export async function GET(
   const startOfToday = new Date(new Date().setHours(0, 0, 0, 0));
 
   for (const log of logs) {
+    const isSent = log.status !== "failed";
+    const isDelivered = isSent && log.status !== "bounced";
+    const isOpened = Boolean(log.openedAt || log.status === "opened");
+    const isClicked = Boolean(log.clickedAt || log.status === "clicked");
+    const isReplied = Boolean(log.repliedAt || log.status === "replied");
+    const isBounced = Boolean(log.bouncedAt || log.status === "bounced");
+
     // Hook stats
     if (log.hookId && hookStatsMap.has(log.hookId)) {
       const hs = hookStatsMap.get(log.hookId)!;
-      hs.sent++;
-      if (log.status !== "failed" && log.status !== "bounced") hs.delivered++;
-      if (log.openedAt || log.status === "opened") hs.opened++;
-      if (log.clickedAt || log.status === "clicked") hs.clicked++;
-      if (log.repliedAt || log.status === "replied") hs.replied++;
-      if (log.bouncedAt || log.status === "bounced") hs.bounced++;
+      if (isSent) hs.sent++;
+      if (isDelivered) hs.delivered++;
+      if (isOpened) hs.opened++;
+      if (isClicked) hs.clicked++;
+      if (isReplied) hs.replied++;
+      if (isBounced) hs.bounced++;
     }
 
     // Step stats
     if (stepStatsMap.has(log.stepIndex)) {
       const ss = stepStatsMap.get(log.stepIndex)!;
-      ss.sent++;
-      if (log.status !== "failed" && log.status !== "bounced") ss.delivered++;
-      if (log.openedAt || log.status === "opened") ss.opened++;
-      if (log.repliedAt || log.status === "replied") ss.replied++;
-      if (log.bouncedAt || log.status === "bounced") ss.bounced++;
+      if (isSent) ss.sent++;
+      if (isDelivered) ss.delivered++;
+      if (isOpened) ss.opened++;
+      if (isReplied) ss.replied++;
+      if (isBounced) ss.bounced++;
     }
 
     // Mailbox stats
@@ -259,14 +265,14 @@ export async function GET(
       };
       mailboxStatsMap.set(mbKey, ms);
     }
-    if (log.status !== "failed") {
+    if (isSent) {
       ms.totalSent++;
       if (new Date(log.sentAt) >= startOfToday) ms.sentToday++;
     }
-    if (log.status !== "failed" && log.status !== "bounced") ms.delivered++;
-    if (log.bouncedAt || log.status === "bounced") ms.bounced++;
-    if (log.openedAt || log.status === "opened") ms.opened++;
-    if (log.repliedAt || log.status === "replied") ms.replied++;
+    if (isDelivered) ms.delivered++;
+    if (isBounced) ms.bounced++;
+    if (isOpened) ms.opened++;
+    if (isReplied) ms.replied++;
   }
 
   const hookPerformance = Array.from(hookStatsMap.values()).map((h) => ({
