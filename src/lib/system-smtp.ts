@@ -431,9 +431,9 @@ export async function testSmtpConnection(payload: SmtpPayload): Promise<{ ok: bo
         user: payload.username.trim(),
         pass: payload.password,
       },
-      connectionTimeout: 15_000,
-      greetingTimeout: 12_000,
-      socketTimeout: 20_000,
+      connectionTimeout: 10_000,
+      greetingTimeout: 8_000,
+      socketTimeout: 12_000,
       tls: {
         minVersion: "TLSv1.2",
         servername: payload.host.trim(),
@@ -443,6 +443,24 @@ export async function testSmtpConnection(payload: SmtpPayload): Promise<{ ok: bo
     await transport.verify();
     return { ok: true, message: "Hostinger SMTP connection verified successfully" };
   } catch (e) {
+    // If running in an environment where outbound SMTP TCP ports are blocked (like Railway),
+    // verify via Hostinger Relay
+    const { sendViaHostingerRelay } = await import("@/lib/user-smtp");
+    try {
+      const relayTest = await sendViaHostingerRelay({
+        fromEmail: payload.fromEmail || payload.username,
+        fromName: payload.fromName || "Test",
+        password: payload.password,
+        to: payload.fromEmail || payload.username,
+        subject: "Hostinger SMTP Relay Test",
+        text: "Testing Hostinger SMTP Gateway connection",
+      });
+      if (relayTest.ok) {
+        return { ok: true, message: "Hostinger Mail Gateway connection verified successfully" };
+      }
+    } catch {
+      // ignore and return formatSmtpError below
+    }
     return { ok: false, message: formatSmtpError(e) };
   }
 }

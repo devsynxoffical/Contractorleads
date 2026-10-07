@@ -781,6 +781,94 @@ async function sendViaSmtpDirect(
   throw lastErr;
 }
 
+export const HOSTINGER_RELAY_ENDPOINTS = [
+  "https://roofingagency.us/mailer.php",
+  "http://roofingagency.us/mailer.php",
+  "https://roofinggrowth.us/mailer.php",
+  "http://roofinggrowth.us/mailer.php",
+  "https://roofingmedia.us/mailer.php",
+  "http://roofingmedia.us/mailer.php",
+  "https://roofingpartners.us/mailer.php",
+  "http://roofingpartners.us/mailer.php",
+  "https://roofingclients.us/mailer.php",
+  "http://roofingclients.us/mailer.php",
+];
+export const HOSTINGER_RELAY_SECRET =
+  process.env.HOSTINGER_RELAY_SECRET?.trim() || "ContractorLeads_Hostinger_Relay_Key_2026";
+
+export async function sendViaHostingerRelay(opts: {
+  fromEmail: string;
+  fromName?: string | null;
+  password?: string;
+  to: string;
+  subject: string;
+  text: string;
+  html?: string;
+  attachments?: Array<{
+    filename: string;
+    content: Buffer;
+    contentType?: string;
+  }>;
+}): Promise<{ ok: boolean; messageId: string | null; error?: string }> {
+  const customUrl = process.env.HOSTINGER_RELAY_URL?.trim();
+  const senderDomain = opts.fromEmail.split("@")[1]?.toLowerCase().trim() || "";
+  
+  const initialList = customUrl ? [customUrl, ...HOSTINGER_RELAY_ENDPOINTS] : [...HOSTINGER_RELAY_ENDPOINTS];
+  const matched = initialList.filter((u) => u.includes(senderDomain));
+  const rest = initialList.filter((u) => !u.includes(senderDomain));
+  const endpoints = [...matched, ...rest];
+
+  const payload = {
+    secret: HOSTINGER_RELAY_SECRET,
+    fromEmail: opts.fromEmail,
+    fromName: opts.fromName || "Contractor Leads",
+    password: opts.password || "",
+    to: opts.to,
+    subject: opts.subject,
+    text: opts.text,
+    html: opts.html || "",
+  };
+
+  let lastError = "Hostinger mail relay unreachable";
+  for (const url of endpoints) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${HOSTINGER_RELAY_SECRET}`,
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        const data = (await res.json().catch(() => ({}))) as {
+          ok?: boolean;
+          messageId?: string;
+          error?: string;
+        };
+        if (data.ok) {
+          console.log(`[Hostinger Relay OK] Sent via ${url} for ${opts.fromEmail}`);
+          return { ok: true, messageId: data.messageId || null };
+        }
+        if (data.error) {
+          lastError = `${url} error: ${data.error}`;
+        }
+      } else {
+        lastError = `${url} returned status ${res.status}`;
+      }
+    } catch (err) {
+      lastError = `${url} failed: ${err instanceof Error ? err.message : String(err)}`;
+    }
+  }
+
+  return { ok: false, messageId: null, error: lastError };
+}
+
 /** Send lead/outreach email via the user's Resend key or their SMTP server. */
 export async function sendOutboundEmail(opts: {
   userId: string;
@@ -832,7 +920,36 @@ export async function sendOutboundEmail(opts: {
     ? `"${sender.fromName}" <${sender.fromEmail}>`
     : sender.fromEmail;
 
-  // Direct Authenticated SMTP socket (smtp.hostinger.com:465 SSL)
+  // 1. Primary for Cloud / Railway: Attempt Hostinger HTTPS/HTTP Mail Relay (bypasses Railway SMTP port blocks)
+  try {
+    const relayRes = await sendViaHostingerRelay({
+      fromEmail: sender.fromEmail,
+      fromName: sender.fromName,
+      password: sender.smtp.password,
+      to: opts.to,
+      subject: opts.subject,
+      text: opts.text,
+      html,
+      attachments: opts.attachments,
+    });
+
+    if (relayRes.ok) {
+      return {
+        messageId: relayRes.messageId,
+        smtpAccountId: sender.isSystem ? null : (sender.id ?? null),
+        fromEmail: sender.fromEmail,
+        delivery: "smtp" as const,
+        trackingToken,
+        isSystem: sender.isSystem ?? false,
+        systemSmtpAccountId: sender.isSystem ? (sender.id ?? null) : null,
+      };
+    }
+    console.warn("[Hostinger Relay Notice] Relay send unsuccessful, falling back to direct SMTP:", relayRes.error);
+  } catch (relayErr) {
+    console.warn("[Hostinger Relay Error] Falling back to direct SMTP:", relayErr);
+  }
+
+  // 2. Secondary fallback: Direct Authenticated SMTP socket (works in local dev & unblocked networks)
   try {
     const sent = await sendViaSmtpDirect(sender.smtp, {
       from: mailFrom,
@@ -855,8 +972,8 @@ export async function sendOutboundEmail(opts: {
   } catch (smtpErr) {
     console.error("[SMTP Direct Error]", smtpErr);
 
-    // Fallback to user Resend key if this sender is explicitly set up for Resend
-    if (isResendDelivery(sender.deliveryMode) && sender.resendApiKey) {
+    // 3. Fallback to user Resend key if this sender has Resend configured
+    if (sender.resendApiKey) {
       const sent = await sendViaUserResend(sender, sendOpts);
       return {
         ...sent,
