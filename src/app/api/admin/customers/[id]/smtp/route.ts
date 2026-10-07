@@ -29,18 +29,27 @@ export async function GET(_request: Request, { params }: Params) {
 
   return NextResponse.json({
     userAccounts: userAccounts.map(maskSmtpAccount),
-    systemAccounts: systemAccounts.map((s) => ({
-      id: s.id,
-      label: `${s.fromName || s.fromEmail} (${s.domain})`,
-      domain: s.domain,
-      fromEmail: s.fromEmail,
-      fromName: s.fromName,
-      host: s.host,
-      port: s.port,
-      secure: s.secure,
-      sendWeight: s.sendWeight,
-      lastTestedAt: s.lastTestedAt,
-    })),
+    systemAccounts: systemAccounts.map((s) => {
+      const isGoDaddy =
+        s.provider === "godaddy" ||
+        s.domain.includes("frankmiller") ||
+        s.domain === "meetfrankmiller.com" ||
+        s.domain === "connectwithbdefrank.com";
+      const provider = isGoDaddy ? "godaddy" : "hostinger";
+      return {
+        id: s.id,
+        label: `${s.fromName || s.fromEmail} (${s.domain})`,
+        domain: s.domain,
+        provider,
+        fromEmail: s.fromEmail,
+        fromName: s.fromName,
+        host: s.host,
+        port: s.port,
+        secure: s.secure,
+        sendWeight: s.sendWeight,
+        lastTestedAt: s.lastTestedAt,
+      };
+    }),
   });
 }
 
@@ -58,18 +67,49 @@ export async function POST(request: Request, { params }: Params) {
   const body = await request.json().catch(() => ({}));
   const systemSmtpAccountId = String(body.systemSmtpAccountId || "").trim();
   const assignAll = Boolean(body.all);
+  const targetProvider = body.provider as "hostinger" | "godaddy" | "all" | undefined;
   const isDefault = Boolean(body.isDefault);
 
-  if (assignAll) {
+  if (assignAll || targetProvider) {
+    let whereClause: Record<string, unknown> = { enabled: true };
+    if (targetProvider === "godaddy") {
+      whereClause = {
+        enabled: true,
+        OR: [
+          { provider: "godaddy" },
+          { domain: { contains: "frankmiller" } },
+          { domain: { in: ["meetfrankmiller.com", "connectwithbdefrank.com"] } },
+        ],
+      };
+    } else if (targetProvider === "hostinger") {
+      whereClause = {
+        enabled: true,
+        provider: "hostinger",
+        NOT: [
+          { domain: { contains: "frankmiller" } },
+          { domain: { in: ["meetfrankmiller.com", "connectwithbdefrank.com"] } },
+        ],
+      };
+    }
+
     const sysAccounts = await prisma.systemSmtpAccount.findMany({
-      where: { enabled: true },
+      where: whereClause,
+      orderBy: [{ domain: "asc" }, { fromName: "asc" }],
     });
     if (!sysAccounts.length) {
-      return NextResponse.json({ error: "No enabled system SMTP accounts found" }, { status: 400 });
+      return NextResponse.json({ error: "No enabled system SMTP accounts found for this provider" }, { status: 400 });
     }
 
     let createdCount = 0;
     for (const sys of sysAccounts) {
+      const isGoDaddy =
+        sys.provider === "godaddy" ||
+        sys.domain.includes("frankmiller") ||
+        sys.domain === "meetfrankmiller.com" ||
+        sys.domain === "connectwithbdefrank.com";
+      const provName = isGoDaddy ? "GoDaddy" : "Hostinger";
+      const customLabel = `${provName} (${sys.domain}) - ${sys.fromName || sys.fromEmail}`;
+
       const existing = await prisma.smtpAccount.findFirst({
         where: { userId, fromEmail: sys.fromEmail },
       });
@@ -77,6 +117,7 @@ export async function POST(request: Request, { params }: Params) {
         await prisma.smtpAccount.update({
           where: { id: existing.id },
           data: {
+            label: customLabel,
             host: sys.host,
             port: sys.port,
             secure: sys.secure,
@@ -92,7 +133,7 @@ export async function POST(request: Request, { params }: Params) {
         await prisma.smtpAccount.create({
           data: {
             userId,
-            label: `Hostinger (${sys.domain}) - ${sys.fromName || sys.fromEmail}`,
+            label: customLabel,
             host: sys.host,
             port: sys.port,
             secure: sys.secure,
@@ -110,22 +151,37 @@ export async function POST(request: Request, { params }: Params) {
       }
     }
 
+    const providerTitle =
+      targetProvider === "godaddy"
+        ? "GoDaddy"
+        : targetProvider === "hostinger"
+          ? "Hostinger"
+          : "System";
+
     return NextResponse.json({
       ok: true,
-      message: `Assigned ${sysAccounts.length} Hostinger mailboxes to customer.`,
+      message: `Assigned all ${sysAccounts.length} ${providerTitle} mailboxes to customer.`,
     });
   }
 
   if (!systemSmtpAccountId) {
-    return NextResponse.json({ error: "Select a Hostinger mailbox to assign" }, { status: 400 });
+    return NextResponse.json({ error: "Select a mailbox to assign" }, { status: 400 });
   }
 
   const sys = await prisma.systemSmtpAccount.findUnique({
     where: { id: systemSmtpAccountId },
   });
   if (!sys) {
-    return NextResponse.json({ error: "Hostinger mailbox not found" }, { status: 404 });
+    return NextResponse.json({ error: "System mailbox not found" }, { status: 404 });
   }
+
+  const isGoDaddy =
+    sys.provider === "godaddy" ||
+    sys.domain.includes("frankmiller") ||
+    sys.domain === "meetfrankmiller.com" ||
+    sys.domain === "connectwithbdefrank.com";
+  const provName = isGoDaddy ? "GoDaddy" : "Hostinger";
+  const defaultLabel = `${provName} (${sys.domain}) - ${sys.fromName || sys.fromEmail}`;
 
   const existing = await prisma.smtpAccount.findFirst({
     where: { userId, fromEmail: sys.fromEmail },
@@ -136,7 +192,7 @@ export async function POST(request: Request, { params }: Params) {
     const updated = await prisma.smtpAccount.update({
       where: { id: existing.id },
       data: {
-        label: body.label || existing.label || `Hostinger (${sys.domain}) - ${sys.fromName || sys.fromEmail}`,
+        label: body.label || defaultLabel,
         host: sys.host,
         port: sys.port,
         secure: sys.secure,
@@ -155,7 +211,7 @@ export async function POST(request: Request, { params }: Params) {
     const created = await prisma.smtpAccount.create({
       data: {
         userId,
-        label: body.label || `Hostinger (${sys.domain}) - ${sys.fromName || sys.fromEmail}`,
+        label: body.label || defaultLabel,
         host: sys.host,
         port: sys.port,
         secure: sys.secure,
