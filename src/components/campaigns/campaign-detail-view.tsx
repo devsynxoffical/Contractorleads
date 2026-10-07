@@ -7,10 +7,12 @@ import { useRouter } from "next/navigation";
 import {
   HiOutlineArrowLeft,
   HiOutlineArrowPath,
+  HiOutlineArrowUturnLeft,
   HiOutlineBolt,
   HiOutlineBookmark,
   HiOutlineCalendar,
   HiOutlineChartBar,
+  HiOutlineChatBubbleLeftRight,
   HiOutlineCheck,
   HiOutlineCheckBadge,
   HiOutlineClock,
@@ -19,6 +21,8 @@ import {
   HiOutlineEye,
   HiOutlineFire,
   HiOutlineGlobeAmericas,
+  HiOutlineInbox,
+  HiOutlineInformationCircle,
   HiOutlineLink,
   HiOutlineMagnifyingGlass,
   HiOutlineNoSymbol,
@@ -45,6 +49,38 @@ import {
   type CampaignHook,
   type CampaignFollowUpStep,
 } from "@/lib/campaign-types";
+
+type CampaignLogItem = {
+  id: string;
+  stepIndex: number;
+  hookId: string | null;
+  mailboxId: string | null;
+  fromEmail: string;
+  toEmail: string;
+  subject: string;
+  body: string;
+  status: string;
+  error: string | null;
+  openedAt: string | null;
+  clickedAt: string | null;
+  repliedAt: string | null;
+  bouncedAt: string | null;
+  sentAt: string;
+  prospect?: {
+    id: string;
+    businessName: string;
+    ownerName: string | null;
+    email: string;
+    phone: string | null;
+    city: string | null;
+    state: string | null;
+    status: string;
+    assignedHookId: string | null;
+    openCount: number;
+    clickCount: number;
+    repliedAt: string | null;
+  };
+};
 import {
   getLocalTimeInTimezone,
   isWithinSendingWindow,
@@ -234,6 +270,57 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
   const [actionLoading, setActionLoading] = useState(false);
   const [processMsg, setProcessMsg] = useState<string | null>(null);
 
+  // Main Tabs navigation
+  const [activeMainTab, setActiveMainTab] = useState<"overview" | "inbox" | "logs">("overview");
+
+  // Logs & Live Feed state
+  const [logsList, setLogsList] = useState<CampaignLogItem[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [logsFilter, setLogsFilter] = useState("all");
+  const [logsSearch, setLogsSearch] = useState("");
+  const [logsTotal, setLogsTotal] = useState(0);
+
+  // Email Viewer Modal State
+  const [emailViewerData, setEmailViewerData] = useState<{
+    prospect: {
+      id?: string;
+      businessName: string;
+      ownerName?: string | null;
+      email: string;
+      phone?: string | null;
+      city?: string | null;
+      state?: string | null;
+      status?: string;
+    };
+    subject: string;
+    body: string;
+    fromEmail?: string | null;
+    toEmail: string;
+    sentAt?: string | null;
+    status?: string;
+    stepIndex?: number;
+    hookId?: string | null;
+    openCount?: number;
+    clickCount?: number;
+    repliedAt?: string | null;
+  } | null>(null);
+
+  // Reply Modal State
+  const [replyModalData, setReplyModalData] = useState<{
+    prospectId: string;
+    businessName: string;
+    ownerName?: string | null;
+    email: string;
+    lastSubject?: string;
+    lastFromEmail?: string | null;
+    lastMailboxId?: string | null;
+  } | null>(null);
+  const [replySubject, setReplySubject] = useState("");
+  const [replyBody, setReplyBody] = useState("");
+  const [replyMailboxId, setReplyMailboxId] = useState("");
+  const [sendingReply, setSendingReply] = useState(false);
+  const [replyFeedback, setReplyFeedback] = useState<string | null>(null);
+
   // Selected copy preview & edit modal (Day 0 hooks and Follow-Up steps)
   const [mounted, setMounted] = useState(false);
   const [selectedCopyPreview, setSelectedCopyPreview] = useState<CopyPreviewModalState | null>(null);
@@ -298,6 +385,194 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
+  }
+
+  async function loadLogs(filter = logsFilter, search = logsSearch) {
+    setLogsLoading(true);
+    try {
+      const p = new URLSearchParams();
+      if (filter !== "all") p.set("status", filter);
+      if (search.trim()) p.set("q", search.trim());
+      p.set("limit", "100");
+
+      const res = await fetch(`/api/campaigns/${campaignId}/logs?${p.toString()}`);
+      if (res.ok) {
+        const d = await res.json();
+        setLogsList(d.logs || []);
+        setLogsTotal(d.pagination?.totalCount || 0);
+      }
+    } catch {
+      /* ignore */
+    } finally {
+      setLogsLoading(false);
+    }
+  }
+
+  async function handleSendDirectReply() {
+    if (!replyModalData || !replySubject.trim() || !replyBody.trim()) return;
+    setSendingReply(true);
+    setReplyFeedback(null);
+    try {
+      const res = await fetch(`/api/campaigns/${campaignId}/reply`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prospectId: replyModalData.prospectId,
+          subject: replySubject.trim(),
+          body: replyBody.trim(),
+          mailboxId: replyMailboxId || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setReplyFeedback(`❌ ${data.error || "Failed to send email"}`);
+      } else {
+        setReplyFeedback("✅ Reply sent successfully!");
+        setTimeout(() => {
+          setReplyModalData(null);
+          setReplyFeedback(null);
+          void loadData();
+          void loadProspects();
+          void loadLogs();
+        }, 1200);
+      }
+    } catch (err) {
+      setReplyFeedback(`❌ ${err instanceof Error ? err.message : "Failed to send reply"}`);
+    } finally {
+      setSendingReply(false);
+    }
+  }
+
+  function openReplyModal(prospect: {
+    id: string;
+    businessName: string;
+    ownerName?: string | null;
+    email: string;
+    lastSubject?: string | null;
+    lastFromEmail?: string | null;
+    lastMailboxId?: string | null;
+  }) {
+    setReplyModalData({
+      prospectId: prospect.id,
+      businessName: prospect.businessName,
+      ownerName: prospect.ownerName,
+      email: prospect.email,
+      lastSubject: prospect.lastSubject || "Our conversation",
+      lastFromEmail: prospect.lastFromEmail,
+      lastMailboxId: prospect.lastMailboxId,
+    });
+    const sub = prospect.lastSubject
+      ? (prospect.lastSubject.startsWith("Re:") ? prospect.lastSubject : `Re: ${prospect.lastSubject}`)
+      : `Re: Regarding ${prospect.businessName}`;
+    setReplySubject(sub);
+    const greeting = prospect.ownerName ? `Hi ${prospect.ownerName.split(" ")[0]},\n\n` : `Hi,\n\n`;
+    setReplyBody(
+      `${greeting}Thanks for getting back to me! I'd love to share more details about how we help contractor teams in your area.\n\nAre you available for a quick 5-minute call tomorrow?\n\nBest regards,\n${campaign?.name || "Contractor Leads Team"}`
+    );
+    setReplyMailboxId(prospect.lastMailboxId || "");
+    setReplyFeedback(null);
+  }
+
+  async function openEmailViewer(
+    prospect:
+      | ProspectItem
+      | {
+          id?: string;
+          businessName: string;
+          ownerName?: string | null;
+          email: string;
+          phone?: string | null;
+          city?: string | null;
+          state?: string | null;
+          status?: string;
+          lastSubject?: string | null;
+          lastFromEmail?: string | null;
+          lastSentAt?: string | null;
+          currentStepIndex?: number;
+          assignedHookId?: string | null;
+          openCount?: number;
+          clickCount?: number;
+          repliedAt?: string | null;
+        },
+    specificLog?: CampaignLogItem
+  ) {
+    if (specificLog) {
+      setEmailViewerData({
+        prospect: {
+          id: specificLog.prospect?.id || prospect.id,
+          businessName: specificLog.prospect?.businessName || prospect.businessName,
+          ownerName: specificLog.prospect?.ownerName || prospect.ownerName,
+          email: specificLog.toEmail,
+          phone: specificLog.prospect?.phone || prospect.phone,
+          city: specificLog.prospect?.city || prospect.city,
+          state: specificLog.prospect?.state || prospect.state,
+          status: specificLog.status,
+        },
+        subject: specificLog.subject,
+        body: specificLog.body,
+        fromEmail: specificLog.fromEmail,
+        toEmail: specificLog.toEmail,
+        sentAt: specificLog.sentAt,
+        status: specificLog.status,
+        stepIndex: specificLog.stepIndex,
+        hookId: specificLog.hookId,
+        openCount: specificLog.openedAt ? 1 : 0,
+        clickCount: specificLog.clickedAt ? 1 : 0,
+        repliedAt: specificLog.repliedAt,
+      });
+      return;
+    }
+
+    if (prospect.id) {
+      try {
+        const res = await fetch(`/api/campaigns/${campaignId}/logs?prospectId=${prospect.id}&limit=1`);
+        if (res.ok) {
+          const d = await res.json();
+          if (d.logs && d.logs.length > 0) {
+            const l = d.logs[0];
+            setEmailViewerData({
+              prospect,
+              subject: l.subject,
+              body: l.body,
+              fromEmail: l.fromEmail,
+              toEmail: l.toEmail,
+              sentAt: l.sentAt,
+              status: l.status,
+              stepIndex: l.stepIndex,
+              hookId: l.hookId,
+              openCount: prospect.openCount,
+              clickCount: prospect.clickCount,
+              repliedAt: prospect.repliedAt,
+            });
+            return;
+          }
+        }
+      } catch {
+        /* fallback */
+      }
+    }
+
+    const hookId = prospect.assignedHookId || "A";
+    const hObj =
+      campaign?.hooks?.find((hk) => hk.id?.toLowerCase() === hookId.toLowerCase()) ||
+      DEFAULT_DAY0_HOOKS[0];
+    const renderedSub = renderCampaignTemplate(hObj.subject, prospect as any, campaign?.name || "Contractor Leads");
+    const renderedBod = renderCampaignTemplate(hObj.body, prospect as any, campaign?.name || "Contractor Leads");
+
+    setEmailViewerData({
+      prospect,
+      subject: renderedSub,
+      body: renderedBod,
+      fromEmail: prospect.lastFromEmail || "Active System Mailbox",
+      toEmail: prospect.email,
+      sentAt: prospect.lastSentAt,
+      status: prospect.status,
+      stepIndex: prospect.currentStepIndex || 0,
+      hookId: prospect.assignedHookId,
+      openCount: prospect.openCount || 0,
+      clickCount: prospect.clickCount || 0,
+      repliedAt: prospect.repliedAt,
+    });
   }
 
   function insertVariableIntoEdit(varTag: string) {
@@ -1043,6 +1318,72 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
         </div>
       </div>
 
+      {/* Primary Section Navigation Tabs */}
+      <div className="flex items-center gap-2 border-b border-border pb-1 overflow-x-auto">
+        <button
+          type="button"
+          onClick={() => setActiveMainTab("overview")}
+          className={cn(
+            "inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition shadow-sm",
+            activeMainTab === "overview"
+              ? "bg-brand-600 text-white shadow-brand-500/20"
+              : "bg-[var(--surface)] text-ink-muted hover:text-ink hover:bg-[var(--input-bg)]"
+          )}
+        >
+          <HiOutlineChartBar className="h-4 w-4" />
+          <span>Sequence Funnel & Analytics</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setActiveMainTab("inbox");
+            void loadLogs("replied");
+          }}
+          className={cn(
+            "inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition shadow-sm",
+            activeMainTab === "inbox"
+              ? "bg-purple-600 text-white shadow-purple-500/20"
+              : "bg-[var(--surface)] text-ink-muted hover:text-ink hover:bg-[var(--input-bg)]"
+          )}
+        >
+          <HiOutlineChatBubbleLeftRight className="h-4 w-4" />
+          <span>🔥 Live Inbox & Replies</span>
+          {metrics.replied > 0 ? (
+            <span className="rounded-full bg-purple-200 text-purple-900 px-2 py-0.5 text-[10px] font-black dark:bg-purple-900 dark:text-purple-200">
+              {metrics.replied}
+            </span>
+          ) : (
+            <span className="rounded-full bg-[var(--input-bg)] text-ink-muted px-1.5 py-0.5 text-[10px] font-semibold">
+              0
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setActiveMainTab("logs");
+            void loadLogs("all");
+          }}
+          className={cn(
+            "inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition shadow-sm",
+            activeMainTab === "logs"
+              ? "bg-blue-600 text-white shadow-blue-500/20"
+              : "bg-[var(--surface)] text-ink-muted hover:text-ink hover:bg-[var(--input-bg)]"
+          )}
+        >
+          <HiOutlineEnvelope className="h-4 w-4" />
+          <span>✉️ Sent Emails & Live Logs</span>
+          <span className="rounded-full bg-blue-100 text-blue-800 px-2 py-0.5 text-[10px] font-bold dark:bg-blue-950 dark:text-blue-300">
+            {metrics.delivered}
+          </span>
+        </button>
+      </div>
+
+      {activeMainTab === "overview" && (
+        <>
+
       {/* SECTION 1: DAY 0 HOOK-BY-HOOK PERFORMANCE (A/B/C/D TESTING) */}
       <div className="rounded-2xl border border-border bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1572,6 +1913,24 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                       <div className="flex items-center justify-end gap-2">
                         <button
                           type="button"
+                          onClick={() => void openEmailViewer(p)}
+                          className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-700 hover:underline"
+                          title="View the exact email sent to this lead"
+                        >
+                          <HiOutlineEnvelope className="h-3 w-3" /> Email
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => openReplyModal(p)}
+                          className="inline-flex items-center gap-1 text-[11px] font-bold text-purple-600 hover:text-purple-700 hover:underline"
+                          title="Send a direct manual reply to this lead"
+                        >
+                          <HiOutlineChatBubbleLeftRight className="h-3 w-3" /> Reply
+                        </button>
+
+                        <button
+                          type="button"
                           onClick={() => {
                             if (p.currentStepIndex === 0) {
                               const hookId = p.assignedHookId || "A";
@@ -1611,8 +1970,8 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                               }, "rendered");
                             }
                           }}
-                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 hover:underline"
-                          title="Preview personalized email for this lead"
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-ink-muted hover:text-brand-600 hover:underline"
+                          title="Preview template copy"
                         >
                           <HiOutlineEye className="h-3 w-3" /> Copy
                         </button>
@@ -1636,6 +1995,321 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
           </table>
         </div>
       </div>
+      </>
+      )}
+
+      {/* TAB 2: LIVE INBOX & REPLIES */}
+      {activeMainTab === "inbox" && (
+        <div className="rounded-2xl border border-border bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-bold text-ink">🔥 Hot Inbound Replies &amp; Lead Inquiries</h2>
+                <span className="rounded-full bg-purple-100 text-purple-800 px-2.5 py-0.5 text-xs font-bold dark:bg-purple-950 dark:text-purple-300">
+                  {metrics.replied} Replied Leads
+                </span>
+              </div>
+              <p className="text-xs text-ink-muted mt-0.5">
+                Leads who responded to your outreach sequence. Reply directly from your connected mailboxes to book meetings and close jobs.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => void loadLogs("replied")}
+                disabled={logsLoading}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-[var(--surface)] px-3 py-1.5 text-xs font-bold text-ink hover:bg-[var(--input-bg)] disabled:opacity-50 transition"
+              >
+                <HiOutlineArrowPath className={cn("h-3.5 w-3.5", logsLoading && "animate-spin")} />
+                <span>Refresh Inbox</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Inbox Feed */}
+          {logsLoading ? (
+            <div className="py-12 text-center text-xs text-ink-muted">
+              Loading replies &amp; inbox messages…
+            </div>
+          ) : logsList.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border bg-[var(--input-bg)]/30 p-10 text-center space-y-3">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-100 text-purple-600 dark:bg-purple-950 dark:text-purple-300">
+                <HiOutlineChatBubbleLeftRight className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-ink">No Inbound Replies Yet</h3>
+                <p className="text-xs text-ink-muted max-w-md mx-auto mt-1">
+                  Your automated follow-up sequence is currently running. As soon as a prospect opens or responds to an email, their conversation thread will show here for instant 1-click replies.
+                </p>
+              </div>
+              <div className="pt-2 flex justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveMainTab("overview");
+                  }}
+                  className="rounded-xl bg-brand-600 px-4 py-2 text-xs font-bold text-white hover:bg-brand-700 transition"
+                >
+                  View Sending Funnel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid gap-3">
+              {logsList.map((log) => (
+                <div
+                  key={log.id}
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-border bg-[var(--surface)] p-4 shadow-sm hover:border-purple-300 transition"
+                >
+                  <div className="space-y-1.5 min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-ink text-sm">
+                        {log.prospect?.businessName || log.toEmail}
+                      </span>
+                      {log.prospect?.ownerName && (
+                        <span className="text-xs text-ink-muted font-medium">
+                          ({log.prospect.ownerName})
+                        </span>
+                      )}
+                      <span className="rounded-full bg-purple-100 text-purple-800 px-2 py-0.5 text-[10px] font-bold dark:bg-purple-950 dark:text-purple-300">
+                        💬 Replied Lead
+                      </span>
+                      <span className="text-[11px] text-ink-muted">
+                        · {formatDateTime(log.repliedAt || log.sentAt)}
+                      </span>
+                    </div>
+
+                    <p className="text-xs font-semibold text-ink line-clamp-1">
+                      {log.subject}
+                    </p>
+                    <p className="text-xs text-ink-muted line-clamp-2 bg-[var(--input-bg)]/50 p-2 rounded-xl font-sans">
+                      {log.body}
+                    </p>
+
+                    <div className="flex items-center gap-3 text-[11px] text-ink-muted pt-1">
+                      <span>From mailbox: <b className="text-ink font-mono">{log.fromEmail}</b></span>
+                      <span>To: <b className="text-ink font-mono">{log.toEmail}</b></span>
+                      {log.prospect?.city && (
+                        <span>Location: <b>{log.prospect.city}, {log.prospect.state || "US"}</b></span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex sm:flex-col items-center sm:items-end justify-end gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        openReplyModal({
+                          id: log.prospect?.id || log.id,
+                          businessName: log.prospect?.businessName || log.toEmail,
+                          ownerName: log.prospect?.ownerName,
+                          email: log.toEmail,
+                          lastSubject: log.subject,
+                          lastFromEmail: log.fromEmail,
+                          lastMailboxId: log.mailboxId,
+                        })
+                      }
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-purple-700 transition"
+                    >
+                      <HiOutlineChatBubbleLeftRight className="h-4 w-4" />
+                      <span>Reply Now</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => void openEmailViewer(log.prospect || { businessName: log.toEmail, email: log.toEmail }, log)}
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-ink-muted hover:text-ink hover:underline"
+                    >
+                      <HiOutlineEye className="h-3.5 w-3.5" />
+                      <span>View Full Email</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB 3: SENT EMAILS & LIVE LOGS */}
+      {activeMainTab === "logs" && (
+        <div className="rounded-2xl border border-border bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-bold text-ink">✉️ Outbound Email Dispatch Log &amp; Activity</h2>
+              <p className="text-xs text-ink-muted">
+                Complete live audit trail of every email sent, tracking opens, clicks, and mailbox routing.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative min-w-[200px]">
+                <HiOutlineMagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-ink-muted" />
+                <input
+                  type="text"
+                  value={logsSearch}
+                  onChange={(e) => {
+                    setLogsSearch(e.target.value);
+                    void loadLogs(logsFilter, e.target.value);
+                  }}
+                  placeholder="Search emails, leads, subject…"
+                  className="saas-input pl-8 py-1.5 text-xs w-full"
+                />
+              </div>
+
+              <select
+                value={logsFilter}
+                onChange={(e) => {
+                  setLogsFilter(e.target.value);
+                  void loadLogs(e.target.value, logsSearch);
+                }}
+                className="saas-input py-1.5 text-xs"
+              >
+                <option value="all">All Dispatches ({logsTotal})</option>
+                <option value="sent">Delivered Only</option>
+                <option value="opened">Opened (👁)</option>
+                <option value="clicked">Clicked (🔗)</option>
+                <option value="replied">Replied (💬)</option>
+                <option value="bounced">Bounced (⚠️)</option>
+                <option value="failed">Failed (❌)</option>
+              </select>
+
+              <button
+                type="button"
+                onClick={() => void loadLogs(logsFilter, logsSearch)}
+                disabled={logsLoading}
+                className="rounded-xl border border-border bg-[var(--surface)] p-2 text-ink-muted hover:text-ink hover:bg-[var(--input-bg)] disabled:opacity-50 transition"
+                title="Refresh dispatch logs"
+              >
+                <HiOutlineArrowPath className={cn("h-4 w-4", logsLoading && "animate-spin")} />
+              </button>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-border text-ink-muted">
+                  <th className="py-2.5 px-3 font-bold uppercase">Recipient Lead</th>
+                  <th className="py-2.5 px-3 font-bold uppercase">Subject Line</th>
+                  <th className="py-2.5 px-3 font-bold uppercase">Sender Mailbox</th>
+                  <th className="py-2.5 px-3 font-bold uppercase">Step</th>
+                  <th className="py-2.5 px-3 font-bold uppercase">Delivery &amp; Engagement</th>
+                  <th className="py-2.5 px-3 font-bold uppercase">Sent At</th>
+                  <th className="py-2.5 px-3 font-bold uppercase text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60 font-medium">
+                {logsLoading ? (
+                  <tr>
+                    <td colSpan={7} className="py-8 text-center text-xs text-ink-muted">
+                      Loading dispatch logs…
+                    </td>
+                  </tr>
+                ) : logsList.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-8 text-center text-xs text-ink-muted">
+                      No logs found for this filter.
+                    </td>
+                  </tr>
+                ) : (
+                  logsList.map((log) => (
+                    <tr key={log.id} className="hover:bg-[var(--input-bg)]/50 transition">
+                      <td className="py-3 px-3">
+                        <div>
+                          <span className="font-bold text-ink">
+                            {log.prospect?.businessName || log.toEmail}
+                          </span>
+                          <span className="text-[11px] text-ink-muted block font-mono">
+                            {log.toEmail}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-3 max-w-[240px]">
+                        <span className="font-semibold text-ink truncate block">
+                          {log.subject}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3 font-mono text-ink-muted">
+                        {log.fromEmail}
+                      </td>
+                      <td className="py-3 px-3">
+                        <span className="rounded-md bg-[var(--input-bg)] border border-border px-2 py-0.5 font-bold text-ink">
+                          {log.stepIndex === 0 ? `Day 0 (Hook ${log.hookId || "A"})` : `Follow-Up ${log.stepIndex}`}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {log.status === "failed" ? (
+                            <span className="rounded bg-rose-100 text-rose-800 px-2 py-0.5 text-[10px] font-bold">
+                              ❌ Failed
+                            </span>
+                          ) : (
+                            <span className="rounded bg-emerald-100 text-emerald-800 px-2 py-0.5 text-[10px] font-bold dark:bg-emerald-950 dark:text-emerald-300">
+                              ✓ Delivered
+                            </span>
+                          )}
+
+                          {log.openedAt && (
+                            <span className="rounded bg-brand-100 text-brand-800 px-1.5 py-0.5 text-[10px] font-bold">
+                              👁 Opened
+                            </span>
+                          )}
+                          {log.clickedAt && (
+                            <span className="rounded bg-blue-100 text-blue-800 px-1.5 py-0.5 text-[10px] font-bold">
+                              🔗 Clicked
+                            </span>
+                          )}
+                          {log.repliedAt && (
+                            <span className="rounded bg-purple-100 text-purple-800 px-1.5 py-0.5 text-[10px] font-bold">
+                              💬 Replied
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 px-3 text-ink-muted whitespace-nowrap">
+                        {formatDateTime(log.sentAt)}
+                      </td>
+                      <td className="py-3 px-3 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => void openEmailViewer(log.prospect || { businessName: log.toEmail, email: log.toEmail }, log)}
+                            className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:underline"
+                            title="Inspect full sent email body"
+                          >
+                            <HiOutlineEye className="h-3.5 w-3.5" /> View
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              openReplyModal({
+                                id: log.prospect?.id || log.id,
+                                businessName: log.prospect?.businessName || log.toEmail,
+                                ownerName: log.prospect?.ownerName,
+                                email: log.toEmail,
+                                lastSubject: log.subject,
+                                lastFromEmail: log.fromEmail,
+                                lastMailboxId: log.mailboxId,
+                              })
+                            }
+                            className="inline-flex items-center gap-1 text-[11px] font-bold text-purple-600 hover:underline"
+                            title="Send direct reply"
+                          >
+                            <HiOutlineChatBubbleLeftRight className="h-3.5 w-3.5" /> Reply
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Copy Preview & Full Edit Modal (Mounted via createPortal directly to document.body) */}
       {mounted && selectedCopyPreview && createPortal((() => {
@@ -2437,6 +3111,260 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
           </div>
         );
       })(), document.body)}
+
+      {/* Sent Email Details Viewer Modal */}
+      {mounted && emailViewerData && createPortal((
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in">
+          <div className="relative flex max-h-[92vh] w-full max-w-2xl flex-col rounded-3xl border border-border bg-[var(--surface)] shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-border px-6 py-4 bg-[var(--input-bg)]/40">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-md">
+                  <HiOutlineEnvelope className="h-5 w-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-ink">{emailViewerData.prospect.businessName}</h3>
+                    <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                      {emailViewerData.status?.toUpperCase() || "DELIVERED"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-ink-muted">
+                    {emailViewerData.prospect.ownerName ? `${emailViewerData.prospect.ownerName} · ` : ""}{emailViewerData.toEmail}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEmailViewerData(null)}
+                className="rounded-xl p-2 text-ink-muted hover:bg-[var(--surface)] hover:text-ink transition"
+              >
+                <HiOutlineXMark className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs rounded-2xl border border-border bg-[var(--input-bg)]/30 p-3.5">
+                <div>
+                  <span className="text-ink-muted block text-[10px] uppercase font-bold">From Sender Mailbox:</span>
+                  <span className="font-semibold text-ink font-mono">{emailViewerData.fromEmail || "System Mailbox"}</span>
+                </div>
+                <div>
+                  <span className="text-ink-muted block text-[10px] uppercase font-bold">Sent Timestamp:</span>
+                  <span className="font-semibold text-ink">{formatDateTime(emailViewerData.sentAt)}</span>
+                </div>
+              </div>
+
+              <div>
+                <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block mb-1">Subject Line</span>
+                <div className="rounded-xl border border-border bg-[var(--input-bg)] px-3.5 py-2.5 text-xs font-bold text-ink">
+                  {emailViewerData.subject}
+                </div>
+              </div>
+
+              <div>
+                <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block mb-1">Email Message Body</span>
+                <div className="rounded-2xl border border-border bg-[var(--surface)] p-5 text-xs text-ink whitespace-pre-wrap font-sans leading-relaxed shadow-inner max-h-80 overflow-y-auto">
+                  {emailViewerData.body}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between border-t border-border px-6 py-4 bg-[var(--input-bg)]/40">
+              <button
+                type="button"
+                onClick={() => handleCopyToClipboard(emailViewerData.body)}
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-ink-muted hover:text-ink"
+              >
+                <HiOutlineDocumentDuplicate className="h-4 w-4" />
+                <span>{copied ? "Copied!" : "Copy Email Body"}</span>
+              </button>
+
+              <div className="flex items-center gap-2">
+                {emailViewerData.prospect.id && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const p = emailViewerData.prospect;
+                      setEmailViewerData(null);
+                      openReplyModal({
+                        id: p.id!,
+                        businessName: p.businessName,
+                        ownerName: p.ownerName,
+                        email: emailViewerData.toEmail,
+                        lastSubject: emailViewerData.subject,
+                        lastFromEmail: emailViewerData.fromEmail,
+                      });
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-purple-700 transition"
+                  >
+                    <HiOutlineChatBubbleLeftRight className="h-4 w-4" />
+                    <span>Reply to this Lead</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setEmailViewerData(null)}
+                  className="rounded-xl border border-border bg-[var(--surface)] px-4 py-2 text-xs font-bold text-ink hover:bg-[var(--input-bg)]"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ), document.body)}
+
+      {/* Direct Reply Modal */}
+      {mounted && replyModalData && createPortal((
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in">
+          <div className="relative flex max-h-[92vh] w-full max-w-2xl flex-col rounded-3xl border border-border bg-[var(--surface)] shadow-2xl overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-border px-6 py-4 bg-[var(--input-bg)]/40">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-purple-600 text-white shadow-md">
+                  <HiOutlineChatBubbleLeftRight className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-ink">Direct Reply to {replyModalData.businessName}</h3>
+                  <p className="text-xs text-ink-muted">
+                    {replyModalData.ownerName ? `${replyModalData.ownerName} · ` : ""}{replyModalData.email}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setReplyModalData(null);
+                  setReplyFeedback(null);
+                }}
+                className="rounded-xl p-2 text-ink-muted hover:bg-[var(--surface)] hover:text-ink transition"
+              >
+                <HiOutlineXMark className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              {replyFeedback && (
+                <div
+                  className={cn(
+                    "rounded-xl border p-3 text-xs font-bold",
+                    replyFeedback.startsWith("✅")
+                      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-900 dark:text-emerald-200"
+                      : "border-rose-500/30 bg-rose-500/10 text-rose-900 dark:text-rose-200"
+                  )}
+                >
+                  {replyFeedback}
+                </div>
+              )}
+
+              {/* Mailbox Selector */}
+              <div>
+                <label className="block text-xs font-bold text-ink mb-1">Send from Mailbox</label>
+                <select
+                  value={replyMailboxId}
+                  onChange={(e) => setReplyMailboxId(e.target.value)}
+                  className="saas-input text-xs"
+                >
+                  <option value="">Default Campaign Mailbox ({replyModalData.lastFromEmail || "Auto-selected"})</option>
+                  {mailboxPerformance.map((mb) => (
+                    <option key={mb.id} value={mb.id}>
+                      {mb.email} ({mb.domain})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Subject */}
+              <div>
+                <label className="block text-xs font-bold text-ink mb-1">Subject Line</label>
+                <input
+                  type="text"
+                  value={replySubject}
+                  onChange={(e) => setReplySubject(e.target.value)}
+                  className="saas-input text-xs font-semibold"
+                  placeholder="Re: Inquiring about services..."
+                />
+              </div>
+
+              {/* Quick AI Prompts */}
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block">Quick Templates</span>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const g = replyModalData.ownerName ? `Hi ${replyModalData.ownerName.split(" ")[0]},\n\n` : `Hi,\n\n`;
+                      setReplyBody(`${g}Great to hear from you! Would you have 5-10 minutes for a quick call tomorrow afternoon to discuss project availability?\n\nBest,\n${campaign?.name || "Team"}`);
+                    }}
+                    className="rounded-lg border border-border bg-[var(--input-bg)] px-2.5 py-1 text-xs font-medium text-ink hover:border-brand-500 hover:text-brand-600 transition"
+                  >
+                    📅 Book Call / Demo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const g = replyModalData.ownerName ? `Hi ${replyModalData.ownerName.split(" ")[0]},\n\n` : `Hi,\n\n`;
+                      setReplyBody(`${g}Thanks for your response! We provide exclusive contractor inquiries in your service area with zero platform cut.\n\nShould I send over our breakdown and recent client results?\n\nBest,\n${campaign?.name || "Team"}`);
+                    }}
+                    className="rounded-lg border border-border bg-[var(--input-bg)] px-2.5 py-1 text-xs font-medium text-ink hover:border-brand-500 hover:text-brand-600 transition"
+                  >
+                    💰 Share Pricing & Details
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const g = replyModalData.ownerName ? `Hi ${replyModalData.ownerName.split(" ")[0]},\n\n` : `Hi,\n\n`;
+                      setReplyBody(`${g}Got your note! Absolutely, we can tailor the lead territory specifically to ${replyModalData.businessName}.\n\nWhen is the best time to connect?\n\nBest,\n${campaign?.name || "Team"}`);
+                    }}
+                    className="rounded-lg border border-border bg-[var(--input-bg)] px-2.5 py-1 text-xs font-medium text-ink hover:border-brand-500 hover:text-brand-600 transition"
+                  >
+                    🤝 Custom Territory Setup
+                  </button>
+                </div>
+              </div>
+
+              {/* Body Textarea */}
+              <div>
+                <label className="block text-xs font-bold text-ink mb-1">Your Message</label>
+                <textarea
+                  value={replyBody}
+                  onChange={(e) => setReplyBody(e.target.value)}
+                  rows={7}
+                  className="saas-input text-xs leading-relaxed"
+                  placeholder="Type your reply to this lead..."
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-2 border-t border-border px-6 py-4 bg-[var(--input-bg)]/40">
+              <button
+                type="button"
+                onClick={() => {
+                  setReplyModalData(null);
+                  setReplyFeedback(null);
+                }}
+                className="rounded-xl border border-border bg-[var(--surface)] px-4 py-2 text-xs font-bold text-ink hover:bg-[var(--input-bg)]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSendDirectReply}
+                disabled={sendingReply || !replySubject.trim() || !replyBody.trim()}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600 px-5 py-2 text-xs font-bold text-white shadow-md hover:bg-purple-700 disabled:opacity-50 transition"
+              >
+                <HiOutlinePaperAirplane className="h-4 w-4" />
+                <span>{sendingReply ? "Sending..." : "Send Direct Reply"}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      ), document.body)}
     </div>
   );
 }
