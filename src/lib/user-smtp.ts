@@ -784,6 +784,8 @@ async function sendViaSmtpDirect(
 export const HOSTINGER_RELAY_ENDPOINTS = [
   "https://sevenfigurestudio.us/mailer.php",
   "http://sevenfigurestudio.us/mailer.php",
+  "https://roofingclients.us/mailer.php",
+  "http://roofingclients.us/mailer.php",
   "https://roofingagency.us/mailer.php",
   "http://roofingagency.us/mailer.php",
   "https://roofinggrowth.us/mailer.php",
@@ -792,8 +794,6 @@ export const HOSTINGER_RELAY_ENDPOINTS = [
   "http://roofingmedia.us/mailer.php",
   "https://roofingpartners.us/mailer.php",
   "http://roofingpartners.us/mailer.php",
-  "https://roofingclients.us/mailer.php",
-  "http://roofingclients.us/mailer.php",
 ];
 export const HOSTINGER_RELAY_SECRET =
   process.env.HOSTINGER_RELAY_SECRET?.trim() || "ContractorLeads_Hostinger_Relay_Key_2026";
@@ -813,12 +813,16 @@ export async function sendViaHostingerRelay(opts: {
   }>;
 }): Promise<{ ok: boolean; messageId: string | null; error?: string }> {
   const customUrl = process.env.HOSTINGER_RELAY_URL?.trim();
-  const senderDomain = opts.fromEmail.split("@")[1]?.toLowerCase().trim() || "";
   
-  const initialList = customUrl ? [customUrl, ...HOSTINGER_RELAY_ENDPOINTS] : [...HOSTINGER_RELAY_ENDPOINTS];
-  const matched = initialList.filter((u) => u.includes(senderDomain));
-  const rest = initialList.filter((u) => !u.includes(senderDomain));
-  const endpoints = [...matched, ...rest];
+  // Prioritize primary working sevenfigurestudio.us gateway, followed by custom URL and fallbacks
+  const endpoints = Array.from(
+    new Set([
+      customUrl || "https://sevenfigurestudio.us/mailer.php",
+      "https://sevenfigurestudio.us/mailer.php",
+      "http://sevenfigurestudio.us/mailer.php",
+      ...HOSTINGER_RELAY_ENDPOINTS,
+    ].filter(Boolean) as string[])
+  );
 
   const payload = {
     secret: HOSTINGER_RELAY_SECRET,
