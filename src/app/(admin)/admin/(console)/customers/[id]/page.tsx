@@ -126,6 +126,7 @@ export default function AdminCustomerDetailPage() {
   >([]);
   const [smtpProviderFilter, setSmtpProviderFilter] = useState<"all" | "hostinger" | "godaddy">("all");
   const [selectedSysSmtp, setSelectedSysSmtp] = useState("");
+  const [selectedAssignedIds, setSelectedAssignedIds] = useState<string[]>([]);
   const [assignBusy, setAssignBusy] = useState(false);
 
   async function load() {
@@ -140,12 +141,25 @@ export default function AdminCustomerDetailPage() {
       const smtpData = await smtpRes.json();
       if (smtpRes.ok && Array.isArray(smtpData.systemAccounts)) {
         setSystemSmtps(smtpData.systemAccounts);
-        if (smtpData.systemAccounts[0]) {
+        if (smtpData.systemAccounts.length > 0) {
           setSelectedSysSmtp(smtpData.systemAccounts[0].id);
         }
       }
     } catch {
       // ignore
+    }
+  }
+
+  function handleProviderFilterChange(filter: "all" | "hostinger" | "godaddy") {
+    setSmtpProviderFilter(filter);
+    const filtered = systemSmtps.filter((s) => {
+      if (filter === "all") return true;
+      return s.provider === filter;
+    });
+    if (filtered.length > 0) {
+      setSelectedSysSmtp(filtered[0].id);
+    } else {
+      setSelectedSysSmtp("");
     }
   }
 
@@ -177,20 +191,41 @@ export default function AdminCustomerDetailPage() {
     }
   }
 
-  async function removeSmtpAccount(accountId: string) {
-    if (!confirm("Remove this mailbox from customer?")) return;
+  async function removeMailboxes(opts: {
+    provider?: "hostinger" | "godaddy" | "all";
+    accountIds?: string[];
+    accountId?: string;
+  }) {
+    const confirmMsg =
+      opts.provider === "all"
+        ? "Revoke and remove ALL assigned mailboxes from this customer?"
+        : opts.provider === "godaddy"
+          ? "Revoke all GoDaddy mailboxes from this customer?"
+          : opts.provider === "hostinger"
+            ? "Revoke all Hostinger mailboxes from this customer?"
+            : opts.accountIds && opts.accountIds.length > 0
+              ? `Remove ${opts.accountIds.length} selected mailbox(es) from this customer?`
+              : "Remove this mailbox from customer?";
+
+    if (!confirm(confirmMsg)) return;
     setAssignBusy(true);
     setMessage(null);
     try {
+      const params = new URLSearchParams();
+      if (opts.provider) params.set("provider", opts.provider);
+      if (opts.accountId) params.set("accountId", opts.accountId);
+      if (opts.accountIds?.length) params.set("accountIds", opts.accountIds.join(","));
+
       const res = await fetch(
-        `/api/admin/customers/${id}/smtp?accountId=${accountId}`,
+        `/api/admin/customers/${id}/smtp?${params.toString()}`,
         { method: "DELETE" },
       );
       const data = await res.json();
       if (!res.ok) {
-        setMessage(data.error || "Failed to remove mailbox");
+        setMessage(data.error || "Failed to remove mailboxes");
       } else {
-        setMessage(data.message || "Mailbox removed.");
+        setMessage(data.message || "Mailboxes removed successfully.");
+        setSelectedAssignedIds([]);
         await load();
       }
     } catch {
@@ -845,54 +880,125 @@ export default function AdminCustomerDetailPage() {
               </span>
             </div>
 
-            {/* Bulk Provider Assign Quick Actions */}
-            <div className="space-y-2 rounded-xl border border-border bg-[var(--input-bg)]/40 p-3.5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">
-                Quick Bulk Assign
-              </span>
+            {/* Quick Bulk Assign Actions */}
+            <div className="space-y-2 rounded-xl border border-emerald-200/70 bg-emerald-50/40 p-3.5 dark:border-emerald-900/50 dark:bg-emerald-950/20">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
+                  ⚡ Quick Bulk Assign (Grant Access)
+                </span>
+                <span className="text-[10.5px] text-emerald-700 dark:text-emerald-400 font-medium">
+                  {systemSmtps.length} available system mailboxes
+                </span>
+              </div>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 <button
                   type="button"
                   onClick={() => assignMailboxes({ provider: "hostinger" })}
                   disabled={assignBusy}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-purple-200 bg-purple-50/80 px-3 py-2 text-center text-xs font-bold text-purple-700 shadow-sm transition hover:bg-purple-100 dark:border-purple-800 dark:bg-purple-950/40 dark:text-purple-300 disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-purple-300 bg-purple-100/80 px-3 py-2 text-center text-xs font-bold text-purple-800 shadow-sm transition hover:bg-purple-200 dark:border-purple-700 dark:bg-purple-950/60 dark:text-purple-200 disabled:opacity-50"
                   title="Assign all 25 Hostinger mailboxes across 5 domains to this user"
                 >
-                  <span>⚡ All 25 Hostinger</span>
+                  <span>⚡ Assign All 25 Hostinger</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => assignMailboxes({ provider: "godaddy" })}
                   disabled={assignBusy}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50/80 px-3 py-2 text-center text-xs font-bold text-blue-700 shadow-sm transition hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300 disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-blue-300 bg-blue-100/80 px-3 py-2 text-center text-xs font-bold text-blue-800 shadow-sm transition hover:bg-blue-200 dark:border-blue-700 dark:bg-blue-950/60 dark:text-blue-200 disabled:opacity-50"
                   title="Assign all 40 GoDaddy mailboxes across 10 domains to this user"
                 >
-                  <span>🌐 All 40 GoDaddy</span>
+                  <span>🌐 Assign All 40 GoDaddy</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => assignMailboxes({ provider: "all" })}
                   disabled={assignBusy}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-300 bg-brand-600 px-3 py-2 text-center text-xs font-bold text-white shadow-sm transition hover:bg-brand-700 disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-brand-400 bg-brand-600 px-3 py-2 text-center text-xs font-bold text-white shadow-sm transition hover:bg-brand-700 disabled:opacity-50"
                   title="Assign all 65 system mailboxes (25 Hostinger + 40 GoDaddy) to this user"
                 >
-                  <span>✨ All 65 Mailboxes</span>
+                  <span>✨ Assign All 65 Mailboxes</span>
                 </button>
               </div>
             </div>
 
+            {/* Quick Bulk Revoke / Remove Actions */}
+            {(() => {
+              const assignedAccounts = customer.smtpAccounts ?? [];
+              const hostingerCount = assignedAccounts.filter((a) => {
+                const isGoDaddy =
+                  a.label.toLowerCase().includes("godaddy") ||
+                  a.fromEmail.includes("frankmiller") ||
+                  a.fromEmail.includes("meetfrankmiller") ||
+                  a.fromEmail.includes("connectwithbdefrank");
+                return !isGoDaddy;
+              }).length;
+
+              const goDaddyCount = assignedAccounts.filter((a) => {
+                const isGoDaddy =
+                  a.label.toLowerCase().includes("godaddy") ||
+                  a.fromEmail.includes("frankmiller") ||
+                  a.fromEmail.includes("meetfrankmiller") ||
+                  a.fromEmail.includes("connectwithbdefrank");
+                return isGoDaddy;
+              }).length;
+
+              return (
+                <div className="space-y-2 rounded-xl border border-rose-200/70 bg-rose-50/40 p-3.5 dark:border-rose-900/50 dark:bg-rose-950/20">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-rose-800 dark:text-rose-300">
+                      🗑️ Quick Bulk Revoke (Remove Access)
+                    </span>
+                    <span className="text-[10.5px] text-rose-700 dark:text-rose-400 font-medium">
+                      {assignedAccounts.length} assigned
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                    <button
+                      type="button"
+                      onClick={() => removeMailboxes({ provider: "hostinger" })}
+                      disabled={assignBusy || hostingerCount === 0}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-white dark:bg-zinc-900 px-3 py-2 text-center text-xs font-bold text-rose-700 shadow-sm transition hover:bg-rose-50 dark:border-rose-800 dark:text-rose-300 disabled:opacity-40"
+                      title="Revoke all Hostinger mailboxes from this user"
+                    >
+                      <span>🗑️ Revoke Hostinger ({hostingerCount})</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => removeMailboxes({ provider: "godaddy" })}
+                      disabled={assignBusy || goDaddyCount === 0}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-200 bg-white dark:bg-zinc-900 px-3 py-2 text-center text-xs font-bold text-rose-700 shadow-sm transition hover:bg-rose-50 dark:border-rose-800 dark:text-rose-300 disabled:opacity-40"
+                      title="Revoke all GoDaddy mailboxes from this user"
+                    >
+                      <span>🗑️ Revoke GoDaddy ({goDaddyCount})</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => removeMailboxes({ provider: "all" })}
+                      disabled={assignBusy || assignedAccounts.length === 0}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-rose-300 bg-rose-600 px-3 py-2 text-center text-xs font-bold text-white shadow-sm transition hover:bg-rose-700 disabled:opacity-40"
+                      title="Revoke all assigned mailboxes from this customer"
+                    >
+                      <span>⚠️ Revoke All ({assignedAccounts.length})</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Individual Mailbox Assigner with Provider Filter */}
             <div className="rounded-xl border border-brand-200 bg-brand-50/50 p-3.5 space-y-2.5">
               <div className="flex items-center justify-between">
-                <p className="text-[12px] font-semibold text-brand-900">
+                <p className="text-[12px] font-semibold text-brand-900 dark:text-brand-200">
                   Assign Individual Mailbox
                 </p>
                 <div className="inline-flex rounded-lg border border-brand-200 bg-white p-0.5 text-[11px] font-medium dark:bg-zinc-900">
                   <button
                     type="button"
-                    onClick={() => setSmtpProviderFilter("all")}
+                    onClick={() => handleProviderFilterChange("all")}
                     className={`rounded-md px-2 py-0.5 ${
                       smtpProviderFilter === "all"
                         ? "bg-brand-600 text-white font-bold"
@@ -903,7 +1009,7 @@ export default function AdminCustomerDetailPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setSmtpProviderFilter("hostinger")}
+                    onClick={() => handleProviderFilterChange("hostinger")}
                     className={`rounded-md px-2 py-0.5 ${
                       smtpProviderFilter === "hostinger"
                         ? "bg-purple-600 text-white font-bold"
@@ -914,7 +1020,7 @@ export default function AdminCustomerDetailPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setSmtpProviderFilter("godaddy")}
+                    onClick={() => handleProviderFilterChange("godaddy")}
                     className={`rounded-md px-2 py-0.5 ${
                       smtpProviderFilter === "godaddy"
                         ? "bg-blue-600 text-white font-bold"
@@ -959,14 +1065,53 @@ export default function AdminCustomerDetailPage() {
               })()}
             </div>
 
-            <p className="text-[12px] text-ink-muted">
-              Sequence:{" "}
-              {customer.emailSequence
-                ? `${customer.emailSequence.name} (${customer.emailSequence.enabled ? "on" : "off"}) · ${customer.emailSequence._count.enrollments} enrollments`
-                : "Not configured"}
-            </p>
+            <div className="flex items-center justify-between pt-1">
+              <p className="text-[12px] text-ink-muted">
+                Sequence:{" "}
+                {customer.emailSequence
+                  ? `${customer.emailSequence.name} (${customer.emailSequence.enabled ? "on" : "off"}) · ${customer.emailSequence._count.enrollments} enrollments`
+                  : "Not configured"}
+              </p>
 
-            <ul className="max-h-56 space-y-1.5 overflow-y-auto text-[12px] text-ink-muted">
+              {/* Multi-select removal action */}
+              {selectedAssignedIds.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => removeMailboxes({ accountIds: selectedAssignedIds })}
+                  disabled={assignBusy}
+                  className="inline-flex items-center gap-1 text-[11.5px] font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 px-2.5 py-1 rounded-lg border border-rose-200 transition"
+                >
+                  <span>🗑️ Remove Selected ({selectedAssignedIds.length})</span>
+                </button>
+              )}
+            </div>
+
+            {/* Assigned list header with Select All */}
+            {(customer.smtpAccounts ?? []).length > 0 && (
+              <div className="flex items-center justify-between px-1 text-[11px] text-ink-muted font-semibold">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={
+                      (customer.smtpAccounts ?? []).length > 0 &&
+                      selectedAssignedIds.length === (customer.smtpAccounts ?? []).length
+                    }
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedAssignedIds((customer.smtpAccounts ?? []).map((a) => a.id));
+                      } else {
+                        setSelectedAssignedIds([]);
+                      }
+                    }}
+                    className="rounded border-border text-brand-600 focus:ring-brand-500"
+                  />
+                  <span>Select All ({(customer.smtpAccounts ?? []).length})</span>
+                </label>
+                <span>Actions</span>
+              </div>
+            )}
+
+            <ul className="max-h-60 space-y-1.5 overflow-y-auto text-[12px] text-ink-muted">
               {(customer.smtpAccounts ?? []).length === 0 && (
                 <li className="rounded-lg bg-[#faf8fc] px-3 py-2 text-ink-faint">
                   No dedicated mailboxes assigned. User falls back to shared rotation pool.
@@ -979,12 +1124,28 @@ export default function AdminCustomerDetailPage() {
                   a.fromEmail.includes("meetfrankmiller") ||
                   a.fromEmail.includes("connectwithbdefrank");
 
+                const isChecked = selectedAssignedIds.includes(a.id);
+
                 return (
                   <li
                     key={a.id}
-                    className="flex items-center justify-between gap-2 rounded-lg bg-[#faf8fc] px-3 py-2"
+                    className={`flex items-center justify-between gap-2 rounded-lg px-3 py-2 transition ${
+                      isChecked ? "bg-brand-50/70 border border-brand-200" : "bg-[#faf8fc]"
+                    }`}
                   >
-                    <div className="min-w-0 flex items-center gap-1.5 flex-wrap">
+                    <div className="min-w-0 flex items-center gap-2 flex-wrap">
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedAssignedIds((prev) => [...prev, a.id]);
+                          } else {
+                            setSelectedAssignedIds((prev) => prev.filter((id) => id !== a.id));
+                          }
+                        }}
+                        className="rounded border-border text-brand-600 focus:ring-brand-500"
+                      />
                       <span
                         className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
                           isGoDaddy
@@ -1011,8 +1172,8 @@ export default function AdminCustomerDetailPage() {
                     </div>
                     <button
                       type="button"
-                      className="text-[11px] font-medium text-rose-600 hover:underline"
-                      onClick={() => removeSmtpAccount(a.id)}
+                      className="text-[11px] font-medium text-rose-600 hover:underline shrink-0"
+                      onClick={() => removeMailboxes({ accountId: a.id })}
                       disabled={assignBusy}
                     >
                       Remove

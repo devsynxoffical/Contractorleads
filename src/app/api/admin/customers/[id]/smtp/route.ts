@@ -245,18 +245,96 @@ export async function DELETE(request: Request, { params }: Params) {
   const { id: userId } = await params;
   const url = new URL(request.url);
   const accountId = url.searchParams.get("accountId");
+  const accountIdsParam = url.searchParams.get("accountIds");
+  const provider = url.searchParams.get("provider");
+  const deleteAll = url.searchParams.get("all") === "true";
 
-  if (!accountId) {
-    return NextResponse.json({ error: "accountId query parameter is required" }, { status: 400 });
+  // Also support JSON body if sent
+  let body: Record<string, unknown> = {};
+  try {
+    body = (await request.json()) as Record<string, unknown>;
+  } catch {
+    /* empty */
   }
 
-  const existing = await prisma.smtpAccount.findFirst({
-    where: { id: accountId, userId },
-  });
-  if (!existing) {
-    return NextResponse.json({ error: "Account not found" }, { status: 404 });
+  const targetDeleteAll = deleteAll || Boolean(body.all);
+  const targetProvider = (provider || body.provider) as "hostinger" | "godaddy" | "all" | undefined;
+  const targetAccountIds = Array.isArray(body.accountIds)
+    ? (body.accountIds as string[])
+    : accountIdsParam
+      ? accountIdsParam.split(",").map((s) => s.trim()).filter(Boolean)
+      : accountId
+        ? [accountId]
+        : (body.accountId ? [String(body.accountId)] : []);
+
+  // Mode 1: Delete all assigned mailboxes
+  if (targetDeleteAll || targetProvider === "all") {
+    const deleted = await prisma.smtpAccount.deleteMany({
+      where: { userId },
+    });
+    return NextResponse.json({
+      ok: true,
+      message: `Removed all ${deleted.count} mailboxes from customer.`,
+      deletedCount: deleted.count,
+    });
   }
 
-  await prisma.smtpAccount.delete({ where: { id: accountId } });
-  return NextResponse.json({ ok: true, message: "Removed mailbox from customer" });
+  // Mode 2: Delete by provider (hostinger vs godaddy)
+  if (targetProvider === "godaddy") {
+    const deleted = await prisma.smtpAccount.deleteMany({
+      where: {
+        userId,
+        OR: [
+          { label: { contains: "godaddy", mode: "insensitive" } },
+          { fromEmail: { contains: "frankmiller" } },
+          { fromEmail: { contains: "meetfrankmiller" } },
+          { fromEmail: { contains: "connectwithbdefrank" } },
+        ],
+      },
+    });
+    return NextResponse.json({
+      ok: true,
+      message: `Removed ${deleted.count} GoDaddy mailboxes from customer.`,
+      deletedCount: deleted.count,
+    });
+  }
+
+  if (targetProvider === "hostinger") {
+    const deleted = await prisma.smtpAccount.deleteMany({
+      where: {
+        userId,
+        NOT: [
+          { label: { contains: "godaddy", mode: "insensitive" } },
+          { fromEmail: { contains: "frankmiller" } },
+          { fromEmail: { contains: "meetfrankmiller" } },
+          { fromEmail: { contains: "connectwithbdefrank" } },
+        ],
+      },
+    });
+    return NextResponse.json({
+      ok: true,
+      message: `Removed ${deleted.count} Hostinger mailboxes from customer.`,
+      deletedCount: deleted.count,
+    });
+  }
+
+  // Mode 3: Delete specific account IDs
+  if (targetAccountIds.length > 0) {
+    const deleted = await prisma.smtpAccount.deleteMany({
+      where: {
+        userId,
+        id: { in: targetAccountIds },
+      },
+    });
+    return NextResponse.json({
+      ok: true,
+      message: `Removed ${deleted.count} mailbox${deleted.count === 1 ? "" : "es"} from customer.`,
+      deletedCount: deleted.count,
+    });
+  }
+
+  return NextResponse.json(
+    { error: "Specify accountId, accountIds, provider, or all=true to remove mailboxes" },
+    { status: 400 },
+  );
 }
