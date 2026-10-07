@@ -183,12 +183,90 @@ export const HOSTINGER_DEFAULT_MAILBOXES: HostingerMailboxSeed[] = [
   },
 ];
 
+export type GoDaddyMailboxSeed = {
+  name: string;
+  email: string;
+  pass: string;
+  domain: string;
+  provider: "godaddy";
+  host: string;
+  port: number;
+  secure: boolean;
+};
+
+const GODADDY_SHARED_PASS = "RAJOURIbranch@1997";
+const GODADDY_HOST = "smtpout.secureserver.net";
+const GODADDY_PORT = 465;
+
+export const GODADDY_DEFAULT_MAILBOXES: GoDaddyMailboxSeed[] = [
+  // 1. frankmillerconnect.com (4)
+  { name: "Frank Miller", email: "frank@frankmillerconnect.com", pass: GODADDY_SHARED_PASS, domain: "frankmillerconnect.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+  { name: "F. Miller", email: "f.miller@frankmillerconnect.com", pass: GODADDY_SHARED_PASS, domain: "frankmillerconnect.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+  { name: "Frank Miller", email: "fmiller@frankmillerconnect.com", pass: GODADDY_SHARED_PASS, domain: "frankmillerconnect.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+  { name: "Frank Miller", email: "frank.miller@frankmillerconnect.com", pass: GODADDY_SHARED_PASS, domain: "frankmillerconnect.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+
+  // 2. frankmillernetwork.com (4)
+  { name: "Frank Miller", email: "frank@frankmillernetwork.com", pass: GODADDY_SHARED_PASS, domain: "frankmillernetwork.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+  { name: "F. Miller", email: "f.miller@frankmillernetwork.com", pass: GODADDY_SHARED_PASS, domain: "frankmillernetwork.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+  { name: "Frank Miller", email: "fmiller@frankmillernetwork.com", pass: GODADDY_SHARED_PASS, domain: "frankmillernetwork.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+  { name: "Frank Miller", email: "frank.miller@frankmillernetwork.com", pass: GODADDY_SHARED_PASS, domain: "frankmillernetwork.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+
+  // 3. frankmillerreach.com (4)
+  { name: "Frank Miller", email: "frank@frankmillerreach.com", pass: GODADDY_SHARED_PASS, domain: "frankmillerreach.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+  { name: "F. Miller", email: "f.miller@frankmillerreach.com", pass: GODADDY_SHARED_PASS, domain: "frankmillerreach.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+  { name: "Frank Miller", email: "fmiller@frankmillerreach.com", pass: GODADDY_SHARED_PASS, domain: "frankmillerreach.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+  { name: "Frank Miller", email: "frank.miller@frankmillerreach.com", pass: GODADDY_SHARED_PASS, domain: "frankmillerreach.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+
+  // 4. frankmillercontact.com (4)
+  { name: "Frank Miller", email: "frank@frankmillercontact.com", pass: GODADDY_SHARED_PASS, domain: "frankmillercontact.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+  { name: "F. Miller", email: "f.miller@frankmillercontact.com", pass: GODADDY_SHARED_PASS, domain: "frankmillercontact.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+  { name: "Frank Miller", email: "fmiller@frankmillercontact.com", pass: GODADDY_SHARED_PASS, domain: "frankmillercontact.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+  { name: "Frank Miller", email: "frank.miller@frankmillercontact.com", pass: GODADDY_SHARED_PASS, domain: "frankmillercontact.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+
+  // 5. meetfrankmiller.com (4)
+  { name: "Frank Miller", email: "frank@meetfrankmiller.com", pass: GODADDY_SHARED_PASS, domain: "meetfrankmiller.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+  { name: "F. Miller", email: "f.miller@meetfrankmiller.com", pass: GODADDY_SHARED_PASS, domain: "meetfrankmiller.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+  { name: "Frank Miller", email: "fmiller@meetfrankmiller.com", pass: GODADDY_SHARED_PASS, domain: "meetfrankmiller.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+  { name: "Frank Miller", email: "frank.miller@meetfrankmiller.com", pass: GODADDY_SHARED_PASS, domain: "meetfrankmiller.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+
+  // 6. connectwithbdefrank.com (4)
+  { name: "Frank Miller", email: "frank@connectwithbdefrank.com", pass: GODADDY_SHARED_PASS, domain: "connectwithbdefrank.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+  { name: "F. Miller", email: "f.miller@connectwithbdefrank.com", pass: GODADDY_SHARED_PASS, domain: "connectwithbdefrank.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+  { name: "Frank Miller", email: "fmiller@connectwithbdefrank.com", pass: GODADDY_SHARED_PASS, domain: "connectwithbdefrank.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+  { name: "Frank Miller", email: "frank.miller@connectwithbdefrank.com", pass: GODADDY_SHARED_PASS, domain: "connectwithbdefrank.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+
+  // 7. frankmillerhub.com (4)
+  { name: "Frank Miller", email: "frank@frankmillerhub.com", pass: GODADDY_SHARED_PASS, domain: "frankmillerhub.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+  { name: "F. Miller", email: "f.miller@frankmillerhub.com", pass: GODADDY_SHARED_PASS, domain: "frankmillerhub.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+  { name: "Frank Miller", email: "fmiller@frankmillerhub.com", pass: GODADDY_SHARED_PASS, domain: "frankmillerhub.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+  { name: "Frank Miller", email: "frank.miller@frankmillerhub.com", pass: GODADDY_SHARED_PASS, domain: "frankmillerhub.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+
+  // 8. frankmillerworks.com (4)
+  { name: "Frank Miller", email: "frank@frankmillerworks.com", pass: GODADDY_SHARED_PASS, domain: "frankmillerworks.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+  { name: "F. Miller", email: "f.miller@frankmillerworks.com", pass: GODADDY_SHARED_PASS, domain: "frankmillerworks.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+  { name: "Frank Miller", email: "fmiller@frankmillerworks.com", pass: GODADDY_SHARED_PASS, domain: "frankmillerworks.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+  { name: "Frank Miller", email: "frank.miller@frankmillerworks.com", pass: GODADDY_SHARED_PASS, domain: "frankmillerworks.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+
+  // 9. frankmillernetworks.com (4)
+  { name: "Frank Miller", email: "frank@frankmillernetworks.com", pass: GODADDY_SHARED_PASS, domain: "frankmillernetworks.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+  { name: "F. Miller", email: "f.miller@frankmillernetworks.com", pass: GODADDY_SHARED_PASS, domain: "frankmillernetworks.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+  { name: "Frank Miller", email: "fmiller@frankmillernetworks.com", pass: GODADDY_SHARED_PASS, domain: "frankmillernetworks.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+  { name: "Frank Miller", email: "frank.miller@frankmillernetworks.com", pass: GODADDY_SHARED_PASS, domain: "frankmillernetworks.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+
+  // 10. frankmillerconnects.com (4)
+  { name: "Frank Miller", email: "frank@frankmillerconnects.com", pass: GODADDY_SHARED_PASS, domain: "frankmillerconnects.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+  { name: "F. Miller", email: "f.miller@frankmillerconnects.com", pass: GODADDY_SHARED_PASS, domain: "frankmillerconnects.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+  { name: "Frank Miller", email: "fmiller@frankmillerconnects.com", pass: GODADDY_SHARED_PASS, domain: "frankmillerconnects.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+  { name: "Frank Miller", email: "frank.miller@frankmillerconnects.com", pass: GODADDY_SHARED_PASS, domain: "frankmillerconnects.com", provider: "godaddy", host: GODADDY_HOST, port: GODADDY_PORT, secure: true },
+];
+
 const DEFAULT_HOSTINGER_HOST = "smtp.hostinger.com";
 const DEFAULT_HOSTINGER_PORT = 465;
 
 export type SystemSmtpRow = {
   id: string;
   label: string;
+  provider: string;
   domain: string;
   host: string;
   port: number;
@@ -199,6 +277,12 @@ export type SystemSmtpRow = {
   enabled: boolean;
   isDefault: boolean;
   sendWeight: number;
+  assignedUserId: string | null;
+  assignedUser?: {
+    id: string;
+    name: string | null;
+    email: string;
+  } | null;
   lastTestedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -207,22 +291,23 @@ export type SystemSmtpRow = {
   };
 };
 
-/** Seed / Upsert the 25 Hostinger mailboxes in database */
-export async function seedHostingerMailboxes(forceUpdatePasswords = true) {
+/** Seed / Upsert all 65 system mailboxes (25 Hostinger + 40 GoDaddy) in database */
+export async function seedSystemMailboxes(forceUpdatePasswords = true) {
   let createdCount = 0;
   let updatedCount = 0;
 
+  // 1. Seed Hostinger mailboxes
   for (const item of HOSTINGER_DEFAULT_MAILBOXES) {
     const existing = await prisma.systemSmtpAccount.findUnique({
       where: { fromEmail: item.email.toLowerCase().trim() },
     });
-
     const passwordEnc = encryptSecret(item.pass);
 
     if (!existing) {
       await prisma.systemSmtpAccount.create({
         data: {
           label: `${item.name} (${item.domain})`,
+          provider: "hostinger",
           domain: item.domain.toLowerCase().trim(),
           host: DEFAULT_HOSTINGER_HOST,
           port: DEFAULT_HOSTINGER_PORT,
@@ -242,6 +327,7 @@ export async function seedHostingerMailboxes(forceUpdatePasswords = true) {
         where: { id: existing.id },
         data: {
           label: `${item.name} (${item.domain})`,
+          provider: "hostinger",
           domain: item.domain.toLowerCase().trim(),
           host: DEFAULT_HOSTINGER_HOST,
           port: DEFAULT_HOSTINGER_PORT,
@@ -255,15 +341,66 @@ export async function seedHostingerMailboxes(forceUpdatePasswords = true) {
     }
   }
 
-  return { createdCount, updatedCount, total: HOSTINGER_DEFAULT_MAILBOXES.length };
+  // 2. Seed GoDaddy mailboxes
+  for (const item of GODADDY_DEFAULT_MAILBOXES) {
+    const existing = await prisma.systemSmtpAccount.findUnique({
+      where: { fromEmail: item.email.toLowerCase().trim() },
+    });
+    const passwordEnc = encryptSecret(item.pass);
+
+    if (!existing) {
+      await prisma.systemSmtpAccount.create({
+        data: {
+          label: `${item.name} (${item.domain})`,
+          provider: "godaddy",
+          domain: item.domain.toLowerCase().trim(),
+          host: item.host,
+          port: item.port,
+          secure: item.secure,
+          username: item.email.toLowerCase().trim(),
+          passwordEnc,
+          fromEmail: item.email.toLowerCase().trim(),
+          fromName: item.name,
+          enabled: true,
+          isDefault: false,
+          sendWeight: 1,
+        },
+      });
+      createdCount++;
+    } else if (forceUpdatePasswords) {
+      await prisma.systemSmtpAccount.update({
+        where: { id: existing.id },
+        data: {
+          label: `${item.name} (${item.domain})`,
+          provider: "godaddy",
+          domain: item.domain.toLowerCase().trim(),
+          host: item.host,
+          port: item.port,
+          secure: item.secure,
+          username: item.email.toLowerCase().trim(),
+          passwordEnc,
+          fromName: item.name,
+        },
+      });
+      updatedCount++;
+    }
+  }
+
+  const total = HOSTINGER_DEFAULT_MAILBOXES.length + GODADDY_DEFAULT_MAILBOXES.length;
+  return { createdCount, updatedCount, total };
+}
+
+/** Alias for backward compatibility */
+export async function seedHostingerMailboxes(forceUpdatePasswords = true) {
+  return seedSystemMailboxes(forceUpdatePasswords);
 }
 
 /** Check if seeding is required and seed if empty */
 export async function ensureSystemSmtpSeeded() {
   try {
     const count = await prisma.systemSmtpAccount.count();
-    if (count === 0) {
-      await seedHostingerMailboxes(false);
+    if (count < 65) {
+      await seedSystemMailboxes(false);
     }
   } catch {
     // Database might not be ready or reachable at boot, ignore gracefully
@@ -271,13 +408,52 @@ export async function ensureSystemSmtpSeeded() {
 }
 
 /** List all system SMTP accounts for super admin or sender pools */
-export async function listSystemSmtpAccounts(options?: { onlyEnabled?: boolean }) {
+export async function listSystemSmtpAccounts(options?: {
+  onlyEnabled?: boolean;
+  provider?: string;
+  domain?: string;
+  assignedUserId?: string | null;
+}) {
   await ensureSystemSmtpSeeded();
-  const where = options?.onlyEnabled ? { enabled: true } : {};
+  const where: any = {};
+  if (options?.onlyEnabled) where.enabled = true;
+  if (options?.provider && options.provider !== "all") where.provider = options.provider;
+  if (options?.domain && options.domain !== "all") where.domain = options.domain;
+  if (options?.assignedUserId !== undefined) where.assignedUserId = options.assignedUserId;
+
   return prisma.systemSmtpAccount.findMany({
     where,
-    orderBy: [{ domain: "asc" }, { fromName: "asc" }, { fromEmail: "asc" }],
+    orderBy: [{ provider: "asc" }, { domain: "asc" }, { fromName: "asc" }, { fromEmail: "asc" }],
     include: {
+      assignedUser: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          companyName: true,
+        },
+      },
+      _count: {
+        select: { emails: true },
+      },
+    },
+  });
+}
+
+/** Assign or unassign a system mailbox to a specific user */
+export async function assignSystemSmtpAccount(id: string, assignedUserId: string | null) {
+  return prisma.systemSmtpAccount.update({
+    where: { id },
+    data: { assignedUserId },
+    include: {
+      assignedUser: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          companyName: true,
+        },
+      },
       _count: {
         select: { emails: true },
       },
@@ -289,6 +465,7 @@ export async function listSystemSmtpAccounts(options?: { onlyEnabled?: boolean }
 export function systemRowToPayload(row: {
   id: string;
   label: string;
+  provider?: string;
   host: string;
   port: number;
   secure: boolean;
@@ -303,17 +480,30 @@ export function systemRowToPayload(row: {
   } catch {
     password = "";
   }
-  const known = HOSTINGER_DEFAULT_MAILBOXES.find(
+  
+  const knownHostinger = HOSTINGER_DEFAULT_MAILBOXES.find(
     (m) =>
       m.email.toLowerCase() === row.username.toLowerCase() ||
       m.email.toLowerCase() === row.fromEmail.toLowerCase(),
   );
-  const host = known ? "smtp.hostinger.com" : (row.host?.trim() || "smtp.hostinger.com");
-  const port = known ? 465 : (row.port || 465);
-  const secure = known ? true : (row.secure ?? true);
-  if (known?.pass) {
-    password = known.pass;
+  const knownGoDaddy = GODADDY_DEFAULT_MAILBOXES.find(
+    (m) =>
+      m.email.toLowerCase() === row.username.toLowerCase() ||
+      m.email.toLowerCase() === row.fromEmail.toLowerCase(),
+  );
+
+  const isGoDaddy = row.provider === "godaddy" || Boolean(knownGoDaddy) || (row.host && row.host.includes("secureserver.net"));
+  
+  const host = isGoDaddy ? GODADDY_HOST : (knownHostinger ? "smtp.hostinger.com" : (row.host?.trim() || "smtp.hostinger.com"));
+  const port = isGoDaddy ? GODADDY_PORT : (knownHostinger ? 465 : (row.port || 465));
+  const secure = true;
+  
+  if (knownGoDaddy?.pass) {
+    password = knownGoDaddy.pass;
+  } else if (knownHostinger?.pass) {
+    password = knownHostinger.pass;
   }
+
   return {
     id: row.id,
     label: row.label,
@@ -331,6 +521,7 @@ export function systemRowToPayload(row: {
 export function systemRowToSenderConfig(row: {
   id: string;
   label: string;
+  provider?: string;
   host: string;
   port: number;
   secure: boolean;
@@ -338,6 +529,7 @@ export function systemRowToSenderConfig(row: {
   passwordEnc: string;
   fromEmail: string;
   fromName: string | null;
+  assignedUserId?: string | null;
 }): SenderConfig {
   return {
     id: row.id,
@@ -366,15 +558,33 @@ export async function getSystemSenderConfig(
 }
 
 /**
- * Pick a system sender via weighted round-robin distribution across active Hostinger accounts.
+ * Pick a system sender via weighted round-robin distribution.
+ * If a userId is passed, prioritizes system mailboxes assigned specifically to that user.
  */
-export async function pickSystemRotationSender(): Promise<SenderConfig | null> {
+export async function pickSystemRotationSender(userId?: string): Promise<SenderConfig | null> {
   await ensureSystemSmtpSeeded();
+
+  // If user has specific assigned system mailboxes, use them
+  if (userId) {
+    const assigned = await prisma.systemSmtpAccount.findMany({
+      where: { enabled: true, assignedUserId: userId },
+      orderBy: [{ createdAt: "asc" }],
+    });
+    if (assigned.length > 0) {
+      const pick = assigned[Math.floor(Math.random() * assigned.length)];
+      return systemRowToSenderConfig(pick);
+    }
+  }
+
+  // Otherwise, use unassigned or shared system mailboxes
   const accounts = await prisma.systemSmtpAccount.findMany({
-    where: { enabled: true },
-    orderBy: [{ domain: "asc" }, { createdAt: "asc" }],
+    where: { enabled: true, assignedUserId: null },
+    orderBy: [{ provider: "asc" }, { domain: "asc" }, { createdAt: "asc" }],
   });
-  if (!accounts.length) return null;
+  if (!accounts.length) {
+    const fallback = await prisma.systemSmtpAccount.findFirst({ where: { enabled: true } });
+    return fallback ? systemRowToSenderConfig(fallback) : null;
+  }
 
   const totalWeight = accounts.reduce(
     (sum, a) => sum + Math.max(1, a.sendWeight),
@@ -441,10 +651,10 @@ export async function testSmtpConnection(payload: SmtpPayload): Promise<{ ok: bo
     });
 
     await transport.verify();
-    return { ok: true, message: "Hostinger SMTP connection verified successfully" };
+    return { ok: true, message: "SMTP connection verified successfully" };
   } catch (e) {
     // If running in an environment where outbound SMTP TCP ports are blocked (like Railway),
-    // verify via Hostinger Relay
+    // verify via Central Relay Gateway
     const { sendViaHostingerRelay } = await import("@/lib/user-smtp");
     try {
       const relayTest = await sendViaHostingerRelay({
@@ -452,11 +662,11 @@ export async function testSmtpConnection(payload: SmtpPayload): Promise<{ ok: bo
         fromName: payload.fromName || "Test",
         password: payload.password,
         to: payload.fromEmail || payload.username,
-        subject: "Hostinger SMTP Relay Test",
-        text: "Testing Hostinger SMTP Gateway connection",
+        subject: "SMTP Gateway Verification",
+        text: "Testing SMTP Gateway connection",
       });
       if (relayTest.ok) {
-        return { ok: true, message: "Hostinger Mail Gateway connection verified successfully" };
+        return { ok: true, message: "Mail Gateway connection verified successfully" };
       }
     } catch {
       // ignore and return formatSmtpError below
@@ -487,6 +697,7 @@ export async function testSystemSmtpAccount(id: string) {
 export function maskSystemSmtpAccount(row: {
   id: string;
   label: string;
+  provider?: string;
   domain: string;
   host: string;
   port: number;
@@ -497,6 +708,13 @@ export function maskSystemSmtpAccount(row: {
   enabled: boolean;
   isDefault: boolean;
   sendWeight: number;
+  assignedUserId?: string | null;
+  assignedUser?: {
+    id: string;
+    name: string | null;
+    email: string;
+    companyName?: string | null;
+  } | null;
   lastTestedAt: Date | null;
   createdAt: Date;
   _count?: { emails: number };
@@ -504,6 +722,7 @@ export function maskSystemSmtpAccount(row: {
   return {
     id: row.id,
     label: row.label || `${row.fromName || row.fromEmail} (${row.domain})`,
+    provider: row.provider || (row.domain.includes("roofing") ? "hostinger" : "godaddy"),
     domain: row.domain,
     host: row.host,
     port: row.port,
@@ -514,6 +733,14 @@ export function maskSystemSmtpAccount(row: {
     enabled: row.enabled,
     isDefault: row.isDefault,
     sendWeight: row.sendWeight,
+    assignedUserId: row.assignedUserId ?? null,
+    assignedUser: row.assignedUser
+      ? {
+          id: row.assignedUser.id,
+          name: row.assignedUser.name,
+          email: row.assignedUser.email,
+        }
+      : null,
     lastTestedAt: row.lastTestedAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
     emailsSent: row._count?.emails ?? 0,

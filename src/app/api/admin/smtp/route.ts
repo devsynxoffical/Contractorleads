@@ -4,20 +4,42 @@ import { prisma } from "@/lib/prisma";
 import { encryptSecret } from "@/lib/crypto-secret";
 import {
   HOSTINGER_DEFAULT_MAILBOXES,
+  GODADDY_DEFAULT_MAILBOXES,
   listSystemSmtpAccounts,
   maskSystemSmtpAccount,
-  seedHostingerMailboxes,
+  seedSystemMailboxes,
   testSystemSmtpAccount,
+  assignSystemSmtpAccount,
 } from "@/lib/system-smtp";
 
-export async function GET() {
+export async function GET(request: Request) {
   const admin = await requirePermission("system");
   if (!admin) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const rows = await listSystemSmtpAccounts();
+  const { searchParams } = new URL(request.url);
+  const providerFilter = searchParams.get("provider") || "all";
+  const domainFilter = searchParams.get("domain") || "all";
+
+  const rows = await listSystemSmtpAccounts({
+    provider: providerFilter !== "all" ? providerFilter : undefined,
+    domain: domainFilter !== "all" ? domainFilter : undefined,
+  });
   const masked = rows.map(maskSystemSmtpAccount);
+
+  // Fetch users for assignment dropdown
+  const users = await prisma.user.findMany({
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      companyName: true,
+      role: true,
+    },
+    orderBy: [{ name: "asc" }, { email: "asc" }],
+    take: 200,
+  });
 
   const domains = Array.from(new Set(rows.map((r) => r.domain || "other"))).filter(
     Boolean,
@@ -25,15 +47,21 @@ export async function GET() {
 
   const totalSent = rows.reduce((sum, r) => sum + (r._count?.emails ?? 0), 0);
   const activeCount = rows.filter((r) => r.enabled).length;
+  const hostingerCount = rows.filter((r) => r.provider === "hostinger").length;
+  const godaddyCount = rows.filter((r) => r.provider === "godaddy").length;
+  const assignedCount = rows.filter((r) => Boolean(r.assignedUserId)).length;
 
   return NextResponse.json({
     ok: true,
     total: rows.length,
     active: activeCount,
+    hostingerCount,
+    godaddyCount,
+    assignedCount,
     totalSent,
     domains,
     accounts: masked,
-    provider: "Hostinger SMTP (smtp.hostinger.com:465 SSL)",
+    users,
   });
 }
 
@@ -46,15 +74,29 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const action = String(body.action || "save");
 
-  // 1. Re-seed all 25 Hostinger mailboxes
+  // 1. Re-seed all 65 system mailboxes (25 Hostinger + 40 GoDaddy)
   if (action === "seed" || action === "reset_default") {
-    const result = await seedHostingerMailboxes(true);
+    const result = await seedSystemMailboxes(true);
     const rows = await listSystemSmtpAccounts();
     return NextResponse.json({
       ok: true,
-      message: `Successfully synced ${result.total} Hostinger mailboxes across 5 domains.`,
+      message: `Successfully synced ${result.total} mailboxes (25 Hostinger + 40 GoDaddy).`,
       result,
       accounts: rows.map(maskSystemSmtpAccount),
+    });
+  }
+
+  // 2. Assign / Unassign mailbox to user
+  if (action === "assign") {
+    const id = String(body.id || "");
+    const assignedUserId = body.assignedUserId ? String(body.assignedUserId) : null;
+    if (!id) return NextResponse.json({ error: "Mailbox ID required" }, { status: 400 });
+
+    const updated = await assignSystemSmtpAccount(id, assignedUserId);
+    return NextResponse.json({
+      ok: true,
+      message: assignedUserId ? "Mailbox assigned successfully" : "Mailbox unassigned to shared pool",
+      account: maskSystemSmtpAccount(updated),
     });
   }
 

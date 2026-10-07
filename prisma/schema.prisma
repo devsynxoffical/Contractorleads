@@ -118,6 +118,7 @@ model User {
   couponRedemptions CouponRedemption[]
   digestSubscription DigestSubscription?
   digestDeliveries   DigestDelivery[]
+  assignedSystemMailboxes SystemSmtpAccount[] @relation("AssignedSystemMailboxes")
   leadSegments       LeadSegment[]
   digestEmailSegments DigestEmailSegment[]
   campaigns          Campaign[]
@@ -823,28 +824,33 @@ model SmtpAccount {
   @@index([userId, enabled])
 }
 
-/// System / Super Admin shared SMTP mailboxes pool (Hostinger, etc.) for user outreach
+/// System / Super Admin shared SMTP mailboxes pool (Hostinger, GoDaddy, etc.) for user outreach
 model SystemSmtpAccount {
-  id           String      @id @default(cuid())
-  label        String      @default("Hostinger")
-  domain       String      @default("")
-  host         String      @default("smtp.hostinger.com")
-  port         Int         @default(465)
-  secure       Boolean     @default(true)
-  username     String
-  passwordEnc  String
-  fromEmail    String      @unique
-  fromName     String?
-  enabled      Boolean     @default(true)
-  isDefault    Boolean     @default(false)
-  sendWeight   Int         @default(1)
-  lastTestedAt DateTime?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  emails       LeadEmail[]
+  id             String      @id @default(cuid())
+  label          String      @default("Hostinger")
+  provider       String      @default("hostinger") // hostinger | godaddy | custom
+  domain         String      @default("")
+  host           String      @default("smtp.hostinger.com")
+  port           Int         @default(465)
+  secure         Boolean     @default(true)
+  username       String
+  passwordEnc    String
+  fromEmail      String      @unique
+  fromName       String?
+  enabled        Boolean     @default(true)
+  isDefault      Boolean     @default(false)
+  sendWeight     Int         @default(1)
+  assignedUserId String?
+  assignedUser   User?       @relation("AssignedSystemMailboxes", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  lastTestedAt   DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  emails         LeadEmail[]
 
   @@index([enabled])
+  @@index([provider])
   @@index([domain])
+  @@index([assignedUserId])
 }
 
 /// Outbound and inbound emails tied to a lead (send from detail + reply webhook).
