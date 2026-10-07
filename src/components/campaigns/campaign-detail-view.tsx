@@ -16,6 +16,7 @@ import {
   HiOutlineCheck,
   HiOutlineCheckBadge,
   HiOutlineClock,
+  HiOutlineDocumentArrowUp,
   HiOutlineDocumentDuplicate,
   HiOutlineEnvelope,
   HiOutlineEye,
@@ -40,6 +41,7 @@ import {
   HiOutlineXMark,
 } from "react-icons/hi2";
 import { cn } from "@/lib/utils";
+import { SpreadsheetImporter } from "@/components/campaigns/spreadsheet-importer";
 import {
   DEFAULT_DAY0_HOOKS,
   DEFAULT_FOLLOWUP_SEQUENCE,
@@ -320,6 +322,9 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
   const [replyMailboxId, setReplyMailboxId] = useState("");
   const [sendingReply, setSendingReply] = useState(false);
   const [replyFeedback, setReplyFeedback] = useState<string | null>(null);
+
+  // Spreadsheet Importer Modal state
+  const [showImportModal, setShowImportModal] = useState(false);
 
   // Selected copy preview & edit modal (Day 0 hooks and Follow-Up steps)
   const [mounted, setMounted] = useState(false);
@@ -1113,6 +1118,16 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
 
             <button
               type="button"
+              onClick={() => setShowImportModal(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-[var(--input-bg)] px-3.5 py-2 text-xs font-bold text-ink hover:border-brand-500 hover:text-brand-600 transition"
+              title="Import leads from Excel spreadsheet, CSV or pasted text"
+            >
+              <HiOutlineDocumentArrowUp className="h-4 w-4 text-brand-600" />
+              <span>Import Sheet / Leads</span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => void loadData()}
               className="rounded-xl border border-border p-2 text-ink-muted hover:text-ink hover:bg-[var(--input-bg)] transition"
               title="Refresh metrics"
@@ -1766,6 +1781,16 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowImportModal(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-brand-600 px-3 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-brand-700 transition"
+              title="Import spreadsheet or paste leads into this campaign"
+            >
+              <HiOutlineDocumentArrowUp className="h-4 w-4" />
+              <span>Import Sheet / Add Leads</span>
+            </button>
+
             <div className="relative">
               <HiOutlineMagnifyingGlass className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-muted" />
               <input
@@ -3365,6 +3390,42 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
           </div>
         </div>
       ), document.body)}
+
+      {/* SPREADSHEET IMPORTER MODAL */}
+      {showImportModal && mounted && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl border border-border bg-[var(--surface)] p-6 shadow-2xl my-8">
+            <button
+              type="button"
+              onClick={() => setShowImportModal(false)}
+              className="absolute right-4 top-4 z-10 rounded-lg p-1.5 text-ink-muted hover:bg-[var(--input-bg)] hover:text-ink transition"
+              title="Close import dialog"
+            >
+              <HiOutlineXMark className="h-5 w-5" />
+            </button>
+            <SpreadsheetImporter
+              campaignMode
+              campaignName={campaign?.name}
+              onEnrollToCampaign={async (leads) => {
+                const res = await fetch(`/api/campaigns/${campaignId}/import`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ leads }),
+                });
+                const d = await res.json();
+                if (!res.ok) {
+                  throw new Error(d.error || "Failed to import leads");
+                }
+                await loadData();
+                await loadProspects(prospectStatusFilter, prospectSearch);
+                setShowImportModal(false);
+              }}
+              onClose={() => setShowImportModal(false)}
+            />
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

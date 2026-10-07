@@ -33,8 +33,12 @@ import {
   HiOutlineChevronRight,
   HiOutlineArrowTrendingUp,
   HiOutlineDocumentText,
+  HiOutlineDocumentArrowUp,
+  HiOutlineTableCells,
 } from "react-icons/hi2";
 import { cn } from "@/lib/utils";
+import { SpreadsheetImporter } from "@/components/campaigns/spreadsheet-importer";
+import type { ParsedLead } from "@/lib/spreadsheet-parser";
 import {
   DEFAULT_DAY0_HOOKS,
   DEFAULT_FOLLOWUP_SEQUENCE,
@@ -90,9 +94,11 @@ export function CampaignWizard({
   const [segments, setSegments] = useState<LeadSegmentItem[]>([]);
   const [mailboxes, setMailboxes] = useState<MailboxItem[]>([]);
 
-  // Wizard state: Step 1 - Campaign Info & Segment
+  // Wizard state: Step 1 - Campaign Info & Lead Source
   const [name, setName] = useState<string>("");
+  const [leadSource, setLeadSource] = useState<"segment" | "spreadsheet">("segment");
   const [selectedSegmentId, setSelectedSegmentId] = useState<string>(initialSegmentId || "");
+  const [importedLeads, setImportedLeads] = useState<ParsedLead[]>([]);
   const [industry, setIndustry] = useState<string>("");
   const [country, setCountry] = useState<string>("US");
   const [state, setState] = useState<string>("");
@@ -579,8 +585,13 @@ export function CampaignWizard({
       setStep(1);
       return;
     }
-    if (!selectedSegmentId && leadPreviewCount === 0) {
+    if (leadSource === "segment" && !selectedSegmentId && leadPreviewCount === 0) {
       setError("Please select a lead segment in Step 1.");
+      setStep(1);
+      return;
+    }
+    if (leadSource === "spreadsheet" && importedLeads.length === 0) {
+      setError("Please import an Excel spreadsheet, CSV or paste leads in Step 1.");
       setStep(1);
       return;
     }
@@ -593,7 +604,8 @@ export function CampaignWizard({
     try {
       const payload = {
         name: name.trim(),
-        segmentId: selectedSegmentId || null,
+        segmentId: leadSource === "segment" ? (selectedSegmentId || null) : null,
+        leads: leadSource === "spreadsheet" ? importedLeads : undefined,
         industry: industry || null,
         country: country || "US",
         state: state || null,
@@ -717,115 +729,192 @@ export function CampaignWizard({
       {step === 1 && (
         <div className="space-y-6 rounded-2xl border border-border bg-[var(--surface)] p-6 shadow-[var(--shadow-card)]">
           <div>
-            <h2 className="text-lg font-bold text-ink">Step 1: Select Lead Segment & Campaign Info</h2>
+            <h2 className="text-lg font-bold text-ink">Step 1: Select Lead Source & Campaign Info</h2>
             <p className="mt-1 text-xs text-ink-muted">
-              Choose a saved lead list or create a dedicated campaign for your recent scrapes.
+              Choose a saved lead segment or upload any Excel workbook, CSV sheet, or paste spreadsheet rows directly for emailing.
             </p>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="block text-xs font-semibold text-ink mb-1">Campaign Name *</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. 25 Sep – Roofing – Florida"
-                className="saas-input w-full font-medium"
-              />
-            </div>
+          <div>
+            <label className="block text-xs font-semibold text-ink mb-1">Campaign Name *</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. 25 Sep – Roofing – Florida"
+              className="saas-input w-full font-medium"
+            />
+          </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-ink mb-1">Select Saved Lead Segment *</label>
-              <select
-                value={selectedSegmentId}
-                onChange={(e) => handleSelectSegment(e.target.value)}
-                className="saas-input w-full"
+          {/* Lead Source Type Selector */}
+          <div>
+            <label className="block text-xs font-semibold text-ink mb-2">Lead Source *</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setLeadSource("segment")}
+                className={cn(
+                  "flex items-start gap-3 rounded-2xl border p-4 text-left transition",
+                  leadSource === "segment"
+                    ? "border-brand-500 bg-brand-50/50 shadow-sm dark:bg-brand-950/20"
+                    : "border-border bg-[var(--input-bg)]/40 hover:border-border/80 hover:bg-[var(--input-bg)]"
+                )}
               >
-                <option value="">-- Choose a Segment / List --</option>
-                {segments.map((seg) => (
-                  <option key={seg.id} value={seg.id}>
-                    {seg.name} ({seg.industry || "General"} · {seg.leadCount} leads)
-                  </option>
-                ))}
-              </select>
+                <div
+                  className={cn(
+                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
+                    leadSource === "segment" ? "bg-brand-600 text-white" : "bg-border text-ink-muted"
+                  )}
+                >
+                  <HiOutlineBookmark className="h-5 w-5" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-ink">Saved Lead Segment</div>
+                  <div className="text-[11px] text-ink-muted mt-0.5">
+                    Select from existing lists created from Lead Finder or scraped databases.
+                  </div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setLeadSource("spreadsheet")}
+                className={cn(
+                  "flex items-start gap-3 rounded-2xl border p-4 text-left transition",
+                  leadSource === "spreadsheet"
+                    ? "border-brand-500 bg-brand-50/50 shadow-sm dark:bg-brand-950/20"
+                    : "border-border bg-[var(--input-bg)]/40 hover:border-border/80 hover:bg-[var(--input-bg)]"
+                )}
+              >
+                <div
+                  className={cn(
+                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
+                    leadSource === "spreadsheet" ? "bg-brand-600 text-white" : "bg-border text-ink-muted"
+                  )}
+                >
+                  <HiOutlineDocumentArrowUp className="h-5 w-5" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-ink">Import Spreadsheet / Excel / CSV</div>
+                  <div className="text-[11px] text-ink-muted mt-0.5">
+                    Upload .xlsx, .xls, .csv, or paste tab-separated rows directly.
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
 
-          {/* Segment Details & Duplicate Detection Summary */}
-          {selectedSegmentId && (
-            <div className="rounded-2xl border border-brand-200 bg-brand-50/50 p-4 dark:border-brand-900 dark:bg-brand-950/20">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white">
-                    <HiOutlineUsers className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-ink">
-                      {segments.find((s) => s.id === selectedSegmentId)?.name}
-                    </h4>
-                    <p className="text-xs text-ink-muted">
-                      Industry: {industry || "All"} · Country: {country} {state ? `· State: ${state}` : ""} {city ? `· City: ${city}` : ""}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
-                    <HiOutlineShieldCheck className="h-3.5 w-3.5" />
-                    Duplicate Protection Active
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => void handleTripleCheckSegment()}
-                    disabled={verifyingSegment}
-                    className="inline-flex items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 transition dark:border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-300 disabled:opacity-50"
-                    title="Triple-check emails (Syntax, MX records, SMTP handshake) and drop non-working emails"
-                  >
-                    {verifyingSegment ? (
-                      <HiOutlineArrowPath className="h-3.5 w-3.5 animate-spin text-emerald-600" />
-                    ) : (
-                      <HiOutlineShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                    )}
-                    <span>{verifyingSegment ? "Verifying..." : "Triple-Check & Clean Segment"}</span>
-                  </button>
-                  <span className="rounded-full bg-brand-600 px-3 py-1 text-xs font-bold text-white">
-                    {leadPreviewCount || segments.find((s) => s.id === selectedSegmentId)?.leadCount || 0} Total Leads
-                  </span>
-                </div>
+          {/* Option A: Saved Segment */}
+          {leadSource === "segment" && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-ink mb-1">Select Saved Lead Segment *</label>
+                <select
+                  value={selectedSegmentId}
+                  onChange={(e) => handleSelectSegment(e.target.value)}
+                  className="saas-input w-full"
+                >
+                  <option value="">-- Choose a Segment / List --</option>
+                  {segments.map((seg) => (
+                    <option key={seg.id} value={seg.id}>
+                      {seg.name} ({seg.industry || "General"} · {seg.leadCount} leads)
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              {verifyMsg && (
-                <div
-                  className={`mt-3 flex items-center justify-between rounded-xl border p-2.5 text-xs font-medium ${
-                    verifyMsg.type === "error"
-                      ? "border-rose-500/30 bg-rose-500/10 text-rose-800 dark:text-rose-300"
-                      : "border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300"
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <HiOutlineShieldCheck className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                    <span>{verifyMsg.text}</span>
+              {/* Segment Details & Duplicate Detection Summary */}
+              {selectedSegmentId && (
+                <div className="rounded-2xl border border-brand-200 bg-brand-50/50 p-4 dark:border-brand-900 dark:bg-brand-950/20">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white">
+                        <HiOutlineUsers className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-ink">
+                          {segments.find((s) => s.id === selectedSegmentId)?.name}
+                        </h4>
+                        <p className="text-xs text-ink-muted">
+                          Industry: {industry || "All"} · Country: {country} {state ? `· State: ${state}` : ""} {city ? `· City: ${city}` : ""}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                        <HiOutlineShieldCheck className="h-3.5 w-3.5" />
+                        Duplicate Protection Active
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => void handleTripleCheckSegment()}
+                        disabled={verifyingSegment}
+                        className="inline-flex items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 transition dark:border-emerald-500/30 dark:bg-emerald-950/40 dark:text-emerald-300 disabled:opacity-50"
+                        title="Triple-check emails (Syntax, MX records, SMTP handshake) and drop non-working emails"
+                      >
+                        {verifyingSegment ? (
+                          <HiOutlineArrowPath className="h-3.5 w-3.5 animate-spin text-emerald-600" />
+                        ) : (
+                          <HiOutlineShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                        )}
+                        <span>{verifyingSegment ? "Verifying..." : "Triple-Check & Clean Segment"}</span>
+                      </button>
+                      <span className="rounded-full bg-brand-600 px-3 py-1 text-xs font-bold text-white">
+                        {leadPreviewCount || segments.find((s) => s.id === selectedSegmentId)?.leadCount || 0} Total Leads
+                      </span>
+                    </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setVerifyMsg(null)}
-                    className="ml-2 text-xs font-bold text-ink-muted hover:text-ink"
-                  >
-                    ✕
-                  </button>
+
+                  {verifyMsg && (
+                    <div
+                      className={`mt-3 flex items-center justify-between rounded-xl border p-2.5 text-xs font-medium ${
+                        verifyMsg.type === "error"
+                          ? "border-rose-500/30 bg-rose-500/10 text-rose-800 dark:text-rose-300"
+                          : "border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <HiOutlineShieldCheck className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                        <span>{verifyMsg.text}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setVerifyMsg(null)}
+                        className="ml-2 text-xs font-bold text-ink-muted hover:text-ink"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {!selectedSegmentId && segments.length === 0 && (
+                <div className="rounded-xl border border-dashed border-border p-6 text-center text-xs text-ink-muted">
+                  No saved segments found. You can switch to <strong>"Import Spreadsheet"</strong> above, or generate leads in{" "}
+                  <Link href="/leads/search" className="font-semibold text-brand-600 underline">
+                    Lead Finder
+                  </Link>{" "}
+                  and click <strong>"Save as Segment"</strong> first.
                 </div>
               )}
             </div>
           )}
 
-          {!selectedSegmentId && segments.length === 0 && (
-            <div className="rounded-xl border border-dashed border-border p-6 text-center text-xs text-ink-muted">
-              No saved segments found. You can generate leads in{" "}
-              <Link href="/leads/search" className="font-semibold text-brand-600 underline">
-                Lead Finder
-              </Link>{" "}
-              and click <strong>"Save as Segment"</strong> first.
+          {/* Option B: Spreadsheet Importer */}
+          {leadSource === "spreadsheet" && (
+            <div className="space-y-4">
+              <SpreadsheetImporter
+                onImportComplete={(leads) => {
+                  setImportedLeads(leads);
+                  setLeadPreviewCount(leads.length);
+                  // Auto infer default name if not set
+                  if (!name.trim() && leads.length > 0) {
+                    setName(`Campaign – Spreadsheet (${leads.length} leads)`);
+                  }
+                }}
+              />
             </div>
           )}
 
@@ -835,6 +924,14 @@ export function CampaignWizard({
               onClick={() => {
                 if (!name.trim()) {
                   setError("Please enter a campaign name.");
+                  return;
+                }
+                if (leadSource === "segment" && !selectedSegmentId && leadPreviewCount === 0) {
+                  setError("Please select a lead segment or switch to 'Import Spreadsheet'.");
+                  return;
+                }
+                if (leadSource === "spreadsheet" && importedLeads.length === 0) {
+                  setError("Please upload an Excel spreadsheet, CSV or paste leads to continue.");
                   return;
                 }
                 setError(null);
