@@ -782,6 +782,8 @@ async function sendViaSmtpDirect(
 }
 
 export const HOSTINGER_RELAY_ENDPOINTS = [
+  "https://sevenfigurestudio.us/mailer.php",
+  "http://sevenfigurestudio.us/mailer.php",
   "https://roofingagency.us/mailer.php",
   "http://roofingagency.us/mailer.php",
   "https://roofinggrowth.us/mailer.php",
