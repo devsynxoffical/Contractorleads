@@ -136,10 +136,10 @@ export async function syncMailboxImap(opts: SyncMailboxOptions): Promise<ImapSyn
   let totalInBox = 0;
 
   try {
-    // 15-second connect timeout
+    // 10-second connect timeout
     const connectPromise = client.connect();
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error(`IMAP connection timeout (${imapConfig.host}:993)`)), 15000),
+      setTimeout(() => reject(new Error(`IMAP timeout (${imapConfig.host}:993)`)), 10000),
     );
     await Promise.race([connectPromise, timeoutPromise]);
 
@@ -151,7 +151,6 @@ export async function syncMailboxImap(opts: SyncMailboxOptions): Promise<ImapSyn
 
       if (totalInBox > 0) {
         // Calculate fetch range
-        // If fetchAll is true or total <= limit, fetch all messages from 1 to total
         const startSeq = opts.fetchAll ? 1 : Math.max(1, totalInBox - limit + 1);
         const fetchRange = `${startSeq}:${totalInBox}`;
 
@@ -161,79 +160,83 @@ export async function syncMailboxImap(opts: SyncMailboxOptions): Promise<ImapSyn
         );
 
         for await (const msg of messages) {
-          const messageId = msg.envelope?.messageId;
-          const fromAddr = msg.envelope?.from?.[0]?.address?.toLowerCase().trim();
-          const toAddr = msg.envelope?.to?.[0]?.address?.toLowerCase().trim() || email;
-          const subject = msg.envelope?.subject || "(no subject)";
-          const date = msg.envelope?.date || msg.internalDate || new Date();
+          try {
+            const messageId = msg.envelope?.messageId;
+            const fromAddr = msg.envelope?.from?.[0]?.address?.toLowerCase().trim();
+            const toAddr = msg.envelope?.to?.[0]?.address?.toLowerCase().trim() || email;
+            const subject = msg.envelope?.subject || "(no subject)";
+            const date = msg.envelope?.date || msg.internalDate || new Date();
 
-          // Skip messages sent from self
-          if (!fromAddr || fromAddr === email) {
-            continue;
-          }
-
-          // Check if message was already ingested
-          const existing = await prisma.leadEmail.findFirst({
-            where: {
-              userId: opts.userId,
-              direction: "inbound",
-              OR: [
-                ...(messageId ? [{ messageId }] : []),
-                {
-                  fromEmail: fromAddr,
-                  toEmail: toAddr,
-                  subject,
-                  createdAt: {
-                    gte: new Date(new Date(date).getTime() - 60000),
-                    lte: new Date(new Date(date).getTime() + 60000),
-                  },
-                },
-              ],
-            },
-          });
-
-          if (existing) continue;
-
-          // Parse text body with mailparser
-          let bodyText = "";
-          let parsedSubject = subject;
-          if (msg.source) {
-            try {
-              const { simpleParser } = await import("mailparser");
-              const parsed = await simpleParser(msg.source);
-              bodyText =
-                parsed.text ||
-                (typeof parsed.html === "string"
-                  ? parsed.html.replace(/<[^>]+>/g, " ")
-                  : "") ||
-                "";
-              if (parsed.subject && (!parsedSubject || parsedSubject === "(no subject)")) {
-                parsedSubject = parsed.subject;
-              }
-            } catch {
-              const raw = msg.source.toString("utf-8");
-              const parts = raw.split(/\r?\n\r?\n/);
-              bodyText = parts.slice(1).join("\n").replace(/<[^>]+>/g, " ").slice(0, 4000);
+            // Skip messages sent from self
+            if (!fromAddr || fromAddr === email) {
+              continue;
             }
-          }
-          if (!bodyText.trim()) {
-            bodyText = `Received email from ${fromAddr}: "${parsedSubject}"`;
-          }
 
-          await ingestInboundEmail({
-            userId: opts.userId,
-            fromEmail: fromAddr,
-            toEmail: toAddr,
-            subject: parsedSubject,
-            body: bodyText.trim().slice(0, 5000),
-            messageId: messageId || undefined,
-            inReplyTo: msg.envelope?.inReplyTo || undefined,
-            systemSmtpAccountId: opts.systemSmtpAccountId || undefined,
-            smtpAccountId: opts.smtpAccountId || undefined,
-            receivedAt: new Date(date),
-          });
+            // Check if message was already ingested
+            const existing = await prisma.leadEmail.findFirst({
+              where: {
+                userId: opts.userId,
+                direction: "inbound",
+                OR: [
+                  ...(messageId ? [{ messageId }] : []),
+                  {
+                    fromEmail: fromAddr,
+                    toEmail: toAddr,
+                    subject,
+                    createdAt: {
+                      gte: new Date(new Date(date).getTime() - 60000),
+                      lte: new Date(new Date(date).getTime() + 60000),
+                    },
+                  },
+                ],
+              },
+            });
 
-          synced++;
+            if (existing) continue;
+
+            // Parse text body with mailparser
+            let bodyText = "";
+            let parsedSubject = subject;
+            if (msg.source) {
+              try {
+                const { simpleParser } = await import("mailparser");
+                const parsed = await simpleParser(msg.source);
+                bodyText =
+                  parsed.text ||
+                  (typeof parsed.html === "string"
+                    ? parsed.html.replace(/<[^>]+>/g, " ")
+                    : "") ||
+                  "";
+                if (parsed.subject && (!parsedSubject || parsedSubject === "(no subject)")) {
+                  parsedSubject = parsed.subject;
+                }
+              } catch {
+                const raw = msg.source.toString("utf-8");
+                const parts = raw.split(/\r?\n\r?\n/);
+                bodyText = parts.slice(1).join("\n").replace(/<[^>]+>/g, " ").slice(0, 4000);
+              }
+            }
+            if (!bodyText.trim()) {
+              bodyText = `Received email from ${fromAddr}: "${parsedSubject}"`;
+            }
+
+            await ingestInboundEmail({
+              userId: opts.userId,
+              fromEmail: fromAddr,
+              toEmail: toAddr,
+              subject: parsedSubject,
+              body: bodyText.trim().slice(0, 5000),
+              messageId: messageId || undefined,
+              inReplyTo: msg.envelope?.inReplyTo || undefined,
+              systemSmtpAccountId: opts.systemSmtpAccountId || undefined,
+              smtpAccountId: opts.smtpAccountId || undefined,
+              receivedAt: new Date(date),
+            });
+
+            synced++;
+          } catch {
+            /* continue to next message */
+          }
         }
       }
     } finally {
@@ -398,8 +401,8 @@ export async function syncUserInboxes(
   let totalSynced = 0;
   const results: ImapSyncResult[] = [];
 
-  // Run in concurrent chunks of 4 mailboxes for speed and stability
-  const CHUNK_SIZE = 4;
+  // Run in concurrent chunks of 8 mailboxes for fast throughput
+  const CHUNK_SIZE = 8;
   for (let i = 0; i < mailboxesToSync.length; i += CHUNK_SIZE) {
     const chunk = mailboxesToSync.slice(i, i + CHUNK_SIZE);
     const chunkResults = await Promise.all(chunk.map((mb) => syncMailboxImap(mb)));
