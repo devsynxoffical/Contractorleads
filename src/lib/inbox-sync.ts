@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { decryptSecret } from "@/lib/crypto-secret";
 import { HOSTINGER_DEFAULT_MAILBOXES, GODADDY_DEFAULT_MAILBOXES } from "@/lib/system-smtp";
 import { ingestInboundEmail } from "@/lib/lead-email";
+import { ADMIN_STAFF_ROLES, OWNER_EMAIL } from "@/lib/roles";
 
 export type ImapSyncResult = {
   mailbox: string;
@@ -275,22 +276,43 @@ export async function syncUserInboxes(
 }> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, role: true },
+    select: { id: true, role: true, email: true },
   });
 
   if (!user) {
     return { totalSynced: 0, results: [], mailboxesCount: 0 };
   }
 
-  const isSuperAdmin = user.role === "SUPER_ADMIN" || user.role === "ADMIN";
+  const role = (user.role || "").toUpperCase();
+  const isSuperAdmin =
+    role === "OWNER" ||
+    role === "SUPER_ADMIN" ||
+    role === "ADMIN" ||
+    role === "MANAGER" ||
+    role === "SUB_ADMIN" ||
+    user.email?.toLowerCase() === OWNER_EMAIL.toLowerCase() ||
+    ADMIN_STAFF_ROLES.includes(role as any);
 
   // 1. Fetch system SMTP accounts
   // Super admins sync all system mailboxes; regular users only sync accounts assigned directly to them.
-  const systemAccounts = await prisma.systemSmtpAccount.findMany({
+  let systemAccounts = await prisma.systemSmtpAccount.findMany({
     where: isSuperAdmin
       ? { enabled: true }
       : { assignedUserId: userId, enabled: true },
   });
+
+  // If superadmin has 0 system accounts in DB, ensure seed
+  if (isSuperAdmin && systemAccounts.length === 0) {
+    try {
+      const { seedSystemMailboxes } = await import("@/lib/system-smtp");
+      await seedSystemMailboxes(false);
+      systemAccounts = await prisma.systemSmtpAccount.findMany({
+        where: { enabled: true },
+      });
+    } catch {
+      /* fallback to seeds */
+    }
+  }
 
   // 2. Fetch custom user SMTP accounts
   const userAccounts = await prisma.smtpAccount.findMany({
@@ -349,8 +371,18 @@ export async function syncUserInboxes(
     }
   }
 
-  // If superadmin with no accounts found, fallback to default seed accounts
+  // If superadmin and still no accounts loaded from DB, fallback to full in-memory seed list
   if (!mailboxesToSync.length && isSuperAdmin) {
+    for (const m of GODADDY_DEFAULT_MAILBOXES) {
+      mailboxesToSync.push({
+        userId,
+        email: m.email,
+        pass: m.pass,
+        provider: "godaddy",
+        limit: opts?.limitPerMailbox ?? 30,
+        fetchAll: opts?.fetchAll ?? true,
+      });
+    }
     for (const m of HOSTINGER_DEFAULT_MAILBOXES) {
       mailboxesToSync.push({
         userId,
