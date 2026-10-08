@@ -39,9 +39,20 @@ export async function GET(_request: Request, { params }: Params) {
     email.readAt = new Date();
   }
 
+  const threadWhere = email.leadId
+    ? { userId: user.id, leadId: email.leadId }
+    : {
+        userId: user.id,
+        OR: [
+          { id: email.id },
+          ...(email.messageId ? [{ inReplyTo: email.messageId }] : []),
+          ...(email.inReplyTo ? [{ messageId: email.inReplyTo }] : []),
+        ],
+      };
+
   const [thread, accounts] = await Promise.all([
     prisma.leadEmail.findMany({
-      where: { userId: user.id, leadId: email.leadId },
+      where: threadWhere,
       orderBy: { createdAt: "asc" },
       select: {
         id: true,
