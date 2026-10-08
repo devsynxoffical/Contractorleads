@@ -118,6 +118,27 @@ export async function processCampaignSends(opts?: {
     // Discover mailboxes for this campaign
     await ensureSystemSmtpSeeded();
 
+    const campaignUser = await prisma.user.findUnique({
+      where: { id: campaign.userId },
+      select: { role: true },
+    });
+    const isSuper =
+      campaignUser?.role === "superadmin" ||
+      campaignUser?.role === "owner" ||
+      campaignUser?.role === "admin";
+
+    let systemWhere: any = { enabled: true };
+    if (!isSuper) {
+      const userAssignedCount = await prisma.systemSmtpAccount.count({
+        where: { enabled: true, assignedUserId: campaign.userId },
+      });
+      if (userAssignedCount > 0) {
+        systemWhere = { enabled: true, assignedUserId: campaign.userId };
+      } else {
+        systemWhere = { enabled: true, assignedUserId: null };
+      }
+    }
+
     let [userMailboxes, systemMailboxes, todayLogs] = await Promise.all([
       prisma.smtpAccount.findMany({
         where: {
@@ -132,7 +153,7 @@ export async function processCampaignSends(opts?: {
         },
       }),
       prisma.systemSmtpAccount.findMany({
-        where: { enabled: true },
+        where: systemWhere,
       }),
       prisma.campaignLog.findMany({
         where: {
@@ -145,7 +166,7 @@ export async function processCampaignSends(opts?: {
       }),
     ]);
 
-    if (systemMailboxes.length === 0) {
+    if (systemMailboxes.length === 0 && isSuper) {
       await seedHostingerMailboxes(true);
       systemMailboxes = await prisma.systemSmtpAccount.findMany({ where: { enabled: true } });
     }

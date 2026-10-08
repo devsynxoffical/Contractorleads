@@ -100,14 +100,41 @@ export function prepareCampaignProspects(
 
 /** Get list of eligible mailboxes and calculate daily send capacity */
 export async function getCampaignMailboxStats(userId: string) {
-  let systemAccounts = await prisma.systemSmtpAccount.findMany({
-    where: { enabled: true },
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, role: true },
   });
 
-  if (systemAccounts.length === 0) {
+  const isSuper =
+    user?.role === "superadmin" ||
+    user?.role === "owner" ||
+    user?.role === "admin";
+
+  let systemWhere: any = { enabled: true };
+  if (!isSuper) {
+    const userAssignedCount = await prisma.systemSmtpAccount.count({
+      where: { enabled: true, assignedUserId: userId },
+    });
+
+    if (userAssignedCount > 0) {
+      // User ONLY has access to their assigned mailboxes
+      systemWhere = { enabled: true, assignedUserId: userId };
+    } else {
+      // User has no specifically assigned mailboxes -> shared unassigned mailboxes only
+      systemWhere = { enabled: true, assignedUserId: null };
+    }
+  }
+
+  let systemAccounts = await prisma.systemSmtpAccount.findMany({
+    where: systemWhere,
+    orderBy: [{ provider: "asc" }, { domain: "asc" }, { createdAt: "asc" }],
+  });
+
+  if (systemAccounts.length === 0 && isSuper) {
     await seedHostingerMailboxes(false);
     systemAccounts = await prisma.systemSmtpAccount.findMany({
       where: { enabled: true },
+      orderBy: [{ provider: "asc" }, { domain: "asc" }, { createdAt: "asc" }],
     });
   }
 

@@ -10,6 +10,7 @@ import { appBaseUrl } from "@/lib/email-brand";
 import {
   getSystemSenderConfig,
   pickSystemRotationSender,
+  systemRowToSenderConfig,
   HOSTINGER_DEFAULT_MAILBOXES,
 } from "@/lib/system-smtp";
 
@@ -272,9 +273,28 @@ export async function getUserSenderConfig(
     });
     if (row) return rowToSenderConfig(row);
 
-    // Check system Hostinger SMTP accounts
-    const sys = await getSystemSenderConfig(accountId);
-    if (sys) return sys;
+    // Check system SMTP accounts
+    const sysRow = await prisma.systemSmtpAccount.findFirst({
+      where: {
+        OR: [{ id: accountId }, { fromEmail: accountId.toLowerCase().trim() }],
+        enabled: true,
+      },
+    });
+    if (sysRow) {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true },
+      });
+      const isSuper =
+        user?.role === "superadmin" ||
+        user?.role === "owner" ||
+        user?.role === "admin";
+
+      // If user is superadmin or the mailbox is assigned to them or unassigned shared, allow
+      if (isSuper || sysRow.assignedUserId === userId || !sysRow.assignedUserId) {
+        return systemRowToSenderConfig(sysRow);
+      }
+    }
   }
 
   const preferred = await prisma.smtpAccount.findFirst({
@@ -303,8 +323,8 @@ export async function getUserSenderConfig(
     };
   }
 
-  // Fallback to Super Admin Hostinger mailboxes pool
-  return pickSystemRotationSender();
+  // Fallback to Super Admin / Assigned system mailboxes pool
+  return pickSystemRotationSender(userId);
 }
 
 export async function listSmtpAccounts(userId: string) {
@@ -317,20 +337,42 @@ export async function listSmtpAccounts(userId: string) {
 
 export async function listAvailableSenders(userId: string) {
   await migrateLegacySmtpIfNeeded(userId);
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+  const isSuper =
+    user?.role === "superadmin" ||
+    user?.role === "owner" ||
+    user?.role === "admin";
+
+  let systemWhere: any = { enabled: true };
+  if (!isSuper) {
+    const userAssignedCount = await prisma.systemSmtpAccount.count({
+      where: { enabled: true, assignedUserId: userId },
+    });
+    if (userAssignedCount > 0) {
+      systemWhere = { enabled: true, assignedUserId: userId };
+    } else {
+      systemWhere = { enabled: true, assignedUserId: null };
+    }
+  }
+
   const userAccounts = await prisma.smtpAccount.findMany({
     where: { userId },
     orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
   });
 
   const systemAccounts = await prisma.systemSmtpAccount.findMany({
-    where: { enabled: true },
-    orderBy: [{ domain: "asc" }, { fromName: "asc" }],
+    where: systemWhere,
+    orderBy: [{ provider: "asc" }, { domain: "asc" }, { fromName: "asc" }],
   });
 
   const maskedUser = userAccounts.map(maskSmtpAccount);
   const maskedSystem = systemAccounts.map((s) => ({
     id: s.id,
-    label: `Hostinger: ${s.fromName || s.fromEmail} (${s.domain})`,
+    label: `${s.provider === "godaddy" ? "GoDaddy" : "Hostinger"}: ${s.fromName || s.fromEmail} (${s.domain})`,
     host: s.host,
     port: s.port,
     secure: s.secure,
@@ -367,7 +409,7 @@ export async function pickRotationSender(userId: string): Promise<SenderConfig |
     orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
   });
   if (!accounts.length) {
-    const sys = await pickSystemRotationSender();
+    const sys = await pickSystemRotationSender(userId);
     if (sys) return sys;
     return getUserSenderConfig(userId);
   }
