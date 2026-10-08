@@ -872,8 +872,8 @@ export function EmailInboxPanel() {
                             {cleanPreview || "(empty message preview)"}
                           </p>
 
-                          {/* Category Badge & Status */}
-                          <div className="flex items-center gap-2 pt-0.5">
+                          {/* Category Badge & Destination Mailbox */}
+                          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                             <span
                               className={cn(
                                 "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wider border",
@@ -882,8 +882,18 @@ export function EmailInboxPanel() {
                             >
                               {theme.label}
                             </span>
+
+                            {e.toEmail && (
+                              <span
+                                title={`Received on mailbox: ${e.toEmail}`}
+                                className="inline-flex items-center gap-1 truncate max-w-[160px] rounded-md bg-[var(--surface-muted)] px-1.5 py-0.5 font-mono text-[10px] font-semibold text-ink-muted border border-border/60"
+                              >
+                                📥 {e.toEmail}
+                              </span>
+                            )}
+
                             {unread && (
-                              <span className="h-2 w-2 rounded-full bg-brand-600 animate-pulse" />
+                              <span className="h-2 w-2 rounded-full bg-brand-600 animate-pulse ml-auto" />
                             )}
                           </div>
                         </div>
@@ -944,7 +954,7 @@ export function EmailInboxPanel() {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2 text-xs text-ink-muted">
-                      <span className="font-mono text-[11px] text-ink-muted">{selectedEmail.fromEmail}</span>
+                      <span className="font-mono text-[11px] text-ink-muted">From: {selectedEmail.fromEmail}</span>
                       <button
                         type="button"
                         onClick={() => copyToClipboard(selectedEmail.fromEmail)}
@@ -960,6 +970,15 @@ export function EmailInboxPanel() {
                           </>
                         )}
                       </button>
+
+                      {selectedEmail.toEmail && (
+                        <div className="flex items-center gap-1 rounded-md bg-[var(--surface-muted)] px-2 py-0.5 text-[11px] border border-border/60">
+                          <span className="text-ink-faint">Received on:</span>
+                          <span className="font-mono font-bold text-brand-700 dark:text-brand-300">
+                            📥 {selectedEmail.toEmail}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -997,7 +1016,7 @@ export function EmailInboxPanel() {
                     >
                       {/* Message Metadata Header */}
                       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-3">
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <span
                             className={cn(
                               "inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10.5px] font-bold tracking-wide uppercase",
@@ -1016,9 +1035,24 @@ export function EmailInboxPanel() {
                               </>
                             )}
                           </span>
-                          <span className="text-xs font-medium text-ink-muted">
-                            {isInbound ? `From: ${m.fromEmail}` : `To: ${m.toEmail}`}
-                          </span>
+
+                          <div className="flex flex-wrap items-center gap-1.5 text-xs text-ink-muted">
+                            {isInbound ? (
+                              <>
+                                <span>From: <strong className="font-mono text-ink font-semibold">{m.fromEmail}</strong></span>
+                                <span className="text-ink-faint">➔</span>
+                                <span className="inline-flex items-center gap-1 rounded bg-brand-50 px-1.5 py-0.5 font-mono text-[10.5px] font-bold text-brand-700 border border-brand-200/70 dark:bg-brand-950 dark:border-brand-900 dark:text-brand-300">
+                                  📥 Received on: {m.toEmail}
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <span>From: <strong className="font-mono text-ink font-semibold">{m.fromEmail}</strong></span>
+                                <span className="text-ink-faint">➔</span>
+                                <span>To: <strong className="font-mono text-ink font-semibold">{m.toEmail}</strong></span>
+                              </>
+                            )}
+                          </div>
                         </div>
 
                         <div className="flex items-center gap-1 text-[11px] text-ink-faint">
