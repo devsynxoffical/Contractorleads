@@ -98,27 +98,16 @@ export function prepareCampaignProspects(
   };
 }
 
-function isPrivilegedAdmin(role?: string | null): boolean {
-  if (!role) return false;
-  const r = String(role).toUpperCase().trim();
-  return (
-    r === "OWNER" ||
-    r === "SUPER_ADMIN" ||
-    r === "ADMIN" ||
-    r === "SUPERADMIN" ||
-    r === "MANAGER" ||
-    r === "SUB_ADMIN"
-  );
-}
+import { isGlobalSuperAdmin } from "@/lib/roles";
 
 /** Get list of eligible mailboxes and calculate daily send capacity */
 export async function getCampaignMailboxStats(userId: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, role: true },
+    select: { id: true, role: true, email: true },
   });
 
-  const isSuper = isPrivilegedAdmin(user?.role);
+  const isSuper = isGlobalSuperAdmin(user);
 
   // Super Admins & Owners see all system mailboxes.
   // Regular users ONLY see system mailboxes explicitly assigned to their user ID.

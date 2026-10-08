@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { decryptSecret } from "@/lib/crypto-secret";
 import { HOSTINGER_DEFAULT_MAILBOXES, GODADDY_DEFAULT_MAILBOXES } from "@/lib/system-smtp";
 import { ingestInboundEmail } from "@/lib/lead-email";
-import { ADMIN_STAFF_ROLES, OWNER_EMAIL } from "@/lib/roles";
+import { isGlobalSuperAdmin } from "@/lib/roles";
 
 export type ImapSyncResult = {
   mailbox: string;
@@ -286,15 +286,7 @@ export async function syncUserInboxes(
     return { totalSynced: 0, results: [], mailboxesCount: 0 };
   }
 
-  const role = (user.role || "").toUpperCase();
-  const isSuperAdmin =
-    role === "OWNER" ||
-    role === "SUPER_ADMIN" ||
-    role === "ADMIN" ||
-    role === "MANAGER" ||
-    role === "SUB_ADMIN" ||
-    user.email?.toLowerCase() === OWNER_EMAIL.toLowerCase() ||
-    ADMIN_STAFF_ROLES.includes(role as any);
+  const isSuperAdmin = isGlobalSuperAdmin(user);
 
   // 1. Fetch system SMTP accounts
   // Super admins sync all system mailboxes; regular users only sync accounts assigned directly to them.

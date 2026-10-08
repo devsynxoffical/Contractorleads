@@ -19,6 +19,7 @@ import {
 import { sendOutboundEmail } from "@/lib/user-smtp";
 import { appBaseUrl } from "@/lib/email-brand";
 import { ensureSystemSmtpSeeded, seedHostingerMailboxes } from "@/lib/system-smtp";
+import { isGlobalSuperAdmin } from "@/lib/roles";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -120,16 +121,9 @@ export async function processCampaignSends(opts?: {
 
     const campaignUser = await prisma.user.findUnique({
       where: { id: campaign.userId },
-      select: { role: true },
+      select: { id: true, role: true, email: true },
     });
-    const r = String(campaignUser?.role || "").toUpperCase().trim();
-    const isSuper =
-      r === "OWNER" ||
-      r === "SUPER_ADMIN" ||
-      r === "ADMIN" ||
-      r === "SUPERADMIN" ||
-      r === "MANAGER" ||
-      r === "SUB_ADMIN";
+    const isSuper = isGlobalSuperAdmin(campaignUser);
 
     // Super Admins see all system mailboxes.
     // Regular users ONLY see mailboxes explicitly assigned to their user ID.

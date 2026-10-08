@@ -9,6 +9,7 @@ import {
   type SenderConfig,
   type SmtpPayload,
 } from "@/lib/user-smtp";
+import { isGlobalSuperAdmin } from "@/lib/roles";
 
 export type HostingerMailboxSeed = {
   name: string;
@@ -568,16 +569,9 @@ export async function pickSystemRotationSender(userId?: string): Promise<SenderC
   if (userId) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { role: true },
+      select: { id: true, role: true, email: true },
     });
-    const r = String(user?.role || "").toUpperCase().trim();
-    const isSuper =
-      r === "OWNER" ||
-      r === "SUPER_ADMIN" ||
-      r === "ADMIN" ||
-      r === "SUPERADMIN" ||
-      r === "MANAGER" ||
-      r === "SUB_ADMIN";
+    const isSuper = isGlobalSuperAdmin(user);
 
     const assigned = await prisma.systemSmtpAccount.findMany({
       where: { enabled: true, assignedUserId: userId },

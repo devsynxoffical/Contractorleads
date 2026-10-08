@@ -260,18 +260,7 @@ function rowToSenderConfig(row: {
   };
 }
 
-function isPrivilegedAdmin(role?: string | null): boolean {
-  if (!role) return false;
-  const r = String(role).toUpperCase().trim();
-  return (
-    r === "OWNER" ||
-    r === "SUPER_ADMIN" ||
-    r === "ADMIN" ||
-    r === "SUPERADMIN" ||
-    r === "MANAGER" ||
-    r === "SUB_ADMIN"
-  );
-}
+import { isGlobalSuperAdmin } from "@/lib/roles";
 
 /** Default sender (from name + reply-to). SMTP credentials optional. */
 export async function getUserSenderConfig(
@@ -282,9 +271,9 @@ export async function getUserSenderConfig(
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { role: true },
+    select: { id: true, role: true, email: true },
   });
-  const isSuper = isPrivilegedAdmin(user?.role);
+  const isSuper = isGlobalSuperAdmin(user);
 
   if (accountId) {
     const row = await prisma.smtpAccount.findFirst({
@@ -352,9 +341,9 @@ export async function listAvailableSenders(userId: string) {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { role: true },
+    select: { id: true, role: true, email: true },
   });
-  const isSuper = isPrivilegedAdmin(user?.role);
+  const isSuper = isGlobalSuperAdmin(user);
 
   // Super Admins see all system mailboxes.
   // Regular users ONLY see system mailboxes explicitly assigned to them.

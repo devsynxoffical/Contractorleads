@@ -16,6 +16,8 @@ import {
 } from "@/lib/user-smtp";
 import { assertPublicSmtpHost } from "@/lib/safe-fetch";
 
+import { isGlobalSuperAdmin } from "@/lib/roles";
+
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
@@ -26,9 +28,9 @@ export async function GET() {
   await migrateLegacySmtpIfNeeded(user.id);
   const rows = await listSmtpAccounts(user.id);
   const performance = await getSmtpAccountPerformance(user.id);
-  const isSuperAdmin = user.role === "SUPER_ADMIN" || user.role === "ADMIN";
+  const isSuper = isGlobalSuperAdmin(user);
   const sysAccounts = await prisma.systemSmtpAccount.findMany({
-    where: isSuperAdmin
+    where: isSuper
       ? { enabled: true }
       : { assignedUserId: user.id, enabled: true },
     orderBy: [{ domain: "asc" }, { fromName: "asc" }],
