@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 type SmtpAccount = {
   id: string;
@@ -21,6 +22,9 @@ type SmtpAccount = {
   lastTestedAt: string | null;
   deliveryMode: "platform" | "smtp";
   sendWeight?: number;
+  isSystem?: boolean;
+  provider?: string;
+  domain?: string;
 };
 
 type AccountPerformance = {
@@ -334,204 +338,271 @@ export function EmailAutomationSettings() {
       ) : null}
 
       <Card className="border-border shadow-[var(--shadow-card)]">
-        <CardHeader>
-          <CardTitle>Email senders</CardTitle>
-          <p className="text-[13px] text-ink-muted">
-            Connect your own Resend account to email leads from your domain.
-            Each user adds their own API key — the site admin key is only for
-            signup and system emails.
-          </p>
+        <CardHeader className="flex flex-row items-center justify-between gap-3">
+          <div>
+            <CardTitle>Email senders &amp; Mailboxes</CardTitle>
+            <p className="text-[13px] text-ink-muted">
+              Connect GoDaddy, Hostinger, or Custom SMTP mailboxes. All outbound outreach auto-rotates across your enabled mailboxes, and all incoming replies are automatically fetched.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                setMsg(null);
+                try {
+                  const res = await fetch("/api/emails/inbox/sync", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ fetchAll: true, limit: 100 }),
+                  });
+                  const data = await res.json();
+                  if (res.ok) {
+                    setMsg(
+                      `✅ Synced ${data.totalSynced ?? 0} email(s) across ${data.mailboxesCount ?? accounts.length} mailbox(es). All old and new messages are in your inbox.`,
+                    );
+                  } else {
+                    setMsg(data.error || "Sync failed");
+                  }
+                } catch {
+                  setMsg("Sync failed. Check connection.");
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              🔄 Fetch / Sync Inboxes
+            </Button>
+            {!editing && (
+              <Button
+                size="sm"
+                onClick={() =>
+                  setEditing({
+                    ...emptyAccount(),
+                    deliveryMode: "smtp",
+                    host: "smtpout.secureserver.net",
+                    port: 465,
+                    secure: true,
+                    isDefault: accounts.length === 0,
+                  })
+                }
+              >
+                + Add Mailbox
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-3">
           <ul className="space-y-2">
-            {accounts.map((a) => (
-              <li
-                key={a.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#faf8fc] px-3 py-2 text-[13px]"
-              >
-                <div>
-                  <p className="font-semibold text-ink">
-                    {a.label}
-                    {a.isDefault ? (
-                      <span className="ml-2 text-[11px] font-medium text-brand-600">
-                        Default
-                      </span>
-                    ) : null}
-                  </p>
-                  <p className="text-[11px] text-ink-muted">
-                    {a.fromEmail}
-                    {a.deliveryMode === "platform"
-                      ? " · Resend API"
-                      : ` · SMTP ${a.host}:${a.port}`}
-                    {!a.enabled ? " · disabled" : ""}
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {!a.isDefault && (
+            {accounts.map((a) => {
+              const isGoDaddy = a.provider === "godaddy" || a.host?.includes("secureserver");
+              const isHostinger = a.provider === "hostinger" || a.host?.includes("hostinger");
+
+              return (
+                <li
+                  key={a.id}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#faf8fc] px-3.5 py-2.5 text-[13px] border border-border/70"
+                >
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-ink">{a.label}</p>
+                      {a.isSystem && (
+                        <span className="rounded-md bg-blue-100 px-1.5 py-0.5 text-[10px] font-bold text-blue-800">
+                          {isGoDaddy ? "GoDaddy System" : isHostinger ? "Hostinger System" : "System Mailbox"}
+                        </span>
+                      )}
+                      {!a.isSystem && a.deliveryMode === "smtp" && (
+                        <span className="rounded-md bg-purple-100 px-1.5 py-0.5 text-[10px] font-bold text-purple-800">
+                          {isGoDaddy ? "GoDaddy Custom" : isHostinger ? "Hostinger Custom" : "Custom SMTP"}
+                        </span>
+                      )}
+                      {a.deliveryMode === "platform" && (
+                        <span className="rounded-md bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800">
+                          Resend API
+                        </span>
+                      )}
+                      {a.isDefault ? (
+                        <span className="rounded-md bg-brand-100 px-1.5 py-0.5 text-[10px] font-bold text-brand-700">
+                          Default
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="text-[11px] text-ink-muted mt-0.5">
+                      {a.fromEmail}
+                      {a.deliveryMode === "platform"
+                        ? " · Resend API"
+                        : ` · SMTP ${a.host}:${a.port}`}
+                      {!a.enabled ? " · disabled" : ""}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {!a.isDefault && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        disabled={busy}
+                        onClick={() => setDefault(a.id)}
+                      >
+                        Make default
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="secondary"
                       disabled={busy}
-                      onClick={() => setDefault(a.id)}
+                      onClick={() => testAccount(a.id)}
                     >
-                      Make default
+                      Test
                     </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    disabled={busy}
-                    onClick={() => testAccount(a.id)}
-                  >
-                    Test
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    disabled={busy}
-                    onClick={() =>
-                      setEditing({
-                        id: a.id,
-                        label: a.label,
-                        host: a.host,
-                        port: a.port,
-                        secure: a.secure,
-                        username: a.username,
-                        password: "",
-                        resendApiKey: "",
-                        fromEmail: a.fromEmail,
-                        fromName: a.fromName,
-                        enabled: a.enabled,
-                        isDefault: a.isDefault,
-                        hasPassword: a.hasPassword,
-                        hasResendKey: Boolean(a.hasResendKey),
-                        deliveryMode: a.deliveryMode,
-                        sendWeight: Number(a.sendWeight) || 1,
-                      })
-                    }
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="danger"
-                    disabled={busy}
-                    onClick={() => removeAccount(a.id)}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </li>
-            ))}
+                    {!a.isSystem && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          disabled={busy}
+                          onClick={() =>
+                            setEditing({
+                              id: a.id,
+                              label: a.label,
+                              host: a.host,
+                              port: a.port,
+                              secure: a.secure,
+                              username: a.username,
+                              password: "",
+                              resendApiKey: "",
+                              fromEmail: a.fromEmail,
+                              fromName: a.fromName,
+                              enabled: a.enabled,
+                              isDefault: a.isDefault,
+                              hasPassword: a.hasPassword,
+                              hasResendKey: Boolean(a.hasResendKey),
+                              deliveryMode: a.deliveryMode,
+                              sendWeight: Number(a.sendWeight) || 1,
+                            })
+                          }
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          disabled={busy}
+                          onClick={() => removeAccount(a.id)}
+                        >
+                          Delete
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
             {!accounts.length && (
               <li className="text-[13px] text-ink-muted">
-                No senders yet. Add your name and reply-to email below.
+                No mailboxes connected yet. Click &quot;Add Mailbox&quot; above to connect your email.
               </li>
             )}
           </ul>
 
-          {!editing ? (
-            <Button
-              variant="secondary"
-              onClick={() =>
-                setEditing({
-                  ...emptyAccount(),
-                  isDefault: accounts.length === 0,
-                })
-              }
-            >
-              Add email sender
-            </Button>
-          ) : (
+          {editing && (
             <form
               onSubmit={saveAccount}
-              className="space-y-3 rounded-xl border border-border p-3"
+              className="space-y-3.5 rounded-xl border border-border bg-[var(--surface)] p-4 shadow-sm"
             >
-              <p className="text-[13px] font-semibold text-ink">
-                {editing.id ? "Edit sender" : "New sender"}
-              </p>
-              <div className="space-y-2 rounded-lg border border-border/80 bg-[#faf8fc] p-3">
-                <p className="text-[12px] font-medium text-ink">Delivery method</p>
-                <label className="flex items-start gap-2 text-[13px] text-ink-muted">
-                  <input
-                    type="radio"
-                    name="deliveryMode"
-                    checked={editing.deliveryMode === "platform"}
-                    onChange={() =>
-                      setEditing({ ...editing, deliveryMode: "platform" })
-                    }
-                    className="mt-0.5"
-                  />
-                  <span>
-                    <span className="font-medium text-ink">Resend API</span>
-                    {" "}(recommended) — your own Resend key and verified domain.
-                    Get a key at{" "}
-                    <a
-                      href="https://resend.com/api-keys"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-brand-600 underline"
-                    >
-                      resend.com
-                    </a>
-                    .
-                  </span>
-                </label>
-                <label className="flex items-start gap-2 text-[13px] text-ink-muted">
-                  <input
-                    type="radio"
-                    name="deliveryMode"
-                    checked={editing.deliveryMode === "smtp"}
-                    onChange={() =>
-                      setEditing({ ...editing, deliveryMode: "smtp" })
-                    }
-                    className="mt-0.5"
-                  />
-                  <span>
-                    <span className="font-medium text-ink">Your own SMTP server</span>
-                    {" "}(advanced) — Gmail, Outlook, or cPanel. May not work on all cloud
-                    hosts.
-                  </span>
-                </label>
+              <div className="flex items-center justify-between border-b border-border pb-2">
+                <p className="text-[14px] font-bold text-ink">
+                  {editing.id ? "Edit Mailbox" : "Add New Mailbox"}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setEditing(null)}
+                  className="text-xs text-ink-muted hover:text-ink font-medium"
+                >
+                  Cancel
+                </button>
               </div>
+
+              {/* Provider Presets */}
+              <div>
+                <label className="block text-xs font-semibold text-ink mb-1.5">
+                  Quick Provider Preset
+                </label>
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+                  {[
+                    { id: "godaddy", label: "GoDaddy", host: "smtpout.secureserver.net", port: 465, secure: true, mode: "smtp" as const },
+                    { id: "hostinger", label: "Hostinger", host: "smtp.hostinger.com", port: 465, secure: true, mode: "smtp" as const },
+                    { id: "gmail", label: "Gmail", host: "smtp.gmail.com", port: 465, secure: true, mode: "smtp" as const },
+                    { id: "outlook", label: "Outlook / 365", host: "smtp.office365.com", port: 587, secure: false, mode: "smtp" as const },
+                    { id: "resend", label: "Resend API", host: "", port: 587, secure: false, mode: "platform" as const },
+                  ].map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() =>
+                        setEditing({
+                          ...editing,
+                          deliveryMode: p.mode,
+                          host: p.host,
+                          port: p.port,
+                          secure: p.secure,
+                        })
+                      }
+                      className={cn(
+                        "rounded-lg border px-2 py-1.5 text-center text-xs font-semibold transition",
+                        editing.host === p.host && editing.deliveryMode === p.mode
+                          ? "border-brand-600 bg-brand-50 text-brand-700 shadow-xs"
+                          : "border-border text-ink-muted hover:bg-[var(--input-bg)] hover:text-ink",
+                      )}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5 sm:col-span-2">
-                  <Label>Label</Label>
+                  <Label>Mailbox Label</Label>
                   <Input
                     value={editing.label}
                     onChange={(e) =>
                       setEditing({ ...editing, label: e.target.value })
                     }
-                    placeholder="Sales inbox"
+                    placeholder="e.g. Sales Outreach - GoDaddy"
                     required
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>From email</Label>
+                  <Label>From Email *</Label>
                   <Input
                     type="email"
                     value={editing.fromEmail}
                     onChange={(e) =>
-                      setEditing({ ...editing, fromEmail: e.target.value })
+                      setEditing({
+                        ...editing,
+                        fromEmail: e.target.value,
+                        username: editing.username || e.target.value,
+                      })
                     }
-                    placeholder="you@yourdomain.com"
+                    placeholder="sales@yourdomain.com"
                     required
                   />
-                  <p className="text-[12px] text-ink-muted">
-                    Must be on a domain verified in your Resend account.
-                  </p>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>From name</Label>
+                  <Label>Sender Display Name</Label>
                   <Input
                     value={editing.fromName ?? ""}
                     onChange={(e) =>
                       setEditing({ ...editing, fromName: e.target.value })
                     }
-                    placeholder="Jane Smith"
+                    placeholder="Frank Miller"
                   />
                 </div>
               </div>
+
               {editing.deliveryMode === "platform" ? (
                 <div className="space-y-1.5">
                   <Label>
@@ -550,128 +621,111 @@ export function EmailAutomationSettings() {
                     autoComplete="off"
                   />
                 </div>
-              ) : null}
-              {editing.deliveryMode === "smtp" ? (
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="space-y-1.5 sm:col-span-2">
-                  <Label>SMTP host</Label>
-                  <Input
-                    value={editing.host}
-                    onChange={(e) =>
-                      setEditing({ ...editing, host: e.target.value })
-                    }
-                    placeholder="smtp.gmail.com"
-                    required
-                  />
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label>SMTP Host *</Label>
+                    <Input
+                      value={editing.host}
+                      onChange={(e) =>
+                        setEditing({ ...editing, host: e.target.value })
+                      }
+                      placeholder="smtpout.secureserver.net"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Port</Label>
+                    <Input
+                      type="number"
+                      value={editing.port}
+                      onChange={(e) =>
+                        setEditing({
+                          ...editing,
+                          port: Number(e.target.value) || 465,
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Security</Label>
+                    <select
+                      value={editing.secure ? "ssl" : "starttls"}
+                      onChange={(e) =>
+                        setEditing({ ...editing, secure: e.target.value === "ssl" })
+                      }
+                      className="saas-input w-full text-xs"
+                    >
+                      <option value="ssl">SSL (Port 465)</option>
+                      <option value="starttls">STARTTLS (Port 587)</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Username / Login *</Label>
+                    <Input
+                      value={editing.username}
+                      onChange={(e) =>
+                        setEditing({ ...editing, username: e.target.value })
+                      }
+                      placeholder="sales@yourdomain.com"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>
+                      Password *{" "}
+                      {editing.hasPassword ? (
+                        <span className="font-normal text-ink-faint">(saved)</span>
+                      ) : null}
+                    </Label>
+                    <Input
+                      type="password"
+                      value={editing.password}
+                      onChange={(e) =>
+                        setEditing({ ...editing, password: e.target.value })
+                      }
+                      placeholder={
+                        editing.hasPassword ? "Leave blank to keep" : "Password"
+                      }
+                    />
+                  </div>
                 </div>
-                <div className="space-y-1.5">
-                  <Label>Port</Label>
-                  <Input
-                    type="number"
-                    value={editing.port}
-                    onChange={(e) =>
-                      setEditing({
-                        ...editing,
-                        port: Number(e.target.value) || 587,
-                      })
-                    }
-                  />
-                </div>
-                <label className="flex items-end gap-2 pb-2 text-[13px] text-ink-muted">
+              )}
+
+              <div className="flex items-center gap-4 pt-1">
+                <label className="flex items-center gap-2 text-[13px] text-ink-muted">
                   <input
                     type="checkbox"
-                    checked={editing.secure}
+                    checked={editing.enabled}
                     onChange={(e) =>
-                      setEditing({ ...editing, secure: e.target.checked })
+                      setEditing({ ...editing, enabled: e.target.checked })
                     }
                   />
-                  TLS / secure (465)
+                  Enabled
                 </label>
-                <div className="space-y-1.5">
-                  <Label>Username</Label>
-                  <Input
-                    value={editing.username}
+                <label className="flex items-center gap-2 text-[13px] text-ink-muted">
+                  <input
+                    type="checkbox"
+                    checked={editing.isDefault}
                     onChange={(e) =>
-                      setEditing({ ...editing, username: e.target.value })
-                    }
-                    required
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>
-                    Password{" "}
-                    {editing.hasPassword ? (
-                      <span className="font-normal text-ink-faint">(saved)</span>
-                    ) : null}
-                  </Label>
-                  <Input
-                    type="password"
-                    value={editing.password}
-                    onChange={(e) =>
-                      setEditing({ ...editing, password: e.target.value })
-                    }
-                    placeholder={
-                      editing.hasPassword ? "Leave blank to keep" : ""
+                      setEditing({ ...editing, isDefault: e.target.checked })
                     }
                   />
-                </div>
+                  Set as default
+                </label>
               </div>
-              ) : null}
-              <label className="flex items-center gap-2 text-[13px] text-ink-muted">
-                <input
-                  type="checkbox"
-                  checked={editing.enabled}
-                  onChange={(e) =>
-                    setEditing({ ...editing, enabled: e.target.checked })
-                  }
-                />
-                Enabled
-              </label>
-              <div className="space-y-1.5">
-                <Label>
-                  Rotation share (1–100){" "}
-                  <span className="font-normal text-ink-faint">
-                    — proportional share of cold-outreach volume
-                  </span>
-                </Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={100}
-                  value={editing.sendWeight}
-                  onChange={(e) =>
-                    setEditing({
-                      ...editing,
-                      sendWeight: Math.max(1, Number(e.target.value) || 1),
-                    })
-                  }
-                />
-                <p className="text-[12px] text-ink-muted">
-                  Equal weights (e.g. all 1) split volume evenly. Raise a
-                  mailbox to send more from it; lower it to send less. The
-                  rotation self-corrects as weights change.
-                </p>
-              </div>
-              <label className="flex items-center gap-2 text-[13px] text-ink-muted">
-                <input
-                  type="checkbox"
-                  checked={editing.isDefault}
-                  onChange={(e) =>
-                    setEditing({ ...editing, isDefault: e.target.checked })
-                  }
-                />
-                Set as default sender
-              </label>
-              <div className="flex flex-wrap gap-2">
-                <Button type="submit" disabled={busy}>
-                  Save sender
-                </Button>
+
+              <div className="flex items-center justify-end gap-2 border-t border-border pt-3">
                 <Button
                   type="button"
                   variant="secondary"
+                  disabled={busy}
                   onClick={() => setEditing(null)}
                 >
                   Cancel
+                </Button>
+                <Button type="submit" loading={busy} disabled={busy}>
+                  Save Mailbox
                 </Button>
               </div>
             </form>

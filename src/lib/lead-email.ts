@@ -402,6 +402,9 @@ export async function ingestInboundEmail(opts: {
   body: string;
   messageId?: string;
   inReplyTo?: string;
+  systemSmtpAccountId?: string | null;
+  smtpAccountId?: string | null;
+  receivedAt?: Date | null;
 }) {
   const from = opts.fromEmail.trim().toLowerCase();
   const to = opts.toEmail.trim().toLowerCase();
@@ -475,7 +478,11 @@ export async function ingestInboundEmail(opts: {
         userId,
         leadId: saved.leadId,
         savedLeadId: saved.id,
-        smtpAccountId: smtpOwners.find((s) => s.userId === userId)?.id ?? null,
+        smtpAccountId:
+          opts.smtpAccountId ||
+          smtpOwners.find((s) => s.userId === userId)?.id ||
+          null,
+        systemSmtpAccountId: opts.systemSmtpAccountId || null,
         direction: "inbound",
         fromEmail: from,
         toEmail: to,
@@ -484,6 +491,7 @@ export async function ingestInboundEmail(opts: {
         status: "received",
         messageId: opts.messageId || null,
         inReplyTo: opts.inReplyTo || null,
+        createdAt: opts.receivedAt || new Date(),
       },
     });
 

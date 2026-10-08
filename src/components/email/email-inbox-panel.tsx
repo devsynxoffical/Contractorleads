@@ -10,6 +10,10 @@ import {
   HiOutlineArrowUpRight,
   HiOutlineArrowPath,
   HiOutlineEnvelope,
+  HiOutlinePlus,
+  HiOutlineXMark,
+  HiOutlineArrowDownTray,
+  HiOutlineShieldCheck,
 } from "react-icons/hi2";
 
 type InboxItem = {
@@ -150,6 +154,22 @@ export function EmailInboxPanel() {
   const [syncing, setSyncing] = useState(false);
   const [searchFilter, setSearchFilter] = useState("");
 
+  // Add mailbox modal state
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newAccount, setNewAccount] = useState({
+    label: "",
+    host: "smtpout.secureserver.net",
+    port: 465,
+    secure: true,
+    username: "",
+    password: "",
+    fromEmail: "",
+    fromName: "",
+    provider: "godaddy" as "godaddy" | "hostinger" | "gmail" | "outlook" | "custom",
+  });
+  const [addBusy, setAddBusy] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+
   const loadInbox = useCallback(async (currentTab: "all" | "inbound" | "outbound") => {
     const res = await fetch(`/api/emails/inbox?tab=${currentTab}`);
     const json = await res.json();
@@ -161,22 +181,40 @@ export function EmailInboxPanel() {
     setTotalCount(json.totalCount ?? 0);
   }, []);
 
-  const syncMailboxes = useCallback(async () => {
-    try {
-      setSyncing(true);
-      setMsg(null);
-      const res = await fetch("/api/emails/inbox/sync", { method: "POST" });
-      const data = await res.json();
-      if (res.ok && data.totalSynced > 0) {
-        setMsg(`Synced ${data.totalSynced} new incoming email(s) from Hostinger.`);
+  const syncMailboxes = useCallback(
+    async (fetchAll: boolean = true) => {
+      try {
+        setSyncing(true);
+        setMsg(null);
+        setError(null);
+        const res = await fetch("/api/emails/inbox/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fetchAll, limit: fetchAll ? 100 : 25 }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          if (data.totalSynced > 0) {
+            setMsg(
+              `✅ Synced ${data.totalSynced} new incoming email(s) across ${data.mailboxesCount ?? "all"} assigned mailbox(es) (GoDaddy & Hostinger).`,
+            );
+          } else {
+            setMsg(
+              `Mailbox sync complete (${data.mailboxesCount ?? 0} active mailbox(es) checked). All emails are up to date.`,
+            );
+          }
+        } else {
+          setError(data.error || "Sync failed");
+        }
+        await loadInbox(tab);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Sync error");
+      } finally {
+        setSyncing(false);
       }
-      await loadInbox(tab);
-    } catch {
-      // ignore background sync errors
-    } finally {
-      setSyncing(false);
-    }
-  }, [loadInbox, tab]);
+    },
+    [loadInbox, tab],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -185,7 +223,7 @@ export function EmailInboxPanel() {
         setLoading(true);
         await loadInbox(tab);
         // Background sync on initial load
-        void syncMailboxes();
+        void syncMailboxes(true);
       } catch (e) {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : "Failed to load inbox");
@@ -199,6 +237,85 @@ export function EmailInboxPanel() {
       cancelled = true;
     };
   }, [tab, loadInbox, syncMailboxes]);
+
+  function handleProviderChange(
+    provider: "godaddy" | "hostinger" | "gmail" | "outlook" | "custom",
+  ) {
+    if (provider === "godaddy") {
+      setNewAccount((prev) => ({
+        ...prev,
+        provider,
+        host: "smtpout.secureserver.net",
+        port: 465,
+        secure: true,
+      }));
+    } else if (provider === "hostinger") {
+      setNewAccount((prev) => ({
+        ...prev,
+        provider,
+        host: "smtp.hostinger.com",
+        port: 465,
+        secure: true,
+      }));
+    } else if (provider === "gmail") {
+      setNewAccount((prev) => ({
+        ...prev,
+        provider,
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true,
+      }));
+    } else if (provider === "outlook") {
+      setNewAccount((prev) => ({
+        ...prev,
+        provider,
+        host: "smtp.office365.com",
+        port: 587,
+        secure: false,
+      }));
+    } else {
+      setNewAccount((prev) => ({ ...prev, provider }));
+    }
+  }
+
+  async function handleAddMailboxSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setAddBusy(true);
+    setAddError(null);
+    try {
+      const res = await fetch("/api/settings/smtp-accounts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "create",
+          label:
+            newAccount.label.trim() ||
+            `${newAccount.fromEmail.split("@")[0]} Mailbox`,
+          host: newAccount.host.trim(),
+          port: Number(newAccount.port),
+          secure: newAccount.secure,
+          username: (newAccount.username || newAccount.fromEmail).trim(),
+          password: newAccount.password,
+          fromEmail: newAccount.fromEmail.trim(),
+          fromName: newAccount.fromName.trim() || null,
+          enabled: true,
+          deliveryMode: "smtp",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to add mailbox");
+      }
+      setShowAddModal(false);
+      setMsg("Mailbox added successfully! Fetching emails…");
+      // Trigger sync for newly added mailbox
+      void syncMailboxes(true);
+    } catch (err) {
+      setAddError(err instanceof Error ? err.message : "Failed to add mailbox");
+    } finally {
+      setAddBusy(false);
+    }
+  }
 
   async function openEmail(id: string) {
     setSelectedId(id);
@@ -278,72 +395,297 @@ export function EmailInboxPanel() {
           </p>
         </div>
 
-        {/* Tab Selector */}
-        <div className="flex items-center gap-1 rounded-xl border border-border bg-[var(--surface)] p-1">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Tab Selector */}
+          <div className="flex items-center gap-1 rounded-xl border border-border bg-[var(--surface)] p-1">
+            <button
+              type="button"
+              onClick={() => setTab("all")}
+              className={cn(
+                "rounded-lg px-3 py-1.5 text-xs font-semibold transition",
+                tab === "all"
+                  ? "bg-brand-600 text-white shadow-sm"
+                  : "text-ink-muted hover:text-ink",
+              )}
+            >
+              All ({totalCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("inbound")}
+              className={cn(
+                "rounded-lg px-3 py-1.5 text-xs font-semibold transition",
+                tab === "inbound"
+                  ? "bg-brand-600 text-white shadow-sm"
+                  : "text-ink-muted hover:text-ink",
+              )}
+            >
+              Received ({inboundCount})
+              {unreadCount > 0 ? (
+                <span className="ml-1 rounded-full bg-rose-500 px-1.5 py-0.2 text-[10px] text-white">
+                  {unreadCount}
+                </span>
+              ) : null}
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("outbound")}
+              className={cn(
+                "rounded-lg px-3 py-1.5 text-xs font-semibold transition",
+                tab === "outbound"
+                  ? "bg-brand-600 text-white shadow-sm"
+                  : "text-ink-muted hover:text-ink",
+              )}
+            >
+              Sent ({outboundCount})
+            </button>
+          </div>
+
+          {/* Action Buttons */}
           <button
             type="button"
-            onClick={() => setTab("all")}
-            className={cn(
-              "rounded-lg px-3 py-1.5 text-xs font-semibold transition",
-              tab === "all"
-                ? "bg-brand-600 text-white shadow-sm"
-                : "text-ink-muted hover:text-ink",
-            )}
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-1.5 rounded-xl border border-brand-600 bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-brand-700 transition"
           >
-            All ({totalCount})
+            <HiOutlinePlus className="h-3.5 w-3.5" />
+            <span>Add Mailbox</span>
           </button>
+
           <button
             type="button"
-            onClick={() => setTab("inbound")}
-            className={cn(
-              "rounded-lg px-3 py-1.5 text-xs font-semibold transition",
-              tab === "inbound"
-                ? "bg-brand-600 text-white shadow-sm"
-                : "text-ink-muted hover:text-ink",
-            )}
-          >
-            Received ({inboundCount})
-            {unreadCount > 0 ? (
-              <span className="ml-1 rounded-full bg-rose-500 px-1.5 py-0.2 text-[10px] text-white">
-                {unreadCount}
-              </span>
-            ) : null}
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab("outbound")}
-            className={cn(
-              "rounded-lg px-3 py-1.5 text-xs font-semibold transition",
-              tab === "outbound"
-                ? "bg-brand-600 text-white shadow-sm"
-                : "text-ink-muted hover:text-ink",
-            )}
-          >
-            Sent ({outboundCount})
-          </button>
-          <button
-            type="button"
-            onClick={() => syncMailboxes()}
+            onClick={() => syncMailboxes(true)}
             disabled={syncing}
-            title="Sync Hostinger Mailboxes (Fetch new replies)"
+            title="Fetch all new & historical emails from all assigned GoDaddy, Hostinger, and custom mailboxes"
             className={cn(
-              "flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition border border-brand-200 bg-brand-50 text-brand-700 hover:bg-brand-100",
+              "flex items-center gap-1.5 rounded-xl border border-brand-200 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-100 transition shadow-sm",
               syncing && "opacity-75 cursor-not-allowed",
             )}
           >
             <HiOutlineArrowPath className={cn("h-3.5 w-3.5", syncing && "animate-spin")} />
-            <span>{syncing ? "Syncing…" : "Sync Mailboxes"}</span>
+            <span>{syncing ? "Syncing Mailboxes…" : "Fetch / Sync Inboxes"}</span>
           </button>
+
           <button
             type="button"
             onClick={() => loadInbox(tab)}
             title="Refresh List"
-            className="rounded-lg p-1.5 text-ink-muted hover:bg-[var(--input-bg)] hover:text-ink transition"
+            className="rounded-xl border border-border bg-[var(--surface)] p-2 text-ink-muted hover:bg-[var(--input-bg)] hover:text-ink transition"
           >
             <HiOutlineArrowPath className="h-4 w-4" />
           </button>
         </div>
       </div>
+
+      {/* Add Mailbox Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="relative w-full max-w-lg rounded-2xl border border-border bg-[var(--surface)] p-6 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-100 text-brand-700">
+                  <HiOutlineEnvelope className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-ink">Add New Mailbox</h3>
+                  <p className="text-[11px] text-ink-muted">Connect SMTP &amp; IMAP for outreach &amp; incoming email sync</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                className="rounded-lg p-1 text-ink-muted hover:bg-[var(--input-bg)] hover:text-ink"
+              >
+                <HiOutlineXMark className="h-5 w-5" />
+              </button>
+            </div>
+
+            {addError && (
+              <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-xs font-medium text-rose-700">
+                {addError}
+              </p>
+            )}
+
+            <form onSubmit={handleAddMailboxSubmit} className="mt-4 space-y-3.5">
+              {/* Provider Quick Presets */}
+              <div>
+                <label className="block text-xs font-semibold text-ink mb-1.5">
+                  Select Provider Preset
+                </label>
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+                  {(
+                    [
+                      { id: "godaddy", label: "GoDaddy" },
+                      { id: "hostinger", label: "Hostinger" },
+                      { id: "gmail", label: "Gmail" },
+                      { id: "outlook", label: "Outlook" },
+                      { id: "custom", label: "Custom" },
+                    ] as const
+                  ).map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => handleProviderChange(p.id)}
+                      className={cn(
+                        "rounded-lg border px-2 py-1.5 text-center text-xs font-semibold transition",
+                        newAccount.provider === p.id
+                          ? "border-brand-600 bg-brand-50 text-brand-700 shadow-xs"
+                          : "border-border text-ink-muted hover:bg-[var(--input-bg)] hover:text-ink",
+                      )}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="block text-xs font-medium text-ink-muted mb-1">
+                    From Email *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="sales@yourdomain.com"
+                    value={newAccount.fromEmail}
+                    onChange={(e) =>
+                      setNewAccount((prev) => ({
+                        ...prev,
+                        fromEmail: e.target.value,
+                        username: prev.username || e.target.value,
+                      }))
+                    }
+                    className="saas-input w-full text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-ink-muted mb-1">
+                    Sender Display Name
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Frank Miller"
+                    value={newAccount.fromName}
+                    onChange={(e) =>
+                      setNewAccount((prev) => ({ ...prev, fromName: e.target.value }))
+                    }
+                    className="saas-input w-full text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="block text-xs font-medium text-ink-muted mb-1">
+                    SMTP Host *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="smtp.hostinger.com"
+                    value={newAccount.host}
+                    onChange={(e) =>
+                      setNewAccount((prev) => ({ ...prev, host: e.target.value }))
+                    }
+                    className="saas-input w-full text-xs font-mono"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs font-medium text-ink-muted mb-1">
+                      Port
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      value={newAccount.port}
+                      onChange={(e) =>
+                        setNewAccount((prev) => ({
+                          ...prev,
+                          port: Number(e.target.value),
+                        }))
+                      }
+                      className="saas-input w-full text-xs font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-ink-muted mb-1">
+                      SSL / TLS
+                    </label>
+                    <select
+                      value={newAccount.secure ? "ssl" : "starttls"}
+                      onChange={(e) =>
+                        setNewAccount((prev) => ({
+                          ...prev,
+                          secure: e.target.value === "ssl",
+                        }))
+                      }
+                      className="saas-input w-full text-xs"
+                    >
+                      <option value="ssl">SSL (465)</option>
+                      <option value="starttls">TLS (587)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="block text-xs font-medium text-ink-muted mb-1">
+                    Username / Login *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="sales@yourdomain.com"
+                    value={newAccount.username}
+                    onChange={(e) =>
+                      setNewAccount((prev) => ({ ...prev, username: e.target.value }))
+                    }
+                    className="saas-input w-full text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-ink-muted mb-1">
+                    Password *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="••••••••••••"
+                    value={newAccount.password}
+                    onChange={(e) =>
+                      setNewAccount((prev) => ({ ...prev, password: e.target.value }))
+                    }
+                    className="saas-input w-full text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 border-t border-border pt-4">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setShowAddModal(false)}
+                  disabled={addBusy}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  loading={addBusy}
+                  disabled={addBusy || !newAccount.fromEmail || !newAccount.password}
+                >
+                  Connect &amp; Sync Mailbox
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {error ? (
         <p className="rounded-xl border border-rose-500/25 bg-rose-500/10 px-3 py-2 text-sm text-rose-700">

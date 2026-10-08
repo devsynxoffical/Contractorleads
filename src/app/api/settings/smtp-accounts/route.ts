@@ -26,14 +26,19 @@ export async function GET() {
   await migrateLegacySmtpIfNeeded(user.id);
   const rows = await listSmtpAccounts(user.id);
   const performance = await getSmtpAccountPerformance(user.id);
+  const isSuperAdmin = user.role === "SUPER_ADMIN" || user.role === "ADMIN";
   const sysAccounts = await prisma.systemSmtpAccount.findMany({
-    where: { enabled: true },
+    where: isSuperAdmin
+      ? { enabled: true }
+      : { assignedUserId: user.id, enabled: true },
     orderBy: [{ domain: "asc" }, { fromName: "asc" }],
   });
 
   const systemMasked = sysAccounts.map((s) => ({
     id: s.id,
-    label: `Hostinger: ${s.fromName || s.fromEmail} (${s.domain})`,
+    label: `${s.provider === "godaddy" ? "GoDaddy" : "Hostinger"}: ${s.fromName || s.fromEmail} (${s.domain || s.fromEmail.split("@")[1] || ""})`,
+    provider: s.provider || "hostinger",
+    domain: s.domain,
     host: s.host,
     port: s.port,
     secure: s.secure,
