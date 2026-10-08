@@ -171,7 +171,7 @@ export function EmailInboxPanel() {
   const [addError, setAddError] = useState<string | null>(null);
 
   const loadInbox = useCallback(async (currentTab: "all" | "inbound" | "outbound") => {
-    const res = await fetch(`/api/emails/inbox?tab=${currentTab}`);
+    const res = await fetch(`/api/emails/inbox?tab=${currentTab}&take=100`);
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || "Failed to load inbox");
     setEmails(json.emails ?? []);
@@ -196,11 +196,11 @@ export function EmailInboxPanel() {
         if (res.ok) {
           if (data.totalSynced > 0) {
             setMsg(
-              `✅ Synced ${data.totalSynced} new incoming email(s) across ${data.mailboxesCount ?? "all"} assigned mailbox(es) (GoDaddy & Hostinger).`,
+              `✅ Synced ${data.totalSynced} incoming email(s) across ${data.mailboxesCount ?? "all"} mailbox(es).`,
             );
           } else {
             setMsg(
-              `Mailbox sync complete (${data.mailboxesCount ?? 0} active mailbox(es) checked). All emails are up to date.`,
+              `Mailbox sync complete (${data.mailboxesCount ?? 0} active mailbox(es) checked). Inbox is up to date.`,
             );
           }
         } else {
@@ -222,8 +222,6 @@ export function EmailInboxPanel() {
       try {
         setLoading(true);
         await loadInbox(tab);
-        // Background sync on initial load
-        void syncMailboxes(true);
       } catch (e) {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : "Failed to load inbox");
@@ -236,7 +234,7 @@ export function EmailInboxPanel() {
     return () => {
       cancelled = true;
     };
-  }, [tab, loadInbox, syncMailboxes]);
+  }, [tab, loadInbox]);
 
   function handleProviderChange(
     provider: "godaddy" | "hostinger" | "gmail" | "outlook" | "custom",
