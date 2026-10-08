@@ -98,6 +98,19 @@ export function prepareCampaignProspects(
   };
 }
 
+function isPrivilegedAdmin(role?: string | null): boolean {
+  if (!role) return false;
+  const r = String(role).toUpperCase().trim();
+  return (
+    r === "OWNER" ||
+    r === "SUPER_ADMIN" ||
+    r === "ADMIN" ||
+    r === "SUPERADMIN" ||
+    r === "MANAGER" ||
+    r === "SUB_ADMIN"
+  );
+}
+
 /** Get list of eligible mailboxes and calculate daily send capacity */
 export async function getCampaignMailboxStats(userId: string) {
   const user = await prisma.user.findUnique({
@@ -105,25 +118,13 @@ export async function getCampaignMailboxStats(userId: string) {
     select: { id: true, role: true },
   });
 
-  const isSuper =
-    user?.role === "superadmin" ||
-    user?.role === "owner" ||
-    user?.role === "admin";
+  const isSuper = isPrivilegedAdmin(user?.role);
 
-  let systemWhere: any = { enabled: true };
-  if (!isSuper) {
-    const userAssignedCount = await prisma.systemSmtpAccount.count({
-      where: { enabled: true, assignedUserId: userId },
-    });
-
-    if (userAssignedCount > 0) {
-      // User ONLY has access to their assigned mailboxes
-      systemWhere = { enabled: true, assignedUserId: userId };
-    } else {
-      // User has no specifically assigned mailboxes -> shared unassigned mailboxes only
-      systemWhere = { enabled: true, assignedUserId: null };
-    }
-  }
+  // Super Admins & Owners see all system mailboxes.
+  // Regular users ONLY see system mailboxes explicitly assigned to their user ID.
+  const systemWhere: any = isSuper
+    ? { enabled: true }
+    : { enabled: true, assignedUserId: userId };
 
   let systemAccounts = await prisma.systemSmtpAccount.findMany({
     where: systemWhere,

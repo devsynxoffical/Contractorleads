@@ -2323,15 +2323,36 @@ export function CampaignWizard({
             </div>
 
             {/* Collapsible Domain Folders List */}
-            <div className="space-y-3">
-              {Object.entries(mailboxesByDomain).map(([domain, mList]) => {
-                const isCollapsed = Boolean(collapsedDomains[domain]);
-                const domainIds = mList.map((m) => m.id);
-                const selectedInDomain = domainIds.filter((id) => selectedMailboxIds.includes(id));
-                const allDomainSelected = selectedInDomain.length === domainIds.length;
-                const domainDailyCapacity = selectedInDomain.reduce((sum, id) => {
-                  return sum + (customMailboxLimits[id] ?? dailyLimitPerMailbox);
-                }, 0);
+            {mailboxes.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-border p-8 text-center space-y-3 bg-[var(--input-bg)]/30">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600">
+                  <HiOutlineEnvelope className="h-6 w-6" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-ink">No Sending Mailboxes Assigned</h4>
+                  <p className="mt-1 text-xs text-ink-muted max-w-md mx-auto">
+                    You currently do not have any system sending mailboxes assigned to your account. Please ask an administrator to assign mailboxes to your user account, or connect your custom SMTP mailbox under Settings.
+                  </p>
+                </div>
+                <div className="pt-2">
+                  <Link
+                    href="/settings"
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-[var(--surface)] px-4 py-2 text-xs font-semibold text-ink hover:border-brand-500 hover:text-brand-600 transition"
+                  >
+                    Go to Settings & SMTP
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {Object.entries(mailboxesByDomain).map(([domain, mList]) => {
+                  const isCollapsed = Boolean(collapsedDomains[domain]);
+                  const domainIds = mList.map((m) => m.id);
+                  const selectedInDomain = domainIds.filter((id) => selectedMailboxIds.includes(id));
+                  const allDomainSelected = selectedInDomain.length === domainIds.length;
+                  const domainDailyCapacity = selectedInDomain.reduce((sum, id) => {
+                    return sum + (customMailboxLimits[id] ?? dailyLimitPerMailbox);
+                  }, 0);
 
                 return (
                   <div key={domain} className="rounded-xl border border-border bg-[var(--surface)] shadow-xs overflow-hidden">
@@ -2455,6 +2476,7 @@ export function CampaignWizard({
                 );
               })}
             </div>
+            )}
           </div>
 
           <div className="flex justify-between gap-2 pt-4 border-t border-border">

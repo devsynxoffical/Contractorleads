@@ -122,22 +122,20 @@ export async function processCampaignSends(opts?: {
       where: { id: campaign.userId },
       select: { role: true },
     });
+    const r = String(campaignUser?.role || "").toUpperCase().trim();
     const isSuper =
-      campaignUser?.role === "superadmin" ||
-      campaignUser?.role === "owner" ||
-      campaignUser?.role === "admin";
+      r === "OWNER" ||
+      r === "SUPER_ADMIN" ||
+      r === "ADMIN" ||
+      r === "SUPERADMIN" ||
+      r === "MANAGER" ||
+      r === "SUB_ADMIN";
 
-    let systemWhere: any = { enabled: true };
-    if (!isSuper) {
-      const userAssignedCount = await prisma.systemSmtpAccount.count({
-        where: { enabled: true, assignedUserId: campaign.userId },
-      });
-      if (userAssignedCount > 0) {
-        systemWhere = { enabled: true, assignedUserId: campaign.userId };
-      } else {
-        systemWhere = { enabled: true, assignedUserId: null };
-      }
-    }
+    // Super Admins see all system mailboxes.
+    // Regular users ONLY see mailboxes explicitly assigned to their user ID.
+    const systemWhere: any = isSuper
+      ? { enabled: true }
+      : { enabled: true, assignedUserId: campaign.userId };
 
     let [userMailboxes, systemMailboxes, todayLogs] = await Promise.all([
       prisma.smtpAccount.findMany({

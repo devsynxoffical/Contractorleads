@@ -566,6 +566,19 @@ export async function pickSystemRotationSender(userId?: string): Promise<SenderC
 
   // If user has specific assigned system mailboxes, use them
   if (userId) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+    const r = String(user?.role || "").toUpperCase().trim();
+    const isSuper =
+      r === "OWNER" ||
+      r === "SUPER_ADMIN" ||
+      r === "ADMIN" ||
+      r === "SUPERADMIN" ||
+      r === "MANAGER" ||
+      r === "SUB_ADMIN";
+
     const assigned = await prisma.systemSmtpAccount.findMany({
       where: { enabled: true, assignedUserId: userId },
       orderBy: [{ createdAt: "asc" }],
@@ -574,16 +587,20 @@ export async function pickSystemRotationSender(userId?: string): Promise<SenderC
       const pick = assigned[Math.floor(Math.random() * assigned.length)];
       return systemRowToSenderConfig(pick);
     }
+
+    // Regular user without assigned mailboxes cannot use global system mailboxes
+    if (!isSuper) {
+      return null;
+    }
   }
 
-  // Otherwise, use unassigned or shared system mailboxes
+  // Otherwise, use system mailboxes for Super Admins / background tasks
   const accounts = await prisma.systemSmtpAccount.findMany({
-    where: { enabled: true, assignedUserId: null },
+    where: { enabled: true },
     orderBy: [{ provider: "asc" }, { domain: "asc" }, { createdAt: "asc" }],
   });
   if (!accounts.length) {
-    const fallback = await prisma.systemSmtpAccount.findFirst({ where: { enabled: true } });
-    return fallback ? systemRowToSenderConfig(fallback) : null;
+    return null;
   }
 
   const totalWeight = accounts.reduce(

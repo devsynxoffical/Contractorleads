@@ -260,12 +260,31 @@ function rowToSenderConfig(row: {
   };
 }
 
+function isPrivilegedAdmin(role?: string | null): boolean {
+  if (!role) return false;
+  const r = String(role).toUpperCase().trim();
+  return (
+    r === "OWNER" ||
+    r === "SUPER_ADMIN" ||
+    r === "ADMIN" ||
+    r === "SUPERADMIN" ||
+    r === "MANAGER" ||
+    r === "SUB_ADMIN"
+  );
+}
+
 /** Default sender (from name + reply-to). SMTP credentials optional. */
 export async function getUserSenderConfig(
   userId: string,
   accountId?: string | null,
 ): Promise<SenderConfig | null> {
   await migrateLegacySmtpIfNeeded(userId);
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+  const isSuper = isPrivilegedAdmin(user?.role);
 
   if (accountId) {
     const row = await prisma.smtpAccount.findFirst({
@@ -281,19 +300,12 @@ export async function getUserSenderConfig(
       },
     });
     if (sysRow) {
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { role: true },
-      });
-      const isSuper =
-        user?.role === "superadmin" ||
-        user?.role === "owner" ||
-        user?.role === "admin";
-
-      // If user is superadmin or the mailbox is assigned to them or unassigned shared, allow
-      if (isSuper || sysRow.assignedUserId === userId || !sysRow.assignedUserId) {
+      // Super Admins can send through any system mailbox.
+      // Regular users can ONLY send through mailboxes explicitly assigned to their user ID.
+      if (isSuper || sysRow.assignedUserId === userId) {
         return systemRowToSenderConfig(sysRow);
       }
+      return null;
     }
   }
 
@@ -342,22 +354,13 @@ export async function listAvailableSenders(userId: string) {
     where: { id: userId },
     select: { role: true },
   });
-  const isSuper =
-    user?.role === "superadmin" ||
-    user?.role === "owner" ||
-    user?.role === "admin";
+  const isSuper = isPrivilegedAdmin(user?.role);
 
-  let systemWhere: any = { enabled: true };
-  if (!isSuper) {
-    const userAssignedCount = await prisma.systemSmtpAccount.count({
-      where: { enabled: true, assignedUserId: userId },
-    });
-    if (userAssignedCount > 0) {
-      systemWhere = { enabled: true, assignedUserId: userId };
-    } else {
-      systemWhere = { enabled: true, assignedUserId: null };
-    }
-  }
+  // Super Admins see all system mailboxes.
+  // Regular users ONLY see system mailboxes explicitly assigned to them.
+  const systemWhere: any = isSuper
+    ? { enabled: true }
+    : { enabled: true, assignedUserId: userId };
 
   const userAccounts = await prisma.smtpAccount.findMany({
     where: { userId },
