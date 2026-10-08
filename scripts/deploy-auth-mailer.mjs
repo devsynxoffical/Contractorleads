@@ -3,17 +3,11 @@ import SftpClient from "ssh2-sftp-client";
 const phpScript = `<?php
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: POST, OPTIONS");
+header("Access-Control-Allow-Methods: POST, OPTIONS, GET");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 
 if ($_SERVER["REQUEST_METHOD"] === "OPTIONS") {
     http_response_code(200);
-    exit;
-}
-
-if ($_SERVER["REQUEST_METHOD"] !== "POST") {
-    http_response_code(405);
-    echo json_encode(["ok" => false, "error" => "Method not allowed"]);
     exit;
 }
 
@@ -23,19 +17,17 @@ $body = file_get_contents("php://input");
 $data = json_decode($body, true) ?? [];
 
 $token = trim(str_replace("Bearer", "", $authHeader));
-if ($token !== $RELAY_SECRET && ($data["secret"] ?? "") !== $RELAY_SECRET) {
+if ($token !== $RELAY_SECRET && ($data["secret"] ?? "") !== $RELAY_SECRET && ($_GET["secret"] ?? "") !== $RELAY_SECRET) {
     http_response_code(401);
     echo json_encode(["ok" => false, "error" => "Unauthorized"]);
     exit;
 }
 
-$to = trim($data["to"] ?? "");
-$subject = trim($data["subject"] ?? "");
-$htmlContent = $data["html"] ?? "";
-$textContent = $data["text"] ?? "";
-$fromEmail = trim($data["fromEmail"] ?? "");
+$action = $data["action"] ?? "send";
+$fromEmail = strtolower(trim($data["fromEmail"] ?? ""));
 $fromName = trim($data["fromName"] ?? "Contractor Leads");
 
+// Default Passwords Dictionary (Hostinger + GoDaddy)
 $PASSWORDS = [
   "gaurav@roofingagency.us" => "7p+zii>=prC",
   "daniel@roofingagency.us" => ";7tTw7=lUz",
@@ -52,11 +44,11 @@ $PASSWORDS = [
   "ryan@roofingmedia.us" => "Wmy6tl?bi7:2",
   "daniel@roofingmedia.us" => "ryjt7~Be",
   "ethan@roofingmedia.us" => "5m>FFsvo",
-  "gaurav@roofingpartners.us" => "cO850%m05yv",
+  "gaurav@roofingpartners.us" => "m~16B>z^eQ2",
   "frank@roofingpartners.us" => "5;T+N5KLt!",
-  "jake@roofingpartners.us" => "944jM0;u",
-  "ryan@roofingpartners.us" => "U004!t50!V?r",
-  "daniel@roofingpartners.us" => "#p+0n46P@N=B",
+  "jake@roofingpartners.us" => "Zd6ygm+w~",
+  "ryan@roofingpartners.us" => "w#W8;H8B$~",
+  "daniel@roofingpartners.us" => "D?x5>xeT>1l",
   "gaurav@roofingclients.us" => "iRR$zYmhuP0@",
   "ethan@roofingclients.us" => "S!HSd2;6:bT",
   "frank@roofingclients.us" => "0b>9*Xx1",
@@ -64,19 +56,16 @@ $PASSWORDS = [
   "ryan@roofingclients.us" => "/Q>rvne5uA"
 ];
 
-$password = $data["password"] ?? ($PASSWORDS[strtolower($fromEmail)] ?? "");
+$password = !empty($data["password"]) ? $data["password"] : ($PASSWORDS[$fromEmail] ?? "RAJOURIbranch@1997");
+$host = trim($data["host"] ?? "");
+$port = (int)($data["port"] ?? 465);
 
-if (empty($to) || empty($subject) || empty($fromEmail)) {
-    http_response_code(400);
-    echo json_encode(["ok" => false, "error" => "Missing required fields"]);
-    exit;
-}
-
-$socket = @fsockopen("ssl://smtp.hostinger.com", 465, $errno, $errstr, 15);
-if (!$socket) {
-    http_response_code(500);
-    echo json_encode(["ok" => false, "error" => "SMTP socket connect failed: " . $errstr]);
-    exit;
+if (empty($host)) {
+    if (strpos($fromEmail, "frankmiller") !== false || strpos($fromEmail, "meetfrankmiller") !== false || strpos($fromEmail, "connectwithbdefrank") !== false) {
+        $host = "smtpout.secureserver.net";
+    } else {
+        $host = "smtp.hostinger.com";
+    }
 }
 
 function getSmtpLine($socket) {
@@ -88,8 +77,56 @@ function getSmtpLine($socket) {
     return $res;
 }
 
+// 1. TEST SMTP CONNECTION ACTION
+if ($action === "test") {
+    $socket = @fsockopen("ssl://" . $host, $port, $errno, $errstr, 12);
+    if (!$socket) {
+        http_response_code(500);
+        echo json_encode(["ok" => false, "error" => "SMTP socket failed ($host:$port): " . $errstr]);
+        exit;
+    }
+    getSmtpLine($socket);
+    fputs($socket, "EHLO contractorleads.us\\r\\n");
+    getSmtpLine($socket);
+    fputs($socket, "AUTH LOGIN\\r\\n");
+    getSmtpLine($socket);
+    fputs($socket, base64_encode($fromEmail) . "\\r\\n");
+    getSmtpLine($socket);
+    fputs($socket, base64_encode($password) . "\\r\\n");
+    $authRes = getSmtpLine($socket);
+    fputs($socket, "QUIT\\r\\n");
+    fclose($socket);
+
+    if (substr($authRes, 0, 3) === "235") {
+        echo json_encode(["ok" => true, "message" => "SMTP connection & authentication verified via $host"]);
+    } else {
+        http_response_code(500);
+        echo json_encode(["ok" => false, "error" => "Auth failed for $fromEmail on $host: " . trim($authRes)]);
+    }
+    exit;
+}
+
+// 2. SEND OUTBOUND EMAIL ACTION
+$to = trim($data["to"] ?? "");
+$subject = trim($data["subject"] ?? "");
+$htmlContent = $data["html"] ?? "";
+$textContent = $data["text"] ?? "";
+
+if (empty($to) || empty($subject) || empty($fromEmail)) {
+    http_response_code(400);
+    echo json_encode(["ok" => false, "error" => "Missing required fields (to, subject, fromEmail)"]);
+    exit;
+}
+
+$socket = @fsockopen("ssl://" . $host, $port, $errno, $errstr, 15);
+if (!$socket) {
+    http_response_code(500);
+    echo json_encode(["ok" => false, "error" => "SMTP socket connect failed to $host:$port - " . $errstr]);
+    exit;
+}
+
 getSmtpLine($socket);
-fputs($socket, "EHLO roofingagency.us\\r\\n");
+fputs($socket, "EHLO contractorleads.us\\r\\n");
 getSmtpLine($socket);
 fputs($socket, "AUTH LOGIN\\r\\n");
 getSmtpLine($socket);
@@ -101,7 +138,7 @@ $authRes = getSmtpLine($socket);
 if (substr($authRes, 0, 3) !== "235") {
     fclose($socket);
     http_response_code(500);
-    echo json_encode(["ok" => false, "error" => "SMTP Auth failed for " . $fromEmail]);
+    echo json_encode(["ok" => false, "error" => "SMTP Auth failed for $fromEmail on $host: " . trim($authRes)]);
     exit;
 }
 
@@ -112,7 +149,7 @@ getSmtpLine($socket);
 fputs($socket, "DATA\\r\\n");
 getSmtpLine($socket);
 
-$domain = explode("@", $fromEmail)[1] ?? "roofingagency.us";
+$domain = explode("@", $fromEmail)[1] ?? "contractorleads.us";
 $msgId = "<" . bin2hex(random_bytes(16)) . "@" . $domain . ">";
 $boundary = "b_" . bin2hex(random_bytes(12));
 
@@ -177,7 +214,7 @@ async function deploy() {
     for (const domain of targets) {
       try {
         const remotePath = `/home/u880916130/domains/${domain}/public_html/mailer.php`;
-        console.log(`Uploading authenticated mailer.php to ${domain}...`);
+        console.log(`Uploading upgraded universal mailer.php to ${domain}...`);
         await sftp.put(Buffer.from(phpScript), remotePath);
         console.log(`✅ Deployed https://${domain}/mailer.php`);
       } catch (e) {
@@ -186,10 +223,11 @@ async function deploy() {
     }
 
     await sftp.end();
-    console.log("🎉 All 5 domains updated with authenticated SMTP gateway!");
+    console.log("🎉 All 5 domains updated with upgraded universal mailer.php gateway!");
   } catch (err) {
     console.error("SFTP Error:", err.message);
   }
 }
 
 deploy();
+

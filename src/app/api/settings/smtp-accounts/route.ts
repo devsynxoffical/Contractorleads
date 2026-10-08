@@ -101,6 +101,30 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Custom SMTP is not fully configured" }, { status: 400 });
     }
     try {
+      const { sendViaHostingerRelay } = await import("@/lib/user-smtp");
+      const relayCheck = await sendViaHostingerRelay({
+        fromEmail: cfg.fromEmail,
+        fromName: cfg.fromName,
+        password: cfg.password,
+        host: cfg.host,
+        port: cfg.port,
+        action: "test",
+      });
+
+      if (relayCheck.ok) {
+        if (cfg.id) {
+          await prisma.smtpAccount.update({
+            where: { id: cfg.id },
+            data: { lastTestedAt: new Date() },
+          });
+        }
+        return NextResponse.json({
+          ok: true,
+          message: "SMTP connection & authentication verified successfully",
+        });
+      }
+
+      // Fallback to direct transport verify
       await assertPublicSmtpHost(cfg.host);
       const transport = createSmtpTransport(cfg);
       await transport.verify();

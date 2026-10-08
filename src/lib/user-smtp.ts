@@ -847,10 +847,13 @@ export async function sendViaHostingerRelay(opts: {
   fromEmail: string;
   fromName?: string | null;
   password?: string;
-  to: string;
-  subject: string;
-  text: string;
+  host?: string;
+  port?: number;
+  to?: string;
+  subject?: string;
+  text?: string;
   html?: string;
+  action?: string;
   attachments?: Array<{
     filename: string;
     content: Buffer;
@@ -871,12 +874,15 @@ export async function sendViaHostingerRelay(opts: {
 
   const payload = {
     secret: HOSTINGER_RELAY_SECRET,
+    action: opts.action || "send",
     fromEmail: opts.fromEmail,
     fromName: opts.fromName || "Contractor Leads",
     password: opts.password || "",
-    to: opts.to,
-    subject: opts.subject,
-    text: opts.text,
+    host: opts.host || "",
+    port: opts.port || 465,
+    to: opts.to || "",
+    subject: opts.subject || "",
+    text: opts.text || "",
     html: opts.html || "",
   };
 
@@ -884,7 +890,7 @@ export async function sendViaHostingerRelay(opts: {
   for (const url of endpoints) {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
       const res = await fetch(url, {
         method: "POST",
         headers: {
@@ -977,6 +983,8 @@ export async function sendOutboundEmail(opts: {
       fromEmail: sender.fromEmail,
       fromName: sender.fromName,
       password: sender.smtp.password,
+      host: sender.smtp.host,
+      port: sender.smtp.port,
       to: opts.to,
       subject: opts.subject,
       text: opts.text,
