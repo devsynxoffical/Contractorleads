@@ -9,7 +9,12 @@ import type { Prisma } from "@prisma/client";
  */
 export function leadOwnershipWhere(userId: string): Prisma.LeadWhereInput {
   return {
-    OR: [{ search: { userId } }, { savedBy: { some: { userId } } }],
+    OR: [
+      { search: { userId } },
+      { savedBy: { some: { userId } } },
+      { emails: { some: { userId } } },
+      { campaignProspects: { some: { campaign: { userId } } } },
+    ],
   };
 }
 

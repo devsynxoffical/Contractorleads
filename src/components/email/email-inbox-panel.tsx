@@ -199,13 +199,16 @@ function cleanMessageBody(raw: string): string {
 
   let text = raw;
 
-  // 1. Remove raw MIME boundaries and content headers
+  // 1. Zero-width and hidden unicode characters
+  text = text.replace(/[\u200B-\u200D\uFEFF\u00A0\u200E\u200F\u202A-\u202E]/g, " ");
+
+  // 2. Remove raw MIME boundaries and content headers
   text = text.replace(/--[a-f0-9_-]+(?:--)?/gi, "");
   text = text.replace(/Content-Type:[^\n\r]+/gi, "");
   text = text.replace(/Content-Transfer-Encoding:[^\n\r]+/gi, "");
   text = text.replace(/charset="?[^"\r\n]+"?/gi, "");
 
-  // 2. Decode Quoted-Printable artifacts
+  // 3. Decode Quoted-Printable artifacts
   text = text.replace(/=E2=80=AF/gi, " ");
   text = text.replace(/=E2=80=99/gi, "’");
   text = text.replace(/=E2=80=98/gi, "‘");
@@ -217,7 +220,7 @@ function cleanMessageBody(raw: string): string {
   text = text.replace(/=3D/gi, "=");
   text = text.replace(/=\r?\n/g, ""); // soft linebreaks in quoted-printable
 
-  // 3. Decode HTML entities
+  // 4. Decode HTML entities
   text = text
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
@@ -226,22 +229,24 @@ function cleanMessageBody(raw: string): string {
     .replace(/&#39;/g, "'")
     .replace(/&nbsp;/g, " ");
 
-  // 4. Strip ugly tracking pixels, beacon images, and analytics URLs
-  // Patterns like [https://et.secureserver.net/pixel?...] or [https://cdn.mcauto-images...]
+  // 5. Remove markdown image artifacts e.g. [img1.wsimg.com](...) or ![...](...)
   text = text.replace(
-    /!?\[[^\]]*\]\(https?:\/\/[^\)]*(?:pixel|beacon|analytics|open\?|wf\/open|mcauto|spacer|transparent|1x1|ea\/|secureserver\.net\/ea|secureserver\.net\/pixel)[^\)]*\)/gi,
+    /!?\[[^\]]*\]\((?:https?:\/\/[^\)]+\.(?:png|jpg|jpeg|gif|webp|svg|ico)[^\)]*)\)/gi,
     "",
   );
   text = text.replace(
-    /\[https?:\/\/[^\]]*(?:pixel|beacon|analytics|open\?|wf\/open|mcauto|spacer|transparent|1x1|ea\/|secureserver\.net\/ea|secureserver\.net\/pixel)[^\]]*\]/gi,
-    "",
-  );
-  text = text.replace(
-    /https?:\/\/[^\s)\]]+(?:pixel|beacon|analytics\.secureserver|open\?|wf\/open|ea\/C5HK)[^\s)\]]*/gi,
+    /!?\[[^\]]*(?:wsimg|secureserver|cloudstorage|imagesak|cdnassets|logo|icon|appstore|googleplay|badge|avatar|pixel|beacon|wf\/open|mcauto)[^\]]*\]\([^\)]*\)/gi,
     "",
   );
 
-  // 5. Clean remaining standalone bracketed URLs [https://...] -> render clean if not noise
+  // 6. Remove tracking redirect click URLs attached to image badges
+  text = text.replace(/https?:\/\/click\.[a-z0-9.-]+\/email\/[^\s)\]]+/gi, "");
+  text = text.replace(
+    /https?:\/\/[^\s)\]]*(?:pixel|beacon|analytics|open\?|wf\/open|mcauto|spacer|transparent|1x1|ea\/|secureserver\.net\/ea|secureserver\.net\/pixel)[^\s)\]]*/gi,
+    "",
+  );
+
+  // 7. Clean remaining standalone bracketed URLs [https://...] -> simplify if not noise
   text = text.replace(/\[(https?:\/\/[^\]]+)\]/g, (_, url) => {
     if (
       url.includes("pixel") ||
@@ -260,7 +265,11 @@ function cleanMessageBody(raw: string): string {
     }
   });
 
-  // 6. Remove excess whitespace & blank lines
+  // 8. Strip empty or broken bracket leftovers
+  text = text.replace(/\[\s*\]/g, "");
+  text = text.replace(/^\s*\[\s*$/gm, "");
+
+  // 9. Remove excess whitespace & blank lines
   text = text.replace(/[ \t]+/g, " ");
   text = text.replace(/\n\s*\n\s*\n+/g, "\n\n").trim();
 
@@ -283,6 +292,57 @@ function formatRelativeTime(dateStr: string): string {
     day: "numeric",
     year: d.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
   });
+}
+
+function renderInlineLinks(text: string) {
+  // Matches markdown links [label](url), angle bracket links <url>, or plain http(s) urls
+  const linkRegex = /(?:\[([^\]]+)\]\((https?:\/\/[^\s\)]+)\)|<((?:https?:\/\/)[^>]+)>|((?:https?:\/\/)[^\s<>"'()]+))/g;
+
+  const elements: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = linkRegex.exec(text)) !== null) {
+    const [fullMatch, mdLabel, mdUrl, angleUrl, plainUrl] = match;
+    const matchIndex = match.index;
+
+    if (matchIndex > lastIndex) {
+      elements.push(text.slice(lastIndex, matchIndex));
+    }
+
+    const targetUrl = mdUrl || angleUrl || plainUrl;
+    let label = mdLabel || angleUrl || plainUrl;
+
+    // If label is a very long URL, shorten domain/path for UI cleanliness
+    if (!mdLabel && label && label.length > 55) {
+      try {
+        const u = new URL(targetUrl);
+        label = `${u.hostname}${u.pathname.length > 20 ? u.pathname.slice(0, 20) + "…" : u.pathname}`;
+      } catch {
+        label = label.slice(0, 52) + "…";
+      }
+    }
+
+    elements.push(
+      <a
+        key={matchIndex}
+        href={targetUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-0.5 font-medium text-brand-600 hover:text-brand-700 underline underline-offset-2 break-all dark:text-brand-400 transition"
+      >
+        <span>{label}</span>
+      </a>,
+    );
+
+    lastIndex = matchIndex + fullMatch.length;
+  }
+
+  if (lastIndex < text.length) {
+    elements.push(text.slice(lastIndex));
+  }
+
+  return elements.length > 0 ? elements : text;
 }
 
 function renderFormattedThreadBody(rawBody: string, category: EmailCategory) {
@@ -328,8 +388,12 @@ function renderFormattedThreadBody(rawBody: string, category: EmailCategory) {
       )}
 
       {mainLines.length > 0 && (
-        <div className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-ink font-normal tracking-[-0.01em]">
-          {mainLines.join("\n").trim()}
+        <div className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-ink font-normal tracking-[-0.01em] space-y-1">
+          {mainLines.map((line, idx) => (
+            <p key={idx} className="min-h-[1.25em]">
+              {renderInlineLinks(line)}
+            </p>
+          ))}
         </div>
       )}
 
@@ -983,19 +1047,23 @@ export function EmailInboxPanel() {
                   </div>
                 </div>
 
-                {/* Lead CRM Link if matched */}
-                {lead && (
-                  <div className="flex items-center gap-2">
-                    <Link
-                      href={`/leads/${lead.id}?from=saved`}
-                      className="flex items-center gap-1.5 rounded-xl border border-brand-200 bg-brand-50/80 px-3 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-100 transition dark:bg-brand-950/50 dark:border-brand-900 dark:text-brand-300"
-                    >
-                      <HiOutlineBuildingOffice2 className="h-3.5 w-3.5" />
-                      <span>{lead.businessName} Profile</span>
-                      <HiOutlineArrowTopRightOnSquare className="h-3 w-3" />
-                    </Link>
-                  </div>
-                )}
+                {/* Lead CRM Link if matched and not a system/bounce account */}
+                {lead &&
+                  !["bounce", "security"].includes(selectedCategory) &&
+                  !["donotreply", "mailer daemon", "system alert", "delivery bounce"].includes(
+                    (lead.businessName || "").toLowerCase().trim(),
+                  ) && (
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/leads/${lead.id}?from=all`}
+                        className="flex items-center gap-1.5 rounded-xl border border-brand-200 bg-brand-50/80 px-3 py-1.5 text-xs font-semibold text-brand-700 hover:bg-brand-100 transition dark:bg-brand-950/50 dark:border-brand-900 dark:text-brand-300 shadow-2xs"
+                      >
+                        <HiOutlineBuildingOffice2 className="h-3.5 w-3.5" />
+                        <span>{lead.businessName} Profile</span>
+                        <HiOutlineArrowTopRightOnSquare className="h-3 w-3" />
+                      </Link>
+                    </div>
+                  )}
               </div>
 
               {/* Messages Thread Body */}
