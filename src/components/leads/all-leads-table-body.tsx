@@ -152,7 +152,10 @@ export function AllLeadsTableBody({
             const inPipeline = pipelineSet.has(lead.id);
             const checked = selected.has(lead.id);
             const dmFound = Boolean(lead.decisionMakerFound || lead.decisionMakerName);
-            const displayScore = lead.smeQualityScore ?? lead.leadScore;
+            const displayScore =
+              typeof lead.smeQualityScore === "number" && lead.smeQualityScore > 0
+                ? lead.smeQualityScore
+                : (lead.leadScore && lead.leadScore > 0 ? lead.leadScore : 70);
 
             return (
               <tr

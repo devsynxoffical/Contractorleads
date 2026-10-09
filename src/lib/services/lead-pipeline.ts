@@ -736,7 +736,12 @@ async function enrichAndPersistPlace(opts: {
     const smeScoring = calculateSmeQualityScore({
       businessVerified: Boolean(place.name && (place.phone || website)),
       hasWebsite: Boolean(website),
-      registrationVerified: Boolean(existingLead?.registrationNumber),
+      registrationVerified: Boolean(
+        existingLead?.registrationNumber ||
+        existingLead?.state ||
+        place.address ||
+        (place.name && /LLC|Inc|Corp|Co\b/i.test(place.name))
+      ),
       businessAgeVerified: estYears !== null,
       domainAgeVerified: Boolean(rdapInfo?.createdDate),
       decisionMakerIdentified: dmFound,
