@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   HiOutlineChevronRight,
   HiOutlineCog6Tooth,
@@ -75,9 +76,15 @@ export function WorkspaceSettingsMenu({
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
   const rootRef = useRef<HTMLDivElement>(null);
   const progress = useSetupProgress(user);
   const canTeams = userHasPlanFeature(user, "teams");
+
+  // Automatically close on navigation
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
 
   const items: MenuItem[] = [
     {
@@ -130,8 +137,8 @@ export function WorkspaceSettingsMenu({
           className={cn(
             "flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13.5px] font-medium transition",
             open
-              ? "bg-brand-50 text-ink"
-              : "text-ink-muted hover:bg-brand-50 hover:text-ink",
+              ? "bg-brand-50 text-ink dark:bg-brand-950/40"
+              : "text-ink-muted hover:bg-brand-50 hover:text-ink dark:hover:bg-brand-950/30",
           )}
           aria-expanded={open}
           aria-haspopup="dialog"
@@ -149,7 +156,12 @@ export function WorkspaceSettingsMenu({
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-2.5 rounded-xl border border-transparent py-1 pl-1 pr-1.5 transition hover:border-border hover:bg-brand-50 sm:pr-2.5"
+          className={cn(
+            "flex items-center gap-2.5 rounded-xl border py-1 pl-1 pr-1.5 transition sm:pr-2.5",
+            open
+              ? "border-brand-300 bg-brand-50/80 dark:border-brand-800 dark:bg-brand-950/50"
+              : "border-transparent hover:border-border hover:bg-brand-50 dark:hover:bg-brand-950/30",
+          )}
           aria-expanded={open}
           aria-haspopup="dialog"
         >
@@ -175,13 +187,13 @@ export function WorkspaceSettingsMenu({
           role="dialog"
           aria-label="Team and workspace setup"
           className={cn(
-            "absolute z-50 w-[min(300px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border bg-[var(--surface)] shadow-[0_18px_50px_rgba(15,23,42,0.18)]",
+            "absolute z-50 w-[min(300px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border bg-[var(--surface)] shadow-[0_18px_50px_rgba(15,23,42,0.18)] backdrop-blur-md",
             variant === "sidebar"
               ? "bottom-[calc(100%+8px)] left-0 right-0 w-auto"
               : "right-0 top-[calc(100%+8px)]",
           )}
         >
-          <div className="border-b border-border px-4 py-3">
+          <div className="border-b border-border px-4 py-3 bg-[var(--surface-muted)]/40">
             <p className="text-[13px] font-semibold text-ink">
               Team &amp; Workspace setup
             </p>
@@ -190,7 +202,7 @@ export function WorkspaceSettingsMenu({
                 <span>{progress}% completed</span>
                 <span className="capitalize">{planLabel(user.plan)}</span>
               </div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
+              <div className="h-1.5 overflow-hidden rounded-full bg-[var(--input-bg)]">
                 <div
                   className="h-full rounded-full transition-all"
                   style={{
@@ -215,11 +227,11 @@ export function WorkspaceSettingsMenu({
                       setOpen(false);
                       onNavigate?.();
                     }}
-                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] font-medium text-ink transition hover:bg-slate-50"
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] font-medium text-ink transition hover:bg-[var(--surface-muted)]"
                   >
                     <Icon className="h-[18px] w-[18px] shrink-0 text-ink-muted" />
                     <span className="flex-1">{item.label}</span>
-                    <span className="rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
+                    <span className="rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
                       {item.lockHint}
                     </span>
                   </button>
@@ -233,7 +245,7 @@ export function WorkspaceSettingsMenu({
                     setOpen(false);
                     onNavigate?.();
                   }}
-                  className="flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium text-ink transition hover:bg-slate-50"
+                  className="flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium text-ink transition hover:bg-[var(--surface-muted)]"
                 >
                   <Icon className="h-[18px] w-[18px] shrink-0 text-ink-muted" />
                   <span className="flex-1">{item.label}</span>
@@ -249,7 +261,7 @@ export function WorkspaceSettingsMenu({
                 setOpen(false);
                 onNavigate?.();
               }}
-              className="flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium text-ink transition hover:bg-slate-50"
+              className="flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium text-ink transition hover:bg-[var(--surface-muted)]"
             >
               <HiOutlineCog6Tooth className="h-[18px] w-[18px] shrink-0 text-ink-muted" />
               <span className="flex-1">All settings</span>

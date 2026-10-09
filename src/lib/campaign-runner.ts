@@ -542,5 +542,21 @@ export async function triggerFollowUpStopLogic(
     data: updateData,
   });
 
+  const prospectIds = prospects.map((p) => p.id);
+  const logUpdateData: Record<string, unknown> = {};
+  if (reason === "replied") {
+    logUpdateData.status = "replied";
+    logUpdateData.repliedAt = now;
+  } else if (reason === "bounced") {
+    logUpdateData.status = "bounced";
+    logUpdateData.bouncedAt = now;
+  }
+  if (Object.keys(logUpdateData).length > 0) {
+    await prisma.campaignLog.updateMany({
+      where: { prospectId: { in: prospectIds } },
+      data: logUpdateData,
+    });
+  }
+
   return { updated: prospects.length, reason };
 }
