@@ -638,7 +638,7 @@ export function AppShell({
           onToggleSidebar={toggleSidebar}
           hud={hudMode}
         />
-        <main className="hud-shell-main scrollbar-thin min-w-0 flex-1 overflow-x-hidden overflow-y-auto print:overflow-visible">
+        <main className="hud-shell-main scrollbar-thin relative z-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto print:overflow-visible">
           <div className="page-enter min-h-full">{children}</div>
         </main>
         <footer
