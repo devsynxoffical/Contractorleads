@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -76,10 +77,16 @@ export function WorkspaceSettingsMenu({
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const rootRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const progress = useSetupProgress(user);
   const canTeams = userHasPlanFeature(user, "teams");
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Automatically close on navigation
   useEffect(() => {
@@ -115,7 +122,10 @@ export function WorkspaceSettingsMenu({
   useEffect(() => {
     if (!open) return;
     function onDoc(e: MouseEvent) {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (rootRef.current?.contains(target)) return;
+      if (dropdownRef.current?.contains(target)) return;
+      setOpen(false);
     }
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
@@ -127,6 +137,95 @@ export function WorkspaceSettingsMenu({
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
+
+  const menuContent = (
+    <div
+      ref={dropdownRef}
+      role="dialog"
+      aria-label="Team and workspace setup"
+      className={cn(
+        "overflow-hidden rounded-2xl border border-border bg-[var(--surface)] shadow-[0_24px_70px_rgba(15,23,42,0.25)] backdrop-blur-md animate-in fade-in zoom-in-95 duration-150",
+        variant === "sidebar"
+          ? "absolute bottom-[calc(100%+8px)] left-0 right-0 z-50 w-auto"
+          : "fixed top-[58px] sm:top-[66px] right-3 sm:right-6 z-[9999] w-[min(320px,calc(100vw-1.5rem))]",
+      )}
+    >
+      <div className="border-b border-border px-4 py-3 bg-[var(--surface-muted)]/50">
+        <p className="text-[13px] font-bold text-ink">
+          Team &amp; Workspace setup
+        </p>
+        <div className="mt-2.5">
+          <div className="mb-1 flex items-center justify-between text-[11px] font-medium text-ink-faint">
+            <span>{progress}% completed</span>
+            <span className="capitalize font-semibold text-brand-600 dark:text-brand-400">{planLabel(user.plan)}</span>
+          </div>
+          <div className="h-1.5 overflow-hidden rounded-full bg-[var(--input-bg)]">
+            <div
+              className="h-full rounded-full transition-all"
+              style={{
+                width: `${progress}%`,
+                background: "var(--logo-gradient)",
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="py-1.5">
+        {items.map((item) => {
+          const Icon = item.icon;
+          if (item.locked && item.feature) {
+            return (
+              <button
+                key={item.label}
+                type="button"
+                onClick={() => {
+                  openUpgradePlanModal(item.feature!);
+                  setOpen(false);
+                  onNavigate?.();
+                }}
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] font-medium text-ink transition hover:bg-[var(--surface-muted)]"
+              >
+                <Icon className="h-[18px] w-[18px] shrink-0 text-ink-muted" />
+                <span className="flex-1">{item.label}</span>
+                <span className="rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+                  {item.lockHint}
+                </span>
+              </button>
+            );
+          }
+          return (
+            <Link
+              key={item.label}
+              href={item.href}
+              onClick={() => {
+                setOpen(false);
+                onNavigate?.();
+              }}
+              className="flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium text-ink transition hover:bg-[var(--surface-muted)]"
+            >
+              <Icon className="h-[18px] w-[18px] shrink-0 text-ink-muted" />
+              <span className="flex-1">{item.label}</span>
+            </Link>
+          );
+        })}
+      </div>
+
+      <div className="border-t border-border py-1.5 bg-[var(--surface-muted)]/20">
+        <Link
+          href="/settings"
+          onClick={() => {
+            setOpen(false);
+            onNavigate?.();
+          }}
+          className="flex items-center gap-3 px-4 py-2.5 text-[13px] font-semibold text-ink transition hover:bg-[var(--surface-muted)]"
+        >
+          <HiOutlineCog6Tooth className="h-[18px] w-[18px] shrink-0 text-ink-muted" />
+          <span className="flex-1">All settings</span>
+        </Link>
+      </div>
+    </div>
+  );
 
   return (
     <div ref={rootRef} className={cn("relative", className)}>
@@ -182,99 +281,20 @@ export function WorkspaceSettingsMenu({
         </button>
       )}
 
-      {open ? (
-        <>
-          <div
-            className="fixed inset-0 z-[90] bg-transparent"
-            onClick={() => setOpen(false)}
-            aria-hidden="true"
-          />
-          <div
-            role="dialog"
-            aria-label="Team and workspace setup"
-            className={cn(
-              "absolute z-[100] w-[min(300px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border bg-[var(--surface)] shadow-[0_18px_50px_rgba(15,23,42,0.18)] backdrop-blur-md",
-              variant === "sidebar"
-                ? "bottom-[calc(100%+8px)] left-0 right-0 w-auto"
-                : "right-0 top-[calc(100%+8px)]",
-            )}
-          >
-            <div className="border-b border-border px-4 py-3 bg-[var(--surface-muted)]/40">
-              <p className="text-[13px] font-semibold text-ink">
-                Team &amp; Workspace setup
-              </p>
-              <div className="mt-2.5">
-                <div className="mb-1 flex items-center justify-between text-[11px] font-medium text-ink-faint">
-                  <span>{progress}% completed</span>
-                  <span className="capitalize">{planLabel(user.plan)}</span>
-                </div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-[var(--input-bg)]">
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{
-                      width: `${progress}%`,
-                      background: "var(--logo-gradient)",
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
+      {open && variant === "sidebar" && menuContent}
 
-            <div className="py-1.5">
-              {items.map((item) => {
-                const Icon = item.icon;
-                if (item.locked && item.feature) {
-                  return (
-                    <button
-                      key={item.label}
-                      type="button"
-                      onClick={() => {
-                        openUpgradePlanModal(item.feature!);
-                        setOpen(false);
-                        onNavigate?.();
-                      }}
-                      className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] font-medium text-ink transition hover:bg-[var(--surface-muted)]"
-                    >
-                      <Icon className="h-[18px] w-[18px] shrink-0 text-ink-muted" />
-                      <span className="flex-1">{item.label}</span>
-                      <span className="rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
-                        {item.lockHint}
-                      </span>
-                    </button>
-                  );
-                }
-                return (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    onClick={() => {
-                      setOpen(false);
-                      onNavigate?.();
-                    }}
-                    className="flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium text-ink transition hover:bg-[var(--surface-muted)]"
-                  >
-                    <Icon className="h-[18px] w-[18px] shrink-0 text-ink-muted" />
-                    <span className="flex-1">{item.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-
-            <div className="border-t border-border py-1.5">
-              <Link
-                href="/settings"
-                onClick={() => {
-                  setOpen(false);
-                  onNavigate?.();
-                }}
-                className="flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium text-ink transition hover:bg-[var(--surface-muted)]"
-              >
-                <HiOutlineCog6Tooth className="h-[18px] w-[18px] shrink-0 text-ink-muted" />
-                <span className="flex-1">All settings</span>
-              </Link>
-            </div>
-          </div>
-        </>
+      {open && variant === "header" && mounted && typeof document !== "undefined" ? (
+        createPortal(
+          <>
+            <div
+              className="fixed inset-0 z-[9990] bg-black/10 backdrop-blur-[1px] dark:bg-black/30 animate-in fade-in duration-100"
+              onClick={() => setOpen(false)}
+              aria-hidden="true"
+            />
+            {menuContent}
+          </>,
+          document.body,
+        )
       ) : null}
     </div>
   );
