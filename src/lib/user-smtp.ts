@@ -926,6 +926,7 @@ export async function sendOutboundEmail(opts: {
   replyTo?: string;
   inReplyTo?: string;
   references?: string;
+  trackingToken?: string;
   attachments?: Array<{
     filename: string;
     content: Buffer;
@@ -941,7 +942,7 @@ export async function sendOutboundEmail(opts: {
     );
   }
 
-  const trackingToken = randomBytes(16).toString("hex");
+  const trackingToken = opts.trackingToken || randomBytes(16).toString("hex");
   const html = withTrackingPixel(opts.text, opts.html, trackingToken);
   const sendOpts = { ...opts, html };
 

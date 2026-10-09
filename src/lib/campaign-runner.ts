@@ -400,8 +400,11 @@ export async function processCampaignSends(opts?: {
               text: renderedBody,
               html: renderedHtml,
               accountId: mailbox.id,
+              trackingToken,
               attachments: outboundAttachments.length > 0 ? outboundAttachments : undefined,
             });
+
+            const finalTrackingToken = sentResult.trackingToken || trackingToken;
 
             // Log campaign email
             await prisma.campaignLog.create({
@@ -417,7 +420,7 @@ export async function processCampaignSends(opts?: {
                 body: renderedBody,
                 status: "sent",
                 messageId: sentResult.messageId ?? null,
-                trackingToken,
+                trackingToken: finalTrackingToken,
               },
             });
 
