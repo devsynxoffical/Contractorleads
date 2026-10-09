@@ -675,9 +675,9 @@ export function CampaignWizard({
   return (
     <div className="space-y-6">
       {/* Wizard Step Progress Bar */}
-      <div className="overflow-x-auto pb-2">
-        <div className="flex min-w-[700px] items-center justify-between gap-2 rounded-2xl border border-border/80 bg-[var(--surface)] p-3 shadow-sm">
-          {WIZARD_STEPS.map((s, idx) => {
+      <div className="rounded-2xl border border-border/80 bg-[var(--surface)] p-2.5 sm:p-3 shadow-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-2">
+          {WIZARD_STEPS.map((s) => {
             const isCurrent = step === s.num;
             const isDone = step > s.num;
             return (
@@ -686,31 +686,42 @@ export function CampaignWizard({
                 type="button"
                 onClick={() => setStep(s.num)}
                 className={cn(
-                  "flex flex-1 items-center gap-2.5 rounded-xl px-3 py-2 text-left transition",
+                  "group relative flex items-center gap-2.5 rounded-xl p-2 sm:p-2.5 text-left transition border",
                   isCurrent
-                    ? "bg-brand-50/80 border border-brand-300 dark:bg-brand-950/40 dark:border-brand-500/30"
+                    ? "bg-brand-50/90 border-brand-300 shadow-2xs dark:bg-brand-950/40 dark:border-brand-500/40"
                     : isDone
-                    ? "hover:bg-[var(--input-bg)] text-ink"
-                    : "opacity-60 hover:opacity-100"
+                    ? "bg-[var(--surface)] border-transparent hover:border-border hover:bg-[var(--input-bg)]/60 text-ink"
+                    : "bg-[var(--surface)] border-transparent opacity-65 hover:opacity-100 hover:border-border/60 text-ink-muted",
                 )}
               >
                 <div
                   className={cn(
-                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold",
+                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold transition shadow-2xs",
                     isDone
                       ? "bg-emerald-600 text-white"
                       : isCurrent
-                      ? "bg-brand-600 text-white"
-                      : "bg-[var(--input-bg)] text-ink-muted border border-border"
+                      ? "bg-brand-600 text-white shadow-brand-500/20"
+                      : "bg-[var(--input-bg)] text-ink-muted border border-border group-hover:border-ink-muted/40",
                   )}
                 >
-                  {isDone ? <HiOutlineCheck className="h-4 w-4" /> : s.num}
+                  {isDone ? <HiOutlineCheck className="h-4 w-4 stroke-[2.5]" /> : s.num}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className={cn("text-xs font-semibold truncate", isCurrent ? "text-brand-700 dark:text-brand-300" : "text-ink")}>
+                  <div
+                    className={cn(
+                      "text-xs font-bold truncate leading-tight",
+                      isCurrent
+                        ? "text-brand-700 dark:text-brand-300"
+                        : isDone
+                        ? "text-ink font-semibold"
+                        : "text-ink-muted group-hover:text-ink font-medium",
+                    )}
+                  >
                     {s.label}
                   </div>
-                  <div className="text-[11px] text-ink-muted truncate">{s.desc}</div>
+                  <div className="text-[10.5px] text-ink-faint truncate leading-tight mt-0.5">
+                    {s.desc}
+                  </div>
                 </div>
               </button>
             );
