@@ -183,91 +183,98 @@ export function WorkspaceSettingsMenu({
       )}
 
       {open ? (
-        <div
-          role="dialog"
-          aria-label="Team and workspace setup"
-          className={cn(
-            "absolute z-50 w-[min(300px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border bg-[var(--surface)] shadow-[0_18px_50px_rgba(15,23,42,0.18)] backdrop-blur-md",
-            variant === "sidebar"
-              ? "bottom-[calc(100%+8px)] left-0 right-0 w-auto"
-              : "right-0 top-[calc(100%+8px)]",
-          )}
-        >
-          <div className="border-b border-border px-4 py-3 bg-[var(--surface-muted)]/40">
-            <p className="text-[13px] font-semibold text-ink">
-              Team &amp; Workspace setup
-            </p>
-            <div className="mt-2.5">
-              <div className="mb-1 flex items-center justify-between text-[11px] font-medium text-ink-faint">
-                <span>{progress}% completed</span>
-                <span className="capitalize">{planLabel(user.plan)}</span>
-              </div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-[var(--input-bg)]">
-                <div
-                  className="h-full rounded-full transition-all"
-                  style={{
-                    width: `${progress}%`,
-                    background: "var(--logo-gradient)",
-                  }}
-                />
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-transparent"
+            onClick={() => setOpen(false)}
+            aria-hidden="true"
+          />
+          <div
+            role="dialog"
+            aria-label="Team and workspace setup"
+            className={cn(
+              "absolute z-50 w-[min(300px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-border bg-[var(--surface)] shadow-[0_18px_50px_rgba(15,23,42,0.18)] backdrop-blur-md",
+              variant === "sidebar"
+                ? "bottom-[calc(100%+8px)] left-0 right-0 w-auto"
+                : "right-0 top-[calc(100%+8px)]",
+            )}
+          >
+            <div className="border-b border-border px-4 py-3 bg-[var(--surface-muted)]/40">
+              <p className="text-[13px] font-semibold text-ink">
+                Team &amp; Workspace setup
+              </p>
+              <div className="mt-2.5">
+                <div className="mb-1 flex items-center justify-between text-[11px] font-medium text-ink-faint">
+                  <span>{progress}% completed</span>
+                  <span className="capitalize">{planLabel(user.plan)}</span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-[var(--input-bg)]">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{
+                      width: `${progress}%`,
+                      background: "var(--logo-gradient)",
+                    }}
+                  />
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="py-1.5">
-            {items.map((item) => {
-              const Icon = item.icon;
-              if (item.locked && item.feature) {
+            <div className="py-1.5">
+              {items.map((item) => {
+                const Icon = item.icon;
+                if (item.locked && item.feature) {
+                  return (
+                    <button
+                      key={item.label}
+                      type="button"
+                      onClick={() => {
+                        openUpgradePlanModal(item.feature!);
+                        setOpen(false);
+                        onNavigate?.();
+                      }}
+                      className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] font-medium text-ink transition hover:bg-[var(--surface-muted)]"
+                    >
+                      <Icon className="h-[18px] w-[18px] shrink-0 text-ink-muted" />
+                      <span className="flex-1">{item.label}</span>
+                      <span className="rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+                        {item.lockHint}
+                      </span>
+                    </button>
+                  );
+                }
                 return (
-                  <button
+                  <Link
                     key={item.label}
-                    type="button"
+                    href={item.href}
                     onClick={() => {
-                      openUpgradePlanModal(item.feature!);
                       setOpen(false);
                       onNavigate?.();
                     }}
-                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] font-medium text-ink transition hover:bg-[var(--surface-muted)]"
+                    className="flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium text-ink transition hover:bg-[var(--surface-muted)]"
                   >
                     <Icon className="h-[18px] w-[18px] shrink-0 text-ink-muted" />
                     <span className="flex-1">{item.label}</span>
-                    <span className="rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
-                      {item.lockHint}
-                    </span>
-                  </button>
+                  </Link>
                 );
-              }
-              return (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  onClick={() => {
-                    setOpen(false);
-                    onNavigate?.();
-                  }}
-                  className="flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium text-ink transition hover:bg-[var(--surface-muted)]"
-                >
-                  <Icon className="h-[18px] w-[18px] shrink-0 text-ink-muted" />
-                  <span className="flex-1">{item.label}</span>
-                </Link>
-              );
-            })}
-          </div>
+              })}
+            </div>
 
-          <div className="border-t border-border py-1.5">
-            <Link
-              href="/settings"
-              onClick={() => {
-                setOpen(false);
-                onNavigate?.();
-              }}
-              className="flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium text-ink transition hover:bg-[var(--surface-muted)]"
-            >
-              <HiOutlineCog6Tooth className="h-[18px] w-[18px] shrink-0 text-ink-muted" />
-              <span className="flex-1">All settings</span>
-            </Link>
+            <div className="border-t border-border py-1.5">
+              <Link
+                href="/settings"
+                onClick={() => {
+                  setOpen(false);
+                  onNavigate?.();
+                }}
+                className="flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium text-ink transition hover:bg-[var(--surface-muted)]"
+              >
+                <HiOutlineCog6Tooth className="h-[18px] w-[18px] shrink-0 text-ink-muted" />
+                <span className="flex-1">All settings</span>
+              </Link>
+            </div>
           </div>
-        </div>
+        </>
       ) : null}
     </div>
   );

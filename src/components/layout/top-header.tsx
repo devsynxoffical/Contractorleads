@@ -31,7 +31,7 @@ export function TopHeader({
   return (
     <header
       className={cn(
-        "hud-shell-header sticky top-0 z-30 border-b backdrop-blur-xl",
+        "hud-shell-header sticky top-0 z-40 border-b backdrop-blur-xl",
         hud
           ? "border-border bg-[color-mix(in_srgb,var(--hud-bg)_90%,transparent)] shadow-none"
           : "border-border/70 bg-surface/80 shadow-[var(--shadow-soft)]"
