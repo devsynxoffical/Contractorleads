@@ -17,9 +17,10 @@ export async function POST(
     const data = await req.json();
     const { prospectId, subject, body, mailboxId } = data;
 
-    if (!prospectId || !subject?.trim() || !body?.trim()) {
+    const targetIdentifier = prospectId || data.email;
+    if (!targetIdentifier || !subject?.trim() || !body?.trim()) {
       return NextResponse.json(
-        { error: "Prospect ID, subject, and message body are required." },
+        { error: "Prospect identifier (ID or email), subject, and message body are required." },
         { status: 400 }
       );
     }
@@ -32,8 +33,14 @@ export async function POST(
       return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
     }
 
-    const prospect = await prisma.campaignProspect.findUnique({
-      where: { id: prospectId, campaignId: id },
+    let prospect = await prisma.campaignProspect.findFirst({
+      where: {
+        campaignId: id,
+        OR: [
+          ...(prospectId ? [{ id: prospectId }, { email: prospectId }, { leadId: prospectId }] : []),
+          ...(data.email ? [{ email: data.email }] : []),
+        ],
+      },
     });
 
     if (!prospect) {

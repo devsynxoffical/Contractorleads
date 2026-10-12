@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import {
   HiOutlineArrowLeft,
   HiOutlineArrowPath,
+  HiOutlineArrowTopRightOnSquare,
   HiOutlineArrowUturnLeft,
   HiOutlineBolt,
   HiOutlineBookmark,
@@ -57,6 +58,7 @@ type CampaignLogItem = {
   stepIndex: number;
   hookId: string | null;
   mailboxId: string | null;
+  prospectId?: string | null;
   fromEmail: string;
   toEmail: string;
   subject: string;
@@ -287,6 +289,7 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
   const [emailViewerData, setEmailViewerData] = useState<{
     prospect: {
       id?: string;
+      leadId?: string | null;
       businessName: string;
       ownerName?: string | null;
       email: string;
@@ -299,6 +302,7 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
     body: string;
     fromEmail?: string | null;
     toEmail: string;
+    mailboxId?: string | null;
     sentAt?: string | null;
     status?: string;
     stepIndex?: number;
@@ -432,6 +436,7 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prospectId: replyModalData.prospectId,
+          email: replyModalData.email,
           subject: replySubject.trim(),
           body: replyBody.trim(),
           mailboxId: replyMailboxId || undefined,
@@ -513,7 +518,8 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
     if (specificLog) {
       setEmailViewerData({
         prospect: {
-          id: specificLog.prospect?.id || prospect.id,
+          id: specificLog.prospect?.id || prospect.id || (specificLog as any).prospectId || specificLog.id,
+          leadId: (specificLog.prospect as any)?.leadId || (prospect as any).leadId || null,
           businessName: specificLog.prospect?.businessName || prospect.businessName,
           ownerName: specificLog.prospect?.ownerName || prospect.ownerName,
           email: specificLog.toEmail,
@@ -526,6 +532,7 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
         body: specificLog.body,
         fromEmail: specificLog.fromEmail,
         toEmail: specificLog.toEmail,
+        mailboxId: specificLog.mailboxId || null,
         sentAt: specificLog.sentAt,
         status: specificLog.status,
         stepIndex: specificLog.stepIndex,
@@ -2230,11 +2237,22 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
               {logsList.map((log) => (
                 <div
                   key={log.id}
-                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-border bg-[var(--surface)] p-4 shadow-sm hover:border-purple-300 transition"
+                  onClick={() =>
+                    void openEmailViewer(
+                      log.prospect || {
+                        id: log.prospectId || log.id,
+                        businessName: log.toEmail,
+                        email: log.toEmail,
+                      },
+                      log
+                    )
+                  }
+                  className="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-border bg-[var(--surface)] p-4 shadow-sm hover:border-purple-400 hover:shadow-md cursor-pointer transition-all active:scale-[0.998]"
+                  title="Click anywhere to inspect full email & options"
                 >
                   <div className="space-y-1.5 min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-ink text-sm">
+                      <span className="font-bold text-ink text-sm group-hover:text-purple-600 transition-colors">
                         {log.prospect?.businessName || log.toEmail}
                       </span>
                       {log.prospect?.ownerName && (
@@ -2242,7 +2260,7 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                           ({log.prospect.ownerName})
                         </span>
                       )}
-                      <span className="rounded-full bg-purple-100 text-purple-800 px-2 py-0.5 text-[10px] font-bold dark:bg-purple-950 dark:text-purple-300">
+                      <span className="rounded-full bg-purple-100 text-purple-800 px-2.5 py-0.5 text-[10px] font-bold dark:bg-purple-950 dark:text-purple-300">
                         💬 Replied Lead
                       </span>
                       <span className="text-[11px] text-ink-muted">
@@ -2253,11 +2271,11 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                     <p className="text-xs font-semibold text-ink line-clamp-1">
                       {log.subject}
                     </p>
-                    <p className="text-xs text-ink-muted line-clamp-2 bg-[var(--input-bg)]/50 p-2 rounded-xl font-sans">
+                    <p className="text-xs text-ink-muted line-clamp-2 bg-[var(--input-bg)]/50 p-2.5 rounded-xl font-sans border border-transparent group-hover:border-purple-200 dark:group-hover:border-purple-900/50 transition">
                       {log.body}
                     </p>
 
-                    <div className="flex items-center gap-3 text-[11px] text-ink-muted pt-1">
+                    <div className="flex items-center gap-3 text-[11px] text-ink-muted pt-1 flex-wrap">
                       <span>From mailbox: <b className="text-ink font-mono">{log.fromEmail}</b></span>
                       <span>To: <b className="text-ink font-mono">{log.toEmail}</b></span>
                       {log.prospect?.city && (
@@ -2269,31 +2287,57 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                   <div className="flex sm:flex-col items-center sm:items-end justify-end gap-2 shrink-0">
                     <button
                       type="button"
-                      onClick={() =>
+                      onClick={(e) => {
+                        e.stopPropagation();
                         openReplyModal({
-                          id: log.prospect?.id || log.id,
+                          id: log.prospect?.id || log.prospectId || log.id,
                           businessName: log.prospect?.businessName || log.toEmail,
                           ownerName: log.prospect?.ownerName,
                           email: log.toEmail,
                           lastSubject: log.subject,
                           lastFromEmail: log.fromEmail,
                           lastMailboxId: log.mailboxId,
-                        })
-                      }
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-purple-700 transition"
+                        });
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-purple-700 active:scale-95 transition"
                     >
                       <HiOutlineChatBubbleLeftRight className="h-4 w-4" />
                       <span>Reply Now</span>
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={() => void openEmailViewer(log.prospect || { businessName: log.toEmail, email: log.toEmail }, log)}
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-ink-muted hover:text-ink hover:underline"
-                    >
-                      <HiOutlineEye className="h-3.5 w-3.5" />
-                      <span>View Full Email</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void openEmailViewer(
+                            log.prospect || {
+                              id: log.prospectId || log.id,
+                              businessName: log.toEmail,
+                              email: log.toEmail,
+                            },
+                            log
+                          );
+                        }}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-ink-muted hover:text-purple-600 hover:underline"
+                      >
+                        <HiOutlineEye className="h-3.5 w-3.5" />
+                        <span>View Full Email</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCopyToClipboard(log.toEmail);
+                        }}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-ink-muted hover:text-ink"
+                        title="Copy email address"
+                      >
+                        <HiOutlineDocumentDuplicate className="h-3 w-3" />
+                        <span>Copy</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -3314,90 +3358,200 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
         );
       })(), document.body)}
 
-      {/* Sent Email Details Viewer Modal */}
-      {mounted && emailViewerData && createPortal((
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in">
-          <div className="relative flex max-h-[92vh] w-full max-w-2xl flex-col rounded-3xl border border-border bg-[var(--surface)] shadow-2xl overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-border px-6 py-4 bg-[var(--input-bg)]/40">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-md">
-                  <HiOutlineEnvelope className="h-5 w-5" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-bold text-ink">{emailViewerData.prospect.businessName}</h3>
-                    <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                      {emailViewerData.status?.toUpperCase() || "DELIVERED"}
-                    </span>
+      {/* Email Details / Inbound Reply Viewer Modal */}
+      {mounted && emailViewerData && (() => {
+        const isReplied =
+          emailViewerData.status?.toLowerCase() === "replied" ||
+          Boolean(emailViewerData.repliedAt);
+        const prospectTargetId =
+          emailViewerData.prospect.id ||
+          (emailViewerData.prospect as any).leadId ||
+          emailViewerData.toEmail;
+
+        return createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-fade-in">
+            <div className="relative flex max-h-[92vh] w-full max-w-2xl flex-col rounded-3xl border border-border bg-[var(--surface)] shadow-2xl overflow-hidden">
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-border px-6 py-4 bg-[var(--input-bg)]/40">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={cn(
+                      "flex h-10 w-10 items-center justify-center rounded-2xl text-white shadow-md",
+                      isReplied ? "bg-purple-600" : "bg-blue-600"
+                    )}
+                  >
+                    {isReplied ? (
+                      <HiOutlineChatBubbleLeftRight className="h-5 w-5" />
+                    ) : (
+                      <HiOutlineEnvelope className="h-5 w-5" />
+                    )}
                   </div>
-                  <p className="text-xs text-ink-muted">
-                    {emailViewerData.prospect.ownerName ? `${emailViewerData.prospect.ownerName} · ` : ""}{emailViewerData.toEmail}
-                  </p>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-sm font-bold text-ink">
+                        {emailViewerData.prospect.businessName || emailViewerData.toEmail}
+                      </h3>
+                      {isReplied ? (
+                        <span className="rounded-md bg-purple-100 px-2 py-0.5 text-[10px] font-bold text-purple-800 dark:bg-purple-950 dark:text-purple-300">
+                          💬 INBOUND REPLY RECEIVED
+                        </span>
+                      ) : (
+                        <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                          {emailViewerData.status?.toUpperCase() || "DELIVERED"}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-ink-muted">
+                      {emailViewerData.prospect.ownerName ? `${emailViewerData.prospect.ownerName} · ` : ""}
+                      <span className="font-mono">{emailViewerData.toEmail}</span>
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setEmailViewerData(null)}
-                className="rounded-xl p-2 text-ink-muted hover:bg-[var(--surface)] hover:text-ink transition"
-              >
-                <HiOutlineXMark className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs rounded-2xl border border-border bg-[var(--input-bg)]/30 p-3.5">
-                <div>
-                  <span className="text-ink-muted block text-[10px] uppercase font-bold">From Sender Mailbox:</span>
-                  <span className="font-semibold text-ink font-mono">{emailViewerData.fromEmail || "System Mailbox"}</span>
-                </div>
-                <div>
-                  <span className="text-ink-muted block text-[10px] uppercase font-bold">Sent Timestamp:</span>
-                  <span className="font-semibold text-ink">{formatDateTime(emailViewerData.sentAt)}</span>
-                </div>
-              </div>
-
-              <div>
-                <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block mb-1">Subject Line</span>
-                <div className="rounded-xl border border-border bg-[var(--input-bg)] px-3.5 py-2.5 text-xs font-bold text-ink">
-                  {emailViewerData.subject}
-                </div>
-              </div>
-
-              <div>
-                <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block mb-1">Email Message Body</span>
-                <div className="rounded-2xl border border-border bg-[var(--surface)] p-5 text-xs text-ink whitespace-pre-wrap font-sans leading-relaxed shadow-inner max-h-80 overflow-y-auto">
-                  {emailViewerData.body}
-                </div>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="flex items-center justify-between border-t border-border px-6 py-4 bg-[var(--input-bg)]/40">
-              <button
-                type="button"
-                onClick={() => handleCopyToClipboard(emailViewerData.body)}
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-ink-muted hover:text-ink"
-              >
-                <HiOutlineDocumentDuplicate className="h-4 w-4" />
-                <span>{copied ? "Copied!" : "Copy Email Body"}</span>
-              </button>
-
-              <div className="flex items-center gap-2">
-                {emailViewerData.prospect.id && (
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
                     onClick={() => {
                       const p = emailViewerData.prospect;
                       setEmailViewerData(null);
                       openReplyModal({
-                        id: p.id!,
-                        businessName: p.businessName,
+                        id: prospectTargetId,
+                        businessName: p.businessName || emailViewerData.toEmail,
                         ownerName: p.ownerName,
                         email: emailViewerData.toEmail,
                         lastSubject: emailViewerData.subject,
                         lastFromEmail: emailViewerData.fromEmail,
+                        lastMailboxId: emailViewerData.mailboxId,
+                      });
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-purple-700 transition"
+                  >
+                    <HiOutlineChatBubbleLeftRight className="h-4 w-4" />
+                    <span>Reply Now</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEmailViewerData(null)}
+                    className="rounded-xl p-2 text-ink-muted hover:bg-[var(--surface)] hover:text-ink transition"
+                  >
+                    <HiOutlineXMark className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs rounded-2xl border border-border bg-[var(--input-bg)]/30 p-3.5">
+                  <div>
+                    <span className="text-ink-muted block text-[10px] uppercase font-bold">
+                      {isReplied ? "From Lead / Sender:" : "To Recipient:"}
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-semibold text-ink font-mono">{emailViewerData.toEmail}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyToClipboard(emailViewerData.toEmail)}
+                        className="text-ink-muted hover:text-ink"
+                        title="Copy email address"
+                      >
+                        <HiOutlineDocumentDuplicate className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-ink-muted block text-[10px] uppercase font-bold">
+                      {isReplied ? "Received At:" : "Sent Timestamp:"}
+                    </span>
+                    <span className="font-semibold text-ink">
+                      {formatDateTime(emailViewerData.repliedAt || emailViewerData.sentAt)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-ink-muted block text-[10px] uppercase font-bold">Connected Mailbox:</span>
+                    <span className="font-semibold text-ink font-mono">
+                      {emailViewerData.fromEmail || "System Mailbox"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-ink-muted block text-[10px] uppercase font-bold">Location & Contact:</span>
+                    <span className="font-semibold text-ink">
+                      {emailViewerData.prospect.city
+                        ? `${emailViewerData.prospect.city}, ${emailViewerData.prospect.state || "US"}`
+                        : emailViewerData.prospect.phone || "Standard Inbound Contact"}
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block mb-1">
+                    Subject Line
+                  </span>
+                  <div className="rounded-xl border border-border bg-[var(--input-bg)] px-3.5 py-2.5 text-xs font-bold text-ink">
+                    {emailViewerData.subject}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block">
+                      {isReplied ? "💬 Received Reply Message" : "Email Message Body"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyToClipboard(emailViewerData.body)}
+                      className="text-[11px] font-bold text-purple-600 hover:underline inline-flex items-center gap-1"
+                    >
+                      <HiOutlineDocumentDuplicate className="h-3 w-3" />
+                      <span>{copied ? "Copied!" : "Copy message"}</span>
+                    </button>
+                  </div>
+                  <div
+                    className={cn(
+                      "rounded-2xl border p-5 text-xs text-ink whitespace-pre-wrap font-sans leading-relaxed shadow-inner max-h-80 overflow-y-auto",
+                      isReplied
+                        ? "border-purple-300/40 bg-purple-50/40 dark:bg-purple-950/20 text-ink font-medium"
+                        : "border-border bg-[var(--surface)]"
+                    )}
+                  >
+                    {emailViewerData.body}
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-between border-t border-border px-6 py-4 bg-[var(--input-bg)]/40 flex-wrap gap-2">
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleCopyToClipboard(emailViewerData.body)}
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-ink-muted hover:text-ink"
+                  >
+                    <HiOutlineDocumentDuplicate className="h-4 w-4" />
+                    <span>{copied ? "Copied!" : "Copy Message"}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyToClipboard(emailViewerData.toEmail)}
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-ink-muted hover:text-ink"
+                  >
+                    <HiOutlineEnvelope className="h-4 w-4" />
+                    <span>Copy Lead Email</span>
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const p = emailViewerData.prospect;
+                      setEmailViewerData(null);
+                      openReplyModal({
+                        id: prospectTargetId,
+                        businessName: p.businessName || emailViewerData.toEmail,
+                        ownerName: p.ownerName,
+                        email: emailViewerData.toEmail,
+                        lastSubject: emailViewerData.subject,
+                        lastFromEmail: emailViewerData.fromEmail,
+                        lastMailboxId: emailViewerData.mailboxId,
                       });
                     }}
                     className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-purple-700 transition"
@@ -3405,19 +3559,20 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                     <HiOutlineChatBubbleLeftRight className="h-4 w-4" />
                     <span>Reply to this Lead</span>
                   </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setEmailViewerData(null)}
-                  className="rounded-xl border border-border bg-[var(--surface)] px-4 py-2 text-xs font-bold text-ink hover:bg-[var(--input-bg)]"
-                >
-                  Close
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setEmailViewerData(null)}
+                    className="rounded-xl border border-border bg-[var(--surface)] px-4 py-2 text-xs font-bold text-ink hover:bg-[var(--input-bg)]"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-      ), document.body)}
+          </div>,
+          document.body
+        );
+      })()}
 
       {/* Direct Reply Modal */}
       {mounted && replyModalData && createPortal((
