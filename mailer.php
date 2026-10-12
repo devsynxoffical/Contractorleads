@@ -256,12 +256,14 @@ $headers = [];
 $headers[] = "From: " . ($fromName ? "=?UTF-8?B?" . base64_encode($fromName) . "?= <" . $fromEmail . ">" : $fromEmail);
 $headers[] = "To: <" . $to . ">";
 $headers[] = "Subject: =?UTF-8?B?" . base64_encode($subject) . "?=";
-$headers[] = "Reply-To: " . $fromEmail;
+$headers[] = "Reply-To: <" . $fromEmail . ">";
 $headers[] = "Return-Path: <" . $fromEmail . ">";
 $headers[] = "Message-ID: " . $msgId;
 $headers[] = "Date: " . date("r");
 $headers[] = "MIME-Version: 1.0";
-$headers[] = "X-Mailer: ContractorLeads-Gateway/3.0";
+// 2024 Google & Yahoo compliance headers (mandatory for inboxing)
+$headers[] = "List-Unsubscribe: <mailto:unsubscribe@" . $domain . "?subject=unsubscribe>";
+$headers[] = "List-Unsubscribe-Post: List-Unsubscribe=One-Click";
 $headers[] = "Content-Type: multipart/alternative; boundary=\"" . $boundary . "\"";
 
 $bodyContent = implode("\r\n", $headers) . "\r\n\r\n";
@@ -279,7 +281,7 @@ if (!empty($htmlContent)) {
 $bodyContent .= "--" . $boundary . "--\r\n";
 
 // ----------------------------------------------------------------------
-// Method 1: Authenticated Direct SMTP socket to Provider Mail Server (Port 465 SSL)
+// Method 1: Authenticated Direct SMTP socket to Provider Mail Server
 // ----------------------------------------------------------------------
 function getSmtpResponse($socket) {
     $response = "";
@@ -290,8 +292,12 @@ function getSmtpResponse($socket) {
     return $response;
 }
 
-$socket = @fsockopen("ssl://" . $smtpHost, 465, $errno, $errstr, 12);
-if ($socket) {
+function sendViaSmtpSocket($host, $port, $domain, $fromEmail, $password, $to, $bodyContent, $msgId, $provider) {
+    $socket = @fsockopen("ssl://" . $host, $port, $errno, $errstr, 15);
+    if (!$socket) {
+        return ["ok" => false, "error" => "Connect failed to {$host}:{$port} ($errstr)"];
+    }
+    stream_set_timeout($socket, 15);
     getSmtpResponse($socket);
     fputs($socket, "EHLO " . $domain . "\r\n");
     getSmtpResponse($socket);
@@ -302,62 +308,90 @@ if ($socket) {
     fputs($socket, base64_encode($password) . "\r\n");
     $authRes = getSmtpResponse($socket);
 
-    if (substr($authRes, 0, 3) === "235") {
-        fputs($socket, "MAIL FROM:<" . $fromEmail . ">\r\n");
-        getSmtpResponse($socket);
-        fputs($socket, "RCPT TO:<" . $to . ">\r\n");
-        getSmtpResponse($socket);
-        fputs($socket, "DATA\r\n");
-        getSmtpResponse($socket);
-        fputs($socket, $bodyContent . "\r\n.\r\n");
-        $sendRes = getSmtpResponse($socket);
-        fputs($socket, "QUIT\r\n");
+    if (substr($authRes, 0, 3) !== "235") {
         fclose($socket);
-
-        if (substr($sendRes, 0, 3) === "250") {
-            echo json_encode([
-                "ok" => true,
-                "messageId" => $msgId,
-                "fromEmail" => $fromEmail,
-                "provider" => $isGoDaddy ? "godaddy" : "hostinger",
-                "to" => $to,
-                "method" => "authenticated_smtp",
-                "response" => trim($sendRes)
-            ]);
-            exit;
-        }
-    } else {
-        fclose($socket);
+        return ["ok" => false, "error" => "Auth failed on {$host}:{$port}: " . trim($authRes)];
     }
+
+    fputs($socket, "MAIL FROM:<" . $fromEmail . ">\r\n");
+    getSmtpResponse($socket);
+    fputs($socket, "RCPT TO:<" . $to . ">\r\n");
+    $rcptRes = getSmtpResponse($socket);
+    if (substr($rcptRes, 0, 3) !== "250" && substr($rcptRes, 0, 3) !== "251") {
+        fclose($socket);
+        return ["ok" => false, "error" => "Recipient rejected by {$host}: " . trim($rcptRes)];
+    }
+
+    fputs($socket, "DATA\r\n");
+    getSmtpResponse($socket);
+    fputs($socket, $bodyContent . "\r\n.\r\n");
+    $sendRes = getSmtpResponse($socket);
+    fputs($socket, "QUIT\r\n");
+    fclose($socket);
+
+    if (substr($sendRes, 0, 3) === "250") {
+        return [
+            "ok" => true,
+            "messageId" => $msgId,
+            "fromEmail" => $fromEmail,
+            "provider" => $provider,
+            "to" => $to,
+            "method" => "authenticated_smtp",
+            "port" => $port,
+            "response" => trim($sendRes)
+        ];
+    }
+
+    return ["ok" => false, "error" => "Delivery failed: " . trim($sendRes)];
+}
+
+// Try primary and secondary ports
+$portsToTry = $isGoDaddy ? [465, 3535] : [465];
+$lastSmtpErr = "";
+
+foreach ($portsToTry as $port) {
+    $res = sendViaSmtpSocket($smtpHost, $port, $domain, $fromEmail, $password, $to, $bodyContent, $msgId, $isGoDaddy ? "godaddy" : "hostinger");
+    if ($res["ok"]) {
+        echo json_encode($res);
+        exit;
+    }
+    $lastSmtpErr = $res["error"];
 }
 
 // ----------------------------------------------------------------------
-// Method 2: Fallback to PHP native mail()
+// Method 2: Fallback (ONLY for Hostinger domains - NEVER for GoDaddy!)
+// Sending GoDaddy domains via Hostinger PHP mail() causes 100% SPF/DKIM
+// failure, poisoning domain reputation and landing directly in SPAM.
 // ----------------------------------------------------------------------
-$plainHeaders = [];
-$plainHeaders[] = "From: " . ($fromName ? "=?UTF-8?B?" . base64_encode($fromName) . "?= <" . $fromEmail . ">" : $fromEmail);
-$plainHeaders[] = "Reply-To: " . $fromEmail;
-$plainHeaders[] = "MIME-Version: 1.0";
-$plainHeaders[] = "Content-Type: text/html; charset=UTF-8";
-$plainHeaders[] = "Message-ID: " . $msgId;
+if (!$isGoDaddy) {
+    $plainHeaders = [];
+    $plainHeaders[] = "From: " . ($fromName ? "=?UTF-8?B?" . base64_encode($fromName) . "?= <" . $fromEmail . ">" : $fromEmail);
+    $plainHeaders[] = "Reply-To: <" . $fromEmail . ">";
+    $plainHeaders[] = "MIME-Version: 1.0";
+    $plainHeaders[] = "Content-Type: text/html; charset=UTF-8";
+    $plainHeaders[] = "Message-ID: " . $msgId;
+    $plainHeaders[] = "List-Unsubscribe: <mailto:unsubscribe@" . $domain . "?subject=unsubscribe>";
+    $plainHeaders[] = "List-Unsubscribe-Post: List-Unsubscribe=One-Click";
 
-$finalHtmlBody = !empty($htmlContent) ? $htmlContent : nl2br(htmlspecialchars($textContent));
-$mailSent = @mail($to, $subject, $finalHtmlBody, implode("\r\n", $plainHeaders), "-f" . $fromEmail);
+    $finalHtmlBody = !empty($htmlContent) ? $htmlContent : nl2br(htmlspecialchars($textContent));
+    $mailSent = @mail($to, $subject, $finalHtmlBody, implode("\r\n", $plainHeaders), "-f" . $fromEmail);
 
-if ($mailSent) {
-    echo json_encode([
-        "ok" => true,
-        "messageId" => $msgId,
-        "fromEmail" => $fromEmail,
-        "provider" => $isGoDaddy ? "godaddy" : "hostinger",
-        "to" => $to,
-        "method" => "native_mail"
-    ]);
-    exit;
+    if ($mailSent) {
+        echo json_encode([
+            "ok" => true,
+            "messageId" => $msgId,
+            "fromEmail" => $fromEmail,
+            "provider" => "hostinger",
+            "to" => $to,
+            "method" => "native_mail"
+        ]);
+        exit;
+    }
 }
 
 http_response_code(500);
 echo json_encode([
     "ok" => false,
-    "error" => "Failed to deliver email through " . $smtpHost . ":465 or PHP mail(). Check credentials for " . $fromEmail
+    "error" => "SMTP delivery failed: " . $lastSmtpErr . ". Refused unauthenticated fallback to protect " . $domain . " reputation."
 ]);
+
