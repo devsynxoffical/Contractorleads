@@ -283,12 +283,19 @@ export function renderCampaignTemplate(
 
   const vars: Record<string, string> = {
     businessName: prospect.businessName || "your business",
+    business: prospect.businessName || "your business",
+    companyName: prospect.businessName || "your business",
+    company: prospect.businessName || "your business",
     ownerName: prospect.ownerName || prospect.businessName || "there",
     firstName,
+    lastName: prospect.ownerName ? prospect.ownerName.trim().split(/\s+/).slice(1).join(" ") : "",
     city: prospect.city || "your area",
     state: prospect.state || "",
     country: prospect.country || "US",
     fromName: senderName,
+    senderName,
+    myName: senderName,
+    myCompany: senderName,
     ...extraVars,
   };
 

@@ -216,58 +216,129 @@ export function CampaignsDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Top High-Level Metrics */}
+      {/* Top High-Level Metrics (Clickable Quick Actions) */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-2xl border border-border bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
+        {/* Active Campaigns -> toggles active filter */}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setFilterStatus((prev) => (prev === "active" ? "all" : "active"))}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setFilterStatus((prev) => (prev === "active" ? "all" : "active"));
+            }
+          }}
+          className={cn(
+            "group cursor-pointer rounded-2xl border bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] transition-all hover:border-emerald-400 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 select-none",
+            filterStatus === "active" ? "border-emerald-500 ring-2 ring-emerald-500/20" : "border-border"
+          )}
+          title="Click to toggle filter for Active campaigns"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Active Campaigns</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400">
+            <span className="text-xs font-semibold uppercase tracking-wider text-ink-muted group-hover:text-emerald-600 transition-colors">
+              Active Campaigns
+            </span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400 group-hover:scale-110 transition-transform">
               <HiOutlineFire className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-ink">{activeCampaigns}</span>
+            <span className="text-2xl font-black text-ink group-hover:text-emerald-600 transition-colors">
+              {activeCampaigns}
+            </span>
             <span className="text-xs text-ink-muted">of {totalCampaigns} total</span>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
+        {/* Prospects Enrolled -> navigates to Leads view */}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => router.push("/leads")}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              router.push("/leads");
+            }
+          }}
+          className="group cursor-pointer rounded-2xl border border-border bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] transition-all hover:border-brand-400 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 select-none"
+          title="Click to view all targeted contractor leads"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Prospects Enrolled</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-950/50 dark:text-brand-400">
+            <span className="text-xs font-semibold uppercase tracking-wider text-ink-muted group-hover:text-brand-600 transition-colors">
+              Prospects Enrolled
+            </span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-950/50 dark:text-brand-400 group-hover:scale-110 transition-transform">
               <HiOutlineUsers className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-ink">{totalLeadsEnrolled.toLocaleString()}</span>
-            <span className="text-xs text-ink-muted">leads targeted</span>
+            <span className="text-2xl font-black text-ink group-hover:text-brand-600 transition-colors">
+              {totalLeadsEnrolled.toLocaleString()}
+            </span>
+            <span className="text-xs text-ink-muted">leads targeted →</span>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
+        {/* Emails Delivered -> toggles active filter */}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setFilterStatus((prev) => (prev === "active" ? "all" : "active"))}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setFilterStatus((prev) => (prev === "active" ? "all" : "active"));
+            }
+          }}
+          className="group cursor-pointer rounded-2xl border border-border bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] transition-all hover:border-blue-400 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 select-none"
+          title="Click to view dispatches across active campaigns"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Emails Delivered</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
+            <span className="text-xs font-semibold uppercase tracking-wider text-ink-muted group-hover:text-blue-600 transition-colors">
+              Emails Delivered
+            </span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400 group-hover:scale-110 transition-transform">
               <HiOutlineEnvelope className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-ink">{totalSent.toLocaleString()}</span>
+            <span className="text-2xl font-black text-ink group-hover:text-blue-600 transition-colors">
+              {totalSent.toLocaleString()}
+            </span>
             <span className="text-xs text-ink-muted">outreach & follow-ups</span>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
+        {/* Total Replies -> navigates to Email Inbox */}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => router.push("/email")}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              router.push("/email");
+            }
+          }}
+          className="group cursor-pointer rounded-2xl border border-border bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] transition-all hover:border-purple-400 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 select-none"
+          title="Click to open email inbox and view replies"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Total Replies</span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-950/50 dark:text-purple-400">
+            <span className="text-xs font-semibold uppercase tracking-wider text-ink-muted group-hover:text-purple-600 transition-colors">
+              Total Replies
+            </span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-950/50 dark:text-purple-400 group-hover:scale-110 transition-transform">
               <HiOutlineChartBar className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl font-black text-ink">{totalReplies}</span>
+            <span className="text-2xl font-black text-ink group-hover:text-purple-600 transition-colors">
+              {totalReplies}
+            </span>
             <span className="rounded-md bg-purple-100 px-1.5 py-0.5 text-xs font-bold text-purple-700 dark:bg-purple-950 dark:text-purple-300">
-              {overallReplyRate}% rate
+              {overallReplyRate}% rate →
             </span>
           </div>
         </div>

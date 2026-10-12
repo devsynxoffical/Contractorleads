@@ -221,6 +221,7 @@ type CopyPreviewModalState = {
   enableUnsubscribe?: boolean;
   unsubscribeText?: string;
   prospect?: {
+    id?: string;
     businessName: string;
     ownerName?: string | null;
     city?: string | null;
@@ -329,6 +330,7 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
   // Selected copy preview & edit modal (Day 0 hooks and Follow-Up steps)
   const [mounted, setMounted] = useState(false);
   const [selectedCopyPreview, setSelectedCopyPreview] = useState<CopyPreviewModalState | null>(null);
+  const [previewProspectId, setPreviewProspectId] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState<"rendered" | "raw" | "edit">("rendered");
   const [copied, setCopied] = useState(false);
   const [editLabel, setEditLabel] = useState("");
@@ -367,6 +369,13 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
 
   function openCopyModal(item: CopyPreviewModalState, mode: "rendered" | "raw" | "edit" = "rendered") {
     setSelectedCopyPreview(item);
+    if (item.prospect?.id) {
+      setPreviewProspectId(item.prospect.id);
+    } else if (prospects.length > 0) {
+      setPreviewProspectId(prospects[0].id);
+    } else {
+      setPreviewProspectId(null);
+    }
     setEditLabel(item.label || "");
     setEditSubject(item.subject || "");
     setEditBody(item.body || "");
@@ -1276,26 +1285,98 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
         )}
       </div>
 
-      {/* KPI Metrics Matrix */}
+      {/* KPI Metrics Matrix (Interactive & Filter-Enabled) */}
       <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
-        <div className="rounded-2xl border border-border bg-[var(--surface)] p-4 shadow-sm">
-          <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block">Total Leads</span>
-          <span className="text-xl font-black text-ink mt-1 block">{metrics.totalLeads.toLocaleString()}</span>
-          {campaign.duplicateDetectedCount > 0 && (
+        {/* Total Leads -> scrolls to prospects explorer */}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => {
+            setActiveMainTab("overview");
+            setTimeout(() => {
+              const el = document.getElementById("campaign-prospects-section");
+              if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+            }, 80);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setActiveMainTab("overview");
+              setTimeout(() => {
+                const el = document.getElementById("campaign-prospects-section");
+                if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+              }, 80);
+            }
+          }}
+          className="group cursor-pointer rounded-2xl border border-border bg-[var(--surface)] p-4 shadow-sm transition-all hover:border-brand-400 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 text-left select-none"
+          title="Click to view and inspect all enrolled prospects"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block group-hover:text-brand-600 transition-colors">Total Leads</span>
+            <span className="text-[10px] font-bold text-brand-600 opacity-0 group-hover:opacity-100 transition-opacity">View ↓</span>
+          </div>
+          <span className="text-xl font-black text-ink mt-1 block group-hover:text-brand-600 transition-colors">{metrics.totalLeads.toLocaleString()}</span>
+          {campaign.duplicateDetectedCount > 0 ? (
             <span className="text-[11px] text-emerald-600 mt-0.5 block">
               ✓ {campaign.duplicateDetectedCount} duplicates removed
             </span>
+          ) : (
+            <span className="text-[11px] text-ink-muted mt-0.5 block">Enrolled in campaign</span>
           )}
         </div>
 
-        <div className="rounded-2xl border border-border bg-[var(--surface)] p-4 shadow-sm">
-          <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block">Delivered Sends</span>
-          <span className="text-xl font-black text-ink mt-1 block">{metrics.delivered.toLocaleString()}</span>
+        {/* Delivered Sends -> switches to Logs tab with 'sent' filter */}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => {
+            setActiveMainTab("logs");
+            setLogsFilter("sent");
+            void loadLogs("sent", logsSearch);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setActiveMainTab("logs");
+              setLogsFilter("sent");
+              void loadLogs("sent", logsSearch);
+            }
+          }}
+          className="group cursor-pointer rounded-2xl border border-border bg-[var(--surface)] p-4 shadow-sm transition-all hover:border-brand-400 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 text-left select-none"
+          title="Click to inspect all delivered outreach emails"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block group-hover:text-brand-600 transition-colors">Delivered Sends</span>
+            <span className="text-[10px] font-bold text-brand-600 opacity-0 group-hover:opacity-100 transition-opacity">Logs →</span>
+          </div>
+          <span className="text-xl font-black text-ink mt-1 block group-hover:text-brand-600 transition-colors">{metrics.delivered.toLocaleString()}</span>
           <span className="text-[11px] text-ink-muted mt-0.5 block">{metrics.sent} total attempted</span>
         </div>
 
-        <div className="rounded-2xl border border-border bg-[var(--surface)] p-4 shadow-sm">
-          <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block">Unique Opens</span>
+        {/* Unique Opens -> switches to Logs tab with 'opened' filter */}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => {
+            setActiveMainTab("logs");
+            setLogsFilter("opened");
+            void loadLogs("opened", logsSearch);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setActiveMainTab("logs");
+              setLogsFilter("opened");
+              void loadLogs("opened", logsSearch);
+            }
+          }}
+          className="group cursor-pointer rounded-2xl border border-border bg-[var(--surface)] p-4 shadow-sm transition-all hover:border-brand-400 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 text-left select-none"
+          title="Click to view all leads who opened your emails"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block group-hover:text-brand-600 transition-colors">Unique Opens</span>
+            <span className="text-[10px] font-bold text-brand-600 opacity-0 group-hover:opacity-100 transition-opacity">Logs →</span>
+          </div>
           <span className="text-xl font-black text-brand-600 dark:text-brand-400 mt-1 block">
             {metrics.uniqueOpens.toLocaleString()}
           </span>
@@ -1304,8 +1385,30 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
           </span>
         </div>
 
-        <div className="rounded-2xl border border-border bg-[var(--surface)] p-4 shadow-sm">
-          <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block">Link Clicks</span>
+        {/* Link Clicks -> switches to Logs tab with 'clicked' filter */}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => {
+            setActiveMainTab("logs");
+            setLogsFilter("clicked");
+            void loadLogs("clicked", logsSearch);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setActiveMainTab("logs");
+              setLogsFilter("clicked");
+              void loadLogs("clicked", logsSearch);
+            }
+          }}
+          className="group cursor-pointer rounded-2xl border border-border bg-[var(--surface)] p-4 shadow-sm transition-all hover:border-blue-400 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 text-left select-none"
+          title="Click to view prospects who clicked links in your email"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block group-hover:text-blue-600 transition-colors">Link Clicks</span>
+            <span className="text-[10px] font-bold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">Logs →</span>
+          </div>
           <span className="text-xl font-black text-blue-600 dark:text-blue-400 mt-1 block">
             {metrics.clicked.toLocaleString()}
           </span>
@@ -1314,8 +1417,28 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
           </span>
         </div>
 
-        <div className="rounded-2xl border border-border bg-[var(--surface)] p-4 shadow-sm">
-          <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block">Replies Received</span>
+        {/* Replies Received -> switches to Live Inbox tab */}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => {
+            setActiveMainTab("inbox");
+            void loadLogs("replied");
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setActiveMainTab("inbox");
+              void loadLogs("replied");
+            }
+          }}
+          className="group cursor-pointer rounded-2xl border border-border bg-[var(--surface)] p-4 shadow-sm transition-all hover:border-purple-400 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 text-left select-none"
+          title="Click to view incoming email replies in live inbox"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block group-hover:text-purple-600 transition-colors">Replies Received</span>
+            <span className="text-[10px] font-bold text-purple-600 opacity-0 group-hover:opacity-100 transition-opacity">Inbox →</span>
+          </div>
           <span className="text-xl font-black text-purple-600 dark:text-purple-400 mt-1 block">
             {metrics.replied.toLocaleString()}
           </span>
@@ -1324,8 +1447,30 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
           </span>
         </div>
 
-        <div className="rounded-2xl border border-border bg-[var(--surface)] p-4 shadow-sm">
-          <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block">Bounced / Unsub</span>
+        {/* Bounced / Unsub -> switches to Logs tab with 'bounced' filter */}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => {
+            setActiveMainTab("logs");
+            setLogsFilter("bounced");
+            void loadLogs("bounced", logsSearch);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setActiveMainTab("logs");
+              setLogsFilter("bounced");
+              void loadLogs("bounced", logsSearch);
+            }
+          }}
+          className="group cursor-pointer rounded-2xl border border-border bg-[var(--surface)] p-4 shadow-sm transition-all hover:border-rose-400 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 text-left select-none"
+          title="Click to view bounced or unsubscribed leads"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider block group-hover:text-rose-600 transition-colors">Bounced / Unsub</span>
+            <span className="text-[10px] font-bold text-rose-600 opacity-0 group-hover:opacity-100 transition-opacity">Logs →</span>
+          </div>
           <span className="text-xl font-black text-rose-600 mt-1 block">{metrics.bounced}</span>
           <span className="text-[11px] text-ink-muted mt-0.5 block">
             {metrics.bounceRate}% bounce rate
@@ -1771,7 +1916,7 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
       </div>
 
       {/* SECTION 4: PROSPECT EXPLORER */}
-      <div className="rounded-2xl border border-border bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] space-y-4">
+      <div id="campaign-prospects-section" className="rounded-2xl border border-border bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-sm font-bold text-ink">Campaign Prospects ({prospectTotal})</h2>
@@ -2338,14 +2483,28 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
 
       {/* Copy Preview & Full Edit Modal (Mounted via createPortal directly to document.body) */}
       {mounted && selectedCopyPreview && createPortal((() => {
-        const sampleLead = selectedCopyPreview.prospect || {
-          businessName: campaign.name ? `${campaign.industry || "Apex"} Contractor Co` : "Apex Roofing Experts",
-          ownerName: "John Miller",
-          city: campaign.city || "Miami",
-          state: campaign.state || "FL",
-          country: campaign.country || "US",
-          email: "john@apexcontracting.com",
-        };
+        const activeProspect =
+          (previewProspectId ? prospects.find((p) => p.id === previewProspectId) : null) ||
+          selectedCopyPreview.prospect ||
+          (prospects && prospects.length > 0 ? prospects[0] : null);
+
+        const sampleLead = activeProspect
+          ? {
+              businessName: activeProspect.businessName,
+              ownerName: activeProspect.ownerName || "John Miller",
+              city: activeProspect.city || campaign.city || "Miami",
+              state: activeProspect.state || campaign.state || "FL",
+              country: activeProspect.country || campaign.country || "US",
+              email: activeProspect.email,
+            }
+          : {
+              businessName: "Apex Contracting",
+              ownerName: "John Miller",
+              city: campaign.city || "Miami",
+              state: campaign.state || "FL",
+              country: campaign.country || "US",
+              email: "john@apexcontracting.com",
+            };
 
         const activeSubject = previewMode === "edit" ? editSubject : selectedCopyPreview.subject;
         const activeBody = previewMode === "edit" ? editBody : selectedCopyPreview.body;
@@ -2408,7 +2567,7 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                       </span>
                     </div>
                     <p className="text-[11px] text-ink-muted truncate">
-                      {selectedCopyPreview.prospect
+                      {activeProspect
                         ? `Personalized preview for ${sampleLead.businessName} (${sampleLead.email})`
                         : "Email template with automated contractor variable personalization"}
                     </p>
@@ -2416,6 +2575,24 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
+                  {prospects.length > 0 && (
+                    <div className="hidden sm:flex items-center gap-1.5 rounded-xl border border-border bg-[var(--surface)] px-2.5 py-1 text-xs shadow-xs">
+                      <span className="text-[11px] font-semibold text-ink-muted shrink-0">Preview Lead:</span>
+                      <select
+                        value={activeProspect?.id || ""}
+                        onChange={(e) => setPreviewProspectId(e.target.value)}
+                        className="bg-transparent font-bold text-ink text-xs focus:outline-none cursor-pointer max-w-[170px] truncate"
+                        title="Choose a real lead from this campaign to preview personalization"
+                      >
+                        {prospects.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.businessName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
                   {/* Mode switcher tabs */}
                   <div className="flex items-center gap-1 rounded-xl bg-[var(--surface)] p-1 border border-border text-xs">
                     <button
