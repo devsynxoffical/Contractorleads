@@ -163,6 +163,73 @@ if ($token !== $RELAY_SECRET && ($data["secret"] ?? "") !== $RELAY_SECRET) {
     exit;
 }
 
+// ----------------------------------------------------------------------
+// IMAP FETCH action — lets the app read inboxes through this gateway when
+// direct IMAP (port 993) is blocked from the app server.
+// ----------------------------------------------------------------------
+function imapCommand($sock, $tag, $cmd) {
+    fputs($sock, $tag . " " . $cmd . "\r\n");
+    $out = "";
+    while (($line = fgets($sock, 8192)) !== false) {
+        $out .= $line;
+        if (strpos($line, $tag . " ") === 0) break;
+    }
+    return $out;
+}
+
+if (($data["action"] ?? "") === "fetch") {
+    $mbox = strtolower(trim($data["fromEmail"] ?? ""));
+    if (empty($mbox)) {
+        http_response_code(400);
+        echo json_encode(["ok" => false, "error" => "Missing fromEmail (mailbox) for fetch."]);
+        exit;
+    }
+    $mDomain = explode("@", $mbox)[1] ?? "";
+    $mGoDaddy = isset($GODADDY_MAILBOXES[$mbox]) || (strpos($mDomain, "frankmiller") !== false) || ($mDomain === "meetfrankmiller.com") || ($mDomain === "connectwithbdefrank.com");
+    $imapHost = $mGoDaddy ? "imap.secureserver.net" : "imap.hostinger.com";
+    $mPass = !empty($data["password"]) ? $data["password"] : ($ALL_MAILBOXES[$mbox] ?? ($mGoDaddy ? $GODADDY_PASS : ""));
+    $limit = max(1, min(50, intval($data["limit"] ?? 25)));
+
+    $sock = @stream_socket_client("ssl://" . $imapHost . ":993", $errno, $errstr, 12);
+    if (!$sock) {
+        http_response_code(502);
+        echo json_encode(["ok" => false, "error" => "IMAP connect failed to " . $imapHost . ": " . $errstr]);
+        exit;
+    }
+    stream_set_timeout($sock, 20);
+    fgets($sock, 8192); // server greeting
+
+    $login = imapCommand($sock, "XA1", 'LOGIN "' . addcslashes($mbox, '"\\') . '" "' . addcslashes($mPass, '"\\') . '"');
+    if (!preg_match('/^XA1 OK/mi', $login)) {
+        fclose($sock);
+        http_response_code(401);
+        echo json_encode(["ok" => false, "error" => "IMAP login failed for " . $mbox . " (check mailbox password)."]);
+        exit;
+    }
+
+    imapCommand($sock, "XA2", "EXAMINE INBOX"); // read-only: never alters read/unread flags
+    $search = imapCommand($sock, "XA3", "UID SEARCH ALL");
+    preg_match('/\* SEARCH([\d ]*)/', $search, $sm);
+    $uids = array_values(array_filter(explode(" ", trim($sm[1] ?? ""))));
+    $total = count($uids);
+    $uids = array_slice($uids, -$limit);
+
+    $messages = [];
+    foreach ($uids as $uid) {
+        $resp = imapCommand($sock, "XF" . $uid, "UID FETCH " . $uid . " BODY.PEEK[]");
+        if (preg_match('/\{(\d+)\}\r\n/', $resp, $lm, PREG_OFFSET_CAPTURE)) {
+            $len = intval($lm[1][0]);
+            $start = $lm[0][1] + strlen($lm[0][0]);
+            $messages[] = ["uid" => intval($uid), "raw" => base64_encode(substr($resp, $start, $len))];
+        }
+    }
+    imapCommand($sock, "XA9", "LOGOUT");
+    fclose($sock);
+
+    echo json_encode(["ok" => true, "mailbox" => $mbox, "total" => $total, "messages" => $messages]);
+    exit;
+}
+
 $to = trim($data["to"] ?? "");
 $subject = trim($data["subject"] ?? "");
 $htmlContent = $data["html"] ?? "";

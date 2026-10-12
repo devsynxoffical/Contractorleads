@@ -480,13 +480,25 @@ export function EmailInboxPanel() {
         });
         const data = await res.json();
         if (res.ok) {
+          const failed: { mailbox: string; error?: string }[] = (data.results || []).filter(
+            (r: { error?: string }) => r.error,
+          );
           if (data.totalSynced > 0) {
             setMsg(
               `✅ Synced ${data.totalSynced} new incoming email(s) across ${data.mailboxesCount ?? "all"} mailbox(es).`,
             );
-          } else {
+          } else if (failed.length === 0) {
             setMsg(
               `Mailbox sync complete (${data.mailboxesCount ?? 0} active mailbox(es) checked). Inbox is up to date.`,
+            );
+          }
+          if (failed.length > 0) {
+            setError(
+              `⚠️ ${failed.length} mailbox(es) failed to sync: ` +
+                failed
+                  .slice(0, 5)
+                  .map((f) => `${f.mailbox} (${f.error})`)
+                  .join("; "),
             );
           }
         } else {

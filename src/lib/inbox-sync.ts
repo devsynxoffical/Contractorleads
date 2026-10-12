@@ -4,6 +4,7 @@ import { decryptSecret } from "@/lib/crypto-secret";
 import { HOSTINGER_DEFAULT_MAILBOXES, GODADDY_DEFAULT_MAILBOXES } from "@/lib/system-smtp";
 import { ingestInboundEmail } from "@/lib/lead-email";
 import { isGlobalSuperAdmin } from "@/lib/roles";
+import { HOSTINGER_RELAY_SECRET } from "@/lib/user-smtp";
 
 export type ImapSyncResult = {
   mailbox: string;
@@ -256,14 +257,144 @@ export async function syncMailboxImap(opts: SyncMailboxOptions): Promise<ImapSyn
     } catch {
       /* ignore */
     }
+    const directError = err instanceof Error ? err.message : String(err);
+
+    // Direct IMAP unreachable (cloud hosts often block 993) -> read via mailer.php relay.
+    const relay = await syncMailboxViaRelay(opts, email, limit);
+    if (!relay.error) {
+      return { ...relay, provider: opts.provider };
+    }
     return {
       mailbox: email,
       provider: opts.provider,
-      synced,
-      totalInBox,
-      error: err instanceof Error ? err.message : String(err),
+      synced: relay.synced,
+      totalInBox: relay.totalInBox,
+      error: `Direct IMAP: ${directError} | Relay: ${relay.error}`,
     };
   }
+}
+
+/**
+ * Fallback: fetch the latest messages through the mailer.php gateway (action=fetch)
+ * and ingest them with the same dedupe rules as the direct IMAP path.
+ */
+async function syncMailboxViaRelay(
+  opts: SyncMailboxOptions,
+  email: string,
+  limit: number,
+): Promise<ImapSyncResult> {
+  const base: ImapSyncResult = { mailbox: email, synced: 0, totalInBox: 0 };
+  const endpoints = Array.from(
+    new Set(
+      [
+        process.env.HOSTINGER_RELAY_URL?.trim(),
+        "https://sevenfigurestudio.us/mailer.php",
+        "https://roofingpartners.us/mailer.php",
+      ].filter(Boolean) as string[],
+    ),
+  );
+
+  let lastError = "relay unreachable";
+  for (const url of endpoints) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 25000);
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${HOSTINGER_RELAY_SECRET}`,
+        },
+        body: JSON.stringify({
+          secret: HOSTINGER_RELAY_SECRET,
+          action: "fetch",
+          fromEmail: email,
+          password: opts.pass,
+          limit: opts.fetchAll ? Math.min(limit, 50) : Math.min(limit, 25),
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+
+      const data = (await res.json().catch(() => null)) as {
+        ok?: boolean;
+        error?: string;
+        total?: number;
+        messages?: { uid: number; raw: string }[];
+      } | null;
+
+      if (!data?.ok) {
+        const msg = data?.error || `status ${res.status}`;
+        lastError = /Missing required fields/i.test(msg)
+          ? `${url} does not support 'fetch' yet - re-upload the updated mailer.php`
+          : `${url}: ${msg}`;
+        continue;
+      }
+
+      let synced = 0;
+      const { simpleParser } = await import("mailparser");
+      for (const m of data.messages || []) {
+        try {
+          const parsed = await simpleParser(Buffer.from(m.raw, "base64"));
+          const fromAddr = parsed.from?.value?.[0]?.address?.toLowerCase().trim();
+          const toAddr =
+            (Array.isArray(parsed.to) ? parsed.to[0] : parsed.to)?.value?.[0]?.address
+              ?.toLowerCase()
+              .trim() || email;
+          const subject = parsed.subject || "(no subject)";
+          const date = parsed.date || new Date();
+          const messageId = parsed.messageId || undefined;
+
+          if (!fromAddr || fromAddr === email) continue;
+
+          const existing = await prisma.leadEmail.findFirst({
+            where: {
+              userId: opts.userId,
+              direction: "inbound",
+              OR: [
+                ...(messageId ? [{ messageId }] : []),
+                {
+                  fromEmail: fromAddr,
+                  toEmail: toAddr,
+                  subject,
+                  createdAt: {
+                    gte: new Date(date.getTime() - 60000),
+                    lte: new Date(date.getTime() + 60000),
+                  },
+                },
+              ],
+            },
+          });
+          if (existing) continue;
+
+          const bodyText =
+            parsed.text ||
+            (typeof parsed.html === "string" ? parsed.html.replace(/<[^>]+>/g, " ") : "") ||
+            `Received email from ${fromAddr}: "${subject}"`;
+
+          await ingestInboundEmail({
+            userId: opts.userId,
+            fromEmail: fromAddr,
+            toEmail: toAddr,
+            subject,
+            body: bodyText.trim().slice(0, 5000),
+            messageId,
+            inReplyTo: typeof parsed.inReplyTo === "string" ? parsed.inReplyTo : undefined,
+            systemSmtpAccountId: opts.systemSmtpAccountId || undefined,
+            smtpAccountId: opts.smtpAccountId || undefined,
+            receivedAt: new Date(date),
+          });
+          synced++;
+        } catch {
+          /* skip bad message */
+        }
+      }
+      return { ...base, synced, totalInBox: data.total ?? 0 };
+    } catch (e) {
+      lastError = `${url}: ${e instanceof Error ? e.message : String(e)}`;
+    }
+  }
+  return { ...base, error: lastError };
 }
 
 /**
