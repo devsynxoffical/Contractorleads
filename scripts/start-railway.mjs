@@ -126,9 +126,35 @@ const cronInterval = setInterval(async () => {
   }
 }, 120_000);
 
+// Background inbox sync: pulls new replies for ALL users' mailboxes every 5 minutes
+// (direct IMAP first, mailer.php relay as fallback).
+const inboxInterval = setInterval(async () => {
+  try {
+    const url = `http://127.0.0.1:${port}/api/cron/inbox-sync`;
+    const headers = {};
+    if (process.env.CRON_SECRET) {
+      headers["Authorization"] = `Bearer ${process.env.CRON_SECRET}`;
+    }
+    const res = await fetch(url, { headers });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.totalSynced > 0) {
+        console.log(`[cron] Inbox sync ingested ${data.totalSynced} new email(s) across ${data.users} user(s).`);
+      }
+      if (data.failedMailboxes > 0) {
+        console.warn(`[cron] Inbox sync: ${data.failedMailboxes} mailbox(es) failed`, data.failures?.slice(0, 3));
+      }
+    }
+  } catch {
+    // server might still be booting or restarting, ignore gracefully
+  }
+}, 300_000);
+
 for (const sig of ["SIGTERM", "SIGINT"]) {
   process.on(sig, () => {
     clearInterval(cronInterval);
+    clearInterval(inboxInterval);
     child.kill(sig);
   });
 }
+
