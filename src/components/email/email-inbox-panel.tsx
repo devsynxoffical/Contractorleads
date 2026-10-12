@@ -572,6 +572,13 @@ export function EmailInboxPanel() {
     }
   }, [selectedId]);
 
+  // Once the thread is loaded, bring the clicked message into view
+  useEffect(() => {
+    if (!selectedId || thread.length === 0) return;
+    const el = document.getElementById(`thread-msg-${selectedId}`);
+    if (el) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [thread, selectedId]);
+
   function handleProviderChange(
     provider: "godaddy" | "hostinger" | "gmail" | "outlook" | "custom",
   ) {
@@ -1087,11 +1094,13 @@ export function EmailInboxPanel() {
                   return (
                     <div
                       key={m.id}
+                      id={`thread-msg-${m.id}`}
                       className={cn(
                         "rounded-2xl p-4 sm:p-5 transition border space-y-3 shadow-2xs",
                         isInbound
                           ? "bg-[var(--surface)] border-border"
                           : "bg-brand-50/50 border-brand-200/80 dark:bg-brand-950/20 dark:border-brand-900/60",
+                        m.id === selectedId && thread.length > 1 && "ring-2 ring-brand-500/60",
                       )}
                     >
                       {/* Message Metadata Header */}

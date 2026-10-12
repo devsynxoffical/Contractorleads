@@ -39,16 +39,24 @@ export async function GET(_request: Request, { params }: Params) {
     email.readAt = new Date();
   }
 
-  const threadWhere = email.leadId
-    ? { userId: user.id, leadId: email.leadId }
-    : {
-        userId: user.id,
-        OR: [
-          { id: email.id },
-          ...(email.messageId ? [{ inReplyTo: email.messageId }] : []),
-          ...(email.inReplyTo ? [{ messageId: email.inReplyTo }] : []),
-        ],
-      };
+  // Automated senders (GoDaddy security codes, bounces, mailer-daemon…) are not
+  // conversations. Grouping them by lead would stack every system email together
+  // and show the oldest one instead of the email that was clicked.
+  const AUTOMATED_SENDER =
+    /(^|[^a-z])(no[-_.]?reply|do[-_.]?not[-_.]?reply|mailer[-_.]?daemon|postmaster|bounce[sd]?|notifications?|alerts?)([^a-z]|@)/i;
+  const isAutomated = AUTOMATED_SENDER.test(email.fromEmail || "");
+
+  const threadWhere =
+    email.leadId && !isAutomated
+      ? { userId: user.id, leadId: email.leadId }
+      : {
+          userId: user.id,
+          OR: [
+            { id: email.id },
+            ...(email.messageId ? [{ inReplyTo: email.messageId }] : []),
+            ...(email.inReplyTo ? [{ messageId: email.inReplyTo }] : []),
+          ],
+        };
 
   const [thread, accounts] = await Promise.all([
     prisma.leadEmail.findMany({
