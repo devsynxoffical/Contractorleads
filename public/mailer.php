@@ -294,8 +294,9 @@ if (($data["action"] ?? "") === "verify") {
                 "email" => $em,
                 "status" => "risky",
                 "score" => 65,
-                "verdict" => "Domain & MX active, but direct mailbox ping timed out or blocked",
-                "smtpCheck" => "unreachable"
+                "verdict" => "Domain & MX active, but direct mailbox ping timed out or blocked: (" . $errno . ") " . $errstr,
+                "smtpCheck" => "unreachable",
+                "mx" => $targetMx
             ];
             continue;
         }
