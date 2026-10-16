@@ -315,11 +315,11 @@ export function CampaignsDashboard() {
         <div
           role="button"
           tabIndex={0}
-          onClick={() => router.push("/email")}
+          onClick={() => router.push("/inbox?tab=inbox")}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
-              router.push("/email");
+              router.push("/inbox?tab=inbox");
             }
           }}
           className="group cursor-pointer rounded-2xl border border-border bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] transition-all hover:border-purple-400 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 select-none"

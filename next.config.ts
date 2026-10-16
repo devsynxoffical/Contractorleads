@@ -58,6 +58,7 @@ const nextConfig: NextConfig = {
   deploymentId,
   async redirects() {
     return [
+      { source: "/email", destination: "/inbox?tab=inbox", permanent: true },
       { source: "/trades", destination: "/industries", permanent: true },
       { source: "/trades/:slug", destination: "/industries/:slug", permanent: true },
       {
