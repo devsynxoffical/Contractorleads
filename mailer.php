@@ -230,6 +230,134 @@ if (($data["action"] ?? "") === "fetch") {
     exit;
 }
 
+function getSmtpResponse($socket) {
+    $response = "";
+    while (!feof($socket) && ($line = fgets($socket, 515))) {
+        $response .= $line;
+        if (strlen($line) >= 4 && substr($line, 3, 1) === " ") break;
+        if (strlen($line) === 3 || (strlen($line) === 5 && substr($line, 3) === "\r\n")) break;
+    }
+    return $response;
+}
+
+// ----------------------------------------------------------------------
+// Action 3: EMAIL VERIFIER via Hostinger Gateway
+// Connects to destination MX servers on Port 25 to verify mailbox existence
+// ----------------------------------------------------------------------
+if (($data["action"] ?? "") === "verify") {
+    $email = strtolower(trim($data["email"] ?? ""));
+    $emails = is_array($data["emails"] ?? null) ? $data["emails"] : ($email ? [$email] : []);
+
+    if (empty($emails)) {
+        http_response_code(400);
+        echo json_encode(["ok" => false, "error" => "No email provided for verification."]);
+        exit;
+    }
+
+    $results = [];
+
+    foreach ($emails as $em) {
+        $em = strtolower(trim($em));
+        if (empty($em) || !filter_var($em, FILTER_VALIDATE_EMAIL)) {
+            $results[] = [
+                "email" => $em,
+                "status" => "invalid",
+                "score" => 0,
+                "verdict" => "Invalid email format syntax",
+                "smtpCheck" => "skipped"
+            ];
+            continue;
+        }
+
+        $domain = substr(strrchr($em, "@"), 1);
+        $mxHosts = [];
+        $mxWeights = [];
+
+        if (!getmxrr($domain, $mxHosts, $mxWeights) || empty($mxHosts)) {
+            $results[] = [
+                "email" => $em,
+                "status" => "invalid",
+                "score" => 10,
+                "verdict" => "No mail exchanger (MX) records found for domain",
+                "smtpCheck" => "failed"
+            ];
+            continue;
+        }
+
+        array_multisort($mxWeights, $mxHosts);
+        $targetMx = $mxHosts[0];
+
+        // Attempt direct SMTP handshake (Port 25) with 5-second timeout
+        $sock = @fsockopen($targetMx, 25, $errno, $errstr, 5);
+        if (!$sock) {
+            $results[] = [
+                "email" => $em,
+                "status" => "risky",
+                "score" => 65,
+                "verdict" => "Domain & MX active, but direct mailbox ping timed out or blocked",
+                "smtpCheck" => "unreachable"
+            ];
+            continue;
+        }
+
+        stream_set_timeout($sock, 6);
+        $banner = getSmtpResponse($sock);
+
+        fputs($sock, "EHLO sevenfigurestudio.us\r\n");
+        $ehloRes = getSmtpResponse($sock);
+        if (substr($ehloRes, 0, 1) === "5") {
+            fputs($sock, "HELO sevenfigurestudio.us\r\n");
+            getSmtpResponse($sock);
+        }
+
+        fputs($sock, "MAIL FROM:<verify@sevenfigurestudio.us>\r\n");
+        $mailRes = getSmtpResponse($sock);
+
+        fputs($sock, "RCPT TO:<" . $em . ">\r\n");
+        $rcptRes = getSmtpResponse($sock);
+
+        fputs($sock, "QUIT\r\n");
+        fclose($sock);
+
+        $code = intval(substr($rcptRes, 0, 3));
+        if ($code === 250 || $code === 251) {
+            $results[] = [
+                "email" => $em,
+                "status" => "valid",
+                "score" => 98,
+                "verdict" => "Verified deliverable mailbox (SMTP 250 OK)",
+                "smtpCheck" => "passed",
+                "response" => trim($rcptRes)
+            ];
+        } else if ($code >= 500 && $code < 600) {
+            $results[] = [
+                "email" => $em,
+                "status" => "invalid",
+                "score" => 10,
+                "verdict" => "Mailbox does not exist (Server rejected with code " . $code . ")",
+                "smtpCheck" => "failed",
+                "response" => trim($rcptRes)
+            ];
+        } else {
+            $results[] = [
+                "email" => $em,
+                "status" => "risky",
+                "score" => 60,
+                "verdict" => "Temporary response from server (code " . $code . ")",
+                "smtpCheck" => "greylisted",
+                "response" => trim($rcptRes)
+            ];
+        }
+    }
+
+    echo json_encode([
+        "ok" => true,
+        "results" => $results,
+        "single" => count($results) === 1 ? $results[0] : null
+    ]);
+    exit;
+}
+
 $to = trim($data["to"] ?? "");
 $subject = trim($data["subject"] ?? "");
 $htmlContent = $data["html"] ?? "";
@@ -283,15 +411,6 @@ $bodyContent .= "--" . $boundary . "--\r\n";
 // ----------------------------------------------------------------------
 // Method 1: Authenticated Direct SMTP socket to Provider Mail Server
 // ----------------------------------------------------------------------
-function getSmtpResponse($socket) {
-    $response = "";
-    while ($line = fgets($socket, 515)) {
-        $response .= $line;
-        if (substr($line, 3, 1) === " ") break;
-    }
-    return $response;
-}
-
 function sendViaSmtpSocket($host, $port, $domain, $fromEmail, $password, $to, $bodyContent, $msgId, $provider) {
     $socket = @fsockopen("ssl://" . $host, $port, $errno, $errstr, 15);
     if (!$socket) {
@@ -359,39 +478,15 @@ foreach ($portsToTry as $port) {
 }
 
 // ----------------------------------------------------------------------
-// Method 2: Fallback (ONLY for Hostinger domains - NEVER for GoDaddy!)
-// Sending GoDaddy domains via Hostinger PHP mail() causes 100% SPF/DKIM
-// failure, poisoning domain reputation and landing directly in SPAM.
+// NEVER fall back to PHP native mail() for ANY provider.
+// On Hostinger, PHP mail() routes via relay.mailchannels.net which is
+// blocked by Microsoft Office 365, Proofpoint, and Spamhaus, resulting
+// in immediate delivery bounces. All mail MUST be authenticated SMTP.
 // ----------------------------------------------------------------------
-if (!$isGoDaddy) {
-    $plainHeaders = [];
-    $plainHeaders[] = "From: " . ($fromName ? "=?UTF-8?B?" . base64_encode($fromName) . "?= <" . $fromEmail . ">" : $fromEmail);
-    $plainHeaders[] = "Reply-To: <" . $fromEmail . ">";
-    $plainHeaders[] = "MIME-Version: 1.0";
-    $plainHeaders[] = "Content-Type: text/html; charset=UTF-8";
-    $plainHeaders[] = "Message-ID: " . $msgId;
-    $plainHeaders[] = "List-Unsubscribe: <mailto:unsubscribe@" . $domain . "?subject=unsubscribe>";
-    $plainHeaders[] = "List-Unsubscribe-Post: List-Unsubscribe=One-Click";
-
-    $finalHtmlBody = !empty($htmlContent) ? $htmlContent : nl2br(htmlspecialchars($textContent));
-    $mailSent = @mail($to, $subject, $finalHtmlBody, implode("\r\n", $plainHeaders), "-f" . $fromEmail);
-
-    if ($mailSent) {
-        echo json_encode([
-            "ok" => true,
-            "messageId" => $msgId,
-            "fromEmail" => $fromEmail,
-            "provider" => "hostinger",
-            "to" => $to,
-            "method" => "native_mail"
-        ]);
-        exit;
-    }
-}
-
 http_response_code(500);
 echo json_encode([
     "ok" => false,
-    "error" => "SMTP delivery failed: " . $lastSmtpErr . ". Refused unauthenticated fallback to protect " . $domain . " reputation."
+    "error" => "Authenticated SMTP delivery failed on " . $smtpHost . " (" . $lastSmtpErr . "). Refused unauthenticated mail() fallback to protect domain reputation and prevent MailChannels bounces."
 ]);
+
 

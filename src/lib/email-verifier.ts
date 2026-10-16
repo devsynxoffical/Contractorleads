@@ -1,5 +1,6 @@
 import dns from "dns";
 import net from "net";
+import { HOSTINGER_RELAY_ENDPOINTS, HOSTINGER_RELAY_SECRET } from "@/lib/user-smtp";
 
 // Common disposable / temporary email domains
 const DISPOSABLE_DOMAINS = new Set([
@@ -444,12 +445,84 @@ async function checkSmtpMailbox(
   });
 }
 
+export interface RemoteVerifyResult {
+  email: string;
+  status: "valid" | "invalid" | "risky";
+  score: number;
+  verdict: string;
+  smtpCheck: "passed" | "failed" | "unreachable" | "skipped" | "greylisted";
+  response?: string;
+}
+
+/**
+ * Verify a list of emails through the Hostinger Gateway on Port 25.
+ * Hostinger shared hosting allows outbound Port 25 TCP connections
+ * directly to target MX servers, bypassing cloud provider Port 25 blocks.
+ */
+export async function verifyViaHostingerGateway(
+  emails: string[]
+): Promise<Map<string, RemoteVerifyResult> | null> {
+  const clean = emails.map((e) => e.trim().toLowerCase()).filter(Boolean);
+  if (clean.length === 0) return new Map();
+
+  const customUrl = process.env.HOSTINGER_RELAY_URL?.trim();
+  const endpoints = Array.from(
+    new Set([
+      customUrl || "https://sevenfigurestudio.us/mailer.php",
+      "https://sevenfigurestudio.us/mailer.php",
+      "http://sevenfigurestudio.us/mailer.php",
+      ...HOSTINGER_RELAY_ENDPOINTS,
+    ].filter(Boolean) as string[])
+  );
+
+  const payload = {
+    action: "verify",
+    secret: HOSTINGER_RELAY_SECRET,
+    emails: clean,
+  };
+
+  for (const url of endpoints) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${HOSTINGER_RELAY_SECRET}`,
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        const data = (await res.json().catch(() => ({}))) as {
+          ok?: boolean;
+          results?: RemoteVerifyResult[];
+        };
+        if (data.ok && Array.isArray(data.results)) {
+          const map = new Map<string, RemoteVerifyResult>();
+          for (const item of data.results) {
+            map.set(item.email.toLowerCase(), item);
+          }
+          return map;
+        }
+      }
+    } catch {
+      // Try next endpoint
+    }
+  }
+
+  return null;
+}
+
 /**
  * Verify any email address with comprehensive validation rules.
  */
 export async function verifyEmailAddress(
   rawEmail: string,
-  options?: { skipSmtp?: boolean },
+  options?: { skipSmtp?: boolean; useLocalSmtpOnly?: boolean },
 ): Promise<EmailVerificationResult> {
   const startTime = Date.now();
   const raw = String(rawEmail || "").trim();
@@ -515,7 +588,55 @@ export async function verifyEmailAddress(
     };
   }
 
-  // Resolve DNS / MX
+  // 1. Primary path: verify via Hostinger Gateway (Port 25 unblocked)
+  if (!options?.skipSmtp && !options?.useLocalSmtpOnly) {
+    try {
+      const remoteMap = await verifyViaHostingerGateway([normalizedEmail]);
+      if (remoteMap && remoteMap.has(normalizedEmail)) {
+        const item = remoteMap.get(normalizedEmail)!;
+        let score = item.score;
+        let status = item.status;
+        let verdict = item.verdict;
+
+        if (isRoleBased && status !== "invalid") {
+          score = Math.min(score, 75);
+          status = "risky";
+          verdict = "Role-based mailbox (admin/support/info - moderate deliverability)";
+        }
+        if (suggestion && status !== "invalid") {
+          score = Math.min(score, 60);
+          status = "risky";
+          verdict = `Possible domain typo. Did you mean ${suggestion}?`;
+        }
+
+        return {
+          email: raw,
+          normalizedEmail,
+          status,
+          score,
+          verdict,
+          user,
+          domain,
+          checks: {
+            formatValid: true,
+            domainExists: item.status !== "invalid" || item.smtpCheck !== "failed",
+            mxFound: item.status !== "invalid" || item.smtpCheck !== "failed",
+            isDisposable: false,
+            isFreeProvider,
+            isRoleBased,
+            smtpCheck: item.smtpCheck === "greylisted" ? "unreachable" : item.smtpCheck,
+          },
+          mxRecords: [],
+          suggestion,
+          durationMs: Date.now() - startTime,
+        };
+      }
+    } catch {
+      // Fallback to local DNS/MX check
+    }
+  }
+
+  // 2. Fallback path: Local DNS / MX
   const { mxRecords, domainExists } = await resolveDomainMx(domain);
 
   if (!domainExists || mxRecords.length === 0) {
@@ -542,15 +663,14 @@ export async function verifyEmailAddress(
     };
   }
 
-  // SMTP Check (fast path for free providers & short timeout)
+  // Local SMTP Check (when Hostinger gateway is unavailable)
   let smtpCheck: "passed" | "failed" | "unreachable" | "skipped" = "skipped";
   if (!options?.skipSmtp && mxRecords.length > 0) {
     if (isFreeProvider) {
-      // Free providers (Gmail, Outlook, Yahoo) are already validated by MX + syntax
       smtpCheck = "skipped";
     } else {
       try {
-        smtpCheck = await checkSmtpMailbox(normalizedEmail, mxRecords[0].host, 1000);
+        smtpCheck = await checkSmtpMailbox(normalizedEmail, mxRecords[0].host, 1200);
       } catch {
         smtpCheck = "unreachable";
       }
@@ -564,15 +684,20 @@ export async function verifyEmailAddress(
 
   if (smtpCheck === "passed") {
     score = 98;
-    verdict = "Verified deliverable mailbox";
+    verdict = "Verified deliverable mailbox (SMTP 250 OK)";
   } else if (smtpCheck === "failed") {
     score = 15;
     status = "invalid";
     verdict = "Mailbox rejected by mail server (does not exist)";
   } else if (smtpCheck === "unreachable") {
-    // Greylisted or firewall blocking port 25 — DNS and MX are good
-    score = 85;
-    verdict = "Domain & MX active (deliverable)";
+    // Port 25 blocked by cloud host or firewall - do NOT mark as valid!
+    score = 65;
+    status = "risky";
+    verdict = "Domain & MX active, but direct mailbox ping timed out or blocked";
+  } else if (smtpCheck === "skipped" && isFreeProvider) {
+    score = 70;
+    status = "risky";
+    verdict = "Free webmail address (direct mailbox ping skipped)";
   }
 
   if (status !== "invalid") {
@@ -580,9 +705,6 @@ export async function verifyEmailAddress(
       score = Math.min(score, 75);
       status = "risky";
       verdict = "Role-based mailbox (admin/support/info - moderate deliverability)";
-    }
-    if (isFreeProvider && score > 90) {
-      score = 92;
     }
     if (suggestion) {
       score = Math.min(score, 60);
@@ -615,7 +737,7 @@ export async function verifyEmailAddress(
 }
 
 /**
- * Batch verify a list of emails with concurrency limit.
+ * Batch verify a list of emails with Hostinger Port 25 gateway acceleration.
  */
 export async function verifyEmailBatch(
   emails: string[],
@@ -629,15 +751,130 @@ export async function verifyEmailBatch(
   results: EmailVerificationResult[];
 }> {
   const cleanList = [...new Set(emails.map((e) => e.trim()).filter(Boolean))].slice(0, 2500);
-  const concurrency = options?.concurrency ?? 30;
   const results: EmailVerificationResult[] = [];
 
-  for (let i = 0; i < cleanList.length; i += concurrency) {
-    const chunk = cleanList.slice(i, i + concurrency);
-    const chunkResults = await Promise.all(
-      chunk.map((email) => verifyEmailAddress(email, options)),
-    );
-    results.push(...chunkResults);
+  // If SMTP check is requested, verify via Hostinger Gateway in batches of 15
+  if (!options?.skipSmtp && cleanList.length > 0) {
+    const BATCH_SIZE = 15;
+    for (let i = 0; i < cleanList.length; i += BATCH_SIZE) {
+      const chunk = cleanList.slice(i, i + BATCH_SIZE);
+      const validSyntaxChunk: string[] = [];
+
+      for (const email of chunk) {
+        const { valid: formatValid, user, domain } = checkSyntax(email);
+        if (!formatValid) {
+          results.push({
+            email,
+            normalizedEmail: email,
+            status: "invalid",
+            score: 0,
+            verdict: "Invalid email syntax or format",
+            user: user || "",
+            domain: domain || "",
+            checks: {
+              formatValid: false,
+              domainExists: false,
+              mxFound: false,
+              isDisposable: false,
+              isFreeProvider: false,
+              isRoleBased: false,
+              smtpCheck: "skipped",
+            },
+            mxRecords: [],
+            suggestion: null,
+            durationMs: 0,
+          });
+        } else if (DISPOSABLE_DOMAINS.has(domain.toLowerCase())) {
+          results.push({
+            email,
+            normalizedEmail: `${user.toLowerCase()}@${domain.toLowerCase()}`,
+            status: "invalid",
+            score: 5,
+            verdict: "Disposable / temporary email address detected",
+            user,
+            domain,
+            checks: {
+              formatValid: true,
+              domainExists: true,
+              mxFound: true,
+              isDisposable: true,
+              isFreeProvider: false,
+              isRoleBased: ROLE_BASED_PREFIXES.has(user.toLowerCase()),
+              smtpCheck: "skipped",
+            },
+            mxRecords: [],
+            suggestion: null,
+            durationMs: 0,
+          });
+        } else {
+          validSyntaxChunk.push(email);
+        }
+      }
+
+      if (validSyntaxChunk.length > 0) {
+        const remoteMap = await verifyViaHostingerGateway(validSyntaxChunk);
+        if (remoteMap && remoteMap.size > 0) {
+          for (const email of validSyntaxChunk) {
+            const norm = email.toLowerCase();
+            const remoteItem = remoteMap.get(norm);
+            if (remoteItem) {
+              const { user, domain } = checkSyntax(norm);
+              const isRoleBased = ROLE_BASED_PREFIXES.has(user.toLowerCase());
+              let score = remoteItem.score;
+              let status = remoteItem.status;
+              let verdict = remoteItem.verdict;
+
+              if (isRoleBased && status !== "invalid") {
+                score = Math.min(score, 75);
+                status = "risky";
+                verdict = "Role-based mailbox (admin/support/info - moderate deliverability)";
+              }
+
+              results.push({
+                email,
+                normalizedEmail: norm,
+                status,
+                score,
+                verdict,
+                user,
+                domain,
+                checks: {
+                  formatValid: true,
+                  domainExists: remoteItem.status !== "invalid" || remoteItem.smtpCheck !== "failed",
+                  mxFound: remoteItem.status !== "invalid" || remoteItem.smtpCheck !== "failed",
+                  isDisposable: false,
+                  isFreeProvider: FREE_EMAIL_PROVIDERS.has(domain),
+                  isRoleBased,
+                  smtpCheck: remoteItem.smtpCheck === "greylisted" ? "unreachable" : remoteItem.smtpCheck,
+                },
+                mxRecords: [],
+                suggestion: null,
+                durationMs: 50,
+              });
+            } else {
+              const fallback = await verifyEmailAddress(email, options);
+              results.push(fallback);
+            }
+          }
+        } else {
+          // Hostinger gateway offline or failed, process chunk individually
+          const fallbackResults = await Promise.all(
+            validSyntaxChunk.map((em) => verifyEmailAddress(em, options))
+          );
+          results.push(...fallbackResults);
+        }
+      }
+    }
+  } else {
+    // Smtp skipped or empty list
+    const concurrency = options?.concurrency ?? 30;
+    for (let i = 0; i < cleanList.length; i += concurrency) {
+      const chunk = cleanList.slice(i, i + concurrency);
+      const chunkResults = await Promise.all(
+        chunk.map((email) => verifyEmailAddress(email, options)),
+      );
+      results.push(...chunkResults);
+    }
   }
 
   let valid = 0;

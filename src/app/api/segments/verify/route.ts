@@ -90,11 +90,13 @@ export async function POST(request: Request) {
       }
       const norm = lead.email.trim().toLowerCase();
       const verified = resultMap.get(norm);
-      if (verified && verified.status === "invalid") {
+      if (verified && (verified.status === "invalid" || (verified.status === "risky" && verified.score < 75))) {
         removedLeadIds.push(lead.id);
         invalidEmails.push(norm);
-      } else {
+      } else if (verified && verified.status === "valid") {
         validLeadIds.push(lead.id);
+      } else {
+        removedLeadIds.push(lead.id);
       }
     }
 
@@ -232,11 +234,13 @@ export async function POST(request: Request) {
       }
       const norm = lead.email.trim().toLowerCase();
       const verified = resultMap.get(norm);
-      if (verified && verified.status === "invalid") {
+      if (verified && (verified.status === "invalid" || (verified.status === "risky" && verified.score < 75))) {
         invalidLeadIds.push(lead.id);
         invalidEmails.push(norm);
-      } else {
+      } else if (verified && verified.status === "valid") {
         validLeadIds.push(lead.id);
+      } else {
+        invalidLeadIds.push(lead.id);
       }
     }
 
