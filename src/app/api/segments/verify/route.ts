@@ -90,13 +90,19 @@ export async function POST(request: Request) {
       }
       const norm = lead.email.trim().toLowerCase();
       const verified = resultMap.get(norm);
-      if (verified && (verified.status === "invalid" || (verified.status === "risky" && verified.score < 75))) {
+      const isDead =
+        !verified ||
+        verified.status === "invalid" ||
+        verified.checks?.mxFound === false ||
+        verified.checks?.isDisposable === true ||
+        verified.checks?.smtpCheck === "failed" ||
+        verified.score <= 30;
+
+      if (isDead) {
         removedLeadIds.push(lead.id);
         invalidEmails.push(norm);
-      } else if (verified && verified.status === "valid") {
-        validLeadIds.push(lead.id);
       } else {
-        removedLeadIds.push(lead.id);
+        validLeadIds.push(lead.id);
       }
     }
 
@@ -234,13 +240,19 @@ export async function POST(request: Request) {
       }
       const norm = lead.email.trim().toLowerCase();
       const verified = resultMap.get(norm);
-      if (verified && (verified.status === "invalid" || (verified.status === "risky" && verified.score < 75))) {
+      const isDead =
+        !verified ||
+        verified.status === "invalid" ||
+        verified.checks?.mxFound === false ||
+        verified.checks?.isDisposable === true ||
+        verified.checks?.smtpCheck === "failed" ||
+        verified.score <= 30;
+
+      if (isDead) {
         invalidLeadIds.push(lead.id);
         invalidEmails.push(norm);
-      } else if (verified && verified.status === "valid") {
-        validLeadIds.push(lead.id);
       } else {
-        invalidLeadIds.push(lead.id);
+        validLeadIds.push(lead.id);
       }
     }
 

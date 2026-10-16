@@ -238,7 +238,7 @@ let consecutiveSmtpFailures = 0;
 /**
  * Resolve MX records with A-record fallback and in-memory cache.
  */
-async function resolveDomainMx(
+export async function resolveDomainMx(
   domain: string,
 ): Promise<{ mxRecords: Array<{ host: string; priority: number }>; domainExists: boolean }> {
   const normDomain = domain.toLowerCase().trim();

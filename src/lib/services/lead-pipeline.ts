@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { searchGooglePlaces } from "./google-places";
+import { resolveDomainMx } from "@/lib/email-verifier";
 import { findLinkedInCompanyUrl } from "./linkedin";
 import { finalizeLeadScore, qualifyLead, scoreSoloContractor } from "./qualification";
 import {
@@ -650,6 +651,25 @@ async function enrichAndPersistPlace(opts: {
         );
       } catch {
         /* ignore */
+      }
+    }
+
+    // Verify candidate email domain has active MX records before finalizing
+    if (emailFinal) {
+      try {
+        const domain = emailFinal.split("@")[1]?.toLowerCase();
+        if (domain) {
+          const { mxRecords, domainExists } = await withTimeout(
+            resolveDomainMx(domain),
+            1200,
+            { mxRecords: [], domainExists: true },
+          );
+          if (!domainExists || mxRecords.length === 0) {
+            emailFinal = null;
+          }
+        }
+      } catch {
+        /* keep if timeout */
       }
     }
 

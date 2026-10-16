@@ -27,7 +27,7 @@ export type WebsitePeopleResult = {
 };
 
 const USER_AGENT =
-  "Mozilla/5.0 (compatible; ContractorLeads/1.0; +https://contractorleads.app)";
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36";
 
 /** Pages likely to list owners/team OR a public email / contact form. */
 const PEOPLE_PATH =
@@ -42,9 +42,9 @@ const OWNER_ROLE =
 const TEAM_ROLE =
   /\b(owner|founder|co-founder|president|principal|ceo|manager|director|partner|supervisor|estimator|sales|operations|technician|specialist)\b/i;
 
-/** Throw away tracking / CDN / image / developer / non-lead addresses. */
+/** Throw away tracking / CDN / image / developer / non-lead addresses and third-party directories. */
 const BAD_EMAIL =
-  /(noreply|no-reply|donotreply|do-not-reply|mailer-daemon|postmaster|sentry|wixpress|squarespace|wordpress|godaddy|cloudflare|schema\.org|googleapis|gstatic|w3\.org|jquery|example\.com|domain\.com|email\.com|yourdomain|placeholder|test@|sample@|user@|name@|email@|billing@|invoices?@|accounting@|careers@|jobs@|hr@|employment@|legal@|privacy@|abuse@|security@|press@|media@|affiliates?@|newsletter@|subscribe@|unsubscribe@|webmaster@|hostmaster@)/i;
+  /(noreply|no-reply|donotreply|do-not-reply|mailer-daemon|postmaster|sentry|wixpress|squarespace|wordpress|godaddy|cloudflare|schema\.org|googleapis|gstatic|w3\.org|jquery|example\.com|domain\.com|email\.com|yourdomain|placeholder|test@|sample@|user@|name@|email@|billing@|invoices?@|accounting@|careers@|jobs@|hr@|employment@|legal@|privacy@|abuse@|security@|press@|media@|affiliates?@|newsletter@|subscribe@|unsubscribe@|webmaster@|hostmaster@|yelp\.com|yellowpages\.com|bbb\.org|angi\.com|angieslist\.com|homeadvisor\.com|houzz\.com|thumbtack\.com|bark\.com|mapquest\.com|whitepages\.com|superpages\.com|manta\.com|zoominfo\.com|apollo\.io|dnb\.com|chamberofcommerce\.com|facebook\.com|instagram\.com|twitter\.com|x\.com|linkedin\.com|youtube\.com|tiktok\.com|pinterest\.com)/i;
 
 /** Common contact paths to try when the homepage has no contact link. */
 const CONTACT_FALLBACKS = [
