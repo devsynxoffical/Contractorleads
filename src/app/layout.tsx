@@ -56,7 +56,10 @@ export const metadata: Metadata = {
     follow: true,
   },
   verification: {
-    google: "TyqXl7_dlFkiT-2tH8-iodrv1XIdFCXk349h199738Y",
+    google: [
+      "dZYfxmRoYeQR6PX6wCHtNz_sZ1HsDUMjXBUeh8UmQBY",
+      "TyqXl7_dlFkiT-2tH8-iodrv1XIdFCXk349h199738Y",
+    ],
   },
   alternates: {
     canonical: seoBaseUrl(),
