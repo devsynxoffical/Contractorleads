@@ -43,6 +43,14 @@ export const metadata: Metadata = {
     siteName: SEO.siteName,
     title: SEO.defaultTitle,
     description: SEO.defaultDescription,
+    images: [
+      {
+        url: `${seoBaseUrl()}/opengraph-image`,
+        width: 1200,
+        height: 630,
+        alt: "Contractor Leads - AI-Powered Contractor Prospecting & Outreach",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
@@ -50,10 +58,18 @@ export const metadata: Metadata = {
     creator: SEO.twitterHandle,
     title: SEO.defaultTitle,
     description: SEO.defaultDescription,
+    images: [`${seoBaseUrl()}/opengraph-image`],
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
   verification: {
     google: [
