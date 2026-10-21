@@ -25,7 +25,8 @@ RUN npm ci
 
 # Scraper Python deps + Chromium (with OS libraries)
 COPY Gmap-scrapper/requirements.txt ./Gmap-scrapper/requirements.txt
-RUN pip3 install --no-cache-dir --break-system-packages playwright beautifulsoup4 lxml openpyxl rich \
+RUN pip3 install --no-cache-dir --break-system-packages --upgrade pip \
+    && pip3 install --no-cache-dir --break-system-packages --retries 5 --timeout 60 -r Gmap-scrapper/requirements.txt \
     && python3 -m playwright install --with-deps chromium
 
 # Rest of the app
