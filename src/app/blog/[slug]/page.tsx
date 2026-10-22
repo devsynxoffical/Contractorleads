@@ -1,7 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { HiOutlineArrowLeft, HiOutlineArrowRight } from "react-icons/hi2";
+import {
+  HiOutlineArrowLeft,
+  HiOutlineArrowRight,
+  HiOutlineClock,
+  HiOutlineCheckCircle,
+  HiOutlineVideoCamera,
+} from "react-icons/hi2";
 import { MarketingSiteShell } from "@/components/marketing/marketing-site-shell";
 import {
   SubpageCtaBand,
@@ -9,71 +15,75 @@ import {
 } from "@/components/marketing/marketing-subpage";
 import { Reveal } from "@/components/marketing/marketing-ui";
 import {
-  BlogArticleBody,
-  BlogMetaLine,
-} from "@/components/marketing/blog-article-body";
-import {
   JsonLd,
   blogPostingJsonLd,
   breadcrumbJsonLd,
+  faqPageJsonLd,
+  videoObjectJsonLd,
 } from "@/components/seo/json-ld";
-import {
-  ACADEMY_ARTICLES,
-  categoryLabel,
-  getAcademyArticle,
-} from "@/lib/academy-content";
+import { BLOG_POSTS, getBlogPost } from "@/lib/blog-content";
 import { buildMetadata } from "@/lib/seo";
 
 type Params = { params: Promise<{ slug: string }> };
 
 export function generateStaticParams() {
-  return ACADEMY_ARTICLES.map((a) => ({ slug: a.slug }));
+  return BLOG_POSTS.map((p) => ({ slug: p.slug }));
 }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
-  const article = getAcademyArticle(slug);
-  if (!article) return {};
+  const post = getBlogPost(slug);
+  if (!post) return {};
   return buildMetadata({
-    title: `${article.title} | Contractor Leads Blog`,
-    description: article.summary,
-    path: `/blog/${article.slug}`,
-    keywords: [
-      ...article.tags,
-      "contractor leads",
-      categoryLabel(article.category),
-    ],
+    title: `${post.titleTag} | Contractor Leads`,
+    description: post.metaDescription,
+    path: `/blog/${post.slug}`,
+    keywords: [post.primaryKeyword, ...post.secondaryKeywords],
   });
 }
 
-export default async function BlogArticlePage({ params }: Params) {
+export default async function BlogPostPage({ params }: Params) {
   const { slug } = await params;
-  const article = getAcademyArticle(slug);
-  if (!article) notFound();
+  const post = getBlogPost(slug);
+  if (!post) notFound();
 
-  const related = ACADEMY_ARTICLES.filter(
-    (a) => a.category === article.category && a.slug !== article.slug,
+  const related = BLOG_POSTS.filter(
+    (p) => p.slug !== post.slug && p.cluster === post.cluster,
   ).slice(0, 3);
 
   return (
     <MarketingSiteShell>
       <JsonLd
         data={blogPostingJsonLd({
-          title: article.title,
-          description: article.summary,
-          path: `/blog/${article.slug}`,
-          datePublished: article.updatedAt,
-          keywords: article.tags,
+          title: post.title,
+          description: post.metaDescription,
+          path: `/blog/${post.slug}`,
+          datePublished: post.publishedDate,
+          dateModified: post.updatedDate,
+          keywords: [post.primaryKeyword, ...post.secondaryKeywords],
         })}
       />
       <JsonLd
         data={breadcrumbJsonLd([
           { name: "Home", path: "/" },
           { name: "Blog", path: "/blog" },
-          { name: article.title, path: `/blog/${article.slug}` },
+          { name: post.title, path: `/blog/${post.slug}` },
         ])}
       />
+      {post.faqs.length > 0 && <JsonLd data={faqPageJsonLd(post.faqs)} />}
+      {post.video && (
+        <JsonLd
+          data={videoObjectJsonLd({
+            name: post.video.name,
+            description: post.video.description,
+            thumbnailUrl: post.video.thumbnailUrl,
+            uploadDate: post.publishedDate,
+            embedUrl: post.video.embedUrl,
+          })}
+        />
+      )}
 
+      {/* Hero Header */}
       <header className="relative overflow-hidden border-b border-white/10 bg-[#07040f] py-14 sm:py-20">
         <div
           className="pointer-events-none absolute inset-0 opacity-40"
@@ -83,54 +93,253 @@ export default async function BlogArticlePage({ params }: Params) {
           }}
           aria-hidden
         />
-        <div className="relative mx-auto max-w-3xl px-5 sm:px-8">
+        <div className="relative mx-auto max-w-4xl px-5 sm:px-8">
           <Link
             href="/blog"
             className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-fuchsia-300 transition hover:text-fuchsia-200"
           >
             <HiOutlineArrowLeft className="h-3.5 w-3.5" />
-            All guides
+            Agency Growth Blog
           </Link>
-          <p className="mt-5 text-[12px] font-semibold uppercase tracking-[0.18em] text-fuchsia-400">
-            {article.type === "blog" ? "Article" : "Guide"} ·{" "}
-            {categoryLabel(article.category)}
-          </p>
-          <h1 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.85rem,4vw,2.75rem)] font-semibold tracking-tight text-white">
-            {article.title}
+
+          <div className="mt-5 flex items-center gap-3">
+            <span className="rounded-full bg-fuchsia-500/20 border border-fuchsia-400/30 px-3 py-0.5 text-[11px] font-bold uppercase tracking-wider text-fuchsia-300">
+              {post.type === "pillar" ? "Flagship Pillar" : "Tactical Guide"}
+            </span>
+            <span className="flex items-center gap-1 text-[12px] text-white/50">
+              <HiOutlineClock className="h-3.5 w-3.5" />
+              {post.readingMinutes} min read · Published {post.publishedDate}
+            </span>
+          </div>
+
+          <h1 className="mt-4 font-[family-name:var(--font-display)] text-[clamp(1.85rem,4vw,2.85rem)] font-bold tracking-tight text-white leading-tight">
+            {post.title}
           </h1>
-          <p className="mt-4 text-[16px] leading-relaxed text-white/65">
-            {article.summary}
+
+          <p className="mt-4 text-[16px] leading-relaxed text-white/70">
+            {post.summary}
           </p>
-          <div className="mt-5 text-white/50">
-            <BlogMetaLine article={article} />
+
+          {/* Author Badge */}
+          <div className="mt-6 flex items-center gap-3 border-t border-white/10 pt-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={post.author.image}
+              alt={post.author.name}
+              width={40}
+              height={40}
+              className="h-10 w-10 rounded-full object-cover border border-violet-400/30"
+            />
+            <div>
+              <p className="text-[13px] font-semibold text-white">{post.author.name}</p>
+              <p className="text-[11px] text-white/50">{post.author.role}</p>
+            </div>
           </div>
         </div>
       </header>
 
-      <div className="bg-white px-5 py-14 sm:px-8">
-        <BlogArticleBody article={article} />
-      </div>
+      {/* Main Content Area */}
+      <article className="mx-auto max-w-4xl px-5 py-12 sm:px-8 space-y-10">
+        {/* Direct Answer Box (AEO Optimization for Featured Snippets) */}
+        <section className="rounded-3xl border-2 border-violet-200 bg-gradient-to-br from-violet-50/70 via-white to-fuchsia-50/40 p-6 sm:p-8 shadow-sm">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-fuchsia-700">
+            Direct Answer (Quick Summary)
+          </p>
+          <p className="mt-3 text-[16px] leading-relaxed text-slate-800 font-medium">
+            {post.directAnswer}
+          </p>
+        </section>
 
-      {related.length ? (
+        {/* Mid-Article CTA Banner */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-2xl border border-violet-200 bg-[#faf8fc] p-5 shadow-xs">
+          <div>
+            <p className="text-[14px] font-bold text-slate-900">
+              Find contractors ready for outreach in your city
+            </p>
+            <p className="text-[12px] text-slate-500">
+              Live Google Places data, owner names & AI lead scores.
+            </p>
+          </div>
+          <Link
+            href="/register"
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-slate-900 px-5 py-2 text-[13px] font-semibold text-white hover:bg-slate-800 transition"
+          >
+            Get 10 free leads
+            <HiOutlineArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+
+        {/* Content Sections */}
+        {post.sections.map((section, idx) => (
+          <section key={idx} className="space-y-4">
+            {section.level === 3 ? (
+              <h3 className="font-[family-name:var(--font-display)] text-[20px] font-bold text-slate-900 pt-2">
+                {section.heading}
+              </h3>
+            ) : (
+              <h2 className="font-[family-name:var(--font-display)] text-[24px] font-bold text-slate-900 border-b border-slate-100 pb-3 pt-4">
+                {section.heading}
+              </h2>
+            )}
+
+            <p className="text-[15px] leading-relaxed text-slate-700 whitespace-pre-line">
+              {section.body}
+            </p>
+
+            {section.callout && (
+              <div className="rounded-2xl border border-violet-200/80 bg-violet-50/50 p-5 space-y-2">
+                <p className="text-[13px] font-bold text-violet-900">{section.callout.title}</p>
+                <p className="text-[14px] leading-relaxed text-violet-950 whitespace-pre-line font-mono text-[13px]">
+                  {section.callout.text}
+                </p>
+              </div>
+            )}
+
+            {section.bullets && section.bullets.length > 0 && (
+              <ul className="space-y-2.5 pt-1">
+                {section.bullets.map((b, bi) => (
+                  <li key={bi} className="flex items-start gap-2.5 text-[14.5px] text-slate-700 leading-relaxed">
+                    <HiOutlineCheckCircle className="h-5 w-5 text-fuchsia-600 shrink-0 mt-0.5" />
+                    <span>{b}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {section.table && (
+              <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white p-4 my-4 shadow-2xs">
+                <table className="w-full text-left text-[14px]">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50 text-[12px] font-bold uppercase tracking-wider text-slate-700">
+                      {section.table.headers.map((h, hi) => (
+                        <th key={hi} className="py-2.5 px-3">
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {section.table.rows.map((row, ri) => (
+                      <tr key={ri} className="hover:bg-slate-50/50 transition">
+                        {row.map((cell, ci) => (
+                          <td
+                            key={ci}
+                            className={`py-3 px-3 text-slate-700 ${ci === 0 ? "font-semibold text-slate-900" : ""}`}
+                          >
+                            {cell}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        ))}
+
+        {/* Video Embed Section (if defined) */}
+        {post.video && (
+          <section className="rounded-3xl border border-violet-200 bg-slate-900 p-6 sm:p-8 text-white space-y-6">
+            <div className="flex items-center gap-2 text-rose-400 text-[12px] font-bold uppercase tracking-wider">
+              <HiOutlineVideoCamera className="h-5 w-5" />
+              Watch: {post.video.name}
+            </div>
+            <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-white/10 bg-black">
+              <iframe
+                src={post.video.embedUrl}
+                title={post.video.name}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="absolute inset-0 h-full w-full"
+              />
+            </div>
+            <div>
+              <p className="text-[13px] font-bold uppercase tracking-wider text-white/60">
+                Video Chapters & Timestamps:
+              </p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2 text-[13px] text-white/80">
+                {post.video.chapters.map((ch, ci) => (
+                  <div key={ci} className="flex items-center gap-2">
+                    <span className="font-mono text-fuchsia-400">{ch.time}</span>
+                    <span>{ch.title}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* FAQs */}
+        {post.faqs.length > 0 && (
+          <section className="rounded-3xl border border-violet-100 bg-white p-6 sm:p-8 shadow-sm space-y-6">
+            <h2 className="font-[family-name:var(--font-display)] text-[22px] font-bold text-slate-900">
+              Frequently Asked Questions
+            </h2>
+            <div className="space-y-4">
+              {post.faqs.map((faq, fi) => (
+                <div key={fi} className="border-b border-slate-100 pb-4 last:border-none last:pb-0">
+                  <h3 className="font-semibold text-slate-900 text-[15px]">{faq.q}</h3>
+                  <p className="mt-2 text-[14px] leading-relaxed text-slate-600">{faq.a}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Author Bio Box */}
+        <section className="rounded-2xl border border-slate-200 bg-slate-50/80 p-6 flex flex-col sm:flex-row items-center gap-4">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={post.author.image}
+            alt={post.author.name}
+            width={72}
+            height={72}
+            className="h-16 w-16 rounded-2xl object-cover shrink-0 border border-violet-200"
+          />
+          <div className="text-center sm:text-left">
+            <p className="text-[14px] font-bold text-slate-900">{post.author.name}</p>
+            <p className="text-[12px] text-fuchsia-700 font-semibold">{post.author.role}</p>
+            <p className="mt-1 text-[13px] text-slate-600 leading-relaxed">{post.author.bio}</p>
+            <div className="mt-3 flex items-center justify-center sm:justify-start gap-3 text-[12px]">
+              <Link href="/about" className="font-semibold text-slate-700 hover:text-fuchsia-700">
+                About Contractor Leads →
+              </Link>
+              <span>·</span>
+              <a
+                href="https://www.linkedin.com/company/contractorleads"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-[#0A66C2] hover:underline"
+              >
+                LinkedIn Profile
+              </a>
+            </div>
+          </div>
+        </section>
+      </article>
+
+      {/* Related Cluster Articles */}
+      {related.length > 0 && (
         <SubpageSection
           tone="tint"
-          eyebrow="Keep reading"
-          title="Related guides"
-          description="More from this part of the Academy."
+          eyebrow="Keep Reading"
+          title="Related Agency Guides"
+          description="More playbooks and data benchmarks from this topic cluster."
         >
-          <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="grid gap-4 sm:grid-cols-3">
             {related.map((r, i) => (
               <li key={r.slug}>
                 <Reveal delay={0.05 * i}>
                   <Link href={`/blog/${r.slug}`} className="group block h-full">
                     <article className="flex h-full flex-col rounded-2xl border border-violet-100 bg-white p-5 shadow-sm transition group-hover:border-fuchsia-300 group-hover:shadow-md">
-                      <h3 className="font-[family-name:var(--font-display)] text-[16px] font-semibold text-slate-900">
+                      <h3 className="font-[family-name:var(--font-display)] text-[16px] font-semibold text-slate-900 group-hover:text-fuchsia-700 transition">
                         {r.title}
                       </h3>
-                      <p className="mt-2 flex-1 text-[14px] leading-relaxed text-slate-600">
+                      <p className="mt-2 flex-1 text-[13px] leading-relaxed text-slate-600">
                         {r.summary}
                       </p>
-                      <span className="mt-4 inline-flex items-center gap-1.5 text-[13px] font-semibold text-fuchsia-700">
+                      <span className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-semibold text-fuchsia-700">
                         Read guide
                         <HiOutlineArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
                       </span>
@@ -141,15 +350,15 @@ export default async function BlogArticlePage({ params }: Params) {
             ))}
           </ul>
         </SubpageSection>
-      ) : null}
+      )}
 
       <SubpageCtaBand
-        title="Put this into practice"
-        description="Start a free trial and run your first Lead Finder search with AI scoring — no card required."
-        primaryLabel="Start free trial"
-        secondaryHref="/blog"
-        secondaryLabel="Browse all guides"
-        note="10 free leads on Starter · No credit card required"
+        title="Start prospecting contractor leads today"
+        description="Pick a trade, pick a city, and watch Contractor Leads score live businesses in seconds. 10 free leads on Starter."
+        primaryLabel="Start free trial (10 leads)"
+        secondaryHref="/pricing"
+        secondaryLabel="View all plans"
+        note="1 credit = 1 lead · No credit card required"
       />
     </MarketingSiteShell>
   );

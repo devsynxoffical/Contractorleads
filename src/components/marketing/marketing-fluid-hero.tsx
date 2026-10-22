@@ -197,15 +197,11 @@ export function MarketingFluidHero() {
       </header>
 
       <div className="mkt-flow-center">
-        <p className="mkt-flow-brand-mark" data-reveal="brand">
-          Contractor Leads
-        </p>
-
-        <h1 className="mkt-flow-heading mkt-flow-heading--rotator" data-reveal="hook">
-          <span className="mkt-flow-heading-static">The fastest way to </span>
+        <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 text-[13px] font-semibold text-white/90 backdrop-blur" data-reveal="brand">
+          <span className="text-fuchsia-300">The fastest way to </span>
           <span className="mkt-flow-rotator" aria-live="polite">
             <span className="mkt-flow-type-wrap">
-              <span className="mkt-flow-rotator-line">{text || "\u00A0"}</span>
+              <span className="mkt-flow-rotator-line font-bold text-white">{text || "\u00A0"}</span>
               {!reduced && (
                 <span
                   className={`mkt-flow-caret${phase === "holding" ? " mkt-flow-caret--blink" : ""}`}
@@ -214,10 +210,14 @@ export function MarketingFluidHero() {
               )}
             </span>
           </span>
+        </div>
+
+        <h1 className="mkt-flow-heading mt-4" data-reveal="hook">
+          Contractor leads for agencies, scored and ready to dial
         </h1>
 
-        <p className="mkt-flow-sub mkt-flow-sub--deck" data-reveal="sub">
-          {SUBLINE}
+        <p className="mkt-flow-sub mkt-flow-sub--deck mt-4" data-reveal="sub">
+          Live Google data, AI lead scores, owner names and outreach scripts for agencies that sell to roofers, HVAC, plumbers and 15 more trades.
         </p>
 
         <div className="mkt-flow-cta-row" data-reveal="cta">

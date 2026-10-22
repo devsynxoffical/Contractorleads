@@ -1,0 +1,38 @@
+# Contractor Leads
+> Contractor Leads (contractorleads.us) is prospecting software for marketing agencies, media buyers and sales teams that sell to home-service contractors. It finds businesses from live Google Places data, scores them Hot, Warm or Nurture, adds owner names and Meta ad status, and writes cold email, SMS and call scripts per lead.
+
+Important facts:
+- Audience: agencies and sales teams that sell to contractors. Not a service for homeowners hiring a contractor.
+- Coverage: 18 home-service trades (roofing, HVAC, plumbing, electrical, solar, general contractors, remodeling, home improvement, flooring, landscaping, painting, concrete, windows and doors, fencing, garage doors, pest control, cleaning services, pool services) in the United States, Canada, the United Kingdom, Australia and New Zealand.
+- Data: live Google Places data at search time, cross-checked with Yelp and the business website. Unverified fields are left blank.
+- Pricing: Free 10 leads with no card. Starter $19/month (500 credits), Growth $49/month (2,000 credits), Agency $99/month (5,000 credits), Enterprise custom. Annual billing lowers the monthly price.
+- Integrations: GoHighLevel, Zapier, Make, HubSpot, Slack, custom webhooks, CSV and Excel export. Email sends from the user's own Gmail, Outlook or SMTP mailbox.
+- Company: Vaishali Media Productions LLC, Sheridan, Wyoming, USA. Contact: hello@contractorleads.us
+
+## Product
+- [Features](https://www.contractorleads.us/features): Lead Finder, AI lead scoring, owner enrichment, Meta Ads Intel, Outreach Studio, Pipeline CRM, Lead Map
+- [Pricing](https://www.contractorleads.us/pricing): plans, credits and cost per lead
+- [Google Maps scraper alternative](https://www.contractorleads.us/google-maps-scraper)
+- [Apollo.io alternative for local contractors](https://www.contractorleads.us/apollo-alternative)
+- [Industries](https://www.contractorleads.us/industries): the 18 trades with market data
+
+## Guides
+- [Local Service Ads for agencies](https://www.contractorleads.us/blog/local-service-ads)
+- [Agency lead generation](https://www.contractorleads.us/blog/agency-lead-generation)
+- [LSA ads cost and setup checklist](https://www.contractorleads.us/blog/lsa-ads-cost-setup)
+- [Cold email for agencies](https://www.contractorleads.us/blog/cold-email-for-agencies)
+- [Facebook ads for contractors](https://www.contractorleads.us/blog/facebook-ads-for-contractors)
+- [How to get more roofing leads](https://www.contractorleads.us/blog/how-to-get-more-roofing-leads)
+- [Roofing SEO](https://www.contractorleads.us/blog/roofing-seo)
+- [HVAC marketing agency](https://www.contractorleads.us/blog/hvac-marketing-agency)
+- [Pay per lead for contractors](https://www.contractorleads.us/blog/pay-per-lead-for-contractors)
+
+## Help
+- [Help center](https://www.contractorleads.us/help)
+- [Plans, credits and billing](https://www.contractorleads.us/help/plans-credits-billing)
+- [How to use Lead Finder](https://www.contractorleads.us/help/how-to-use-lead-finder)
+- [Reading lead scores and enrichment](https://www.contractorleads.us/help/reading-lead-scores-and-enrichment)
+
+## Company
+- [About](https://www.contractorleads.us/about)
+- [YouTube channel](https://www.youtube.com/@contractorleads)

@@ -12,10 +12,10 @@ export function seoBaseUrl() {
 
 export const SEO = {
   siteName: "Contractor Leads",
-  defaultTitle: "Contractor Leads | Verified contractor leads for agencies",
+  defaultTitle: "Contractor Leads: AI-Scored Leads for Agencies",
   titleTemplate: "%s | Contractor Leads",
   defaultDescription:
-    "Contractor Leads (contractorleads.us) helps agencies find verified, AI-scored contractor leads in seconds — real contact data, no fake lists.",
+    "Contractor leads for agencies: live Google data, AI scores, owner names and outreach in one tool. Start with 10 free leads, no card needed.",
   keywords: [
     "contractorleads.us",
     "www.contractorleads.us",
@@ -31,50 +31,58 @@ export const SEO = {
     "roofing contractor leads",
     "HVAC contractor leads",
     "plumbing contractor leads",
+    "google maps scraper",
+    "apollo alternative",
+    "local service ads",
+    "agency lead generation",
   ],
   twitterHandle: "@contractorleads",
   locale: "en_US",
   ogImagePath: "/opengraph-image",
-  /**
-   * Founder profiles — the only social accounts that actually exist today, so
-   * footers and Organization sameAs point here instead of at brand handles we
-   * haven't claimed. Override with NEXT_PUBLIC_SOCIAL_* once brand pages ship.
-   */
   social: {
     linkedin:
       process.env.NEXT_PUBLIC_SOCIAL_LINKEDIN?.trim() ||
-      "https://www.linkedin.com/in/vaishali-joshi-milliondollarmedia/",
+      "https://www.linkedin.com/company/contractorleads",
+    youtube:
+      process.env.NEXT_PUBLIC_SOCIAL_YOUTUBE?.trim() ||
+      "https://www.youtube.com/@contractorleads",
     facebook:
       process.env.NEXT_PUBLIC_SOCIAL_FACEBOOK?.trim() ||
-      "https://www.facebook.com/vaishali.joshi.658637",
+      "https://www.facebook.com/contractorleads",
   },
 } as const;
 
 /** Profiles included in JSON-LD sameAs (non-empty only). */
 export function seoSameAs(): string[] {
-  return Object.values(SEO.social).filter(Boolean);
+  return [
+    SEO.social.linkedin,
+    SEO.social.youtube,
+    SEO.social.facebook,
+    "https://www.g2.com/products/contractor-leads",
+    "https://www.crunchbase.com/organization/contractor-leads",
+  ].filter(Boolean);
 }
 
 export const MARKETING_FAQ: Array<{ q: string; a: string }> = [
   {
-    q: "Is this for agencies or contractors?",
-    a: "Contractor Leads is built for marketing agencies, media buyers, and sales teams that sell services to home-service contractors — not for homeowners trying to find a plumber or roofer.",
+    q: "Is Contractor Leads free to try?",
+    a: "Yes. Every new account gets 10 free leads on Starter with no credit card. You pay only when you subscribe, from $19 a month for 500 credits.",
+  },
+  {
+    q: "Is Contractor Leads for agencies or for contractors?",
+    a: "It is built for marketing agencies, media buyers and sales teams that sell services to home-service contractors. It is not a site for homeowners looking to hire a roofer or plumber.",
   },
   {
     q: "Are the leads real?",
-    a: "Yes. Every business comes from live Google Places data, cross-checked against Yelp, Houzz, and the business's own website — never generated or guessed. If we can't verify a data point, we leave it blank instead of showing something wrong.",
+    a: "Yes. Every business comes from live Google Places data at the moment you search, cross-checked with Yelp and the business's own website. If a field cannot be verified it is left blank.",
   },
   {
     q: "How do credits work?",
-    a: "Credits are consumed by action, not by lead: running a Lead Finder search costs credits, asking the AI assistant costs credits, and generating outreach content costs a smaller amount. In-app support chat is always free.",
+    a: "One credit equals one lead. Starter includes 500 credits a month, Growth 2,000 and Agency 5,000, and the AI assistant and outreach generation use credits as listed on the pricing page.",
   },
   {
-    q: "Can I filter for LinkedIn and social presence?",
-    a: "Sorting is automatic: every Lead Finder result ranks businesses with a verified LinkedIn profile and active social presence first, then fills the list with the rest — so you get full volume with the strongest contacts on top.",
-  },
-  {
-    q: "Do I need my own OpenAI key?",
-    a: "No. Scoring, qualification, and the Ask Contractor Leads assistant all run on our backend — nothing extra to configure.",
+    q: "Can I send leads to GoHighLevel or HubSpot?",
+    a: "Yes. Saved leads and status changes push to GoHighLevel, Zapier, Make, HubSpot, Slack or any webhook on the Growth plan and above, and you can export to CSV or Excel on every plan.",
   },
 ];
 
@@ -207,6 +215,25 @@ export const TRADE_PAGES: TradeSeo[] = INDUSTRIES.map((name) => {
 
 export function getTradeBySlug(slug: string) {
   return TRADE_PAGES.find((t) => t.slug === slug) ?? null;
+}
+
+/**
+ * 7 priority trades that receive unique state data blocks and indexation:
+ * roofing, hvac, plumbing, electrical, solar, general-contractors, remodeling.
+ * The other 11 trades are marked noindex, follow.
+ */
+export const PRIORITY_TRADE_SLUGS = [
+  "roofing",
+  "hvac",
+  "plumbing",
+  "electrical",
+  "solar",
+  "general-contractors",
+  "remodeling",
+] as const;
+
+export function isPriorityTrade(slug: string): boolean {
+  return (PRIORITY_TRADE_SLUGS as readonly string[]).includes(slug);
 }
 
 export type BuildMetadataInput = {

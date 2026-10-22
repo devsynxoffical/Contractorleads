@@ -7,20 +7,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        allow: [
-          "/",
-          "/pricing",
-          "/enterprise/book",
-          "/features",
-          "/about",
-          "/industries",
-          "/email-verifier",
-          "/blog",
-          "/login",
-          "/register",
-          "/terms",
-          "/privacy",
-        ],
+        allow: "/",
         disallow: [
           "/admin",
           "/api",
@@ -44,10 +31,11 @@ export default function robots(): MetadataRoute.Robots {
           "/referrals",
           "/email",
           "/auth",
+          "/login",
+          "/register",
         ],
       },
     ],
     sitemap: `${base}/sitemap.xml`,
-    host: base,
   };
 }

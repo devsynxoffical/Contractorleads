@@ -41,18 +41,16 @@ import { INDUSTRIES, TIER_ONE_COUNTRIES } from "@/lib/constants";
 import { TRADE_PAGES, buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
-  title: "Features — AI contractor lead finder for agencies | US, UK, CA, AU, NZ",
+  title: "Features: AI Contractor Lead Finder for Agencies",
   description:
-    "Lead Finder, AI scoring, owner enrichment, Meta ads intel, Outreach Studio, pipeline CRM, email & SMS — everything agencies need to prospect home-service contractors across the US, Canada, UK, Australia, and New Zealand.",
+    "Lead Finder, AI scoring, owner enrichment, Meta ads intel, Outreach Studio, pipeline CRM, email & SMS — everything agencies need to prospect home-service contractors.",
   path: "/features",
   keywords: [
     "contractor lead generation software",
     "AI contractor lead scoring",
     "contractor prospecting software for agencies",
-    "contractor leads UK",
-    "contractor leads Canada",
-    "contractor leads Australia",
-    "tradie leads New Zealand",
+    "google maps scraper",
+    "apollo alternative",
     "home service lead finder",
     "cold outreach software for agencies",
   ],
@@ -89,7 +87,7 @@ const FEATURE_GROUPS: Array<{
     features: [
       {
         title: "Lead Finder",
-        body: "Search live Google Places data by trade, city, region, radius, or postcode — not a static purchased list resold to twenty other agencies.",
+        body: "Search live Google Places data by trade, city, region, radius, or postcode. Looking for Maps data? Check our dedicated Google Maps scraper alternative and Apollo.io comparison.",
         icon: HiOutlineMagnifyingGlass,
       },
       {
@@ -476,6 +474,21 @@ export default function FeaturesPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-4 text-[13px]">
+            <Link
+              href="/google-maps-scraper"
+              className="inline-flex items-center gap-1.5 font-semibold text-fuchsia-700 hover:underline"
+            >
+              Looking for Maps data? Google Maps Scraper alternative →
+            </Link>
+            <span className="text-slate-300">·</span>
+            <Link
+              href="/apollo-alternative"
+              className="inline-flex items-center gap-1.5 font-semibold text-fuchsia-700 hover:underline"
+            >
+              Comparing with Apollo.io? See Contractor Leads vs Apollo →
+            </Link>
           </div>
         </Reveal>
       </SubpageSection>

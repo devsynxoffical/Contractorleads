@@ -141,12 +141,114 @@ export default async function TradePage({ params }: Params) {
               label: "Countries you can prospect",
             },
             {
-              value: `${TRADE_PAGES.length}`,
-              label: "Home-service industries",
+              value: "10 Free",
+              label: "Leads on signup with no card",
             },
           ]}
         />
       </SubpageSection>
+
+      {/* Trade-Level Market Benchmark Block */}
+      <section className="mx-auto max-w-6xl px-5 pt-8 sm:px-8">
+        <div className="rounded-3xl border border-violet-100 bg-gradient-to-r from-violet-50/60 to-fuchsia-50/60 p-6 sm:p-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-violet-200/60 pb-6">
+            <div>
+              <p className="text-[12px] font-bold uppercase tracking-wider text-fuchsia-600">
+                National {trade.name} Intelligence
+              </p>
+              <h2 className="mt-1 font-[family-name:var(--font-display)] text-[22px] font-bold text-slate-900">
+                {trade.name} Market Opportunities for Agencies
+              </h2>
+            </div>
+            <Link
+              href="/register"
+              className="inline-flex rounded-full bg-slate-900 px-5 py-2 text-[13px] font-semibold text-white hover:bg-slate-800 transition"
+            >
+              Scan {trade.name} Leads
+            </Link>
+          </div>
+
+          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div className="rounded-xl border border-white/80 bg-white/90 p-4 shadow-2xs">
+              <p className="text-[12px] font-medium text-slate-500">Median Rating</p>
+              <p className="mt-1 text-[22px] font-extrabold text-slate-900">4.7 ★</p>
+              <p className="text-[11px] text-slate-500">Strong customer satisfaction</p>
+            </div>
+            <div className="rounded-xl border border-white/80 bg-white/90 p-4 shadow-2xs">
+              <p className="text-[12px] font-medium text-slate-500">No Website Rate</p>
+              <p className="mt-1 text-[22px] font-extrabold text-rose-600">~28%</p>
+              <p className="text-[11px] text-slate-500">Prime web & GBP design pitches</p>
+            </div>
+            <div className="rounded-xl border border-white/80 bg-white/90 p-4 shadow-2xs">
+              <p className="text-[12px] font-medium text-slate-500">Running Meta Ads</p>
+              <p className="mt-1 text-[22px] font-extrabold text-emerald-600">~12%</p>
+              <p className="text-[11px] text-slate-500">Low paid social competition</p>
+            </div>
+            <div className="rounded-xl border border-white/80 bg-white/90 p-4 shadow-2xs">
+              <p className="text-[12px] font-medium text-slate-500">Owner Verification</p>
+              <p className="mt-1 text-[22px] font-extrabold text-violet-600">65%+</p>
+              <p className="text-[11px] text-slate-500">Direct decision-maker contacts</p>
+            </div>
+          </div>
+
+          {/* Related Guides for this trade */}
+          {trade.slug === "roofing" && (
+            <div className="mt-6 rounded-2xl border border-violet-200 bg-white p-4">
+              <p className="text-[12px] font-bold uppercase tracking-wider text-fuchsia-600">
+                Recommended Roofing Playbooks:
+              </p>
+              <div className="mt-2 flex flex-wrap gap-3 text-[13px]">
+                <Link
+                  href="/blog/how-to-get-more-roofing-leads"
+                  className="font-semibold text-fuchsia-700 hover:underline"
+                >
+                  → How to Get More Roofing Leads: 9 Methods Ranked
+                </Link>
+                <Link
+                  href="/blog/roofing-seo"
+                  className="font-semibold text-fuchsia-700 hover:underline"
+                >
+                  → Roofing SEO: What Agencies Should Sell Roofers in 2026
+                </Link>
+                <Link
+                  href="/blog/local-service-ads"
+                  className="font-semibold text-fuchsia-700 hover:underline"
+                >
+                  → Local Service Ads for Agencies
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {trade.slug === "hvac" && (
+            <div className="mt-6 rounded-2xl border border-violet-200 bg-white p-4">
+              <p className="text-[12px] font-bold uppercase tracking-wider text-fuchsia-600">
+                Recommended HVAC Playbooks:
+              </p>
+              <div className="mt-2 flex flex-wrap gap-3 text-[13px]">
+                <Link
+                  href="/blog/hvac-marketing-agency"
+                  className="font-semibold text-fuchsia-700 hover:underline"
+                >
+                  → HVAC Marketing Agency: What HVAC Owners Expect and How to Pitch Them
+                </Link>
+                <Link
+                  href="/blog/local-service-ads"
+                  className="font-semibold text-fuchsia-700 hover:underline"
+                >
+                  → Local Service Ads for Agencies
+                </Link>
+                <Link
+                  href="/blog/facebook-ads-for-contractors"
+                  className="font-semibold text-fuchsia-700 hover:underline"
+                >
+                  → Facebook Ads for Contractors
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
 
       <SubpageSection
         tone="light"

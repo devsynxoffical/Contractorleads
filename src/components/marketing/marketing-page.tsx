@@ -41,6 +41,7 @@ import {
 import { RiOpenaiFill } from "react-icons/ri";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
 import { cn } from "@/lib/utils";
+import { MARKETING_FAQ } from "@/lib/seo";
 import {
   CloudDecor,
   SoftBlob,
@@ -202,28 +203,7 @@ const PAINS = [
   },
 ];
 
-const FAQS = [
-  {
-    q: "Is this for agencies or contractors?",
-    a: "Contractor Leads is built for marketing agencies, media buyers, and sales teams that sell services to home-service contractors — not for homeowners trying to find a plumber or roofer.",
-  },
-  {
-    q: "Are the leads real?",
-    a: "Yes. Every business comes from live Google Places data, cross-checked against Yelp, Houzz, and the business's own website — never generated or guessed. If we can't verify a data point (like a LinkedIn profile), we leave it blank instead of showing you something wrong.",
-  },
-  {
-    q: "How do credits work?",
-    a: "Each lead costs 1 credit when you run Lead Finder (for example, 10 leads = 10 credits). Asking the AI assistant and generating outreach also use credits. The in-app support chat is always free and never touches your credit balance.",
-  },
-  {
-    q: "Can I filter for LinkedIn + social presence?",
-    a: "Sorting is automatic: every Lead Finder result ranks businesses with a verified LinkedIn profile and active social presence first, then fills the list with the rest — so you get full volume with the strongest contacts on top.",
-  },
-  {
-    q: "Does AI qualification need me to bring my own OpenAI key?",
-    a: "No. Scoring, qualification, and the assistant all run on our backend — there's nothing extra for you to configure or pay for separately.",
-  },
-];
+const FAQS = MARKETING_FAQ;
 
 const PARTNER_LOGOS = [
   "image.png",

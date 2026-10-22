@@ -16,7 +16,10 @@ const columns = [
       ["Features", "/features"],
       ["Pricing", "/pricing"],
       ["Industries", "/industries"],
+      ["Google Maps Scraper", "/google-maps-scraper"],
+      ["Apollo Alternative", "/apollo-alternative"],
       ["Blog", "/blog"],
+      ["Help Center", "/help"],
       ["FAQs", "/#faq"],
     ],
   },
@@ -25,12 +28,14 @@ const columns = [
     links: [
       ["About", "/about"],
       ["Contact", "mailto:hello@contractorleads.us"],
+      ["Help Center", "/help"],
     ],
   },
   {
     h: "Social",
     links: [
       ["LinkedIn", SEO.social.linkedin],
+      ["YouTube", SEO.social.youtube],
       ["Facebook", SEO.social.facebook],
     ],
   },

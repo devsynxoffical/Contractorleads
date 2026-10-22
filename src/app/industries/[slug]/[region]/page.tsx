@@ -24,7 +24,8 @@ import { Reveal } from "@/components/marketing/marketing-ui";
 import {
   JsonLd,
   breadcrumbJsonLd,
-  softwareApplicationJsonLd,
+  datasetJsonLd,
+  faqPageJsonLd,
 } from "@/components/seo/json-ld";
 import {
   leadFinderDeepLink,
@@ -37,7 +38,10 @@ import {
   buildMetadata,
   getRegionBySlug,
   getTradeBySlug,
+  isPriorityTrade,
 } from "@/lib/seo";
+import { getStateMarketData } from "@/lib/state-market-data";
+import { StateDataBlocks } from "@/components/marketing/state-data-blocks";
 
 type Params = { params: Promise<{ slug: string; region: string }> };
 
@@ -56,10 +60,19 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const trade = getTradeBySlug(slug);
   const region = getRegionBySlug(regionSlug);
   if (!trade || !region) return {};
-  const title = `${trade.name} contractor leads in ${region.name}`;
+
+  const priority = isPriorityTrade(trade.slug);
+  const market = getStateMarketData(trade.slug, trade.name, region.slug, region.name, region.code);
+
+  // Priority trade titles follow: "[Trade] Contractor Leads in [State]: [N] Businesses Scored" (< 60 chars)
+  const fullTitle = `${trade.name} Contractor Leads in ${region.name}: ${market.businessCount.toLocaleString()} Businesses Scored`;
+  const title = fullTitle.length <= 60 ? fullTitle : `${trade.name} Contractor Leads in ${region.name}`;
+
+  const description = `${market.businessCount.toLocaleString()} ${trade.name.toLowerCase()} businesses in ${region.name}, ${market.noWebsitePct}% with no website and ${market.runningMetaAdsPct}% running Meta ads. Get owner contacts and AI scores. Start with 10 free leads.`;
+
   return buildMetadata({
-    title: `${title} for agencies`,
-    description: `Find verified ${trade.name.toLowerCase()} contractors in ${region.name}. AI-scored leads with phones, owners, and outreach scripts for agencies.`,
+    title,
+    description,
     path: `/industries/${trade.slug}/${region.slug}`,
     keywords: [
       `${trade.name.toLowerCase()} contractor leads ${region.name}`,
@@ -67,6 +80,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       `${trade.name.toLowerCase()} leads for agencies`,
       "verified contractor leads",
     ],
+    noIndex: !priority, // Non-priority trades (11 trades) get noindex, follow
   });
 }
 
@@ -76,6 +90,7 @@ export default async function TradeRegionPage({ params }: Params) {
   const region = getRegionBySlug(regionSlug);
   if (!trade || !region) notFound();
 
+  const priority = isPriorityTrade(trade.slug);
   const lower = trade.name.toLowerCase();
   const regionLabel = usRegionLabelForState(region.code);
   const siblingCodes = siblingStateCodes(region.code, 10);
@@ -85,32 +100,33 @@ export default async function TradeRegionPage({ params }: Params) {
   const otherTrades = TRADE_PAGES.filter((t) => t.slug !== trade.slug);
   const finderHref = leadFinderDeepLink(trade.name, region.code);
 
+  const market = getStateMarketData(trade.slug, trade.name, region.slug, region.name, region.code);
+
   const workflow = [
     {
-      title: `Filter to ${region.name}`,
-      body: `Set the market to ${region.name} (${region.code}), pick ${trade.name}, and tighten by city, radius, or ZIP code.`,
+      title: `1. Filter to ${region.name}`,
+      body: `Set the market to ${region.name} (${region.code}), pick ${trade.name}, and filter by city or radius.`,
       icon: HiOutlineMapPin,
     },
     {
-      title: "Read the scores",
-      body: "Each business returns with website, PPC, SEO, and marketing-fit scores so the weakest digital presence rises to the top.",
+      title: "2. Read AI Scores",
+      body: "Identify businesses with weak website and PPC presence that convert fastest on marketing pitches.",
       icon: HiOutlineSparkles,
     },
     {
-      title: "Get the owner",
-      body: "Decision-maker names and contact details are enriched from the company site, with Meta ad activity alongside them.",
+      title: "3. Enrich Decision-Maker",
+      body: "Extract verified owner names and review active Facebook/Meta ads intelligence.",
       icon: HiOutlineUserCircle,
     },
     {
-      title: "Send the first touch",
-      body: "Generate email, SMS, or a call script from that lead's audit and send it from your own mailbox.",
+      title: "4. Launch Outreach",
+      body: "Generate personalized cold email, SMS, or call scripts directly in Outreach Studio.",
       icon: HiOutlineMegaphone,
     },
   ];
 
   return (
     <MarketingSiteShell>
-      <JsonLd data={softwareApplicationJsonLd()} />
       <JsonLd
         data={breadcrumbJsonLd([
           { name: "Home", path: "/" },
@@ -122,6 +138,20 @@ export default async function TradeRegionPage({ params }: Params) {
           },
         ])}
       />
+      {priority && (
+        <>
+          <JsonLd
+            data={datasetJsonLd({
+              name: `${trade.name} Contractor Market Dataset - ${region.name}`,
+              description: `Verified directory data, digital marketing scores, and owner intelligence for ${market.businessCount.toLocaleString()} ${lower} businesses in ${region.name}.`,
+              spatialCoverage: `${region.name}, United States`,
+              temporalCoverage: "2026-09-01/2026-10-22",
+              url: `/industries/${trade.slug}/${region.slug}`,
+            })}
+          />
+          <JsonLd data={faqPageJsonLd(market.faqs)} />
+        </>
+      )}
 
       <MarketingSubpageHero
         eyebrow={`${trade.name} · ${region.name}`}
@@ -155,72 +185,24 @@ export default async function TradeRegionPage({ params }: Params) {
         </ul>
       </MarketingSubpageHero>
 
-      <SubpageSection tone="tint">
-        <SubpageStats
-          items={[
-            { value: region.code, label: `${region.name} market coverage` },
-            { value: "Live", label: "Google & Yelp data at search time" },
-            { value: "4", label: "AI scores on every lead" },
-            {
-              value: `${otherTrades.length + 1}`,
-              label: `Trades searchable in ${region.name}`,
-            },
-          ]}
-        />
-      </SubpageSection>
+      {/* Main Content Area: Data Blocks for Priority Trades */}
+      <section className="mx-auto max-w-6xl px-5 py-12 sm:px-8">
+        {priority ? (
+          <StateDataBlocks data={market} />
+        ) : (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-6 text-slate-700">
+            <p className="text-[14px]">
+              Displaying basic index listing for {trade.name} in {region.name}. Deep AI scoring and verified owner enrichment are currently prioritizing high-volume trades.
+            </p>
+          </div>
+        )}
+      </section>
 
-      <SubpageSection
-        tone="light"
-        eyebrow="The opportunity"
-        title={`Why ${region.name} ${lower} outreach works`}
-      >
-        <div className="grid gap-6 lg:grid-cols-[1.15fr_1fr] lg:items-start">
-          <Reveal>
-            <div className="space-y-4 text-[15px] leading-relaxed text-slate-600">
-              <p>{trade.angle}</p>
-              <p>
-                In {region.name}, that plays out as a long tail of {lower}{" "}
-                businesses with solid reviews and a weak digital footprint — the
-                exact profile that converts on a specific, evidence-backed pitch
-                rather than a cold template.
-              </p>
-              <p>
-                Contractor Leads scores that footprint for you, so your first line
-                names a problem the owner already knows they have.
-              </p>
-            </div>
-          </Reveal>
-          <Reveal delay={0.1}>
-            <div className="rounded-2xl border border-violet-100 bg-gradient-to-br from-fuchsia-50 to-violet-50 p-6">
-              <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-fuchsia-700">
-                What agencies get
-              </p>
-              <ul className="mt-4 space-y-2.5">
-                {[
-                  `Live Google and Yelp data for ${region.name}`,
-                  "AI scores for website, PPC, SEO, and fit",
-                  "Owner enrichment and Meta ads context",
-                  "Email, SMS, and call scripts per lead",
-                  "Pipeline stages and CRM webhooks",
-                ].map((item) => (
-                  <li
-                    key={item}
-                    className="flex items-start gap-2 text-[14px] leading-relaxed text-slate-700"
-                  >
-                    <HiOutlineCheck className="mt-0.5 h-4 w-4 shrink-0 text-fuchsia-600" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </Reveal>
-        </div>
-      </SubpageSection>
-
+      {/* Compact 4-Step Process Section */}
       <SubpageSection
         tone="dark"
-        eyebrow="How it works"
-        title={`From ${region.name} search to first reply`}
+        eyebrow="Workflow"
+        title={`From search to first reply in ${region.name}`}
         description="Four steps in one workspace — no exporting, no second tool, no manual research pass."
       >
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -240,6 +222,7 @@ export default async function TradeRegionPage({ params }: Params) {
         </div>
       </SubpageSection>
 
+      {/* Neighbouring Markets */}
       <SubpageSection
         tone="light"
         eyebrow="More markets"
@@ -272,6 +255,7 @@ export default async function TradeRegionPage({ params }: Params) {
         </p>
       </SubpageSection>
 
+      {/* Other Trades in this State */}
       <SubpageSection
         tone="soft"
         eyebrow="Other industries"

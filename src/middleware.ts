@@ -11,12 +11,25 @@ const APEX_HOST = "contractorleads.us";
 export function middleware(request: NextRequest) {
   const hostHeader = request.headers.get("host")?.toLowerCase() ?? "";
   const hostname = hostHeader.split(":")[0];
+  const url = new URL(request.url);
 
+  // 1. Apex to canonical www redirect (one hop to https://www.contractorleads.us)
   if (hostname === APEX_HOST) {
     const dest = new URL(request.url);
     dest.protocol = "https:";
     dest.hostname = CANONICAL_HOST;
     dest.port = "";
+    // also normalize pathname to lowercase if needed
+    if (dest.pathname !== dest.pathname.toLowerCase()) {
+      dest.pathname = dest.pathname.toLowerCase();
+    }
+    return NextResponse.redirect(dest, 308);
+  }
+
+  // 2. Normalize uppercase URL paths to lowercase (e.g. /Pricing -> /pricing, /industries/roofing/TEXAS -> /industries/roofing/texas)
+  if (url.pathname !== url.pathname.toLowerCase()) {
+    const dest = new URL(request.url);
+    dest.pathname = dest.pathname.toLowerCase();
     return NextResponse.redirect(dest, 308);
   }
 
@@ -25,6 +38,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml)$).*)",
   ],
 };
