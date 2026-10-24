@@ -132,13 +132,6 @@ export async function syncUserSubscription(opts: {
     return user;
   });
 
-  await applyReferralCommissionOnPurchase({
-    userId: opts.userId,
-    plan,
-    previousPlan: previous.plan,
-    subscriptionStatus: status,
-  });
-
   // Thank-you / confirmation email on a NEW paid activation or a plan change.
   // Not sent on monthly renewals (same plan, already active).
   const wasActive = ACTIVE_STATUSES.has(
@@ -148,6 +141,17 @@ export async function syncUserSubscription(opts: {
   const isNewActivation = isNowActive && !wasActive;
   const isPlanChange =
     isNowActive && normalizePlan(previous.plan) !== plan;
+  const isRenewal = wasActive && isNowActive && Boolean(opts.grantMonthlyCredits || opts.invoiceId);
+
+  await applyReferralCommissionOnPurchase({
+    userId: opts.userId,
+    plan,
+    previousPlan: previous.plan,
+    subscriptionStatus: status,
+    isRenewal,
+    invoiceId: opts.invoiceId || null,
+    paymentProvider: "stripe",
+  });
 
   if (previous.email && (isNewActivation || isPlanChange)) {
     const monthlyCredits =

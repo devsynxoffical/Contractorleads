@@ -200,15 +200,19 @@ async function main() {
 
   await prisma.referralRewardConfig.upsert({
     where: { id: "default" },
-    update: {},
+    update: {
+      commissionPercent: 30,
+      minWithdrawalUsd: 500,
+    },
     create: {
       id: "default",
       enabled: true,
-      creditsPerReferral: 10,
+      commissionPercent: 30,
+      minWithdrawalUsd: 500,
       milestonesJson: JSON.stringify([
-        { minReferrals: 10, bonusCredits: 50 },
-        { minReferrals: 50, bonusCredits: 200 },
-        { minReferrals: 100, bonusCredits: 500 },
+        { minReferrals: 10, bonusUsd: 50 },
+        { minReferrals: 50, bonusUsd: 250 },
+        { minReferrals: 100, bonusUsd: 500 },
       ]),
     },
   });

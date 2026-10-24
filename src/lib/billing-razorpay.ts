@@ -61,11 +61,21 @@ export async function activateUserPlanWithRazorpay(opts: {
   });
 
   // Commission & referral
+  const isRenewal = previous.subscriptionStatus === "active";
+  const amountUsd =
+    typeof opts.amountPaidCents === "number" && opts.amountPaidCents > 0
+      ? opts.amountPaidCents / 100
+      : undefined;
+
   await applyReferralCommissionOnPurchase({
     userId: opts.userId,
     plan,
     previousPlan: previous.plan,
     subscriptionStatus: "active",
+    amountUsd,
+    isRenewal,
+    invoiceId: opts.paymentId || opts.orderId || null,
+    paymentProvider: "razorpay",
   });
 
   // Send confirmation email

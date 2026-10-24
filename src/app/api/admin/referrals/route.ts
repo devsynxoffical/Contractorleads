@@ -17,7 +17,17 @@ export async function GET() {
 
   const config = await getRewardConfig();
 
-  const [recent, leaders, totalReferrals, withdrawals] = await Promise.all([
+  const [
+    recent,
+    leaders,
+    totalReferrals,
+    withdrawals,
+    salesCount,
+    salesAgg,
+    pendingAgg,
+    completedAgg,
+    recentSales,
+  ] = await Promise.all([
     prisma.referral.findMany({
       orderBy: { createdAt: "desc" },
       take: 40,
@@ -68,6 +78,46 @@ export async function GET() {
         },
       },
     }),
+    prisma.referralSale.count(),
+    prisma.referralSale.aggregate({
+      _sum: { amountUsd: true, commissionUsd: true },
+    }),
+    prisma.referralWithdrawal.aggregate({
+      where: { status: "pending" },
+      _sum: { amountUsd: true },
+    }),
+    prisma.referralWithdrawal.aggregate({
+      where: { status: "paid" },
+      _sum: { amountUsd: true },
+    }),
+    prisma.referralSale.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      include: {
+        referral: {
+          include: {
+            referrer: {
+              select: {
+                id: true,
+                email: true,
+                companyName: true,
+                name: true,
+                referralCode: true,
+              },
+            },
+            referredUser: {
+              select: {
+                id: true,
+                email: true,
+                companyName: true,
+                name: true,
+                plan: true,
+              },
+            },
+          },
+        },
+      },
+    }),
   ]);
 
   const leaderUsers = await prisma.user.findMany({
@@ -86,6 +136,43 @@ export async function GET() {
   return NextResponse.json({
     config,
     totalReferrals,
+    totalSalesCount: salesCount,
+    totalRevenueUsd: Math.round((salesAgg._sum.amountUsd ?? 0) * 100) / 100,
+    totalCommissionUsd:
+      Math.round((salesAgg._sum.commissionUsd ?? 0) * 100) / 100,
+    pendingPayoutsUsd:
+      Math.round((pendingAgg._sum.amountUsd ?? 0) * 100) / 100,
+    completedPayoutsUsd:
+      Math.round((completedAgg._sum.amountUsd ?? 0) * 100) / 100,
+    sales: recentSales.map((s) => ({
+      id: s.id,
+      amountUsd: s.amountUsd,
+      commissionUsd: s.commissionUsd,
+      commissionRate: s.commissionRate,
+      plan: s.plan,
+      type: s.type,
+      paymentProvider: s.paymentProvider,
+      status: s.status,
+      createdAt: s.createdAt,
+      referrer: {
+        id: s.referral.referrer.id,
+        label:
+          s.referral.referrer.companyName ||
+          s.referral.referrer.name ||
+          s.referral.referrer.email,
+        email: s.referral.referrer.email,
+        code: s.referral.referrer.referralCode,
+      },
+      customer: {
+        id: s.referral.referredUser.id,
+        label:
+          s.referral.referredUser.companyName ||
+          s.referral.referredUser.name ||
+          s.referral.referredUser.email,
+        email: s.referral.referredUser.email,
+        plan: s.referral.referredUser.plan,
+      },
+    })),
     recent: recent.map((r) => ({
       id: r.id,
       status: r.status,

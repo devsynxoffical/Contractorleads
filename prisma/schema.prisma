@@ -663,7 +663,7 @@ model LeadSms {
   @@index([toPhone])
 }
 
-/// One signup attributed to a referrer. Commission pays on first paid plan purchase.
+/// One signup attributed to a referrer. Commission pays on plan purchases and renewals.
 model Referral {
   id                String    @id @default(cuid())
   referrerId        String
@@ -678,20 +678,46 @@ model Referral {
   milestoneBonusUsd Float     @default(0)
   planAtReward      String?
   purchaseAmountUsd Float?
+  totalRevenueUsd   Float     @default(0)
+  totalCommissionUsd Float    @default(0)
+  totalSalesCount   Int       @default(0)
   createdAt         DateTime  @default(now())
   rewardedAt        DateTime?
+  sales             ReferralSale[]
 
   @@index([referrerId, createdAt])
   @@index([status])
+}
+
+/// Individual sales and renewals attributed to an affiliate.
+model ReferralSale {
+  id                String    @id @default(cuid())
+  referralId        String
+  referral          Referral  @relation(fields: [referralId], references: [id], onDelete: Cascade)
+  referrerId        String
+  referredUserId    String
+  amountUsd         Float
+  commissionUsd     Float
+  commissionRate    Float     @default(30)
+  plan              String
+  type              String    @default("initial") // initial | renewal | upgrade | addon
+  paymentProvider   String?   // stripe | razorpay | manual
+  invoiceId         String?   @unique
+  status            String    @default("completed") // completed | refunded
+  createdAt         DateTime  @default(now())
+
+  @@index([referralId, createdAt])
+  @@index([referrerId, createdAt])
+  @@index([referredUserId])
 }
 
 /// Singleton admin config for referral cash commissions and milestone tiers.
 model ReferralRewardConfig {
   id                 String   @id @default("default")
   enabled            Boolean  @default(true)
-  /// Percent of first paid plan monthly price paid as commission
-  commissionPercent  Float    @default(20)
-  minWithdrawalUsd   Float    @default(25)
+  /// Percent of paid plan price paid as commission (30% default)
+  commissionPercent  Float    @default(30)
+  minWithdrawalUsd   Float    @default(500)
   /// Legacy — unused
   creditsPerReferral Float    @default(0)
   /// JSON: [{ "minReferrals": 10, "bonusUsd": 25 }, ...]

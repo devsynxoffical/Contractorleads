@@ -62,16 +62,16 @@ export async function getRewardConfig(): Promise<ReferralRewardSettings> {
     create: {
       id: "default",
       enabled: true,
-      commissionPercent: 20,
-      minWithdrawalUsd: 25,
+      commissionPercent: 30,
+      minWithdrawalUsd: 500,
       milestonesJson: JSON.stringify(DEFAULT_MILESTONES),
     },
   });
 
   return {
     enabled: row.enabled,
-    commissionPercent: row.commissionPercent,
-    minWithdrawalUsd: row.minWithdrawalUsd,
+    commissionPercent: Math.max(30, Number(row.commissionPercent) || 30),
+    minWithdrawalUsd: Math.max(500, Number(row.minWithdrawalUsd) || 500),
     milestones: parseMilestones(row.milestonesJson),
   };
 }
@@ -293,14 +293,19 @@ export async function applyReferralOnSignup(opts: {
 }
 
 /**
- * Pay cash commission when a referred user first converts to a paid plan.
- * Idempotent — one commission per referred user.
+ * Pay cash commission when a referred user purchases a plan or renews.
+ * Commission Rate: 30% on every eligible sale based on package price.
+ * Tracks individual sales and renewals in ReferralSale.
  */
 export async function applyReferralCommissionOnPurchase(opts: {
   userId: string;
   plan: string;
   previousPlan?: string | null;
   subscriptionStatus?: string | null;
+  amountUsd?: number | null;
+  isRenewal?: boolean;
+  invoiceId?: string | null;
+  paymentProvider?: string | null;
 }) {
   const config = await getRewardConfig();
   if (!config.enabled) {
@@ -322,39 +327,71 @@ export async function applyReferralCommissionOnPurchase(opts: {
   if (!referral) {
     return { paid: false as const, reason: "no_referral" as const };
   }
-  if (referral.status === "rewarded") {
-    return { paid: false as const, reason: "already_rewarded" as const };
-  }
   if (referral.status === "blocked") {
     return { paid: false as const, reason: "blocked" as const };
   }
 
-  const purchaseAmountUsd = await getPlanMonthlyPrice(opts.plan);
-  const commissionUsd = roundUsd(
-    purchaseAmountUsd * (config.commissionPercent / 100),
-  );
+  // Idempotency check on invoice/payment ID if provided
+  if (opts.invoiceId) {
+    const existingSale = await prisma.referralSale.findUnique({
+      where: { invoiceId: opts.invoiceId },
+    });
+    if (existingSale) {
+      return {
+        paid: false as const,
+        reason: "already_rewarded_invoice" as const,
+      };
+    }
+  }
 
-  const previousRewarded = await prisma.referral.count({
-    where: { referrerId: referral.referrerId, status: "rewarded" },
-  });
-  const nextCount = previousRewarded + 1;
-  const milestoneBonusUsd = milestoneBonusForCount(
-    nextCount,
-    config.milestones,
-    previousRewarded,
-  );
+  const purchaseAmountUsd =
+    typeof opts.amountUsd === "number" && opts.amountUsd > 0
+      ? roundUsd(opts.amountUsd)
+      : await getPlanMonthlyPrice(opts.plan);
+
+  const commissionRate = config.commissionPercent || 30;
+  const commissionUsd = roundUsd(purchaseAmountUsd * (commissionRate / 100));
+
+  const isFirstPurchase = referral.status !== "rewarded";
+  let milestoneBonusUsd = 0;
+  let nextCount = 0;
+
+  if (isFirstPurchase) {
+    const previousRewarded = await prisma.referral.count({
+      where: { referrerId: referral.referrerId, status: "rewarded" },
+    });
+    nextCount = previousRewarded + 1;
+    milestoneBonusUsd = milestoneBonusForCount(
+      nextCount,
+      config.milestones,
+      previousRewarded,
+    );
+  }
+
   const totalUsd = roundUsd(commissionUsd + milestoneBonusUsd);
+  const saleType = opts.isRenewal
+    ? "renewal"
+    : isFirstPurchase
+      ? "initial"
+      : "upgrade";
 
   await prisma.$transaction(async (tx) => {
     await tx.referral.update({
       where: { id: referral.id },
       data: {
         status: "rewarded",
-        commissionUsd,
-        milestoneBonusUsd,
-        planAtReward: opts.plan,
-        purchaseAmountUsd,
-        rewardedAt: new Date(),
+        totalRevenueUsd: { increment: purchaseAmountUsd },
+        totalCommissionUsd: { increment: commissionUsd },
+        totalSalesCount: { increment: 1 },
+        ...(isFirstPurchase
+          ? {
+              commissionUsd: { increment: commissionUsd },
+              milestoneBonusUsd,
+              planAtReward: opts.plan,
+              purchaseAmountUsd,
+              rewardedAt: new Date(),
+            }
+          : {}),
       },
     });
 
@@ -365,18 +402,37 @@ export async function applyReferralCommissionOnPurchase(opts: {
       });
     }
 
+    await tx.referralSale.create({
+      data: {
+        referralId: referral.id,
+        referrerId: referral.referrerId,
+        referredUserId: opts.userId,
+        amountUsd: purchaseAmountUsd,
+        commissionUsd,
+        commissionRate,
+        plan: opts.plan,
+        type: saleType,
+        paymentProvider: opts.paymentProvider || "stripe",
+        invoiceId: opts.invoiceId || null,
+        status: "completed",
+      },
+    });
+
     if (commissionUsd > 0) {
       await tx.referralEarningLedger.create({
         data: {
           userId: referral.referrerId,
           amountUsd: commissionUsd,
-          action: "commission",
-          reference: referral.id,
+          action: opts.isRenewal ? "renewal_commission" : "commission",
+          reference: opts.invoiceId || referral.id,
           metaJson: JSON.stringify({
             referredUserId: opts.userId,
             plan: opts.plan,
             purchaseAmountUsd,
-            commissionPercent: config.commissionPercent,
+            commissionPercent: commissionRate,
+            isRenewal: Boolean(opts.isRenewal),
+            paymentProvider: opts.paymentProvider || "stripe",
+            invoiceId: opts.invoiceId || null,
           }),
         },
       });
@@ -400,7 +456,7 @@ export async function applyReferralCommissionOnPurchase(opts: {
   await logActivity(
     referral.referrerId,
     "referral_commission",
-    `Earned $${totalUsd.toFixed(2)} commission when a referral purchased ${opts.plan}`,
+    `Earned $${commissionUsd.toFixed(2)} (${commissionRate}% commission) when a referred client ${opts.isRenewal ? "renewed" : "purchased"} ${opts.plan}`,
     {
       referralId: referral.id,
       referredUserId: opts.userId,
@@ -408,7 +464,8 @@ export async function applyReferralCommissionOnPurchase(opts: {
       milestoneBonusUsd,
       plan: opts.plan,
       purchaseAmountUsd,
-      totalReferrals: nextCount,
+      commissionRate,
+      saleType,
     },
   );
 
@@ -418,7 +475,7 @@ export async function applyReferralCommissionOnPurchase(opts: {
     commissionUsd,
     milestoneBonusUsd,
     totalUsd,
-    totalReferrals: nextCount,
+    saleType,
   };
 }
 
@@ -430,17 +487,17 @@ export async function requestWithdrawal(opts: {
 }) {
   const config = await getRewardConfig();
   if (!config.enabled) {
-    return { ok: false as const, error: "Referral program is paused" };
+    return { ok: false as const, error: "Affiliate program is currently paused" };
   }
 
   const amount = roundUsd(opts.amountUsd);
   if (!Number.isFinite(amount) || amount <= 0) {
-    return { ok: false as const, error: "Enter a valid withdrawal amount" };
+    return { ok: false as const, error: "Enter a valid payout amount" };
   }
   if (amount < config.minWithdrawalUsd) {
     return {
       ok: false as const,
-      error: `Minimum withdrawal is $${config.minWithdrawalUsd.toFixed(2)}`,
+      error: `Minimum payout threshold is $${config.minWithdrawalUsd.toFixed(2)}. Affiliates become eligible once their payable commission balance reaches $${config.minWithdrawalUsd.toFixed(2)}.`,
     };
   }
 
@@ -448,7 +505,7 @@ export async function requestWithdrawal(opts: {
   if (details.length < 3) {
     return {
       ok: false as const,
-      error: "Add payout details (PayPal email or bank info)",
+      error: "Add payout details (PayPal email, Wire routing, or Bank details)",
     };
   }
 
@@ -458,7 +515,10 @@ export async function requestWithdrawal(opts: {
   });
   if (!user) return { ok: false as const, error: "User not found" };
   if (user.referralBalanceUsd < amount) {
-    return { ok: false as const, error: "Insufficient referral balance" };
+    return {
+      ok: false as const,
+      error: `Insufficient payable commission balance (available: $${user.referralBalanceUsd.toFixed(2)})`,
+    };
   }
 
   const pending = await prisma.referralWithdrawal.findFirst({
@@ -468,7 +528,7 @@ export async function requestWithdrawal(opts: {
   if (pending) {
     return {
       ok: false as const,
-      error: "You already have a pending withdrawal request",
+      error: "You already have a pending payout request in review",
     };
   }
 
@@ -481,7 +541,7 @@ export async function requestWithdrawal(opts: {
       data: { referralBalanceUsd: { decrement: amount } },
     });
     if (updated.count === 0) {
-      throw new Error("Insufficient referral balance");
+      throw new Error("Insufficient payable commission balance");
     }
 
     const row = await tx.referralWithdrawal.create({
@@ -510,7 +570,7 @@ export async function requestWithdrawal(opts: {
   await logActivity(
     opts.userId,
     "referral_withdrawal_request",
-    `Requested $${amount.toFixed(2)} referral withdrawal via ${opts.method}`,
+    `Requested $${amount.toFixed(2)} affiliate payout via ${opts.method}`,
     { withdrawalId: withdrawal.id, amountUsd: amount },
   );
 
@@ -542,7 +602,7 @@ export async function processWithdrawal(opts: {
     await logActivity(
       row.userId,
       "referral_withdrawal_paid",
-      `Referral withdrawal of $${row.amountUsd.toFixed(2)} marked paid`,
+      `Affiliate payout of $${row.amountUsd.toFixed(2)} marked paid`,
       { withdrawalId: row.id },
     );
     return { ok: true as const, status: "paid" as const };
@@ -575,7 +635,7 @@ export async function processWithdrawal(opts: {
   await logActivity(
     row.userId,
     "referral_withdrawal_rejected",
-    `Referral withdrawal of $${row.amountUsd.toFixed(2)} was rejected — balance restored`,
+    `Affiliate payout of $${row.amountUsd.toFixed(2)} was rejected — balance restored`,
     { withdrawalId: row.id },
   );
 
@@ -593,7 +653,7 @@ export async function getReferralStats(userId: string) {
   const code = await ensureReferralCode(userId);
   const config = await getRewardConfig();
 
-  const [user, referrals, withdrawals, earned] = await Promise.all([
+  const [user, referrals, withdrawals, sales, earned] = await Promise.all([
     prisma.user.findUnique({
       where: { id: userId },
       select: { referralBalanceUsd: true },
@@ -619,44 +679,108 @@ export async function getReferralStats(userId: string) {
       orderBy: { createdAt: "desc" },
       take: 50,
     }),
+    prisma.referralSale.findMany({
+      where: { referrerId: userId },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+      include: {
+        referral: {
+          select: {
+            referredUser: {
+              select: {
+                email: true,
+                name: true,
+                companyName: true,
+              },
+            },
+          },
+        },
+      },
+    }),
     prisma.referralEarningLedger.aggregate({
       where: {
         userId,
-        action: { in: ["commission", "milestone"] },
+        action: { in: ["commission", "renewal_commission", "milestone"] },
       },
       _sum: { amountUsd: true },
     }),
   ]);
 
-  const successful = referrals.filter((r) => r.status === "rewarded").length;
-  const pending = referrals.filter((r) => r.status === "pending").length;
+  const totalSignups = referrals.length;
+  const payingCustomers = referrals.filter((r) => r.status === "rewarded").length;
+  const pendingReferrals = referrals.filter((r) => r.status === "pending").length;
+
+  const totalSales = sales.length;
+  const totalRevenueUsd = roundUsd(
+    sales.reduce((sum, s) => sum + (s.amountUsd || 0), 0),
+  );
+  const totalEarnedUsd = roundUsd(earned._sum.amountUsd ?? 0);
+
+  const payableBalanceUsd = roundUsd(user?.referralBalanceUsd ?? 0);
+  const pendingPayoutsUsd = roundUsd(
+    withdrawals
+      .filter((w) => w.status === "pending")
+      .reduce((sum, w) => sum + (w.amountUsd || 0), 0),
+  );
+  const completedPayoutsUsd = roundUsd(
+    withdrawals
+      .filter((w) => w.status === "paid")
+      .reduce((sum, w) => sum + (w.amountUsd || 0), 0),
+  );
+
+  const payoutThresholdUsd = config.minWithdrawalUsd; // $500
+  const isEligibleForPayout = payableBalanceUsd >= payoutThresholdUsd;
+  const remainingForPayoutUsd = Math.max(
+    0,
+    roundUsd(payoutThresholdUsd - payableBalanceUsd),
+  );
+  const payoutProgressPercent = Math.min(
+    100,
+    Math.round((payableBalanceUsd / payoutThresholdUsd) * 100),
+  );
+
   const nextMilestone =
-    config.milestones.find((m) => m.minReferrals > successful) ?? null;
+    config.milestones.find((m) => m.minReferrals > payingCustomers) ?? null;
 
   return {
     code,
     enabled: config.enabled,
-    commissionPercent: config.commissionPercent,
-    minWithdrawalUsd: config.minWithdrawalUsd,
+    commissionPercent: config.commissionPercent, // 30%
+    minWithdrawalUsd: config.minWithdrawalUsd, // $500
     milestones: config.milestones,
-    balanceUsd: roundUsd(user?.referralBalanceUsd ?? 0),
-    totalEarnedUsd: roundUsd(earned._sum.amountUsd ?? 0),
-    successfulReferrals: successful,
-    pendingReferrals: pending,
+    // 5 Core Affiliate KPIs required by user:
+    totalSignups,
+    totalSales,
+    totalRevenueUsd,
+    totalEarnedUsd, // Affiliate commission earned
+    payableBalanceUsd,
+    pendingPayoutsUsd,
+    completedPayoutsUsd,
+    payoutThresholdUsd,
+    isEligibleForPayout,
+    remainingForPayoutUsd,
+    payoutProgressPercent,
+    successfulReferrals: payingCustomers,
+    pendingReferrals,
+    balanceUsd: payableBalanceUsd,
     nextMilestone,
     progressToNext: nextMilestone
       ? {
-          current: successful,
+          current: payingCustomers,
           target: nextMilestone.minReferrals,
-          remaining: Math.max(0, nextMilestone.minReferrals - successful),
+          remaining: Math.max(0, nextMilestone.minReferrals - payingCustomers),
           bonusUsd: nextMilestone.bonusUsd,
         }
       : null,
+    // Referred Contacts:
     referrals: referrals.map((r) => ({
       id: r.id,
       status: r.status,
       commissionUsd: r.commissionUsd,
       milestoneBonusUsd: r.milestoneBonusUsd,
+      totalRevenueUsd: r.totalRevenueUsd,
+      totalCommissionUsd: r.totalCommissionUsd,
+      totalSalesCount: r.totalSalesCount,
       planAtReward: r.planAtReward,
       createdAt: r.createdAt,
       rewardedAt: r.rewardedAt,
@@ -668,6 +792,26 @@ export async function getReferralStats(userId: string) {
         plan: r.referredUser.plan,
       },
     })),
+    // Sales & Renewals Ledger:
+    sales: sales.map((s) => ({
+      id: s.id,
+      amountUsd: s.amountUsd,
+      commissionUsd: s.commissionUsd,
+      commissionRate: s.commissionRate,
+      plan: s.plan,
+      type: s.type,
+      paymentProvider: s.paymentProvider,
+      status: s.status,
+      createdAt: s.createdAt,
+      customerEmail: s.referral?.referredUser?.email
+        ? maskEmail(s.referral.referredUser.email)
+        : "Referred Customer",
+      customerName:
+        s.referral?.referredUser?.name ||
+        s.referral?.referredUser?.companyName ||
+        null,
+    })),
+    // Payouts History:
     withdrawals: withdrawals.map((w) => ({
       id: w.id,
       amountUsd: w.amountUsd,

@@ -33,7 +33,21 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(dest, 308);
   }
 
-  return NextResponse.next();
+  // 3. Capture affiliate/referral attribution cookie across any marketing or landing page
+  const refCode = url.searchParams.get("ref")?.trim();
+  const response = NextResponse.next();
+  if (refCode) {
+    response.cookies.set("referral_code", refCode.toLowerCase(), {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+      path: "/",
+    });
+    return response;
+  }
+
+  return response;
 }
 
 export const config = {

@@ -18,7 +18,10 @@ export async function GET(
   const appUrl = appBaseUrl();
 
   const referrer = normalized ? await findReferrerByCode(normalized) : null;
-  const registerUrl = new URL(`${appUrl}/register`);
+  const reqUrl = new URL(_request.url);
+  const dest = reqUrl.searchParams.get("dest")?.trim() || "register";
+  const targetPath = dest.startsWith("/") ? dest : `/${dest}`;
+  const registerUrl = new URL(`${appUrl}${targetPath}`);
   if (referrer?.referralCode) {
     registerUrl.searchParams.set("ref", referrer.referralCode);
   }

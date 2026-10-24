@@ -18,6 +18,24 @@ type Payload = {
     milestones: Milestone[];
   };
   totalReferrals: number;
+  totalSalesCount: number;
+  totalRevenueUsd: number;
+  totalCommissionUsd: number;
+  pendingPayoutsUsd: number;
+  completedPayoutsUsd: number;
+  sales: Array<{
+    id: string;
+    amountUsd: number;
+    commissionUsd: number;
+    commissionRate: number;
+    plan: string;
+    type: string;
+    paymentProvider: string | null;
+    status: string;
+    createdAt: string;
+    referrer: { id: string; label: string; email: string; code: string | null };
+    customer: { id: string; label: string; email: string; plan: string };
+  }>;
   recent: Array<{
     id: string;
     status: string;
@@ -62,8 +80,8 @@ function money(n: number) {
 export default function AdminReferralsPage() {
   const [data, setData] = useState<Payload | null>(null);
   const [enabled, setEnabled] = useState(true);
-  const [commissionPercent, setCommissionPercent] = useState(20);
-  const [minWithdrawalUsd, setMinWithdrawalUsd] = useState(25);
+  const [commissionPercent, setCommissionPercent] = useState(30);
+  const [minWithdrawalUsd, setMinWithdrawalUsd] = useState(500);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -187,35 +205,65 @@ export default function AdminReferralsPage() {
         </p>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <div className="rounded-2xl border border-border bg-[var(--surface)] p-4 shadow-[var(--shadow-card)]">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
-            Paid conversions
+            Total Revenue
+          </p>
+          <p className="mt-1 text-2xl font-bold tabular-nums text-ink">
+            {money(data?.totalRevenueUsd ?? 0)}
+          </p>
+          <p className="mt-1 text-[11px] text-ink-muted">Gross affiliate sales</p>
+        </div>
+        <div className="rounded-2xl border border-border bg-[var(--surface)] p-4 shadow-[var(--shadow-card)]">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+            Total Sales
+          </p>
+          <p className="mt-1 text-2xl font-bold tabular-nums text-ink">
+            {data?.totalSalesCount ?? 0}
+          </p>
+          <p className="mt-1 text-[11px] text-ink-muted">Initial + renewals</p>
+        </div>
+        <div className="rounded-2xl border border-border bg-[var(--surface)] p-4 shadow-[var(--shadow-card)]">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+            Commissions Earned
+          </p>
+          <p className="mt-1 text-2xl font-bold tabular-nums text-emerald-600">
+            {money(data?.totalCommissionUsd ?? 0)}
+          </p>
+          <p className="mt-1 text-[11px] text-ink-muted">At 30% commission</p>
+        </div>
+        <div className="rounded-2xl border border-border bg-[var(--surface)] p-4 shadow-[var(--shadow-card)]">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+            Paid Customers
           </p>
           <p className="mt-1 text-2xl font-bold tabular-nums text-ink">
             {data?.totalReferrals ?? 0}
           </p>
+          <p className="mt-1 text-[11px] text-ink-muted">Unique paying accounts</p>
         </div>
         <div className="rounded-2xl border border-border bg-[var(--surface)] p-4 shadow-[var(--shadow-card)]">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
-            Program status
+            Pending Payouts
           </p>
-          <p className="mt-1 text-2xl font-bold text-ink">
-            {enabled ? "On" : "Off"}
+          <p className="mt-1 text-2xl font-bold tabular-nums text-amber-600">
+            {money(data?.pendingPayoutsUsd ?? 0)}
           </p>
+          <p className="mt-1 text-[11px] text-ink-muted">{pendingWithdrawals.length} in review</p>
         </div>
         <div className="rounded-2xl border border-border bg-[var(--surface)] p-4 shadow-[var(--shadow-card)]">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
-            Commission
+            Completed Payouts
           </p>
-          <p className="mt-1 text-2xl font-bold tabular-nums text-ink">
-            {commissionPercent}%
+          <p className="mt-1 text-2xl font-bold tabular-nums text-brand-600">
+            {money(data?.completedPayoutsUsd ?? 0)}
           </p>
+          <p className="mt-1 text-[11px] text-ink-muted">Disbursed to affiliates</p>
         </div>
       </div>
 
       <section className="space-y-3 rounded-2xl border border-border bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
-        <h2 className="text-sm font-semibold text-ink">Commission settings</h2>
+        <h2 className="text-sm font-semibold text-ink">Commission & Payout Policy</h2>
         <label className="flex items-center gap-2 text-[13px] text-ink">
           <input
             type="checkbox"
@@ -223,12 +271,12 @@ export default function AdminReferralsPage() {
             onChange={(e) => setEnabled(e.target.checked)}
             disabled={busy}
           />
-          Referral program enabled
+          Referral & Affiliate program enabled
         </label>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block text-[12px]">
             <span className="font-medium text-ink-muted">
-              Commission % of first paid plan
+              Commission Rate (% on eligible sales & recurring renewals)
             </span>
             <input
               type="number"
@@ -244,7 +292,7 @@ export default function AdminReferralsPage() {
           </label>
           <label className="block text-[12px]">
             <span className="font-medium text-ink-muted">
-              Minimum withdrawal (USD)
+              Minimum Payout Threshold (USD — default $500)
             </span>
             <input
               type="number"
@@ -391,6 +439,82 @@ export default function AdminReferralsPage() {
             <p className="text-[13px] text-ink-muted">No withdrawal requests yet.</p>
           ) : null}
         </ul>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="text-sm font-semibold text-ink">
+              Affiliate Sales & Renewals Ledger
+            </h2>
+            <p className="text-[12px] text-ink-muted">
+              Real-time audit log of attributed initial plan purchases and recurring subscription renewals
+            </p>
+          </div>
+          <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-[11px] font-semibold text-brand-700">
+            {data?.sales?.length ?? 0} recent transactions
+          </span>
+        </div>
+
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full min-w-[680px] text-left text-sm">
+            <thead className="border-b border-border text-[11px] uppercase tracking-wide text-ink-faint">
+              <tr>
+                <th className="px-2 py-2 font-medium">Affiliate</th>
+                <th className="px-2 py-2 font-medium">Customer</th>
+                <th className="px-2 py-2 font-medium">Plan</th>
+                <th className="px-2 py-2 font-medium">Type</th>
+                <th className="px-2 py-2 font-medium">Deal Price</th>
+                <th className="px-2 py-2 font-medium">Commission (30%)</th>
+                <th className="px-2 py-2 font-medium">Date</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/60">
+              {(data?.sales ?? []).map((s) => (
+                <tr key={s.id} className="hover:bg-[var(--input-bg)]">
+                  <td className="px-2 py-2.5">
+                    <p className="font-medium text-ink">{s.referrer.label}</p>
+                    <p className="text-[11px] text-ink-muted">{s.referrer.email}</p>
+                  </td>
+                  <td className="px-2 py-2.5">
+                    <p className="font-medium text-ink">{s.customer.label}</p>
+                    <p className="text-[11px] text-ink-muted">{s.customer.email}</p>
+                  </td>
+                  <td className="px-2 py-2.5 font-medium text-ink capitalize">
+                    {s.plan}
+                  </td>
+                  <td className="px-2 py-2.5">
+                    <span
+                      className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold ${
+                        s.type === "renewal"
+                          ? "bg-purple-50 text-purple-700 ring-1 ring-purple-200"
+                          : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+                      }`}
+                    >
+                      {s.type === "renewal" ? "Recurring Renewal" : "Initial Sale"}
+                    </span>
+                  </td>
+                  <td className="px-2 py-2.5 tabular-nums font-semibold text-ink">
+                    {money(s.amountUsd)}
+                  </td>
+                  <td className="px-2 py-2.5 tabular-nums font-bold text-emerald-600">
+                    +{money(s.commissionUsd)}
+                  </td>
+                  <td className="px-2 py-2.5 text-[12px] text-ink-muted">
+                    {new Date(s.createdAt).toLocaleDateString()}
+                  </td>
+                </tr>
+              ))}
+              {!data?.sales?.length ? (
+                <tr>
+                  <td colSpan={7} className="py-6 text-center text-[13px] text-ink-muted">
+                    No affiliate sales or renewal transactions recorded yet.
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <div className="grid gap-5 lg:grid-cols-2">
