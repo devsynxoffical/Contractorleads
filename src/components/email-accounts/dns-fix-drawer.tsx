@@ -125,46 +125,46 @@ export function DnsFixDrawer({
   ];
 
   return createPortal(
-    <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 z-[100] flex justify-end bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200">
-      <div className="relative w-full max-w-xl bg-[#141326] border-l border-[#26253c] p-6 shadow-2xl flex flex-col h-full overflow-y-auto text-slate-100">
+    <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 z-[100] flex justify-end bg-black/50 dark:bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200">
+      <div className="relative w-full max-w-xl bg-white dark:bg-[#141326] border-l border-slate-200 dark:border-[#26253c] p-6 shadow-2xl flex flex-col h-full overflow-y-auto text-slate-800 dark:text-slate-100">
         {/* Header */}
-        <div className="flex items-center justify-between pb-5 border-b border-[#26253c]">
+        <div className="flex items-center justify-between pb-5 border-b border-slate-200 dark:border-[#26253c]">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+            <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 text-indigo-600 dark:text-indigo-400">
               <HiOutlineShieldCheck className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
                 DNS Authentication & Fix
-                <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono">
+                <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono">
                   {domain}
                 </span>
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 Verified records required by Gmail & Yahoo bulk-sender rules
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
           >
             <HiOutlineXMark className="w-5 h-5" />
           </button>
         </div>
 
         {/* Re-test Action Bar */}
-        <div className="my-5 p-3.5 rounded-xl bg-[#1b1a32] border border-[#2b2a45] flex items-center justify-between">
+        <div className="my-5 p-3.5 rounded-xl bg-slate-50 dark:bg-[#1b1a32] border border-slate-200 dark:border-[#2b2a45] flex items-center justify-between">
           <div>
-            <div className="text-xs font-semibold text-slate-200">Live DNS Resolution</div>
-            <div className="text-[11px] text-slate-400">
-              Provider detected: <span className="font-semibold text-indigo-300 capitalize">{provider}</span>
+            <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">Live DNS Resolution</div>
+            <div className="text-[11px] text-slate-500 dark:text-slate-400">
+              Provider detected: <span className="font-semibold text-indigo-600 dark:text-indigo-300 capitalize">{provider}</span>
             </div>
           </div>
           <button
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white transition disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white transition disabled:opacity-50 shadow-xs"
           >
             <HiOutlineArrowPath className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
             {isRefreshing ? "Checking DNS..." : "Re-test DNS Now"}
@@ -181,55 +181,55 @@ export function DnsFixDrawer({
             return (
               <div
                 key={rec.badge}
-                className="p-4 rounded-xl border border-[#26253c] bg-[#17162b] space-y-3"
+                className="p-4 rounded-xl border border-slate-200 dark:border-[#26253c] bg-slate-50/70 dark:bg-[#17162b] space-y-3"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span
                       className={`text-[11px] font-bold px-2 py-0.5 rounded-md font-mono ${
                         isPass
-                          ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                          ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30"
                           : isWarn
-                          ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-                          : "bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                          ? "bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-500/30"
+                          : "bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-rose-500/30"
                       }`}
                     >
                       {rec.badge}
                     </span>
-                    <span className="text-xs font-semibold text-slate-200">{rec.type}</span>
+                    <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">{rec.type}</span>
                   </div>
 
                   <span className="flex items-center gap-1 text-[11px] font-medium">
                     {isPass && (
-                      <span className="text-emerald-400 flex items-center gap-1">
+                      <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
                         <HiOutlineCheck className="w-3.5 h-3.5" /> Passing
                       </span>
                     )}
                     {isWarn && (
-                      <span className="text-amber-400 flex items-center gap-1">
+                      <span className="text-amber-600 dark:text-amber-400 flex items-center gap-1">
                         <HiOutlineExclamationTriangle className="w-3.5 h-3.5" /> Weak / Monitoring
                       </span>
                     )}
                     {isFail && (
-                      <span className="text-rose-400 flex items-center gap-1">
+                      <span className="text-rose-600 dark:text-rose-400 flex items-center gap-1">
                         <HiOutlineXCircle className="w-3.5 h-3.5" /> Missing / Failed
                       </span>
                     )}
                   </span>
                 </div>
 
-                <p className="text-[11px] text-slate-400">{rec.explanation}</p>
+                <p className="text-[11px] text-slate-600 dark:text-slate-400">{rec.explanation}</p>
 
                 {/* Found record */}
-                <div className="text-[11px] bg-[#0f0e1e] p-2.5 rounded-lg border border-[#201f35] font-mono text-slate-300 break-all">
-                  <div className="text-[10px] text-slate-500 mb-1">CURRENT RECORD FOUND:</div>
+                <div className="text-[11px] bg-white dark:bg-[#0f0e1e] p-2.5 rounded-lg border border-slate-200 dark:border-[#201f35] font-mono text-slate-800 dark:text-slate-300 break-all">
+                  <div className="text-[10px] text-slate-400 dark:text-slate-500 mb-1">CURRENT RECORD FOUND:</div>
                   {rec.recordFound}
                 </div>
 
                 {/* Recommended fix if not passing */}
                 {(!isPass || isWarn) && (
                   <div className="space-y-1.5 pt-1">
-                    <div className="text-[11px] font-semibold text-amber-300">
+                    <div className="text-[11px] font-semibold text-amber-700 dark:text-amber-300">
                       Recommended DNS Record to Add in {provider.toUpperCase()}:
                     </div>
                     <div className="grid grid-cols-4 gap-2 text-[11px] text-slate-300">

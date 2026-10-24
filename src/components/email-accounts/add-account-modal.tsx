@@ -151,31 +151,31 @@ export function AddAccountModal({
   }
 
   return createPortal(
-    <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 z-[100] flex items-center justify-center bg-black/75 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg bg-[#141326] border border-[#26253c] rounded-2xl p-6 shadow-2xl flex flex-col text-slate-100 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 z-[100] flex items-center justify-center bg-black/60 dark:bg-black/75 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+      <div className="relative w-full max-w-lg bg-white dark:bg-[#141326] border border-slate-200 dark:border-[#26253c] rounded-2xl p-6 shadow-2xl flex flex-col text-slate-800 dark:text-slate-100 max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-[#26253c]">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-[#26253c]">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+            <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/20 text-indigo-600 dark:text-indigo-400">
               <HiOutlineEnvelope className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white">Connect Email Account</h2>
-              <p className="text-xs text-slate-400">
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">Connect Email Account</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Validated via Hostinger mail gateway to ensure deliverability
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+            className="p-1 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
           >
             <HiOutlineXMark className="w-5 h-5" />
           </button>
         </div>
 
         {/* Tab Selector */}
-        <div className="grid grid-cols-4 gap-1 p-1 bg-[#1b1a32] rounded-xl border border-[#2b2a45] my-4 text-xs font-semibold">
+        <div className="grid grid-cols-4 gap-1 p-1 bg-slate-100 dark:bg-[#1b1a32] rounded-xl border border-slate-200 dark:border-[#2b2a45] my-4 text-xs font-semibold">
           <button
             type="button"
             onClick={() => {
@@ -185,7 +185,7 @@ export function AddAccountModal({
               setProvider("hostinger");
             }}
             className={`py-1.5 rounded-lg transition ${
-              tab === "smtp" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white"
+              tab === "smtp" ? "bg-indigo-600 text-white shadow-xs" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
             Hostinger / SMTP
@@ -199,7 +199,7 @@ export function AddAccountModal({
               setProvider("google");
             }}
             className={`py-1.5 rounded-lg transition ${
-              tab === "google" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white"
+              tab === "google" ? "bg-indigo-600 text-white shadow-xs" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
             Google Workspace
@@ -213,7 +213,7 @@ export function AddAccountModal({
               setProvider("microsoft");
             }}
             className={`py-1.5 rounded-lg transition ${
-              tab === "microsoft" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white"
+              tab === "microsoft" ? "bg-indigo-600 text-white shadow-xs" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
             Microsoft 365
@@ -222,7 +222,7 @@ export function AddAccountModal({
             type="button"
             onClick={() => setTab("csv")}
             className={`py-1.5 rounded-lg transition ${
-              tab === "csv" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white"
+              tab === "csv" ? "bg-indigo-600 text-white shadow-xs" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
             Bulk CSV
@@ -231,14 +231,14 @@ export function AddAccountModal({
 
         {/* Alert Feedback */}
         {error && (
-          <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
-            <HiOutlineExclamationCircle className="w-4 h-4 shrink-0 text-rose-400" />
+          <div className="mb-4 p-3 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-rose-800 dark:text-rose-300 text-xs flex items-center gap-2">
+            <HiOutlineExclamationCircle className="w-4 h-4 shrink-0 text-rose-500 dark:text-rose-400" />
             <span>{error}</span>
           </div>
         )}
         {success && (
-          <div className="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
-            <HiOutlineCheck className="w-4 h-4 shrink-0 text-emerald-400" />
+          <div className="mb-4 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2">
+            <HiOutlineCheck className="w-4 h-4 shrink-0 text-emerald-500 dark:text-emerald-400" />
             <span>{success}</span>
           </div>
         )}
@@ -247,8 +247,8 @@ export function AddAccountModal({
         {tab !== "csv" ? (
           <form onSubmit={handleSingleSubmit} className="space-y-3.5 text-xs">
             <div>
-              <label className="block text-slate-300 font-semibold mb-1">
-                Email Address <span className="text-rose-400">*</span>
+              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
+                Email Address <span className="text-rose-500 dark:text-rose-400">*</span>
               </label>
               <input
                 type="email"
@@ -256,24 +256,24 @@ export function AddAccountModal({
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="jennifer.jackson@yourdomain.com"
-                className="w-full px-3 py-2 rounded-xl bg-[#0f0e1e] border border-[#2b2a45] text-white focus:outline-hidden focus:border-indigo-500 transition"
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#0f0e1e] border border-slate-200 dark:border-[#2b2a45] text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-hidden focus:border-indigo-500 transition"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Sender Name</label>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Sender Name</label>
                 <input
                   type="text"
                   value={senderName}
                   onChange={(e) => setSenderName(e.target.value)}
                   placeholder="Jennifer Jackson"
-                  className="w-full px-3 py-2 rounded-xl bg-[#0f0e1e] border border-[#2b2a45] text-white focus:outline-hidden focus:border-indigo-500 transition"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#0f0e1e] border border-slate-200 dark:border-[#2b2a45] text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-hidden focus:border-indigo-500 transition"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
                   Daily Campaign Limit
                 </label>
                 <input
@@ -282,14 +282,14 @@ export function AddAccountModal({
                   max="100"
                   value={dailyLimit}
                   onChange={(e) => setDailyLimit(parseInt(e.target.value, 10))}
-                  className="w-full px-3 py-2 rounded-xl bg-[#0f0e1e] border border-[#2b2a45] text-white focus:outline-hidden focus:border-indigo-500 transition"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#0f0e1e] border border-slate-200 dark:border-[#2b2a45] text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500 transition"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-slate-300 font-semibold mb-1">
-                Password / App Password <span className="text-rose-400">*</span>
+              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
+                Password / App Password <span className="text-rose-500 dark:text-rose-400">*</span>
               </label>
               <input
                 type="password"
@@ -297,10 +297,10 @@ export function AddAccountModal({
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={tab === "google" ? "Google 16-character App Password" : "••••••••••••"}
-                className="w-full px-3 py-2 rounded-xl bg-[#0f0e1e] border border-[#2b2a45] text-white focus:outline-hidden focus:border-indigo-500 transition"
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#0f0e1e] border border-slate-200 dark:border-[#2b2a45] text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-hidden focus:border-indigo-500 transition"
               />
               {tab === "google" && (
-                <p className="text-[11px] text-slate-400 mt-1">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
                   For Google Workspace, generate an <strong>App Password</strong> under Google Account → Security → 2-Step Verification.
                 </p>
               )}
@@ -308,38 +308,38 @@ export function AddAccountModal({
 
             <div className="grid grid-cols-3 gap-3">
               <div className="col-span-2">
-                <label className="block text-slate-300 font-semibold mb-1">SMTP Host</label>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">SMTP Host</label>
                 <input
                   type="text"
                   value={host}
                   onChange={(e) => setHost(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-[#0f0e1e] border border-[#2b2a45] text-white focus:outline-hidden focus:border-indigo-500 transition font-mono"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#0f0e1e] border border-slate-200 dark:border-[#2b2a45] text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500 transition font-mono"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Port</label>
+                <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Port</label>
                 <input
                   type="number"
                   value={port}
                   onChange={(e) => setPort(parseInt(e.target.value, 10))}
-                  className="w-full px-3 py-2 rounded-xl bg-[#0f0e1e] border border-[#2b2a45] text-white focus:outline-hidden focus:border-indigo-500 transition font-mono"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#0f0e1e] border border-slate-200 dark:border-[#2b2a45] text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500 transition font-mono"
                 />
               </div>
             </div>
 
-            <div className="pt-3 border-t border-[#26253c] flex items-center justify-between">
+            <div className="pt-3 border-t border-slate-200 dark:border-[#26253c] flex items-center justify-between">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition font-semibold"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-white transition disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-white transition disabled:opacity-50 shadow-sm"
               >
                 {loading && <HiOutlineArrowPath className="w-4 h-4 animate-spin" />}
                 {loading ? "Verifying via Relay..." : "Connect & Verify Account"}
@@ -350,37 +350,37 @@ export function AddAccountModal({
           /* Bulk CSV Import Form */
           <form onSubmit={handleCsvSubmit} className="space-y-4 text-xs">
             <div>
-              <label className="block text-slate-300 font-semibold mb-1">
+              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">
                 Paste CSV Mailboxes List
               </label>
-              <p className="text-[11px] text-slate-400 mb-2">
-                Format: <code className="text-indigo-300">email,password,host,port,name</code>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-2">
+                Format: <code className="text-indigo-600 dark:text-indigo-300 font-semibold">email,password,host,port,name</code>
               </p>
               <textarea
                 rows={7}
                 value={csvContent}
                 onChange={(e) => setCsvContent(e.target.value)}
                 placeholder={`jennifer@mydomain.com,MyPass123!,smtp.hostinger.com,465,Jennifer Jackson\nmichael@mydomain.com,MyPass123!,smtp.hostinger.com,465,Michael Smith`}
-                className="w-full p-3 rounded-xl bg-[#0f0e1e] border border-[#2b2a45] text-white font-mono text-xs focus:outline-hidden focus:border-indigo-500 transition"
+                className="w-full p-3 rounded-xl bg-slate-50 dark:bg-[#0f0e1e] border border-slate-200 dark:border-[#2b2a45] text-slate-900 dark:text-white font-mono text-xs focus:outline-hidden focus:border-indigo-500 transition placeholder-slate-400 dark:placeholder-slate-500"
               />
             </div>
 
-            <div className="p-3 rounded-xl bg-[#17162b] border border-[#26253c] text-[11px] text-slate-300">
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#17162b] border border-slate-200 dark:border-[#26253c] text-[11px] text-slate-600 dark:text-slate-300">
               Each mailbox will be automatically tested, stored on the Hostinger mail gateway, and have its domain DNS verified.
             </div>
 
-            <div className="pt-3 border-t border-[#26253c] flex items-center justify-between">
+            <div className="pt-3 border-t border-slate-200 dark:border-[#26253c] flex items-center justify-between">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition font-semibold"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-white transition disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-white transition disabled:opacity-50 shadow-sm"
               >
                 <HiOutlineDocumentArrowUp className="w-4 h-4" />
                 {loading ? "Importing & Verifying..." : "Import All Mailboxes"}

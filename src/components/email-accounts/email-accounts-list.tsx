@@ -198,64 +198,64 @@ export function EmailAccountsList() {
     <div className="space-y-6">
       {/* 1. TOP SUMMARY KPI CARDS */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
-        <div className="p-4 rounded-2xl bg-[#141326] border border-[#26253c] shadow-xs">
-          <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+        <div className="p-4 rounded-2xl bg-white dark:bg-[#141326] border border-slate-200 dark:border-[#26253c] shadow-xs">
+          <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
             Total Mailboxes
           </div>
-          <div className="text-2xl font-black text-white mt-1 flex items-baseline gap-2">
+          <div className="text-2xl font-black text-slate-900 dark:text-white mt-1 flex items-baseline gap-2">
             {summary.totalMailboxes}
-            <span className="text-xs font-normal text-indigo-400">active pool</span>
+            <span className="text-xs font-normal text-indigo-600 dark:text-indigo-400">active pool</span>
           </div>
-          <div className="text-[11px] text-slate-500 mt-0.5">Across Hostinger & GoDaddy</div>
+          <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Across Hostinger & GoDaddy</div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-[#141326] border border-[#26253c] shadow-xs">
-          <div className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">
+        <div className="p-4 rounded-2xl bg-white dark:bg-[#141326] border border-slate-200 dark:border-[#26253c] shadow-xs">
+          <div className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
             Campaign Ready
           </div>
-          <div className="text-2xl font-black text-emerald-400 mt-1 flex items-baseline gap-2">
+          <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1 flex items-baseline gap-2">
             {summary.readyCount}
-            <span className="text-xs font-normal text-slate-400">mailboxes</span>
+            <span className="text-xs font-normal text-slate-500 dark:text-slate-400">mailboxes</span>
           </div>
-          <div className="text-[11px] text-slate-500 mt-0.5">Health ≥90% & Day 14+</div>
+          <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Health ≥90% & Day 14+</div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-[#141326] border border-[#26253c] shadow-xs">
-          <div className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider">
+        <div className="p-4 rounded-2xl bg-white dark:bg-[#141326] border border-slate-200 dark:border-[#26253c] shadow-xs">
+          <div className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
             Warming Up
           </div>
-          <div className="text-2xl font-black text-amber-400 mt-1 flex items-baseline gap-2">
+          <div className="text-2xl font-black text-amber-600 dark:text-amber-400 mt-1 flex items-baseline gap-2">
             {summary.warmingCount}
-            <span className="text-xs font-normal text-slate-400">mailboxes</span>
+            <span className="text-xs font-normal text-slate-500 dark:text-slate-400">mailboxes</span>
           </div>
-          <div className="text-[11px] text-slate-500 mt-0.5">Automated safe ramp-up</div>
+          <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Automated safe ramp-up</div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-[#141326] border border-[#26253c] shadow-xs">
-          <div className="text-[11px] font-semibold text-rose-400 uppercase tracking-wider">
+        <div className="p-4 rounded-2xl bg-white dark:bg-[#141326] border border-slate-200 dark:border-[#26253c] shadow-xs">
+          <div className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 uppercase tracking-wider">
             At Risk
           </div>
-          <div className="text-2xl font-black text-rose-400 mt-1 flex items-baseline gap-2">
+          <div className="text-2xl font-black text-rose-600 dark:text-rose-400 mt-1 flex items-baseline gap-2">
             {summary.atRiskCount}
-            <span className="text-xs font-normal text-slate-400">mailboxes</span>
+            <span className="text-xs font-normal text-slate-500 dark:text-slate-400">mailboxes</span>
           </div>
-          <div className="text-[11px] text-slate-500 mt-0.5">Auto-paused from sends</div>
+          <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Auto-paused from sends</div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-[#141326] border border-[#26253c] shadow-xs">
-          <div className="text-[11px] font-semibold text-purple-400 uppercase tracking-wider">
+        <div className="p-4 rounded-2xl bg-white dark:bg-[#141326] border border-slate-200 dark:border-[#26253c] shadow-xs">
+          <div className="text-[11px] font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider">
             Platform Avg Health
           </div>
-          <div className="text-2xl font-black text-purple-400 mt-1 flex items-baseline gap-2">
+          <div className="text-2xl font-black text-purple-600 dark:text-purple-400 mt-1 flex items-baseline gap-2">
             {summary.avgPlatformHealth}%
-            <span className="text-xs font-normal text-slate-400">inbox rate</span>
+            <span className="text-xs font-normal text-slate-500 dark:text-slate-400">inbox rate</span>
           </div>
-          <div className="text-[11px] text-slate-500 mt-0.5">7-Day rolling average</div>
+          <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">7-Day rolling average</div>
         </div>
       </div>
 
       {/* 2. TOP ACTION & CONTROL BAR (MATCHING PLUSVIBE REFERENCE SCREEN) */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 p-4 rounded-2xl bg-[#141326] border border-[#26253c]">
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 p-4 rounded-2xl bg-white dark:bg-[#141326] border border-slate-200 dark:border-[#26253c] shadow-xs">
         {/* Search Input */}
         <div className="relative flex-1 max-w-md">
           <HiOutlineMagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -267,14 +267,14 @@ export function EmailAccountsList() {
               setPage(1);
             }}
             placeholder="Search by account address, first name or campaign name (Press enter)"
-            className="w-full pl-10 pr-4 py-2 rounded-xl bg-[#0f0e1e] border border-[#26253c] text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-indigo-500 transition"
+            className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-[#0f0e1e] border border-slate-200 dark:border-[#26253c] text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-hidden focus:border-indigo-500 transition"
           />
         </div>
 
         {/* Right controls: Page size + Pagination + Add Account Button */}
         <div className="flex items-center gap-3">
           {/* Show N accounts per page */}
-          <div className="flex items-center gap-2 text-xs text-slate-400">
+          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <span>Show</span>
             <input
               type="number"
@@ -285,17 +285,17 @@ export function EmailAccountsList() {
                 setPageSize(Math.max(10, parseInt(e.target.value, 10) || 50));
                 setPage(1);
               }}
-              className="w-14 px-2 py-1 text-center rounded-lg bg-[#0f0e1e] border border-[#26253c] text-white text-xs font-mono"
+              className="w-14 px-2 py-1 text-center rounded-lg bg-slate-50 dark:bg-[#0f0e1e] border border-slate-200 dark:border-[#26253c] text-slate-900 dark:text-white text-xs font-mono"
             />
             <span>accounts per page</span>
           </div>
 
           {/* Pagination Navigation */}
-          <div className="flex items-center gap-1 text-xs text-slate-400">
+          <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
             <button
               onClick={() => setPage(1)}
               disabled={page === 1}
-              className="p-1 rounded text-slate-400 hover:text-white disabled:opacity-30"
+              className="p-1 rounded text-slate-400 hover:text-slate-900 dark:hover:text-white disabled:opacity-30"
               title="First Page"
             >
               <HiOutlineChevronDoubleLeft className="w-3.5 h-3.5" />
@@ -303,18 +303,18 @@ export function EmailAccountsList() {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="p-1 rounded text-slate-400 hover:text-white disabled:opacity-30"
+              className="p-1 rounded text-slate-400 hover:text-slate-900 dark:hover:text-white disabled:opacity-30"
               title="Previous Page"
             >
               <HiOutlineChevronLeft className="w-3.5 h-3.5" />
             </button>
-            <span className="px-2 text-xs font-mono text-slate-300">
+            <span className="px-2 text-xs font-mono text-slate-700 dark:text-slate-300">
               {allRows.length === 0 ? "0" : `${(page - 1) * pageSize + 1}-${Math.min(page * pageSize, allRows.length)} of ${allRows.length}`}
             </span>
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
-              className="p-1 rounded text-slate-400 hover:text-white disabled:opacity-30"
+              className="p-1 rounded text-slate-400 hover:text-slate-900 dark:hover:text-white disabled:opacity-30"
               title="Next Page"
             >
               <HiOutlineChevronRight className="w-3.5 h-3.5" />
@@ -322,7 +322,7 @@ export function EmailAccountsList() {
             <button
               onClick={() => setPage(totalPages)}
               disabled={page >= totalPages}
-              className="p-1 rounded text-slate-400 hover:text-white disabled:opacity-30"
+              className="p-1 rounded text-slate-400 hover:text-slate-900 dark:hover:text-white disabled:opacity-30"
               title="Last Page"
             >
               <HiOutlineChevronDoubleRight className="w-3.5 h-3.5" />
@@ -342,46 +342,46 @@ export function EmailAccountsList() {
 
       {/* 3. BULK ACTIONS BAR (When mailboxes are checked) */}
       {selectedMailboxIds.length > 0 && (
-        <div className="p-3 rounded-xl bg-indigo-950/40 border border-indigo-500/30 flex items-center justify-between text-xs text-indigo-200 animate-in fade-in duration-150">
+        <div className="p-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-500/30 flex items-center justify-between text-xs text-indigo-900 dark:text-indigo-200 animate-in fade-in duration-150">
           <div className="flex items-center gap-2 font-medium">
-            <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-indigo-500 dark:bg-indigo-400 animate-pulse" />
             <span>{selectedMailboxIds.length} mailboxes selected</span>
           </div>
 
           <div className="flex items-center gap-2">
             <button
               onClick={() => handleBulkAction("warmup_on")}
-              className="px-2.5 py-1.5 rounded-lg bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/40 transition flex items-center gap-1 font-semibold"
+              className="px-2.5 py-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-600/30 hover:bg-emerald-200 dark:hover:bg-emerald-600/50 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/40 transition flex items-center gap-1 font-semibold"
             >
               <HiOutlineFire className="w-3.5 h-3.5" /> Enable Warmup
             </button>
             <button
               onClick={() => handleBulkAction("warmup_off")}
-              className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition font-semibold"
+              className="px-2.5 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-300 transition font-semibold"
             >
               Disable Warmup
             </button>
             <button
               onClick={() => handleBulkAction("pause")}
-              className="px-2.5 py-1.5 rounded-lg bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 border border-amber-500/40 transition flex items-center gap-1 font-semibold"
+              className="px-2.5 py-1.5 rounded-lg bg-amber-100 dark:bg-amber-600/30 hover:bg-amber-200 dark:hover:bg-amber-600/50 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-500/40 transition flex items-center gap-1 font-semibold"
             >
               <HiOutlinePause className="w-3.5 h-3.5" /> Pause
             </button>
             <button
               onClick={() => setIsBulkLimitOpen(!isBulkLimitOpen)}
-              className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-semibold transition"
+              className="px-2.5 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-900 dark:text-white font-semibold transition"
             >
               Set Limit
             </button>
             {isBulkLimitOpen && (
-              <div className="flex items-center gap-1 bg-[#141326] p-1 rounded border border-[#2b2a45]">
+              <div className="flex items-center gap-1 bg-white dark:bg-[#141326] p-1 rounded-lg border border-slate-200 dark:border-[#2b2a45] shadow-md">
                 <input
                   type="number"
                   min="5"
                   max="100"
                   value={bulkLimitVal}
                   onChange={(e) => setBulkLimitVal(parseInt(e.target.value, 10))}
-                  className="w-12 px-1 text-center bg-black text-white rounded text-xs"
+                  className="w-12 px-1 text-center bg-slate-50 dark:bg-black text-slate-900 dark:text-white border border-slate-200 dark:border-transparent rounded text-xs"
                 />
                 <button
                   onClick={() => handleBulkAction("set_limit", { limit: bulkLimitVal })}
@@ -393,7 +393,7 @@ export function EmailAccountsList() {
             )}
             <button
               onClick={() => setSelectedMailboxIds([])}
-              className="text-slate-400 hover:text-white px-2 py-1"
+              className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white px-2 py-1"
             >
               Deselect All
             </button>
@@ -403,12 +403,12 @@ export function EmailAccountsList() {
 
       {/* 4. DOMAIN FOLDERS & MAILBOX LIST (EXACT PLUSVIBE UX) */}
       {loading ? (
-        <div className="p-12 text-center text-xs text-slate-400 bg-[#141326] rounded-2xl border border-[#26253c]">
-          <HiOutlineArrowPath className="w-6 h-6 animate-spin mx-auto text-indigo-400 mb-2" />
+        <div className="p-12 text-center text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-[#141326] rounded-2xl border border-slate-200 dark:border-[#26253c] shadow-xs">
+          <HiOutlineArrowPath className="w-6 h-6 animate-spin mx-auto text-indigo-500 dark:text-indigo-400 mb-2" />
           Loading email accounts and verifying DNS compliance...
         </div>
       ) : groupedFolders.length === 0 ? (
-        <div className="p-12 text-center text-xs text-slate-400 bg-[#141326] rounded-2xl border border-[#26253c]">
+        <div className="p-12 text-center text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-[#141326] rounded-2xl border border-slate-200 dark:border-[#26253c] shadow-xs">
           No email accounts match your search.
         </div>
       ) : (
@@ -420,7 +420,7 @@ export function EmailAccountsList() {
             return (
               <div
                 key={folder.domain}
-                className="rounded-2xl border border-[#26253c] bg-[#141326] overflow-hidden shadow-xs"
+                className="rounded-2xl border border-slate-200 dark:border-[#26253c] bg-white dark:bg-[#141326] overflow-hidden shadow-xs"
               >
                 {/* DOMAIN FOLDER HEADER */}
                 <div
@@ -430,19 +430,19 @@ export function EmailAccountsList() {
                       [folder.domain]: !prev[folder.domain],
                     }))
                   }
-                  className="p-3.5 bg-[#17162b] border-b border-[#26253c] flex items-center justify-between cursor-pointer hover:bg-[#1a1930] transition select-none"
+                  className="p-3.5 bg-slate-50/90 dark:bg-[#17162b] border-b border-slate-200 dark:border-[#26253c] flex items-center justify-between cursor-pointer hover:bg-slate-100/80 dark:hover:bg-[#1a1930] transition select-none"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-slate-400">
+                    <span className="text-slate-400 dark:text-slate-400">
                       {isCollapsed ? (
                         <HiOutlineChevronRight className="w-4 h-4" />
                       ) : (
                         <HiOutlineChevronDown className="w-4 h-4" />
                       )}
                     </span>
-                    <span className="text-xs font-bold text-white font-mono flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-900 dark:text-white font-mono flex items-center gap-2">
                       {folder.domain}
-                      <span className="text-[10px] font-normal px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-sans">
+                      <span className="text-[10px] font-normal px-2 py-0.5 rounded-full bg-slate-200/80 dark:bg-slate-800 text-slate-700 dark:text-slate-400 font-sans">
                         {folder.mailboxes.length} Mailboxes
                       </span>
                     </span>
@@ -506,17 +506,17 @@ export function EmailAccountsList() {
                     </div>
 
                     {/* Avg Health */}
-                    <div className="flex items-center gap-1 text-slate-300">
-                      <HiOutlineHeart className="w-3.5 h-3.5 text-rose-400" />
-                      <span className="font-semibold text-emerald-400">
+                    <div className="flex items-center gap-1 text-slate-600 dark:text-slate-300">
+                      <HiOutlineHeart className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" />
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">
                         {folder.avgHealth}%
                       </span>
                     </div>
 
                     {/* Total Capacity */}
-                    <div className="text-[11px] text-slate-400">
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400">
                       Daily Capacity:{" "}
-                      <span className="font-semibold text-white">
+                      <span className="font-semibold text-slate-900 dark:text-white">
                         {folder.mailboxes.reduce(
                           (acc: number, m: any) => acc + m.campaignSends.limit,
                           0
@@ -529,7 +529,7 @@ export function EmailAccountsList() {
 
                 {/* MAILBOX TABLE ROWS (Matching PlusVibe Columns) */}
                 {!isCollapsed && (
-                  <div className="divide-y divide-[#201f35] overflow-x-auto">
+                  <div className="divide-y divide-slate-200 dark:divide-[#201f35] overflow-x-auto">
                     {folder.mailboxes.map((row: any) => {
                       const isSelected = selectedMailboxIds.includes(row.id);
                       const isHealthGood = row.healthScore >= 90;
@@ -540,8 +540,8 @@ export function EmailAccountsList() {
                           key={row.id}
                           className={`flex items-center justify-between px-4 py-3 text-xs transition select-none ${
                             isSelected
-                              ? "bg-indigo-950/20"
-                              : "hover:bg-[#18172e]"
+                              ? "bg-indigo-50/70 dark:bg-indigo-950/20"
+                              : "hover:bg-slate-50 dark:hover:bg-[#18172e]"
                           }`}
                         >
                           {/* Left: Checkbox + Mailbox Address + Sender Name + Status */}
@@ -550,29 +550,29 @@ export function EmailAccountsList() {
                               type="checkbox"
                               checked={isSelected}
                               onChange={() => toggleSelectRow(row.id)}
-                              className="rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-0"
+                              className="rounded border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-indigo-600 focus:ring-0"
                             />
 
-                            <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 shrink-0">
+                            <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 shrink-0">
                               <HiOutlineEnvelope className="w-4 h-4" />
                             </div>
 
                             <div>
-                              <div className="font-semibold text-white flex items-center gap-2">
+                              <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
                                 <span>{row.email}</span>
-                                <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 uppercase font-mono">
+                                <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-transparent uppercase font-mono">
                                   {row.provider}
                                 </span>
                               </div>
-                              <div className="text-[11px] text-slate-400">{row.senderName}</div>
+                              <div className="text-[11px] text-slate-500 dark:text-slate-400">{row.senderName}</div>
                             </div>
 
                             {/* Status Pill */}
                             <span
                               className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
                                 row.status === "Active"
-                                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                                  : "bg-slate-700 text-slate-400"
+                                  ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30"
+                                  : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
                               }`}
                             >
                               {row.status}
@@ -583,7 +583,7 @@ export function EmailAccountsList() {
                           <div className="flex items-center gap-6">
                             {/* Paper-plane: Campaign Emails Sent Today / Limit */}
                             <div
-                              className="flex items-center gap-1.5 text-slate-300 min-w-[70px]"
+                              className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 min-w-[70px]"
                               title={`Campaign emails sent today: ${row.campaignSends.sent} / Daily limit: ${row.campaignSends.limit}`}
                             >
                               <HiOutlinePaperAirplane className="w-3.5 h-3.5 text-slate-400" />
@@ -594,12 +594,12 @@ export function EmailAccountsList() {
 
                             {/* Thermometer: Warmup Emails Sent Today / Target */}
                             <div
-                              className="flex items-center gap-1.5 text-slate-300 min-w-[70px]"
+                              className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 min-w-[70px]"
                               title={`Warmup emails sent today: ${row.warmupSends.sent} / Ramp target: ${row.warmupSends.target}`}
                             >
                               <HiOutlineFire
                                 className={`w-3.5 h-3.5 ${
-                                  row.warmupEnabled ? "text-amber-400" : "text-slate-500"
+                                  row.warmupEnabled ? "text-amber-500 dark:text-amber-400" : "text-slate-400 dark:text-slate-500"
                                 }`}
                               />
                               <span className="font-mono">
@@ -615,19 +615,19 @@ export function EmailAccountsList() {
                               <HiOutlineHeart
                                 className={`w-3.5 h-3.5 ${
                                   isHealthGood
-                                    ? "text-emerald-400"
+                                    ? "text-emerald-500 dark:text-emerald-400"
                                     : isHealthWatch
-                                    ? "text-amber-400"
-                                    : "text-rose-400"
+                                    ? "text-amber-500 dark:text-amber-400"
+                                    : "text-rose-500 dark:text-rose-400"
                                 }`}
                               />
                               <span
                                 className={`font-mono font-bold ${
                                   isHealthGood
-                                    ? "text-emerald-400"
+                                    ? "text-emerald-600 dark:text-emerald-400"
                                     : isHealthWatch
-                                    ? "text-amber-400"
-                                    : "text-rose-400"
+                                    ? "text-amber-600 dark:text-amber-400"
+                                    : "text-rose-600 dark:text-rose-400"
                                 }`}
                               >
                                 {row.healthScore}%
@@ -636,7 +636,7 @@ export function EmailAccountsList() {
 
                             {/* Reply Arrow: Reply rate % */}
                             <div
-                              className="flex items-center gap-1 text-slate-300 min-w-[55px]"
+                              className="flex items-center gap-1 text-slate-600 dark:text-slate-300 min-w-[55px]"
                               title="Campaign reply rate"
                             >
                               <HiOutlineArrowUturnLeft className="w-3.5 h-3.5 text-slate-400" />
@@ -650,12 +650,12 @@ export function EmailAccountsList() {
                             >
                               <HiOutlineArrowTrendingDown
                                 className={`w-3.5 h-3.5 ${
-                                  row.bounceRate > 2 ? "text-amber-400" : "text-slate-400"
+                                  row.bounceRate > 2 ? "text-amber-500 dark:text-amber-400" : "text-slate-400"
                                 }`}
                               />
                               <span
                                 className={`font-mono ${
-                                  row.bounceRate > 2 ? "text-amber-400 font-bold" : "text-slate-300"
+                                  row.bounceRate > 2 ? "text-amber-600 dark:text-amber-400 font-bold" : "text-slate-600 dark:text-slate-300"
                                 }`}
                               >
                                 {row.bounceRate}%
@@ -664,7 +664,7 @@ export function EmailAccountsList() {
 
                             {/* Megaphone: Campaigns Attached */}
                             <div
-                              className="flex items-center gap-1 text-slate-300 min-w-[40px]"
+                              className="flex items-center gap-1 text-slate-600 dark:text-slate-300 min-w-[40px]"
                               title={`Attached to ${row.attachedCampaigns} active campaign(s)`}
                             >
                               <HiOutlineMegaphone className="w-3.5 h-3.5 text-slate-400" />
@@ -680,8 +680,8 @@ export function EmailAccountsList() {
                               <span
                                 className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono ${
                                   dns.spfStatus === "pass"
-                                    ? "bg-emerald-500/20 text-emerald-400"
-                                    : "bg-rose-500/20 text-rose-400"
+                                    ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-transparent"
+                                    : "bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-transparent"
                                 }`}
                               >
                                 SPF
@@ -689,8 +689,8 @@ export function EmailAccountsList() {
                               <span
                                 className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono ${
                                   dns.dkimStatus === "pass"
-                                    ? "bg-emerald-500/20 text-emerald-400"
-                                    : "bg-rose-500/20 text-rose-400"
+                                    ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-transparent"
+                                    : "bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-transparent"
                                 }`}
                               >
                                 DKIM
@@ -698,8 +698,10 @@ export function EmailAccountsList() {
                               <span
                                 className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono ${
                                   dns.dmarcStatus === "pass"
-                                    ? "bg-emerald-500/20 text-emerald-400"
-                                    : "bg-amber-500/20 text-amber-400"
+                                    ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-transparent"
+                                    : dns.dmarcStatus === "warn"
+                                    ? "bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-transparent"
+                                    : "bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-transparent"
                                 }`}
                               >
                                 DMARC
@@ -707,8 +709,8 @@ export function EmailAccountsList() {
                               <span
                                 className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono ${
                                   dns.mxStatus === "pass"
-                                    ? "bg-emerald-500/20 text-emerald-400"
-                                    : "bg-rose-500/20 text-rose-400"
+                                    ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-transparent"
+                                    : "bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-transparent"
                                 }`}
                               >
                                 MX
@@ -722,7 +724,7 @@ export function EmailAccountsList() {
                             <button
                               onClick={() => refreshDomainDns(row.domain)}
                               disabled={dnsRefreshingDomain === row.domain}
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
                               title="Re-run DNS and connection checks"
                             >
                               <HiOutlineArrowPath
@@ -737,8 +739,8 @@ export function EmailAccountsList() {
                               onClick={() => setWarmupSettingsMailbox(row)}
                               className={`p-1.5 rounded-lg transition ${
                                 row.warmupEnabled
-                                  ? "text-amber-400 hover:bg-amber-500/10"
-                                  : "text-slate-500 hover:text-white hover:bg-slate-800"
+                                  ? "text-amber-500 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10"
+                                  : "text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
                               }`}
                               title={
                                 row.warmupEnabled
@@ -752,7 +754,7 @@ export function EmailAccountsList() {
                             {/* Analytics Chart Drawer */}
                             <button
                               onClick={() => setAnalyticsMailbox(row.email)}
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-slate-800 transition"
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
                               title="Open deliverability analytics chart"
                             >
                               <HiOutlineChartBar className="w-4 h-4" />
@@ -763,22 +765,22 @@ export function EmailAccountsList() {
                               onClick={() =>
                                 setActiveMenuId(activeMenuId === row.id ? null : row.id)
                               }
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
                             >
                               <HiOutlineEllipsisHorizontal className="w-4 h-4" />
                             </button>
 
                             {/* Dropdown Menu */}
                             {activeMenuId === row.id && (
-                              <div className="absolute right-0 top-8 z-30 w-48 rounded-xl bg-[#1b1a32] border border-[#2b2a45] shadow-2xl p-1 text-xs text-slate-200 animate-in fade-in duration-100">
+                              <div className="absolute right-0 top-8 z-30 w-48 rounded-xl bg-white dark:bg-[#1b1a32] border border-slate-200 dark:border-[#2b2a45] shadow-2xl p-1 text-xs text-slate-800 dark:text-slate-200 animate-in fade-in duration-100">
                                 <button
                                   onClick={() => {
                                     setWarmupSettingsMailbox(row);
                                     setActiveMenuId(null);
                                   }}
-                                  className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-slate-800 flex items-center gap-2"
+                                  className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
                                 >
-                                  <HiOutlineFire className="w-3.5 h-3.5 text-amber-400" />
+                                  <HiOutlineFire className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
                                   Warmup Settings
                                 </button>
                                 <button
@@ -786,16 +788,16 @@ export function EmailAccountsList() {
                                     toggleRowWarmup(row);
                                     setActiveMenuId(null);
                                   }}
-                                  className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-slate-800 flex items-center gap-2"
+                                  className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
                                 >
                                   {row.warmupEnabled ? (
                                     <>
-                                      <HiOutlinePause className="w-3.5 h-3.5 text-slate-400" />
+                                      <HiOutlinePause className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                                       Pause Warmup
                                     </>
                                   ) : (
                                     <>
-                                      <HiOutlinePlay className="w-3.5 h-3.5 text-emerald-400" />
+                                      <HiOutlinePlay className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                       Resume Warmup
                                     </>
                                   )}
@@ -805,9 +807,9 @@ export function EmailAccountsList() {
                                     setAnalyticsMailbox(row.email);
                                     setActiveMenuId(null);
                                   }}
-                                  className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-slate-800 flex items-center gap-2"
+                                  className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
                                 >
-                                  <HiOutlineChartBar className="w-3.5 h-3.5 text-indigo-400" />
+                                  <HiOutlineChartBar className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                                   View Trend Charts
                                 </button>
                                 <button
@@ -815,9 +817,9 @@ export function EmailAccountsList() {
                                     setFixDrawerDomain(row.domain);
                                     setActiveMenuId(null);
                                   }}
-                                  className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-slate-800 flex items-center gap-2"
+                                  className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
                                 >
-                                  <HiOutlineShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                                  <HiOutlineShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                   DNS Fix Drawer
                                 </button>
                               </div>
