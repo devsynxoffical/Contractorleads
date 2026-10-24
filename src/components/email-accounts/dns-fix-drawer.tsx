@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   HiOutlineXMark,
   HiOutlineCheck,
@@ -26,10 +27,24 @@ export function DnsFixDrawer({
   dnsData,
   onRefreshDns,
 }: DnsFixDrawerProps) {
+  const [mounted, setMounted] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = "";
+      };
+    }
+  }, [isOpen]);
+
+  if (!isOpen || !mounted) return null;
 
   function copyToClipboard(text: string, key: string) {
     navigator.clipboard.writeText(text);
@@ -109,7 +124,7 @@ export function DnsFixDrawer({
     },
   ];
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200">
       <div className="relative w-full max-w-xl bg-[#141326] border-l border-[#26253c] p-6 shadow-2xl flex flex-col h-full overflow-y-auto text-slate-100">
         {/* Header */}
@@ -265,6 +280,7 @@ export function DnsFixDrawer({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

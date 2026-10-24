@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   HiOutlineXMark,
   HiOutlineFire,
@@ -20,6 +21,7 @@ export function WarmupSettingsModal({
   mailbox,
   onSettingsSaved,
 }: WarmupSettingsModalProps) {
+  const [mounted, setMounted] = useState(false);
   const [enabled, setEnabled] = useState(mailbox?.warmupEnabled ?? true);
   const [startVolume, setStartVolume] = useState(3);
   const [increment, setIncrement] = useState(2);
@@ -28,7 +30,20 @@ export function WarmupSettingsModal({
   const [weekdaysOnly, setWeekdaysOnly] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  if (!isOpen || !mailbox) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = "";
+      };
+    }
+  }, [isOpen]);
+
+  if (!isOpen || !mailbox || !mounted) return null;
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -53,7 +68,7 @@ export function WarmupSettingsModal({
     }
   }
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-in fade-in duration-200">
       <div className="relative w-full max-w-md bg-[#141326] border border-[#26253c] rounded-2xl p-6 shadow-2xl flex flex-col text-slate-100">
         <div className="flex items-center justify-between pb-4 border-b border-[#26253c]">
@@ -178,6 +193,7 @@ export function WarmupSettingsModal({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

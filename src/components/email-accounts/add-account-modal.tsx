@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   HiOutlineXMark,
   HiOutlineEnvelope,
@@ -21,10 +22,24 @@ export function AddAccountModal({
   onClose,
   onAccountAdded,
 }: AddAccountModalProps) {
+  const [mounted, setMounted] = useState(false);
   const [tab, setTab] = useState<"smtp" | "google" | "microsoft" | "csv">("smtp");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = "";
+      };
+    }
+  }, [isOpen]);
 
   // Form state
   const [email, setEmail] = useState("");
@@ -38,7 +53,7 @@ export function AddAccountModal({
   // CSV State
   const [csvContent, setCsvContent] = useState("");
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   async function handleSingleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -135,7 +150,7 @@ export function AddAccountModal({
     }
   }
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-in fade-in duration-200">
       <div className="relative w-full max-w-lg bg-[#141326] border border-[#26253c] rounded-2xl p-6 shadow-2xl flex flex-col text-slate-100 max-h-[90vh] overflow-y-auto">
         {/* Header */}
@@ -374,6 +389,7 @@ export function AddAccountModal({
           </form>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

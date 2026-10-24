@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   HiOutlineXMark,
   HiOutlineChartBar,
@@ -21,9 +22,23 @@ export function AnalyticsDrawer({
   onClose,
   mailboxEmail,
 }: AnalyticsDrawerProps) {
+  const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<any>(null);
   const [days, setDays] = useState<number>(7);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = "";
+      };
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen || !mailboxEmail) return;
@@ -39,12 +54,12 @@ export function AnalyticsDrawer({
       .finally(() => setLoading(false));
   }, [isOpen, mailboxEmail, days]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   const chartData = stats?.chartData || [];
   const healthReport = stats?.healthReport || { healthScore: 98.3, status: "healthy" };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200">
       <div className="relative w-full max-w-xl bg-[#141326] border-l border-[#26253c] p-6 shadow-2xl flex flex-col h-full overflow-y-auto text-slate-100">
         {/* Header */}
@@ -230,6 +245,7 @@ export function AnalyticsDrawer({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
