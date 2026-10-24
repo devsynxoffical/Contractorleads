@@ -95,6 +95,12 @@ function buildSections(user: SessionUser): NavSection[] {
       title: "AI Assistant",
       items: [
         {
+          href: "/email-accounts",
+          label: "Email Accounts & Warmup",
+          icon: HiOutlineEnvelope,
+          badge: true,
+        },
+        {
           href: "/campaigns",
           label: "Outreach Campaigns",
           icon: HiOutlinePaperAirplane,
