@@ -189,6 +189,7 @@ export function MarketingFluidHero() {
           <a href="/features">Features</a>
           <a href="/pricing">Pricing</a>
           <a href="/industries">Industries</a>
+          <a href="/affiliates">Affiliates</a>
           <a href="/blog">Blog</a>
           <a href="/#faq">FAQ</a>
         </nav>

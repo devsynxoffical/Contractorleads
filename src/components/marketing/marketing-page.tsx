@@ -25,6 +25,8 @@ import {
   HiOutlinePuzzlePiece,
   HiOutlineEyeSlash,
   HiOutlineDocumentMagnifyingGlass,
+  HiOutlineBanknotes,
+  HiOutlineCurrencyDollar,
 } from "react-icons/hi2";
 import { FaLinkedinIn, FaSlack } from "react-icons/fa6";
 import {
@@ -775,6 +777,157 @@ function Pricing({ plans }: { plans: MarketingPlanCard[] }) {
   );
 }
 
+function AffiliateSection() {
+  return (
+    <section
+      id="affiliates"
+      className="relative overflow-hidden border-y border-violet-100/80 bg-[#faf8fb] py-24 sm:py-28"
+    >
+      <SoftBlob color="violet" className="left-0 top-1/2 -translate-y-1/2 h-72 w-72 opacity-50" />
+      <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8">
+        <div className="grid gap-12 lg:grid-cols-12 lg:items-center">
+          <div className="lg:col-span-6">
+            <Reveal>
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-fuchsia-200 bg-fuchsia-50/80 px-3.5 py-1 text-xs font-semibold text-fuchsia-700">
+                <HiOutlineSparkles className="h-3.5 w-3.5" />
+                <span>Partner &amp; Affiliate Program</span>
+              </div>
+              <h2 className="mt-4 font-[family-name:var(--font-display)] text-[clamp(1.85rem,4vw,2.75rem)] font-semibold tracking-tight text-slate-900">
+                Earn 30% recurring cash commission for life
+              </h2>
+              <p className="mt-4 text-[15px] leading-relaxed text-slate-500">
+                Recommend Contractor Leads to marketing agencies, coaching groups, or contractors. Earn a direct 30% cash commission on every deal and continuous monthly renewal.
+              </p>
+
+              <div className="mt-6 space-y-3">
+                <div className="flex items-start gap-3 rounded-2xl border border-violet-100 bg-white p-3.5 transition hover:border-fuchsia-200">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+                    <HiOutlineCurrencyDollar className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-900">
+                      30% Lifetime Recurring Rate
+                    </h3>
+                    <p className="text-xs leading-relaxed text-slate-500">
+                      Earn on initial signups and every monthly subscription renewal for the active lifetime of the customer.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 rounded-2xl border border-violet-100 bg-white p-3.5 transition hover:border-fuchsia-200">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-purple-100 text-purple-700">
+                    <HiOutlineClock className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-900">
+                      30-Day Cookie Window
+                    </h3>
+                    <p className="text-xs leading-relaxed text-slate-500">
+                      Attribution cookies persist for 30 days. When prospects convert later, you get credited automatically.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3 rounded-2xl border border-violet-100 bg-white p-3.5 transition hover:border-fuchsia-200">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                    <HiOutlineBanknotes className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-900">
+                      $500 Minimum Payout Threshold
+                    </h3>
+                    <p className="text-xs leading-relaxed text-slate-500">
+                      Request electronic cash payouts to PayPal, Direct Bank Wire / ACH, or Wise once you reach $500.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 flex flex-wrap items-center gap-3">
+                <Link
+                  href="/register"
+                  className="inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-[14px] font-semibold text-white shadow-md shadow-fuchsia-500/20"
+                  style={{ background: LOGO_GRADIENT }}
+                >
+                  Join Affiliate Program Free
+                  <HiOutlineArrowRight className="h-4 w-4" />
+                </Link>
+                <Link
+                  href="/affiliates"
+                  className="inline-flex items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-[14px] font-semibold text-slate-700 transition hover:border-fuchsia-300 hover:text-fuchsia-700"
+                >
+                  View Calculator &amp; Terms →
+                </Link>
+              </div>
+            </Reveal>
+          </div>
+
+          <div className="lg:col-span-6">
+            <Reveal delay={0.1}>
+              <div className="rounded-3xl border border-violet-100 bg-gradient-to-br from-fuchsia-50/50 via-purple-50/30 to-white p-6 shadow-xl sm:p-8">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                  <div>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                      Estimated Earnings Preview
+                    </span>
+                    <p className="font-[family-name:var(--font-display)] text-lg font-bold text-slate-900">
+                      30 Customers on Growth Plan ($49/mo)
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">
+                    30% Commission
+                  </span>
+                </div>
+
+                <div className="mt-6 grid grid-cols-2 gap-4 text-center">
+                  <div className="rounded-2xl border border-violet-100 bg-white p-4 shadow-sm">
+                    <p className="text-[12px] font-medium text-slate-500">
+                      Monthly Recurring Passive Income
+                    </p>
+                    <p className="mt-1 font-[family-name:var(--font-display)] text-2xl font-extrabold text-slate-900 sm:text-3xl">
+                      $441.00
+                      <span className="text-xs font-normal text-slate-400">/mo</span>
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-fuchsia-200 bg-fuchsia-50/60 p-4 shadow-sm">
+                    <p className="text-[12px] font-medium text-fuchsia-800">
+                      Annual Passive Earnings
+                    </p>
+                    <p className="mt-1 font-[family-name:var(--font-display)] text-2xl font-extrabold text-fuchsia-700 sm:text-3xl">
+                      $5,292.00
+                      <span className="text-xs font-normal text-fuchsia-600">/yr</span>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-6 rounded-2xl border border-slate-100 bg-white p-4">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-slate-800">Unique Referral Link Included:</span>
+                    <span className="font-mono text-fuchsia-600 font-bold">contractorleads.us/ref/you</span>
+                  </div>
+                  <p className="mt-2 text-[12px] text-slate-500">
+                    Full partner dashboard included: track clicks, sign-ups, deal conversions, lifetime sales, and payout requests in real time.
+                  </p>
+                </div>
+
+                <div className="mt-6">
+                  <Link
+                    href="/affiliates"
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-900 py-3.5 text-center text-[13px] font-semibold text-white transition hover:bg-fuchsia-700"
+                  >
+                    Open Interactive Earnings Calculator
+                    <HiOutlineArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function Faq() {
   const [open, setOpen] = useState<number | null>(0);
   const [query, setQuery] = useState("");
@@ -938,6 +1091,7 @@ export function MarketingPage({
       <Integrations />
       <AiSection />
       <Pricing plans={plans} />
+      <AffiliateSection />
       <Faq />
       <FinalCta />
       <MarketingEmailOptIn />
