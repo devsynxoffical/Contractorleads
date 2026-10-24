@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -35,9 +35,12 @@ import {
   HiOutlineDocumentText,
   HiOutlineDocumentArrowUp,
   HiOutlineTableCells,
+  HiOutlineHeart,
+  HiOutlineBolt,
 } from "react-icons/hi2";
 import { cn } from "@/lib/utils";
 import { SpreadsheetImporter } from "@/components/campaigns/spreadsheet-importer";
+import { SpintaxStepEditor } from "@/components/campaigns/spintax-step-editor";
 import type { ParsedLead } from "@/lib/spreadsheet-parser";
 import {
   DEFAULT_DAY0_HOOKS,
@@ -62,6 +65,13 @@ type MailboxItem = {
   enabled: boolean;
   sendsToday: number;
   bouncedToday: number;
+  dailyLimit?: number;
+  warmupEnabled?: boolean;
+  warmupTarget?: number;
+  healthScore?: number;
+  replyRate?: number;
+  bounceRate?: number;
+  tags?: string[];
 };
 
 type LeadSegmentItem = {
@@ -139,14 +149,35 @@ export function CampaignWizard({
   const [scheduleType, setScheduleType] = useState<"launch_now" | "schedule" | "draft">("launch_now");
   const [scheduledStartDate, setScheduledStartDate] = useState<string>("");
 
-  // Composer View Modes ("edit" | "preview")
-  const [hookViewMode, setHookViewMode] = useState<Record<string, "edit" | "preview">>({
-    A: "edit",
-    B: "edit",
-    C: "edit",
-    D: "edit",
+  // Composer View Modes ("edit" | "spintax" | "preview")
+  const [hookViewMode, setHookViewMode] = useState<Record<string, "edit" | "spintax" | "preview">>({
+    A: "spintax",
+    B: "spintax",
+    C: "spintax",
+    D: "spintax",
   });
-  const [stepViewMode, setStepViewMode] = useState<Record<number, "edit" | "preview">>({});
+  const [stepViewMode, setStepViewMode] = useState<Record<number, "edit" | "spintax" | "preview">>({
+    1: "spintax",
+    2: "spintax",
+    3: "spintax",
+  });
+
+  // Sample leads for Spintax live preview
+  const spintaxSampleLeads = useMemo(() => {
+    if (importedLeads.length > 0) {
+      return importedLeads.slice(0, 5).map((l, idx) => ({
+        id: `lead-${idx + 1}`,
+        email: l.email || "lead@example.com",
+        firstName: l.ownerName ? l.ownerName.split(" ")[0] : "Friend",
+        ownerName: l.ownerName || l.businessName || "Contractor",
+        businessName: l.businessName || "Local Services Co",
+        city: l.city || "Dallas",
+        state: l.state || "TX",
+        industry: "Contractor",
+      }));
+    }
+    return undefined;
+  }, [importedLeads]);
 
   // Test send state
   const [testEmail, setTestEmail] = useState<string>("");
@@ -1013,9 +1044,23 @@ export function CampaignWizard({
                     />
                   </div>
 
-                  <div className="flex items-center gap-4">
-                    {/* Compose vs Preview Tabs */}
+                  <div className="flex items-center gap-3">
+                    {/* Compose vs Spintax vs Preview Tabs */}
                     <div className="flex items-center rounded-xl border border-border bg-[var(--input-bg)] p-0.5 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setHookViewMode((prev) => ({ ...prev, [h.id]: "spintax" }))}
+                        className={cn(
+                          "flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-bold transition",
+                          currentMode === "spintax"
+                            ? "bg-brand-600 text-white shadow-xs"
+                            : "text-ink-muted hover:text-ink"
+                        )}
+                      >
+                        <HiOutlineBolt className="h-3.5 w-3.5" />
+                        <span>Spintax Studio</span>
+                        <span className="rounded bg-white/20 px-1 py-0.2 text-[9px] uppercase tracking-wide">PlusVibe</span>
+                      </button>
                       <button
                         type="button"
                         onClick={() => setHookViewMode((prev) => ({ ...prev, [h.id]: "edit" }))}
@@ -1026,7 +1071,7 @@ export function CampaignWizard({
                             : "text-ink-muted hover:text-ink"
                         )}
                       >
-                        ✍️ Compose Box
+                        ✍️ Standard Box
                       </button>
                       <button
                         type="button"
@@ -1058,7 +1103,24 @@ export function CampaignWizard({
                   </div>
                 </div>
 
-                {/* Subject Line Input */}
+                {currentMode === "spintax" ? (
+                  <div className="pt-1">
+                    <SpintaxStepEditor
+                      stepLabel={`Hook ${h.id} (${h.label || "Angle"})`}
+                      subject={h.subject}
+                      body={h.body}
+                      sampleLeads={spintaxSampleLeads}
+                      onChange={({ subject, body }) => {
+                        const next = [...hooks];
+                        next[idx].subject = subject;
+                        next[idx].body = body;
+                        setHooks(next);
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <>
+                    {/* Subject Line Input */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label className="block text-xs font-bold text-ink">Email Subject Line</label>
@@ -1468,6 +1530,8 @@ export function CampaignWizard({
                     </div>
                   </div>
                 )}
+                  </>
+                )}
               </div>
             );
           })}
@@ -1598,8 +1662,22 @@ export function CampaignWizard({
                       <span>days</span>
                     </div>
 
-                    {/* Compose vs Preview Tabs */}
+                    {/* Compose vs Spintax vs Preview Tabs */}
                     <div className="flex items-center rounded-xl border border-border bg-[var(--input-bg)] p-0.5 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setStepViewMode((prev) => ({ ...prev, [idx + 1]: "spintax" }))}
+                        className={cn(
+                          "flex items-center gap-1.5 rounded-lg px-2.5 py-1 font-bold transition",
+                          currentMode === "spintax"
+                            ? "bg-brand-600 text-white shadow-xs"
+                            : "text-ink-muted hover:text-ink"
+                        )}
+                      >
+                        <HiOutlineBolt className="h-3.5 w-3.5" />
+                        <span>Spintax Studio</span>
+                        <span className="rounded bg-white/20 px-1 py-0.2 text-[9px] uppercase tracking-wide">PlusVibe</span>
+                      </button>
                       <button
                         type="button"
                         onClick={() => setStepViewMode((prev) => ({ ...prev, [idx + 1]: "edit" }))}
@@ -1610,7 +1688,7 @@ export function CampaignWizard({
                             : "text-ink-muted hover:text-ink"
                         )}
                       >
-                        ✍️ Edit
+                        ✍️ Standard Box
                       </button>
                       <button
                         type="button"
@@ -1653,6 +1731,23 @@ export function CampaignWizard({
                   </div>
                 </div>
 
+                {currentMode === "spintax" ? (
+                  <div className="pt-1">
+                    <SpintaxStepEditor
+                      stepLabel={`Follow-Up ${idx + 1} (${s.label || `Day +${s.dayDelay}`})`}
+                      subject={s.subject}
+                      body={s.body}
+                      sampleLeads={spintaxSampleLeads}
+                      onChange={({ subject, body }) => {
+                        const next = [...sequenceSteps];
+                        next[idx].subject = subject;
+                        next[idx].body = body;
+                        setSequenceSteps(next);
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <>
                 <div>
                   <label className="block text-xs font-bold text-ink mb-1">Subject Line</label>
                   <input
@@ -2046,6 +2141,8 @@ export function CampaignWizard({
                     </div>
                   </div>
                 )}
+                  </>
+                )}
               </div>
             );
           })}
@@ -2311,6 +2408,34 @@ export function CampaignWizard({
             )}
           </div>
 
+          {/* Email Accounts & Mailbox Warmup Bridge Banner */}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-brand-500/30 bg-brand-50/40 dark:bg-brand-950/20 p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-600 text-white shadow-xs">
+                <HiOutlineHeart className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-ink">PlusVibe Mailbox Warmup & Health Monitoring</span>
+                  <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-500">
+                    Active & Authenticated
+                  </span>
+                </div>
+                <p className="text-[11px] text-ink-muted mt-0.5">
+                  SPF, DKIM, DMARC, MX checks & rolling 7-day health scores protect sender reputation before sending.
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/email-accounts"
+              target="_blank"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-[var(--surface)] px-3.5 py-1.5 text-xs font-semibold text-brand-600 hover:bg-[var(--input-bg)] shadow-xs transition"
+            >
+              <span>Manage Mailboxes & Warmup</span>
+              <HiOutlineArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+
           {/* Folder for Domains & Connected Mailboxes */}
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -2444,10 +2569,20 @@ export function CampaignWizard({
                                 />
                                 <div className="min-w-0 flex-1">
                                   <div className="font-semibold text-ink truncate">{mb.label}</div>
-                                  <div className="text-[11px] text-ink-muted truncate">{mb.email}</div>
-                                  <div className="mt-1 flex items-center gap-1.5 text-[10px] text-ink-muted">
-                                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                                    <span>Sent today: {mb.sendsToday}</span>
+                                  <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[10px] text-ink-muted">
+                                    <span className="flex items-center gap-1">
+                                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                      <span>Sent: {mb.sendsToday}</span>
+                                    </span>
+                                    <span className="flex items-center gap-0.5 font-semibold text-emerald-600 dark:text-emerald-400">
+                                      <HiOutlineHeart className="h-3 w-3" />
+                                      {mb.healthScore ? `${mb.healthScore.toFixed(0)}%` : "98%"}
+                                    </span>
+                                    {mb.warmupEnabled !== false && (
+                                      <span className="rounded bg-amber-500/15 px-1 py-0.2 text-[9px] font-semibold text-amber-500">
+                                        🔥 Warmup
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
                               </div>

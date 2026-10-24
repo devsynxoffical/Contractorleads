@@ -869,6 +869,15 @@ model SystemSmtpAccount {
   assignedUserId String?
   assignedUser   User?       @relation("AssignedSystemMailboxes", fields: [assignedUserId], references: [id], onDelete: SetNull)
   lastTestedAt   DateTime?
+  dailyLimit     Int         @default(30)
+  warmupEnabled  Boolean     @default(true)
+  warmupTarget   Int         @default(25)
+  warmupSentToday Int        @default(0)
+  campaignSentToday Int      @default(0)
+  healthScore    Float       @default(98.0)
+  replyRate      Float       @default(3.2)
+  bounceRate     Float       @default(1.2)
+  tags           String      @default("")
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
   emails         LeadEmail[]
@@ -1181,6 +1190,9 @@ model CampaignLog {
   error         String?
   trackingToken String?          @unique
   messageId     String?
+  variantLabel  String?          // "1A", "1B", "Hook A", etc.
+  spinChoicesJson String?        // JSON array e.g. "[2,0,1,1,0,1]"
+  renderedHash  String?          // sha256 hash of subject+body
   openedAt      DateTime?
   clickedAt     DateTime?
   repliedAt     DateTime?
@@ -1192,5 +1204,108 @@ model CampaignLog {
   @@index([mailboxId])
   @@index([toEmail])
   @@index([sentAt])
+  @@index([renderedHash])
 }
+
+/// Cached DNS authentication status for sending domains (shared by all mailboxes on that domain)
+model DomainDnsCache {
+  id            String   @id @default(cuid())
+  domain        String   @unique
+  provider      String   @default("custom")
+  overallStatus String   @default("pass") // pass | warn | fail
+  spfStatus     String   @default("pass")
+  spfRecord     String?
+  dkimStatus    String   @default("pass")
+  dkimSelector  String?
+  dkimRecord    String?
+  dmarcStatus   String   @default("pass")
+  dmarcRecord   String?
+  mxStatus      String   @default("pass")
+  mxRecords     String?
+  lastCheckedAt DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([domain])
+  @@index([overallStatus])
+}
+
+/// Mailbox warmup configuration and ramp-up pacing
+model WarmupSettings {
+  id              String    @id @default(cuid())
+  mailboxEmail    String    @unique
+  enabled         Boolean   @default(true)
+  startVolume     Int       @default(3)
+  dailyIncrement  Int       @default(2)
+  maxDailyWarmup  Int       @default(25)
+  replyRate       Float     @default(0.35)
+  weekdaysOnly    Boolean   @default(true)
+  healthScore     Float     @default(98.0)
+  startedAt       DateTime  @default(now())
+  lastCycleAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([mailboxEmail])
+  @@index([enabled])
+}
+
+/// Log of warmup emails sent and rescued from spam to build mailbox reputation
+model WarmupMessage {
+  id           String    @id @default(cuid())
+  fromEmail    String
+  toEmail      String
+  messageId    String?
+  warmupMarker String
+  landed       String    @default("inbox") // inbox | spam | promotions
+  rescued      Boolean   @default(false)
+  replied      Boolean   @default(false)
+  repliedAt    DateTime?
+  sentAt       DateTime  @default(now())
+
+  @@index([fromEmail, sentAt])
+  @@index([toEmail, sentAt])
+  @@index([warmupMarker])
+}
+
+/// Daily historical roll-up for mailbox deliverability charts & PlusVibe statistics
+model MailboxDailyStat {
+  id             String   @id @default(cuid())
+  mailboxEmail   String
+  date           String   // YYYY-MM-DD
+  warmupSent     Int      @default(0)
+  warmupTarget   Int      @default(25)
+  warmupReceived Int      @default(0)
+  inboxCount     Int      @default(0)
+  spamCount      Int      @default(0)
+  campaignSent   Int      @default(0)
+  campaignLimit  Int      @default(30)
+  bounces        Int      @default(0)
+  replies        Int      @default(0)
+  healthScore    Float    @default(98.0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([mailboxEmail, date])
+  @@index([mailboxEmail, date])
+}
+
+/// Step variant (1A, 1B, 1C, 1D) with spintax and traffic split
+model StepVariant {
+  id                String   @id @default(cuid())
+  campaignId        String
+  stepIndex         Int      // 0 for Day 0, 1 for FU1, etc.
+  label             String   // "1A", "1B", "Hook A", etc.
+  subjectTemplate   String
+  preheaderTemplate String?
+  bodyTemplate      String
+  splitPercent      Int      @default(50)
+  spinMode          String   @default("random") // random | even | weighted
+  uniqueVersions    Int      @default(1)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([campaignId, stepIndex])
+}
+
 

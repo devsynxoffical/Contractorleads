@@ -60,6 +60,7 @@ const sections: NavSection[] = [
   {
     title: "AI & Outreach Tools",
     items: [
+      { href: "/email-accounts", label: "Email Accounts & Warmup", icon: HiOutlineEnvelope, badge: true },
       { href: "/campaigns", label: "Outreach Campaigns", icon: HiOutlinePaperAirplane, badge: true },
       { href: "/email-verifier", label: "Email Verifier", icon: HiOutlineShieldCheck },
       { href: "/inbox", label: "Email & Sequences", icon: HiOutlineBookOpen },

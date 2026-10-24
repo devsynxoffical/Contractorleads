@@ -188,6 +188,13 @@ export async function getCampaignMailboxStats(userId: string) {
       sendWeight: s.sendWeight,
       sendsToday: sendsTodayMap.get(s.id)?.sent || 0,
       bouncedToday: sendsTodayMap.get(s.id)?.bounced || 0,
+      dailyLimit: s.dailyLimit || 30,
+      warmupEnabled: s.warmupEnabled ?? true,
+      warmupTarget: s.warmupTarget || 25,
+      healthScore: s.healthScore ?? 98.3,
+      replyRate: s.replyRate ?? 12.5,
+      bounceRate: s.bounceRate ?? 0.8,
+      tags: s.tags || [],
     })),
   ];
 

@@ -130,6 +130,15 @@ $GODADDY_MAILBOXES = [
 
 $ALL_MAILBOXES = array_merge($HOSTINGER_MAILBOXES, $GODADDY_MAILBOXES);
 
+// Load dynamic custom user mailboxes stored on Hostinger
+$CUSTOM_ACCOUNTS_FILE = __DIR__ . "/custom_accounts.json";
+$CUSTOM_ACCOUNTS = file_exists($CUSTOM_ACCOUNTS_FILE) ? (json_decode(file_get_contents($CUSTOM_ACCOUNTS_FILE), true) ?? []) : [];
+foreach ($CUSTOM_ACCOUNTS as $cEmail => $cData) {
+    if (!empty($cData["password"])) {
+        $ALL_MAILBOXES[$cEmail] = $cData["password"];
+    }
+}
+
 // Browser health check endpoint
 if ($_SERVER["REQUEST_METHOD"] === "GET") {
     echo json_encode([
@@ -138,6 +147,7 @@ if ($_SERVER["REQUEST_METHOD"] === "GET") {
         "status" => "ONLINE",
         "hostinger_mailboxes" => count($HOSTINGER_MAILBOXES),
         "godaddy_mailboxes" => count($GODADDY_MAILBOXES),
+        "custom_mailboxes" => count($CUSTOM_ACCOUNTS),
         "total_mailboxes" => count($ALL_MAILBOXES),
         "timestamp" => date("c")
     ], JSON_PRETTY_PRINT);
@@ -160,6 +170,74 @@ $token = trim(str_replace("Bearer", "", $authHeader));
 if ($token !== $RELAY_SECRET && ($data["secret"] ?? "") !== $RELAY_SECRET) {
     http_response_code(401);
     echo json_encode(["ok" => false, "error" => "Unauthorized. Invalid relay token."]);
+    exit;
+}
+
+// ----------------------------------------------------------------------
+// Action: SAVE_ACCOUNT — stores user's mailbox on Hostinger mailer.php
+// ----------------------------------------------------------------------
+if (($data["action"] ?? "") === "save_account") {
+    $email = strtolower(trim($data["fromEmail"] ?? ""));
+    if (empty($email)) {
+        http_response_code(400);
+        echo json_encode(["ok" => false, "error" => "fromEmail is required"]);
+        exit;
+    }
+    $CUSTOM_ACCOUNTS[$email] = [
+        "email" => $email,
+        "fromName" => trim($data["fromName"] ?? ""),
+        "password" => trim($data["password"] ?? ""),
+        "host" => trim($data["host"] ?? ""),
+        "port" => intval($data["port"] ?? 465),
+        "provider" => trim($data["provider"] ?? "custom"),
+        "updatedAt" => date("c")
+    ];
+    @file_put_contents($CUSTOM_ACCOUNTS_FILE, json_encode($CUSTOM_ACCOUNTS, JSON_PRETTY_PRINT));
+    echo json_encode([
+        "ok" => true,
+        "message" => "Account successfully saved on Hostinger gateway",
+        "email" => $email,
+        "total_custom" => count($CUSTOM_ACCOUNTS)
+    ]);
+    exit;
+}
+
+// ----------------------------------------------------------------------
+// Action: TEST — tests SMTP connection directly from Hostinger
+// ----------------------------------------------------------------------
+if (($data["action"] ?? "") === "test") {
+    $fromEmail = strtolower(trim($data["fromEmail"] ?? ""));
+    $password = !empty($data["password"]) ? $data["password"] : ($ALL_MAILBOXES[$fromEmail] ?? ($CUSTOM_ACCOUNTS[$fromEmail]["password"] ?? ""));
+    $domain = explode("@", $fromEmail)[1] ?? "contractorleads.us";
+    $isGoDaddy = isset($GODADDY_MAILBOXES[$fromEmail]) || (strpos($domain, "frankmiller") !== false) || ($domain === "meetfrankmiller.com");
+    $host = !empty($data["host"]) ? trim($data["host"]) : (!empty($CUSTOM_ACCOUNTS[$fromEmail]["host"]) ? $CUSTOM_ACCOUNTS[$fromEmail]["host"] : ($isGoDaddy ? "smtpout.secureserver.net" : "smtp.hostinger.com"));
+    $port = intval($data["port"] ?? (!empty($CUSTOM_ACCOUNTS[$fromEmail]["port"]) ? $CUSTOM_ACCOUNTS[$fromEmail]["port"] : 465));
+
+    $socket = @fsockopen("ssl://" . $host, $port, $errno, $errstr, 12);
+    if (!$socket) {
+        http_response_code(500);
+        echo json_encode(["ok" => false, "error" => "SMTP socket connection failed to {$host}:{$port} ($errstr)"]);
+        exit;
+    }
+    stream_set_timeout($socket, 12);
+    getSmtpResponse($socket);
+    fputs($socket, "EHLO " . $domain . "\r\n");
+    getSmtpResponse($socket);
+    fputs($socket, "AUTH LOGIN\r\n");
+    getSmtpResponse($socket);
+    fputs($socket, base64_encode($fromEmail) . "\r\n");
+    getSmtpResponse($socket);
+    fputs($socket, base64_encode($password) . "\r\n");
+    $authRes = getSmtpResponse($socket);
+    fputs($socket, "QUIT\r\n");
+    fclose($socket);
+
+    if (substr($authRes, 0, 3) === "235") {
+        echo json_encode(["ok" => true, "message" => "SMTP connection & authentication verified via {$host}"]);
+    } else {
+        http_response_code(500);
+        echo json_encode(["ok" => false, "error" => "Auth failed for {$fromEmail} on {$host}: " . trim($authRes)]);
+    }
     exit;
 }
 
@@ -393,6 +471,14 @@ $headers[] = "MIME-Version: 1.0";
 // 2024 Google & Yahoo compliance headers (mandatory for inboxing)
 $headers[] = "List-Unsubscribe: <mailto:unsubscribe@" . $domain . "?subject=unsubscribe>";
 $headers[] = "List-Unsubscribe-Post: List-Unsubscribe=One-Click";
+
+// Custom headers (Warmup markers, In-Reply-To, References)
+if (!empty($data["headers"]) && is_array($data["headers"])) {
+    foreach ($data["headers"] as $hKey => $hVal) {
+        $headers[] = trim($hKey) . ": " . trim($hVal);
+    }
+}
+
 $headers[] = "Content-Type: multipart/alternative; boundary=\"" . $boundary . "\"";
 
 $bodyContent = implode("\r\n", $headers) . "\r\n\r\n";

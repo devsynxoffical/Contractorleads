@@ -19,6 +19,7 @@ import {
 import { sendOutboundEmail } from "@/lib/user-smtp";
 import { appBaseUrl } from "@/lib/email-brand";
 import { ensureSystemSmtpSeeded, seedHostingerMailboxes } from "@/lib/system-smtp";
+import { renderOutreachEmail } from "@/lib/spintax-engine";
 import { isGlobalSuperAdmin } from "@/lib/roles";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -349,24 +350,59 @@ export async function processCampaignSends(opts?: {
             stepUnsubText = followUpStep.unsubscribeText;
           }
 
-          // Render email content with personalizations
-          const renderedSubject = renderCampaignTemplate(
-            subject,
-            prospect,
-            senderName
-          );
-          const renderedBody = renderCampaignTemplate(
-            bodyTemplate,
-            prospect,
-            senderName,
+          // Deterministic spintax render seeded per lead (Doc 2 requirement)
+          const spintaxRender = renderOutreachEmail(
             {
+              subject,
+              body: bodyTemplate,
+            },
+            {
+              ...prospect,
+              businessName: prospect.businessName,
+              ownerName: prospect.ownerName,
+              city: prospect.city,
+              state: prospect.state,
+              country: prospect.country,
+              fromName: senderName,
               lastSubject: prospect.lastSubject || "",
+            },
+            {
+              campaignId: campaign.id,
+              stepId: `step-${stepIdx}`,
+              leadId: prospect.id || prospect.email,
+              mode: "random",
             }
           );
 
-          // Select mailbox
+          const renderedSubject = spintaxRender.subject;
+          const renderedBody = spintaxRender.body;
+
+          // Select mailbox with thread stickiness for follow-ups
           const assignedMailboxIdx = mailboxIndex++;
-          const mailbox = availableMailboxes[assignedMailboxIdx % availableMailboxes.length];
+          let mailbox = availableMailboxes[assignedMailboxIdx % availableMailboxes.length];
+
+          if (stepIdx > 0) {
+            // Thread stickiness: ensure follow-up comes from the exact same mailbox as Day 0
+            const priorLog = await prisma.campaignLog.findFirst({
+              where: {
+                campaignId: campaign.id,
+                prospectId: prospect.id,
+                status: "sent",
+              },
+              orderBy: { sentAt: "asc" },
+              select: { mailboxId: true, fromEmail: true },
+            });
+            if (priorLog) {
+              const stickyMatch = availableMailboxes.find(
+                (m) =>
+                  m.id === priorLog.mailboxId ||
+                  m.fromEmail.toLowerCase() === priorLog.fromEmail.toLowerCase()
+              );
+              if (stickyMatch) {
+                mailbox = stickyMatch;
+              }
+            }
+          }
 
           const trackingToken = randomBytes(24).toString("hex");
           const baseAppUrl = appBaseUrl();
@@ -406,13 +442,16 @@ export async function processCampaignSends(opts?: {
 
             const finalTrackingToken = sentResult.trackingToken || trackingToken;
 
-            // Log campaign email
+            // Log campaign email with spintax choices and hash
             await prisma.campaignLog.create({
               data: {
                 campaignId: campaign.id,
                 prospectId: prospect.id,
                 stepIndex: stepIdx,
                 hookId,
+                variantLabel: stepIdx === 0 ? `Hook ${hookId || "A"}` : `FU Step ${stepIdx}`,
+                spinChoicesJson: JSON.stringify(spintaxRender.choices),
+                renderedHash: spintaxRender.renderedHash,
                 mailboxId: mailbox.id,
                 fromEmail: sentResult.fromEmail || mailbox.fromEmail,
                 toEmail: prospect.email,
