@@ -16,6 +16,7 @@ export async function GET() {
     { path: "/blog", priority: "0.85", changefreq: "weekly" },
     { path: "/help", priority: "0.85", changefreq: "weekly" },
     { path: "/about", priority: "0.7", changefreq: "monthly" },
+    { path: "/affiliates", priority: "0.8", changefreq: "weekly" },
     { path: "/enterprise/book", priority: "0.7", changefreq: "monthly" },
   ];
 

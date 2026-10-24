@@ -121,6 +121,7 @@ export function MarketingNavLinks({
     ["Features", "#features"],
     ["Technology", "#integrations"],
     ["Pricing", "#pricing"],
+    ["Affiliates", "/affiliates"],
     ["FAQ", "#faq"],
   ] as const;
 

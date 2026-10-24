@@ -27,6 +27,7 @@ const columns = [
     h: "Company",
     links: [
       ["About", "/about"],
+      ["Affiliate Program", "/affiliates"],
       ["Contact", "mailto:hello@contractorleads.us"],
       ["Help Center", "/help"],
     ],
