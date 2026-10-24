@@ -60,7 +60,7 @@ export function AnalyticsDrawer({
   const healthReport = stats?.healthReport || { healthScore: 98.3, status: "healthy" };
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200">
+    <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 z-[100] flex justify-end bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200">
       <div className="relative w-full max-w-xl bg-[#141326] border-l border-[#26253c] p-6 shadow-2xl flex flex-col h-full overflow-y-auto text-slate-100">
         {/* Header */}
         <div className="flex items-center justify-between pb-5 border-b border-[#26253c]">

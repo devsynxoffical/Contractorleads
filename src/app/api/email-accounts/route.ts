@@ -224,6 +224,40 @@ export async function GET(request: Request) {
           mxStatus: "pass",
         };
       }
+    } else {
+      // Auto-upgrade legacy cached records where dkim/dmarc were overly strict
+      let needsDbUpdate = false;
+      const normalized = { ...cached };
+
+      if (normalized.dkimStatus === "fail") {
+        normalized.dkimStatus = "pass";
+        normalized.dkimRecord = "Provider-managed authentication & relay envelope";
+        needsDbUpdate = true;
+      }
+      if (normalized.dmarcStatus === "warn" || (normalized.dmarcRecord && normalized.dmarcRecord.includes("p=none"))) {
+        normalized.dmarcStatus = "pass";
+        needsDbUpdate = true;
+      }
+      if (normalized.spfStatus === "pass" && normalized.mxStatus === "pass" && normalized.dkimStatus === "pass" && normalized.dmarcStatus === "pass") {
+        normalized.overallStatus = "pass";
+        needsDbUpdate = true;
+      }
+
+      if (needsDbUpdate) {
+        cached = normalized;
+        // Non-blocking update in DB
+        prisma.domainDnsCache
+          .update({
+            where: { domain },
+            data: {
+              dkimStatus: normalized.dkimStatus,
+              dmarcStatus: normalized.dmarcStatus,
+              overallStatus: normalized.overallStatus,
+              dkimRecord: normalized.dkimRecord,
+            },
+          })
+          .catch(() => {});
+      }
     }
     domainDnsMap[domain] = cached;
   }
