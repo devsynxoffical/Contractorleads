@@ -6,6 +6,10 @@ import {
   HiOutlineXMark,
   HiOutlineFire,
   HiOutlineCheck,
+  HiOutlineBolt,
+  HiOutlineArrowPath,
+  HiOutlineCheckCircle,
+  HiOutlineExclamationTriangle,
 } from "react-icons/hi2";
 
 export type WarmupSettingsModalProps = {
@@ -29,6 +33,9 @@ export function WarmupSettingsModal({
   const [replyRate, setReplyRate] = useState(35);
   const [weekdaysOnly, setWeekdaysOnly] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<any>(null);
+  const [testError, setTestError] = useState<string | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -44,6 +51,30 @@ export function WarmupSettingsModal({
   }, [isOpen]);
 
   if (!isOpen || !mailbox || !mounted) return null;
+
+  async function handleRunTest() {
+    setTesting(true);
+    setTestError(null);
+    setTestResult(null);
+
+    try {
+      const res = await fetch("/api/email-accounts/test-warmup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mailboxEmail: mailbox.email }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to trigger warmup test");
+      }
+      setTestResult(data.details);
+      await onSettingsSaved();
+    } catch (err: any) {
+      setTestError(err.message || "Failed to execute warmup test");
+    } finally {
+      setTesting(false);
+    }
+  }
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -172,6 +203,61 @@ export function WarmupSettingsModal({
             <label htmlFor="weekdays" className="text-slate-600 dark:text-slate-300 cursor-pointer select-none">
               Send on weekdays only (recommended for B2B reputation)
             </label>
+          </div>
+
+          {/* LIVE VERIFICATION TEST BOX */}
+          <div className="p-3.5 rounded-xl border border-indigo-200 dark:border-indigo-500/20 bg-indigo-50/60 dark:bg-indigo-950/20 space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <h4 className="text-xs font-bold text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5">
+                  <HiOutlineBolt className="w-4 h-4 text-amber-500" />
+                  Live Warmup Verification
+                </h4>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Send a live test warmup email right now to verify peer dispatch & delivery.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleRunTest}
+                disabled={testing}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-bold text-xs transition shadow-xs cursor-pointer shrink-0"
+              >
+                {testing ? (
+                  <>
+                    <HiOutlineArrowPath className="w-3.5 h-3.5 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <HiOutlineBolt className="w-3.5 h-3.5" />
+                    Send Test Now
+                  </>
+                )}
+              </button>
+            </div>
+
+            {testResult && (
+              <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-200 text-xs space-y-1">
+                <div className="flex items-center gap-1.5 font-bold">
+                  <HiOutlineCheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>Verified! Warmup email dispatched via Hostinger relay (200 OK)</span>
+                </div>
+                <div className="pl-5 text-[11px] text-emerald-700 dark:text-emerald-300 font-mono space-y-0.5">
+                  <div><span className="font-semibold text-emerald-900 dark:text-emerald-100">From:</span> {testResult.from}</div>
+                  <div><span className="font-semibold text-emerald-900 dark:text-emerald-100">To:</span> {testResult.to}</div>
+                  <div><span className="font-semibold text-emerald-900 dark:text-emerald-100">Subject:</span> {testResult.subject}</div>
+                  <div className="text-[10px] opacity-80">Message ID: {testResult.messageId}</div>
+                </div>
+              </div>
+            )}
+
+            {testError && (
+              <div className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-500/30 text-rose-800 dark:text-rose-200 text-xs flex items-start gap-1.5">
+                <HiOutlineExclamationTriangle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                <span>{testError}</span>
+              </div>
+            )}
           </div>
 
           <div className="pt-3 border-t border-slate-200 dark:border-[#26253c] flex items-center justify-between">

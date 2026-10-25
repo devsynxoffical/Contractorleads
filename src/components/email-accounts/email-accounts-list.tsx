@@ -24,6 +24,7 @@ import {
   HiOutlinePause,
   HiOutlinePlay,
   HiOutlineTrash,
+  HiOutlineBolt,
 } from "react-icons/hi2";
 import { DnsFixDrawer } from "./dns-fix-drawer";
 import { AnalyticsDrawer } from "./analytics-drawer";
@@ -50,6 +51,38 @@ export function EmailAccountsList() {
   // Bulk edit limit state
   const [isBulkLimitOpen, setIsBulkLimitOpen] = useState(false);
   const [bulkLimitVal, setBulkLimitVal] = useState(30);
+
+  // Quick warmup test state
+  const [testingWarmup, setTestingWarmup] = useState(false);
+  const [testBanner, setTestBanner] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  async function handleQuickWarmupTest() {
+    setTestingWarmup(true);
+    setTestBanner(null);
+    try {
+      const res = await fetch("/api/email-accounts/test-warmup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to trigger warmup test");
+      }
+      setTestBanner({
+        type: "success",
+        message: `⚡ Live Warmup Test Succeeded! Sent from ${data.details.from} to ${data.details.to} ("${data.details.subject}") via Hostinger Relay.`,
+      });
+      await loadAccounts();
+    } catch (err: any) {
+      setTestBanner({
+        type: "error",
+        message: `Warmup test failed: ${err.message || String(err)}`,
+      });
+    } finally {
+      setTestingWarmup(false);
+    }
+  }
 
   async function loadAccounts() {
     setLoading(true);
@@ -329,16 +362,53 @@ export function EmailAccountsList() {
             </button>
           </div>
 
+          {/* Quick Warmup Test Button */}
+          <button
+            onClick={handleQuickWarmupTest}
+            disabled={testingWarmup}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 font-semibold text-xs text-white transition shadow-sm cursor-pointer"
+            title="Dispatch an instant warmup email across connected mailboxes to verify the engine is working"
+          >
+            {testingWarmup ? (
+              <HiOutlineArrowPath className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <HiOutlineBolt className="w-3.5 h-3.5" />
+            )}
+            {testingWarmup ? "Testing Engine..." : "⚡ Test Warmup Engine"}
+          </button>
+
           {/* Add Account Button */}
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-xs text-white transition shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-xs text-white transition shadow-sm cursor-pointer"
           >
             <HiOutlinePlus className="w-4 h-4" />
             Add Account
           </button>
         </div>
       </div>
+
+      {/* TEST BANNER NOTIFICATION */}
+      {testBanner && (
+        <div
+          className={`p-3.5 rounded-xl border flex items-center justify-between text-xs animate-in fade-in duration-200 ${
+            testBanner.type === "success"
+              ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-500/30 text-emerald-900 dark:text-emerald-100"
+              : "bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-500/30 text-rose-900 dark:text-rose-100"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-base">{testBanner.type === "success" ? "✅" : "⚠️"}</span>
+            <span className="font-medium">{testBanner.message}</span>
+          </div>
+          <button
+            onClick={() => setTestBanner(null)}
+            className="text-xs font-bold px-2 py-1 rounded-md opacity-70 hover:opacity-100 cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* 3. BULK ACTIONS BAR (When mailboxes are checked) */}
       {selectedMailboxIds.length > 0 && (

@@ -148,9 +148,14 @@ export function pickWarmupRecipient(
 /**
  * Execute one warmup dispatch cycle for a mailbox
  */
-export async function runMailboxWarmupCycle(mailboxEmail: string): Promise<{
+export async function runMailboxWarmupCycle(
+  mailboxEmail: string,
+  options?: { force?: boolean }
+): Promise<{
   dispatched: boolean;
   messageId?: string;
+  recipient?: string;
+  subject?: string;
   error?: string;
 }> {
   const email = mailboxEmail.toLowerCase().trim();
@@ -171,12 +176,12 @@ export async function runMailboxWarmupCycle(mailboxEmail: string): Promise<{
     });
   }
 
-  if (!settings.enabled) {
+  if (!settings.enabled && !options?.force) {
     return { dispatched: false, error: "Warmup disabled for this mailbox" };
   }
 
   // Check weekdays only
-  if (settings.weekdaysOnly) {
+  if (settings.weekdaysOnly && !options?.force) {
     const dayOfWeek = new Date().getDay(); // 0 is Sunday, 6 is Saturday
     if (dayOfWeek === 0 || dayOfWeek === 6) {
       return { dispatched: false, error: "Weekend pause (weekdays-only active)" };
@@ -200,7 +205,7 @@ export async function runMailboxWarmupCycle(mailboxEmail: string): Promise<{
     maxPerDay: settings.maxDailyWarmup,
   });
 
-  if (sentTodayCount >= ramp.warmupTarget) {
+  if (sentTodayCount >= ramp.warmupTarget && !options?.force) {
     return { dispatched: false, error: `Daily warmup target reached (${sentTodayCount}/${ramp.warmupTarget})` };
   }
 
@@ -273,7 +278,12 @@ export async function runMailboxWarmupCycle(mailboxEmail: string): Promise<{
     },
   });
 
-  return { dispatched: true, messageId: sendRes.messageId || undefined };
+  return {
+    dispatched: true,
+    messageId: sendRes.messageId || undefined,
+    recipient: recipient.email,
+    subject: topic.subject,
+  };
 }
 
 /**
