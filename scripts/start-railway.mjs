@@ -148,6 +148,8 @@ const inboxInterval = setInterval(async () => {
   } catch {
     // server might still be booting or restarting, ignore gracefully
   }
+}, 300_000);
+
 // Background automated mailbox warmup runner: executes warmup cycle every 3 minutes
 const warmupInterval = setInterval(async () => {
   try {

@@ -162,19 +162,15 @@ export async function runMailboxWarmupCycle(
   const domain = email.split("@")[1] || "";
 
   // 1. Get or create WarmupSettings
-  let settings = await prisma.warmupSettings.findUnique({
+  const settings = await prisma.warmupSettings.upsert({
     where: { mailboxEmail: email },
+    update: {},
+    create: {
+      mailboxEmail: email,
+      enabled: true,
+      startedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // Default to day 14 mature
+    },
   });
-
-  if (!settings) {
-    settings = await prisma.warmupSettings.create({
-      data: {
-        mailboxEmail: email,
-        enabled: true,
-        startedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // Default to day 14 mature
-      },
-    });
-  }
 
   if (!settings.enabled && !options?.force) {
     return { dispatched: false, error: "Warmup disabled for this mailbox" };
