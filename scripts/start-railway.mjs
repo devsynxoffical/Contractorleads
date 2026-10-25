@@ -148,12 +148,31 @@ const inboxInterval = setInterval(async () => {
   } catch {
     // server might still be booting or restarting, ignore gracefully
   }
-}, 300_000);
+// Background automated mailbox warmup runner: executes warmup cycle every 3 minutes
+const warmupInterval = setInterval(async () => {
+  try {
+    const url = `http://127.0.0.1:${port}/api/cron/warmup`;
+    const headers = {};
+    if (process.env.CRON_SECRET) {
+      headers["Authorization"] = `Bearer ${process.env.CRON_SECRET}`;
+    }
+    const res = await fetch(url, { headers });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.dispatchedCount > 0) {
+        console.log(`[cron] Warmup cycle dispatched ${data.dispatchedCount} peer-to-peer warmup email(s).`);
+      }
+    }
+  } catch {
+    // server might still be booting or restarting, ignore gracefully
+  }
+}, 180_000);
 
 for (const sig of ["SIGTERM", "SIGINT"]) {
   process.on(sig, () => {
     clearInterval(cronInterval);
     clearInterval(inboxInterval);
+    clearInterval(warmupInterval);
     child.kill(sig);
   });
 }

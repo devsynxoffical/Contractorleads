@@ -27,24 +27,44 @@ export async function GET(request: Request) {
     select: { mailboxEmail: true },
   });
 
-  const mailboxesToWarm = enabledSettings.map((s) => s.mailboxEmail);
+  if (enabledSettings.length === 0) {
+    return NextResponse.json({ ok: true, message: "No mailboxes have warmup enabled" });
+  }
+
+  // Shuffle to randomize sending order throughout the day
+  const shuffled = enabledSettings
+    .map((s) => s.mailboxEmail)
+    .sort(() => Math.random() - 0.5);
+
+  // Process a batch of up to 12 mailboxes per 3-minute cron cycle
+  // Spacing sends evenly across 24 hours mimics authentic human activity
+  const batch = shuffled.slice(0, 12);
   const results: Array<{ email: string; dispatched: boolean; error?: string }> = [];
 
-  for (const email of mailboxesToWarm) {
-    try {
-      const res = await runMailboxWarmupCycle(email);
-      results.push({ email, dispatched: res.dispatched, error: res.error });
-      await applyMailboxProtectionRules(email);
-    } catch (err: any) {
-      results.push({ email, dispatched: false, error: err.message || String(err) });
-    }
+  // Execute in small parallel chunks of 3 to stay well within 60s timeout
+  const chunkSize = 3;
+  for (let i = 0; i < batch.length; i += chunkSize) {
+    const chunk = batch.slice(i, i + chunkSize);
+    const chunkResults = await Promise.all(
+      chunk.map(async (email) => {
+        try {
+          const res = await runMailboxWarmupCycle(email);
+          await applyMailboxProtectionRules(email);
+          return { email, dispatched: res.dispatched, error: res.error };
+        } catch (err: any) {
+          return { email, dispatched: false, error: err.message || String(err) };
+        }
+      })
+    );
+    results.push(...chunkResults);
   }
 
   const dispatchedCount = results.filter((r) => r.dispatched).length;
 
   return NextResponse.json({
     ok: true,
-    totalEligible: mailboxesToWarm.length,
+    totalPool: enabledSettings.length,
+    batchSize: batch.length,
     dispatchedCount,
     results,
   });
