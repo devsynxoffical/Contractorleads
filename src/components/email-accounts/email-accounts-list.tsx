@@ -145,6 +145,7 @@ export function EmailAccountsList() {
   // Bulk actions
   async function handleBulkAction(action: string, extra?: Record<string, any>) {
     if (selectedMailboxIds.length === 0) return;
+    const count = selectedMailboxIds.length;
     try {
       await fetch("/api/email-accounts", {
         method: "PATCH",
@@ -158,6 +159,17 @@ export function EmailAccountsList() {
       await loadAccounts();
       setSelectedMailboxIds([]);
       setIsBulkLimitOpen(false);
+      const actionLabels: Record<string, string> = {
+        warmup_on: "Warmup enabled",
+        warmup_off: "Warmup disabled",
+        pause: "Paused",
+        activate: "Activated",
+        set_limit: `Daily limit set to ${extra?.limit || 30}`,
+      };
+      setTestBanner({
+        type: "success",
+        message: `${actionLabels[action] || action} for ${count} selected mailbox(es).`,
+      });
     } catch {
       // ignore
     }

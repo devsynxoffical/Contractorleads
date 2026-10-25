@@ -332,7 +332,7 @@ export async function GET(request: Request) {
 
   // Summary KPIs
   const totalMailboxes = rows.length;
-  const warmingCount = rows.filter((r) => r.rampStatus === "warming").length;
+  const warmingCount = rows.filter((r) => r.warmupEnabled).length;
   const readyCount = rows.filter((r) => r.isReady).length;
   const atRiskCount = rows.filter((r) => r.healthScore < 80).length;
   const avgPlatformHealth =
@@ -529,10 +529,18 @@ export async function PATCH(request: Request) {
   const emails = accounts.map((a) => a.fromEmail.toLowerCase());
 
   if (action === "warmup_on") {
-    await prisma.warmupSettings.updateMany({
-      where: { mailboxEmail: { in: emails } },
-      data: { enabled: true },
-    });
+    // Upsert warmupSettings for every mailbox so rows exist and are enabled
+    for (const em of emails) {
+      await prisma.warmupSettings.upsert({
+        where: { mailboxEmail: em },
+        update: { enabled: true },
+        create: {
+          mailboxEmail: em,
+          enabled: true,
+          startedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
+        },
+      });
+    }
     await prisma.systemSmtpAccount.updateMany({
       where: { id: { in: mailboxIds } },
       data: { warmupEnabled: true },
