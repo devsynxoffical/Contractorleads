@@ -195,35 +195,43 @@ export async function GET(request: Request) {
   for (const domain of Array.from(uniqueDomains)) {
     let cached = dnsCacheMap.get(domain);
     if (!cached) {
-      // Async DNS resolution & cache populate
-      try {
-        const dnsReport = await checkDomainDns(domain);
-        cached = await prisma.domainDnsCache.create({
-          data: {
-            domain,
-            provider: dnsReport.provider,
-            overallStatus: dnsReport.overallStatus,
-            spfStatus: dnsReport.spf.status,
-            spfRecord: dnsReport.spf.record,
-            dkimStatus: dnsReport.dkim.status,
-            dkimSelector: dnsReport.dkim.selector,
-            dkimRecord: dnsReport.dkim.record,
-            dmarcStatus: dnsReport.dmarc.status,
-            dmarcRecord: dnsReport.dmarc.record,
-            mxStatus: dnsReport.mx.status,
-            mxRecords: dnsReport.mx.record,
-          },
-        });
-      } catch {
-        cached = {
-          domain,
-          overallStatus: "pass",
-          spfStatus: "pass",
-          dkimStatus: "pass",
-          dmarcStatus: "pass",
-          mxStatus: "pass",
-        };
-      }
+      cached = {
+        domain,
+        overallStatus: "pass",
+        spfStatus: "pass",
+        dkimStatus: "pass",
+        dmarcStatus: "pass",
+        mxStatus: "pass",
+      };
+      // Asynchronously populate cache in background without blocking the user
+      checkDomainDns(domain)
+        .then((dnsReport) => {
+          return prisma.domainDnsCache.upsert({
+            where: { domain },
+            update: {
+              overallStatus: dnsReport.overallStatus,
+              spfStatus: dnsReport.spf.status,
+              dkimStatus: dnsReport.dkim.status,
+              dmarcStatus: dnsReport.dmarc.status,
+              mxStatus: dnsReport.mx.status,
+            },
+            create: {
+              domain,
+              provider: dnsReport.provider,
+              overallStatus: dnsReport.overallStatus,
+              spfStatus: dnsReport.spf.status,
+              spfRecord: dnsReport.spf.record,
+              dkimStatus: dnsReport.dkim.status,
+              dkimSelector: dnsReport.dkim.selector,
+              dkimRecord: dnsReport.dkim.record,
+              dmarcStatus: dnsReport.dmarc.status,
+              dmarcRecord: dnsReport.dmarc.record,
+              mxStatus: dnsReport.mx.status,
+              mxRecords: dnsReport.mx.record,
+            },
+          });
+        })
+        .catch(() => {});
     } else {
       // Auto-upgrade legacy cached records where dkim/dmarc were overly strict
       let needsDbUpdate = false;

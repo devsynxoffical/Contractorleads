@@ -21,20 +21,53 @@ export async function GET(request: Request) {
     }
   }
 
-  // 1. Fetch all mailboxes where warmup is enabled
-  const enabledSettings = await prisma.warmupSettings.findMany({
-    where: { enabled: true },
-    select: { mailboxEmail: true },
-  });
+  // 1. Fetch all mailboxes where warmup is enabled:
+  // - All active system accounts with warmupEnabled: true
+  // - All active user custom accounts
+  // - Plus any accounts explicitly enabled in WarmupSettings
+  // - Minus any accounts explicitly disabled in WarmupSettings
+  const [systemAccounts, userAccounts, disabledSettings, explicitlyEnabled] = await Promise.all([
+    prisma.systemSmtpAccount.findMany({
+      where: { enabled: true, warmupEnabled: true },
+      select: { fromEmail: true },
+    }),
+    prisma.smtpAccount.findMany({
+      where: { enabled: true },
+      select: { fromEmail: true },
+    }),
+    prisma.warmupSettings.findMany({
+      where: { enabled: false },
+      select: { mailboxEmail: true },
+    }),
+    prisma.warmupSettings.findMany({
+      where: { enabled: true },
+      select: { mailboxEmail: true },
+    }),
+  ]);
 
-  if (enabledSettings.length === 0) {
+  const disabledSet = new Set(disabledSettings.map((s) => s.mailboxEmail.toLowerCase().trim()));
+  const candidateEmails = new Set<string>();
+
+  for (const s of systemAccounts) {
+    const em = s.fromEmail.toLowerCase().trim();
+    if (!disabledSet.has(em)) candidateEmails.add(em);
+  }
+  for (const u of userAccounts) {
+    const em = u.fromEmail.toLowerCase().trim();
+    if (!disabledSet.has(em)) candidateEmails.add(em);
+  }
+  for (const e of explicitlyEnabled) {
+    candidateEmails.add(e.mailboxEmail.toLowerCase().trim());
+  }
+
+  const mailboxesToWarm = Array.from(candidateEmails);
+
+  if (mailboxesToWarm.length === 0) {
     return NextResponse.json({ ok: true, message: "No mailboxes have warmup enabled" });
   }
 
   // Shuffle to randomize sending order throughout the day
-  const shuffled = enabledSettings
-    .map((s) => s.mailboxEmail)
-    .sort(() => Math.random() - 0.5);
+  const shuffled = mailboxesToWarm.sort(() => Math.random() - 0.5);
 
   // Process a batch of up to 12 mailboxes per 3-minute cron cycle
   // Spacing sends evenly across 24 hours mimics authentic human activity
@@ -63,7 +96,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     ok: true,
-    totalPool: enabledSettings.length,
+    totalPool: mailboxesToWarm.length,
     batchSize: batch.length,
     dispatchedCount,
     results,

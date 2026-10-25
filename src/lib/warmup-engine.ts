@@ -168,6 +168,7 @@ export async function runMailboxWarmupCycle(
     create: {
       mailboxEmail: email,
       enabled: true,
+      weekdaysOnly: false,
       startedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // Default to day 14 mature
     },
   });
@@ -176,11 +177,18 @@ export async function runMailboxWarmupCycle(
     return { dispatched: false, error: "Warmup disabled for this mailbox" };
   }
 
-  // Check weekdays only
+  // Check weekdays only (if active, send at gentle weekend maintenance volume of 5/day rather than dead stop)
   if (settings.weekdaysOnly && !options?.force) {
     const dayOfWeek = new Date().getDay(); // 0 is Sunday, 6 is Saturday
     if (dayOfWeek === 0 || dayOfWeek === 6) {
-      return { dispatched: false, error: "Weekend pause (weekdays-only active)" };
+      const todayStartCheck = new Date();
+      todayStartCheck.setHours(0, 0, 0, 0);
+      const weekendSends = await prisma.warmupMessage.count({
+        where: { fromEmail: email, sentAt: { gte: todayStartCheck } },
+      });
+      if (weekendSends >= 5) {
+        return { dispatched: false, error: "Weekend maintenance target reached (5/5)" };
+      }
     }
   }
 

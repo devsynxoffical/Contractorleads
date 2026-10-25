@@ -73,7 +73,7 @@ export function EmailAccountsList() {
         type: "success",
         message: `⚡ Live Warmup Test Succeeded! Sent from ${data.details.from} to ${data.details.to} ("${data.details.subject}") via Hostinger Relay.`,
       });
-      await loadAccounts();
+      await loadAccounts(true);
     } catch (err: any) {
       setTestBanner({
         type: "error",
@@ -84,8 +84,10 @@ export function EmailAccountsList() {
     }
   }
 
-  async function loadAccounts() {
-    setLoading(true);
+  async function loadAccounts(silent = false) {
+    if (!silent && !data) {
+      setLoading(true);
+    }
     try {
       const res = await fetch("/api/email-accounts");
       const json = await res.json();
@@ -156,7 +158,7 @@ export function EmailAccountsList() {
           ...extra,
         }),
       });
-      await loadAccounts();
+      await loadAccounts(true);
       setSelectedMailboxIds([]);
       setIsBulkLimitOpen(false);
       const actionLabels: Record<string, string> = {
@@ -184,7 +186,7 @@ export function EmailAccountsList() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ domain }),
       });
-      await loadAccounts();
+      await loadAccounts(true);
     } catch {
       // ignore
     } finally {
@@ -203,7 +205,7 @@ export function EmailAccountsList() {
           action: row.warmupEnabled ? "warmup_off" : "warmup_on",
         }),
       });
-      await loadAccounts();
+      await loadAccounts(true);
     } catch {
       // ignore
     }
