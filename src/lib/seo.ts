@@ -10,6 +10,9 @@ export function seoBaseUrl() {
   return SITE_URL.replace(/\/$/, "");
 }
 
+/** Last date the core marketing pages changed. Bump when you edit copy; sitemaps use it for lastmod. */
+export const CONTENT_LAST_UPDATED = "2026-10-29";
+
 export const SEO = {
   siteName: "Contractor Leads",
   defaultTitle: "Contractor Leads: AI-Scored Leads for Agencies",
@@ -58,15 +61,13 @@ export function seoSameAs(): string[] {
     SEO.social.linkedin,
     SEO.social.youtube,
     SEO.social.facebook,
-    "https://www.g2.com/products/contractor-leads",
-    "https://www.crunchbase.com/organization/contractor-leads",
   ].filter(Boolean);
 }
 
 export const MARKETING_FAQ: Array<{ q: string; a: string }> = [
   {
     q: "Is Contractor Leads free to try?",
-    a: "Yes. Every new account gets 10 free leads on Starter with no credit card. You pay only when you subscribe, from $19 a month for 500 credits.",
+    a: "Yes. Every new account gets 10 free leads on Starter with no credit card. You pay only when you subscribe, from $19.99 a month for 500 credits.",
   },
   {
     q: "Is Contractor Leads for agencies or for contractors?",
@@ -243,6 +244,11 @@ export type BuildMetadataInput = {
   keywords?: string[];
   noIndex?: boolean;
   ogImage?: string;
+  /** Use "article" for blog posts and guides so Open Graph carries publish dates. */
+  type?: "website" | "article";
+  publishedTime?: string;
+  modifiedTime?: string;
+  authors?: string[];
 };
 
 export function buildMetadata(input: BuildMetadataInput): Metadata {
@@ -265,22 +271,29 @@ export function buildMetadata(input: BuildMetadataInput): Metadata {
     robots: input.noIndex
       ? { index: false, follow: false, googleBot: { index: false, follow: false } }
       : { index: true, follow: true },
-    openGraph: {
-      type: "website",
-      locale: SEO.locale,
-      url,
-      siteName: SEO.siteName,
-      title: input.title,
-      description: input.description,
-      images: [
-        {
-          url: ogImage,
-          width: 1200,
-          height: 630,
-          alt: input.title,
-        },
-      ],
-    },
+    openGraph:
+      input.type === "article"
+        ? {
+            type: "article",
+            locale: SEO.locale,
+            url,
+            siteName: SEO.siteName,
+            title: input.title,
+            description: input.description,
+            publishedTime: input.publishedTime,
+            modifiedTime: input.modifiedTime ?? input.publishedTime,
+            authors: input.authors,
+            images: [{ url: ogImage, width: 1200, height: 630, alt: input.title }],
+          }
+        : {
+            type: "website",
+            locale: SEO.locale,
+            url,
+            siteName: SEO.siteName,
+            title: input.title,
+            description: input.description,
+            images: [{ url: ogImage, width: 1200, height: 630, alt: input.title }],
+          },
     twitter: {
       card: "summary_large_image",
       site: SEO.twitterHandle,

@@ -55,7 +55,7 @@ export default function NotFound() {
               </div>
               <div className="min-w-0">
                 <p className="text-[14px] font-semibold text-white">Pricing & Plans</p>
-                <p className="text-[12px] text-white/60">Starter $19, Growth $49, Agency $99</p>
+                <p className="text-[12px] text-white/60">Starter $19.99, Growth $49, Agency $99</p>
               </div>
             </Link>
 

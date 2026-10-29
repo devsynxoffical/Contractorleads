@@ -61,7 +61,7 @@ const SCRAPER_FAQS = [
   },
   {
     q: "Is there a free Google Maps scraper?",
-    a: "Contractor Leads gives every new account 10 free scored leads with no credit card. Paid plans start at $19 a month for 500 credits.",
+    a: "Contractor Leads gives every new account 10 free scored leads with no credit card. Paid plans start at $19.99 a month for 500 credits.",
   },
 ];
 
@@ -375,7 +375,7 @@ export default function GoogleMapsScraperPage() {
               </tr>
               <tr>
                 <td className="py-3.5 px-4 font-semibold text-slate-900">Entry Pricing</td>
-                <td className="py-3.5 px-4 font-semibold text-slate-900">Free 10 leads, then $19/mo</td>
+                <td className="py-3.5 px-4 font-semibold text-slate-900">Free 10 leads, then $19.99/mo</td>
                 <td className="py-3.5 px-4 text-slate-600">$15–$50/mo</td>
                 <td className="py-3.5 px-4 text-slate-600">Usage credits + compute</td>
                 <td className="py-3.5 px-4 text-slate-600">Labor costs</td>
@@ -426,9 +426,9 @@ export default function GoogleMapsScraperPage() {
           <div className="rounded-2xl border border-violet-100 bg-white p-6 shadow-sm">
             <p className="text-[13px] font-bold uppercase tracking-wider text-fuchsia-600">Starter</p>
             <p className="mt-2 font-[family-name:var(--font-display)] text-[28px] font-extrabold text-slate-900">
-              $19<span className="text-[14px] font-normal text-slate-500">/mo</span>
+              $19.99<span className="text-[14px] font-normal text-slate-500">/mo</span>
             </p>
-            <p className="mt-2 text-[13px] text-slate-600">500 credits/mo ($0.038/lead)</p>
+            <p className="mt-2 text-[13px] text-slate-600">500 credits/mo ($0.04/lead)</p>
             <p className="mt-4 text-[13px] text-slate-600">Ideal for solo agency operators starting outreach.</p>
             <Link
               href="/pricing"
@@ -446,7 +446,7 @@ export default function GoogleMapsScraperPage() {
             <p className="mt-2 font-[family-name:var(--font-display)] text-[28px] font-extrabold text-slate-900">
               $49<span className="text-[14px] font-normal text-slate-500">/mo</span>
             </p>
-            <p className="mt-2 text-[13px] text-slate-600">2,000 credits/mo ($0.024/lead)</p>
+            <p className="mt-2 text-[13px] text-slate-600">2,000 credits/mo ($0.025/lead)</p>
             <p className="mt-4 text-[13px] text-slate-600">Full CRM webhook push, GoHighLevel & Outreach Studio.</p>
             <Link
               href="/pricing"
@@ -461,7 +461,7 @@ export default function GoogleMapsScraperPage() {
             <p className="mt-2 font-[family-name:var(--font-display)] text-[28px] font-extrabold text-slate-900">
               $99<span className="text-[14px] font-normal text-slate-500">/mo</span>
             </p>
-            <p className="mt-2 text-[13px] text-slate-600">5,000 credits/mo ($0.019/lead)</p>
+            <p className="mt-2 text-[13px] text-slate-600">5,000 credits/mo ($0.02/lead)</p>
             <p className="mt-4 text-[13px] text-slate-600">High-volume prospecting desks and cold calling teams.</p>
             <Link
               href="/pricing"

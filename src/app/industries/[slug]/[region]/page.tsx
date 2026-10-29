@@ -18,13 +18,11 @@ import {
   SubpageCtaBand,
   SubpageLinkGrid,
   SubpageSection,
-  SubpageStats,
 } from "@/components/marketing/marketing-subpage";
 import { Reveal } from "@/components/marketing/marketing-ui";
 import {
   JsonLd,
   breadcrumbJsonLd,
-  datasetJsonLd,
   faqPageJsonLd,
 } from "@/components/seo/json-ld";
 import {
@@ -65,10 +63,10 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const market = getStateMarketData(trade.slug, trade.name, region.slug, region.name, region.code);
 
   // Priority trade titles follow: "[Trade] Contractor Leads in [State]: [N] Businesses Scored" (< 60 chars)
-  const fullTitle = `${trade.name} Contractor Leads in ${region.name}: ${market.businessCount.toLocaleString()} Businesses Scored`;
+  const fullTitle = `${trade.name} Contractor Leads in ${region.name} for Agencies`;
   const title = fullTitle.length <= 60 ? fullTitle : `${trade.name} Contractor Leads in ${region.name}`;
 
-  const description = `${market.businessCount.toLocaleString()} ${trade.name.toLowerCase()} businesses in ${region.name}, ${market.noWebsitePct}% with no website and ${market.runningMetaAdsPct}% running Meta ads. Get owner contacts and AI scores. Start with 10 free leads.`;
+  const description = `Find ${trade.name.toLowerCase()} contractor leads in ${region.name}: live Google data, AI scores, owner contacts and outreach scripts. An estimated ${market.noWebsitePct}% have no website. Start with 10 free leads.`;
 
   return buildMetadata({
     title,
@@ -138,20 +136,7 @@ export default async function TradeRegionPage({ params }: Params) {
           },
         ])}
       />
-      {priority && (
-        <>
-          <JsonLd
-            data={datasetJsonLd({
-              name: `${trade.name} Contractor Market Dataset - ${region.name}`,
-              description: `Verified directory data, digital marketing scores, and owner intelligence for ${market.businessCount.toLocaleString()} ${lower} businesses in ${region.name}.`,
-              spatialCoverage: `${region.name}, United States`,
-              temporalCoverage: "2026-09-01/2026-10-22",
-              url: `/industries/${trade.slug}/${region.slug}`,
-            })}
-          />
-          <JsonLd data={faqPageJsonLd(market.faqs)} />
-        </>
-      )}
+      {priority && <JsonLd data={faqPageJsonLd(market.faqs)} />}
 
       <MarketingSubpageHero
         eyebrow={`${trade.name} · ${region.name}`}
@@ -167,7 +152,7 @@ export default async function TradeRegionPage({ params }: Params) {
             <HiOutlineArrowRight className="h-4 w-4" />
           </Link>
           <Link
-            href={`/industries/${trade.slug}#markets`}
+            href={`/industries/${trade.slug}#states`}
             className="inline-flex rounded-full border border-white/25 bg-white/10 px-5 py-2.5 text-[14px] font-semibold text-white backdrop-blur transition hover:bg-white/20"
           >
             All {trade.name} states
@@ -192,7 +177,7 @@ export default async function TradeRegionPage({ params }: Params) {
         ) : (
           <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-6 text-slate-700">
             <p className="text-[14px]">
-              Displaying basic index listing for {trade.name} in {region.name}. Deep AI scoring and verified owner enrichment are currently prioritizing high-volume trades.
+              Detailed {region.name} market estimates are published for our seven highest-volume trades. {trade.name} leads in {region.name} are fully searchable in the app with the same live Google data, AI scores and owner enrichment.
             </p>
           </div>
         )}
@@ -240,7 +225,7 @@ export default async function TradeRegionPage({ params }: Params) {
         </Reveal>
         <Reveal delay={0.1}>
           <Link
-            href={`/industries/${trade.slug}#markets`}
+            href={`/industries/${trade.slug}#states`}
             className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-fuchsia-200 bg-fuchsia-50 px-4 py-2 text-[13px] font-semibold text-fuchsia-800 transition hover:border-fuchsia-300"
           >
             Browse all {SEO_REGIONS.length} US states

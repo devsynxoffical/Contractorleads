@@ -15,7 +15,7 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata: Metadata = buildMetadata({
   title: "Contractor Leads Pricing: Plans for Agencies",
   description:
-    "Compare Contractor Leads plans for agencies. Start free with 10 leads, then $19 to $99/mo. 1 credit = 1 lead, AI scoring and outreach tools included.",
+    "Compare Contractor Leads plans for agencies. Start free with 10 leads, then $19.99 to $99/mo. 1 credit = 1 lead, AI scoring and outreach tools included.",
   path: "/pricing",
   keywords: [
     "contractor leads pricing",
@@ -32,11 +32,11 @@ const PRICING_FAQS = [
   },
   {
     q: "How do credits work?",
-    a: "One credit equals one lead. Starter includes 500 credits a month ($19/mo), Growth includes 2,000 credits ($49/mo), and Agency includes 5,000 credits ($99/mo). The AI assistant and outreach generation use credits as listed on the pricing breakdown.",
+    a: "One credit equals one lead. Starter includes 500 credits a month ($19.99/mo), Growth includes 2,000 credits ($49/mo), and Agency includes 5,000 credits ($99/mo). The AI assistant and outreach generation use credits as listed on the pricing breakdown.",
   },
   {
     q: "Do you offer an annual billing discount?",
-    a: "Yes. Annual subscriptions receive up to a 25% discount, bringing Starter down to $14/month, Growth to $39/month, and Agency to $79/month.",
+    a: "Yes. Annual subscriptions save up to 25%: Starter works out to $15/month, Growth to $39/month, and Agency to $79/month when billed annually.",
   },
   {
     q: "Can I cancel or change my plan anytime?",

@@ -477,6 +477,13 @@ export default function FeaturesPage() {
           </div>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-4 text-[13px]">
             <Link
+              href="/contractor-lead-generation-software"
+              className="inline-flex items-center gap-1.5 font-semibold text-fuchsia-700 hover:underline"
+            >
+              Evaluating contractor lead generation software? Read the buyer&apos;s guide →
+            </Link>
+            <span className="text-slate-300">·</span>
+            <Link
               href="/google-maps-scraper"
               className="inline-flex items-center gap-1.5 font-semibold text-fuchsia-700 hover:underline"
             >

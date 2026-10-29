@@ -17,6 +17,7 @@ import {
 import {
   SubpageCard,
   SubpageCtaBand,
+  SubpageLinkGrid,
   SubpageSection,
   SubpageStats,
 } from "@/components/marketing/marketing-subpage";
@@ -29,10 +30,13 @@ import {
 } from "@/components/seo/json-ld";
 import { TIER_ONE_COUNTRIES } from "@/lib/constants";
 import {
+  SEO_REGIONS,
   TRADE_PAGES,
   buildMetadata,
   getTradeBySlug,
+  isPriorityTrade,
 } from "@/lib/seo";
+import { BLOG_POSTS } from "@/lib/blog-content";
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -87,6 +91,10 @@ export default async function TradePage({ params }: Params) {
 
   const lower = trade.name.toLowerCase();
   const related = TRADE_PAGES.filter((t) => t.slug !== trade.slug).slice(0, 6);
+  const priority = isPriorityTrade(trade.slug);
+  const playbooks = BLOG_POSTS.filter((p) =>
+    p.relatedIndustries?.includes(trade.slug),
+  ).slice(0, 4);
 
   return (
     <MarketingSiteShell>
@@ -154,11 +162,14 @@ export default async function TradePage({ params }: Params) {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-violet-200/60 pb-6">
             <div>
               <p className="text-[12px] font-bold uppercase tracking-wider text-fuchsia-600">
-                National {trade.name} Intelligence
+                Typical {trade.name} Benchmarks
               </p>
               <h2 className="mt-1 font-[family-name:var(--font-display)] text-[22px] font-bold text-slate-900">
                 {trade.name} Market Opportunities for Agencies
               </h2>
+              <p className="mt-1 text-[12.5px] text-slate-500">
+                Illustrative ranges from typical Contractor Leads searches. Your market will differ; run a live search for exact numbers.
+              </p>
             </div>
             <Link
               href="/register"
@@ -191,60 +202,24 @@ export default async function TradePage({ params }: Params) {
             </div>
           </div>
 
-          {/* Related Guides for this trade */}
-          {trade.slug === "roofing" && (
+          {/* Related guides for this trade (driven by BLOG_POSTS.relatedIndustries) */}
+          {playbooks.length > 0 && (
             <div className="mt-6 rounded-2xl border border-violet-200 bg-white p-4">
               <p className="text-[12px] font-bold uppercase tracking-wider text-fuchsia-600">
-                Recommended Roofing Playbooks:
+                Recommended {trade.name} Playbooks
               </p>
-              <div className="mt-2 flex flex-wrap gap-3 text-[13px]">
-                <Link
-                  href="/blog/how-to-get-more-roofing-leads"
-                  className="font-semibold text-fuchsia-700 hover:underline"
-                >
-                  → How to Get More Roofing Leads: 9 Methods Ranked
-                </Link>
-                <Link
-                  href="/blog/roofing-seo"
-                  className="font-semibold text-fuchsia-700 hover:underline"
-                >
-                  → Roofing SEO: What Agencies Should Sell Roofers in 2026
-                </Link>
-                <Link
-                  href="/blog/local-service-ads"
-                  className="font-semibold text-fuchsia-700 hover:underline"
-                >
-                  → Local Service Ads for Agencies
-                </Link>
-              </div>
-            </div>
-          )}
-
-          {trade.slug === "hvac" && (
-            <div className="mt-6 rounded-2xl border border-violet-200 bg-white p-4">
-              <p className="text-[12px] font-bold uppercase tracking-wider text-fuchsia-600">
-                Recommended HVAC Playbooks:
-              </p>
-              <div className="mt-2 flex flex-wrap gap-3 text-[13px]">
-                <Link
-                  href="/blog/hvac-marketing-agency"
-                  className="font-semibold text-fuchsia-700 hover:underline"
-                >
-                  → HVAC Marketing Agency: What HVAC Owners Expect and How to Pitch Them
-                </Link>
-                <Link
-                  href="/blog/local-service-ads"
-                  className="font-semibold text-fuchsia-700 hover:underline"
-                >
-                  → Local Service Ads for Agencies
-                </Link>
-                <Link
-                  href="/blog/facebook-ads-for-contractors"
-                  className="font-semibold text-fuchsia-700 hover:underline"
-                >
-                  → Facebook Ads for Contractors
-                </Link>
-              </div>
+              <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-[13px]">
+                {playbooks.map((p) => (
+                  <li key={p.slug}>
+                    <Link
+                      href={`/blog/${p.slug}`}
+                      className="font-semibold text-fuchsia-700 hover:underline"
+                    >
+                      {p.title}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </div>
@@ -331,6 +306,26 @@ export default async function TradePage({ params }: Params) {
       >
         <IndustryLocationSection industryName={trade.name} />
       </SubpageSection>
+
+      {priority && (
+        <SubpageSection
+          tone="tint"
+          id="states"
+          eyebrow="United States"
+          title={`${trade.name} contractor leads by state`}
+          description={`State-level market estimates, opening angles and FAQs for ${lower} contractors in every US state.`}
+        >
+          <Reveal>
+            <SubpageLinkGrid
+              columns={5}
+              items={SEO_REGIONS.map((r) => ({
+                href: `/industries/${trade.slug}/${r.slug}`,
+                label: r.name,
+              }))}
+            />
+          </Reveal>
+        </SubpageSection>
+      )}
 
       <SubpageSection
         tone="soft"

@@ -16,6 +16,7 @@ const columns = [
       ["Features", "/features"],
       ["Pricing", "/pricing"],
       ["Industries", "/industries"],
+      ["Lead Generation Software", "/contractor-lead-generation-software"],
       ["Google Maps Scraper", "/google-maps-scraper"],
       ["Apollo Alternative", "/apollo-alternative"],
       ["Blog", "/blog"],
@@ -28,6 +29,7 @@ const columns = [
     links: [
       ["About", "/about"],
       ["Affiliate Program", "/affiliates"],
+      ["Enterprise", "/enterprise/book"],
       ["Contact", "mailto:hello@contractorleads.us"],
       ["Help Center", "/help"],
     ],

@@ -77,9 +77,6 @@ export const metadata: Metadata = {
       "TyqXl7_dlFkiT-2tH8-iodrv1XIdFCXk349h199738Y",
     ],
   },
-  alternates: {
-    canonical: seoBaseUrl(),
-  },
 };
 
 export const viewport = {

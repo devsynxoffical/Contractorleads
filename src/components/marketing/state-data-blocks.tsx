@@ -22,13 +22,13 @@ export function StateDataBlocks({ data }: { data: StateMarketData }) {
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-fuchsia-200 bg-fuchsia-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-fuchsia-700">
               <HiOutlineChartBar className="h-3.5 w-3.5" />
-              Verified Market Intelligence
+              Market Estimate
             </div>
             <h2 className="mt-3 font-[family-name:var(--font-display)] text-[22px] font-bold text-slate-900 sm:text-[26px]">
-              We found {data.businessCount.toLocaleString()} {data.tradeName.toLowerCase()} businesses in {data.stateName}
+              An estimated {data.businessCount.toLocaleString()} {data.tradeName.toLowerCase()} businesses in {data.stateName}
             </h2>
             <p className="mt-1 text-[14px] text-slate-600">
-              Scanned across Google Places, local maps, and public directories.
+              Modeled from typical Contractor Leads search results and state market size. Live counts come from Lead Finder.
             </p>
           </div>
           <div className="flex items-center gap-3 rounded-2xl border border-violet-100 bg-white px-4 py-3 shadow-xs">
@@ -78,7 +78,7 @@ export function StateDataBlocks({ data }: { data: StateMarketData }) {
               {data.ownerIdentifiedPct}%
             </p>
             <p className="mt-1 text-[12px] text-slate-500">
-              Leads with verified owner name & decision-maker
+              Share of leads where enrichment typically returns an owner name
             </p>
           </div>
 
@@ -91,7 +91,7 @@ export function StateDataBlocks({ data }: { data: StateMarketData }) {
               {data.runningMetaAdsPct}%
             </p>
             <p className="mt-1 text-[12px] text-slate-500">
-              Businesses currently spending on Meta/IG ads
+              Share of businesses typically running Meta/IG ads
             </p>
           </div>
         </div>
@@ -148,7 +148,7 @@ export function StateDataBlocks({ data }: { data: StateMarketData }) {
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50 text-[12px] font-bold uppercase tracking-wider text-slate-600">
                 <th className="py-3 px-4">City</th>
-                <th className="py-3 px-4">Businesses Scanned</th>
+                <th className="py-3 px-4">Est. Businesses</th>
                 <th className="py-3 px-4">% Without Website</th>
                 <th className="py-3 px-4">% Running Meta Ads</th>
                 <th className="py-3 px-4 text-right">Action</th>
@@ -195,17 +195,17 @@ export function StateDataBlocks({ data }: { data: StateMarketData }) {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
             <h3 className="font-[family-name:var(--font-display)] text-[20px] font-bold text-slate-900">
-              Sample Scored Leads in {data.stateName}
+              What a Scored Lead Looks Like in {data.stateName}
             </h3>
             <p className="text-[13px] text-slate-600">
-              Real records from our database (business and owner names anonymized for privacy).
+              Illustrative examples of the Hot, Warm and Nurture tiers. Business names, owner names and live scores appear in the app.
             </p>
           </div>
           <Link
             href="/register"
             className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-fuchsia-600 hover:text-fuchsia-700"
           >
-            Unlock complete records with 10 free leads →
+            Pull live records with 10 free leads →
           </Link>
         </div>
 
@@ -234,7 +234,7 @@ export function StateDataBlocks({ data }: { data: StateMarketData }) {
 
               <div>
                 <p className="font-semibold text-slate-900">{lead.category}</p>
-                <p className="text-[12px] text-slate-400">Owner Contact: [Verified in App]</p>
+                <p className="text-[12px] text-slate-400">Owner contact shown in app</p>
               </div>
 
               <div className="grid grid-cols-2 gap-2 border-y border-slate-100 py-3 text-[12px]">
@@ -259,7 +259,7 @@ export function StateDataBlocks({ data }: { data: StateMarketData }) {
               <div className="flex items-center justify-between text-[11.5px] text-slate-600">
                 <span className="flex items-center gap-1">
                   <HiOutlineCheckCircle className="h-4 w-4 text-emerald-500" />
-                  Owner Identified
+                  Owner name typical
                 </span>
                 <span>{lead.runningAds ? "Running Meta Ads" : "No Active Ads"}</span>
               </div>

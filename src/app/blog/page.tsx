@@ -3,10 +3,7 @@ import Link from "next/link";
 import {
   HiOutlineArrowRight,
   HiOutlineClock,
-  HiOutlineSparkles,
-  HiOutlineDocumentText,
   HiOutlineFire,
-  HiOutlineVideoCamera,
 } from "react-icons/hi2";
 import { MarketingSiteShell, MarketingSubpageHero } from "@/components/marketing/marketing-site-shell";
 import {
@@ -15,7 +12,7 @@ import {
 } from "@/components/marketing/marketing-subpage";
 import { Reveal } from "@/components/marketing/marketing-ui";
 import { JsonLd, breadcrumbJsonLd } from "@/components/seo/json-ld";
-import { BLOG_POSTS } from "@/lib/blog-content";
+import { BLOG_CLUSTER_LABELS, BLOG_POSTS } from "@/lib/blog-content";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
@@ -100,12 +97,6 @@ export default function BlogIndexPage() {
                     <span className="font-semibold text-fuchsia-700 inline-flex items-center gap-1 group-hover:translate-x-0.5 transition">
                       Read full pillar guide →
                     </span>
-                    {pillar.video && (
-                      <span className="inline-flex items-center gap-1 text-slate-500 text-[12px]">
-                        <HiOutlineVideoCamera className="h-4 w-4 text-rose-500" />
-                        Video included
-                      </span>
-                    )}
                   </div>
                 </article>
               </Link>
@@ -128,7 +119,7 @@ export default function BlogIndexPage() {
                 <article className="flex h-full flex-col rounded-2xl border border-violet-100 bg-white p-5 shadow-sm transition group-hover:border-fuchsia-300 group-hover:shadow-md">
                   <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500">
                     <span className="text-fuchsia-600">
-                      {post.cluster === "lsa" ? "Local Ads & Search" : "Agency Growth"}
+                      {BLOG_CLUSTER_LABELS[post.cluster]}
                     </span>
                     <span className="flex items-center gap-1 text-slate-400">
                       <HiOutlineClock className="h-3.5 w-3.5" />
@@ -145,7 +136,7 @@ export default function BlogIndexPage() {
                   </p>
 
                   <div className="mt-4 flex items-center justify-between text-[12px] text-slate-400 border-t border-slate-50 pt-3">
-                    <span>Keyword: {post.primaryKeyword}</span>
+                    <span>Updated {post.updatedDate}</span>
                     <span className="font-semibold text-fuchsia-700">Read guide →</span>
                   </div>
                 </article>

@@ -1,10 +1,10 @@
-import { TRADE_PAGES, seoBaseUrl } from "@/lib/seo";
+import { CONTENT_LAST_UPDATED, TRADE_PAGES, seoBaseUrl } from "@/lib/seo";
 
 export const dynamic = "force-static";
 
 export async function GET() {
   const base = seoBaseUrl();
-  const now = "2026-10-22";
+  const now = CONTENT_LAST_UPDATED;
 
   const urls = TRADE_PAGES.map(
     (t) => `  <url>

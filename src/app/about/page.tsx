@@ -279,7 +279,7 @@ export default function AboutPage() {
         primaryLabel="Start free trial (10 leads)"
         secondaryHref="/features"
         secondaryLabel="See all features"
-        note="No credit card required · Starter starts at $19/mo"
+        note="No credit card required · Starter starts at $19.99/mo"
       />
     </MarketingSiteShell>
   );

@@ -27,7 +27,7 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata: Metadata = buildMetadata({
   title: "Apollo Alternative for Local Contractor Leads",
   description:
-    "Looking for an Apollo.io alternative for local contractor leads? Get live Google data, owner names and AI scores from $19 a month. 10 leads free.",
+    "Looking for an Apollo.io alternative for local contractor leads? Get live Google data, owner names and AI scores from $19.99 a month. 10 leads free.",
   path: "/apollo-alternative",
   keywords: [
     "apollo alternative",
@@ -47,7 +47,7 @@ const APOLLO_FAQS = [
   },
   {
     q: "Is there a free Apollo.io alternative?",
-    a: "Contractor Leads gives 10 free scored leads with no credit card, then starts at $19 a month for 500 credits.",
+    a: "Contractor Leads gives 10 free scored leads with no credit card, then starts at $19.99 a month for 500 credits.",
   },
   {
     q: "Is Apollo.io free?",
@@ -96,7 +96,7 @@ export default function ApolloAlternativePage() {
             Apollo.io is built around company and contact databases for B2B sales. Local contractors
             often have thin company data and no sales team on LinkedIn. Contractor Leads searches live
             Google business data instead, finds the owner from the business website and scores each
-            lead, from $19 a month.
+            lead, from $19.99 a month.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
@@ -115,7 +115,7 @@ export default function ApolloAlternativePage() {
             </Link>
           </div>
           <p className="mt-4 text-[12px] text-white/50">
-            No credit card required · Starter starts at $19/mo (500 leads)
+            No credit card required · Starter starts at $19.99/mo (500 leads)
           </p>
         </div>
       </header>
@@ -250,13 +250,13 @@ export default function ApolloAlternativePage() {
               </tr>
               <tr>
                 <td className="py-3.5 px-4 font-semibold text-slate-900">Entry Paid Price</td>
-                <td className="py-3.5 px-4 font-semibold text-slate-900">$19/mo (500 credits)</td>
+                <td className="py-3.5 px-4 font-semibold text-slate-900">$19.99/mo (500 credits)</td>
                 <td className="py-3.5 px-4 text-slate-600">$49/user/mo (billed annually)</td>
               </tr>
             </tbody>
           </table>
           <p className="mt-4 text-[12px] text-slate-400">
-            Data verified from apollo.io/pricing on 22 Oct 2026.
+            Apollo.io figures reflect its public pricing page as of October 2026 and may change; check apollo.io/pricing before relying on them.
           </p>
         </div>
       </SubpageSection>
@@ -386,7 +386,7 @@ export default function ApolloAlternativePage() {
         primaryLabel="Start free trial (10 leads)"
         secondaryHref="/pricing"
         secondaryLabel="View all plans"
-        note="Starter $19/mo · Growth $49/mo · Agency $99/mo"
+        note="Starter $19.99/mo · Growth $49/mo · Agency $99/mo"
       />
     </MarketingSiteShell>
   );

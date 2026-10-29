@@ -44,6 +44,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       "contractor leads tutorial",
       categoryLabel(article.category),
     ],
+    type: "article",
+    publishedTime: article.updatedAt,
+    modifiedTime: article.updatedAt,
   });
 }
 
