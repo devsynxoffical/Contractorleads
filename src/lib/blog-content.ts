@@ -1,8 +1,11 @@
 /**
  * Content Engine Data for Contractor Leads
- * 9 high-authority guides (2 pillars, 7 cluster posts) targeting high-intent,
- * growing agency and contractor search queries.
+ * Pillar and cluster guides targeting high-intent agency and contractor
+ * search queries. Add new posts to BLOG_POSTS; sitemaps and the blog index
+ * pick them up automatically.
  */
+
+import { PLAYBOOK_POSTS } from "@/lib/blog-posts-playbooks";
 
 export type BlogFaq = {
   q: string;
@@ -24,6 +27,15 @@ export type BlogPostSection = {
   };
 };
 
+export type BlogCluster = "lsa" | "agency-growth" | "trade-playbooks" | "tools";
+
+export const BLOG_CLUSTER_LABELS: Record<BlogCluster, string> = {
+  lsa: "Local Ads & Search",
+  "agency-growth": "Agency Growth",
+  "trade-playbooks": "Trade Playbooks",
+  tools: "Tools & Data",
+};
+
 export type BlogPost = {
   slug: string;
   type: "pillar" | "cluster";
@@ -34,7 +46,7 @@ export type BlogPost = {
   secondaryKeywords: string[];
   searchVolume: string;
   growth: string;
-  cluster: "lsa" | "agency-growth";
+  cluster: BlogCluster;
   publishedDate: string;
   updatedDate: string;
   readingMinutes: number;
@@ -48,16 +60,11 @@ export type BlogPost = {
   summary: string;
   faqs: BlogFaq[];
   sections: BlogPostSection[];
-  video?: {
-    name: string;
-    description: string;
-    embedUrl: string;
-    thumbnailUrl: string;
-    chapters: Array<{ time: string; title: string }>;
-  };
+  /** Industry slugs (see TRADE_PAGES) this guide is most relevant to; drives cross-links. */
+  relatedIndustries?: string[];
 };
 
-export const BLOG_POSTS: BlogPost[] = [
+const CORE_POSTS: BlogPost[] = [
   // 1. PILLAR 1: Local Service Ads for Agencies
   {
     slug: "local-service-ads",
@@ -82,6 +89,7 @@ export const BLOG_POSTS: BlogPost[] = [
     searchVolume: "49,500/mo",
     growth: "+18%",
     cluster: "lsa",
+    relatedIndustries: ["roofing", "hvac", "plumbing", "electrical"],
     publishedDate: "2026-10-22",
     updatedDate: "2026-10-22",
     readingMinutes: 16,
@@ -93,20 +101,6 @@ export const BLOG_POSTS: BlogPost[] = [
     },
     directAnswer: "Local Service Ads (LSAs) are Google's pay-per-lead ads for service businesses such as roofers, plumbers and HVAC companies. They appear at the very top of Google search results with a Google Guaranteed or Google Screened badge. Contractors pay exclusively for valid phone calls, messages, or booked appointments—not for clicks. Marketing agencies set up profiles, verify licenses and insurance, manage budgets, dispute invalid leads, and optimize review velocity for a monthly management retainer.",
     summary: "The definitive guide for marketing agencies and media buyers selling Google Local Service Ads to home-service contractors. Covers verification, costs, disputes, 2026 Google Ads migration, and agency pricing.",
-    video: {
-      name: "Local Service Ads for Contractors: Start to Finish Walkthrough",
-      description: "Complete agency setup, verification checklist, lead dispute management, and bidding strategy for Google LSAs.",
-      embedUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-      thumbnailUrl: "https://www.contractorleads.us/marketing/founder-portrait.jpg",
-      chapters: [
-        { time: "00:00", title: "Introduction to Local Service Ads" },
-        { time: "03:15", title: "Google Guaranteed vs Google Screened" },
-        { time: "07:40", title: "Verification, License & Background Checks" },
-        { time: "12:10", title: "Target CPA & Budget Management in 2026" },
-        { time: "18:30", title: "Disputing Invalid Leads in Google Ads Lead Manager" },
-        { time: "24:00", title: "How Agencies Package and Price LSA Management" },
-      ],
-    },
     sections: [
       {
         heading: "What are Local Service Ads?",
@@ -149,7 +143,7 @@ export const BLOG_POSTS: BlogPost[] = [
       {
         heading: "What changes as LSAs move into Google Ads in 2026",
         level: 3,
-        body: "Starting in late 2026, Google began transitioning standalone Local Services Ads accounts into the unified Google Ads interface as specialized Performance Max campaigns. The legacy LSA portal is phased out in favor of Google Ads Lead Manager. Key operational updates include: budgets transitioned from weekly to daily schedules, manual bidding replaced by Target CPA bid automation, and unified billing across search and local campaigns. Agencies must download historical dispute records prior to migration.",
+        body: "Google has been moving Local Services Ads management out of the standalone LSA portal and into the Google Ads interface, with leads handled in Google Ads Lead Manager. Expect the remaining standalone features to follow. Key operational updates include: budgets transitioned from weekly to daily schedules, manual bidding replaced by Target CPA bid automation, and unified billing across search and local campaigns. Agencies must download historical dispute records prior to migration.",
       },
       {
         heading: "How much do Local Service Ads cost?",
@@ -260,6 +254,7 @@ export const BLOG_POSTS: BlogPost[] = [
     searchVolume: "210/mo",
     growth: "+40%",
     cluster: "agency-growth",
+    relatedIndustries: ["roofing", "hvac", "remodeling", "solar"],
     publishedDate: "2026-10-22",
     updatedDate: "2026-10-22",
     readingMinutes: 10,
@@ -346,6 +341,7 @@ export const BLOG_POSTS: BlogPost[] = [
     searchVolume: "140/mo",
     growth: "+156%",
     cluster: "lsa",
+    relatedIndustries: ["roofing"],
     publishedDate: "2026-10-22",
     updatedDate: "2026-10-22",
     readingMinutes: 11,
@@ -426,6 +422,7 @@ export const BLOG_POSTS: BlogPost[] = [
     searchVolume: "3,600/mo",
     growth: "-19%",
     cluster: "agency-growth",
+    relatedIndustries: ["roofing", "hvac", "plumbing"],
     publishedDate: "2026-10-22",
     updatedDate: "2026-10-22",
     readingMinutes: 12,
@@ -501,6 +498,7 @@ export const BLOG_POSTS: BlogPost[] = [
     searchVolume: "3,600/mo",
     growth: "+69%",
     cluster: "agency-growth",
+    relatedIndustries: ["roofing", "hvac", "plumbing", "general-contractors"],
     publishedDate: "2026-10-22",
     updatedDate: "2026-10-22",
     readingMinutes: 17,
@@ -596,6 +594,7 @@ export const BLOG_POSTS: BlogPost[] = [
     searchVolume: "1,900/mo",
     growth: "-11%",
     cluster: "agency-growth",
+    relatedIndustries: ["roofing"],
     publishedDate: "2026-10-22",
     updatedDate: "2026-10-22",
     readingMinutes: 11,
@@ -668,6 +667,7 @@ export const BLOG_POSTS: BlogPost[] = [
     searchVolume: "880/mo",
     growth: "-4%",
     cluster: "agency-growth",
+    relatedIndustries: ["hvac"],
     publishedDate: "2026-10-22",
     updatedDate: "2026-10-22",
     readingMinutes: 10,
@@ -744,6 +744,7 @@ export const BLOG_POSTS: BlogPost[] = [
     searchVolume: "390/mo",
     growth: "-11%",
     cluster: "agency-growth",
+    relatedIndustries: ["roofing", "plumbing", "hvac"],
     publishedDate: "2026-10-22",
     updatedDate: "2026-10-22",
     readingMinutes: 10,
@@ -816,6 +817,7 @@ export const BLOG_POSTS: BlogPost[] = [
     searchVolume: "1,900/mo",
     growth: "+65%",
     cluster: "lsa",
+    relatedIndustries: ["plumbing", "hvac", "electrical", "roofing"],
     publishedDate: "2026-10-22",
     updatedDate: "2026-10-22",
     readingMinutes: 11,
@@ -881,6 +883,8 @@ export const BLOG_POSTS: BlogPost[] = [
   },
 ];
 
+/** All public blog posts: core guides plus trade / tooling playbooks. */
+export const BLOG_POSTS: BlogPost[] = [...CORE_POSTS, ...PLAYBOOK_POSTS];
 export function getBlogPost(slug: string): BlogPost | undefined {
   return BLOG_POSTS.find((p) => p.slug === slug);
 }

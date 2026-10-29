@@ -1,7 +1,9 @@
 /**
- * Deterministic State Market Data Generator for Contractor Leads
- * Generates verified market size, digital gap metrics, top cities,
- * Hot/Warm/Nurture tiers, best opening angles, and state-specific FAQs.
+ * Deterministic state market MODEL for Contractor Leads landing pages.
+ *
+ * These figures are modeled estimates (trade baseline x state population scale,
+ * with seeded variation), not a live count. Every consumer of this data must
+ * label it as an estimate — see StateDataBlocks and the region FAQ copy.
  */
 
 export type StateCityStat = {
@@ -205,16 +207,16 @@ export function getStateMarketData(
   // Best opening angle selection based on rules:
   let openingAngle = "";
   if (noWebsitePct >= 30) {
-    openingAngle = `In ${stateName}, over ${noWebsitePct}% of ${tradeName.toLowerCase()} contractors operate without a verified website, while another ${weakWebsitePct}% score below 50 on our Website performance test. For agencies, the strongest opening angle is a high-converting website build paired with a Google Business Profile optimization. Position your pitch around capturing local map pack visibility that competitors without digital infrastructure are actively forfeiting.`;
+    openingAngle = `In ${stateName}, we estimate that around ${noWebsitePct}% of ${tradeName.toLowerCase()} contractors operate without a website, while another ${weakWebsitePct}% score below 50 on the Contractor Leads website test. For agencies, the strongest opening angle is a high-converting website build paired with a Google Business Profile optimization. Position your pitch around capturing local map pack visibility that competitors without digital infrastructure are actively forfeiting.`;
   } else if (runningMetaAdsPct <= 12) {
-    openingAngle = `Only ${runningMetaAdsPct}% of ${tradeName.toLowerCase()} contractors in ${stateName} are currently running Facebook or Instagram ads. This represents an enormous paid social arbitrage for agencies: customer acquisition costs on Meta remain uncontested in this market. Lead your outbound campaign with a targeted Meta lead-ad sprint focused on seasonal emergency requests and tune-up specials.`;
+    openingAngle = `Only an estimated ${runningMetaAdsPct}% of ${tradeName.toLowerCase()} contractors in ${stateName} are running Facebook or Instagram ads. This represents an enormous paid social arbitrage for agencies: customer acquisition costs on Meta remain uncontested in this market. Lead your outbound campaign with a targeted Meta lead-ad sprint focused on seasonal emergency requests and tune-up specials.`;
   } else if (medianReviews < 25) {
-    openingAngle = `The median ${tradeName.toLowerCase()} business in ${stateName} holds just ${medianReviews} Google reviews, leaving the local map pack wide open to disruption. The winning outreach pitch in this market is an automated review acceleration system paired with Local Service Ads. Show contractors how adding 15 to 25 verified customer reviews will directly elevate them above local competitors.`;
+    openingAngle = `The typical ${tradeName.toLowerCase()} business in ${stateName} holds an estimated ${medianReviews} Google reviews, leaving the local map pack wide open to disruption. The winning outreach pitch in this market is an automated review acceleration system paired with Local Service Ads. Show contractors how adding 15 to 25 verified customer reviews will directly elevate them above local competitors.`;
   } else {
-    openingAngle = `With ${businessCount.toLocaleString()} ${tradeName.toLowerCase()} businesses active across ${stateName} and ${ownerIdentifiedPct}% having verified owner contact records, outbound appointment setting yields rapid returns. Lead with an audit showing their PPC and SEO scores against the top three map competitors in ${topCities[0]?.city ?? stateName}, and offer a guaranteed 14-day pipeline test.`;
+    openingAngle = `With an estimated ${businessCount.toLocaleString()} ${tradeName.toLowerCase()} businesses active across ${stateName} and roughly ${ownerIdentifiedPct}% returning an owner name in enrichment, outbound appointment setting yields rapid returns. Lead with an audit showing their PPC and SEO scores against the top three map competitors in ${topCities[0]?.city ?? stateName}, and offer a guaranteed 14-day pipeline test.`;
   }
 
-  // Sample lead cards (anonymized)
+  // Illustrative sample lead cards (what a scored record looks like)
   const sampleLeads: SampleLeadCard[] = [
     {
       tier: "Hot",
@@ -260,21 +262,21 @@ export function getStateMarketData(
     },
   ];
 
-  const freshnessNote = `Data from ${businessCount.toLocaleString()} businesses scanned between 1 Sep and 22 Oct 2026. Updated monthly.`;
+  const freshnessNote = `Methodology: the figures on this page are modeled estimates for ${tradeName.toLowerCase()} businesses in ${stateName}, built from typical Contractor Leads search results and state market size. They are directional planning numbers, not a live count. Run a search in the app for live data on your exact market.`;
   const lastUpdated = "2026-10-22";
 
   const faqs = [
     {
       q: `How many ${tradeName.toLowerCase()} contractors in ${stateName} have no website?`,
-      a: `Based on our live scan of ${businessCount.toLocaleString()} ${tradeName.toLowerCase()} businesses in ${stateName}, approximately ${noWebsitePct}% have no registered website, and an additional ${weakWebsitePct}% have sites scoring under 50 on digital performance.`,
+      a: `Our market model estimates that roughly ${noWebsitePct}% of the ${businessCount.toLocaleString()} or so ${tradeName.toLowerCase()} businesses in ${stateName} have no website, and about ${weakWebsitePct}% more have sites scoring under 50 on the Contractor Leads website test. Run a live search in Lead Finder to see the exact split for your city.`,
     },
     {
       q: `How many ${tradeName.toLowerCase()} businesses in ${stateName} run Facebook or Meta ads?`,
-      a: `Currently, only about ${runningMetaAdsPct}% of verified ${tradeName.toLowerCase()} contractors across ${stateName} run active Meta campaigns, making paid social a low-competition acquisition channel for marketing agencies.`,
+      a: `We estimate that only about ${runningMetaAdsPct}% of ${tradeName.toLowerCase()} contractors across ${stateName} run active Meta campaigns, which makes paid social a low-competition channel for agencies to pitch. Meta Ads Intel in the app checks each lead's live ad status.`,
     },
     {
       q: `What is the typical Google review count for ${tradeName.toLowerCase()} contractors in ${stateName}?`,
-      a: `The median Google review count for ${tradeName.toLowerCase()} businesses in ${stateName} is ${medianReviews} reviews with a median rating of ${medianRating} stars. Contractors in top metros like ${topCities[0]?.city ?? stateName} average higher review counts than rural areas.`,
+      a: `Our estimate for the median ${tradeName.toLowerCase()} business in ${stateName} is around ${medianReviews} Google reviews at a ${medianRating} star rating. Contractors in larger metros such as ${topCities[0]?.city ?? stateName} typically carry more reviews than rural operators.`,
     },
   ];
 

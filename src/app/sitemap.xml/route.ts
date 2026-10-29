@@ -1,10 +1,10 @@
-import { seoBaseUrl } from "@/lib/seo";
+import { CONTENT_LAST_UPDATED, seoBaseUrl } from "@/lib/seo";
 
 export const dynamic = "force-static";
 
 export async function GET() {
   const base = seoBaseUrl();
-  const now = new Date().toISOString().split("T")[0];
+  const now = CONTENT_LAST_UPDATED;
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

@@ -5,12 +5,13 @@ Important facts:
 - Audience: agencies and sales teams that sell to contractors. Not a service for homeowners hiring a contractor.
 - Coverage: 18 home-service trades (roofing, HVAC, plumbing, electrical, solar, general contractors, remodeling, home improvement, flooring, landscaping, painting, concrete, windows and doors, fencing, garage doors, pest control, cleaning services, pool services) in the United States, Canada, the United Kingdom, Australia and New Zealand.
 - Data: live Google Places data at search time, cross-checked with Yelp and the business website. Unverified fields are left blank.
-- Pricing: Free 10 leads with no card. Starter $19/month (500 credits), Growth $49/month (2,000 credits), Agency $99/month (5,000 credits), Enterprise custom. Annual billing lowers the monthly price.
+- Pricing: Free 10 leads with no card. Starter $19.99/month (500 credits), Growth $49/month (2,000 credits), Agency $99/month (5,000 credits), Enterprise custom. Annual billing lowers the monthly price.
 - Integrations: GoHighLevel, Zapier, Make, HubSpot, Slack, custom webhooks, CSV and Excel export. Email sends from the user's own Gmail, Outlook or SMTP mailbox.
 - Company: Vaishali Media Productions LLC, Sheridan, Wyoming, USA. Contact: hello@contractorleads.us
 
 ## Product
 - [Features](https://www.contractorleads.us/features): Lead Finder, AI lead scoring, owner enrichment, Meta Ads Intel, Outreach Studio, Pipeline CRM, Lead Map
+- [Contractor lead generation software: buyer's guide](https://www.contractorleads.us/contractor-lead-generation-software)
 - [Pricing](https://www.contractorleads.us/pricing): plans, credits and cost per lead
 - [Google Maps scraper alternative](https://www.contractorleads.us/google-maps-scraper)
 - [Apollo.io alternative for local contractors](https://www.contractorleads.us/apollo-alternative)
@@ -26,6 +27,12 @@ Important facts:
 - [Roofing SEO](https://www.contractorleads.us/blog/roofing-seo)
 - [HVAC marketing agency](https://www.contractorleads.us/blog/hvac-marketing-agency)
 - [Pay per lead for contractors](https://www.contractorleads.us/blog/pay-per-lead-for-contractors)
+- [How to get contractor leads: 11 channels ranked](https://www.contractorleads.us/blog/how-to-get-contractor-leads)
+- [Plumbing contractor leads for agencies](https://www.contractorleads.us/blog/plumbing-contractor-leads)
+- [Solar contractor leads for agencies](https://www.contractorleads.us/blog/solar-contractor-leads)
+- [Apollo.io vs Google Maps scraper vs Contractor Leads](https://www.contractorleads.us/blog/apollo-vs-google-maps-scraper)
+- [How to sell SEO to contractors](https://www.contractorleads.us/blog/how-to-sell-seo-to-contractors)
+- [Cold calling contractors: scripts and openers](https://www.contractorleads.us/blog/cold-calling-contractors-script)
 
 ## Help
 - [Help center](https://www.contractorleads.us/help)

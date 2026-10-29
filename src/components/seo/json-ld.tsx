@@ -75,7 +75,7 @@ export function softwareApplicationJsonLd() {
       {
         "@type": "Offer",
         name: "Starter",
-        price: "19",
+        price: "19.99",
         priceCurrency: "USD",
         description: "500 credits a month",
         url: absoluteUrl("/pricing"),
@@ -133,11 +133,6 @@ export function websiteJsonLd() {
       "@type": "Organization",
       name: SEO.siteName,
       url: seoBaseUrl(),
-    },
-    potentialAction: {
-      "@type": "SearchAction",
-      target: `${absoluteUrl("/register")}?ref=search`,
-      "query-input": "required name=search_term_string",
     },
   };
 }
@@ -264,49 +259,5 @@ export function personJsonLd() {
   };
 }
 
-export function datasetJsonLd(opts: {
-  name: string;
-  description: string;
-  spatialCoverage: string;
-  temporalCoverage: string;
-  url: string;
-}) {
-  return {
-    "@context": "https://schema.org",
-    "@type": "Dataset",
-    name: opts.name,
-    description: opts.description,
-    url: absoluteUrl(opts.url),
-    creator: {
-      "@type": "Organization",
-      name: "Contractor Leads",
-      url: seoBaseUrl(),
-    },
-    temporalCoverage: opts.temporalCoverage,
-    spatialCoverage: {
-      "@type": "Place",
-      name: opts.spatialCoverage,
-    },
-  };
-}
 
-export function videoObjectJsonLd(opts: {
-  name: string;
-  description: string;
-  thumbnailUrl: string;
-  uploadDate: string;
-  contentUrl?: string;
-  embedUrl: string;
-}) {
-  return {
-    "@context": "https://schema.org",
-    "@type": "VideoObject",
-    name: opts.name,
-    description: opts.description,
-    thumbnailUrl: opts.thumbnailUrl,
-    uploadDate: opts.uploadDate,
-    embedUrl: opts.embedUrl,
-    ...(opts.contentUrl ? { contentUrl: opts.contentUrl } : {}),
-  };
-}
 

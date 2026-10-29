@@ -6,7 +6,6 @@ import {
   HiOutlineArrowRight,
   HiOutlineClock,
   HiOutlineCheckCircle,
-  HiOutlineVideoCamera,
 } from "react-icons/hi2";
 import { MarketingSiteShell } from "@/components/marketing/marketing-site-shell";
 import {
@@ -19,10 +18,9 @@ import {
   blogPostingJsonLd,
   breadcrumbJsonLd,
   faqPageJsonLd,
-  videoObjectJsonLd,
 } from "@/components/seo/json-ld";
-import { BLOG_POSTS, getBlogPost } from "@/lib/blog-content";
-import { buildMetadata } from "@/lib/seo";
+import { BLOG_CLUSTER_LABELS, BLOG_POSTS, getBlogPost } from "@/lib/blog-content";
+import { buildMetadata, getTradeBySlug } from "@/lib/seo";
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -39,6 +37,10 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     description: post.metaDescription,
     path: `/blog/${post.slug}`,
     keywords: [post.primaryKeyword, ...post.secondaryKeywords],
+    type: "article",
+    publishedTime: post.publishedDate,
+    modifiedTime: post.updatedDate,
+    authors: [post.author.name],
   });
 }
 
@@ -47,9 +49,16 @@ export default async function BlogPostPage({ params }: Params) {
   const post = getBlogPost(slug);
   if (!post) notFound();
 
-  const related = BLOG_POSTS.filter(
+  const sameCluster = BLOG_POSTS.filter(
     (p) => p.slug !== post.slug && p.cluster === post.cluster,
-  ).slice(0, 3);
+  );
+  const others = BLOG_POSTS.filter(
+    (p) => p.slug !== post.slug && p.cluster !== post.cluster,
+  );
+  const related = [...sameCluster, ...others].slice(0, 3);
+  const industries = (post.relatedIndustries ?? [])
+    .map((slug) => getTradeBySlug(slug))
+    .filter((t): t is NonNullable<typeof t> => Boolean(t));
 
   return (
     <MarketingSiteShell>
@@ -71,17 +80,6 @@ export default async function BlogPostPage({ params }: Params) {
         ])}
       />
       {post.faqs.length > 0 && <JsonLd data={faqPageJsonLd(post.faqs)} />}
-      {post.video && (
-        <JsonLd
-          data={videoObjectJsonLd({
-            name: post.video.name,
-            description: post.video.description,
-            thumbnailUrl: post.video.thumbnailUrl,
-            uploadDate: post.publishedDate,
-            embedUrl: post.video.embedUrl,
-          })}
-        />
-      )}
 
       {/* Hero Header */}
       <header className="relative overflow-hidden border-b border-white/10 bg-[#07040f] py-14 sm:py-20">
@@ -104,11 +102,12 @@ export default async function BlogPostPage({ params }: Params) {
 
           <div className="mt-5 flex items-center gap-3">
             <span className="rounded-full bg-fuchsia-500/20 border border-fuchsia-400/30 px-3 py-0.5 text-[11px] font-bold uppercase tracking-wider text-fuchsia-300">
-              {post.type === "pillar" ? "Flagship Pillar" : "Tactical Guide"}
+              {post.type === "pillar" ? "Flagship Pillar" : BLOG_CLUSTER_LABELS[post.cluster]}
             </span>
             <span className="flex items-center gap-1 text-[12px] text-white/50">
               <HiOutlineClock className="h-3.5 w-3.5" />
-              {post.readingMinutes} min read · Published {post.publishedDate}
+              {post.readingMinutes} min read · Updated{" "}
+              <time dateTime={post.updatedDate}>{post.updatedDate}</time>
             </span>
           </div>
 
@@ -238,38 +237,6 @@ export default async function BlogPostPage({ params }: Params) {
           </section>
         ))}
 
-        {/* Video Embed Section (if defined) */}
-        {post.video && (
-          <section className="rounded-3xl border border-violet-200 bg-slate-900 p-6 sm:p-8 text-white space-y-6">
-            <div className="flex items-center gap-2 text-rose-400 text-[12px] font-bold uppercase tracking-wider">
-              <HiOutlineVideoCamera className="h-5 w-5" />
-              Watch: {post.video.name}
-            </div>
-            <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-white/10 bg-black">
-              <iframe
-                src={post.video.embedUrl}
-                title={post.video.name}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="absolute inset-0 h-full w-full"
-              />
-            </div>
-            <div>
-              <p className="text-[13px] font-bold uppercase tracking-wider text-white/60">
-                Video Chapters & Timestamps:
-              </p>
-              <div className="mt-3 grid gap-2 sm:grid-cols-2 text-[13px] text-white/80">
-                {post.video.chapters.map((ch, ci) => (
-                  <div key={ci} className="flex items-center gap-2">
-                    <span className="font-mono text-fuchsia-400">{ch.time}</span>
-                    <span>{ch.title}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
         {/* FAQs */}
         {post.faqs.length > 0 && (
           <section className="rounded-3xl border border-violet-100 bg-white p-6 sm:p-8 shadow-sm space-y-6">
@@ -282,6 +249,37 @@ export default async function BlogPostPage({ params }: Params) {
                   <h3 className="font-semibold text-slate-900 text-[15px]">{faq.q}</h3>
                   <p className="mt-2 text-[14px] leading-relaxed text-slate-600">{faq.a}</p>
                 </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Prospect-this-trade cross links */}
+        {industries.length > 0 && (
+          <section className="rounded-3xl border border-violet-200 bg-gradient-to-br from-violet-50/70 via-white to-fuchsia-50/40 p-6 sm:p-8">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-fuchsia-700">
+              Put it to work
+            </p>
+            <h2 className="mt-2 font-[family-name:var(--font-display)] text-[20px] font-bold text-slate-900">
+              Find the contractors this guide is about
+            </h2>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {industries.map((t) => (
+                <Link
+                  key={t.slug}
+                  href={`/industries/${t.slug}`}
+                  className="group flex items-start justify-between gap-3 rounded-2xl border border-violet-100 bg-white p-4 transition hover:border-fuchsia-300 hover:shadow-md"
+                >
+                  <span>
+                    <span className="block text-[14px] font-semibold text-slate-900 group-hover:text-fuchsia-700">
+                      {t.headline}
+                    </span>
+                    <span className="mt-1 block text-[12.5px] leading-relaxed text-slate-600">
+                      {t.description}
+                    </span>
+                  </span>
+                  <HiOutlineArrowRight className="mt-1 h-4 w-4 shrink-0 text-fuchsia-600 transition group-hover:translate-x-0.5" />
+                </Link>
               ))}
             </div>
           </section>
