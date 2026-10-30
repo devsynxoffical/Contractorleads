@@ -251,7 +251,9 @@ export default async function TradeRegionPage({ params }: Params) {
           <SubpageLinkGrid
             columns={4}
             items={otherTrades.map((t) => ({
-              href: `/industries/${t.slug}/${region.slug}`,
+              href: isPriorityTrade(t.slug)
+                ? `/industries/${t.slug}/${region.slug}`
+                : `/industries/${t.slug}`,
               label: t.name,
             }))}
           />

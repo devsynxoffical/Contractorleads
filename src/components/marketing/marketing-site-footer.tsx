@@ -19,6 +19,7 @@ const columns = [
       ["Lead Generation Software", "/contractor-lead-generation-software"],
       ["Google Maps Scraper", "/google-maps-scraper"],
       ["Apollo Alternative", "/apollo-alternative"],
+      ["Compare Alternatives", "/alternatives"],
       ["Blog", "/blog"],
       ["Help Center", "/help"],
       ["FAQs", "/#faq"],

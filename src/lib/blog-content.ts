@@ -5,6 +5,7 @@
  * pick them up automatically.
  */
 
+import { GROWTH_POSTS } from "@/lib/blog-posts-growth";
 import { PLAYBOOK_POSTS } from "@/lib/blog-posts-playbooks";
 
 export type BlogFaq = {
@@ -884,7 +885,23 @@ const CORE_POSTS: BlogPost[] = [
 ];
 
 /** All public blog posts: core guides plus trade / tooling playbooks. */
-export const BLOG_POSTS: BlogPost[] = [...CORE_POSTS, ...PLAYBOOK_POSTS];
+export const BLOG_POSTS: BlogPost[] = [...CORE_POSTS, ...PLAYBOOK_POSTS, ...GROWTH_POSTS];
+/** Approximate word count across all rendered copy (for BlogPosting.wordCount). */
+export function blogWordCount(post: BlogPost): number {
+  const parts: string[] = [post.title, post.directAnswer, post.summary];
+  for (const s of post.sections) {
+    parts.push(s.heading, s.body);
+    if (s.bullets) parts.push(...s.bullets);
+    if (s.callout) parts.push(s.callout.title, s.callout.text);
+    if (s.table) {
+      parts.push(...s.table.headers);
+      for (const r of s.table.rows) parts.push(...r);
+    }
+  }
+  for (const f of post.faqs) parts.push(f.q, f.a);
+  return parts.join(" ").split(/\s+/).filter(Boolean).length;
+}
+
 export function getBlogPost(slug: string): BlogPost | undefined {
   return BLOG_POSTS.find((p) => p.slug === slug);
 }

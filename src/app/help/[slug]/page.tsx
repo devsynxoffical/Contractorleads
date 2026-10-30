@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const article = getAcademyArticle(slug);
   if (!article) return {};
   return buildMetadata({
-    title: `${article.title} | Contractor Leads Help Center`,
+    title: `${article.title} | Help Center`,
     description: article.summary,
     path: `/help/${article.slug}`,
     keywords: [

@@ -19,7 +19,7 @@ import {
   breadcrumbJsonLd,
   faqPageJsonLd,
 } from "@/components/seo/json-ld";
-import { BLOG_CLUSTER_LABELS, BLOG_POSTS, getBlogPost } from "@/lib/blog-content";
+import { BLOG_CLUSTER_LABELS, BLOG_POSTS, blogWordCount, getBlogPost } from "@/lib/blog-content";
 import { buildMetadata, getTradeBySlug } from "@/lib/seo";
 
 type Params = { params: Promise<{ slug: string }> };
@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const post = getBlogPost(slug);
   if (!post) return {};
   return buildMetadata({
-    title: `${post.titleTag} | Contractor Leads`,
+    title: post.titleTag,
     description: post.metaDescription,
     path: `/blog/${post.slug}`,
     keywords: [post.primaryKeyword, ...post.secondaryKeywords],
@@ -41,6 +41,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     publishedTime: post.publishedDate,
     modifiedTime: post.updatedDate,
     authors: [post.author.name],
+    ogImage: `/blog/${post.slug}/opengraph-image`,
   });
 }
 
@@ -70,6 +71,9 @@ export default async function BlogPostPage({ params }: Params) {
           datePublished: post.publishedDate,
           dateModified: post.updatedDate,
           keywords: [post.primaryKeyword, ...post.secondaryKeywords],
+          image: `/blog/${post.slug}/opengraph-image`,
+          author: { name: post.author.name, url: "/about", image: post.author.image },
+          wordCount: blogWordCount(post),
         })}
       />
       <JsonLd

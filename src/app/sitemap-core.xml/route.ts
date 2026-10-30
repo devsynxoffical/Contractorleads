@@ -13,6 +13,7 @@ export async function GET() {
     { path: "/contractor-lead-generation-software", priority: "0.9", changefreq: "monthly" },
     { path: "/google-maps-scraper", priority: "0.9", changefreq: "monthly" },
     { path: "/apollo-alternative", priority: "0.9", changefreq: "monthly" },
+    { path: "/alternatives", priority: "0.85", changefreq: "monthly" },
     { path: "/industries", priority: "0.85", changefreq: "weekly" },
     { path: "/blog", priority: "0.85", changefreq: "weekly" },
     { path: "/help", priority: "0.85", changefreq: "weekly" },

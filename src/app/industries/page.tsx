@@ -16,7 +16,7 @@ import { TIER_ONE_COUNTRIES } from "@/lib/constants";
 import { SEO_REGIONS, TRADE_PAGES, buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
-  title: "Contractor leads by trade — roofing, HVAC, plumbing & more",
+  title: "Contractor Leads by Trade: Roofing, HVAC, Plumbing and More",
   description:
     "Browse verified contractor lead verticals for agencies: roofing, HVAC, plumbing, electrical, solar, landscaping, remodeling, and more home-service trades.",
   path: "/industries",
