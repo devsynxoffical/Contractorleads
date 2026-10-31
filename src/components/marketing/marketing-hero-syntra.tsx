@@ -1,6 +1,5 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -22,11 +21,8 @@ import { handleMarketingHashClick } from "./marketing-scroll";
 import { usePrefersReducedMotion } from "./marketing-motion";
 import { MarketingAuthActions, useMarketingSession } from "./marketing-auth-actions";
 import { MarketingMobileNav } from "./marketing-mobile-nav";
+import { HeroObject } from "./hero-object";
 
-const HeroKnot3D = dynamic(
-  () => import("./hero-knot-3d").then((m) => m.HeroKnot3D),
-  { ssr: false, loading: () => null },
-);
 
 const NAV = [
   { href: "/features", label: "Features" },
@@ -369,22 +365,8 @@ export function MarketingHeroSyntra() {
 
         {/* Center: 3D knot */}
         <div className="relative order-first lg:order-none lg:col-span-4">
-          <div className="relative mx-auto aspect-square w-full max-w-[420px] lg:-mx-12 lg:-mt-6 lg:aspect-[4/5] lg:w-[calc(100%+6rem)] lg:max-w-none">
-            <div
-              className="absolute inset-[18%] rounded-full blur-3xl"
-              style={{
-                background:
-                  "radial-gradient(circle, rgba(217,70,239,0.28) 0%, rgba(59,130,246,0.18) 50%, transparent 72%)",
-              }}
-              aria-hidden
-            />
-            <div
-              className="pointer-events-none absolute inset-[6%] rounded-full border border-white/[0.06]"
-              aria-hidden
-            />
-            <div className="absolute inset-0">
-              <HeroKnot3D reduced={reduced} />
-            </div>
+          <div className="relative mx-auto w-full max-w-[440px] lg:-mx-10 lg:-mt-4 lg:w-[calc(100%+5rem)] lg:max-w-none">
+            <HeroObject />
           </div>
         </div>
 
