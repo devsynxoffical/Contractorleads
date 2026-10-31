@@ -34,7 +34,7 @@ import { BLOG_POSTS } from "@/lib/blog-content";
 import { PRIORITY_TRADE_SLUGS, TRADE_PAGES, buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
-  title: "Contractor Lead Generation Software for Agencies | Contractor Leads",
+  title: "Contractor Lead Generation Software for Agencies",
   description:
     "Contractor lead generation software built for agencies: live Google data, AI lead scoring, owner contacts and outreach scripts for 18 home-service trades. 10 free leads, no card.",
   path: "/contractor-lead-generation-software",

@@ -67,7 +67,8 @@ import {
 import { FooterLivePurchases } from "./footer-live-purchases";
 import { MarketingSiteFooter } from "./marketing-site-footer";
 import { MarketingMobileNav } from "./marketing-mobile-nav";
-import { MarketingFluidHero } from "./marketing-fluid-hero";
+import { MarketingHeroSyntra } from "./marketing-hero-syntra";
+import { MarketingComparison } from "./marketing-comparison";
 import { MarketingInteractiveDemo } from "./marketing-interactive-demo";
 import { MarketingAutomationShowcase } from "./marketing-automation-showcase";
 import { StickyPlatformScroll } from "./marketing-sticky-platform";
@@ -232,7 +233,7 @@ function ScrollNav() {
 
   return (
     <motion.header
-      className="fixed inset-x-0 top-0 z-40 border-b border-slate-200/80 bg-[#ffffff]/90 backdrop-blur-xl"
+      className="fixed inset-x-0 top-0 z-40 border-b border-white/10 bg-[#07040f]/90 text-white backdrop-blur-xl"
       initial={false}
       animate={
         shown
@@ -250,14 +251,14 @@ function ScrollNav() {
         >
           <Link href="/" className="flex min-w-0 items-center gap-2.5">
             <Image src="/logo.png" alt="" width={36} height={36} className="shrink-0 rounded-full" priority />
-            <span className="truncate font-[family-name:var(--font-display)] text-[15px] font-semibold tracking-tight text-slate-900 max-[360px]:hidden">
+            <span className="truncate font-[family-name:var(--font-display)] text-[15px] font-semibold tracking-tight text-white max-[360px]:hidden">
               Contractor <span className="gradient-text">Leads</span>
             </span>
           </Link>
         </motion.div>
-        <MarketingNavLinks className="hidden md:flex" />
+        <MarketingNavLinks tone="dark" className="hidden md:flex" />
         <div className="flex items-center gap-2">
-          <MarketingAuthActions variant="scroll" />
+          <MarketingAuthActions variant="dark" />
           <MarketingMobileNav />
         </div>
       </div>
@@ -283,7 +284,7 @@ function SocialProof() {
       <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
         <Reveal variant="fade">
           <p className="text-center text-[11px] font-semibold uppercase tracking-[0.24em] text-white/45 sm:text-[12px]">
-            Trusted by leading home-service brands
+            Trusted by agencies selling into every trade
           </p>
         </Reveal>
       </div>
@@ -1081,10 +1082,11 @@ export function MarketingPage({
       <SpotlightCursor />
       <MarketingVisitTracker />
       <ScrollNav />
-      <MarketingFluidHero />
-      <MarketingInteractiveDemo />
+      <MarketingHeroSyntra />
       <SocialProof />
+      <MarketingInteractiveDemo />
       <FeaturesGrid />
+      <MarketingComparison />
       <ProblemSection />
       <StickyPlatformScroll />
       <MarketingAutomationShowcase />

@@ -13,9 +13,10 @@ import {
 import { Reveal } from "@/components/marketing/marketing-ui";
 import { JsonLd, breadcrumbJsonLd } from "@/components/seo/json-ld";
 import { BLOG_CLUSTER_LABELS, BLOG_POSTS } from "@/lib/blog-content";
-import { buildMetadata } from "@/lib/seo";
+import { absoluteUrl, buildMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = buildMetadata({
+export const metadata: Metadata = {
+  ...buildMetadata({
   title: "Agency Growth Blog: Selling Marketing to Contractors",
   description:
     "Playbooks, benchmarks, and guides for marketing agencies, media buyers, and sales teams that sell to home-service contractors.",
@@ -28,11 +29,18 @@ export const metadata: Metadata = buildMetadata({
     "roofing marketing",
     "hvac marketing",
   ],
-});
+  }),
+  alternates: {
+    canonical: absoluteUrl("/blog"),
+    types: { "application/rss+xml": absoluteUrl("/blog/rss.xml") },
+  },
+};
 
 export default function BlogIndexPage() {
   const pillars = BLOG_POSTS.filter((p) => p.type === "pillar");
-  const clusters = BLOG_POSTS.filter((p) => p.type === "cluster");
+  const clusters = [...BLOG_POSTS.filter((p) => p.type === "cluster")].sort((a, b) =>
+    b.updatedDate.localeCompare(a.updatedDate),
+  );
 
   return (
     <MarketingSiteShell>

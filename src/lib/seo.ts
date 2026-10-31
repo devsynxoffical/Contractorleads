@@ -11,7 +11,7 @@ export function seoBaseUrl() {
 }
 
 /** Last date the core marketing pages changed. Bump when you edit copy; sitemaps use it for lastmod. */
-export const CONTENT_LAST_UPDATED = "2026-10-29";
+export const CONTENT_LAST_UPDATED = "2026-10-30";
 
 export const SEO = {
   siteName: "Contractor Leads",
@@ -269,8 +269,18 @@ export function buildMetadata(input: BuildMetadataInput): Metadata {
     keywords: input.keywords ?? [...SEO.keywords],
     alternates: { canonical: url },
     robots: input.noIndex
-      ? { index: false, follow: false, googleBot: { index: false, follow: false } }
-      : { index: true, follow: true },
+      ? { index: false, follow: true, googleBot: { index: false, follow: true } }
+      : {
+          index: true,
+          follow: true,
+          googleBot: {
+            index: true,
+            follow: true,
+            "max-image-preview": "large",
+            "max-snippet": -1,
+            "max-video-preview": -1,
+          },
+        },
     openGraph:
       input.type === "article"
         ? {

@@ -28,6 +28,10 @@ export async function GET() {
     <loc>${base}/sitemap-blog.xml</loc>
     <lastmod>${now}</lastmod>
   </sitemap>
+  <sitemap>
+    <loc>${base}/sitemap-compare.xml</loc>
+    <lastmod>${now}</lastmod>
+  </sitemap>
 </sitemapindex>`;
 
   return new Response(xml, {

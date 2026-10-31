@@ -174,6 +174,9 @@ export function blogPostingJsonLd(opts: {
   datePublished: string;
   dateModified?: string;
   keywords?: string[];
+  image?: string;
+  author?: { name: string; url?: string; image?: string };
+  wordCount?: number;
 }) {
   return {
     "@context": "https://schema.org",
@@ -181,13 +184,24 @@ export function blogPostingJsonLd(opts: {
     headline: opts.title,
     description: opts.description,
     url: absoluteUrl(opts.path),
+    image: [opts.image ? absoluteUrl(opts.image) : absoluteUrl(SEO.ogImagePath)],
     datePublished: opts.datePublished,
     dateModified: opts.dateModified || opts.datePublished,
-    author: {
-      "@type": "Organization",
-      name: "Contractor Leads",
-      url: seoBaseUrl(),
-    },
+    inLanguage: "en-US",
+    isAccessibleForFree: true,
+    ...(opts.wordCount ? { wordCount: opts.wordCount } : {}),
+    author: opts.author
+      ? {
+          "@type": "Person",
+          name: opts.author.name,
+          url: opts.author.url ? absoluteUrl(opts.author.url) : absoluteUrl("/about"),
+          ...(opts.author.image ? { image: absoluteUrl(opts.author.image) } : {}),
+        }
+      : {
+          "@type": "Organization",
+          name: "Contractor Leads",
+          url: seoBaseUrl(),
+        },
     publisher: {
       "@type": "Organization",
       name: "Contractor Leads",

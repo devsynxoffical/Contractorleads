@@ -113,26 +113,35 @@ export function MarketingStickyCta() {
 export function MarketingNavLinks({
   className,
   onNavigate,
+  tone = "light",
 }: {
   className?: string;
   onNavigate?: () => void;
+  tone?: "light" | "dark";
 }) {
   const links = [
     ["Features", "#features"],
-    ["Technology", "#integrations"],
+    ["Compare", "#compare"],
     ["Pricing", "#pricing"],
-    ["Affiliates", "/affiliates"],
+    ["Industries", "/industries"],
+    ["Blog", "/blog"],
     ["FAQ", "#faq"],
   ] as const;
 
   return (
-    <div className={cn("flex items-center gap-6 text-[13px] font-medium text-slate-500", className)}>
+    <div
+      className={cn(
+        "flex items-center gap-6 text-[13px] font-medium",
+        tone === "dark" ? "text-white/70" : "text-slate-500",
+        className,
+      )}
+    >
       {links.map(([label, href], i) => (
         <motion.a
           key={href}
           href={href}
           onClick={onNavigate}
-          className="relative transition hover:text-slate-900"
+          className={cn("relative transition", tone === "dark" ? "hover:text-white" : "hover:text-slate-900")}
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 + i * 0.04, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
