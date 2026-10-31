@@ -5,9 +5,9 @@ import Link from "next/link";
 import { HiOutlineArrowRight } from "react-icons/hi2";
 import { cn } from "@/lib/utils";
 
-type Variant = "hero" | "scroll" | "chrome" | "pills";
+type Variant = "hero" | "scroll" | "chrome" | "pills" | "dark";
 
-function useMarketingSession() {
+export function useMarketingSession() {
   const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -78,6 +78,39 @@ export function MarketingAuthActions({
         <Link href="/register" className="mkt-flow-pill">
           <span className="sm:hidden">Start free</span>
           <span className="hidden sm:inline">Get started free</span>
+        </Link>
+      </div>
+    );
+  }
+
+  if (variant === "dark") {
+    if (isAuthed) {
+      return (
+        <div className={cn("flex items-center gap-2", className)}>
+          <Link
+            href="/home"
+            className="inline-flex h-10 items-center gap-1.5 rounded-full bg-white px-4 text-[13px] font-semibold text-slate-900 transition hover:bg-fuchsia-50"
+          >
+            Dashboard <HiOutlineArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+      );
+    }
+    return (
+      <div className={cn("flex items-center gap-1.5 sm:gap-3", className)}>
+        <Link
+          href="/login"
+          className="hidden h-10 items-center px-3 text-[13.5px] font-medium text-white/80 transition hover:text-white sm:inline-flex"
+        >
+          Sign in
+        </Link>
+        <Link
+          href="/register"
+          className="inline-flex h-10 items-center gap-1.5 rounded-full bg-white px-4 text-[13px] font-semibold text-slate-900 shadow-[0_8px_30px_-12px_rgba(255,255,255,0.6)] transition hover:bg-fuchsia-50"
+        >
+          <span className="sm:hidden">Start free</span>
+          <span className="hidden sm:inline">Get started</span>
+          <HiOutlineArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>
     );

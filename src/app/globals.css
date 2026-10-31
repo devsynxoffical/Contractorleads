@@ -172,6 +172,7 @@ html[data-theme="light"] {
   --color-brand-900: var(--brand-900);
   --font-sans: var(--font-jakarta), system-ui, sans-serif;
   --font-display: var(--font-outfit), var(--font-jakarta), system-ui, sans-serif;
+  --font-serif: var(--font-serif-display), "Iowan Old Style", Georgia, serif;
   --shadow-card: 0 0 0 1px rgba(217, 70, 239, 0.1),
     0 8px 28px rgba(0, 0, 0, 0.35);
   --shadow-elevated: 0 0 0 1px rgba(217, 70, 239, 0.14),
