@@ -1,100 +1,138 @@
 "use client";
 
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Float } from "@react-three/drei";
-import type { Group, Mesh } from "three";
-import { MathUtils } from "three";
+import {
+  Environment,
+  Float,
+  Lightformer,
+  MeshTransmissionMaterial,
+} from "@react-three/drei";
+import type { Group, MeshBasicMaterial } from "three";
+import { CanvasTexture, MathUtils, RepeatWrapping, SRGBColorSpace } from "three";
 
 /**
- * Glowing torus knot for the homepage hero. Slow idle rotation, gentle float,
- * and a pointer-driven tilt so the object feels alive without being busy.
- * Honors prefers-reduced-motion by freezing rotation and float.
+ * Glass torus knot for the homepage hero.
+ *
+ * Two layers: an inner tube wrapped in an animated pink -> blue -> violet
+ * gradient texture (the "light inside"), and an outer refracting glass shell
+ * that picks up the gradient plus bright reflections from an in-scene
+ * light environment. No network assets, no post-processing dependency.
  */
+
+function createFlowTexture() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1024;
+  canvas.height = 8;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    const g = ctx.createLinearGradient(0, 0, canvas.width, 0);
+    // Seamless loop: first and last stops match.
+    g.addColorStop(0.0, "#f0abfc");
+    g.addColorStop(0.18, "#e879f9");
+    g.addColorStop(0.36, "#a855f7");
+    g.addColorStop(0.52, "#60a5fa");
+    g.addColorStop(0.68, "#22d3ee");
+    g.addColorStop(0.84, "#c084fc");
+    g.addColorStop(1.0, "#f0abfc");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+  const tex = new CanvasTexture(canvas);
+  tex.wrapS = RepeatWrapping;
+  tex.wrapT = RepeatWrapping;
+  tex.repeat.set(2, 1);
+  tex.colorSpace = SRGBColorSpace;
+  return tex;
+}
+
 function Knot({ reduced }: { reduced: boolean }) {
   const group = useRef<Group>(null);
-  const inner = useRef<Mesh>(null);
+  const flow = useMemo(() => createFlowTexture(), []);
+  const coreMat = useRef<MeshBasicMaterial>(null);
   const { pointer } = useThree();
 
   useFrame((_, dt) => {
     const g = group.current;
     if (!g) return;
     if (!reduced) {
-      g.rotation.y += dt * 0.22;
-      g.rotation.x += dt * 0.07;
-      if (inner.current) inner.current.rotation.z -= dt * 0.12;
+      g.rotation.y += dt * 0.18;
+      g.rotation.x += dt * 0.05;
+      const map = coreMat.current?.map;
+      if (map) map.offset.x -= dt * 0.06; // colour flows along the tube
     }
-    // Pointer parallax: ease toward the cursor, never snap.
-    const targetX = pointer.y * 0.35;
-    const targetZ = -pointer.x * 0.35;
-    g.rotation.x = MathUtils.lerp(g.rotation.x, g.rotation.x + targetX * 0.02, 0.1);
-    g.rotation.z = MathUtils.lerp(g.rotation.z, targetZ, 0.04);
+    const targetZ = -pointer.x * 0.3;
+    const targetTilt = pointer.y * 0.18;
+    g.rotation.z = MathUtils.lerp(g.rotation.z, targetZ, 0.05);
+    g.position.y = MathUtils.lerp(g.position.y, targetTilt, 0.05);
   });
 
   return (
     <Float
-      speed={reduced ? 0 : 1.1}
-      rotationIntensity={reduced ? 0 : 0.25}
-      floatIntensity={reduced ? 0 : 0.5}
+      speed={reduced ? 0 : 1}
+      rotationIntensity={reduced ? 0 : 0.2}
+      floatIntensity={reduced ? 0 : 0.45}
     >
-      <group ref={group} rotation={[0.6, 0.2, 0]}>
-        {/* Core glossy body */}
+      <group ref={group} rotation={[0.55, 0.35, 0]}>
+        {/* Inner light tube */}
         <mesh>
-          <torusKnotGeometry args={[0.95, 0.3, 260, 40, 2, 3]} />
-          <meshPhysicalMaterial
-            color="#3b0764"
-            emissive="#a21caf"
-            emissiveIntensity={0.32}
-            metalness={0.85}
-            roughness={0.22}
+          <torusKnotGeometry args={[0.95, 0.21, 300, 32, 2, 3]} />
+          <meshBasicMaterial ref={coreMat} map={flow} toneMapped={false} />
+        </mesh>
+        {/* Outer glass shell */}
+        <mesh>
+          <torusKnotGeometry args={[0.95, 0.33, 300, 48, 2, 3]} />
+          <MeshTransmissionMaterial
+            transmission={1}
+            thickness={0.9}
+            roughness={0.06}
+            ior={1.35}
+            chromaticAberration={0.08}
+            anisotropicBlur={0.25}
+            distortion={0.25}
+            distortionScale={0.35}
+            temporalDistortion={reduced ? 0 : 0.12}
             clearcoat={1}
-            clearcoatRoughness={0.08}
-            iridescence={1}
-            iridescenceIOR={1.6}
-            iridescenceThicknessRange={[120, 560]}
-            sheen={0.6}
-            sheenColor="#f0abfc"
+            clearcoatRoughness={0.05}
+            color="#f5e9ff"
+            attenuationColor="#d8b4fe"
+            attenuationDistance={1.6}
+            samples={6}
+            resolution={512}
+            backside
+            backsideThickness={0.4}
           />
-        </mesh>
-        {/* Inner light-blue filament for the two-tone glow */}
-        <mesh ref={inner} scale={0.985}>
-          <torusKnotGeometry args={[0.95, 0.17, 220, 24, 2, 3]} />
-          <meshStandardMaterial
-            color="#60a5fa"
-            emissive="#38bdf8"
-            emissiveIntensity={1.4}
-            transparent
-            opacity={0.55}
-            roughness={0.4}
-          />
-        </mesh>
-        {/* Soft outer halo */}
-        <mesh scale={1.06}>
-          <torusKnotGeometry args={[0.95, 0.33, 140, 16, 2, 3]} />
-          <meshBasicMaterial color="#e879f9" transparent opacity={0.07} wireframe />
         </mesh>
       </group>
     </Float>
   );
 }
 
-function Particles({ count = 60, reduced }: { count?: number; reduced: boolean }) {
+function Sparks({ count = 48, reduced }: { count?: number; reduced: boolean }) {
   const group = useRef<Group>(null);
-  const seeds = Array.from({ length: count }, (_, i) => {
-    const a = (i / count) * Math.PI * 2;
-    const r = 2.2 + ((i * 7919) % 100) / 60;
-    const y = (((i * 104729) % 100) / 100 - 0.5) * 3.2;
-    return { pos: [Math.cos(a) * r, y, Math.sin(a) * r] as [number, number, number], s: 0.012 + ((i * 31) % 7) * 0.003 };
-  });
+  const seeds = useMemo(
+    () =>
+      Array.from({ length: count }, (_, i) => {
+        const a = (i / count) * Math.PI * 2;
+        const r = 2.1 + ((i * 7919) % 100) / 55;
+        const y = (((i * 104729) % 100) / 100 - 0.5) * 3.4;
+        return {
+          pos: [Math.cos(a) * r, y, Math.sin(a) * r] as [number, number, number],
+          s: 0.012 + ((i * 31) % 7) * 0.004,
+          c: i % 4 === 0 ? "#f0abfc" : i % 4 === 1 ? "#93c5fd" : "#ffffff",
+        };
+      }),
+    [count],
+  );
   useFrame((_, dt) => {
-    if (group.current && !reduced) group.current.rotation.y -= dt * 0.03;
+    if (group.current && !reduced) group.current.rotation.y -= dt * 0.025;
   });
   return (
     <group ref={group}>
       {seeds.map((p, i) => (
         <mesh key={i} position={p.pos} scale={p.s}>
           <sphereGeometry args={[1, 6, 6]} />
-          <meshBasicMaterial color={i % 3 === 0 ? "#f0abfc" : "#a5b4fc"} transparent opacity={0.8} />
+          <meshBasicMaterial color={p.c} transparent opacity={0.85} toneMapped={false} />
         </mesh>
       ))}
     </group>
@@ -110,14 +148,18 @@ export function HeroKnot3D({ reduced = false }: { reduced?: boolean }) {
       style={{ background: "transparent" }}
       frameloop={reduced ? "demand" : "always"}
     >
-      <ambientLight intensity={0.35} />
-      <pointLight position={[4, 3, 5]} intensity={40} color="#f472b6" />
-      <pointLight position={[-5, -2, 3]} intensity={36} color="#38bdf8" />
-      <pointLight position={[0, -4, -3]} intensity={18} color="#a855f7" />
-      <pointLight position={[2, 5, -4]} intensity={22} color="#c4b5fd" />
-      <spotLight position={[0, 6, 3]} angle={0.5} penumbra={1} intensity={30} color="#ffffff" />
+      {/* Procedural light environment: gives the glass its bright reflections */}
+      <Environment resolution={256} frames={1}>
+        <Lightformer form="ring" intensity={6} color="#f0abfc" scale={6} position={[4, 3, -4]} target={[0, 0, 0]} />
+        <Lightformer form="rect" intensity={5} color="#93c5fd" scale={[8, 2, 1]} position={[-5, -2, -3]} target={[0, 0, 0]} />
+        <Lightformer form="rect" intensity={8} color="#ffffff" scale={[1.5, 6, 1]} position={[0, 5, 2]} target={[0, 0, 0]} />
+        <Lightformer form="circle" intensity={4} color="#c084fc" scale={4} position={[0, -5, -2]} target={[0, 0, 0]} />
+      </Environment>
+      <ambientLight intensity={0.2} />
+      <pointLight position={[4, 3, 5]} intensity={30} color="#f472b6" />
+      <pointLight position={[-5, -1, 3]} intensity={28} color="#38bdf8" />
       <Knot reduced={reduced} />
-      <Particles reduced={reduced} />
+      <Sparks reduced={reduced} />
     </Canvas>
   );
 }

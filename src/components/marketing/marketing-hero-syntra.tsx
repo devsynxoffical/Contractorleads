@@ -9,8 +9,6 @@ import {
   HiOutlineArrowRight,
   HiOutlineChartBar,
   HiOutlineCheck,
-  HiOutlineCursorArrowRays,
-  HiOutlineDocumentText,
   HiOutlineFire,
   HiOutlineGlobeAmericas,
   HiOutlineMagnifyingGlass,
@@ -79,6 +77,14 @@ const ACTIVITY = [
   { who: "Lead Finder", what: "28 plumbers scored in Denver, CO", tag: "Hot: 9", tone: "rose" },
 ];
 
+const AVATAR: Record<string, string> = {
+  rose: "linear-gradient(135deg,#f43f5e,#ec4899)",
+  violet: "linear-gradient(135deg,#8b5cf6,#d946ef)",
+  sky: "linear-gradient(135deg,#0ea5e9,#6366f1)",
+  emerald: "linear-gradient(135deg,#10b981,#14b8a6)",
+  amber: "linear-gradient(135deg,#f59e0b,#f97316)",
+};
+
 const TONE: Record<string, string> = {
   rose: "bg-rose-500/15 text-rose-200 border-rose-400/30",
   violet: "bg-violet-500/15 text-violet-200 border-violet-400/30",
@@ -114,7 +120,7 @@ function Card({
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.7, delay, ease: [0.16, 1, 0.3, 1] }}
-      className={`relative rounded-[22px] border border-white/10 bg-white/[0.04] p-5 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.9)] backdrop-blur-md ${className}`}
+      className={`relative rounded-[20px] border border-white/10 bg-white/[0.04] p-4 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.9)] backdrop-blur-md ${className}`}
     >
       {children}
     </motion.div>
@@ -205,8 +211,12 @@ function ActivityCard({ reduced }: { reduced: boolean }) {
             transition={{ duration: 0.45 }}
             className="flex items-start gap-3"
           >
-            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-fuchsia-200">
-              <HiOutlineCursorArrowRays className="h-4 w-4" />
+            <span
+              className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
+              style={{ background: AVATAR[it.tone] }}
+              aria-hidden
+            >
+              {it.who.slice(0, 1)}
             </span>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[13px] font-semibold text-white">{it.who}</span>
@@ -275,7 +285,7 @@ export function MarketingHeroSyntra() {
         </div>
       </header>
 
-      <div className="relative mx-auto grid max-w-7xl gap-10 px-5 pb-20 pt-10 sm:px-8 sm:pt-14 lg:grid-cols-12 lg:gap-6 lg:pb-24">
+      <div className="relative mx-auto grid max-w-7xl gap-8 px-5 pb-10 pt-6 sm:px-8 sm:pt-8 lg:grid-cols-12 lg:gap-5 lg:pb-12">
         {/* Left column */}
         <div className="lg:col-span-5">
           <motion.p
@@ -290,7 +300,7 @@ export function MarketingHeroSyntra() {
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.75, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-            className="mt-4 max-w-[13ch] font-[family-name:var(--font-serif)] text-[clamp(2.7rem,5.2vw,4.4rem)] font-normal leading-[1.0] tracking-[-0.02em] text-white"
+            className="mt-3 max-w-[15ch] font-[family-name:var(--font-serif)] text-[clamp(2.5rem,4.3vw,3.75rem)] font-normal leading-[1.0] tracking-[-0.02em] text-white"
           >
             Contractor leads for agencies, <em className="not-italic bg-gradient-to-r from-pink-300 via-fuchsia-300 to-violet-300 bg-clip-text text-transparent">scored and ready to dial.</em>
           </motion.h1>
@@ -298,7 +308,7 @@ export function MarketingHeroSyntra() {
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.25 }}
-            className="mt-5 max-w-md text-[16px] leading-relaxed text-white/65"
+            className="mt-4 max-w-md text-[15px] leading-relaxed text-white/65"
           >
             Live Google data, AI lead scores, owner names and outreach scripts for agencies that sell
             to roofers, HVAC, plumbers and {INDUSTRIES.length - 3} more trades.
@@ -307,7 +317,7 @@ export function MarketingHeroSyntra() {
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.38 }}
-            className="mt-7 flex flex-wrap items-center gap-4"
+            className="mt-6 flex flex-wrap items-center gap-4"
           >
             <HeroPrimaryCta />
             <a
@@ -332,7 +342,7 @@ export function MarketingHeroSyntra() {
             10 free leads · No card required · Cancel anytime
           </motion.p>
 
-          <div className="mt-10 space-y-4">
+          <div className="mt-8 space-y-3">
             <PipelineCard reduced={reduced} />
             <Card delay={0.65}>
               <CardHeader title="Built for real outreach desks" href="/pricing" />
@@ -361,11 +371,15 @@ export function MarketingHeroSyntra() {
         <div className="relative order-first lg:order-none lg:col-span-4">
           <div className="relative mx-auto aspect-square w-full max-w-[420px] lg:-mx-12 lg:-mt-6 lg:aspect-[4/5] lg:w-[calc(100%+6rem)] lg:max-w-none">
             <div
-              className="absolute inset-[12%] rounded-full blur-3xl"
+              className="absolute inset-[18%] rounded-full blur-3xl"
               style={{
                 background:
-                  "radial-gradient(circle, rgba(217,70,239,0.45) 0%, rgba(99,102,241,0.3) 45%, transparent 70%)",
+                  "radial-gradient(circle, rgba(217,70,239,0.28) 0%, rgba(59,130,246,0.18) 50%, transparent 72%)",
               }}
+              aria-hidden
+            />
+            <div
+              className="pointer-events-none absolute inset-[6%] rounded-full border border-white/[0.06]"
               aria-hidden
             />
             <div className="absolute inset-0">
@@ -375,7 +389,7 @@ export function MarketingHeroSyntra() {
         </div>
 
         {/* Right column */}
-        <div className="space-y-4 lg:col-span-3">
+        <div className="space-y-3 lg:col-span-3 lg:pt-2">
           <Card delay={0.45} className="lg:relative lg:z-10">
             <CardHeader title="Clearer prospecting" href="/features" />
             <ul className="mt-4 divide-y divide-white/10">
@@ -396,19 +410,6 @@ export function MarketingHeroSyntra() {
             </ul>
           </Card>
           <ActivityCard reduced={reduced} />
-          <Card delay={0.85} className="hidden lg:block">
-            <div className="flex items-center gap-3">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06] text-fuchsia-200">
-                <HiOutlineDocumentText className="h-4.5 w-4.5" />
-              </span>
-              <p className="text-[13px] leading-snug text-white/75">
-                Every lead ships with a written audit and a first email drafted from it.{" "}
-                <Link href="/blog" className="font-semibold text-white hover:underline">
-                  Read the playbooks →
-                </Link>
-              </p>
-            </div>
-          </Card>
         </div>
       </div>
     </section>

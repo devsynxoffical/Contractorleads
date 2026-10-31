@@ -1083,8 +1083,8 @@ export function MarketingPage({
       <MarketingVisitTracker />
       <ScrollNav />
       <MarketingHeroSyntra />
-      <MarketingInteractiveDemo />
       <SocialProof />
+      <MarketingInteractiveDemo />
       <FeaturesGrid />
       <MarketingComparison />
       <ProblemSection />
