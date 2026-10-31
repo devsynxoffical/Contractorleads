@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { MarketingSiteShell, MarketingSubpageHero } from "@/components/marketing/marketing-site-shell";
 import { MarketingPricingSection } from "@/components/marketing/marketing-pricing-section";
+import { MarketingComparison } from "@/components/marketing/marketing-comparison";
 import { SubpageCtaBand, SubpageSection } from "@/components/marketing/marketing-subpage";
 import { getMarketingPlansLive } from "@/components/marketing/marketing-plans-data";
 import {
@@ -89,6 +90,9 @@ export default async function PricingPage() {
       <section className="mx-auto max-w-6xl px-5 py-16 sm:px-8">
         <MarketingPricingSection plans={plans} />
       </section>
+
+      {/* The difference: what every plan includes vs lists and scrapers */}
+      <MarketingComparison />
 
       {/* Pricing FAQs Section */}
       <SubpageSection

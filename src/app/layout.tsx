@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
-import { Instrument_Serif, Outfit, Plus_Jakarta_Sans } from "next/font/google";
+import { Outfit, Plus_Jakarta_Sans } from "next/font/google";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { ThemeScript } from "@/components/theme/theme-script";
 import { SEO, seoBaseUrl } from "@/lib/seo";
@@ -10,14 +10,6 @@ import { MetaPixelTracker } from "@/components/pixel/meta-pixel-tracker";
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-jakarta",
-  display: "swap",
-});
-
-const instrumentSerif = Instrument_Serif({
-  subsets: ["latin"],
-  weight: "400",
-  style: ["normal", "italic"],
-  variable: "--font-serif-display",
   display: "swap",
 });
 
@@ -111,7 +103,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${jakarta.variable} ${outfit.variable} ${instrumentSerif.variable} h-full`}
+      className={`${jakarta.variable} ${outfit.variable} h-full`}
       data-theme="light"
       suppressHydrationWarning
     >

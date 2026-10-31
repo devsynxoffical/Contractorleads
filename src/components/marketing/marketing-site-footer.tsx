@@ -148,7 +148,7 @@ export function MarketingSiteFooter() {
             Contractor Leads
             <sup className="ml-1 align-top text-[0.18em] font-semibold text-fuchsia-600">®</sup>
           </p>
-          <p className="mt-4 text-right font-[family-name:var(--font-serif)] text-[clamp(1.3rem,2.2vw,1.9rem)] italic leading-tight text-slate-500 lg:mt-2">
+          <p className="mt-4 text-right font-[family-name:var(--font-display)] text-[clamp(1.1rem,1.9vw,1.6rem)] font-medium leading-tight tracking-tight text-slate-500 lg:mt-2">
             Lead intelligence for agencies —
           </p>
         </div>
