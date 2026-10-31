@@ -66,9 +66,10 @@ export function MarketingStickyCta() {
           )
         : null;
     if (footer && io) io.observe(footer);
-    sync();
+    const raf = requestAnimationFrame(sync);
     window.addEventListener("scroll", sync, { passive: true });
     return () => {
+      cancelAnimationFrame(raf);
       window.removeEventListener("scroll", sync);
       io?.disconnect();
     };
