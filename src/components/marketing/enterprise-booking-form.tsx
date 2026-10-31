@@ -172,9 +172,9 @@ export function EnterpriseBookingForm({ source = "pricing" }: { source?: string 
           <HiOutlineSparkles className="h-3.5 w-3.5" />
           Enterprise plan
         </div>
-        <h1 className="mt-4 font-[family-name:var(--font-display)] text-[28px] font-semibold tracking-tight text-slate-900 sm:text-[32px]">
+        <h2 className="mt-4 font-[family-name:var(--font-display)] text-[28px] font-semibold tracking-tight text-slate-900 sm:text-[32px]">
           Book your strategy call
-        </h1>
+        </h2>
         <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-slate-600">
           Pick a time that works for you. We&apos;ll review volume, seats, white-label
           options, and custom integrations — usually 30 minutes.

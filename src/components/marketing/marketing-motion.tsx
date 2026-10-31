@@ -47,10 +47,31 @@ export function MarketingStickyCta() {
   const reduced = usePrefersReducedMotion();
 
   useEffect(() => {
-    const onScroll = () => setVisible(window.scrollY > window.innerHeight * 1.1);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    // Show after the first screen; hide once the footer scrolls into view so
+    // the pill never sits on top of footer content.
+    const footer = document.querySelector("footer");
+    let footerVisible = false;
+    const sync = () => {
+      const pastHero = window.scrollY > window.innerHeight * 1.1;
+      setVisible(pastHero && !footerVisible);
+    };
+    const io =
+      footer && "IntersectionObserver" in window
+        ? new IntersectionObserver(
+            (entries) => {
+              footerVisible = entries.some((e) => e.isIntersecting);
+              sync();
+            },
+            { rootMargin: "0px 0px -40px 0px" },
+          )
+        : null;
+    if (footer && io) io.observe(footer);
+    sync();
+    window.addEventListener("scroll", sync, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", sync);
+      io?.disconnect();
+    };
   }, []);
 
   useEffect(() => {
