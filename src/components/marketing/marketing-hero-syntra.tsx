@@ -339,7 +339,7 @@ export function MarketingHeroSyntra() {
             >
               Contractor lead intelligence
             </motion.p>
-            <h1 className="mt-3 max-w-[15ch] font-[family-name:var(--font-serif)] text-[clamp(2.5rem,4.3vw,3.75rem)] font-normal leading-[1.0] tracking-[-0.02em] text-white">
+            <h1 className="mt-3 max-w-[15ch] font-[family-name:var(--font-display)] text-[clamp(2.25rem,3.9vw,3.4rem)] font-semibold leading-[1.06] tracking-[-0.03em] text-white">
               {HEADLINE_WORDS.map((w, i) => (
                 <motion.span
                   key={w}

@@ -99,7 +99,7 @@ export function MarketingComparison() {
               <HiOutlineScale className="h-3.5 w-3.5" />
               The difference
             </span>
-            <h2 className="mt-5 font-[family-name:var(--font-serif)] text-[clamp(2.2rem,4.8vw,3.5rem)] font-normal leading-[1.05] tracking-[-0.01em]">
+            <h2 className="mt-5 font-[family-name:var(--font-display)] text-[clamp(1.9rem,4.2vw,3rem)] font-semibold leading-[1.08] tracking-tight">
               How Contractor Leads simplifies what others complicate daily
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-white/60">
