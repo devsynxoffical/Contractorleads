@@ -254,6 +254,8 @@ export async function runMailboxWarmupCycle(
       toEmail: recipient.email,
       messageId: sendRes.messageId || null,
       warmupMarker: marker,
+      subject: topic.subject,
+      body: topic.body,
       landed: "inbox",
       rescued: false,
       replied: false,
