@@ -818,38 +818,67 @@ html[data-theme="dark"] .admin-shell--hud .hud-shell-main .text-ink-faint {
   box-shadow: var(--shadow-soft);
 }
 
-.saas-input {
-  height: 2.75rem;
-  width: 100%;
-  border-radius: 0.875rem;
-  border: 1px solid var(--border-strong);
-  background: var(--input-bg);
-  padding: 0 0.875rem;
-  font-size: 0.875rem;
-  color: var(--ink);
-  outline: none;
-  transition:
-    border-color 0.15s ease,
-    background 0.15s ease,
-    box-shadow 0.15s ease;
+/* Long emails / URLs inside running text wrap instead of pushing past the screen edge.
+   Base layer, so any utility (break-normal, truncate…) still wins. */
+@layer base {
+  main p,
+  main li,
+  main dd,
+  main td {
+    overflow-wrap: break-word;
+  }
+
+  /* Grid children may shrink below their longest word, so one long email or URL
+     cannot widen a whole page on phones. Any min-w-* utility still overrides. */
+  main .grid > * {
+    min-width: 0;
+  }
 }
 
-textarea.saas-input {
-  height: auto;
-  min-height: 8rem;
-  padding: 0.75rem 0.875rem;
-  resize: vertical;
-  line-height: 1.6;
-}
+/* In the components layer so Tailwind utilities (pl-9, h-8, w-44, text-xs…) can override it. */
+@layer components {
+  .saas-input {
+    height: 2.75rem;
+    width: 100%;
+    border-radius: 0.875rem;
+    border: 1px solid var(--border-strong);
+    background: var(--input-bg);
+    padding: 0 0.875rem;
+    font-size: 0.875rem;
+    color: var(--ink);
+    outline: none;
+    transition:
+      border-color 0.15s ease,
+      background 0.15s ease,
+      box-shadow 0.15s ease;
+  }
 
-.saas-input:hover {
-  border-color: var(--border-strong);
-}
+  textarea.saas-input {
+    height: auto;
+    min-height: 8rem;
+    padding: 0.75rem 0.875rem;
+    resize: vertical;
+    line-height: 1.6;
+  }
 
-.saas-input:focus {
-  border-color: var(--border-strong);
-  background: var(--input-bg-focus);
-  box-shadow: 0 0 0 4px var(--ring);
+  .saas-input:hover {
+    border-color: var(--border-strong);
+  }
+
+  .saas-input:focus {
+    border-color: var(--border-strong);
+    background: var(--input-bg-focus);
+    box-shadow: 0 0 0 4px var(--ring);
+  }
+
+  /* Shared <Select>: visible chevron so dropdowns read as dropdowns, and long labels ellipsize. */
+  .ui-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%238b8597' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.85rem center;
+    background-size: 1rem 1rem;
+    text-overflow: ellipsis;
+  }
 }
 
 .saas-shell {

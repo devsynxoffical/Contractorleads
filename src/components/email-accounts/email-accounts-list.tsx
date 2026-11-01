@@ -388,7 +388,7 @@ export function EmailAccountsList() {
             ) : (
               <HiOutlineBolt className="w-3.5 h-3.5" />
             )}
-            {testingWarmup ? "Testing Engine..." : "⚡ Test Warmup Engine"}
+            {testingWarmup ? "Testing Engine..." : "Test Warmup Engine"}
           </button>
 
           {/* Add Account Button */}
@@ -504,7 +504,7 @@ export function EmailAccountsList() {
             return (
               <div
                 key={folder.domain}
-                className="rounded-2xl border border-slate-200 dark:border-[#26253c] bg-white dark:bg-[#141326] overflow-hidden shadow-xs"
+                className="rounded-2xl border border-slate-200 dark:border-[#26253c] bg-white dark:bg-[#141326] shadow-xs"
               >
                 {/* DOMAIN FOLDER HEADER */}
                 <div
@@ -514,7 +514,7 @@ export function EmailAccountsList() {
                       [folder.domain]: !prev[folder.domain],
                     }))
                   }
-                  className="p-3.5 bg-slate-50/90 dark:bg-[#17162b] border-b border-slate-200 dark:border-[#26253c] flex items-center justify-between cursor-pointer hover:bg-slate-100/80 dark:hover:bg-[#1a1930] transition select-none"
+                  className={`flex flex-wrap items-center justify-between gap-3 p-3.5 bg-slate-50/90 dark:bg-[#17162b] cursor-pointer hover:bg-slate-100/80 dark:hover:bg-[#1a1930] transition select-none ${isCollapsed ? "rounded-2xl" : "rounded-t-2xl border-b border-slate-200 dark:border-[#26253c]"}`}
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-slate-400 dark:text-slate-400">
@@ -533,7 +533,7 @@ export function EmailAccountsList() {
                   </div>
 
                   {/* Domain DNS Badges + Capacity in Header */}
-                  <div className="flex items-center gap-4 text-xs">
+                  <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 text-xs">
                     {/* 4 DNS Badges for domain */}
                     <div
                       className="flex items-center gap-1.5"
@@ -622,7 +622,7 @@ export function EmailAccountsList() {
                       return (
                         <div
                           key={row.id}
-                          className={`flex items-center justify-between px-4 py-3 text-xs transition select-none ${
+                          className={`flex items-center justify-between gap-4 px-4 py-3 text-xs transition select-none ${
                             isSelected
                               ? "bg-indigo-50/70 dark:bg-indigo-950/20"
                               : "hover:bg-slate-50 dark:hover:bg-[#18172e]"
@@ -641,19 +641,19 @@ export function EmailAccountsList() {
                               <HiOutlineEnvelope className="w-4 h-4" />
                             </div>
 
-                            <div>
-                              <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                                <span>{row.email}</span>
-                                <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-transparent uppercase font-mono">
+                            <div className="min-w-0">
+                              <div className="flex min-w-0 items-center gap-2 font-semibold text-slate-900 dark:text-white">
+                                <span className="truncate" title={row.email}>{row.email}</span>
+                                <span className="shrink-0 text-[9px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-transparent uppercase font-mono">
                                   {row.provider}
                                 </span>
                               </div>
-                              <div className="text-[11px] text-slate-500 dark:text-slate-400">{row.senderName}</div>
+                              <div className="truncate text-[11px] text-slate-500 dark:text-slate-400">{row.senderName}</div>
                             </div>
 
                             {/* Status Pill */}
                             <span
-                              className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                              className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
                                 row.status === "Active"
                                   ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30"
                                   : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
@@ -663,8 +663,8 @@ export function EmailAccountsList() {
                             </span>
                           </div>
 
-                          {/* Middle: PlusVibe Metric Icons */}
-                          <div className="flex items-center gap-6">
+                          {/* Middle: PlusVibe Metric Icons (less important columns hide on narrower screens) */}
+                          <div className="hidden shrink-0 items-center gap-4 md:flex 2xl:gap-6">
                             {/* Paper-plane: Campaign Emails Sent Today / Limit */}
                             <div
                               className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 min-w-[70px]"
@@ -720,7 +720,7 @@ export function EmailAccountsList() {
 
                             {/* Reply Arrow: Reply rate % */}
                             <div
-                              className="flex items-center gap-1 text-slate-600 dark:text-slate-300 min-w-[55px]"
+                              className="hidden items-center gap-1 text-slate-600 dark:text-slate-300 min-w-[55px] lg:flex"
                               title="Campaign reply rate"
                             >
                               <HiOutlineArrowUturnLeft className="w-3.5 h-3.5 text-slate-400" />
@@ -729,7 +729,7 @@ export function EmailAccountsList() {
 
                             {/* Down-right Arrow: Bounce rate % */}
                             <div
-                              className="flex items-center gap-1 min-w-[55px]"
+                              className="hidden items-center gap-1 min-w-[55px] lg:flex"
                               title="Hard bounce rate (should stay under 2-3%)"
                             >
                               <HiOutlineArrowTrendingDown
@@ -748,7 +748,7 @@ export function EmailAccountsList() {
 
                             {/* Megaphone: Campaigns Attached */}
                             <div
-                              className="flex items-center gap-1 text-slate-600 dark:text-slate-300 min-w-[40px]"
+                              className="hidden items-center gap-1 text-slate-600 dark:text-slate-300 min-w-[40px] xl:flex"
                               title={`Attached to ${row.attachedCampaigns} active campaign(s)`}
                             >
                               <HiOutlineMegaphone className="w-3.5 h-3.5 text-slate-400" />
@@ -757,7 +757,7 @@ export function EmailAccountsList() {
 
                             {/* 4 DNS Badges */}
                             <div
-                              className="flex items-center gap-1 cursor-pointer"
+                              className="hidden cursor-pointer items-center gap-1 2xl:flex"
                               onClick={() => setFixDrawerDomain(row.domain)}
                               title="Click to open DNS Fix Drawer"
                             >
@@ -803,7 +803,7 @@ export function EmailAccountsList() {
                           </div>
 
                           {/* Right: PlusVibe Action Icons */}
-                          <div className="flex items-center gap-1 relative">
+                          <div className="relative flex shrink-0 items-center gap-1">
                             {/* Re-check DNS & connection */}
                             <button
                               onClick={() => refreshDomainDns(row.domain)}

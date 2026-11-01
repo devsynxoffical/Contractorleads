@@ -104,7 +104,7 @@ export function SupportChatWidget({ user }: { user: SessionUser }) {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="fixed z-40 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-[0_10px_28px_rgba(123,31,162,0.4)] transition hover:scale-105 hover:opacity-95"
+          className="fixed z-40 flex h-12 w-12 items-center justify-center rounded-full text-white lg:hidden shadow-[0_10px_28px_rgba(123,31,162,0.4)] transition hover:scale-105 hover:opacity-95"
           style={{
             background: LOGO_GRADIENT,
             bottom: "max(1.25rem, env(safe-area-inset-bottom))",

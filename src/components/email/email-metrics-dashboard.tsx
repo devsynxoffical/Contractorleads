@@ -217,7 +217,7 @@ export function EmailMetricsDashboard({
         {!emails.length ? (
           <p className="mt-4 text-sm text-ink-faint">No emails yet.</p>
         ) : (
-          <ul className="mt-3 max-h-[420px] divide-y divide-border overflow-y-auto">
+          <ul className="mt-3 divide-y divide-border sm:max-h-[420px] sm:overflow-y-auto">
             {emails.map((e) => (
               <li key={e.id} className="py-3 first:pt-0">
                 <div className="flex flex-wrap items-center justify-between gap-2">

@@ -10,11 +10,17 @@ import {
 } from "@/lib/campaign-engine";
 import { processCampaignSends } from "@/lib/campaign-runner";
 
+/** Percentage with one decimal, so 2 of 436 reads 0.5% rather than 0%. */
+function pct(part: number, whole: number): number {
+  return whole > 0 ? Math.round((part / whole) * 1000) / 10 : 0;
+}
+
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const user = await getSessionUser();
+
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
@@ -278,16 +284,16 @@ export async function GET(
 
   const hookPerformance = Array.from(hookStatsMap.values()).map((h) => ({
     ...h,
-    openRate: h.delivered > 0 ? Math.round((h.opened / h.delivered) * 100) : 0,
-    clickRate: h.delivered > 0 ? Math.round((h.clicked / h.delivered) * 100) : 0,
-    replyRate: h.delivered > 0 ? Math.round((h.replied / h.delivered) * 100) : 0,
-    bounceRate: h.sent > 0 ? Math.round((h.bounced / h.sent) * 100) : 0,
+    openRate: pct(h.opened, h.delivered),
+    clickRate: pct(h.clicked, h.delivered),
+    replyRate: pct(h.replied, h.delivered),
+    bounceRate: pct(h.bounced, h.sent),
   }));
 
   const stepPerformance = Array.from(stepStatsMap.values()).map((s) => ({
     ...s,
-    openRate: s.delivered > 0 ? Math.round((s.opened / s.delivered) * 100) : 0,
-    replyRate: s.delivered > 0 ? Math.round((s.replied / s.delivered) * 100) : 0,
+    openRate: pct(s.opened, s.delivered),
+    replyRate: pct(s.replied, s.delivered),
   }));
 
   // Match all connected mailboxes
@@ -342,8 +348,8 @@ export async function GET(
         replied: 0,
       };
       const limit = customLimitsMap[mb.id] ?? campaign.dailyLimitPerMailbox ?? 10;
-      const bounceRate = stats.totalSent > 0 ? Math.round((stats.bounced / stats.totalSent) * 100) : 0;
-      const replyRate = stats.delivered > 0 ? Math.round((stats.replied / stats.delivered) * 100) : 0;
+      const bounceRate = pct(stats.bounced, stats.totalSent);
+      const replyRate = pct(stats.replied, stats.delivered);
       return {
         id: mb.id,
         email: mb.email,
@@ -385,9 +391,9 @@ export async function GET(
     pending: statusCounts.pending,
     inProgress: statusCounts.in_progress,
     completed: statusCounts.completed,
-    openRate: delivered > 0 ? Math.round((uniqueOpens / delivered) * 100) : 0,
-    replyRate: delivered > 0 ? Math.round((statusCounts.replied / delivered) * 100) : 0,
-    bounceRate: totalSent > 0 ? Math.round((statusCounts.bounced / totalSent) * 100) : 0,
+    openRate: pct(uniqueOpens, delivered),
+    replyRate: pct(statusCounts.replied, delivered),
+    bounceRate: pct(statusCounts.bounced, totalSent),
   };
 
   return NextResponse.json({

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   HiOutlineBars3,
+  HiOutlineChatBubbleOvalLeftEllipsis,
   HiOutlineChevronDoubleLeft,
   HiOutlineChevronDoubleRight,
   HiOutlineMagnifyingGlass,
@@ -75,6 +76,16 @@ export function TopHeader({
         </button>
 
         <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+          {/* Desktop home for the support chat, so no floating button sits over page content. */}
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new Event("leadflow:open-bot"))}
+            className="hidden h-9 items-center gap-1.5 rounded-xl border border-border px-3 text-[13px] font-semibold text-ink-muted transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-600 lg:inline-flex"
+            aria-label="Help & support chat"
+          >
+            <HiOutlineChatBubbleOvalLeftEllipsis className="h-4 w-4" />
+            Help
+          </button>
           <ThemeToggle compact />
           <WorkspaceSettingsMenu user={user} variant="header" />
         </div>

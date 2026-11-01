@@ -32,7 +32,7 @@ export function Select({
   ...props
 }: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <select className={cn(fieldClass, "appearance-none", className)} {...props}>
+    <select className={cn(fieldClass, "ui-select appearance-none truncate pr-10", className)} {...props}>
       {children}
     </select>
   );
