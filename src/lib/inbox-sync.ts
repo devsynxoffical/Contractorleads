@@ -4,7 +4,7 @@ import { decryptSecret } from "@/lib/crypto-secret";
 import { HOSTINGER_DEFAULT_MAILBOXES, GODADDY_DEFAULT_MAILBOXES } from "@/lib/system-smtp";
 import { ingestInboundEmail } from "@/lib/lead-email";
 import { isGlobalSuperAdmin } from "@/lib/roles";
-import { HOSTINGER_RELAY_SECRET } from "@/lib/user-smtp";
+import { HOSTINGER_RELAY_SECRET, relayEndpoints } from "@/lib/user-smtp";
 
 export type ImapSyncResult = {
   mailbox: string;
@@ -284,16 +284,7 @@ async function syncMailboxViaRelay(
   limit: number,
 ): Promise<ImapSyncResult> {
   const base: ImapSyncResult = { mailbox: email, synced: 0, totalInBox: 0 };
-  const endpoints = Array.from(
-    new Set(
-      [
-        process.env.HOSTINGER_RELAY_URL?.trim(),
-        "https://roofingclients.us/mailer.php",
-        "https://roofingpartners.us/mailer.php",
-        "https://sevenfigurestudio.us/mailer.php",
-      ].filter(Boolean) as string[],
-    ),
-  );
+  const endpoints = relayEndpoints();
 
   let lastError = "relay unreachable";
   for (const url of endpoints) {

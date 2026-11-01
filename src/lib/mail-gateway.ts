@@ -1,5 +1,5 @@
 import {
-  HOSTINGER_RELAY_ENDPOINTS,
+  relayEndpoints,
   HOSTINGER_RELAY_SECRET,
   sendViaSmtpDirect,
   resolveSmtpCredentialsForEmail,
@@ -36,15 +36,7 @@ export type SendRelayOptions = {
  * Get all configured Hostinger relay URLs, prioritized by custom env then active domains
  */
 export function getRelayEndpoints(): string[] {
-  const customUrl = process.env.HOSTINGER_RELAY_URL?.trim();
-  return Array.from(
-    new Set(
-      [
-        customUrl,
-        ...HOSTINGER_RELAY_ENDPOINTS,
-      ].filter(Boolean) as string[]
-    )
-  );
+  return relayEndpoints();
 }
 
 /**
@@ -201,6 +193,9 @@ export async function sendEmailViaHostingerRelay(opts: SendRelayOptions): Promis
     headers["References"] = opts.references;
   }
 
+  // Keep every relay's error, so the log shows why the primary relay failed
+  // rather than only the last host tried.
+  const relayErrors: string[] = [];
   for (const url of endpoints) {
     try {
       const controller = new AbortController();
@@ -235,14 +230,16 @@ export async function sendEmailViaHostingerRelay(opts: SendRelayOptions): Promis
         if (data.ok) {
           return { ok: true, messageId: data.messageId || null };
         }
-        if (data.error) lastErr = `${url} error: ${data.error}`;
+        relayErrors.push(`${url} error: ${data.error || "relay answered without ok"}`);
       } else {
-        lastErr = `${url} returned status ${res.status}`;
+        const detail = await res.text().catch(() => "");
+        relayErrors.push(`${url} returned status ${res.status}${detail ? ` (${detail.slice(0, 160)})` : ""}`);
       }
     } catch (e: any) {
-      lastErr = `${url} failed: ${e.message || String(e)}`;
+      relayErrors.push(`${url} failed: ${e.message || String(e)}`);
     }
   }
+  if (relayErrors.length) lastErr = relayErrors.join(" | ");
 
   // --- AUTOMATIC DIRECT SMTP FALLBACK ---
   // If HTTP relay gateway returned 404 or was unreachable, seamlessly try direct authenticated SMTP
