@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ContractorLeads - Cost Per Lead & Infrastructure Analysis</title>
+<style>
+  @page {
+    size: letter portrait;
+    margin: 14mm 14mm 14mm 14mm;
+  }
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  body {
+    background-color: #ffffff;
+    color: #000000;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 10pt;
+    line-height: 1.45;
+  }
+  .header {
+    border-bottom: 2px solid #000000;
+    padding-bottom: 8px;
+    margin-bottom: 14px;
+  }
+  .header h1 {
+    font-size: 16pt;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    text-transform: uppercase;
+  }
+  .header .meta {
+    font-size: 8.5pt;
+    margin-top: 3px;
+  }
+  h2 {
+    font-size: 11pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    border-bottom: 1px solid #000000;
+    padding-bottom: 3px;
+    margin-top: 14px;
+    margin-bottom: 8px;
+    letter-spacing: 0.2px;
+  }
+  p {
+    margin-bottom: 6px;
+    font-size: 9.5pt;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 6px;
+    margin-bottom: 12px;
+    font-size: 8.5pt;
+  }
+  th, td {
+    border: 1px solid #000000;
+    padding: 5px 6px;
+    text-align: left;
+    vertical-align: top;
+    background-color: #ffffff;
+    color: #000000;
+  }
+  th {
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 8pt;
+    letter-spacing: 0.2px;
+  }
+  td.num, th.num {
+    text-align: right;
+  }
+  .highlight-col {
+    font-weight: 700;
+  }
+  .box {
+    border: 1px solid #000000;
+    padding: 8px 10px;
+    margin: 8px 0;
+    font-size: 9pt;
+  }
+  .box strong {
+    display: block;
+    margin-bottom: 2px;
+    font-size: 9.5pt;
+  }
+  ul {
+    margin-left: 18px;
+    margin-bottom: 6px;
+    font-size: 9pt;
+  }
+  li {
+    margin-bottom: 2px;
+  }
+  .footer {
+    margin-top: 16px;
+    border-top: 1px solid #000000;
+    padding-top: 6px;
+    font-size: 7.5pt;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>ContractorLeads.us: Cost Per Lead &amp; Infrastructure Analysis</h1>
+  <div class="meta">
+    Prepared for Management | System: Waterfall Lead Enrichment &amp; Email Verifier | Date: November 2026 | Currency: USD ($)
+  </div>
+</div>
+
+<h2>1. Fixed Hosting &amp; Infrastructure Allocation ($17.00 / Month Railway)</h2>
+<p>
+  Railway hosting costs a flat fee of $17.00 per month for the Next.js application, background workers, and PostgreSQL database. Because this cost is fixed, the infrastructure cost per lead decreases directly as monthly lead volume increases:
+</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Monthly Lead Volume</th>
+      <th>Total Railway Cost</th>
+      <th class="num">Railway Allocation Per Lead</th>
+      <th>Impact on Unit Economics</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1,000 leads / month</td>
+      <td>$17.00 / month</td>
+      <td class="num highlight-col">$0.0170 (1.70 cents)</td>
+      <td>Early stage / low volume baseline</td>
+    </tr>
+    <tr>
+      <td>2,500 leads / month (Standard Baseline)</td>
+      <td>$17.00 / month</td>
+      <td class="num highlight-col">$0.0068 (0.68 cents)</td>
+      <td>Active customer base benchmark ($0.007 / lead)</td>
+    </tr>
+    <tr>
+      <td>5,000 leads / month</td>
+      <td>$17.00 / month</td>
+      <td class="num highlight-col">$0.0034 (0.34 cents)</td>
+      <td>High efficiency scaling target</td>
+    </tr>
+    <tr>
+      <td>10,000 leads / month</td>
+      <td>$17.00 / month</td>
+      <td class="num highlight-col">$0.0017 (0.17 cents)</td>
+      <td>Near-zero marginal server cost</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>2. Complete Master Table: All Services, APIs &amp; Full Price Per Lead</h2>
+<p>
+  The table below details every API, third-party service, and server infrastructure cost. The last column shows the full all-in price per lead including both the direct API cost and the Railway server infrastructure share (calculated at the standard 2,500 leads/month baseline):
+</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Service / Provider</th>
+      <th>Pipeline Role</th>
+      <th>Package / Plan Cost</th>
+      <th class="num">Direct API Unit Cost</th>
+      <th class="num">Railway Share (2.5k)</th>
+      <th class="num highlight-col">Full All-In Price Per Lead</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Railway Hosting</strong></td>
+      <td>Next.js Server &amp; Database</td>
+      <td>$17.00 / month flat</td>
+      <td class="num">Shared server</td>
+      <td class="num">$0.0070</td>
+      <td class="num highlight-col">$0.0070 (0.70 cents)</td>
+    </tr>
+    <tr>
+      <td><strong>Internal DB &amp; Scraper</strong></td>
+      <td>Stages 1 &amp; 2 (Checked 1st)</td>
+      <td>Included on server ($0)</td>
+      <td class="num">$0.0000</td>
+      <td class="num">+$0.0070</td>
+      <td class="num highlight-col">$0.0070 (0.70 cents)</td>
+    </tr>
+    <tr>
+      <td><strong>Serper.dev (Google Search)</strong></td>
+      <td>Stage 3 (Owner &amp; Snippets)</td>
+      <td>$50 for 50,000 queries</td>
+      <td class="num">$0.0010</td>
+      <td class="num">+$0.0070</td>
+      <td class="num highlight-col">$0.0080 (0.80 cents)</td>
+    </tr>
+    <tr>
+      <td><strong>NinjaPear (Nubela)</strong></td>
+      <td>Stage 4.4 (Company &amp; Execs)</td>
+      <td>$10 for 1,000 lookups</td>
+      <td class="num">$0.0100</td>
+      <td class="num">+$0.0070 +$0.001 Serper</td>
+      <td class="num highlight-col">$0.0180 (1.80 cents)</td>
+    </tr>
+    <tr>
+      <td><strong>Apollo.io (Paid Plan)</strong></td>
+      <td>Stage 4.1 (External People Match)</td>
+      <td>$49 for 2,500 credits</td>
+      <td class="num">$0.0196</td>
+      <td class="num">+$0.0070 +$0.001 Serper</td>
+      <td class="num highlight-col">$0.0276 (2.76 cents)</td>
+    </tr>
+    <tr>
+      <td><strong>Prospeo.io v2</strong></td>
+      <td>Stage 4.2 (Verified Email &amp; Phone)</td>
+      <td>$39 for 1,000 credits</td>
+      <td class="num">$0.0300</td>
+      <td class="num">+$0.0070 +$0.001 Serper</td>
+      <td class="num highlight-col">$0.0380 (3.80 cents)</td>
+    </tr>
+    <tr>
+      <td><strong>Hunter.io</strong></td>
+      <td>Stage 4.3 (Email Finder Fallback)</td>
+      <td>$49 for 500 searches</td>
+      <td class="num">$0.0350</td>
+      <td class="num">+$0.0070 +$0.001 Serper</td>
+      <td class="num highlight-col">$0.0430 (4.30 cents)</td>
+    </tr>
+    <tr>
+      <td><strong>ZeroBounce</strong></td>
+      <td>7-Step Verification Safety</td>
+      <td>$15 for 5,000 checks</td>
+      <td class="num">$0.0030</td>
+      <td class="num">Applied on external emails</td>
+      <td class="num highlight-col">$0.0030 (0.30 cents)</td>
+    </tr>
+    <tr>
+      <td><strong>Hostinger Mail Relay</strong></td>
+      <td>Warmup &amp; Relay Dispatch</td>
+      <td>Included in domains ($0)</td>
+      <td class="num">$0.0000</td>
+      <td class="num">+$0.0000</td>
+      <td class="num highlight-col">$0.0000 (0.00 cents)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>3. Exact Cost Per Lead by Outcome Scenario</h2>
+<p>
+  Because the enrichment engine operates as a sequential waterfall, execution stops the instant verified contact details are found. The exact cost per lead depends on which stage resolves the contact:
+</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Outcome Scenario</th>
+      <th>Pipeline Stages &amp; APIs Triggered</th>
+      <th class="num">Direct API Cost</th>
+      <th class="num">Railway Cost</th>
+      <th class="num highlight-col">Full All-In Price You Pay</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Scenario A: Internal DB or Website Scrape</strong> (approx 40% of leads)</td>
+      <td>Internal DB query + direct website crawl</td>
+      <td class="num">$0.0000</td>
+      <td class="num">$0.0070</td>
+      <td class="num highlight-col">$0.0070 (0.70 cents)</td>
+    </tr>
+    <tr>
+      <td><strong>Scenario B: Google Serper Search</strong> (approx 25% of leads)</td>
+      <td>Serper search query + website snippet parse</td>
+      <td class="num">$0.0010</td>
+      <td class="num">$0.0070</td>
+      <td class="num highlight-col">$0.0080 (0.80 cents)</td>
+    </tr>
+    <tr>
+      <td><strong>Scenario C: Apollo.io Match</strong> (approx 15% of leads)</td>
+      <td>Serper ($0.001) + Apollo Match ($0.0196)</td>
+      <td class="num">$0.0206</td>
+      <td class="num">$0.0070</td>
+      <td class="num highlight-col">$0.0276 (2.76 cents)</td>
+    </tr>
+    <tr>
+      <td><strong>Scenario D: Prospeo.io Match</strong> (approx 15% of leads)</td>
+      <td>Serper ($0.001) + Prospeo Person ($0.0300)</td>
+      <td class="num">$0.0310</td>
+      <td class="num">$0.0070</td>
+      <td class="num highlight-col">$0.0380 (3.80 cents)</td>
+    </tr>
+    <tr>
+      <td><strong>Scenario E: Complete Miss / Unresolvable</strong> (approx 5% of leads)</td>
+      <td>Serper ($0.001). Prospeo/Apollo do not charge on miss</td>
+      <td class="num">$0.0010</td>
+      <td class="num">$0.0070</td>
+      <td class="num highlight-col">$0.0080 (0.80 cents)</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="box">
+  <strong>Weighted Blended Average Cost Per Lead:</strong>
+  (40% x $0.0070) + (25% x $0.0080) + (15% x $0.0276) + (15% x $0.0380) + (5% x $0.0080) = <strong>$0.0150 per lead</strong>.
+  When external safety verification (ZeroBounce at $0.0030) is added to external provider hits, the <strong>total all-inclusive blended average cost is approximately $0.018 to $0.020 (1.8 to 2.0 cents) per lead</strong>.
+</div>
+
+<h2>4. Customer Pricing, Revenue &amp; Net Profit Margins</h2>
+<p>
+  When a user enriches a lead, the system deducts 1 credit (configured in Admin Console). The table below compares your real all-in cost against customer subscription revenue:
+</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Customer Subscription Plan</th>
+      <th>Plan Price &amp; Credits</th>
+      <th class="num">Revenue Value Per Credit</th>
+      <th class="num">Your All-In Cost Per Lead</th>
+      <th class="num highlight-col">Net Profit Per Lead</th>
+      <th class="num">Net Margin (%)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Starter Plan</strong></td>
+      <td>$39.00 / month (250 credits)</td>
+      <td class="num">$0.1560</td>
+      <td class="num">~$0.0200</td>
+      <td class="num highlight-col">+$0.1360 per lead</td>
+      <td class="num"><strong>87.2% profit</strong></td>
+    </tr>
+    <tr>
+      <td><strong>Growth Plan</strong></td>
+      <td>$79.00 / month (1,000 credits)</td>
+      <td class="num">$0.0790</td>
+      <td class="num">~$0.0200</td>
+      <td class="num highlight-col">+$0.0590 per lead</td>
+      <td class="num"><strong>74.7% profit</strong></td>
+    </tr>
+    <tr>
+      <td><strong>Agency Plan</strong></td>
+      <td>$149.00 / month (2,500 credits)</td>
+      <td class="num">$0.0596</td>
+      <td class="num">~$0.0200</td>
+      <td class="num highlight-col">+$0.0396 per lead</td>
+      <td class="num"><strong>66.4% profit</strong></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>5. Operational Summary</h2>
+<ul>
+  <li><strong>Zero-Cost-First Architecture:</strong> Approximately 65% of all lead requests are resolved via the internal database, direct website parsing, or Google web search before any paid external API is called.</li>
+  <li><strong>No-Charge-On-Miss Guarantee:</strong> External providers (Prospeo, Apollo) only deduct credits when real matching data is returned; unresolvable leads incur no external API cost.</li>
+  <li><strong>Hosting Stability:</strong> Railway hosting at $17.00 per month is fixed, resulting in higher gross margins as lead enrichment volume grows.</li>
+</ul>
+
+<div class="footer">
+  ContractorLeads.us Confidential Cost Analysis Report | Generated November 2026 | Pure Monochrome Edition
+</div>
+
+</body>
+</html>
