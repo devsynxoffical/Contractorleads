@@ -955,13 +955,15 @@ export async function sendViaHostingerRelay(opts: {
   if (opts.references) relayHeaders["References"] = opts.references;
   if (opts.replyTo) relayHeaders["Reply-To"] = opts.replyTo;
 
+  // mailer.php only falls back to its stored mailbox password when `password` is
+  // absent (PHP `??`), so an empty string would make it log in with a blank password.
   const payload = {
     secret: HOSTINGER_RELAY_SECRET,
     action: opts.action || "send",
     fromEmail: opts.fromEmail,
     fromName: opts.fromName || "Contractor Leads",
-    password: opts.password || "",
-    host: opts.host || "",
+    ...(opts.password ? { password: opts.password } : {}),
+    ...(opts.host ? { host: opts.host } : {}),
     port: opts.port || 465,
     to: opts.to || "",
     subject: opts.subject || "",
@@ -974,7 +976,8 @@ export async function sendViaHostingerRelay(opts: {
   for (const url of endpoints) {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 12000);
+      // GoDaddy sends try two ports with a 15s socket timeout each on the relay side.
+      const timeoutId = setTimeout(() => controller.abort(), 45000);
       const res = await fetch(url, {
         method: "POST",
         headers: {

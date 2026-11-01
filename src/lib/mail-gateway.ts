@@ -193,13 +193,30 @@ export async function sendEmailViaHostingerRelay(opts: SendRelayOptions): Promis
     headers["References"] = opts.references;
   }
 
+  // Use the mailbox's saved credentials when the caller (e.g. warmup) passed none.
+  let password = opts.password || "";
+  let host = opts.host || "";
+  let port = opts.port || 0;
+  if (!password) {
+    const creds = await resolveSmtpCredentialsForEmail(opts.fromEmail).catch(() => null);
+    if (creds?.password) {
+      password = creds.password;
+      host = host || creds.host || "";
+      port = port || creds.port || 0;
+    }
+  }
+
   // Keep every relay's error, so the log shows why the primary relay failed
   // rather than only the last host tried.
   const relayErrors: string[] = [];
+  // True once a relay answered with its own SMTP error: the relay is reachable, so
+  // retrying direct SMTP from this host (blocked on Railway) cannot help.
+  let relayAnswered = false;
   for (const url of endpoints) {
     try {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 15000);
+      // GoDaddy sends try two ports with a 15s socket timeout each on the relay side.
+      const timer = setTimeout(() => controller.abort(), 45000);
 
       const res = await fetch(url, {
         method: "POST",
@@ -212,9 +229,11 @@ export async function sendEmailViaHostingerRelay(opts: SendRelayOptions): Promis
           action: "send",
           fromEmail: opts.fromEmail.toLowerCase().trim(),
           fromName: opts.fromName || "Contractor Leads",
-          password: opts.password || "",
-          host: opts.host || "",
-          port: opts.port || 465,
+          // Omit when unknown: mailer.php then uses its stored password (it only
+          // falls back when the field is absent, not when it is empty).
+          ...(password ? { password } : {}),
+          ...(host ? { host } : {}),
+          port: port || 465,
           to: opts.to,
           subject: opts.subject,
           html: opts.html || "",
@@ -230,16 +249,23 @@ export async function sendEmailViaHostingerRelay(opts: SendRelayOptions): Promis
         if (data.ok) {
           return { ok: true, messageId: data.messageId || null };
         }
+        relayAnswered = true;
         relayErrors.push(`${url} error: ${data.error || "relay answered without ok"}`);
       } else {
         const detail = await res.text().catch(() => "");
-        relayErrors.push(`${url} returned status ${res.status}${detail ? ` (${detail.slice(0, 160)})` : ""}`);
+        if (detail.trim().startsWith("{")) relayAnswered = true;
+        relayErrors.push(`${url} returned status ${res.status}${detail ? ` (${detail.slice(0, 200)})` : ""}`);
       }
     } catch (e: any) {
       relayErrors.push(`${url} failed: ${e.message || String(e)}`);
     }
   }
   if (relayErrors.length) lastErr = relayErrors.join(" | ");
+
+  if (relayAnswered) {
+    console.warn(`[Hostinger Relay] Send failed for ${opts.fromEmail}: ${lastErr}`);
+    return { ok: false, error: lastErr };
+  }
 
   // --- AUTOMATIC DIRECT SMTP FALLBACK ---
   // If HTTP relay gateway returned 404 or was unreachable, seamlessly try direct authenticated SMTP

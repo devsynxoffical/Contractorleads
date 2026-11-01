@@ -2351,14 +2351,14 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
         <div className="rounded-2xl border border-border bg-[var(--surface)] p-5 shadow-[var(--shadow-card)] space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-sm font-bold text-ink">✉️ Outbound Email Dispatch Log &amp; Activity</h2>
+              <h2 className="text-sm font-bold text-ink">Outbound Email Dispatch Log &amp; Activity</h2>
               <p className="text-xs text-ink-muted">
                 Complete live audit trail of every email sent, tracking opens, clicks, and mailbox routing.
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <div className="relative min-w-[200px]">
+              <div className="relative w-full sm:w-60">
                 <HiOutlineMagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-ink-muted" />
                 <input
                   type="text"
@@ -2368,7 +2368,7 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                     void loadLogs(logsFilter, e.target.value);
                   }}
                   placeholder="Search emails, leads, subject…"
-                  className="saas-input pl-8 py-1.5 text-xs w-full"
+                  className="saas-input h-9 w-full pl-8 text-xs"
                 />
               </div>
 
@@ -2378,7 +2378,7 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                   setLogsFilter(e.target.value);
                   void loadLogs(e.target.value, logsSearch);
                 }}
-                className="saas-input py-1.5 text-xs"
+                className="saas-input h-9 w-auto pr-8 text-xs"
               >
                 <option value="all">All Dispatches ({logsTotal})</option>
                 <option value="sent">Delivered Only</option>
@@ -2407,7 +2407,7 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                 <tr className="border-b border-border text-ink-muted">
                   <th className="py-2.5 px-3 font-bold uppercase">Recipient Lead</th>
                   <th className="py-2.5 px-3 font-bold uppercase">Subject Line</th>
-                  <th className="py-2.5 px-3 font-bold uppercase">Sender Mailbox</th>
+                  <th className="hidden py-2.5 px-3 font-bold uppercase 2xl:table-cell">Sender Mailbox</th>
                   <th className="py-2.5 px-3 font-bold uppercase">Step</th>
                   <th className="py-2.5 px-3 font-bold uppercase">Delivery &amp; Engagement</th>
                   <th className="py-2.5 px-3 font-bold uppercase">Sent At</th>
@@ -2430,37 +2430,41 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                 ) : (
                   logsList.map((log) => (
                     <tr key={log.id} className="hover:bg-[var(--input-bg)]/50 transition">
-                      <td className="py-3 px-3">
-                        <div>
-                          <span className="font-bold text-ink">
+                      <td className="py-3 px-3 max-w-[190px] 2xl:max-w-[240px]">
+                        <div className="min-w-0">
+                          <span className="block truncate font-bold text-ink" title={log.prospect?.businessName || log.toEmail}>
                             {log.prospect?.businessName || log.toEmail}
                           </span>
-                          <span className="text-[11px] text-ink-muted block font-mono">
+                          <span className="block truncate font-mono text-[11px] text-ink-muted" title={log.toEmail}>
                             {log.toEmail}
                           </span>
                         </div>
                       </td>
-                      <td className="py-3 px-3 max-w-[240px]">
-                        <span className="font-semibold text-ink truncate block">
+                      <td className="py-3 px-3 max-w-[210px] 2xl:max-w-[280px]">
+                        <span className="font-semibold text-ink truncate block" title={log.subject}>
                           {log.subject}
                         </span>
+                        {/* Sender shown under the subject until the Sender column has room */}
+                        <span className="block truncate font-mono text-[11px] text-ink-muted 2xl:hidden" title={log.fromEmail}>
+                          from {log.fromEmail}
+                        </span>
                       </td>
-                      <td className="py-3 px-3 font-mono text-ink-muted">
+                      <td className="hidden max-w-[240px] truncate py-3 px-3 font-mono text-ink-muted 2xl:table-cell" title={log.fromEmail}>
                         {log.fromEmail}
                       </td>
                       <td className="py-3 px-3">
-                        <span className="rounded-md bg-[var(--input-bg)] border border-border px-2 py-0.5 font-bold text-ink">
+                        <span className="whitespace-nowrap rounded-md bg-[var(--input-bg)] border border-border px-2 py-0.5 font-bold text-ink">
                           {log.stepIndex === 0 ? `Day 0 (Hook ${log.hookId || "A"})` : `Follow-Up ${log.stepIndex}`}
                         </span>
                       </td>
                       <td className="py-3 px-3">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           {log.status === "failed" ? (
-                            <span className="rounded bg-rose-100 text-rose-800 px-2 py-0.5 text-[10px] font-bold">
+                            <span className="whitespace-nowrap rounded bg-rose-100 text-rose-800 px-2 py-0.5 text-[10px] font-bold">
                               ❌ Failed
                             </span>
                           ) : (
-                            <span className="rounded bg-emerald-100 text-emerald-800 px-2 py-0.5 text-[10px] font-bold dark:bg-emerald-950 dark:text-emerald-300">
+                            <span className="whitespace-nowrap rounded bg-emerald-100 text-emerald-800 px-2 py-0.5 text-[10px] font-bold dark:bg-emerald-950 dark:text-emerald-300">
                               ✓ Delivered
                             </span>
                           )}
@@ -2486,7 +2490,7 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
                         {formatDateTime(log.sentAt)}
                       </td>
                       <td className="py-3 px-3 text-right">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-2 whitespace-nowrap">
                           <button
                             type="button"
                             onClick={() => void openEmailViewer(log.prospect || { businessName: log.toEmail, email: log.toEmail }, log)}
