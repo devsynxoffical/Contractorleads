@@ -99,10 +99,37 @@ export async function saveAccountToHostingerRelay(payload: MailboxRelayPayload):
 /**
  * Test SMTP connectivity for an email account via Hostinger relay
  */
+/** Ask the gateway which SMTP ports of a mail server it can reach (admin diagnostics). */
+export async function relayPortCheck(host: string): Promise<{
+  ok: boolean;
+  results?: Array<{ port: number; open: boolean; ms: number; banner?: string; error?: string }>;
+  error?: string;
+}> {
+  const errors: string[] = [];
+  for (const url of getRelayEndpoints()) {
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${HOSTINGER_RELAY_SECRET}` },
+        body: JSON.stringify({ secret: HOSTINGER_RELAY_SECRET, action: "port_check", host }),
+        signal: AbortSignal.timeout(45000),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok) return { ok: true, results: data.results };
+      errors.push(`${url}: ${data.error || `status ${res.status}`}`);
+    } catch (e: unknown) {
+      errors.push(`${url}: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+  return { ok: false, error: errors.join(" | ") || "Gateway unreachable" };
+}
+
 export async function testAccountViaHostingerRelay(payload: MailboxRelayPayload): Promise<{
   ok: boolean;
   message?: string;
   error?: string;
+  /** Port the gateway actually authenticated on (it tries fallbacks) */
+  port?: number;
 }> {
   const endpoints = getRelayEndpoints();
   const relayErrors: string[] = [];
@@ -113,8 +140,8 @@ export async function testAccountViaHostingerRelay(payload: MailboxRelayPayload)
   for (const url of endpoints) {
     try {
       const controller = new AbortController();
-      // GoDaddy tests try two ports with a 15s socket timeout each on the relay side.
-      const timer = setTimeout(() => controller.abort(), 45000);
+      // The gateway may try up to four ports (8s connect each) for GoDaddy.
+      const timer = setTimeout(() => controller.abort(), 60000);
 
       const res = await fetch(url, {
         method: "POST",
@@ -135,14 +162,18 @@ export async function testAccountViaHostingerRelay(payload: MailboxRelayPayload)
       clearTimeout(timer);
 
       const text = await res.text().catch(() => "");
-      let data: { ok?: boolean; message?: string; error?: string } = {};
+      let data: { ok?: boolean; message?: string; error?: string; port?: number } = {};
       try {
         data = text ? JSON.parse(text) : {};
       } catch {
         data = {};
       }
       if (res.ok && data.ok) {
-        return { ok: true, message: data.message || "Connection & authentication verified via the mail relay" };
+        return {
+          ok: true,
+          message: data.message || "Connection & authentication verified via the mail relay",
+          port: typeof (data as { port?: unknown }).port === "number" ? (data as { port: number }).port : undefined,
+        };
       }
       if (data.error) {
         relayAnswered = true;
@@ -248,8 +279,8 @@ async function sendEmailViaHostingerRelayRaw(opts: SendRelayOptions): Promise<{
   for (const url of endpoints) {
     try {
       const controller = new AbortController();
-      // GoDaddy sends try two ports with a 15s socket timeout each on the relay side.
-      const timer = setTimeout(() => controller.abort(), 45000);
+      // The gateway may try up to four ports (8s connect each) for GoDaddy.
+      const timer = setTimeout(() => controller.abort(), 60000);
 
       const res = await fetch(url, {
         method: "POST",

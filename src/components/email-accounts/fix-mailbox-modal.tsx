@@ -69,6 +69,22 @@ export function FixMailboxModal({
   const [username, setUsername] = useState("");
   const [busy, setBusy] = useState<"" | "retest" | "save" | "force">("");
   const [result, setResult] = useState<{ ok: boolean; text: string; detail?: string } | null>(null);
+  const [ports, setPorts] = useState<{ loading: boolean; host?: string; error?: string; results?: Array<{ port: number; open: boolean; ms: number; banner?: string; error?: string }> } | null>(null);
+
+  async function runPortCheck() {
+    setPorts({ loading: true });
+    try {
+      const res = await fetch("/api/email-accounts/fix", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mailboxId, action: "port_check" }),
+      });
+      const data = await res.json().catch(() => ({}));
+      setPorts({ loading: false, host: data.host, results: data.results, error: res.ok && data.ok ? undefined : data.error || "Check failed" });
+    } catch {
+      setPorts({ loading: false, error: "Check failed" });
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -225,6 +241,44 @@ export function FixMailboxModal({
                     </button>
                   </div>
 
+                  {/* Admins: which SMTP ports the gateway can actually reach */}
+                  {info.viewerIsAdmin && (
+                    <div className="rounded-xl border border-border p-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-semibold">Check connection (admin)</p>
+                          <p className="text-[12px] text-ink-muted">Which ports of {info.mailbox.host} the sending gateway can reach.</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={runPortCheck}
+                          disabled={ports?.loading}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-[13px] font-semibold hover:bg-brand-50 disabled:opacity-50"
+                        >
+                          <HiOutlineArrowPath className={`h-4 w-4 ${ports?.loading ? "animate-spin" : ""}`} />
+                          {ports?.loading ? "Checking…" : "Check connection"}
+                        </button>
+                      </div>
+                      {ports && !ports.loading && (
+                        ports.error ? (
+                          <p className="mt-2 text-[12px] text-rose-600">{ports.error}</p>
+                        ) : (
+                          <ul className="mt-2 grid grid-cols-2 gap-1.5 text-[12px] sm:grid-cols-3">
+                            {(ports.results || []).map((r) => (
+                              <li
+                                key={r.port}
+                                className={`rounded-lg border px-2 py-1.5 ${r.open ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-rose-200 bg-rose-50 text-rose-800"}`}
+                                title={r.open ? r.banner : r.error}
+                              >
+                                <span className="font-mono font-bold">{r.port}</span> {r.open ? "open" : "blocked"}
+                              </li>
+                            ))}
+                          </ul>
+                        )
+                      )}
+                    </div>
+                  )}
+
                   {/* Option 2: update login */}
                   <details className="group" open={!relayProblem && d?.problem !== "recipient_rejected"}>
                     <summary className="cursor-pointer list-none text-[13px] font-semibold text-brand-600 group-open:hidden">
@@ -291,6 +345,7 @@ export function FixMailboxModal({
                                 <option value={465}>465 (SSL)</option>
                                 <option value={587}>587 (STARTTLS)</option>
                                 <option value={3535}>3535 (GoDaddy alt.)</option>
+                                <option value={80}>80 (GoDaddy alt.)</option>
                               </select>
                             </label>
                           </div>

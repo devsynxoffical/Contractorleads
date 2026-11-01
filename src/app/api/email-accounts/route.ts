@@ -503,7 +503,7 @@ export async function POST(request: Request) {
   const email = (body.email || "").toLowerCase().trim();
   const password = body.password || "";
   const host = body.host?.trim() || "";
-  const port = parseInt(body.port || "465", 10);
+  let port = parseInt(body.port || "465", 10);
   const senderName = body.senderName?.trim() || email.split("@")[0].replace(".", " ");
   const provider = body.provider?.trim() || "custom";
   const dailyLimit = parseInt(body.dailyLimit || "30", 10);
@@ -545,6 +545,9 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
+
+  // The gateway may have authenticated on a fallback port: keep the one that worked.
+  if (testRes.port && testRes.port !== port) port = testRes.port;
 
   // 2. Persist to Hostinger mailer.php storage (save_account action)
   await saveAccountToHostingerRelay({

@@ -163,6 +163,10 @@ function saveCustomAccounts($file, $accounts, $guard) {
 
 $CUSTOM_ACCOUNTS = loadCustomAccounts($CUSTOM_ACCOUNTS_FILE);
 
+// Last SMTP port that worked per mail server (e.g. GoDaddy may only be reachable on 80 / 3535 from here).
+$PORT_CACHE_FILE = dirname($CUSTOM_ACCOUNTS_FILE) . "/smtp_ports.store.php";
+$PORT_CACHE = loadCustomAccounts($PORT_CACHE_FILE);
+
 // One-time move of the old public file into the protected store, then delete it.
 if (file_exists($LEGACY_ACCOUNTS_FILE)) {
     $legacy = json_decode(@file_get_contents($LEGACY_ACCOUNTS_FILE), true);
@@ -255,6 +259,35 @@ if (($data["action"] ?? "") === "save_account") {
 }
 
 // ----------------------------------------------------------------------
+// Action: PORT_CHECK — which SMTP ports of a mail server this host can reach
+// (shared hosting often blocks outgoing mail ports to other providers).
+// ----------------------------------------------------------------------
+if (($data["action"] ?? "") === "port_check") {
+    $host = trim($data["host"] ?? "");
+    if ($host === "" || !preg_match('/^[a-z0-9.-]+$/i', $host)) {
+        http_response_code(400);
+        echo json_encode(["ok" => false, "error" => "A valid host is required"]);
+        exit;
+    }
+    $results = [];
+    foreach ([465, 587, 3535, 80, 25] as $p) {
+        $t0 = microtime(true);
+        $sock = @fsockopen(($p === 465 ? "ssl://" : "tcp://") . $host, $p, $errno, $errstr, 6);
+        $ms = intval((microtime(true) - $t0) * 1000);
+        if ($sock) {
+            stream_set_timeout($sock, 6);
+            $banner = trim((string)fgets($sock, 515));
+            fclose($sock);
+            $results[] = ["port" => $p, "open" => true, "ms" => $ms, "banner" => substr($banner, 0, 80)];
+        } else {
+            $results[] = ["port" => $p, "open" => false, "ms" => $ms, "error" => trim($errstr) ?: "closed"];
+        }
+    }
+    echo json_encode(["ok" => true, "host" => $host, "results" => $results]);
+    exit;
+}
+
+// ----------------------------------------------------------------------
 // Action: TEST — tests SMTP connection directly from Hostinger
 // ----------------------------------------------------------------------
 if (($data["action"] ?? "") === "test") {
@@ -265,27 +298,34 @@ if (($data["action"] ?? "") === "test") {
     $host = !empty($data["host"]) ? trim($data["host"]) : (!empty($CUSTOM_ACCOUNTS[$fromEmail]["host"]) ? $CUSTOM_ACCOUNTS[$fromEmail]["host"] : ($isGoDaddy ? "smtpout.secureserver.net" : "smtp.hostinger.com"));
     $port = intval($data["port"] ?? (!empty($CUSTOM_ACCOUNTS[$fromEmail]["port"]) ? $CUSTOM_ACCOUNTS[$fromEmail]["port"] : 465));
 
-    list($socket, $sessionErr) = smtpOpenSession($host, $port, $domain, 12);
-    if (!$socket) {
-        http_response_code(500);
-        echo json_encode(["ok" => false, "error" => $sessionErr]);
+    $connectErrors = [];
+    foreach (smtpPortsFor($host, $port) as $tryPort) {
+        list($socket, $sessionErr) = smtpOpenSession($host, $tryPort, $domain, 12);
+        if (!$socket) {
+            $connectErrors[] = $sessionErr;
+            continue;
+        }
+        fputs($socket, "AUTH LOGIN\r\n");
+        getSmtpResponse($socket);
+        fputs($socket, base64_encode($fromEmail) . "\r\n");
+        getSmtpResponse($socket);
+        fputs($socket, base64_encode($password) . "\r\n");
+        $authRes = getSmtpResponse($socket);
+        fputs($socket, "QUIT\r\n");
+        fclose($socket);
+
+        if (substr($authRes, 0, 3) === "235") {
+            rememberWorkingPort($host, $tryPort);
+            echo json_encode(["ok" => true, "message" => "Connection & authentication verified on {$host}:{$tryPort}", "host" => $host, "port" => $tryPort]);
+        } else {
+            // The server answered: the login itself was refused, other ports will not help.
+            http_response_code(500);
+            echo json_encode(["ok" => false, "error" => "Auth failed for {$fromEmail} on {$host}:{$tryPort}: " . trim($authRes), "port" => $tryPort]);
+        }
         exit;
     }
-    fputs($socket, "AUTH LOGIN\r\n");
-    getSmtpResponse($socket);
-    fputs($socket, base64_encode($fromEmail) . "\r\n");
-    getSmtpResponse($socket);
-    fputs($socket, base64_encode($password) . "\r\n");
-    $authRes = getSmtpResponse($socket);
-    fputs($socket, "QUIT\r\n");
-    fclose($socket);
-
-    if (substr($authRes, 0, 3) === "235") {
-        echo json_encode(["ok" => true, "message" => "SMTP connection & authentication verified via {$host}"]);
-    } else {
-        http_response_code(500);
-        echo json_encode(["ok" => false, "error" => "Auth failed for {$fromEmail} on {$host}: " . trim($authRes)]);
-    }
+    http_response_code(500);
+    echo json_encode(["ok" => false, "error" => "SMTP socket connection failed to {$host} on every port tried (" . implode(" | ", $connectErrors) . ")"]);
     exit;
 }
 
@@ -357,18 +397,25 @@ if (($data["action"] ?? "") === "fetch") {
 }
 
 /**
- * Open an SMTP session ready for AUTH: implicit SSL on 465 / 3535, or STARTTLS on 587
- * (Microsoft 365 and many hosts only accept 587). Returns [socket, error].
+ * Open an SMTP session ready for AUTH. Port 465 uses implicit SSL; every other port
+ * (587, 3535, 80, 25) must upgrade with STARTTLS, so a password is never sent in clear.
+ * Returns [socket, error].
  */
 function smtpOpenSession($host, $port, $domain, $timeout) {
-    $useStartTls = intval($port) === 587;
-    $socket = @fsockopen(($useStartTls ? "tcp://" : "ssl://") . $host, $port, $errno, $errstr, $timeout);
+    $port = intval($port);
+    $implicitSsl = $port === 465;
+    $connectTimeout = min($timeout, 8);
+    $socket = @fsockopen(($implicitSsl ? "ssl://" : "tcp://") . $host, $port, $errno, $errstr, $connectTimeout);
     if (!$socket) return [null, "SMTP socket connection failed to {$host}:{$port} ({$errstr})"];
     stream_set_timeout($socket, $timeout);
     getSmtpResponse($socket);
     fputs($socket, "EHLO " . $domain . "\r\n");
-    getSmtpResponse($socket);
-    if ($useStartTls) {
+    $ehlo = getSmtpResponse($socket);
+    if (!$implicitSsl) {
+        if (stripos($ehlo, "STARTTLS") === false) {
+            fclose($socket);
+            return [null, "STARTTLS failed on {$host}:{$port}: server does not offer encryption on this port"];
+        }
         fputs($socket, "STARTTLS\r\n");
         $tlsRes = getSmtpResponse($socket);
         if (substr($tlsRes, 0, 3) !== "220" || !@stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
@@ -379,6 +426,28 @@ function smtpOpenSession($host, $port, $domain, $timeout) {
         getSmtpResponse($socket);
     }
     return [$socket, ""];
+}
+
+/** True when an error means "could not reach / secure the port" (worth trying the next port). */
+function isSmtpConnectError($err) {
+    return strpos($err, "SMTP socket connection failed") === 0 || strpos($err, "STARTTLS failed") === 0;
+}
+
+/** Ports to try: requested, last one that worked for this server, then provider fallbacks. */
+function smtpPortsFor($host, $requested) {
+    global $PORT_CACHE;
+    $fallbacks = stripos($host, "secureserver.net") !== false ? [465, 587, 3535, 80] : [465, 587];
+    $cached = intval($PORT_CACHE[strtolower($host)] ?? 0);
+    $list = array_merge([intval($requested), $cached], $fallbacks);
+    return array_values(array_unique(array_filter($list, function ($p) { return $p > 0; })));
+}
+
+function rememberWorkingPort($host, $port) {
+    global $PORT_CACHE, $PORT_CACHE_FILE, $STORE_GUARD;
+    $key = strtolower($host);
+    if (intval($PORT_CACHE[$key] ?? 0) === intval($port)) return;
+    $PORT_CACHE[$key] = intval($port);
+    saveCustomAccounts($PORT_CACHE_FILE, $PORT_CACHE, $STORE_GUARD);
 }
 
 function getSmtpResponse($socket) {
@@ -625,16 +694,19 @@ function sendViaSmtpSocket($host, $port, $domain, $fromEmail, $password, $to, $b
 
 // Try primary and secondary ports
 $requestedPort = intval($data["port"] ?? ($savedAccount["port"] ?? 0));
-$portsToTry = array_values(array_unique(array_filter(array_merge([$requestedPort], $isGoDaddy ? [465, 3535] : [465]))));
+$portsToTry = smtpPortsFor($smtpHost, $requestedPort);
 $lastSmtpErr = "";
 
 foreach ($portsToTry as $port) {
     $res = sendViaSmtpSocket($smtpHost, $port, $domain, $fromEmail, $password, $to, $bodyContent, $msgId, $isGoDaddy ? "godaddy" : "hostinger");
     if ($res["ok"]) {
+        rememberWorkingPort($smtpHost, $port);
         echo json_encode($res);
         exit;
     }
     $lastSmtpErr = $res["error"];
+    // Only an unreachable port is worth retrying on the next one (not a refused login or recipient).
+    if (!isSmtpConnectError($res["error"])) break;
 }
 
 // ----------------------------------------------------------------------

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { isGlobalSuperAdmin } from "@/lib/roles";
 import { decryptSecret, encryptSecret } from "@/lib/crypto-secret";
 import { systemRowToPayload } from "@/lib/system-smtp";
-import { saveAccountToHostingerRelay, testAccountViaHostingerRelay } from "@/lib/mail-gateway";
+import { relayPortCheck, saveAccountToHostingerRelay, testAccountViaHostingerRelay } from "@/lib/mail-gateway";
 import {
   clearMailboxFailure,
   diagnoseMailboxError,
@@ -83,6 +83,12 @@ export async function POST(request: Request) {
   /** What a user may see of a raw relay / SMTP error. */
   const shown = (raw: string | null | undefined) => (isSuper ? raw || "" : publicMailError(raw));
 
+  if (action === "port_check") {
+    if (!isSuper) return NextResponse.json({ error: "Only platform admins can run this check" }, { status: 403 });
+    const check = await relayPortCheck(current.host);
+    return NextResponse.json({ ok: check.ok, host: current.host, results: check.results ?? [], error: check.ok ? undefined : check.error });
+  }
+
   if (action === "diagnose") {
     return NextResponse.json({ ok: true, ...describe(settings?.lastSendErrorRaw || settings?.lastSendError || null) });
   }
@@ -105,6 +111,11 @@ export async function POST(request: Request) {
       port: current.port,
     });
     if (test.ok) {
+      // Remember the port that actually worked (the gateway may have used a fallback).
+      if (test.port && test.port !== current.port) {
+        if (system) await prisma.systemSmtpAccount.update({ where: { id: system.id }, data: { port: test.port } });
+        else await prisma.smtpAccount.update({ where: { id: own!.id }, data: { port: test.port } });
+      }
       await clearMailboxFailure(email);
       return NextResponse.json({ ok: true, message: "Login works. The mailbox can send again.", ...describe(null) });
     }
@@ -116,18 +127,20 @@ export async function POST(request: Request) {
     const password = typeof body.password === "string" && body.password.length > 0 ? body.password : current.password;
     const host = (typeof body.host === "string" && body.host.trim()) || current.host;
     const portNum = Number(body.port);
-    const port = Number.isFinite(portNum) && portNum > 0 ? Math.round(portNum) : current.port;
+    const requestedPort = Number.isFinite(portNum) && portNum > 0 ? Math.round(portNum) : current.port;
     const username = (typeof body.username === "string" && body.username.trim()) || current.username || email;
     if (!password) return NextResponse.json({ error: "Enter the mailbox password" }, { status: 400 });
-    if (![465, 587, 3535].includes(port)) {
-      return NextResponse.json({ error: "Port must be 465 (SSL), 587 (STARTTLS) or 3535 (GoDaddy)" }, { status: 400 });
+    if (![465, 587, 3535, 80].includes(requestedPort)) {
+      return NextResponse.json({ error: "Port must be 465 (SSL), 587, 3535 or 80 (STARTTLS)" }, { status: 400 });
     }
 
     const saveWithoutTest = body.saveWithoutTest === true;
     let testError: string | null = null;
+    let port = requestedPort;
     if (!saveWithoutTest) {
-      const test = await testAccountViaHostingerRelay({ fromEmail: email, password, host, port });
+      const test = await testAccountViaHostingerRelay({ fromEmail: email, password, host, port: requestedPort });
       if (!test.ok) testError = test.error || "Test failed";
+      else if (test.port) port = test.port;
     }
     if (testError) {
       // Nothing is saved when the new details do not work.

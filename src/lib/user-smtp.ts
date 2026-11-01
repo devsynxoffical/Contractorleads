@@ -1007,8 +1007,8 @@ async function sendViaHostingerRelayRaw(opts: {
   for (const url of endpoints) {
     try {
       const controller = new AbortController();
-      // GoDaddy sends try two ports with a 15s socket timeout each on the relay side.
-      const timeoutId = setTimeout(() => controller.abort(), 45000);
+      // The gateway may try up to four ports (8s connect each) for GoDaddy.
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
       const res = await fetch(url, {
         method: "POST",
         headers: {
