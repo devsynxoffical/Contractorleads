@@ -48,6 +48,36 @@ export function EmailAccountsList() {
   const [analyticsMailbox, setAnalyticsMailbox] = useState<string | null>(null);
   const [warmupInboxMailbox, setWarmupInboxMailbox] = useState<string | null>(null);
   const [fixMailbox, setFixMailbox] = useState<{ id: string; email: string } | null>(null);
+  const [retestAll, setRetestAll] = useState<{ running: boolean; done: number; total: number; fixed: number } | null>(null);
+
+  // Re-test every failing mailbox one after another (each test can take up to a minute).
+  async function handleRetestAll(ids: string[]) {
+    setRetestAll({ running: true, done: 0, total: ids.length, fixed: 0 });
+    let fixed = 0;
+    for (let i = 0; i < ids.length; i++) {
+      try {
+        const res = await fetch("/api/email-accounts/fix", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mailboxId: ids[i], action: "retest" }),
+        });
+        const d = await res.json().catch(() => ({}));
+        if (res.ok && d.ok) fixed++;
+      } catch {
+        // counted as still failing
+      }
+      setRetestAll({ running: true, done: i + 1, total: ids.length, fixed });
+    }
+    await loadAccounts(true);
+    setRetestAll({ running: false, done: ids.length, total: ids.length, fixed });
+    setTestBanner({
+      type: fixed === ids.length ? "success" : "error",
+      message:
+        fixed === ids.length
+          ? `All ${ids.length} mailboxes passed the re-test and can send again.`
+          : `${fixed} of ${ids.length} mailboxes passed the re-test. Open the ones still marked "Sending failed" to see why.`,
+    });
+  }
   const [warmupSettingsMailbox, setWarmupSettingsMailbox] = useState<any | null>(null);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [dnsRefreshingDomain, setDnsRefreshingDomain] = useState<string | null>(null);
@@ -266,9 +296,26 @@ export function EmailAccountsList() {
         if (!failing.length) return null;
         return (
           <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 dark:border-rose-500/30 dark:bg-rose-500/10">
-            <p className="text-sm font-bold text-rose-900 dark:text-rose-100">
-              {`${failing.length} mailbox${failing.length === 1 ? "" : "es"} can't send right now`}
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-bold text-rose-900 dark:text-rose-100">
+                {`${failing.length} mailbox${failing.length === 1 ? "" : "es"} can't send right now`}
+              </p>
+              <button
+                type="button"
+                disabled={retestAll?.running}
+                onClick={() => handleRetestAll(failing.map((m: any) => m.id))}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-rose-300 bg-white px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 disabled:opacity-60 dark:border-rose-500/40 dark:bg-transparent dark:text-rose-200"
+              >
+                <HiOutlineArrowPath className={`h-3.5 w-3.5 ${retestAll?.running ? "animate-spin" : ""}`} />
+                {retestAll?.running ? `Re-testing ${retestAll.done}/${retestAll.total}…` : "Re-test all"}
+              </button>
+            </div>
+            {retestAll && !retestAll.running && (
+              <p className="mt-1 text-xs font-semibold text-rose-900 dark:text-rose-100">
+                {retestAll.fixed} of {retestAll.total} now work.
+                {retestAll.fixed < retestAll.total ? " Open the rest to see what is wrong." : ""}
+              </p>
+            )}
             <p className="mt-0.5 text-xs text-rose-800/90 dark:text-rose-200/90">
               Campaigns skip them until they work again. Open one to see what is wrong and fix it.
             </p>
