@@ -32,6 +32,19 @@ Audited every app route at desktop (1440) and mobile (390) with an automated ove
 - Upgrade modal copy spacing fix.
 - Email overview card now reflects the Messaging add-on state instead of saying "Free & Unlocked".
 
+Second pass (with realistic data: 15 long mailbox addresses, inbox threads, a campaign with replies):
+
+- Search boxes: the shared input style overrode padding, so the magnifier icon sat on the placeholder text in 11 search fields. Fixed at the source, so every icon input is correct.
+- Dropdowns: all dropdowns now show a chevron and ellipsize long labels instead of cutting them off.
+- Email Accounts: the "0/30" send counter no longer overlaps the "Active" badge. Long addresses truncate, low-priority columns hide on narrower screens, and the row menu is no longer clipped.
+- Lead Finder: SME filters use three columns with the two checkboxes on their own row.
+- Inbox: list and reading pane fit phone screens, and long addresses wrap or truncate.
+- Lead detail and other two-column pages: a long email can no longer make the page wider than a phone screen.
+- Campaign stats show one decimal (2 replies of 436 = 0.5 %, not 0 %).
+- Desktop support chat moved to a "Help" button in the top bar so the floating button no longer covers buttons and text. The floating button stays on phones.
+- Sidebar: the duplicate "Email" link now opens Email setup, and only one item is highlighted at a time.
+- Activity list shows all entries on phones instead of a cut-off scroll box.
+
 Final scan: zero horizontal overflow on all 30 routes; the only flagged "overlaps" were a scrolled sidebar list under its sticky card, a modal over its dimmed backdrop, and the Next.js dev badge.
 
 ## 2. Affiliate program — Done
