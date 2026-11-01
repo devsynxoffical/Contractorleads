@@ -143,7 +143,7 @@ export function MarketingSiteFooter() {
         <div className="min-w-0">
           <p
             aria-hidden
-            className="select-none bg-gradient-to-r from-pink-600 via-fuchsia-600 to-violet-600 bg-clip-text font-[family-name:var(--font-display)] text-[clamp(2.4rem,7.4vw,6.8rem)] font-bold leading-[0.92] tracking-[-0.05em] text-transparent"
+            className="select-none break-words bg-gradient-to-r from-pink-600 via-fuchsia-600 to-violet-600 bg-clip-text font-[family-name:var(--font-display)] text-[clamp(2.4rem,6.6vw,6rem)] font-bold leading-[0.95] tracking-[-0.05em] text-transparent"
           >
             Contractor Leads
             <sup className="ml-1 align-top text-[0.18em] font-semibold text-fuchsia-600">®</sup>
@@ -226,8 +226,8 @@ export function MarketingSiteFooter() {
 
       {/* Legal row */}
       <div className="border-t border-slate-200">
-        <div className="mx-auto grid max-w-7xl gap-6 px-5 py-8 text-[13px] text-slate-600 sm:px-8 lg:grid-cols-[1.2fr_1fr_0.8fr] lg:gap-0">
-          <div className="grid gap-6 sm:grid-cols-2 lg:border-r lg:border-slate-200 lg:pr-8">
+        <div className="mx-auto grid max-w-7xl gap-8 px-5 py-8 pb-24 text-[13px] text-slate-600 sm:px-8 lg:grid-cols-[1.7fr_1fr_0.35fr] lg:gap-0 lg:pb-8">
+          <div className="grid gap-8 sm:grid-cols-2 lg:border-r lg:border-slate-200 lg:pr-10">
             <div>
               <p className="text-[11px] uppercase tracking-wider text-slate-400">Registered office</p>
               <p className="mt-1">
@@ -237,7 +237,7 @@ export function MarketingSiteFooter() {
               </p>
               <a
                 href={`mailto:${EMAIL_BRAND.contactEmail}`}
-                className="mt-3 inline-block font-[family-name:var(--font-display)] text-[clamp(1.1rem,1.6vw,1.4rem)] font-semibold tracking-tight text-slate-900 hover:text-fuchsia-700"
+                className="mt-3 inline-block break-all font-[family-name:var(--font-display)] text-[15px] font-semibold tracking-tight text-slate-900 hover:text-fuchsia-700"
               >
                 {EMAIL_BRAND.contactEmail}
               </a>
@@ -247,7 +247,7 @@ export function MarketingSiteFooter() {
               that sell to home-service contractors. It is not a marketplace for homeowners.
             </p>
           </div>
-          <div className="lg:border-r lg:border-slate-200 lg:px-8">
+          <div className="lg:border-r lg:border-slate-200 lg:px-10">
             <p>© {new Date().getFullYear()} Contractor Leads. All rights reserved.</p>
             <p className="mt-2 text-slate-500">Built for agencies that sell to contractors.</p>
           </div>

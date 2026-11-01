@@ -52,7 +52,7 @@ export function SparklesDecor({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "pointer-events-none absolute inset-x-0 top-16 z-[1] flex justify-center gap-14 text-violet-400/70 sm:gap-24",
+        "pointer-events-none absolute inset-x-0 top-6 z-[1] hidden justify-between px-[8%] text-violet-400/70 sm:flex lg:px-[14%]",
         className,
       )}
       aria-hidden
