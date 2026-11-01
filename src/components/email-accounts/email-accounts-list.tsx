@@ -319,7 +319,7 @@ export function EmailAccountsList() {
         </div>
 
         {/* Right controls: Page size + Pagination + Add Account Button */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {/* Show N accounts per page */}
           <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <span>Show</span>
@@ -613,7 +613,7 @@ export function EmailAccountsList() {
 
                 {/* MAILBOX TABLE ROWS (Matching PlusVibe Columns) */}
                 {!isCollapsed && (
-                  <div className="divide-y divide-slate-200 dark:divide-[#201f35] overflow-x-auto">
+                  <div className="divide-y divide-slate-200 dark:divide-[#201f35] overflow-visible">
                     {folder.mailboxes.map((row: any) => {
                       const isSelected = selectedMailboxIds.includes(row.id);
                       const isHealthGood = row.healthScore >= 90;
@@ -629,7 +629,7 @@ export function EmailAccountsList() {
                           }`}
                         >
                           {/* Left: Checkbox + Mailbox Address + Sender Name + Status */}
-                          <div className="flex items-center gap-3 min-w-[320px]">
+                          <div className="flex min-w-0 flex-1 items-center gap-3">
                             <input
                               type="checkbox"
                               checked={isSelected}

@@ -4,10 +4,12 @@ import { prisma } from "@/lib/prisma";
 import { getRazorpayClient, isRazorpayConfigured, verifyRazorpaySignature } from "@/lib/razorpay";
 import { getRazorpayBillingSecrets } from "@/lib/razorpay-config";
 import {
+  MESSAGING_ADDON_PRICE_LABEL,
   MESSAGING_ADDON_PRICE_USD,
   hasMessagingAddon,
 } from "@/lib/messaging-addon";
 import { activateMessagingAddonWithRazorpay } from "@/lib/billing-razorpay";
+import { CHECKOUT_RECOVERY_ADDON_PLAN, recordCheckoutStarted } from "@/lib/checkout-recovery";
 
 export async function GET() {
   const user = await getSessionUser();
@@ -66,7 +68,7 @@ export async function POST(request: Request) {
 
   try {
     const { client, keyId } = await getRazorpayClient();
-    const amountCents = Math.round(MESSAGING_ADDON_PRICE_USD * 100); // $30.00 -> 3000
+    const amountCents = Math.round(MESSAGING_ADDON_PRICE_USD * 100); // $15.50 -> 1550
     const receipt = `addon_msg_${user.id.slice(-6)}_${Date.now()}`;
 
     const order = await client.orders.create({
@@ -80,14 +82,29 @@ export async function POST(request: Request) {
       },
     });
 
+    // Track the attempt so the abandoned-checkout sequence can follow up.
+    try {
+      await recordCheckoutStarted({
+        userId: dbUser.id,
+        provider: "razorpay",
+        orderId: order.id,
+        plan: CHECKOUT_RECOVERY_ADDON_PLAN,
+        period: "monthly",
+        kind: "addon",
+        amountUsd: Number(order.amount) / 100,
+      });
+    } catch (err) {
+      console.error("[checkout-recovery] record started (addon) failed", err);
+    }
+
     return NextResponse.json({
       provider: "razorpay",
       orderId: order.id,
       amount: order.amount,
       currency: order.currency,
       keyId,
-      name: "Messaging Add-on ($30/mo)",
-      description: "Unlocks bulk automated email and SMS outreach",
+      name: `Messaging Add-on (${MESSAGING_ADDON_PRICE_LABEL})`,
+      description: "Unlocks 1:1 and bulk email, sequences and SMS outreach",
       user: {
         name: dbUser.name || dbUser.companyName || "Customer",
         email: dbUser.email,

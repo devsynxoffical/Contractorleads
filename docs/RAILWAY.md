@@ -25,7 +25,7 @@ built into the Docker image — `GOOGLE_PLACES_API_KEY` is no longer required.
 
 5. Settings → Networking → Generate Domain
 6. Put that URL into NEXT_PUBLIC_APP_URL and redeploy
-7. In Stripe Dashboard → Webhooks, add `https://YOUR-APP/api/billing/webhook` for checkout.session.completed, customer.subscription.*, invoice.paid
+7. In Stripe Dashboard → Webhooks, add `https://YOUR-APP/api/billing/stripe/webhook` for checkout.session.completed, customer.subscription.*, invoice.paid, charge.refunded (`/api/billing/webhook` is the Razorpay endpoint)
 8. Open URL → Register → test Home search + Billing subscribe
 
 ### Confirm scraper on live (Railway Console)

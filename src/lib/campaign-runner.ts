@@ -22,6 +22,35 @@ import { ensureSystemSmtpSeeded, seedHostingerMailboxes } from "@/lib/system-smt
 import { renderOutreachEmail } from "@/lib/spintax-engine";
 import { isGlobalSuperAdmin } from "@/lib/roles";
 
+/** Strip any number of leading "Re:" / "RE:" / "Fwd:" style reply prefixes. */
+export function stripReplyPrefix(subject: string): string {
+  return subject.replace(/^(\s*(re|aw|fw|fwd)\s*:\s*)+/i, "").trim();
+}
+
+/** Maximum delivery attempts per prospect per step before giving up. */
+const MAX_STEP_ATTEMPTS = 3;
+
+/**
+ * Detect permanent (hard-bounce) delivery failures from an SMTP/relay error
+ * message. Matches 5.1.x / 5.5.x enhanced status codes, 550/551/553 reply
+ * codes and common "no such user" phrasings. Does NOT match generic
+ * "invalid" (e.g. "invalid login").
+ */
+export function isHardBounceError(msg: string): boolean {
+  if (!msg) return false;
+  const m = msg.toLowerCase();
+  if (/\b5\.(1|5)\.\d+\b/.test(m)) return true;
+  if (/\b55[013]\b/.test(m)) return true;
+  return [
+    "user unknown",
+    "no such user",
+    "mailbox unavailable",
+    "recipient rejected",
+    "does not exist",
+    "invalid recipient",
+  ].some((phrase) => m.includes(phrase));
+}
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
@@ -319,6 +348,25 @@ export async function processCampaignSends(opts?: {
           let stepEnableUnsub = false;
           let stepUnsubText: string | undefined = undefined;
 
+          // Day-0 log for threading (follow-ups reply to it) and prior sends for References
+          let day0Log: { messageId: string | null; subject: string } | null = null;
+          let lastPriorMessageId: string | null = null;
+          if (stepIdx > 0) {
+            const priorSentLogs = await prisma.campaignLog.findMany({
+              where: { campaignId: campaign.id, prospectId: prospect.id, status: "sent" },
+              orderBy: { sentAt: "asc" },
+              select: { stepIndex: true, messageId: true, subject: true },
+            });
+            day0Log = priorSentLogs.find((l) => l.stepIndex === 0) ?? null;
+            lastPriorMessageId = priorSentLogs.length
+              ? priorSentLogs[priorSentLogs.length - 1].messageId
+              : null;
+          }
+          // Base subject for "Re:" follow-ups: Day-0 subject without any Re: prefixes
+          const day0Subject = stripReplyPrefix(
+            day0Log?.subject || prospect.lastSubject || "Our conversation",
+          );
+
           if (stepIdx === 0) {
             // Day 0 Outreach Hook
             const assignedHook =
@@ -343,7 +391,13 @@ export async function processCampaignSends(opts?: {
               });
               return;
             }
-            subject = followUpStep.subject.replace("{{lastSubject}}", prospect.lastSubject || "Our conversation");
+            const rawStepSubject = (followUpStep.subject || "").trim();
+            if (!rawStepSubject || /^re\s*:/i.test(rawStepSubject)) {
+              // Thread under the Day-0 email; never produce "Re: Re:"
+              subject = `Re: ${day0Subject}`;
+            } else {
+              subject = rawStepSubject.replace(/\{\{\s*lastSubject\s*\}\}/g, day0Subject);
+            }
             bodyTemplate = followUpStep.body;
             stepAttachments = followUpStep.attachments || [];
             stepEnableUnsub = Boolean(followUpStep.enableUnsubscribe);
@@ -364,7 +418,7 @@ export async function processCampaignSends(opts?: {
               state: prospect.state,
               country: prospect.country,
               fromName: senderName,
-              lastSubject: prospect.lastSubject || "",
+              lastSubject: day0Subject,
             },
             {
               campaignId: campaign.id,
@@ -437,6 +491,17 @@ export async function processCampaignSends(opts?: {
               html: renderedHtml,
               accountId: mailbox.id,
               trackingToken,
+              inReplyTo: stepIdx > 0 ? day0Log?.messageId || undefined : undefined,
+              references:
+                stepIdx > 0
+                  ? [
+                      ...new Set(
+                        [day0Log?.messageId, lastPriorMessageId].filter(
+                          (v): v is string => Boolean(v),
+                        ),
+                      ),
+                    ].join(" ") || undefined
+                  : undefined,
               attachments: outboundAttachments.length > 0 ? outboundAttachments : undefined,
             });
 
@@ -486,7 +551,8 @@ export async function processCampaignSends(opts?: {
                 nextSendDueAt: nextDue,
                 lastMailboxId: mailbox.id,
                 lastFromEmail: sentResult.fromEmail || mailbox.fromEmail,
-                lastSubject: renderedSubject,
+                // Store the thread's base subject (no Re:) so {{lastSubject}} never chains "Re: Re:"
+                lastSubject: stepIdx === 0 ? stripReplyPrefix(renderedSubject) : day0Subject,
               },
             });
 
@@ -514,8 +580,7 @@ export async function processCampaignSends(opts?: {
             });
 
             // If email bounced or hard error, stop follow-ups for this prospect
-            const isHardBounce = errMsg.toLowerCase().includes("invalid") || errMsg.toLowerCase().includes("not exist") || errMsg.toLowerCase().includes("550");
-            if (isHardBounce) {
+            if (isHardBounceError(errMsg)) {
               await prisma.campaignProspect.update({
                 where: { id: prospect.id },
                 data: {
@@ -525,6 +590,26 @@ export async function processCampaignSends(opts?: {
                   nextSendDueAt: null,
                 },
               });
+            } else {
+              // Retry cap: give up on this prospect after repeated failures on the same step
+              const failedAttempts = await prisma.campaignLog.count({
+                where: {
+                  campaignId: campaign.id,
+                  prospectId: prospect.id,
+                  stepIndex: stepIdx,
+                  status: "failed",
+                },
+              });
+              if (failedAttempts >= MAX_STEP_ATTEMPTS) {
+                await prisma.campaignProspect.update({
+                  where: { id: prospect.id },
+                  data: {
+                    status: "failed",
+                    stopReason: "max_attempts",
+                    nextSendDueAt: null,
+                  },
+                });
+              }
             }
           }
         })

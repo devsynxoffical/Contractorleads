@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
 import { readBillingCouponCode } from "@/components/billing/billing-coupon-field";
-import { openRazorpayModal } from "@/lib/client/razorpay-checkout";
+import { openRazorpayModal, reportCheckoutDismissed } from "@/lib/client/razorpay-checkout";
 
 export function BillingCheckoutButton({
   planId,
@@ -96,6 +96,7 @@ export function BillingCheckoutButton({
           }
         },
         onDismiss: () => {
+          reportCheckoutDismissed(data.orderId ?? "");
           setLoading(false);
         },
       });

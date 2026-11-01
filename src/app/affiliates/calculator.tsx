@@ -2,6 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { ADMIN_PLANS } from "@/lib/plans";
+import {
+  DEFAULT_COMMISSION_PERCENT,
+  DEFAULT_MIN_WITHDRAWAL_USD,
+} from "@/lib/referral-constants";
 import {
   HiOutlineArrowRight,
   HiOutlineCurrencyDollar,
@@ -9,12 +14,27 @@ import {
   HiOutlineBanknotes,
 } from "react-icons/hi2";
 
+function planPrice(id: "starter" | "growth" | "agency") {
+  return ADMIN_PLANS.find((p) => p.value === id)?.priceMonthly ?? 0;
+}
+
 const PLANS = [
-  { id: "starter", name: "Starter", price: 19, desc: "Solo agencies & contractors" },
-  { id: "growth", name: "Growth", price: 49, desc: "Scaling lead agencies (Most Popular)" },
-  { id: "agency", name: "Agency", price: 99, desc: "High-volume teams & call centers" },
-  { id: "mixed", name: "Mixed Average", price: 56, desc: "Blended average across all tiers" },
+  { id: "starter", name: "Starter", price: planPrice("starter"), desc: "Solo agencies & contractors" },
+  { id: "growth", name: "Growth", price: planPrice("growth"), desc: "Scaling lead agencies (Most Popular)" },
+  { id: "agency", name: "Agency", price: planPrice("agency"), desc: "High-volume teams & call centers" },
+  {
+    id: "mixed",
+    name: "Mixed Average",
+    price:
+      Math.round(
+        ((planPrice("starter") + planPrice("growth") + planPrice("agency")) / 3) * 100,
+      ) / 100,
+    desc: "Blended average across all tiers",
+  },
 ];
+
+const RATE = DEFAULT_COMMISSION_PERCENT / 100;
+const THRESHOLD = DEFAULT_MIN_WITHDRAWAL_USD;
 
 const PRESETS = [5, 15, 30, 50, 100];
 
@@ -24,7 +44,7 @@ export function AffiliateEarningsCalculator() {
 
   const plan = PLANS.find((p) => p.id === selectedPlanId) || PLANS[1];
   const monthlyRevenue = referrals * plan.price;
-  const monthlyCommission = monthlyRevenue * 0.3;
+  const monthlyCommission = monthlyRevenue * RATE;
   const annualCommission = monthlyCommission * 12;
 
   let milestoneBonus = 0;
@@ -125,7 +145,7 @@ export function AffiliateEarningsCalculator() {
             </span>{" "}
             Unlike programs that only pay on the first transaction, Contractor Leads pays you{" "}
             <strong className="text-fuchsia-700 dark:text-fuchsia-300">
-              30% every single month
+              {DEFAULT_COMMISSION_PERCENT}% every single month
             </strong>{" "}
             when your customers renew their plan.
           </div>
@@ -139,7 +159,7 @@ export function AffiliateEarningsCalculator() {
                 Your Estimated Earnings
               </span>
               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300">
-                <HiOutlineSparkles className="h-3.5 w-3.5" /> 30% Rate
+                <HiOutlineSparkles className="h-3.5 w-3.5" /> {DEFAULT_COMMISSION_PERCENT}% Rate
               </span>
             </div>
 
@@ -181,11 +201,11 @@ export function AffiliateEarningsCalculator() {
             <div className="mt-3 flex items-center gap-2 text-[11px] text-slate-500 dark:text-ink-muted">
               <HiOutlineBanknotes className="h-4 w-4 shrink-0 text-emerald-600" />
               <span>
-                Exceeds the $500 payout threshold within{" "}
+                Exceeds the ${THRESHOLD} payout threshold within{" "}
                 <strong>
-                  {monthlyCommission >= 500
+                  {monthlyCommission >= THRESHOLD
                     ? "your first 30 days"
-                    : `${Math.ceil(500 / monthlyCommission)} months`}
+                    : `${Math.ceil(THRESHOLD / monthlyCommission)} months`}
                 </strong>
                 .
               </span>

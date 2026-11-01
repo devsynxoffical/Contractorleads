@@ -48,16 +48,29 @@ export function classifyAdPlacements(platforms: string[] | null | undefined) {
   };
 }
 
-export function buildAdsLibraryUrl(businessName: string, country = "US") {
-  const cleanName = (businessName || "").replace(/^['"]+|['"]+$/g, "").trim();
+/** Strip wrapping single/double quotes; report whether the input was double-quoted. */
+export function parseAdsSearchTerm(input: string): { term: string; quoted: boolean } {
+  const raw = (input || "").trim();
+  const quoted = /^".+"$/.test(raw);
+  const term = raw.replace(/^['"]+|['"]+$/g, "").trim();
+  return { term, quoted };
+}
+
+export function buildAdsLibraryUrl(
+  businessName: string,
+  country = "US",
+  opts?: { exact?: boolean },
+) {
+  const { term, quoted } = parseAdsSearchTerm(businessName);
+  const exact = opts?.exact ?? quoted;
   const params = new URLSearchParams({
     active_status: "all",
     ad_type: "all",
-    country: country || "US",
+    country: country && country !== "ALL" ? country : "ALL",
     is_targeted_country: "false",
     media_type: "all",
-    q: cleanName,
-    search_type: "keyword_unordered",
+    q: term,
+    search_type: exact ? "keyword_exact_phrase" : "keyword_unordered",
   });
   return `https://www.facebook.com/ads/library/?${params.toString()}`;
 }
@@ -108,42 +121,63 @@ export async function searchFacebookPage(
   }
 }
 
-export async function searchFacebookAdsLibrary(
-  businessName: string,
-  country = "US",
-  opts?: { accessToken?: string | null },
-): Promise<FacebookAdsResult> {
-  const searchUrl = buildAdsLibraryUrl(businessName, country);
-  const token = opts?.accessToken?.trim() || (await getMetaAccessToken());
+type AdsArchiveRow = {
+  id: string;
+  page_name?: string;
+  page_id?: string;
+  ad_snapshot_url?: string;
+  ad_creative_bodies?: string[];
+  ad_delivery_start_time?: string;
+  ad_delivery_stop_time?: string;
+  publisher_platforms?: string[];
+  spend?: { lower_bound?: string; upper_bound?: string };
+};
 
-  if (!token) {
-    return {
-      ads: [],
-      totalCount: 0,
-      searchUrl,
-      source: "link",
-      message:
-        "Connect your Facebook profile in the FB section, or add META_APP_ID / META_APP_SECRET for live ad data. You can still open the public Ads Library link below.",
-    };
+type AdsArchiveResponse = {
+  data?: AdsArchiveRow[];
+  paging?: { next?: string };
+  error?: { message?: string };
+};
+
+const ADS_ARCHIVE_FIELDS =
+  "id,page_name,page_id,ad_snapshot_url,ad_creative_bodies,ad_delivery_start_time,ad_delivery_stop_time,publisher_platforms,spend";
+const ADS_MAX_PAGES = 3;
+const ADS_MAX_RESULTS = 75;
+
+type AdsFetchOutcome =
+  | { ok: true; rows: AdsArchiveRow[] }
+  | { ok: false; message: string };
+
+/** Fetch up to ADS_MAX_PAGES pages of ads_archive results. */
+async function fetchAdsArchive(opts: {
+  token: string;
+  term: string;
+  exact: boolean;
+  pageId?: string;
+  /** ISO country or "ALL" to omit ad_reached_countries. */
+  country: string;
+}): Promise<AdsFetchOutcome> {
+  const url = new URL("https://graph.facebook.com/v21.0/ads_archive");
+  if (opts.pageId) {
+    url.searchParams.set("search_page_ids", JSON.stringify([opts.pageId]));
+  } else {
+    url.searchParams.set("search_terms", opts.term);
+    if (opts.exact) url.searchParams.set("search_type", "KEYWORD_EXACT_PHRASE");
   }
-
-  try {
-    const url = new URL("https://graph.facebook.com/v21.0/ads_archive");
-    url.searchParams.set("search_terms", businessName);
+  if (opts.country !== "ALL") {
     // Meta expects a JSON array string, e.g. ["US"]
-    url.searchParams.set("ad_reached_countries", `["${country}"]`);
-    url.searchParams.set(
-      "fields",
-      "id,page_name,page_id,ad_snapshot_url,ad_creative_bodies,ad_delivery_start_time,ad_delivery_stop_time,publisher_platforms,spend"
-    );
-    url.searchParams.set("ad_active_status", "ACTIVE");
-    url.searchParams.set("ad_type", "ALL");
-    url.searchParams.set("limit", "25");
-    url.searchParams.set("access_token", token);
+    url.searchParams.set("ad_reached_countries", JSON.stringify([opts.country]));
+  }
+  url.searchParams.set("fields", ADS_ARCHIVE_FIELDS);
+  url.searchParams.set("ad_active_status", "ACTIVE");
+  url.searchParams.set("ad_type", "ALL");
+  url.searchParams.set("limit", "25");
+  url.searchParams.set("access_token", opts.token);
 
-    const response = await fetch(url.toString(), {
-      signal: AbortSignal.timeout(20000),
-    });
+  const rows: AdsArchiveRow[] = [];
+  let next: string | undefined = url.toString();
+  for (let page = 0; page < ADS_MAX_PAGES && next; page++) {
+    const response = await fetch(next, { signal: AbortSignal.timeout(20000) });
 
     if (!response.ok) {
       const err = await response.text();
@@ -157,10 +191,7 @@ export async function searchFacebookAdsLibrary(
           err,
         );
       return {
-        ads: [],
-        totalCount: 0,
-        searchUrl,
-        source: "link",
+        ok: false,
         message: permission
           ? "Meta Ads Library API is not enabled for this app. Open facebook.com/ads/library/api, accept access for the Contractor Leads app, then try again. You can still use the public Ads Library link below."
           : expired
@@ -169,66 +200,154 @@ export async function searchFacebookAdsLibrary(
       };
     }
 
-    const data = (await response.json()) as {
-      data?: Array<{
-        id: string;
-        page_name?: string;
-        page_id?: string;
-        ad_snapshot_url?: string;
-        ad_creative_bodies?: string[];
-        ad_delivery_start_time?: string;
-        ad_delivery_stop_time?: string;
-        publisher_platforms?: string[];
-        spend?: { lower_bound?: string; upper_bound?: string };
-      }>;
-      error?: { message?: string };
-    };
-
+    const data = (await response.json()) as AdsArchiveResponse;
     if (data.error?.message) {
+      return {
+        ok: false,
+        message: `${data.error.message} — open the Ads Library link below.`,
+      };
+    }
+    rows.push(...(data.data ?? []));
+    if (rows.length >= ADS_MAX_RESULTS) break;
+    next = data.paging?.next;
+  }
+  return { ok: true, rows: rows.slice(0, ADS_MAX_RESULTS) };
+}
+
+function mapAdsArchiveRows(rows: AdsArchiveRow[]): FacebookAd[] {
+  return rows.map((ad) => ({
+    id: ad.id,
+    pageName: ad.page_name ?? "Unknown",
+    pageId: ad.page_id ?? "",
+    adSnapshotUrl: ad.ad_snapshot_url ?? "",
+    adCreativeBodies: ad.ad_creative_bodies ?? [],
+    adDeliveryStartTime: ad.ad_delivery_start_time,
+    adDeliveryStopTime: ad.ad_delivery_stop_time,
+    publisherPlatforms: ad.publisher_platforms ?? [],
+    spend:
+      ad.spend?.lower_bound || ad.spend?.upper_bound
+        ? {
+            lower: ad.spend.lower_bound ?? "",
+            upper: ad.spend.upper_bound ?? "",
+          }
+        : undefined,
+  }));
+}
+
+/**
+ * Search the Meta Ads Library.
+ *
+ * - Wrapping the name in double quotes (or `opts.exact`) requests an exact
+ *   page-name match: the API gets `search_type=KEYWORD_EXACT_PHRASE` and the
+ *   results are filtered to ads whose page_name equals the term.
+ * - `country = "ALL"` omits `ad_reached_countries`. A country-specific call
+ *   that returns nothing is retried once with ALL.
+ * - `opts.pageId` searches by `search_page_ids` instead of search_terms.
+ */
+export async function searchFacebookAdsLibrary(
+  businessName: string,
+  country = "US",
+  opts?: { accessToken?: string | null; exact?: boolean; pageId?: string },
+): Promise<FacebookAdsResult> {
+  const { term, quoted } = parseAdsSearchTerm(businessName);
+  const exact = Boolean(opts?.exact || quoted);
+  const requestedCountry = (country || "US").trim().toUpperCase() || "US";
+  const searchUrl = buildAdsLibraryUrl(term, requestedCountry, { exact });
+  const token = opts?.accessToken?.trim() || (await getMetaAccessToken());
+
+  if (!token) {
+    return {
+      ads: [],
+      totalCount: 0,
+      searchUrl,
+      source: "link",
+      message:
+        "Connect your Facebook profile in the FB section, or add META_APP_ID / META_APP_SECRET for live ad data. You can still open the public Ads Library link below.",
+    };
+  }
+
+  if (!term && !opts?.pageId) {
+    return {
+      ads: [],
+      totalCount: 0,
+      searchUrl,
+      source: "link",
+      message: "Enter a Facebook Page name to search.",
+    };
+  }
+
+  try {
+    const notes: string[] = [];
+    let outcome = await fetchAdsArchive({
+      token,
+      term,
+      exact,
+      pageId: opts?.pageId,
+      country: requestedCountry,
+    });
+
+    if (outcome.ok && outcome.rows.length === 0 && requestedCountry !== "ALL") {
+      const retry = await fetchAdsArchive({
+        token,
+        term,
+        exact,
+        pageId: opts?.pageId,
+        country: "ALL",
+      });
+      if (retry.ok && retry.rows.length > 0) {
+        notes.push(
+          `No active ads reached ${requestedCountry}; showing ads from all countries instead.`,
+        );
+        outcome = retry;
+      }
+    }
+
+    if (!outcome.ok) {
       return {
         ads: [],
         totalCount: 0,
         searchUrl,
         source: "link",
-        message: `${data.error.message} — open the Ads Library link below.`,
+        message: outcome.message,
       };
     }
 
-    const needle = businessName.trim().toLowerCase();
-    const mapped = (data.data ?? []).map((ad) => ({
-      id: ad.id,
-      pageName: ad.page_name ?? "Unknown",
-      pageId: ad.page_id ?? "",
-      adSnapshotUrl: ad.ad_snapshot_url ?? "",
-      adCreativeBodies: ad.ad_creative_bodies ?? [],
-      adDeliveryStartTime: ad.ad_delivery_start_time,
-      adDeliveryStopTime: ad.ad_delivery_stop_time,
-      publisherPlatforms: ad.publisher_platforms ?? [],
-      spend:
-        ad.spend?.lower_bound || ad.spend?.upper_bound
-          ? {
-              lower: ad.spend.lower_bound ?? "",
-              upper: ad.spend.upper_bound ?? "",
-            }
-          : undefined,
-    }));
+    const mapped = mapAdsArchiveRows(outcome.rows);
+    const needle = term.toLowerCase();
 
     // Prefer ads whose page name matches the business; keep others as fallback
-    const ads: FacebookAd[] = mapped.sort((a, b) => {
+    const byContains = [...mapped].sort((a, b) => {
       const aMatch = a.pageName.toLowerCase().includes(needle) ? 0 : 1;
       const bMatch = b.pageName.toLowerCase().includes(needle) ? 0 : 1;
       return aMatch - bMatch;
     });
+
+    let ads: FacebookAd[] = byContains;
+    if (exact && !opts?.pageId && mapped.length > 0) {
+      const exactMatches = mapped.filter(
+        (ad) => ad.pageName.trim().toLowerCase() === needle,
+      );
+      if (exactMatches.length > 0) {
+        ads = exactMatches;
+      } else {
+        notes.push(
+          `No Page named exactly "${term}" is running ads. Showing the closest matches instead.`,
+        );
+      }
+    }
+
+    if (ads.length === 0) {
+      notes.push(
+        "No active ads found via the Meta API for this name. Try the public Ads Library link — some advertisers only appear there.",
+      );
+    }
 
     return {
       ads,
       totalCount: ads.length,
       searchUrl,
       source: "api",
-      message:
-        ads.length === 0
-          ? "No active ads found via the Meta API for this name. Try the public Ads Library link — some advertisers only appear there."
-          : undefined,
+      message: notes.length ? notes.join(" ") : undefined,
     };
   } catch {
     return {

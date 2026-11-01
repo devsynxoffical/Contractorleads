@@ -117,7 +117,7 @@ export function EmailWorkspace({
               </button>
             </div>
           ) : null}
-          <EmailComposePanel />
+          <EmailComposePanel hasAddon={hasAddon} />
         </div>
       ) : null}
 
@@ -132,7 +132,7 @@ export function EmailWorkspace({
       {tab === "setup" || tab === "sequences" ? (
         <div className="space-y-4">
           {tab === "setup" ? (
-            <div className="rounded-2xl border border-border bg-[#faf8fc]/70 px-4 py-3 text-[13px] text-ink-muted">
+            <div className="rounded-2xl border border-border bg-[var(--canvas)] px-4 py-3 text-[13px] text-ink-muted">
               Add Resend (recommended) or SMTP mailboxes, set a default sender,
               and test delivery. Nurture templates are under{" "}
               <button
@@ -145,7 +145,7 @@ export function EmailWorkspace({
               .
             </div>
           ) : (
-            <div className="rounded-2xl border border-border bg-[#faf8fc]/70 px-4 py-3 text-[13px] text-ink-muted">
+            <div className="rounded-2xl border border-border bg-[var(--canvas)] px-4 py-3 text-[13px] text-ink-muted">
               Edit Day 1–N nurture steps below. Enroll leads from Saved leads or
               the lead detail page after templates are ready.
             </div>

@@ -5,6 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import {
+  AddonLockNotice,
+  isMessagingAddonLocked,
+} from "@/components/billing/addon-lock-notice";
 
 type SmtpAccount = {
   id: string;
@@ -290,6 +294,9 @@ export function EmailAutomationSettings() {
     setSteps((prev) => prev.filter((_, i) => i !== index));
   }
 
+  // Flipped to true when the server answers 402 messaging_addon_required.
+  const [addonLocked, setAddonLocked] = useState(false);
+
   async function processDue() {
     setBusy(true);
     setMsg(null);
@@ -301,6 +308,10 @@ export function EmailAutomationSettings() {
     const data = await res.json();
     setBusy(false);
     if (!res.ok) {
+      if (isMessagingAddonLocked(res, data)) {
+        setAddonLocked(true);
+        return;
+      }
       setMsg(data.error || "Process failed");
       return;
     }
@@ -331,6 +342,7 @@ export function EmailAutomationSettings() {
 
   return (
     <div className="max-w-2xl space-y-6">
+      {addonLocked ? <AddonLockNotice feature="email" compact /> : null}
       {msg ? (
         <p className="rounded-xl border border-brand-100 bg-brand-50/70 px-3 py-2 text-[13px] text-brand-800">
           {msg}

@@ -1,5 +1,6 @@
 import dns from "dns";
 import net from "net";
+import { randomBytes } from "node:crypto";
 import { HOSTINGER_RELAY_ENDPOINTS, HOSTINGER_RELAY_SECRET } from "@/lib/user-smtp";
 
 // Common disposable / temporary email domains
@@ -183,6 +184,8 @@ export type EmailVerificationResult = {
   mxRecords: Array<{ host: string; priority: number }>;
   suggestion: string | null;
   durationMs: number;
+  /** True when the domain accepts any recipient (accept-all), so SMTP acceptance proves nothing. */
+  catchAll?: boolean;
 };
 
 /**
@@ -452,6 +455,8 @@ export interface RemoteVerifyResult {
   verdict: string;
   smtpCheck: "passed" | "failed" | "unreachable" | "skipped" | "greylisted";
   response?: string;
+  /** Optional flag from the gateway when the domain is accept-all. */
+  catchAll?: boolean;
 }
 
 /**
@@ -597,7 +602,13 @@ export async function verifyEmailAddress(
         let score = item.score;
         let status = item.status;
         let verdict = item.verdict;
+        const gatewayCatchAll = item.catchAll === true;
 
+        if (gatewayCatchAll && status !== "invalid") {
+          score = Math.min(score, 70);
+          status = "risky";
+          verdict = "Catch-all domain accepts any address";
+        }
         if (isRoleBased && status !== "invalid") {
           score = Math.min(score, 75);
           status = "risky";
@@ -617,6 +628,7 @@ export async function verifyEmailAddress(
           verdict,
           user,
           domain,
+          ...(gatewayCatchAll ? { catchAll: true } : {}),
           checks: {
             formatValid: true,
             domainExists: item.status !== "invalid" || item.smtpCheck !== "failed",
@@ -665,6 +677,7 @@ export async function verifyEmailAddress(
 
   // Local SMTP Check (when Hostinger gateway is unavailable)
   let smtpCheck: "passed" | "failed" | "unreachable" | "skipped" = "skipped";
+  let catchAll = false;
   if (!options?.skipSmtp && mxRecords.length > 0) {
     if (isFreeProvider) {
       smtpCheck = "skipped";
@@ -674,6 +687,16 @@ export async function verifyEmailAddress(
       } catch {
         smtpCheck = "unreachable";
       }
+      // Catch-all detection: if a random mailbox is also accepted, acceptance proves nothing.
+      if (smtpCheck === "passed") {
+        const probeUser = `zz-verify-${randomBytes(6).toString("hex")}`;
+        try {
+          const randomProbe = await checkSmtpMailbox(`${probeUser}@${domain}`, mxRecords[0].host, 1200);
+          if (randomProbe === "passed") catchAll = true;
+        } catch {
+          // ignore: treat as not catch-all
+        }
+      }
     }
   }
 
@@ -682,7 +705,11 @@ export async function verifyEmailAddress(
   let status: EmailVerificationStatus = "valid";
   let verdict = "Deliverable and safe to email";
 
-  if (smtpCheck === "passed") {
+  if (smtpCheck === "passed" && catchAll) {
+    score = 70;
+    status = "risky";
+    verdict = "Catch-all domain accepts any address";
+  } else if (smtpCheck === "passed") {
     score = 98;
     verdict = "Verified deliverable mailbox (SMTP 250 OK)";
   } else if (smtpCheck === "failed") {
@@ -698,6 +725,11 @@ export async function verifyEmailAddress(
     score = 70;
     status = "risky";
     verdict = "Free webmail address (direct mailbox ping skipped)";
+  } else if (smtpCheck === "skipped") {
+    // No mailbox probe was performed: syntax + MX only, so do NOT claim deliverable.
+    score = 70;
+    status = "risky";
+    verdict = "Not probed (SMTP check skipped)";
   }
 
   if (status !== "invalid") {
@@ -711,6 +743,7 @@ export async function verifyEmailAddress(
       status = "risky";
       verdict = `Possible domain typo. Did you mean ${suggestion}?`;
     }
+    if (catchAll) score = Math.min(score, 70);
   }
 
   return {
@@ -733,6 +766,7 @@ export async function verifyEmailAddress(
     mxRecords,
     suggestion,
     durationMs: Date.now() - startTime,
+    ...(catchAll ? { catchAll: true } : {}),
   };
 }
 
@@ -823,7 +857,13 @@ export async function verifyEmailBatch(
               let score = remoteItem.score;
               let status = remoteItem.status;
               let verdict = remoteItem.verdict;
+              const gatewayCatchAll = remoteItem.catchAll === true;
 
+              if (gatewayCatchAll && status !== "invalid") {
+                score = Math.min(score, 70);
+                status = "risky";
+                verdict = "Catch-all domain accepts any address";
+              }
               if (isRoleBased && status !== "invalid") {
                 score = Math.min(score, 75);
                 status = "risky";
@@ -838,6 +878,7 @@ export async function verifyEmailBatch(
                 verdict,
                 user,
                 domain,
+                ...(gatewayCatchAll ? { catchAll: true } : {}),
                 checks: {
                   formatValid: true,
                   domainExists: remoteItem.status !== "invalid" || remoteItem.smtpCheck !== "failed",

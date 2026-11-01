@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
+import { requireMessagingAddon } from "@/lib/messaging-addon-server";
 import {
   parseCampaignHooks,
   parseCampaignSteps,
@@ -418,6 +419,13 @@ export async function PATCH(
   try {
     const body = await req.json();
     const { action, ...updates } = body;
+
+    // Starting (or re-starting) sends needs the Messaging add-on; pausing,
+    // stopping and plain field edits stay open.
+    if (action === "launch" || action === "resume" || action === "schedule") {
+      const locked = await requireMessagingAddon(user);
+      if (locked) return locked;
+    }
 
     const existing = await prisma.campaign.findUnique({
       where: { id, userId: user.id },

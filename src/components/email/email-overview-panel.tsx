@@ -66,8 +66,10 @@ export function EmailOverviewPanel({
     },
     {
       n: 3,
-      title: "Bulk email many leads (Free for all)",
-      body: "Select up to 200 saved leads and send personalized campaigns directly from your mailbox. 100% free with no add-on needed.",
+      title: "Bulk email many leads",
+      body: hasAddon
+        ? "Select up to 200 saved leads and send personalized campaigns directly from your mailbox."
+        : `Select up to 200 saved leads and send personalized campaigns from your mailbox. Included in the Messaging add-on ($${MESSAGING_ADDON_PRICE_USD}/mo).`,
       tab: "bulk",
       cta: "Open bulk send",
       done: smtpReady,
@@ -110,14 +112,20 @@ export function EmailOverviewPanel({
         />
         <StatusCard
           label="Bulk Email"
-          ok={true}
-          okText="Free & Unlocked"
-          badText=""
+          ok={hasAddon}
+          okText="Unlocked"
+          badText="Needs Messaging add-on"
           action={
-            <Button size="sm" variant="secondary" onClick={() => onGo("bulk")}>
-              <HiOutlineUsers className="mr-1.5 h-3.5 w-3.5" />
-              Bulk send
-            </Button>
+            hasAddon ? (
+              <Button size="sm" variant="secondary" onClick={() => onGo("bulk")}>
+                <HiOutlineUsers className="mr-1.5 h-3.5 w-3.5" />
+                Bulk send
+              </Button>
+            ) : (
+              <Link href="/billing" className={cn(buttonVariants({ size: "sm" }))}>
+                Unlock ${MESSAGING_ADDON_PRICE_USD}/mo
+              </Link>
+            )
           }
         />
         <StatusCard

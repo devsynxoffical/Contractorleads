@@ -72,7 +72,12 @@ export function AiAssistantWorkspace({
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [listLoading, setListLoading] = useState(true);
+  // Chat list is collapsed by default on phones so the conversation gets the full width.
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  useEffect(() => {
+    // Collapse after mount (not during render) so server and client markup match.
+    if (window.matchMedia("(max-width: 767px)").matches) setSidebarOpen(false);
+  }, []);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -282,7 +287,7 @@ export function AiAssistantWorkspace({
   return (
     <div
       className={cn(
-        "animate-fade-up flex w-full overflow-hidden rounded-2xl border border-border bg-[var(--panel-solid)] shadow-[var(--shadow-card)]",
+        "animate-fade-up relative flex w-full overflow-hidden rounded-2xl border border-border bg-[var(--panel-solid)] shadow-[var(--shadow-card)]",
         compact ? "h-[min(520px,70vh)]" : "h-[min(640px,78vh)]",
       )}
     >
@@ -290,7 +295,9 @@ export function AiAssistantWorkspace({
       <aside
         className={cn(
           "flex shrink-0 flex-col border-r border-border bg-[var(--sidebar)] transition-[width] duration-200",
-          sidebarOpen ? "w-[220px] sm:w-[240px]" : "w-0 overflow-hidden border-r-0",
+          // On phones the chat list overlays the conversation instead of squeezing it.
+          "absolute inset-y-0 left-0 z-20 md:static",
+          sidebarOpen ? "w-[min(260px,85%)] md:w-[240px]" : "w-0 overflow-hidden border-r-0",
         )}
       >
         <div className="space-y-2 border-b border-border p-3">

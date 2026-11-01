@@ -10,6 +10,9 @@ const TYPES = [
   { id: "welcome", label: "Welcome" },
   { id: "reset", label: "Forgot password" },
   { id: "scrape", label: "Lead scrape" },
+  { id: "checkout_recovery_1", label: "Checkout recovery 1" },
+  { id: "checkout_recovery_2", label: "Checkout recovery 2" },
+  { id: "checkout_recovery_3", label: "Checkout recovery 3" },
 ] as const;
 
 type TemplateKey = (typeof TYPES)[number]["id"];

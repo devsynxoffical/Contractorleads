@@ -5,6 +5,8 @@ import { logActivity } from "@/lib/credits";
 import { sendPurchaseConfirmationEmail } from "@/lib/email";
 import { normalizePlan, planLabel, type PlanId, PLAN_MONTHLY_CREDITS } from "@/lib/plans";
 import { CREDIT_COSTS } from "@/lib/constants";
+import { MESSAGING_ADDON_PRICE_LABEL } from "@/lib/messaging-addon";
+import { markCheckoutAttemptsPaid } from "@/lib/checkout-recovery";
 
 export async function activateUserPlanWithRazorpay(opts: {
   userId: string;
@@ -59,6 +61,13 @@ export async function activateUserPlanWithRazorpay(opts: {
 
     return user;
   });
+
+  // Close any open abandoned-checkout recovery sequences for this user.
+  try {
+    await markCheckoutAttemptsPaid(opts.userId, { kind: "plan" });
+  } catch (err) {
+    console.error("[checkout-recovery] mark paid (plan) failed", err);
+  }
 
   // Commission & referral
   const isRenewal = previous.subscriptionStatus === "active";
@@ -125,10 +134,16 @@ export async function activateMessagingAddonWithRazorpay(opts: {
     },
   });
 
+  try {
+    await markCheckoutAttemptsPaid(opts.userId, { kind: "addon" });
+  } catch (err) {
+    console.error("[checkout-recovery] mark paid (addon) failed", err);
+  }
+
   await logActivity(
     opts.userId,
     "messaging_addon_purchase",
-    "Messaging add-on activated ($30/mo)",
+    `Messaging add-on activated (${MESSAGING_ADDON_PRICE_LABEL})`,
     { orderId: opts.orderId, paymentId: opts.paymentId },
   );
 

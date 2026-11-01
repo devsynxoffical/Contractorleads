@@ -33,10 +33,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(dest, 308);
   }
 
-  // 3. Capture affiliate/referral attribution cookie across any marketing or landing page
+  // 3. Capture affiliate/referral attribution cookie across any marketing or landing page.
+  //    First click wins: never overwrite an existing attribution cookie.
   const refCode = url.searchParams.get("ref")?.trim();
   const response = NextResponse.next();
-  if (refCode) {
+  const existingRef = request.cookies.get("referral_code")?.value?.trim();
+  if (refCode && !existingRef) {
     response.cookies.set("referral_code", refCode.toLowerCase(), {
       httpOnly: true,
       sameSite: "lax",

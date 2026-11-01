@@ -17,6 +17,22 @@ export function loadRazorpayScript(): Promise<boolean> {
   });
 }
 
+/**
+ * Tell the server the user closed the payment modal without paying so the
+ * abandoned-checkout recovery sequence can mark the attempt. Fire-and-forget.
+ */
+export function reportCheckoutDismissed(orderId: string): void {
+  if (typeof window === "undefined" || !orderId) return;
+  void fetch("/api/billing/checkout/dismissed", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ orderId }),
+    keepalive: true,
+  }).catch(() => {
+    /* best effort */
+  });
+}
+
 export type RazorpayCheckoutOptions = {
   keyId: string;
   orderId: string;

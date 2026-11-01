@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
+import { requireMessagingAddon } from "@/lib/messaging-addon-server";
 import { replyToLeadEmail } from "@/lib/lead-email";
 
 export const maxDuration = 60;
@@ -13,6 +14,9 @@ export async function POST(request: Request, { params }: Params) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const locked = await requireMessagingAddon(user);
+  if (locked) return locked;
 
   const { id } = await params;
   const body = await request.json().catch(() => ({}));

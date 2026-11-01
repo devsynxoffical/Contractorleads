@@ -122,6 +122,7 @@ model User {
   leadSegments       LeadSegment[]
   digestEmailSegments DigestEmailSegment[]
   campaigns          Campaign[]
+  checkoutAttempts   CheckoutAttempt[]
 }
 
 /// Morning email of fresh verified leads matching the user's saved filters.
@@ -770,6 +771,36 @@ model PasswordResetToken {
   createdAt DateTime @default(now())
 
   @@index([userId])
+}
+
+/// Checkout started by one of OUR users (plan or add-on) — drives the
+/// abandoned-checkout recovery email sequence (src/lib/checkout-recovery.ts).
+model CheckoutAttempt {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// razorpay | stripe
+  provider      String
+  orderId       String?   @unique
+  plan          String
+  /// monthly | annual
+  period        String?
+  /// plan | addon
+  kind          String    @default("plan")
+  amountUsd     Float?
+  coupon        String?
+  /// started | abandoned | paid | stopped
+  status        String    @default("started")
+  startedAt     DateTime  @default(now())
+  paidAt        DateTime?
+  lastStepSent  Int       @default(0)
+  nextSendAt    DateTime?
+  stepsSentJson String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([userId, status])
+  @@index([status, nextSendAt])
 }
 
 /// Admin-editable branded email templates (verify, welcome, reset, scrape).

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
+import { requireMessagingAddon } from "@/lib/messaging-addon-server";
 import { prisma } from "@/lib/prisma";
 import { processDueEnrollments, processEnrollment } from "@/lib/email-automation";
 
@@ -7,6 +8,9 @@ import { processDueEnrollments, processEnrollment } from "@/lib/email-automation
 export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const locked = await requireMessagingAddon(user);
+  if (locked) return locked;
 
   const body = await request.json();
   const action = body.action || "enroll";

@@ -843,6 +843,11 @@ export async function sendViaHostingerRelay(opts: {
   text?: string;
   html?: string;
   action?: string;
+  replyTo?: string;
+  inReplyTo?: string;
+  references?: string;
+  /** Extra MIME headers forwarded to the relay (e.g. In-Reply-To, References). */
+  headers?: Record<string, string>;
   attachments?: Array<{
     filename: string;
     content: Buffer;
@@ -861,6 +866,12 @@ export async function sendViaHostingerRelay(opts: {
     ].filter(Boolean) as string[])
   );
 
+  // Threading / reply headers (the relay forwards `headers` as raw MIME headers)
+  const relayHeaders: Record<string, string> = { ...(opts.headers || {}) };
+  if (opts.inReplyTo) relayHeaders["In-Reply-To"] = opts.inReplyTo;
+  if (opts.references) relayHeaders["References"] = opts.references;
+  if (opts.replyTo) relayHeaders["Reply-To"] = opts.replyTo;
+
   const payload = {
     secret: HOSTINGER_RELAY_SECRET,
     action: opts.action || "send",
@@ -873,6 +884,7 @@ export async function sendViaHostingerRelay(opts: {
     subject: opts.subject || "",
     text: opts.text || "",
     html: opts.html || "",
+    headers: relayHeaders,
   };
 
   let lastError = "Hostinger mail relay unreachable";
@@ -927,6 +939,8 @@ export async function sendOutboundEmail(opts: {
   inReplyTo?: string;
   references?: string;
   trackingToken?: string;
+  /** Append open-tracking pixel + styled HTML wrapper (default true). Set false for personal replies. */
+  track?: boolean;
   attachments?: Array<{
     filename: string;
     content: Buffer;
@@ -942,8 +956,11 @@ export async function sendOutboundEmail(opts: {
     );
   }
 
+  const track = opts.track !== false;
   const trackingToken = opts.trackingToken || randomBytes(16).toString("hex");
-  const html = withTrackingPixel(opts.text, opts.html, trackingToken);
+  const html = track
+    ? withTrackingPixel(opts.text, opts.html, trackingToken)
+    : plainHtml(opts.text, opts.html);
   const sendOpts = { ...opts, html };
 
   if (isResendDelivery(sender.deliveryMode)) {
@@ -968,19 +985,28 @@ export async function sendOutboundEmail(opts: {
     : sender.fromEmail;
 
   // 1. Primary for Cloud / Railway: Attempt Hostinger HTTPS/HTTP Mail Relay (bypasses Railway SMTP port blocks)
+  // The relay does not carry attachments, so skip it when any are present (never drop them silently).
+  const hasAttachments = Boolean(opts.attachments && opts.attachments.length > 0);
+  if (hasAttachments) {
+    console.log("[Hostinger Relay Skip] Attachments present, using direct SMTP");
+  }
   try {
-    const relayRes = await sendViaHostingerRelay({
-      fromEmail: sender.fromEmail,
-      fromName: sender.fromName,
-      password: sender.smtp.password,
-      host: sender.smtp.host,
-      port: sender.smtp.port,
-      to: opts.to,
-      subject: opts.subject,
-      text: opts.text,
-      html,
-      attachments: opts.attachments,
-    });
+    const relayRes = hasAttachments
+      ? { ok: false as const, messageId: null, error: "Attachments require direct SMTP" }
+      : await sendViaHostingerRelay({
+          fromEmail: sender.fromEmail,
+          fromName: sender.fromName,
+          password: sender.smtp.password,
+          host: sender.smtp.host,
+          port: sender.smtp.port,
+          to: opts.to,
+          subject: opts.subject,
+          text: opts.text,
+          html,
+          replyTo: opts.replyTo,
+          inReplyTo: opts.inReplyTo,
+          references: opts.references,
+        });
 
     if (relayRes.ok) {
       return {
@@ -993,7 +1019,9 @@ export async function sendOutboundEmail(opts: {
         systemSmtpAccountId: sender.isSystem ? (sender.id ?? null) : null,
       };
     }
-    console.warn("[Hostinger Relay Notice] Relay send unsuccessful, falling back to direct SMTP:", relayRes.error);
+    if (!hasAttachments) {
+      console.warn("[Hostinger Relay Notice] Relay send unsuccessful, falling back to direct SMTP:", relayRes.error);
+    }
   } catch (relayErr) {
     console.warn("[Hostinger Relay Error] Falling back to direct SMTP:", relayErr);
   }
@@ -1053,6 +1081,16 @@ function withTrackingPixel(text: string, html: string | undefined, token: string
     escaped +
     `</div>${pixel}`
   );
+}
+
+/** Minimal HTML body without tracking pixel or styled wrapper (used for personal replies). */
+function plainHtml(text: string, html: string | undefined) {
+  if (html && html.trim()) return html;
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\n/g, "<br>");
 }
 
 /** @deprecated Use sendOutboundEmail */

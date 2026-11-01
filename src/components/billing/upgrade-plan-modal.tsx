@@ -122,7 +122,7 @@ export function UpgradePlanModalHost({
             id={titleId}
             className="mt-1.5 font-[family-name:var(--font-display)] text-[22px] font-semibold tracking-tight text-ink"
           >
-            {copy.featureLabel} isn&apos;t on your plan
+            {copy.featureLabel}{" "}isn&apos;t on your plan
           </h2>
           <p className="mt-2 text-[14px] leading-relaxed text-ink-muted">
             {copy.description} You’re currently on{" "}

@@ -70,6 +70,23 @@ function sampleVars(key: EmailTemplateKey) {
       },
     };
   }
+  if (key.startsWith("checkout_recovery_")) {
+    return {
+      vars: {
+        ...common,
+        planName: "Growth",
+        planSummary: "It includes 2,000 credits a month (1 credit = 1 lead).",
+        credits: "2,000",
+        priceLabel: "$49/mo",
+        freeLeads: 10,
+      },
+      ctaUrl: `${base}/billing?plan=growth&utm_source=recovery&utm_campaign=checkout_step1&attempt=sample`,
+      links: {
+        unsubscribeUrl: `${base}/email/unsubscribe?token=sample`,
+        preferencesUrl: `${base}/email/preferences?token=sample`,
+      },
+    };
+  }
   return {
     vars: common,
     links: {

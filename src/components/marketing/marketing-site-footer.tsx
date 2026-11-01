@@ -15,6 +15,7 @@ const NAV_PRIMARY: Array<[string, string]> = [
   ["Industries", "/industries"],
   ["Blog", "/blog"],
   ["Help Center", "/help"],
+  ["FAQ", "/faq"],
   ["About", "/about"],
 ];
 

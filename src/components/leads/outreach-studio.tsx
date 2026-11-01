@@ -8,6 +8,10 @@ import { Input, Label, Textarea } from "@/components/ui/input";
 import { notifyCreditsChanged } from "@/lib/client/credits-sync";
 import { toE164 } from "@/lib/phone";
 import { FaWhatsapp } from "react-icons/fa";
+import {
+  AddonLockNotice,
+  isMessagingAddonLocked,
+} from "@/components/billing/addon-lock-notice";
 
 const types = [
   { key: "email", label: "Cold Email" },
@@ -161,7 +165,13 @@ export function OutreachStudio({
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Send failed");
+      if (!res.ok) {
+        if (isMessagingAddonLocked(res, data)) {
+          setHasMessagingAddon(false);
+          return;
+        }
+        throw new Error(data.error || "Send failed");
+      }
       setStatusMsg("Email sent. Pipeline moved to Contacted if it was New.");
       onSent?.("email", data.status || "contacted");
       await loadSendMeta();
@@ -234,6 +244,9 @@ export function OutreachStudio({
             </Button>
           ))}
         </div>
+        {showEmailSend && hasMessagingAddon === false ? (
+          <AddonLockNotice feature="email" compact />
+        ) : null}
         {error && <p className="text-sm text-red-600">{error}</p>}
         {statusMsg && (
           <p className="rounded-xl bg-brand-50 px-3 py-2 text-[13px] text-brand-800">

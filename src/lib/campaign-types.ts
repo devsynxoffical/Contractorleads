@@ -126,7 +126,7 @@ Best,
     stepNumber: 2,
     label: "Follow-Up 2: Proof & Results",
     dayDelay: 3,
-    subject: "Re: Quick question for {{businessName}}",
+    subject: "Re: {{lastSubject}}",
     body: `Hi {{firstName}},
 
 Just wanted to share a quick example — we helped another local {{industry}} team in your region add 14 booked installation jobs last month by filtering out price-shoppers and routing only ready-to-buy homeowners.
@@ -142,7 +142,7 @@ Best,
     stepNumber: 3,
     label: "Follow-Up 3: Education & Insights",
     dayDelay: 3,
-    subject: "Idea for {{businessName}}'s schedule this month",
+    subject: "Re: {{lastSubject}}",
     body: `Hi {{firstName}},
 
 Most {{industry}} business owners we speak with tell us that dealing with unqualified tire-kickers wastes hours of estimator time.
@@ -160,7 +160,7 @@ Best,
     stepNumber: 4,
     label: "Follow-Up 4: Access & Exclusive Territory",
     dayDelay: 4,
-    subject: "Exclusive {{industry}} territory in {{city}}",
+    subject: "Re: {{lastSubject}}",
     body: `Hi {{firstName}},
 
 We only work with 1 primary contractor per territory in {{city}} so we don't create internal competition.
@@ -178,7 +178,7 @@ Best,
     stepNumber: 5,
     label: "Follow-Up 5: Value + Case Study",
     dayDelay: 4,
-    subject: "{{businessName}} — quick follow-up",
+    subject: "Re: {{lastSubject}}",
     body: `Hi {{firstName}},
 
 I know you're busy running job sites, so I'll keep this simple.
@@ -196,7 +196,7 @@ Best,
     stepNumber: 6,
     label: "Follow-Up 6: Direct Conversation",
     dayDelay: 5,
-    subject: "Checking in one last time — {{businessName}}",
+    subject: "Re: {{lastSubject}}",
     body: `Hi {{firstName}},
 
 I haven't heard back, so I assume you're either completely slammed with jobs right now or this isn't a priority.
@@ -212,7 +212,7 @@ Best,
     stepNumber: 7,
     label: "Follow-Up 7: Offer & Final Note",
     dayDelay: 6,
-    subject: "Closing the loop for {{businessName}}",
+    subject: "Re: {{lastSubject}}",
     body: `Hi {{firstName}},
 
 I'm going to assume the timing isn't right for {{businessName}} and close out your file for now.
@@ -360,10 +360,10 @@ export function formatEmailBodyToHtml(
     "If you do not wish to receive further emails from us, click here to unsubscribe or reply STOP.";
   const unsubUrl = options?.unsubscribeUrl || "#unsubscribe";
 
-  const hasUnsubTag = /{{\\s*unsubscribe\\s*}}/gi.test(content);
+  const hasUnsubTag = /{{\s*unsubscribe\s*}}/gi.test(content);
   if (hasUnsubTag) {
     const unsubLinkHtml = `<a href="${unsubUrl}" style="color:#64748b;text-decoration:underline;">${unsubText}</a>`;
-    content = content.replace(/{{\\s*unsubscribe\\s*}}/gi, unsubLinkHtml);
+    content = content.replace(/{{\s*unsubscribe\s*}}/gi, unsubLinkHtml);
   }
 
   // 3. Markdown Formatting

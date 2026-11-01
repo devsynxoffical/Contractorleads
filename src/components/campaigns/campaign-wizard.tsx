@@ -40,6 +40,10 @@ import {
 } from "react-icons/hi2";
 import { cn } from "@/lib/utils";
 import { SpreadsheetImporter } from "@/components/campaigns/spreadsheet-importer";
+import {
+  AddonLockNotice,
+  isMessagingAddonLocked,
+} from "@/components/billing/addon-lock-notice";
 import { SpintaxStepEditor } from "@/components/campaigns/spintax-step-editor";
 import type { ParsedLead } from "@/lib/spreadsheet-parser";
 import {
@@ -99,6 +103,21 @@ export function CampaignWizard({
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  // Messaging add-on: null = unknown, false = locked (fetched on mount or set by a 402).
+  const [hasAddon, setHasAddon] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/billing/messaging-addon")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled && data) setHasAddon(Boolean(data.active));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Data sources
   const [segments, setSegments] = useState<LeadSegmentItem[]>([]);
@@ -599,6 +618,8 @@ export function CampaignWizard({
       const data = await res.json();
       if (res.ok) {
         setTestSuccess(`Test email sent to ${testEmail}${data.result?.from ? ` via ${data.result.from}` : ""}! Check your inbox.`);
+      } else if (isMessagingAddonLocked(res, data)) {
+        setHasAddon(false);
       } else {
         setError(data.error || "Test send failed");
       }
@@ -673,6 +694,11 @@ export function CampaignWizard({
 
       const data = await res.json();
       if (!res.ok) {
+        if (isMessagingAddonLocked(res, data)) {
+          setHasAddon(false);
+          setStep(6);
+          return;
+        }
         setError(data.error || "Failed to create campaign");
         return;
       }
@@ -3031,6 +3057,8 @@ export function CampaignWizard({
             )}
           </div>
 
+          {hasAddon === false ? <AddonLockNotice feature="email" /> : null}
+
           {/* Action Launch Buttons */}
           <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-border">
             <button
@@ -3045,7 +3073,7 @@ export function CampaignWizard({
               <button
                 type="button"
                 onClick={() => void handleSaveCampaign("draft")}
-                disabled={saving}
+                disabled={saving || hasAddon === false}
                 className="rounded-xl border border-border px-4 py-2.5 text-xs font-bold text-ink transition hover:bg-[var(--input-bg)] disabled:opacity-50"
               >
                 Save as Draft
@@ -3053,7 +3081,7 @@ export function CampaignWizard({
               <button
                 type="button"
                 onClick={() => void handleSaveCampaign(scheduleType === "schedule" ? "schedule" : "launch_now")}
-                disabled={saving}
+                disabled={saving || hasAddon === false}
                 className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-6 py-2.5 text-xs font-bold text-white shadow-md transition hover:bg-brand-700 disabled:opacity-50"
               >
                 <HiOutlineRocketLaunch className="h-4 w-4" />

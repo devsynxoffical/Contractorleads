@@ -19,6 +19,47 @@ export const INDUSTRIES = [
   "Pool Services",
 ] as const;
 
+/**
+ * Audience presets: non-trade targets a user can pick instead of an industry.
+ * Downstream (criteria, labels, saved searches) treats the label as the
+ * industry string; only Google Places phrase building special-cases them.
+ */
+export const AUDIENCE_PRESETS = [
+  {
+    id: "agency-owners",
+    label: "Agency Owners",
+    phrases: [
+      "marketing agency",
+      "digital marketing agency",
+      "advertising agency",
+      "SEO agency",
+      "web design agency",
+    ],
+  },
+  {
+    id: "ecommerce-brands",
+    label: "E-commerce Brands",
+    phrases: [
+      "ecommerce store",
+      "online store",
+      "online boutique",
+      "direct to consumer brand",
+      "online retailer",
+    ],
+  },
+] as const;
+
+export type AudiencePreset = (typeof AUDIENCE_PRESETS)[number];
+
+export function getAudiencePreset(industry?: string): AudiencePreset | undefined {
+  if (!industry) return undefined;
+  const needle = industry.trim().toLowerCase();
+  return AUDIENCE_PRESETS.find((a) => a.label.toLowerCase() === needle);
+}
+
+/** Pseudo country code meaning "search every Tier 1 country". */
+export const ANY_COUNTRY_CODE = "ANY";
+
 export const TIER_ONE_COUNTRIES = [
   {
     code: "US",
@@ -64,9 +105,36 @@ export const TIER_ONE_COUNTRIES = [
 
 export type TierOneCountryCode = (typeof TIER_ONE_COUNTRIES)[number]["code"];
 
-export function getTierOneCountry(code?: string) {
+export type TierOneCountry = {
+  code: string;
+  name: string;
+  googleRegion: string;
+  regionLabel: string;
+  postalLabel: string;
+  distanceUnit: string;
+};
+
+/**
+ * Synthetic entry for "Any country". Deliberately NOT part of
+ * TIER_ONE_COUNTRIES so UIs that iterate the list are unaffected.
+ */
+export const ANY_COUNTRY: TierOneCountry = {
+  code: ANY_COUNTRY_CODE,
+  name: "Any country",
+  googleRegion: "",
+  regionLabel: "Region",
+  postalLabel: "Postal code",
+  distanceUnit: "miles",
+};
+
+export function isAnyCountry(code?: string | null): boolean {
+  return (code ?? "").trim().toUpperCase() === ANY_COUNTRY_CODE;
+}
+
+export function getTierOneCountry(code?: string): TierOneCountry {
   if (!code) return TIER_ONE_COUNTRIES[0];
   const normalized = code.trim().toUpperCase();
+  if (normalized === ANY_COUNTRY_CODE) return ANY_COUNTRY;
   if (normalized === "UK") {
     return TIER_ONE_COUNTRIES.find((c) => c.code === "GB") ?? TIER_ONE_COUNTRIES[0];
   }

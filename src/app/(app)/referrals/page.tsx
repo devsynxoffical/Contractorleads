@@ -93,6 +93,13 @@ type ReferralStats = {
   }>;
 };
 
+const SALE_TYPE_LABELS: Record<string, string> = {
+  initial: "Initial purchase",
+  renewal: "Renewal",
+  upgrade: "Plan upgrade",
+  addon: "Add-on",
+};
+
 function money(n: number) {
   return `$${(n || 0).toLocaleString("en-US", {
     minimumFractionDigits: 2,
@@ -253,7 +260,7 @@ export default function ReferralsPage() {
       {/* Header */}
       <PageHeader
         title="Affiliate Program"
-        description="Earn 30% recurring cash commission on every eligible customer purchase and ongoing subscription renewal. Track your sign-ups, sales, deal volume, and payouts below."
+        description={`Earn ${data.commissionPercent}% recurring cash commission on every eligible customer purchase and ongoing subscription renewal. Track your sign-ups, sales, deal volume, and payouts below.`}
         backHref="/dashboard"
         backLabel="Back to dashboard"
         crumbs={[
@@ -271,13 +278,13 @@ export default function ReferralsPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center rounded-lg bg-emerald-100/80 px-2.5 py-1 text-xs font-semibold text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300">
-            30% Commission Rate
+            {data.commissionPercent}% Commission Rate
           </span>
           <span className="inline-flex items-center rounded-lg bg-blue-100/80 px-2.5 py-1 text-xs font-semibold text-blue-800 dark:bg-blue-500/20 dark:text-blue-300">
             Recurring Renewals Included
           </span>
           <span className="inline-flex items-center rounded-lg bg-amber-100/80 px-2.5 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-500/20 dark:text-amber-300">
-            $500 Minimum Payout Threshold
+            {money(data.minWithdrawalUsd)} Minimum Payout Threshold
           </span>
           <span className="inline-flex items-center rounded-lg bg-purple-100/80 px-2.5 py-1 text-xs font-semibold text-purple-800 dark:bg-purple-500/20 dark:text-purple-300">
             30-Day Cookie Attribution
@@ -556,7 +563,7 @@ export default function ReferralsPage() {
               <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50/70 p-3 text-xs text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
                 <HiOutlineClock className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
                 <p>
-                  <strong>Goal in progress:</strong> You are {money(data.remainingForPayoutUsd)} away from unlocking payouts. Share your link with contractor groups and agencies to earn 30% on their plan subscriptions!
+                  <strong>Goal in progress:</strong> You are {money(data.remainingForPayoutUsd)} away from unlocking payouts. Share your link with contractor groups and agencies to earn {data.commissionPercent}% on their plan subscriptions!
                 </p>
               </div>
             )}
@@ -663,7 +670,7 @@ export default function ReferralsPage() {
                 <div>
                   <p className="text-sm font-semibold text-ink">Payout Form Locked</p>
                   <p className="mt-1 text-xs text-ink-muted">
-                    Reach the minimum $500 payout threshold to request cash withdrawals. You currently have {money(data.payableBalanceUsd)} payable balance.
+                    Reach the minimum {money(data.minWithdrawalUsd)} payout threshold to request cash withdrawals. You currently have {money(data.payableBalanceUsd)} payable balance.
                   </p>
                 </div>
                 <Button
@@ -755,7 +762,7 @@ export default function ReferralsPage() {
                   </div>
                   <h3 className="mt-3 text-sm font-semibold text-ink">No sales tracked yet</h3>
                   <p className="mt-1 text-xs text-ink-muted">
-                    When visitors you refer purchase a plan or renew their monthly subscription, your 30% commission will record here instantly.
+                    When visitors you refer purchase a plan or renew their monthly subscription, your {data.commissionPercent}% commission will record here instantly.
                   </p>
                 </div>
               ) : (
@@ -789,10 +796,14 @@ export default function ReferralsPage() {
                               className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold ${
                                 s.type === "renewal"
                                   ? "bg-purple-50 text-purple-700 ring-1 ring-purple-200 dark:bg-purple-500/20 dark:text-purple-300"
-                                  : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300"
+                                  : s.type === "upgrade"
+                                    ? "bg-blue-50 text-blue-700 ring-1 ring-blue-200 dark:bg-blue-500/20 dark:text-blue-300"
+                                    : s.type === "addon"
+                                      ? "bg-amber-50 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-500/20 dark:text-amber-300"
+                                      : "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300"
                               }`}
                             >
-                              {s.type === "renewal" ? "Subscription Renewal" : "Initial Purchase"}
+                              {SALE_TYPE_LABELS[s.type] ?? "Purchase"}
                             </span>
                           </td>
                           <td className="px-2 py-3 tabular-nums font-semibold text-ink">
@@ -893,7 +904,7 @@ export default function ReferralsPage() {
                   </div>
                   <h3 className="mt-3 text-sm font-semibold text-ink">No payouts yet</h3>
                   <p className="mt-1 text-xs text-ink-muted">
-                    Once your payable commission balance reaches $500, submit a payout request and it will display here.
+                    Once your payable commission balance reaches {money(data.minWithdrawalUsd)}, submit a payout request and it will display here.
                   </p>
                 </div>
               ) : (
@@ -962,7 +973,7 @@ export default function ReferralsPage() {
                   What is the affiliate commission rate?
                 </h4>
                 <p className="text-ink-muted leading-relaxed">
-                  You earn <strong>30% cash commission</strong> on every eligible deal or package price purchased by users who register through your referral link.
+                  You earn <strong>{data.commissionPercent}% cash commission</strong> on every eligible deal or package price purchased by users who register through your referral link.
                 </p>
               </div>
 
@@ -972,7 +983,7 @@ export default function ReferralsPage() {
                   Are recurring subscription renewals included?
                 </h4>
                 <p className="text-ink-muted leading-relaxed">
-                  <strong>Yes!</strong> As long as your referred customer maintains an active subscription, you continue to earn 30% recurring commission every billing cycle when their plan renews.
+                  <strong>Yes!</strong> As long as your referred customer maintains an active subscription, you continue to earn {data.commissionPercent}% recurring commission every billing cycle when their plan renews.
                 </p>
               </div>
 
@@ -982,7 +993,7 @@ export default function ReferralsPage() {
                   What is the minimum payout threshold?
                 </h4>
                 <p className="text-ink-muted leading-relaxed">
-                  The minimum payout threshold is <strong>$500.00</strong>. Affiliates become eligible to request a cash withdrawal once their payable commission balance reaches $500.
+                  The minimum payout threshold is <strong>{money(data.minWithdrawalUsd)}</strong>. Affiliates become eligible to request a cash withdrawal once their payable commission balance reaches {money(data.minWithdrawalUsd)}.
                 </p>
               </div>
 

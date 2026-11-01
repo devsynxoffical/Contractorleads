@@ -19,6 +19,10 @@ import {
   HiOutlineLightBulb,
 } from "react-icons/hi2";
 import { OUTREACH_HOOKS, compileHookForLead } from "@/lib/outreach-hooks";
+import {
+  AddonLockNotice,
+  isMessagingAddonLocked,
+} from "@/components/billing/addon-lock-notice";
 
 type PickLead = {
   id: string;
@@ -57,8 +61,14 @@ type Mailbox = {
 
 const VARS = ["businessName", "city", "industry", "ownerName"];
 
-export function EmailComposePanel() {
+export function EmailComposePanel({
+  hasAddon = true,
+}: {
+  hasAddon?: boolean;
+}) {
   const searchParams = useSearchParams();
+  // Flipped to true when the server answers 402 messaging_addon_required.
+  const [addonLocked, setAddonLocked] = useState(false);
   const [mode, setMode] = useState<"lead" | "custom">("lead");
   const [query, setQuery] = useState("");
   const [leads, setLeads] = useState<PickLead[]>([]);
@@ -298,7 +308,13 @@ export function EmailComposePanel() {
         }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Send failed");
+      if (!res.ok) {
+        if (isMessagingAddonLocked(res, json)) {
+          setAddonLocked(true);
+          return;
+        }
+        throw new Error(json.error || "Send failed");
+      }
 
       setMsg(`Email successfully sent to ${recipient}!`);
 
@@ -339,7 +355,14 @@ export function EmailComposePanel() {
         }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Bulk send failed");
+      if (!res.ok) {
+        if (isMessagingAddonLocked(res, json)) {
+          setAddonLocked(true);
+          setBulkModalOpen(false);
+          return;
+        }
+        throw new Error(json.error || "Bulk send failed");
+      }
 
       setBulkResult({
         sent: json.sent ?? 0,
@@ -351,6 +374,10 @@ export function EmailComposePanel() {
     } finally {
       setBulkBusy(false);
     }
+  }
+
+  if (!hasAddon || addonLocked) {
+    return <AddonLockNotice feature="email" />;
   }
 
   return (

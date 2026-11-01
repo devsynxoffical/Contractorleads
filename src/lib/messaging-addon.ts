@@ -7,6 +7,8 @@ import { ADMIN_STAFF_ROLES } from "@/lib/roles";
  */
 export const MESSAGING_ADDON_PRICE_USD = 15.5;
 export const MESSAGING_ADDON_NAME = "Messaging add-on";
+/** Human-readable price, e.g. "$15.50/mo". Use this instead of hardcoding the amount. */
+export const MESSAGING_ADDON_PRICE_LABEL = `$${MESSAGING_ADDON_PRICE_USD.toFixed(2)}/mo`;
 
 const ACTIVE_ADDON_STATUSES = new Set(["active", "trialing"]);
 
