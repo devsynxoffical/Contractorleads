@@ -510,23 +510,28 @@ export async function runWaterfallEnrichment(
   // STAGE 1: CHECK OUR INTERNAL POSTGRESQL DATABASE FIRST (Cost: $0)
   // ============================================================================
   sourcesChecked.push("Internal Database");
-  let dbLead = matchedLeadId
-    ? await prisma.lead.findUnique({ where: { id: matchedLeadId } })
-    : await findExistingLead({
-        name: businessName,
-        address: input.address || [city, state].filter(Boolean).join(", "),
-        phone: phone ?? undefined,
-        website: website ?? undefined,
-      });
+  let dbLead: any = null;
+  try {
+    dbLead = matchedLeadId
+      ? await prisma.lead.findUnique({ where: { id: matchedLeadId } })
+      : await findExistingLead({
+          name: businessName,
+          address: input.address || [city, state].filter(Boolean).join(", "),
+          phone: phone ?? undefined,
+          website: website ?? undefined,
+        });
 
-  if (!dbLead && businessName) {
-    dbLead = await prisma.lead.findFirst({
-      where: {
-        businessName: { equals: businessName, mode: "insensitive" },
-        ...(state ? { state: { equals: state, mode: "insensitive" } } : {}),
-      },
-      orderBy: { leadScore: "desc" },
-    });
+    if (!dbLead && businessName) {
+      dbLead = await prisma.lead.findFirst({
+        where: {
+          businessName: { equals: businessName, mode: "insensitive" },
+          ...(state ? { state: { equals: state, mode: "insensitive" } } : {}),
+        },
+        orderBy: { leadScore: "desc" },
+      });
+    }
+  } catch {
+    dbLead = null;
   }
 
   const dbFoundFields: string[] = [];
@@ -1063,15 +1068,17 @@ export async function runWaterfallEnrichment(
         matchedLeadId = created.id;
       }
     } catch {
-      // Ignore unique constraint collision on phone/mapsLink and match existing
-      const fallbackExisting = await findExistingLead({
-        name: businessName,
-        phone: phone ?? undefined,
-        website: website ?? undefined,
-      });
-      if (fallbackExisting) {
-        matchedLeadId = fallbackExisting.id;
-      }
+      // Ignore database errors if detached or unique constraint collision
+      try {
+        const fallbackExisting = await findExistingLead({
+          name: businessName,
+          phone: phone ?? undefined,
+          website: website ?? undefined,
+        });
+        if (fallbackExisting) {
+          matchedLeadId = fallbackExisting.id;
+        }
+      } catch {}
     }
   }
 
