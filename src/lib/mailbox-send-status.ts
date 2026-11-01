@@ -16,6 +16,7 @@ export type MailboxProblem =
   | "server_unreachable"
   | "relay_unreachable"
   | "relay_token"
+  | "provider_blocked"
   | "recipient_rejected"
   | "unknown";
 
@@ -88,6 +89,27 @@ export function diagnoseMailboxError(
   };
   // The gateway answered, but could not reach the mailbox's own SMTP server.
   if (/SMTP socket connection failed|STARTTLS failed|Could not connect to the SMTP/i.test(e)) {
+    // The server name is a real provider's: the problem is the connection, not the settings.
+    const known = e.match(/smtpout\.secureserver\.net|smtp\.hostinger\.com|smtp\.office365\.com|smtp\.gmail\.com|smtp\.titan\.email/i);
+    if (known) {
+      const provider = /secureserver/i.test(known[0]) ? "GoDaddy" : /hostinger|titan/i.test(known[0]) ? "Hostinger" : /office365/i.test(known[0]) ? "Microsoft 365" : "Google";
+      return {
+        problem: "provider_blocked",
+        title: `Can't connect to ${provider}'s mail server`,
+        explanation: opts.admin
+          ? `The sending gateway could not open a connection to ${known[0]} on any SMTP port. The server name is correct, so retyping the password will not help.`
+          : `Our sending service can't reach ${provider}'s mail server right now. Your server settings look right and your password may be correct; this is a connection problem on our side.`,
+        steps: opts.admin
+          ? [
+              "Click Check connection below to see which ports the gateway can reach.",
+              `If every port is closed, the gateway host blocks outgoing mail to ${provider}. Ask the host's support to allow outbound SMTP to ${known[0]} (ports 465 / 587), or run the gateway on a host that allows it.`,
+              "When a port opens, click Re-test: the working port is remembered automatically.",
+            ]
+          : ["Wait a little and click Re-test.", "If it keeps failing, contact support; your mailbox details do not need to change."],
+        canUpdatePassword: true,
+        canEditServer: true,
+      };
+    }
     return serverUnreachable;
   }
   // The gateway itself did not answer (missing, offline, timed out).
