@@ -378,7 +378,7 @@ async function queryHunterApi(params: {
 }
 
 /**
- * External API Provider 3: Prospeo Email Finder & Domain Search
+ * External API Provider 3: Prospeo Person Enrichment & Email Finder (Modern v2 API)
  */
 async function queryProspeoApi(params: {
   domain: string | null;
@@ -388,76 +388,66 @@ async function queryProspeoApi(params: {
   email: string | null;
   ownerName: string | null;
   ownerTitle: string | null;
+  linkedinUrl: string | null;
+  phone: string | null;
 } | null> {
   const apiKey = (await resolvePlatformKey("prospeoApiKey")).trim();
   if (!apiKey || !params.domain) return null;
 
   try {
-    if (params.ownerName) {
-      const { firstName, lastName } = splitFullName(params.ownerName);
-      if (firstName && lastName) {
-        const res = await fetch("https://api.prospeo.io/email-finder", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-KEY": apiKey,
-          },
-          body: JSON.stringify({
-            first_name: firstName,
-            last_name: lastName,
-            company: params.domain,
-          }),
-          signal: AbortSignal.timeout(7500),
-        });
-        if (res.ok) {
-          const json = (await res.json()) as {
-            response?: { email?: string; email_status?: string };
-          };
-          if (json.response?.email) {
-            return {
-              email: json.response.email,
-              ownerName: params.ownerName,
-              ownerTitle: null,
-            };
-          }
-        }
-      }
-    }
+    const { firstName, lastName } = splitFullName(params.ownerName);
+    const dataPayload: Record<string, unknown> = {
+      company_website: params.domain,
+    };
+    if (firstName) dataPayload.first_name = firstName;
+    if (lastName) dataPayload.last_name = lastName;
+    if (params.ownerName) dataPayload.full_name = params.ownerName;
 
-    const domainRes = await fetch("https://api.prospeo.io/domain-search", {
+    const res = await fetch("https://api.prospeo.io/enrich-person", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "X-KEY": apiKey,
       },
       body: JSON.stringify({
-        company: params.domain,
-        limit: 5,
+        only_verified_email: false,
+        enrich_mobile: true,
+        data: dataPayload,
       }),
-      signal: AbortSignal.timeout(7500),
+      signal: AbortSignal.timeout(8000),
     });
 
-    if (domainRes.ok) {
-      const json = (await domainRes.json()) as {
-        response?: {
-          email_list?: Array<{
+    if (res.ok) {
+      const json = (await res.json()) as {
+        error?: boolean;
+        person?: {
+          full_name?: string;
+          first_name?: string;
+          last_name?: string;
+          current_job_title?: string;
+          linkedin_url?: string;
+          email?: {
             email?: string;
-            first_name?: string;
-            last_name?: string;
-            job_title?: string;
-          }>;
+            status?: string;
+          } | string;
+          phone?: {
+            phone?: string;
+          } | string;
         };
       };
-      const first = json.response?.email_list?.[0];
-      if (first?.email) {
-        const fullName = [first.first_name, first.last_name]
-          .filter(Boolean)
-          .join(" ")
-          .trim();
+
+      if (!json.error && json.person) {
+        const p = json.person;
+        const emailStr = typeof p.email === "object" ? p.email?.email : p.email;
+        const phoneStr = typeof p.phone === "object" ? p.phone?.phone : p.phone;
+        const fullName =
+          p.full_name || [p.first_name, p.last_name].filter(Boolean).join(" ").trim();
         return {
-          email: first.email,
-          ownerName: fullName || null,
-          ownerTitle: first.job_title || null,
+          email: emailStr || null,
+          ownerName: fullName || params.ownerName || null,
+          ownerTitle: p.current_job_title || null,
+          linkedinUrl: p.linkedin_url || null,
+          phone: phoneStr || null,
         };
       }
     }
@@ -911,6 +901,14 @@ export async function runWaterfallEnrichment(
           ownerName = prospeoRes.ownerName;
           ownerTitle = ownerTitle || prospeoRes.ownerTitle || "Owner";
           prospeoFields.push("ownerName");
+        }
+        if (!phone && isValidPhoneCandidate(prospeoRes.phone)) {
+          phone = prospeoRes.phone;
+          prospeoFields.push("phone");
+        }
+        if (!linkedinUrl && prospeoRes.linkedinUrl) {
+          linkedinUrl = prospeoRes.linkedinUrl;
+          prospeoFields.push("linkedin");
         }
         if (!email && prospeoRes.email) {
           const check = await verifyCandidateEmail(prospeoRes.email);
