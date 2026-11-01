@@ -133,7 +133,7 @@ function buildSections(user: SessionUser): NavSection[] {
       items: [
         { href: "/setup", label: "Setup hub", icon: HiOutlineWrenchScrewdriver },
         { href: "/facebook", label: "Facebook", icon: FaFacebook },
-        { href: "/inbox", label: "Email", icon: HiOutlineInbox },
+        { href: "/inbox?tab=setup", label: "Email setup", icon: HiOutlineInbox },
         { href: "/sms", label: "SMS", icon: HiOutlineDevicePhoneMobile },
       ],
     },
@@ -217,7 +217,12 @@ function isActive(
   pathname: string,
   href: string,
   from?: string | null,
+  tab?: string | null,
 ) {
+  // The inbox appears twice: the workspace (AI Assistant) and its mailbox setup tab (Setup).
+  // Light up only one of them.
+  if (href === "/inbox?tab=setup") return pathname === "/inbox" && tab === "setup";
+  if (href === "/inbox") return pathname === "/inbox" && tab !== "setup";
   if (isLeadDetailPath(pathname)) {
     if (href === "/dashboard") return from === "dashboard";
     if (href === "/leads/hot") return from === "hot";
@@ -261,6 +266,7 @@ function SidebarNav({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const from = searchParams.get("from");
+  const tab = searchParams.get("tab");
   const router = useRouter();
 
   async function handleLogout() {
@@ -335,7 +341,7 @@ function SidebarNav({
             </p>
             <div className="space-y-0.5">
               {section.items.map((item) => {
-                const active = isActive(pathname, item.href, from);
+                const active = isActive(pathname, item.href, from, tab);
                 const Icon = item.icon;
                 const locked =
                   Boolean(item.feature) &&

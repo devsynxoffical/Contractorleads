@@ -1420,7 +1420,7 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
             {metrics.clicked.toLocaleString()}
           </span>
           <span className="text-[11px] text-ink-muted mt-0.5 block">
-            {metrics.delivered > 0 ? Math.round((metrics.clicked / metrics.delivered) * 100) : 0}% CTR
+            {metrics.delivered > 0 ? Math.round((metrics.clicked / metrics.delivered) * 1000) / 10 : 0}% CTR
           </span>
         </div>
 
@@ -1515,7 +1515,7 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
           )}
         >
           <HiOutlineChatBubbleLeftRight className="h-4 w-4" />
-          <span>🔥 Live Inbox & Replies</span>
+          <span>Live Inbox &amp; Replies</span>
           {metrics.replied > 0 ? (
             <span className="rounded-full bg-purple-200 text-purple-900 px-2 py-0.5 text-[10px] font-black dark:bg-purple-900 dark:text-purple-200">
               {metrics.replied}
@@ -1541,7 +1541,7 @@ export function CampaignDetailView({ campaignId }: { campaignId: string }) {
           )}
         >
           <HiOutlineEnvelope className="h-4 w-4" />
-          <span>✉️ Sent Emails & Live Logs</span>
+          <span>Sent Emails &amp; Live Logs</span>
           <span className="rounded-full bg-blue-100 text-blue-800 px-2 py-0.5 text-[10px] font-bold dark:bg-blue-950 dark:text-blue-300">
             {metrics.delivered}
           </span>

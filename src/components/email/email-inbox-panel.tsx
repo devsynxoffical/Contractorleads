@@ -843,9 +843,9 @@ export function EmailInboxPanel() {
       )}
 
       {/* Main Inbox Workspace (Split Grid) */}
-      <div className="grid gap-4 lg:grid-cols-[minmax(320px,380px)_minmax(0,1fr)] items-start">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(320px,380px)_minmax(0,1fr)] items-start">
         {/* Left Column: Email List */}
-        <div className="space-y-2.5">
+        <div className="min-w-0 space-y-2.5">
           {/* Search Box */}
           <div className="relative">
             <HiOutlineMagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-faint" />
@@ -990,7 +990,7 @@ export function EmailInboxPanel() {
         </div>
 
         {/* Right Column: Conversation Thread & Smart Reply */}
-        <div className="rounded-2xl border border-border bg-[var(--surface)] shadow-xs flex flex-col min-h-[580px]">
+        <div className="min-w-0 rounded-2xl border border-border bg-[var(--surface)] shadow-xs flex flex-col min-h-[580px]">
           {!selectedId || !selectedEmail ? (
             <div className="my-auto py-24 text-center px-6 space-y-3">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-500/10 text-brand-600 mx-auto dark:bg-brand-500/20">
@@ -1055,9 +1055,9 @@ export function EmailInboxPanel() {
                       </button>
 
                       {selectedEmail.toEmail && (
-                        <div className="flex items-center gap-1 rounded-md bg-[var(--surface-muted)] px-2 py-0.5 text-[11px] border border-border/60">
-                          <span className="text-ink-faint">Received on:</span>
-                          <span className="font-mono font-bold text-brand-700 dark:text-brand-300">
+                        <div className="flex min-w-0 max-w-full items-center gap-1 rounded-md bg-[var(--surface-muted)] px-2 py-0.5 text-[11px] border border-border/60">
+                          <span className="shrink-0 text-ink-faint">Received on:</span>
+                          <span className="truncate font-mono font-bold text-brand-700 dark:text-brand-300" title={selectedEmail.toEmail}>
                             📥 {selectedEmail.toEmail}
                           </span>
                         </div>
@@ -1128,17 +1128,17 @@ export function EmailInboxPanel() {
                           <div className="flex flex-wrap items-center gap-1.5 text-xs text-ink-muted">
                             {isInbound ? (
                               <>
-                                <span>From: <strong className="font-mono text-ink font-semibold">{m.fromEmail}</strong></span>
+                                <span className="min-w-0 break-all">From: <strong className="font-mono text-ink font-semibold">{m.fromEmail}</strong></span>
                                 <span className="text-ink-faint">➔</span>
-                                <span className="inline-flex items-center gap-1 rounded bg-brand-50 px-1.5 py-0.5 font-mono text-[10.5px] font-bold text-brand-700 border border-brand-200/70 dark:bg-brand-950 dark:border-brand-900 dark:text-brand-300">
+                                <span className="inline-flex max-w-full items-center gap-1 break-all rounded bg-brand-50 px-1.5 py-0.5 font-mono text-[10.5px] font-bold text-brand-700 border border-brand-200/70 dark:bg-brand-950 dark:border-brand-900 dark:text-brand-300">
                                   📥 Received on: {m.toEmail}
                                 </span>
                               </>
                             ) : (
                               <>
-                                <span>From: <strong className="font-mono text-ink font-semibold">{m.fromEmail}</strong></span>
+                                <span className="min-w-0 break-all">From: <strong className="font-mono text-ink font-semibold">{m.fromEmail}</strong></span>
                                 <span className="text-ink-faint">➔</span>
-                                <span>To: <strong className="font-mono text-ink font-semibold">{m.toEmail}</strong></span>
+                                <span className="min-w-0 break-all">To: <strong className="font-mono text-ink font-semibold">{m.toEmail}</strong></span>
                               </>
                             )}
                           </div>

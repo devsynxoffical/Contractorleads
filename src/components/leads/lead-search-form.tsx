@@ -1057,8 +1057,8 @@ export function LeadSearchForm() {
                   </span>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  <div className="space-y-1.5">
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  <div className="min-w-0 space-y-1.5">
                     <Label className="text-[12px] font-semibold text-ink">Target Team Size</Label>
                     <Select
                       value={smeTeamSize}
@@ -1078,7 +1078,7 @@ export function LeadSearchForm() {
                     </p>
                   </div>
 
-                  <div className="space-y-1.5">
+                  <div className="min-w-0 space-y-1.5">
                     <Label className="text-[12px] font-semibold text-ink">Business Age Range</Label>
                     <Select
                       value={smeBusinessAge}
@@ -1099,7 +1099,7 @@ export function LeadSearchForm() {
                     </p>
                   </div>
 
-                  <div className="space-y-1.5">
+                  <div className="min-w-0 space-y-1.5">
                     <Label className="text-[12px] font-semibold text-ink">Min SME Quality Score</Label>
                     <Select
                       value={String(smeMinScore)}
@@ -1115,7 +1115,7 @@ export function LeadSearchForm() {
                     </p>
                   </div>
 
-                  <div className="space-y-2 pt-1">
+                  <div className="grid gap-3 border-t border-border/60 pt-3 sm:col-span-2 sm:grid-cols-2 xl:col-span-3">
                     <label className="flex items-start gap-2 cursor-pointer">
                       <input
                         type="checkbox"
@@ -1129,7 +1129,7 @@ export function LeadSearchForm() {
                       </span>
                     </label>
 
-                    <label className="flex items-start gap-2 cursor-pointer pt-1">
+                    <label className="flex items-start gap-2 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={smeExcludeEnterprise}
