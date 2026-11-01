@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
+import { requireMessagingAddon } from "@/lib/messaging-addon-server";
 import { sendLeadEmail } from "@/lib/lead-email";
 import { prisma } from "@/lib/prisma";
 import { LEAD_REPORT_SCRIPT_TYPE } from "@/lib/services/lead-intelligence-report";
@@ -49,6 +50,9 @@ export async function GET(_request: Request, { params }: Params) {
 export async function POST(request: Request, { params }: Params) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const locked = await requireMessagingAddon(user);
+  if (locked) return locked;
 
   const { id: leadId } = await params;
 

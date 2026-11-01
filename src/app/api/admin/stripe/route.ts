@@ -15,7 +15,7 @@ export async function GET() {
   const status = await getStripeBillingStatus();
   return NextResponse.json({
     ...status,
-    webhookUrl: `${appBaseUrl()}/api/billing/webhook`,
+    webhookUrl: `${appBaseUrl()}/api/billing/stripe/webhook`,
   });
 }
 
@@ -101,6 +101,6 @@ export async function PUT(request: Request) {
   return NextResponse.json({
     ok: true,
     ...status,
-    webhookUrl: `${appBaseUrl()}/api/billing/webhook`,
+    webhookUrl: `${appBaseUrl()}/api/billing/stripe/webhook`,
   });
 }

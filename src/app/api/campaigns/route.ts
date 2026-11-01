@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
+import { requireMessagingAddon } from "@/lib/messaging-addon-server";
 import {
   prepareCampaignProspects,
   parseCampaignHooks,
@@ -155,6 +156,9 @@ export async function GET() {
 export async function POST(req: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const locked = await requireMessagingAddon(user);
+  if (locked) return locked;
 
   try {
     const body = await req.json();

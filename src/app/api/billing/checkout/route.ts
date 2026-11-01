@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { normalizePlan, getPlanMonthlyPrice, type PlanId } from "@/lib/plans";
 import { validateCouponForCheckout } from "@/lib/coupons";
 import { getRazorpayClient, isRazorpayConfigured } from "@/lib/razorpay";
+import { recordCheckoutStarted } from "@/lib/checkout-recovery";
 
 export async function POST(request: Request) {
   const user = await getSessionUser();
@@ -96,6 +97,22 @@ export async function POST(request: Request) {
         userEmail: dbUser.email,
       },
     });
+
+    // Track the attempt so the abandoned-checkout sequence can follow up.
+    try {
+      await recordCheckoutStarted({
+        userId: user.id,
+        provider: "razorpay",
+        orderId: order.id,
+        plan,
+        period: billingPeriod,
+        kind: "plan",
+        amountUsd: Number(order.amount) / 100,
+        coupon: appliedCoupon?.ok ? appliedCoupon.coupon.code : null,
+      });
+    } catch (err) {
+      console.error("[checkout-recovery] record started (plan) failed", err);
+    }
 
     return NextResponse.json({
       provider: "razorpay",

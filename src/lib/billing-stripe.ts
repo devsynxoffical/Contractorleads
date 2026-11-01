@@ -43,6 +43,10 @@ export async function syncUserSubscription(opts: {
   /** When true, reset creditsRemaining to the plan monthly allotment */
   grantMonthlyCredits?: boolean;
   invoiceId?: string | null;
+  /** Actual amount paid (USD) for this invoice; falls back to list price. */
+  amountUsd?: number | null;
+  /** Override renewal detection (e.g. from invoice.billing_reason). */
+  isRenewal?: boolean;
 }) {
   const previous = await prisma.user.findUnique({
     where: { id: opts.userId },
@@ -141,17 +145,25 @@ export async function syncUserSubscription(opts: {
   const isNewActivation = isNowActive && !wasActive;
   const isPlanChange =
     isNowActive && normalizePlan(previous.plan) !== plan;
-  const isRenewal = wasActive && isNowActive && Boolean(opts.grantMonthlyCredits || opts.invoiceId);
+  const isRenewal =
+    opts.isRenewal ??
+    (wasActive && isNowActive && Boolean(opts.grantMonthlyCredits || opts.invoiceId));
 
-  await applyReferralCommissionOnPurchase({
-    userId: opts.userId,
-    plan,
-    previousPlan: previous.plan,
-    subscriptionStatus: status,
-    isRenewal,
-    invoiceId: opts.invoiceId || null,
-    paymentProvider: "stripe",
-  });
+  // Commission is only paid against a concrete payment reference so the
+  // ReferralSale.invoiceId unique constraint can dedupe redirect + webhook.
+  // Status-only syncs (subscription.updated / deleted) never pay.
+  if (opts.invoiceId) {
+    await applyReferralCommissionOnPurchase({
+      userId: opts.userId,
+      plan,
+      previousPlan: previous.plan,
+      subscriptionStatus: status,
+      amountUsd: opts.amountUsd ?? null,
+      isRenewal,
+      invoiceId: opts.invoiceId,
+      paymentProvider: "stripe",
+    });
+  }
 
   if (previous.email && (isNewActivation || isPlanChange)) {
     const monthlyCredits =
@@ -445,6 +457,11 @@ export async function fulfillCheckoutSession(opts: {
         : session.invoice && typeof session.invoice === "object"
           ? session.invoice.id ?? null
           : null;
+    // Real amount paid (after coupons; full annual amount) when expanded.
+    let amountPaidCents: number | null =
+      session.invoice && typeof session.invoice === "object"
+        ? session.invoice.amount_paid ?? null
+        : null;
 
     if (subscription) {
       status = subscription.status;
@@ -458,6 +475,10 @@ export async function fulfillCheckoutSession(opts: {
       ).latest_invoice;
       if (!invoiceId && latest) {
         invoiceId = typeof latest === "string" ? latest : latest.id ?? null;
+      }
+      if (amountPaidCents == null && latest && typeof latest === "object") {
+        const paid = (latest as { amount_paid?: number }).amount_paid;
+        amountPaidCents = typeof paid === "number" ? paid : null;
       }
     }
 
@@ -481,6 +502,7 @@ export async function fulfillCheckoutSession(opts: {
       // so the ledger dedupes and will not double-grant.
       grantMonthlyCredits: true,
       invoiceId: invoiceId || `checkout:${session.id}`,
+      amountUsd: amountPaidCents != null ? amountPaidCents / 100 : null,
     });
 
     const couponId = session.metadata?.couponId?.trim();

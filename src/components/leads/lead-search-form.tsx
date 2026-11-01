@@ -20,6 +20,8 @@ import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  ANY_COUNTRY_CODE,
+  AUDIENCE_PRESETS,
   getTierOneCountry,
   getRegionAnyLabel,
   getRegionsForCountry,
@@ -246,7 +248,11 @@ export function LeadSearchForm() {
         return {
           ...l,
           verificationStatus:
-            v.emailStatus === "invalid" ? ("invalid" as const) : ("verified" as const),
+            v.emailStatus === "invalid"
+              ? ("invalid" as const)
+              : v.emailStatus === "safe"
+                ? ("verified" as const)
+                : ("risky" as const),
           emailStatus: v.emailStatus,
           emailBounceRisk: v.emailBounceRisk,
           isRoleAccount: v.isRoleAccount,
@@ -693,30 +699,32 @@ export function LeadSearchForm() {
   async function handleSearch(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
+    const scope: "local" | "country" =
+      selectedCountry === ANY_COUNTRY_CODE ? "country" : locationScope;
     await runSearch({
       industry:
         industryMode === "custom" ? CUSTOM_INDUSTRY_VALUE : selectedIndustry,
       customIndustry: customIndustry,
       country: selectedCountry,
-      locationScope,
+      locationScope: scope,
       state:
-        locationScope === "local" && locationMode === "standard"
+        scope === "local" && locationMode === "standard"
           ? String(form.get("state") || "")
           : undefined,
       city:
-        locationScope === "local" && locationMode === "standard"
+        scope === "local" && locationMode === "standard"
           ? String(form.get("city") || "")
           : undefined,
       zip:
-        locationScope === "local" && locationMode === "standard"
+        scope === "local" && locationMode === "standard"
           ? String(form.get("zip") || "")
           : undefined,
       customLocation:
-        locationScope === "local" && locationMode === "custom"
+        scope === "local" && locationMode === "custom"
           ? customLocation
           : undefined,
       radius:
-        locationScope === "local"
+        scope === "local"
           ? String(form.get("radius") || "25")
           : undefined,
       targetLeadCount,
@@ -750,6 +758,12 @@ export function LeadSearchForm() {
     });
     setFormKey((k) => k + 1);
   }
+
+  const isAnyCountry = selectedCountry === ANY_COUNTRY_CODE;
+  // "Any country" is always a country-wide sweep (region/city don't apply).
+  const effectiveScope: "local" | "country" = isAnyCountry
+    ? "country"
+    : locationScope;
 
   const hotCount = leads.filter((l) => l.qualityTier === "hot").length;
   const avgScore =
@@ -788,8 +802,8 @@ export function LeadSearchForm() {
           <StatChip label="Coverage" value="Tier 1" hint="US · CA · UK · AU · NZ" />
           <StatChip
             label="Industries"
-            value="12"
-            hint="Roofing → General Contractors"
+            value={String(INDUSTRIES.length)}
+            hint="Trades + audience presets"
           />
           <StatChip label="Per lead" value="1 credit" hint="Only leads returned" />
           <StatChip label="Re-export" value="Free" hint="Already billed leads" />
@@ -842,11 +856,20 @@ export function LeadSearchForm() {
                     <option value="" disabled>
                       Select industry
                     </option>
-                    {INDUSTRIES.map((i) => (
-                      <option key={i} value={i}>
-                        {i}
-                      </option>
-                    ))}
+                    <optgroup label="Trades">
+                      {INDUSTRIES.map((i) => (
+                        <option key={i} value={i}>
+                          {i}
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Audiences">
+                      {AUDIENCE_PRESETS.map((a) => (
+                        <option key={a.id} value={a.label}>
+                          {a.label}
+                        </option>
+                      ))}
+                    </optgroup>
                     <option value={CUSTOM_INDUSTRY_VALUE}>Custom service…</option>
                   </Select>
                   {industryMode === "custom" && (
@@ -865,12 +888,18 @@ export function LeadSearchForm() {
                   value={selectedCountry}
                   onChange={(e) => {
                     setSelectedCountry(e.target.value);
+                    if (e.target.value === ANY_COUNTRY_CODE) {
+                      setLocationScope("country");
+                    }
                     setCustomLocation("");
                     setSelectedState("");
                     setCity("");
                     setFormKey((k) => k + 1);
                   }}
                 >
+                  <option value={ANY_COUNTRY_CODE}>
+                    Any country (US, CA, UK, AU, NZ)
+                  </option>
                   {TIER_ONE_COUNTRIES.map((country) => (
                     <option key={country.code} value={country.code}>
                       {country.name}
@@ -881,7 +910,8 @@ export function LeadSearchForm() {
               <div className="space-y-2">
                 <Label>Search scope</Label>
                 <Select
-                  value={locationScope}
+                  value={isAnyCountry ? "country" : locationScope}
+                  disabled={isAnyCountry}
                   onChange={(e) =>
                     setLocationScope(e.target.value as "local" | "country")
                   }
@@ -890,7 +920,7 @@ export function LeadSearchForm() {
                   <option value="country">Entire country</option>
                 </Select>
               </div>
-              {locationScope === "local" && (
+              {effectiveScope === "local" && (
               <div className="space-y-2 sm:col-span-2 lg:col-span-1">
                 <Label>Area type</Label>
                 <Select
@@ -904,7 +934,17 @@ export function LeadSearchForm() {
                 </Select>
               </div>
               )}
-              {locationScope === "country" ? (
+              {isAnyCountry ? (
+                <div className="rounded-xl border border-brand-100 bg-brand-50/60 px-4 py-3 text-sm text-ink-muted sm:col-span-2 lg:col-span-3">
+                  Searching top matching businesses across{" "}
+                  <strong className="text-ink">
+                    the United States, Canada, the United Kingdom, Australia and
+                    New Zealand
+                  </strong>
+                  . Region, city, postal code, and radius are not required; the
+                  lead budget is shared across all five countries.
+                </div>
+              ) : locationScope === "country" ? (
                 <div className="rounded-xl border border-brand-100 bg-brand-50/60 px-4 py-3 text-sm text-ink-muted sm:col-span-2 lg:col-span-3">
                   Searching top matching businesses across{" "}
                   <strong className="text-ink">
@@ -984,7 +1024,7 @@ export function LeadSearchForm() {
                   </p>
                 </div>
               )}
-              {locationScope === "local" && (
+              {effectiveScope === "local" && (
               <div className="space-y-2">
                 <Label>
                   Radius ({getTierOneCountry(selectedCountry).distanceUnit})

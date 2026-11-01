@@ -412,19 +412,25 @@ export async function PATCH(request: Request, { params }: Params) {
       },
     });
 
-    const planChanged =
-      typeof data.plan === "string" && data.plan !== previousPlan;
-    const statusChanged =
-      typeof data.subscriptionStatus === "string" &&
-      data.subscriptionStatus !== previousStatus;
-
-    if (planChanged || statusChanged) {
+    // Referral commission is only recorded when the admin explicitly asks
+    // (recordSale: true) — a plain plan/status edit must never pay out.
+    // The deterministic invoiceId makes a repeated save on the same day a
+    // no-op via the ReferralSale.invoiceId unique constraint.
+    const recordSale = body.recordSale === true;
+    if (recordSale) {
+      const day = new Date().toISOString().slice(0, 10);
       try {
         await applyReferralCommissionOnPurchase({
           userId: customer.id,
           plan: customer.plan,
           previousPlan,
           subscriptionStatus: customer.subscriptionStatus,
+          isRenewal:
+            customer.plan === previousPlan &&
+            previousStatus === "active" &&
+            customer.subscriptionStatus === "active",
+          invoiceId: `manual:${customer.id}:${customer.plan}:${day}`,
+          paymentProvider: "manual",
         });
       } catch (err) {
         console.error("[referral] commission on purchase failed", err);

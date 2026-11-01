@@ -1,6 +1,9 @@
 import {
+  ANY_COUNTRY_CODE,
+  AUDIENCE_PRESETS,
   getTierOneCountry,
   INDUSTRIES,
+  isAnyCountry,
   TIER_ONE_COUNTRIES,
   US_STATES,
 } from "@/lib/constants";
@@ -81,12 +84,14 @@ export function resolveSearchCriteria(
   }
 
   const country = input.country?.trim().toUpperCase() || "US";
-  if (!TIER_ONE_COUNTRIES.some((item) => item.code === country)) {
+  const anyCountry = country === ANY_COUNTRY_CODE;
+  if (!anyCountry && !TIER_ONE_COUNTRIES.some((item) => item.code === country)) {
     return { ok: false, error: "Select a supported Tier 1 country." };
   }
 
+  // "Any country" is always a country-wide sweep — region/city filters don't apply.
   const locationScope: LocationScope =
-    input.locationScope === "country" ? "country" : "local";
+    anyCountry || input.locationScope === "country" ? "country" : "local";
   const rawTarget = Number(input.targetLeadCount ?? 50);
   const targetLeadCount = Number.isFinite(rawTarget)
     ? Math.max(1, Math.min(1000, Math.floor(rawTarget)))
@@ -179,7 +184,10 @@ export function resolveSearchCriteria(
 }
 
 export function isPresetIndustry(value: string): boolean {
-  return (INDUSTRIES as readonly string[]).includes(value);
+  return (
+    (INDUSTRIES as readonly string[]).includes(value) ||
+    AUDIENCE_PRESETS.some((a) => a.label === value)
+  );
 }
 
 export function formatSearchLabel(criteria: {
@@ -190,6 +198,9 @@ export function formatSearchLabel(criteria: {
   city?: string;
   customLocation?: string;
 }): string {
+  if (isAnyCountry(criteria.country)) {
+    return `${criteria.industry} across US, CA, UK, AU and NZ`;
+  }
   const country = getTierOneCountry(criteria.country);
   if (criteria.locationScope === "country") {
     return `${criteria.industry} across ${country.name}`;

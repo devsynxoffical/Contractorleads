@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
+import { requireMessagingAddon } from "@/lib/messaging-addon-server";
 import { sendOutboundEmail } from "@/lib/user-smtp";
 import { renderCampaignTemplate, formatEmailBodyToHtml, type CampaignAttachment } from "@/lib/campaign-engine";
 import { appBaseUrl } from "@/lib/email-brand";
@@ -7,6 +8,9 @@ import { appBaseUrl } from "@/lib/email-brand";
 export async function POST(req: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const locked = await requireMessagingAddon(user);
+  if (locked) return locked;
 
   try {
     const body = await req.json();

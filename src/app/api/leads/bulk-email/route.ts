@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
+import { requireMessagingAddon } from "@/lib/messaging-addon-server";
 import { prisma } from "@/lib/prisma";
 import { sendBulkLeadEmail } from "@/lib/lead-email";
 import { listSmtpAccounts, migrateLegacySmtpIfNeeded } from "@/lib/user-smtp";
@@ -10,6 +11,9 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const locked = await requireMessagingAddon(user);
+  if (locked) return locked;
 
   const body = await request.json().catch(() => ({}));
   const leadIds = (Array.isArray(body.leadIds)

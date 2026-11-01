@@ -57,7 +57,7 @@ export async function GET() {
       by: ["referrerId"],
       where: { status: "rewarded" },
       _count: { _all: true },
-      _sum: { commissionUsd: true, milestoneBonusUsd: true },
+      _sum: { totalCommissionUsd: true, milestoneBonusUsd: true },
       orderBy: { _count: { referrerId: "desc" } },
       take: 20,
     }),
@@ -206,7 +206,11 @@ export async function GET() {
         code: u?.referralCode,
         referrals: l._count._all,
         earnedUsd:
-          (l._sum.commissionUsd ?? 0) + (l._sum.milestoneBonusUsd ?? 0),
+          Math.round(
+            ((l._sum.totalCommissionUsd ?? 0) +
+              (l._sum.milestoneBonusUsd ?? 0)) *
+              100,
+          ) / 100,
         balanceUsd: u?.referralBalanceUsd ?? 0,
       };
     }),

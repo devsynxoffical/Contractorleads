@@ -18,7 +18,9 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const [customers, prices, recentBilling] = await Promise.all([
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  const [customers, prices, recentBilling, checkoutAttemptGroups] = await Promise.all([
     prisma.user.findMany({
       where: AGENCY_WHERE,
       orderBy: { createdAt: "desc" },
@@ -41,7 +43,11 @@ export async function GET() {
     prisma.activityLog.findMany({
       where: {
         type: {
-          in: ["stripe_subscription_sync", "checkout_abandoned_email"],
+          in: [
+            "stripe_subscription_sync",
+            "checkout_abandoned_email",
+            "checkout_recovery_email",
+          ],
         },
       },
       orderBy: { createdAt: "desc" },
@@ -63,7 +69,26 @@ export async function GET() {
         },
       },
     }),
+    prisma.checkoutAttempt.groupBy({
+      by: ["status"],
+      where: { startedAt: { gte: thirtyDaysAgo } },
+      _count: { _all: true },
+    }),
   ]);
+
+  // Abandoned-checkout recovery funnel (our own customers), last 30 days.
+  const checkoutRecovery30d = {
+    started: 0,
+    abandoned: 0,
+    paid: 0,
+    stopped: 0,
+  };
+  for (const row of checkoutAttemptGroups) {
+    if (row.status in checkoutRecovery30d) {
+      checkoutRecovery30d[row.status as keyof typeof checkoutRecovery30d] =
+        row._count._all;
+    }
+  }
 
   const totalCustomers = customers.length;
   const paidActive = customers.filter(
@@ -191,6 +216,7 @@ export async function GET() {
     },
     planBreakdown,
     statusMix,
+    checkoutRecovery30d,
     rawPlanCounts: Object.fromEntries(rawPlanCounts),
     prices,
     plans: ADMIN_PLANS,

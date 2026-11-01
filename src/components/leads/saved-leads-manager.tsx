@@ -27,6 +27,10 @@ import {
   HiOutlineDocumentArrowUp,
 } from "react-icons/hi2";
 import { OUTREACH_HOOKS } from "@/lib/outreach-hooks";
+import {
+  AddonLockNotice,
+  isMessagingAddonLocked,
+} from "@/components/billing/addon-lock-notice";
 import { SpreadsheetImporter } from "@/components/campaigns/spreadsheet-importer";
 
 type SavedLeadRow = {
@@ -297,6 +301,9 @@ export function SavedLeadsManager({
     setSelected(allSelected ? new Set() : new Set(selectableIds));
   }
 
+  // Flipped to true when the server answers 402 messaging_addon_required.
+  const [addonLocked, setAddonLocked] = useState(!hasAddon);
+
   async function send() {
     setBusy(true);
     setError(null);
@@ -313,7 +320,13 @@ export function SavedLeadsManager({
         }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Bulk send failed");
+      if (!res.ok) {
+        if (isMessagingAddonLocked(res, json)) {
+          setAddonLocked(true);
+          return;
+        }
+        throw new Error(json.error || "Bulk send failed");
+      }
       setResults({
         sent: json.sent,
         skipped: json.skipped,
@@ -777,6 +790,8 @@ export function SavedLeadsManager({
                   </button>
                 ))}
               </div>
+
+              {addonLocked ? <AddonLockNotice feature="email" compact /> : null}
 
               {error ? (
                 <p className="rounded-xl border border-rose-500/25 bg-rose-500/10 px-3 py-2 text-[13px] text-rose-700">

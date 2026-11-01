@@ -1,7 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/credits";
 import { dispatchCrmWebhook } from "@/lib/crm-webhook";
-import { sendOutboundEmail, formatSmtpError } from "@/lib/user-smtp";
+import {
+  sendOutboundEmail,
+  formatSmtpError,
+  getUserSenderConfig,
+  pickRotationSender,
+} from "@/lib/user-smtp";
 import { findOwnedLead } from "@/lib/lead-ownership";
 import { getAgencyReportBranding } from "@/lib/agency-branding";
 import { LEAD_REPORT_SCRIPT_TYPE } from "@/lib/services/lead-intelligence-report";
@@ -25,6 +30,8 @@ export async function sendLeadEmail(opts: {
   references?: string | null;
   /** Attach a saved lead intelligence report as PDF */
   attachReportId?: string | null;
+  /** Append open-tracking pixel (default true). Replies pass false. */
+  track?: boolean;
 }) {
   const subject = opts.subject.trim();
   const body = opts.body.trim();
@@ -82,6 +89,17 @@ export async function sendLeadEmail(opts: {
     });
   }
 
+  // Resolve the intended sender up front so a failed row still records the right fromEmail.
+  let intendedFromEmail = "";
+  try {
+    const intended = opts.smtpAccountId
+      ? await getUserSenderConfig(opts.userId, opts.smtpAccountId)
+      : await pickRotationSender(opts.userId);
+    intendedFromEmail = intended?.fromEmail || "";
+  } catch {
+    intendedFromEmail = "";
+  }
+
   try {
     const sent = await sendOutboundEmail({
       userId: opts.userId,
@@ -92,6 +110,7 @@ export async function sendLeadEmail(opts: {
       inReplyTo: opts.inReplyToMessageId || undefined,
       references: opts.references || opts.inReplyToMessageId || undefined,
       attachments: attachments.length ? attachments : undefined,
+      track: opts.track,
     });
 
     const emailRow = await prisma.leadEmail.create({
@@ -167,7 +186,7 @@ export async function sendLeadEmail(opts: {
         smtpAccountId: isSystemSmtp ? null : (opts.smtpAccountId || null),
         systemSmtpAccountId: isSystemSmtp ? (opts.smtpAccountId || null) : null,
         direction: "outbound",
-        fromEmail: "",
+        fromEmail: intendedFromEmail,
         toEmail: to,
         subject,
         body,
@@ -368,16 +387,24 @@ export async function replyToLeadEmail(opts: {
       ? baseSubject
       : `Re: ${baseSubject}`);
 
-  const refs = [original.messageId, original.inReplyTo].filter(Boolean).join(" ");
+  // RFC 5322: References lists ancestors first, then the message being replied to.
+  const refs = [
+    ...new Set([original.inReplyTo, original.messageId].filter((v): v is string => Boolean(v))),
+  ].join(" ");
+
+  // Reply from the same mailbox the thread used (user account or system account).
+  const mailboxId =
+    opts.smtpAccountId || original.smtpAccountId || original.systemSmtpAccountId || null;
 
   const result = await sendLeadEmail({
     userId: opts.userId,
     leadId: original.leadId,
     subject,
     body,
-    smtpAccountId: opts.smtpAccountId || original.smtpAccountId,
+    smtpAccountId: mailboxId,
     inReplyToMessageId: original.messageId,
     references: refs || original.messageId,
+    track: false,
   });
 
   if (!original.readAt && original.direction === "inbound") {

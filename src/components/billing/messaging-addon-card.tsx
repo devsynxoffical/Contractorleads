@@ -6,12 +6,14 @@ import {
   HiOutlineChatBubbleLeftRight,
   HiOutlineCheckCircle,
 } from "react-icons/hi2";
-import { openRazorpayModal } from "@/lib/client/razorpay-checkout";
+import { openRazorpayModal, reportCheckoutDismissed } from "@/lib/client/razorpay-checkout";
+import { MESSAGING_ADDON_PRICE_LABEL } from "@/lib/messaging-addon";
 
 const PERKS = [
-  "Bulk email — message many leads at once with personalization",
-  "SMS / text messaging to lead phone numbers (Twilio)",
-  "Shared inbox + delivery tracking for every send",
+  "1:1 and bulk email from your mailboxes",
+  "Email sequences and campaigns",
+  "SMS / text messaging (Twilio)",
+  "Shared inbox and delivery tracking",
 ];
 
 export function MessagingAddonCard({
@@ -46,7 +48,7 @@ export function MessagingAddonCard({
         amount: json.amount,
         currency: json.currency || "USD",
         name: "Contractor Leads",
-        description: "Messaging Add-on ($30/mo)",
+        description: `Messaging Add-on (${MESSAGING_ADDON_PRICE_LABEL})`,
         prefill: {
           name: json.user?.name,
           email: json.user?.email,
@@ -72,6 +74,7 @@ export function MessagingAddonCard({
           }
         },
         onDismiss: () => {
+          reportCheckoutDismissed(String(json.orderId ?? ""));
           setBusy(false);
         },
       });
@@ -82,7 +85,7 @@ export function MessagingAddonCard({
   }
 
   async function cancel() {
-    if (!confirm("Cancel the Messaging add-on? Bulk email and SMS will turn off at the end of the period.")) {
+    if (!confirm("Cancel the Messaging add-on? Email sending and SMS will turn off at the end of the period.")) {
       return;
     }
     setBusy(true);
@@ -117,7 +120,7 @@ export function MessagingAddonCard({
                 Messaging add-on
               </h3>
               <p className="text-[12px] text-ink-muted">
-                Turn on bulk email + Twilio SMS for all leads in your account.
+                Turn on 1:1 and bulk email, sequences, and Twilio SMS for all leads in your account.
               </p>
             </div>
           </div>

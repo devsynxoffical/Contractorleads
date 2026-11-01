@@ -389,7 +389,7 @@ function SidebarNav({
         ))}
       </nav>
 
-      <div className="shrink-0 border-t border-border/80 p-4">
+      <div className="shrink-0 border-t border-border/80 p-3">
         <WorkspaceSettingsMenu
           user={user}
           variant="sidebar"
@@ -398,37 +398,39 @@ function SidebarNav({
         />
         <div
           className={cn(
-            "hud-credits-card relative overflow-hidden rounded-2xl p-3.5 ring-1",
+            "hud-credits-card relative flex items-center justify-between gap-3 overflow-hidden rounded-xl px-3 py-2.5 ring-1",
             hud
               ? "bg-brand-500/10 ring-brand-500/25"
               : "bg-gradient-to-br from-[#fcf2f8] via-white to-[#f3eef8] ring-brand-100/80",
           )}
         >
-          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-faint">
-            Credits
-          </p>
-          <p
-            className={cn(
-              "mt-1 font-[family-name:var(--font-display)] text-2xl font-semibold tabular-nums tracking-tight",
-              hud ? "text-brand-500" : "text-brand-700",
-            )}
-          >
-            {formatCredits(user.creditsRemaining)}
-          </p>
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-ink-faint">
+              Credits
+            </p>
+            <p
+              className={cn(
+                "font-[family-name:var(--font-display)] text-xl font-semibold leading-tight tabular-nums tracking-tight",
+                hud ? "text-brand-500" : "text-brand-700",
+              )}
+            >
+              {formatCredits(user.creditsRemaining)}
+            </p>
+          </div>
           <Link
             href="/billing"
             className={cn(
-              "mt-2 inline-block text-[11px] font-semibold hover:underline",
-              hud ? "text-brand-400" : "text-brand-600",
+              "shrink-0 rounded-full px-3 py-1.5 text-[11px] font-semibold text-white",
             )}
+            style={{ background: "var(--logo-gradient)" }}
           >
-            Upgrade plan →
+            Upgrade
           </Link>
         </div>
         <button
           type="button"
           onClick={handleLogout}
-          className="mt-3 flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-[13px] font-medium text-ink-muted transition hover:bg-brand-50 hover:text-ink"
+          className="mt-2 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-medium text-ink-muted transition hover:bg-brand-50 hover:text-ink"
         >
           <HiOutlineArrowRightOnRectangle className="h-4 w-4" />
           Sign out
@@ -644,15 +646,14 @@ export function AppShell({
           onToggleSidebar={toggleSidebar}
           hud={hudMode}
         />
-        <main className="hud-shell-main scrollbar-thin relative z-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto print:overflow-visible">
-          <div className="page-enter min-h-full">{children}</div>
+        <main className="hud-shell-main scrollbar-thin relative z-0 flex min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto print:overflow-visible">
+          <div className="page-enter flex-1 pb-20 sm:pb-16">{children}</div>
+          {/* Footer scrolls with the page instead of pinning and stealing viewport height */}
+          <footer className="hud-shell-footer mt-6 shrink-0 border-t border-border bg-[var(--sidebar)] px-4 py-3 text-center text-[12px] text-ink-muted print:hidden sm:px-6">
+            <p>Copyright © {new Date().getFullYear()} Contractor Leads. All rights reserved.</p>
+            <p>Vaishali Media Productions LLC</p>
+          </footer>
         </main>
-        <footer
-          className="hud-shell-footer shrink-0 border-t border-border bg-[var(--sidebar)] px-4 py-3 text-center text-[12px] text-ink-muted backdrop-blur-md print:hidden sm:px-6 sm:text-[12px]"
-        >
-          <p>Copyright © 2026 Contractor Leads. All rights reserved.</p>
-          <p>Vaishali Media Productions LLC</p>
-        </footer>
       </div>
 
       <SupportChatWidget user={shellUser} />

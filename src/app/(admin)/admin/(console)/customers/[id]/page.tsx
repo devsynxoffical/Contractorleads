@@ -112,6 +112,7 @@ export default function AdminCustomerDetailPage() {
   const [latestApiKey, setLatestApiKey] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [recordSale, setRecordSale] = useState(false);
   const [systemSmtps, setSystemSmtps] = useState<
     Array<{
       id: string;
@@ -502,13 +503,26 @@ export default function AdminCustomerDetailPage() {
                 ))}
               </select>
             </label>
+            <label className="flex items-start gap-2 text-[12px] text-ink-muted">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={recordSale}
+                onChange={(e) => setRecordSale(e.target.checked)}
+              />
+              <span>
+                Record as a manual sale (pays referral commission to the
+                referrer, if any). Leave off for corrections.
+              </span>
+            </label>
             <Button
               disabled={saving}
               onClick={() =>
                 save({
                   plan: customer.plan,
                   subscriptionStatus: customer.subscriptionStatus,
-                })
+                  recordSale,
+                }).then(() => setRecordSale(false))
               }
             >
               Save plan

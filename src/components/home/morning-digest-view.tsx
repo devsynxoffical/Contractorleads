@@ -18,6 +18,10 @@ import { Input, Label, Textarea } from "@/components/ui/input";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
 import { DigestEmailSegmentsSettings } from "@/components/home/digest-email-segments-settings";
 import type { DigestLead, MorningDigest } from "@/lib/services/morning-digest";
+import {
+  AddonLockNotice,
+  isMessagingAddonLocked,
+} from "@/components/billing/addon-lock-notice";
 
 type SmtpAccount = {
   id: string;
@@ -62,6 +66,8 @@ function DigestLeadCard({
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [saved, setSaved] = useState(Boolean(lead.savedLeadId));
+  // Flipped to true when the server answers 402 messaging_addon_required.
+  const [addonLocked, setAddonLocked] = useState(false);
 
   useEffect(() => {
     if (!expanded || !lead.email) return;
@@ -112,7 +118,13 @@ function DigestLeadCard({
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Send failed");
+      if (!res.ok) {
+        if (isMessagingAddonLocked(res, data)) {
+          setAddonLocked(true);
+          return;
+        }
+        throw new Error(data.error || "Send failed");
+      }
       setMsg("Email sent — moved to Contacted");
       onDone(lead.id);
     } catch (e) {
@@ -246,6 +258,12 @@ function DigestLeadCard({
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {addonLocked && (
+        <div className="border-t border-border px-4 py-3 sm:px-5">
+          <AddonLockNotice feature="email" compact />
         </div>
       )}
 

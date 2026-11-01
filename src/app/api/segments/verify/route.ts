@@ -77,8 +77,11 @@ export async function POST(request: Request) {
       resultMap.set(res.email.toLowerCase(), res);
     }
 
-    // Filter out non-working / dead / invalid emails
+    // Filter out non-working / dead / invalid emails.
+    // "valid" -> verified, "risky" -> kept in the segment but flagged risky, "invalid" -> removed.
     const validLeadIds: string[] = [];
+    const verifiedLeadIds: string[] = [];
+    const riskyLeadIds: string[] = [];
     const removedLeadIds: string[] = [];
     const invalidEmails: string[] = [];
 
@@ -103,20 +106,28 @@ export async function POST(request: Request) {
         invalidEmails.push(norm);
       } else {
         validLeadIds.push(lead.id);
+        if (verified.status === "valid") verifiedLeadIds.push(lead.id);
+        else riskyLeadIds.push(lead.id);
       }
     }
 
     // Update lead verificationStatus in DB
-    if (invalidEmails.length > 0) {
+    if (removedLeadIds.length > 0) {
       await prisma.lead.updateMany({
         where: { id: { in: removedLeadIds } },
         data: { verificationStatus: "invalid" },
       }).catch(() => {});
     }
-    if (validLeadIds.length > 0) {
+    if (verifiedLeadIds.length > 0) {
       await prisma.lead.updateMany({
-        where: { id: { in: validLeadIds } },
+        where: { id: { in: verifiedLeadIds } },
         data: { verificationStatus: "verified" },
+      }).catch(() => {});
+    }
+    if (riskyLeadIds.length > 0) {
+      await prisma.lead.updateMany({
+        where: { id: { in: riskyLeadIds } },
+        data: { verificationStatus: "risky" },
       }).catch(() => {});
     }
 
@@ -196,7 +207,9 @@ export async function POST(request: Request) {
       originalSegmentId: segment.id,
       originalSegmentName: segment.name,
       totalChecked: leadsToVerify.length,
-      validCount: validLeadIds.length,
+      validCount: verifiedLeadIds.length,
+      riskyCount: riskyLeadIds.length,
+      keptCount: validLeadIds.length,
       invalidCount: removedLeadIds.length,
       removedCount: removedLeadIds.length,
       remainingCount: validLeadIds.length,
@@ -230,6 +243,8 @@ export async function POST(request: Request) {
     }
 
     const validLeadIds: string[] = [];
+    const verifiedLeadIds: string[] = [];
+    const riskyLeadIds: string[] = [];
     const invalidLeadIds: string[] = [];
     const invalidEmails: string[] = [];
 
@@ -253,29 +268,41 @@ export async function POST(request: Request) {
         invalidEmails.push(norm);
       } else {
         validLeadIds.push(lead.id);
+        if (verified.status === "valid") verifiedLeadIds.push(lead.id);
+        else riskyLeadIds.push(lead.id);
       }
     }
 
-    // Persist verification status
+    // Persist verification status ("valid" -> verified, "risky" -> risky, dead -> invalid)
     if (invalidLeadIds.length > 0) {
       await prisma.lead.updateMany({
         where: { id: { in: invalidLeadIds } },
         data: { verificationStatus: "invalid" },
       }).catch(() => {});
     }
-    if (validLeadIds.length > 0) {
+    if (verifiedLeadIds.length > 0) {
       await prisma.lead.updateMany({
-        where: { id: { in: validLeadIds } },
+        where: { id: { in: verifiedLeadIds } },
         data: { verificationStatus: "verified" },
+      }).catch(() => {});
+    }
+    if (riskyLeadIds.length > 0) {
+      await prisma.lead.updateMany({
+        where: { id: { in: riskyLeadIds } },
+        data: { verificationStatus: "risky" },
       }).catch(() => {});
     }
 
     return NextResponse.json({
       ok: true,
       totalChecked: leads.length,
-      validCount: validLeadIds.length,
+      validCount: verifiedLeadIds.length,
+      riskyCount: riskyLeadIds.length,
+      keptCount: validLeadIds.length,
       invalidCount: invalidLeadIds.length,
       validLeadIds,
+      verifiedLeadIds,
+      riskyLeadIds,
       invalidLeadIds,
       invalidEmails: invalidEmails.slice(0, 50),
       summary,

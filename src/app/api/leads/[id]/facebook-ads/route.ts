@@ -31,9 +31,9 @@ export async function POST(
     const updated = await prisma.lead.update({
       where: { id },
       data: {
-        facebookAdsData: result.ads.length
-          ? JSON.stringify(result)
-          : null,
+        // Persist even when zero ads so the UI can show the status/message
+        // (e.g. "no exact page-name match") instead of nothing.
+        facebookAdsData: JSON.stringify(result),
         facebookAdsCheckedAt: new Date(),
       },
     });

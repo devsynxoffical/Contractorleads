@@ -170,11 +170,74 @@ const warmupInterval = setInterval(async () => {
   }
 }, 180_000);
 
+// Abandoned-checkout recovery emails (our own customers): every 15 minutes
+const checkoutRecoveryInterval = setInterval(async () => {
+  try {
+    const url = `http://127.0.0.1:${port}/api/cron/checkout-recovery`;
+    const headers = {};
+    if (process.env.CRON_SECRET) {
+      headers["Authorization"] = `Bearer ${process.env.CRON_SECRET}`;
+    }
+    const res = await fetch(url, { headers });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.sent > 0 || data.errors > 0) {
+        console.log(`[cron] Checkout recovery: ${data.sent} email(s) sent, ${data.paid} marked paid, ${data.errors} error(s).`);
+      }
+    }
+  } catch {
+    // server might still be booting or restarting, ignore gracefully
+  }
+}, 900_000);
+
+// Nurture email sequences (lead follow-ups): every 10 minutes
+const emailSequencesInterval = setInterval(async () => {
+  try {
+    const url = `http://127.0.0.1:${port}/api/cron/email-sequences`;
+    const headers = {};
+    if (process.env.CRON_SECRET) {
+      headers["Authorization"] = `Bearer ${process.env.CRON_SECRET}`;
+    }
+    const res = await fetch(url, { headers });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.sent > 0 || data.errors > 0) {
+        console.log(`[cron] Email sequences: ${data.sent} sent, ${data.errors} error(s) of ${data.processed} due.`);
+      }
+    }
+  } catch {
+    // server might still be booting or restarting, ignore gracefully
+  }
+}, 600_000);
+
+// Morning daily digest: hourly (the route itself picks the local 7–9am window)
+const dailyDigestInterval = setInterval(async () => {
+  try {
+    const url = `http://127.0.0.1:${port}/api/cron/daily-digest`;
+    const headers = {};
+    if (process.env.CRON_SECRET) {
+      headers["Authorization"] = `Bearer ${process.env.CRON_SECRET}`;
+    }
+    const res = await fetch(url, { headers });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.sent > 0 || data.failed > 0) {
+        console.log(`[cron] Daily digest: ${data.sent} sent, ${data.failed} failed of ${data.processed} due.`);
+      }
+    }
+  } catch {
+    // server might still be booting or restarting, ignore gracefully
+  }
+}, 3_600_000);
+
 for (const sig of ["SIGTERM", "SIGINT"]) {
   process.on(sig, () => {
     clearInterval(cronInterval);
     clearInterval(inboxInterval);
     clearInterval(warmupInterval);
+    clearInterval(checkoutRecoveryInterval);
+    clearInterval(emailSequencesInterval);
+    clearInterval(dailyDigestInterval);
     child.kill(sig);
   });
 }

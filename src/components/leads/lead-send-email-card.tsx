@@ -4,6 +4,10 @@ import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Label, Textarea } from "@/components/ui/input";
+import {
+  AddonLockNotice,
+  isMessagingAddonLocked,
+} from "@/components/billing/addon-lock-notice";
 
 type SmtpAccount = {
   id: string;
@@ -55,9 +59,18 @@ export function LeadSendEmailCard({
   );
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  // null = unknown (still loading); false = Messaging add-on missing.
+  const [hasAddon, setHasAddon] = useState<boolean | null>(null);
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/leads/${leadId}/send-email`);
+    const [res, addonRes] = await Promise.all([
+      fetch(`/api/leads/${leadId}/send-email`),
+      fetch("/api/billing/messaging-addon").catch(() => null),
+    ]);
+    if (addonRes?.ok) {
+      const addon = await addonRes.json().catch(() => ({}));
+      setHasAddon(Boolean(addon.active));
+    }
     const data = await res.json();
     if (!res.ok) return;
     setEmails(data.emails ?? []);
@@ -105,6 +118,10 @@ export function LeadSendEmailCard({
     const data = await res.json();
     setBusy(false);
     if (!res.ok) {
+      if (isMessagingAddonLocked(res, data)) {
+        setHasAddon(false);
+        return;
+      }
       setMsg(data.error || "Send failed");
       return;
     }
@@ -127,6 +144,19 @@ export function LeadSendEmailCard({
           <p className="text-[13px] text-ink-muted">
             No email on this lead — enrich or add an address before sending.
           </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (hasAddon === false) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Email lead</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <AddonLockNotice feature="email" />
         </CardContent>
       </Card>
     );

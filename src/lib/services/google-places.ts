@@ -3,7 +3,12 @@ import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
-import { getTierOneCountry } from "@/lib/constants";
+import {
+  getAudiencePreset,
+  getTierOneCountry,
+  isAnyCountry,
+  TIER_ONE_COUNTRIES,
+} from "@/lib/constants";
 import {
   logGooglePlacesError,
   PUBLIC_PLACES_SEARCH_UNAVAILABLE,
@@ -24,7 +29,21 @@ export type PlaceResult = {
   latitude?: number;
   longitude?: number;
   yearsInBusiness?: number;
+  /** ISO country code the place belongs to, when known (per-query country or parsed from the address). */
+  country?: string;
 };
+
+/** Trailing-address country detection for Tier 1 countries, e.g. "..., TX 78701, USA". */
+export function detectCountryFromAddress(address?: string | null): string | undefined {
+  const tail = address?.split(",").pop()?.trim().toLowerCase();
+  if (!tail) return undefined;
+  if (/^(usa|united states|united states of america|us)$/.test(tail)) return "US";
+  if (/^canada$/.test(tail)) return "CA";
+  if (/^(uk|united kingdom|great britain|england|scotland|wales|northern ireland)$/.test(tail)) return "GB";
+  if (/^australia$/.test(tail)) return "AU";
+  if (/^new zealand$/.test(tail)) return "NZ";
+  return undefined;
+}
 
 export class GooglePlacesError extends Error {
   /** HTTP status when the failure came from a Places API response, if known. */
@@ -69,6 +88,8 @@ const PRESET_PHRASES: Record<string, string[]> = {
 function industryPhrases(industry: string): string[] {
   const raw = industry.trim();
   if (!raw) return [];
+  const audience = getAudiencePreset(raw);
+  if (audience) return [...audience.phrases];
   const preset = PRESET_PHRASES[raw];
   if (preset?.length) return preset;
   const out = new Set<string>([raw]);
@@ -717,7 +738,8 @@ async function searchTextOnce(
 
 async function placesTextSearch(opts: {
   query: string;
-  regionCode: string;
+  /** Omitted (undefined) for cross-country "Any country" queries. */
+  regionCode?: string;
   pageToken?: string;
 }): Promise<PlacesTextSearchResponse> {
   const { primary, backup } = await getGooglePlacesKeys();
@@ -729,8 +751,8 @@ async function placesTextSearch(opts: {
     textQuery: opts.query,
     pageSize: 20,
     languageCode: "en",
-    regionCode: opts.regionCode,
   };
+  if (opts.regionCode) body.regionCode = opts.regionCode;
   if (opts.pageToken) body.pageToken = opts.pageToken;
 
   let lastError: GooglePlacesError | null = null;
@@ -762,7 +784,7 @@ async function placesTextSearch(opts: {
 
 async function searchOfficialQuery(opts: {
   query: string;
-  regionCode: string;
+  regionCode?: string;
   maxPages: number;
   wanted: number;
 }): Promise<PlaceResult[]> {
@@ -807,7 +829,7 @@ async function searchOfficialQuery(opts: {
 async function searchOfficialPlaces(opts: {
   queries: string[];
   wanted: number;
-  regionCode: string;
+  regionCode?: string;
 }): Promise<PlaceResult[]> {
   const { queries, wanted, regionCode } = opts;
   const pagesPerQuery = wanted <= 20 ? 1 : wanted <= 60 ? 2 : wanted <= 200 ? 4 : 5;
@@ -867,14 +889,28 @@ export async function searchGooglePlaces(params: {
   onPlacesBatch?: (places: PlaceResult[]) => Promise<void> | void;
   /** Optional cancellation signal from caller (e.g. when enough leads are already enriched) */
   shouldStop?: () => boolean;
+  /**
+   * Internal: call the Places API without a regionCode (used by the
+   * "Any country" fan-out so generic queries aren't biased to one region).
+   */
+  omitRegionCode?: boolean;
 }): Promise<PlaceResult[]> {
   // Allow up to 2500 places so high volume requests (e.g. 1000 leads) succeed
   const wanted = Math.max(1, Math.min(params.limit ?? 10, 2500));
+
+  if (isAnyCountry(params.country)) {
+    return searchAnyCountryPlaces({ ...params, wanted });
+  }
+
+  const resultCountry = getTierOneCountry(params.country).code;
   const workers = wanted >= 500 ? 8 : wanted >= 200 ? 6 : wanted >= 100 ? 5 : wanted >= 40 ? 3 : 2;
 
   const pool = buildPlacesQueries({ ...params, wanted });
   const isCountryWide = params.locationScope === "country";
-  const hasCustomStopper = typeof params.shouldStop === "function";
+  // The "Any country" fan-out passes a stopper but must keep the per-country
+  // budget small, so it opts out of the aggressive volume path.
+  const hasCustomStopper =
+    typeof params.shouldStop === "function" && !params.omitRegionCode;
 
   const queryBudget = hasCustomStopper
     ? isCountryWide
@@ -920,7 +956,7 @@ export async function searchGooglePlaces(params: {
       const apiPlaces = await searchOfficialPlaces({
         queries: selectedQueries,
         wanted,
-        regionCode: getTierOneCountry(params.country).code,
+        regionCode: params.omitRegionCode ? undefined : resultCountry,
       });
       const newBatch: PlaceResult[] = [];
       for (const p of apiPlaces) {
@@ -928,8 +964,9 @@ export async function searchGooglePlaces(params: {
         if (params.shouldStop?.()) break;
         const key = p.placeId || p.name;
         if (!deduped.has(key)) {
-          deduped.set(key, p);
-          newBatch.push(p);
+          const tagged: PlaceResult = { ...p, country: resultCountry };
+          deduped.set(key, tagged);
+          newBatch.push(tagged);
         }
       }
       if (newBatch.length > 0 && params.onPlacesBatch) {
@@ -1001,6 +1038,7 @@ export async function searchGooglePlaces(params: {
               `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`,
             latitude: row.latitude ?? fromUrl.lat,
             longitude: row.longitude ?? fromUrl.lng,
+            country: resultCountry,
           };
           deduped.set(placeId, item);
           newBatch.push(item);
@@ -1030,6 +1068,81 @@ export async function searchGooglePlaces(params: {
         sanitizePlacesErrorForClient(detail) || PUBLIC_PLACES_SEARCH_UNAVAILABLE,
       );
     }
+  }
+
+  return Array.from(deduped.values()).slice(0, wanted);
+}
+
+/**
+ * "Any country": fan the existing country-wide logic across every Tier 1
+ * country. The `wanted` budget is shared (wanted / 5 each, min 10) so the
+ * total query volume stays close to a single country-wide search. Places are
+ * called without a regionCode, and each result keeps its real country
+ * (parsed from the address when possible, else the per-query country).
+ */
+async function searchAnyCountryPlaces(params: {
+  industry: string;
+  wanted: number;
+  onPlacesBatch?: (places: PlaceResult[]) => Promise<void> | void;
+  shouldStop?: () => boolean;
+}): Promise<PlaceResult[]> {
+  const { wanted } = params;
+  const perCountry = Math.max(
+    10,
+    Math.ceil(wanted / TIER_ONE_COUNTRIES.length),
+  );
+  const deduped = new Map<string, PlaceResult>();
+  const failures: string[] = [];
+
+  const absorb = async (incoming: PlaceResult[], fallbackCountry: string) => {
+    const newBatch: PlaceResult[] = [];
+    for (const p of incoming) {
+      if (params.shouldStop?.()) break;
+      if (deduped.size >= wanted) break;
+      const key = p.placeId || p.name;
+      if (deduped.has(key)) continue;
+      const tagged: PlaceResult = {
+        ...p,
+        country: detectCountryFromAddress(p.address) ?? p.country ?? fallbackCountry,
+      };
+      deduped.set(key, tagged);
+      newBatch.push(tagged);
+    }
+    if (newBatch.length > 0 && params.onPlacesBatch) {
+      try {
+        await params.onPlacesBatch(newBatch);
+      } catch {
+        /* ignore callback errors */
+      }
+    }
+  };
+
+  await mapPool([...TIER_ONE_COUNTRIES], 2, async (country) => {
+    if (params.shouldStop?.() || deduped.size >= wanted) return;
+    try {
+      const rows = await searchGooglePlaces({
+        industry: params.industry,
+        country: country.code,
+        locationScope: "country",
+        limit: perCountry,
+        omitRegionCode: true,
+        onPlacesBatch: (batch) => absorb(batch, country.code),
+        shouldStop: () => Boolean(params.shouldStop?.()) || deduped.size >= wanted,
+      });
+      // Rows already streamed via onPlacesBatch are deduped away here.
+      await absorb(rows, country.code);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      failures.push(`${country.code} → ${msg}`);
+      logGooglePlacesError("places-any-country", `${country.code} → ${msg}`);
+    }
+  });
+
+  if (!deduped.size && failures.length === TIER_ONE_COUNTRIES.length) {
+    const detail = failures[0].split(" → ")[1] ?? "";
+    throw new GooglePlacesError(
+      sanitizePlacesErrorForClient(detail) || PUBLIC_PLACES_SEARCH_UNAVAILABLE,
+    );
   }
 
   return Array.from(deduped.values()).slice(0, wanted);

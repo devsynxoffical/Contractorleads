@@ -13,21 +13,43 @@ export async function POST(request: Request) {
 
   const rawBody = await request.text();
 
-  // If webhook secret is configured, verify signature
-  if (secrets.webhookSecret && signature) {
-    const isValid = verifyRazorpayWebhookSignature({
+  // Never process an unverified payload. Without a configured secret we
+  // cannot verify anything, so refuse (503) rather than trust the body.
+  if (!secrets.webhookSecret) {
+    console.warn(
+      "[razorpay webhook] RAZORPAY_WEBHOOK_SECRET is not configured — event ignored",
+    );
+    return NextResponse.json(
+      { error: "Webhook secret not configured" },
+      { status: 503 },
+    );
+  }
+  if (
+    !signature ||
+    !verifyRazorpayWebhookSignature({
       body: rawBody,
       signature,
       webhookSecret: secrets.webhookSecret,
-    });
-    if (!isValid) {
-      return NextResponse.json({ error: "Invalid webhook signature" }, { status: 400 });
-    }
+    })
+  ) {
+    return NextResponse.json({ error: "Invalid webhook signature" }, { status: 401 });
   }
 
-  let event: any = null;
+  type RazorpayEntity = {
+    id?: string;
+    order_id?: string;
+    notes?: Record<string, string | undefined>;
+  };
+  type RazorpayEvent = {
+    event?: string;
+    payload?: {
+      payment?: { entity?: RazorpayEntity };
+      order?: { entity?: RazorpayEntity };
+    };
+  };
+  let event: RazorpayEvent;
   try {
-    event = JSON.parse(rawBody);
+    event = JSON.parse(rawBody) as RazorpayEvent;
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }

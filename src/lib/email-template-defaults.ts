@@ -3,6 +3,9 @@ export const EMAIL_TEMPLATE_KEYS = [
   "welcome",
   "reset",
   "scrape",
+  "checkout_recovery_1",
+  "checkout_recovery_2",
+  "checkout_recovery_3",
 ] as const;
 
 export type EmailTemplateKey = (typeof EMAIL_TEMPLATE_KEYS)[number];
@@ -31,7 +34,10 @@ export type EmailTemplateFields = {
   secondaryCtaPath: string;
 };
 
-/** Placeholders: {{name}} {{industry}} {{location}} {{leadCount}} {{hotCount}} {{warmCount}} */
+/**
+ * Placeholders: {{name}} {{industry}} {{location}} {{leadCount}} {{hotCount}} {{warmCount}}
+ * Checkout recovery adds: {{planName}} {{planSummary}} {{credits}} {{priceLabel}} {{freeLeads}}
+ */
 export const EMAIL_TEMPLATE_DEFAULTS: Record<EmailTemplateKey, EmailTemplateFields> = {
   verify: {
     key: "verify",
@@ -126,6 +132,78 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<EmailTemplateKey, EmailTemplateFiel
       "Save leads to your pipeline, export CSV, or sync status updates to Slack and GoHighLevel.",
     secondaryCtaLabel: "Open pipeline",
     secondaryCtaPath: "/leads/pipeline",
+  },
+  checkout_recovery_1: {
+    key: "checkout_recovery_1",
+    label: "Checkout recovery · 1 (1 hour)",
+    enabled: true,
+    subject: "Your {{planName}} checkout is still open",
+    preheader: "No charge was made. Pick up where you left off whenever you’re ready.",
+    heroTitle: "Finish setting up {{planName}}?",
+    heroSubtitle: "Nothing was charged — your spot is saved.",
+    headline: "",
+    body: "Hi {{name}}, you started checkout for {{planName}} ({{priceLabel}}) a little while ago but didn’t finish. No charge was made. {{planSummary}} You still have your {{freeLeads}} free leads to use in the meantime, and you can cancel anytime.",
+    ctaLabel: "Finish checkout",
+    ctaPath: "/billing",
+    feature1Title: "",
+    feature1Body: "",
+    feature2Title: "",
+    feature2Body: "",
+    feature3Title: "",
+    feature3Body: "",
+    secondaryTitle: "Hit a snag?",
+    secondaryBody:
+      "If the payment form gave you trouble or you have a question about the plan, just reply to this email — a real person reads it.",
+    secondaryCtaLabel: "",
+    secondaryCtaPath: "",
+  },
+  checkout_recovery_2: {
+    key: "checkout_recovery_2",
+    label: "Checkout recovery · 2 (24 hours)",
+    enabled: true,
+    subject: "What you get with {{planName}}",
+    preheader: "{{planSummary}} Cancel anytime.",
+    heroTitle: "Still thinking about {{planName}}?",
+    heroSubtitle: "Here’s what it unlocks, in plain terms.",
+    headline: "",
+    body: "Hi {{name}}, quick follow-up on the {{planName}} checkout you started yesterday. {{planSummary}} 1 credit = 1 lead, and you keep the {{freeLeads}} free leads already in your account. Here’s what customers use most:",
+    ctaLabel: "Complete {{planName}} checkout",
+    ctaPath: "/billing",
+    feature1Title: "Live Google data",
+    feature1Body: "Every search pulls fresh Google Places results, scored Hot / Warm / Nurture so you call the right contractors first.",
+    feature2Title: "Owner names",
+    feature2Body: "We surface the owner or decision-maker where available, so you’re not stuck talking to a front desk.",
+    feature3Title: "Outreach scripts",
+    feature3Body: "Call, email, and text scripts written for contractor sales — copy, personalize, send.",
+    secondaryTitle: "No lock-in",
+    secondaryBody:
+      "{{priceLabel}}, billed as you go. Cancel anytime from Plans & Billing — no calls, no forms.",
+    secondaryCtaLabel: "",
+    secondaryCtaPath: "",
+  },
+  checkout_recovery_3: {
+    key: "checkout_recovery_3",
+    label: "Checkout recovery · 3 (72 hours, last nudge)",
+    enabled: true,
+    subject: "Last note about {{planName}}",
+    preheader: "We’ll stop here — the link still works whenever you’re ready.",
+    heroTitle: "Last one from us",
+    heroSubtitle: "Your {{planName}} checkout is still open if you want it.",
+    headline: "",
+    body: "Hi {{name}}, this is the last reminder about the {{planName}} checkout you started. {{planSummary}} If now isn’t the right time, no problem — your account and {{freeLeads}} free leads stay exactly as they are, and you can upgrade later in one click.",
+    ctaLabel: "Finish checkout",
+    ctaPath: "/billing",
+    feature1Title: "",
+    feature1Body: "",
+    feature2Title: "",
+    feature2Body: "",
+    feature3Title: "",
+    feature3Body: "",
+    secondaryTitle: "",
+    secondaryBody:
+      "Questions? Reply to this email and we’ll help you pick the right plan.",
+    secondaryCtaLabel: "",
+    secondaryCtaPath: "",
   },
 };
 

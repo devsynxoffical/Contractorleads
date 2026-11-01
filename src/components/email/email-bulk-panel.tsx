@@ -14,6 +14,10 @@ import {
   HiOutlineClock,
 } from "react-icons/hi2";
 import { OUTREACH_HOOKS } from "@/lib/outreach-hooks";
+import {
+  AddonLockNotice,
+  isMessagingAddonLocked,
+} from "@/components/billing/addon-lock-notice";
 
 type PickLead = {
   id: string;
@@ -61,6 +65,7 @@ type BulkResult = {
 const VARS = ["businessName", "city", "industry", "ownerName"];
 
 export function EmailBulkPanel({
+  hasAddon = true,
   smtpReady,
   onNeedSetup,
 }: {
@@ -79,6 +84,8 @@ export function EmailBulkPanel({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<BulkResult | null>(null);
+  // Flipped to true when the server answers 402 messaging_addon_required.
+  const [addonLocked, setAddonLocked] = useState(false);
 
   // Segments state
   const [segments, setSegments] = useState<Segment[]>([]);
@@ -221,7 +228,13 @@ export function EmailBulkPanel({
         }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Bulk send failed");
+      if (!res.ok) {
+        if (isMessagingAddonLocked(res, json)) {
+          setAddonLocked(true);
+          return;
+        }
+        throw new Error(json.error || "Bulk send failed");
+      }
       setResults({
         sent: json.sent,
         skipped: json.skipped,
@@ -234,6 +247,10 @@ export function EmailBulkPanel({
     } finally {
       setBusy(false);
     }
+  }
+
+  if (!hasAddon || addonLocked) {
+    return <AddonLockNotice feature="email" />;
   }
 
   if (!smtpReady) {

@@ -138,7 +138,7 @@ export function AllLeadsTableBody({
   return (
     <>
       {leads.length > 0 ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-[#faf8fb] px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-[var(--canvas)] px-4 py-3">
           <label className="flex items-center gap-2 text-[13px] font-medium text-ink">
             <input
               type="checkbox"
@@ -185,7 +185,7 @@ export function AllLeadsTableBody({
       ) : null}
 
       <table className="w-full min-w-[900px] text-left text-sm">
-        <thead className="border-b border-border bg-[#faf8fb] text-xs uppercase tracking-wide text-ink-muted">
+        <thead className="border-b border-border bg-[var(--canvas)] text-xs uppercase tracking-wide text-ink-muted">
           <tr>
             <th className="w-10 px-4 py-3 font-medium" aria-label="Select" />
             <th className="px-4 py-3 font-medium">Business & Industry</th>

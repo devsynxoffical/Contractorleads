@@ -14,6 +14,7 @@ import {
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input, Label, Select } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { leadDetailHref } from "@/lib/nav-context";
 
@@ -78,6 +79,83 @@ type HubPayload = {
 
 type Banner = { type: "ok" | "err"; text: string };
 
+type AdSearchResult = {
+  ads: HubAd[];
+  totalCount: number;
+  searchUrl: string;
+  source: "api" | "link";
+  message?: string;
+  country: string;
+};
+
+const AD_SEARCH_COUNTRIES = [
+  { code: "US", label: "United States" },
+  { code: "CA", label: "Canada" },
+  { code: "GB", label: "United Kingdom" },
+  { code: "AU", label: "Australia" },
+  { code: "NZ", label: "New Zealand" },
+  { code: "ALL", label: "All countries" },
+] as const;
+
+function formatDeliveryStart(value?: string) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toLocaleDateString();
+}
+
+/** Ad cards shared by the per-lead list and the page-name search results. */
+function AdList({
+  ads,
+  max,
+  moreLabel,
+}: {
+  ads: HubAd[];
+  max?: number;
+  moreLabel?: string;
+}) {
+  const shown = max ? ads.slice(0, max) : ads;
+  return (
+    <ul className="space-y-2 rounded-xl bg-[var(--input-bg)]/50 p-3">
+      {shown.map((ad) => {
+        const started = formatDeliveryStart(ad.adDeliveryStartTime);
+        return (
+          <li
+            key={ad.id || ad.adSnapshotUrl}
+            className="text-[12px] leading-snug text-ink-muted"
+          >
+            <span className="font-medium text-ink">{ad.pageName || "Ad"}</span>
+            {ad.placementLabels.length ? (
+              <span> · {ad.placementLabels.join(", ")}</span>
+            ) : null}
+            {started ? <span> · since {started}</span> : null}
+            {ad.adCreativeBodies[0] ? (
+              <p className="mt-0.5 line-clamp-2 text-ink-faint">
+                {ad.adCreativeBodies[0]}
+              </p>
+            ) : null}
+            {ad.adSnapshotUrl ? (
+              <a
+                href={ad.adSnapshotUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1 inline-flex items-center gap-1 font-semibold text-brand-600 hover:underline"
+              >
+                View ad
+                <HiOutlineArrowTopRightOnSquare className="h-3 w-3" />
+              </a>
+            ) : null}
+          </li>
+        );
+      })}
+      {max && ads.length > max ? (
+        <li className="text-[12px] text-ink-muted">
+          +{ads.length - max} {moreLabel ?? "more ads"}
+        </li>
+      ) : null}
+    </ul>
+  );
+}
+
 function bannerFromSearchParams(searchParams: URLSearchParams): Banner | null {
   if (searchParams.get("connected") === "1") {
     return { type: "ok", text: "Facebook connected." };
@@ -113,6 +191,13 @@ export function FacebookHubView() {
     bannerFromSearchParams(searchParams),
   );
   const cleanedQuery = useRef(false);
+  const [adQuery, setAdQuery] = useState("");
+  const [adCountry, setAdCountry] = useState<string>("US");
+  const [adSearching, setAdSearching] = useState(false);
+  const [adSearchError, setAdSearchError] = useState<string | null>(null);
+  const [adSearchResult, setAdSearchResult] = useState<AdSearchResult | null>(
+    null,
+  );
 
   const applyHubPayload = useCallback(
     (json: HubPayload & { error?: string }, ok: boolean) => {
@@ -200,6 +285,42 @@ export function FacebookHubView() {
     }
   }
 
+  async function searchAds(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const query = adQuery.trim();
+    if (!query || adSearching) return;
+    setAdSearching(true);
+    setAdSearchError(null);
+    try {
+      const res = await fetch("/api/facebook/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query, country: adCountry }),
+      });
+      const json = (await res.json()) as Partial<AdSearchResult> & {
+        error?: string;
+      };
+      if (!res.ok) {
+        setAdSearchError(json.error || "Couldn’t search the Ads Library.");
+        setAdSearchResult(null);
+        return;
+      }
+      setAdSearchResult({
+        ads: Array.isArray(json.ads) ? json.ads : [],
+        totalCount: json.totalCount ?? 0,
+        searchUrl: json.searchUrl ?? "",
+        source: json.source ?? "link",
+        message: json.message,
+        country: json.country ?? adCountry,
+      });
+    } catch {
+      setAdSearchError("Couldn’t search the Ads Library. Try again.");
+      setAdSearchResult(null);
+    } finally {
+      setAdSearching(false);
+    }
+  }
+
   const connection = data?.connection;
   const connected = connection?.connected === true;
   const leads = data?.leads ?? [];
@@ -248,6 +369,93 @@ export function FacebookHubView() {
           <p>{banner.text}</p>
         </div>
       )}
+
+      <div className="rounded-2xl border border-border bg-[var(--surface)] p-5 shadow-[var(--shadow-soft)]">
+        <div className="flex items-center gap-2">
+          <HiOutlineMegaphone className="h-5 w-5 text-brand-600" />
+          <h2 className="text-[15px] font-semibold text-ink">
+            Search the Ads Library
+          </h2>
+        </div>
+        <p className="mt-1.5 text-[13px] leading-relaxed text-ink-muted">
+          Look up any advertiser by Facebook Page name. Wrap the page name in
+          quotes for an exact match.
+        </p>
+        <form
+          onSubmit={searchAds}
+          className="mt-4 grid gap-3 sm:grid-cols-[1fr_180px_auto] sm:items-end"
+        >
+          <div className="space-y-2">
+            <Label htmlFor="fb-ad-search">Facebook Page name</Label>
+            <Input
+              id="fb-ad-search"
+              value={adQuery}
+              onChange={(e) => setAdQuery(e.target.value)}
+              placeholder={'Search ads by exact Facebook Page name, e.g. "Summit Peak Roofing"'}
+              maxLength={200}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="fb-ad-country">Country</Label>
+            <Select
+              id="fb-ad-country"
+              value={adCountry}
+              onChange={(e) => setAdCountry(e.target.value)}
+            >
+              {AD_SEARCH_COUNTRIES.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.label}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <Button type="submit" loading={adSearching} disabled={!adQuery.trim()}>
+            Search
+          </Button>
+        </form>
+
+        {adSearchError ? (
+          <div className="mt-3 flex items-start gap-2 rounded-xl bg-amber-50 px-4 py-3 text-[13px] text-amber-950 ring-1 ring-amber-200/80">
+            <HiOutlineExclamationCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <p>{adSearchError}</p>
+          </div>
+        ) : null}
+
+        {adSearchResult ? (
+          <div className="mt-4 space-y-3">
+            {adSearchResult.message ? (
+              <div className="flex items-start gap-2 rounded-xl bg-[var(--input-bg)]/60 px-4 py-3 text-[13px] text-ink-muted ring-1 ring-border">
+                <HiOutlineExclamationCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <p>{adSearchResult.message}</p>
+              </div>
+            ) : null}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-[13px] font-medium text-ink">
+                {adSearchResult.ads.length} active ad
+                {adSearchResult.ads.length === 1 ? "" : "s"}
+                {adSearchResult.country === "ALL"
+                  ? " across all countries"
+                  : ` reaching ${adSearchResult.country}`}
+              </p>
+              {adSearchResult.searchUrl ? (
+                <a
+                  href={adSearchResult.searchUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border bg-[var(--surface)] px-3 text-[12px] font-semibold text-ink-muted transition hover:border-brand-200 hover:text-brand-700"
+                >
+                  Open in Ads Library
+                  <HiOutlineArrowTopRightOnSquare className="h-3.5 w-3.5" />
+                </a>
+              ) : null}
+            </div>
+            {adSearchResult.ads.length > 0 ? (
+              <AdList ads={adSearchResult.ads} />
+            ) : null}
+          </div>
+        ) : null}
+      </div>
 
       <div className="rounded-2xl border border-border bg-[var(--surface)] p-5 shadow-[var(--shadow-soft)]">
         {loading && !connection ? (
@@ -437,45 +645,17 @@ export function FacebookHubView() {
                   </div>
 
                   {lead.ads.length > 0 ? (
-                    <ul className="mt-3 space-y-2 rounded-xl bg-[var(--input-bg)]/50 p-3">
-                      {lead.ads.slice(0, 3).map((ad) => (
-                        <li
-                          key={ad.id || ad.adSnapshotUrl}
-                          className="text-[12px] leading-snug text-ink-muted"
-                        >
-                          <span className="font-medium text-ink">
-                            {ad.pageName || "Ad"}
-                          </span>
-                          {ad.placementLabels.length ? (
-                            <span>
-                              {" "}
-                              · {ad.placementLabels.join(", ")}
-                            </span>
-                          ) : null}
-                          {ad.adCreativeBodies[0] ? (
-                            <p className="mt-0.5 line-clamp-2 text-ink-faint">
-                              {ad.adCreativeBodies[0]}
-                            </p>
-                          ) : null}
-                          {ad.adSnapshotUrl ? (
-                            <a
-                              href={ad.adSnapshotUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="mt-1 inline-flex items-center gap-1 font-semibold text-brand-600 hover:underline"
-                            >
-                              View ad
-                              <HiOutlineArrowTopRightOnSquare className="h-3 w-3" />
-                            </a>
-                          ) : null}
-                        </li>
-                      ))}
-                      {lead.ads.length > 3 ? (
-                        <li className="text-[12px] text-ink-muted">
-                          +{lead.ads.length - 3} more ads on this lead
-                        </li>
-                      ) : null}
-                    </ul>
+                    <div className="mt-3">
+                      <AdList
+                        ads={lead.ads}
+                        max={3}
+                        moreLabel="more ads on this lead"
+                      />
+                    </div>
+                  ) : lead.adsChecked && lead.message ? (
+                    <p className="mt-3 text-[12px] text-ink-muted">
+                      {lead.message}
+                    </p>
                   ) : null}
                 </div>
               );

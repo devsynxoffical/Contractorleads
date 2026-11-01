@@ -29,6 +29,10 @@ import {
 } from "react-icons/hi2";
 import { cn } from "@/lib/utils";
 import {
+  MESSAGING_ADDON_UPGRADE_HREF,
+  isMessagingAddonLocked,
+} from "@/components/billing/addon-lock-notice";
+import {
   getLocalTimeInTimezone,
   isWithinSendingWindow,
 } from "@/lib/campaign-timezone";
@@ -94,6 +98,17 @@ export function CampaignsDashboard() {
     void loadCampaigns();
   }, []);
 
+  /** 402 messaging_addon_required → offer to open Plans & Billing. */
+  function promptAddonUpgrade(error?: string) {
+    if (
+      confirm(
+        `${error || "Sending campaign email requires the Messaging add-on."}\n\nOpen Plans & Billing to unlock messaging?`,
+      )
+    ) {
+      router.push(MESSAGING_ADDON_UPGRADE_HREF);
+    }
+  }
+
   async function handleCampaignAction(id: string, action: "launch" | "pause" | "resume" | "stop") {
     setActionLoadingId(id);
     try {
@@ -104,6 +119,9 @@ export function CampaignsDashboard() {
       });
       if (res.ok) {
         await loadCampaigns();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        if (isMessagingAddonLocked(res, data)) promptAddonUpgrade(data.error);
       }
     } catch {
       /* ignore */
@@ -182,6 +200,8 @@ export function CampaignsDashboard() {
           alert("0 emails dispatched. No prospects are currently eligible or due.");
         }
         await loadCampaigns();
+      } else if (isMessagingAddonLocked(res, data)) {
+        promptAddonUpgrade(data.error);
       } else {
         alert(data.error || "Batch execution failed.");
       }
@@ -346,8 +366,8 @@ export function CampaignsDashboard() {
 
       {/* Action Bar & Filters */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-[var(--surface)] p-4 shadow-sm">
-        <div className="flex flex-1 flex-wrap items-center gap-2.5 min-w-[280px]">
-          <div className="relative flex-1 min-w-[200px] max-w-sm">
+        <div className="flex w-full flex-1 flex-wrap items-center gap-2.5 sm:w-auto sm:min-w-[280px]">
+          <div className="relative min-w-[160px] flex-1 sm:max-w-sm">
             <HiOutlineMagnifyingGlass className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
             <input
               type="text"

@@ -25,6 +25,8 @@ import {
   SubpageStats,
 } from "@/components/marketing/marketing-subpage";
 import { Reveal } from "@/components/marketing/marketing-ui";
+import { ADMIN_PLANS } from "@/lib/plans";
+import { DEFAULT_COMMISSION_PERCENT } from "@/lib/referral-constants";
 import {
   JsonLd,
   breadcrumbJsonLd,
@@ -33,6 +35,19 @@ import {
 } from "@/components/seo/json-ld";
 import { buildMetadata } from "@/lib/seo";
 import { AffiliateEarningsCalculator } from "./calculator";
+
+const PRICE = {
+  starter: ADMIN_PLANS.find((p) => p.value === "starter")?.priceMonthly ?? 0,
+  growth: ADMIN_PLANS.find((p) => p.value === "growth")?.priceMonthly ?? 0,
+  agency: ADMIN_PLANS.find((p) => p.value === "agency")?.priceMonthly ?? 0,
+};
+const RATE_LABEL = `${DEFAULT_COMMISSION_PERCENT}%`;
+function commission(price: number) {
+  return Math.round(price * DEFAULT_COMMISSION_PERCENT) / 100;
+}
+function usd(n: number) {
+  return `$${n.toFixed(2)}`;
+}
 
 export const metadata: Metadata = buildMetadata({
   title: "Contractor Leads Affiliate Program: 30% Recurring Commission",
@@ -63,7 +78,7 @@ const AFFILIATE_FAQS = [
   },
   {
     q: "Which payout methods are supported?",
-    a: "We support PayPal (instant electronic payment), Direct Bank Wire / ACH transfer, and Wise. Payout requests are verified and disbursed promptly by our accounting team.",
+    a: "We support PayPal, bank transfer (ACH/wire) or other arrangements agreed with our accounting team. Payout requests are verified and disbursed promptly.",
   },
   {
     q: "How long is the tracking cookie window?",
@@ -170,7 +185,7 @@ export default function AffiliatesMarketingPage() {
           <SubpageCard
             icon={<HiOutlineCurrencyDollar className="h-5 w-5" />}
             title="3. Earn 30% Recurring Cash"
-            body="Receive 30% cash commission on every initial purchase and ongoing subscription renewal. Once your balance hits $500, request a direct payout via PayPal, Bank Wire, or Wise."
+            body="Receive 30% cash commission on every initial purchase and ongoing subscription renewal. Once your balance hits $500, request a direct payout via PayPal, bank transfer (ACH/wire) or other."
           />
         </div>
       </SubpageSection>
@@ -206,7 +221,7 @@ export default function AffiliatesMarketingPage() {
           <SubpageCard
             icon={<HiOutlineBanknotes className="h-5 w-5" />}
             title="Reliable & Fast Payouts"
-            body="Request your payout as soon as your payable commission balance hits $500. We disburse payouts via PayPal, ACH/Wire, or Wise."
+            body="Request your payout as soon as your payable commission balance hits $500. We disburse payouts via PayPal, bank transfer (ACH/wire) or other."
           />
           <SubpageCard
             icon={<HiOutlineGift className="h-5 w-5" />}
@@ -242,14 +257,14 @@ export default function AffiliatesMarketingPage() {
                     Starter Plan
                   </td>
                   <td className="px-5 py-4 tabular-nums text-slate-600 dark:text-ink-muted">
-                    $19.00 / mo
+                    {usd(PRICE.starter)} / mo
                   </td>
-                  <td className="px-5 py-4 font-semibold text-fuchsia-600">30%</td>
+                  <td className="px-5 py-4 font-semibold text-fuchsia-600">{RATE_LABEL}</td>
                   <td className="px-5 py-4 tabular-nums font-bold text-emerald-600">
-                    $5.70 / mo
+                    {usd(commission(PRICE.starter))} / mo
                   </td>
                   <td className="px-5 py-4 tabular-nums font-semibold text-slate-900 dark:text-white">
-                    $68.40 / year
+                    {usd(commission(PRICE.starter) * 12)} / year
                   </td>
                 </tr>
                 <tr className="hover:bg-slate-50/50 dark:hover:bg-white/5">
@@ -257,14 +272,14 @@ export default function AffiliatesMarketingPage() {
                     Growth Plan (Most Popular)
                   </td>
                   <td className="px-5 py-4 tabular-nums text-slate-600 dark:text-ink-muted">
-                    $49.00 / mo
+                    {usd(PRICE.growth)} / mo
                   </td>
-                  <td className="px-5 py-4 font-semibold text-fuchsia-600">30%</td>
+                  <td className="px-5 py-4 font-semibold text-fuchsia-600">{RATE_LABEL}</td>
                   <td className="px-5 py-4 tabular-nums font-bold text-emerald-600">
-                    $14.70 / mo
+                    {usd(commission(PRICE.growth))} / mo
                   </td>
                   <td className="px-5 py-4 tabular-nums font-semibold text-slate-900 dark:text-white">
-                    $176.40 / year
+                    {usd(commission(PRICE.growth) * 12)} / year
                   </td>
                 </tr>
                 <tr className="hover:bg-slate-50/50 dark:hover:bg-white/5">
@@ -272,14 +287,14 @@ export default function AffiliatesMarketingPage() {
                     Agency Plan
                   </td>
                   <td className="px-5 py-4 tabular-nums text-slate-600 dark:text-ink-muted">
-                    $99.00 / mo
+                    {usd(PRICE.agency)} / mo
                   </td>
-                  <td className="px-5 py-4 font-semibold text-fuchsia-600">30%</td>
+                  <td className="px-5 py-4 font-semibold text-fuchsia-600">{RATE_LABEL}</td>
                   <td className="px-5 py-4 tabular-nums font-bold text-emerald-600">
-                    $29.70 / mo
+                    {usd(commission(PRICE.agency))} / mo
                   </td>
                   <td className="px-5 py-4 tabular-nums font-semibold text-slate-900 dark:text-white">
-                    $356.40 / year
+                    {usd(commission(PRICE.agency) * 12)} / year
                   </td>
                 </tr>
                 <tr className="bg-fuchsia-50/40 hover:bg-fuchsia-50/60 dark:bg-fuchsia-500/10 dark:hover:bg-fuchsia-500/15">
@@ -289,7 +304,7 @@ export default function AffiliatesMarketingPage() {
                   <td className="px-5 py-4 tabular-nums text-slate-600 dark:text-ink-muted">
                     $790.00 / yr
                   </td>
-                  <td className="px-5 py-4 font-semibold text-fuchsia-600">30%</td>
+                  <td className="px-5 py-4 font-semibold text-fuchsia-600">{RATE_LABEL}</td>
                   <td className="px-5 py-4 tabular-nums font-bold text-emerald-600">
                     $237.00 (Lump sum)
                   </td>
@@ -369,7 +384,7 @@ export default function AffiliatesMarketingPage() {
         primaryLabel="Join the Affiliate Program"
         secondaryHref="/login?redirect=/referrals"
         secondaryLabel="Affiliate Portal Login"
-        note="Instant approval · $500 minimum payout · Payouts via PayPal, Wire & Wise"
+        note="Instant approval · $500 minimum payout · Payouts via PayPal, bank transfer or other"
       />
     </MarketingSiteShell>
   );

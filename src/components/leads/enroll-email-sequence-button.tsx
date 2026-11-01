@@ -1,6 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import {
+  MESSAGING_ADDON_UPGRADE_HREF,
+  isMessagingAddonLocked,
+} from "@/components/billing/addon-lock-notice";
 
 export function EnrollEmailSequenceButton({
   savedLeadId,
@@ -11,6 +16,7 @@ export function EnrollEmailSequenceButton({
 }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [addonLocked, setAddonLocked] = useState(false);
 
   async function enroll() {
     if (!hasEmail) {
@@ -27,6 +33,10 @@ export function EnrollEmailSequenceButton({
     const data = await res.json();
     setBusy(false);
     if (!res.ok) {
+      if (isMessagingAddonLocked(res, data)) {
+        setAddonLocked(true);
+        return;
+      }
       setMsg(data.error || "Failed");
       return;
     }
@@ -47,6 +57,18 @@ export function EnrollEmailSequenceButton({
       >
         {busy ? "Enrolling…" : "Enroll in nurture"}
       </button>
+      {addonLocked ? (
+        <span className="text-[12px] text-ink-muted">
+          Sequences need the{" "}
+          <Link
+            href={MESSAGING_ADDON_UPGRADE_HREF}
+            className="font-semibold text-brand-600 underline"
+          >
+            Messaging add-on
+          </Link>
+          .
+        </span>
+      ) : null}
       {msg ? <span className="text-[12px] text-ink-muted">{msg}</span> : null}
     </div>
   );
