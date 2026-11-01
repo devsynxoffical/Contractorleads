@@ -1298,6 +1298,9 @@ model WarmupMessage {
   toEmail      String
   messageId    String?
   warmupMarker String
+  /// Stored so users can read what each mailbox sent and received (null on rows logged before this field existed)
+  subject      String?
+  body         String?
   landed       String    @default("inbox") // inbox | spam | promotions
   rescued      Boolean   @default(false)
   replied      Boolean   @default(false)

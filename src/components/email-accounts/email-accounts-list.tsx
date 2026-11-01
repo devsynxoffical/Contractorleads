@@ -30,6 +30,7 @@ import { DnsFixDrawer } from "./dns-fix-drawer";
 import { AnalyticsDrawer } from "./analytics-drawer";
 import { AddAccountModal } from "./add-account-modal";
 import { WarmupSettingsModal } from "./warmup-settings-modal";
+import { WarmupMessagesDrawer } from "./warmup-messages-drawer";
 
 export function EmailAccountsList() {
   const [data, setData] = useState<any>(null);
@@ -44,6 +45,7 @@ export function EmailAccountsList() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [fixDrawerDomain, setFixDrawerDomain] = useState<string | null>(null);
   const [analyticsMailbox, setAnalyticsMailbox] = useState<string | null>(null);
+  const [warmupInboxMailbox, setWarmupInboxMailbox] = useState<string | null>(null);
   const [warmupSettingsMailbox, setWarmupSettingsMailbox] = useState<any | null>(null);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [dnsRefreshingDomain, setDnsRefreshingDomain] = useState<string | null>(null);
@@ -835,6 +837,16 @@ export function EmailAccountsList() {
                               <HiOutlineFire className="w-4 h-4" />
                             </button>
 
+                            {/* Warmup emails sent / received by this mailbox */}
+                            <button
+                              onClick={() => setWarmupInboxMailbox(row.email)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                              title="View warmup emails sent and received"
+                              aria-label="View warmup emails"
+                            >
+                              <HiOutlineEnvelope className="w-4 h-4" />
+                            </button>
+
                             {/* Analytics Chart Drawer */}
                             <button
                               onClick={() => setAnalyticsMailbox(row.email)}
@@ -888,6 +900,16 @@ export function EmailAccountsList() {
                                 </button>
                                 <button
                                   onClick={() => {
+                                    setWarmupInboxMailbox(row.email);
+                                    setActiveMenuId(null);
+                                  }}
+                                  className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                                >
+                                  <HiOutlineEnvelope className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                                  View warmup emails
+                                </button>
+                                <button
+                                  onClick={() => {
                                     setAnalyticsMailbox(row.email);
                                     setActiveMenuId(null);
                                   }}
@@ -930,6 +952,13 @@ export function EmailAccountsList() {
             data?.domainFolders?.find((f: any) => f.domain === fixDrawerDomain)?.dns
           }
           onRefreshDns={refreshDomainDns}
+        />
+      )}
+
+      {warmupInboxMailbox && (
+        <WarmupMessagesDrawer
+          mailboxEmail={warmupInboxMailbox}
+          onClose={() => setWarmupInboxMailbox(null)}
         />
       )}
 
