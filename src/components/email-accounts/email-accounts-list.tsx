@@ -290,6 +290,18 @@ export function EmailAccountsList() {
 
   return (
     <div className="space-y-6">
+      {/* Platform admins: the sending gateway itself had trouble recently */}
+      {data?.summary?.gatewayIssue && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+          <p className="text-sm font-bold">Sending gateway had trouble (admin only)</p>
+          <p className="mt-0.5 text-xs">
+            {data.summary.gatewayIssue.count} request{data.summary.gatewayIssue.count === 1 ? "" : "s"} failed at the gateway in the last hour,
+            last at {new Date(data.summary.gatewayIssue.at).toLocaleTimeString()}. Mailboxes are not marked as broken for this; sends retry on the next cycle.
+          </p>
+          <p className="mt-1 break-all font-mono text-[11px] opacity-80">{data.summary.gatewayIssue.error}</p>
+        </div>
+      )}
+
       {/* Mailboxes that cannot send, each with a direct fix */}
       {(() => {
         const failing = (data?.mailboxes || []).filter((m: any) => m.sendStatus === "failing");

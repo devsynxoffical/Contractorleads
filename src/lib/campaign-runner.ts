@@ -1,3 +1,4 @@
+import { isPlatformProblem } from "@/lib/mailbox-send-status";
 import { prisma } from "@/lib/prisma";
 import { randomBytes } from "node:crypto";
 import {
@@ -273,7 +274,8 @@ export async function processCampaignSends(opts?: {
         const failing =
           w.consecutiveSendFailures >= 2 &&
           Boolean(w.lastSendErrorAt) &&
-          (!w.lastSendOkAt || w.lastSendErrorAt! > w.lastSendOkAt);
+          (!w.lastSendOkAt || w.lastSendErrorAt! > w.lastSendOkAt) &&
+          !isPlatformProblem(w.lastSendErrorRaw || w.lastSendError);
         const measuredLow = Boolean(w.lastSendOkAt || w.lastSendErrorAt) && w.healthScore < 80;
         if (failing || measuredLow) blocked.add(m.id);
       }

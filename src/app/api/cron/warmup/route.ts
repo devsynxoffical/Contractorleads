@@ -74,9 +74,9 @@ export async function GET(request: Request) {
   const batch = shuffled.slice(0, 12);
   const results: Array<{ email: string; dispatched: boolean; error?: string }> = [];
 
-  // Parallel chunks of 6: a slow relay send can take up to 45s, so two chunks
-  // finish well inside the 3-minute cycle.
-  const chunkSize = 6;
+  // Small parallel chunks: the gateway runs on shared hosting with few PHP processes,
+  // and relay requests are additionally capped app-wide (lib/relay-fetch).
+  const chunkSize = 3;
   for (let i = 0; i < batch.length; i += chunkSize) {
     const chunk = batch.slice(i, i + chunkSize);
     const chunkResults = await Promise.all(

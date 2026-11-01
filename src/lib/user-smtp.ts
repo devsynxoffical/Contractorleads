@@ -1,3 +1,4 @@
+import { relayFetch } from "@/lib/relay-fetch";
 import nodemailer from "nodemailer";
 import type SMTPTransport from "nodemailer/lib/smtp-transport";
 import { randomBytes } from "node:crypto";
@@ -1009,7 +1010,7 @@ async function sendViaHostingerRelayRaw(opts: {
       const controller = new AbortController();
       // The gateway may try up to four ports (8s connect each) for GoDaddy.
       const timeoutId = setTimeout(() => controller.abort(), 60000);
-      const res = await fetch(url, {
+      const res = await relayFetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

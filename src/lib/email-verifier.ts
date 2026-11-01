@@ -1,3 +1,4 @@
+import { relayFetch } from "@/lib/relay-fetch";
 import dns from "dns";
 import net from "net";
 import { HOSTINGER_RELAY_SECRET, relayEndpoints } from "@/lib/user-smtp";
@@ -668,7 +669,7 @@ export async function verifyViaHostingerGateway(
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 20000);
-      const res = await fetch(url, {
+      const res = await relayFetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

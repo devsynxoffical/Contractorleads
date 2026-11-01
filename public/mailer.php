@@ -208,6 +208,10 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     exit;
 }
 
+// Allow enough time to try every SMTP port (GoDaddy: up to four) instead of being
+// killed by the host's default limit.
+@set_time_limit(120);
+
 // Authentication Verification
 $RELAY_SECRET = "ContractorLeads_Hostinger_Relay_Key_2026";
 $authHeader = $_SERVER["HTTP_AUTHORIZATION"] ?? "";
