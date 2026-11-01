@@ -817,14 +817,26 @@ export async function sendViaSmtpDirect(
   throw lastErr;
 }
 
-export const HOSTINGER_RELAY_ENDPOINTS = [
-  "https://roofingclients.us/mailer.php",
-  "https://roofingpartners.us/mailer.php",
-  "https://roofingagency.us/mailer.php",
-  "https://roofinggrowth.us/mailer.php",
-  "https://roofingmedia.us/mailer.php",
-  "https://sevenfigurestudio.us/mailer.php",
-];
+/** The relay host that has mailer.php deployed. */
+export const PRIMARY_RELAY_URL = "https://roofingclients.us/mailer.php";
+
+/**
+ * Relay endpoints in the order to try them:
+ * HOSTINGER_RELAY_URL (if set), then roofingclients.us, then any extra hosts listed
+ * comma-separated in HOSTINGER_RELAY_FALLBACK_URLS. Hosts without mailer.php are not
+ * tried by default, because each dead host adds a timeout to every send.
+ */
+export function relayEndpoints(): string[] {
+  const fallbacks = (process.env.HOSTINGER_RELAY_FALLBACK_URLS || "")
+    .split(",")
+    .map((u) => u.trim())
+    .filter(Boolean);
+  return Array.from(
+    new Set([process.env.HOSTINGER_RELAY_URL?.trim(), PRIMARY_RELAY_URL, ...fallbacks].filter(Boolean) as string[]),
+  );
+}
+
+export const HOSTINGER_RELAY_ENDPOINTS = [PRIMARY_RELAY_URL];
 export const HOSTINGER_RELAY_SECRET =
   process.env.HOSTINGER_RELAY_SECRET?.trim() || "ContractorLeads_Hostinger_Relay_Key_2026";
 
@@ -935,16 +947,7 @@ export async function sendViaHostingerRelay(opts: {
     contentType?: string;
   }>;
 }): Promise<{ ok: boolean; messageId: string | null; error?: string }> {
-  const customUrl = process.env.HOSTINGER_RELAY_URL?.trim();
-  
-  // Prioritize primary working sevenfigurestudio.us gateway, followed by custom URL and fallbacks
-  const endpoints = Array.from(
-    new Set([
-      customUrl || "https://roofingclients.us/mailer.php",
-      "https://roofingclients.us/mailer.php",
-      ...HOSTINGER_RELAY_ENDPOINTS,
-    ].filter(Boolean) as string[])
-  );
+  const endpoints = relayEndpoints();
 
   // Threading / reply headers (the relay forwards `headers` as raw MIME headers)
   const relayHeaders: Record<string, string> = { ...(opts.headers || {}) };

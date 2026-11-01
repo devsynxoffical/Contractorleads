@@ -1,6 +1,6 @@
 import dns from "dns";
 import net from "net";
-import { HOSTINGER_RELAY_ENDPOINTS, HOSTINGER_RELAY_SECRET } from "@/lib/user-smtp";
+import { HOSTINGER_RELAY_SECRET, relayEndpoints } from "@/lib/user-smtp";
 import { resolvePlatformKey } from "@/lib/platform-keys";
 
 // Common disposable / temporary email domains
@@ -656,16 +656,7 @@ export async function verifyViaHostingerGateway(
   const clean = emails.map((e) => e.trim().toLowerCase()).filter(Boolean);
   if (clean.length === 0) return new Map();
 
-  const customUrl = process.env.HOSTINGER_RELAY_URL?.trim();
-  const endpoints = Array.from(
-    new Set(
-      [
-        customUrl || "https://roofingclients.us/mailer.php",
-        "https://roofingclients.us/mailer.php",
-        ...HOSTINGER_RELAY_ENDPOINTS,
-      ].filter(Boolean) as string[],
-    ),
-  );
+  const endpoints = relayEndpoints();
 
   const payload = {
     action: "verify",
