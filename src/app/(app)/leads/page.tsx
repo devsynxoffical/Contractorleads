@@ -15,6 +15,7 @@ import { AllLeadsTableBody } from "@/components/leads/all-leads-table-body";
 import { LeadSegmentBar } from "@/components/leads/lead-segment-bar";
 import { HiOutlineFire, HiOutlineMagnifyingGlass } from "react-icons/hi2";
 import { startOfDaysAgo, startOfToday } from "@/lib/lead-date-filters";
+import { ensureEmailVerificationColumns } from "@/lib/email-verifier-db";
 
 export default async function AllLeadsPage({
   searchParams,
@@ -30,12 +31,15 @@ export default async function AllLeadsPage({
     age?: string;
     size?: string;
     dm?: string;
+    emailStatus?: string;
     targetSme?: string;
     excludeEnterprise?: string;
   }>;
 }) {
   const user = await getSessionUser();
   if (!user) redirect("/login");
+
+  await ensureEmailVerificationColumns();
 
   const params = await searchParams;
   const query = params.q?.trim() ?? "";
@@ -50,6 +54,7 @@ export default async function AllLeadsPage({
   const age = params.age ?? "all";
   const size = params.size ?? "all";
   const dm = params.dm ?? "all";
+  const emailStatus = params.emailStatus ?? "all";
   const targetSme = params.targetSme === "1";
   const excludeEnterprise = params.excludeEnterprise === "1";
 
@@ -173,6 +178,17 @@ export default async function AllLeadsPage({
     where.decisionMakerFound = false;
   }
 
+  // Email Verification Status filtering (Section 08)
+  if (
+    emailStatus === "safe" ||
+    emailStatus === "catchall" ||
+    emailStatus === "role" ||
+    emailStatus === "invalid" ||
+    emailStatus === "unknown"
+  ) {
+    where.emailStatus = emailStatus;
+  }
+
   // Target SME Profile toggle (1-15 team, 2-15 yrs, DM found, not excluded)
   if (targetSme) {
     where.decisionMakerFound = true;
@@ -236,6 +252,7 @@ export default async function AllLeadsPage({
     age !== "all" ||
     size !== "all" ||
     dm !== "all" ||
+    emailStatus !== "all" ||
     targetSme ||
     excludeEnterprise;
 
@@ -296,6 +313,16 @@ export default async function AllLeadsPage({
             decisionMakerName: lead.decisionMakerName ?? lead.ownerName,
             decisionMakerRole: lead.decisionMakerRole ?? lead.ownerTitle,
             decisionMakerEmail: lead.decisionMakerEmail,
+            email: lead.email,
+            emailStatus: lead.emailStatus,
+            emailBounceRisk: lead.emailBounceRisk,
+            isRoleAccount: lead.isRoleAccount,
+            emailVerifySource: lead.emailVerifySource,
+            emailScore: lead.emailScore,
+            emailSubStatus: lead.emailSubStatus,
+            emailVerifiedAt: lead.emailVerifiedAt
+              ? lead.emailVerifiedAt.toISOString()
+              : null,
             decisionMakerDirectPhone: lead.decisionMakerDirectPhone,
             businessAgeYears: lead.businessAgeYears ?? lead.yearsInBusiness,
             businessMaturity: lead.businessMaturity,

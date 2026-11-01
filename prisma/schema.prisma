@@ -222,6 +222,14 @@ model Lead {
   phone                     String?
   email                     String?
   emailSourceUrl            String?
+  // --- Email Verification Fields (Section 06) ---
+  emailStatus               String   @default("unknown") // safe | catchall | role | invalid | unknown
+  emailVerifiedAt           DateTime?
+  emailBounceRisk           String?  // low | medium | high | critical
+  isRoleAccount             Boolean  @default(false)
+  emailVerifySource         String?  // zerobounce | neverbounce | millionverifier | hunter | bouncer | smtp_handshake | mx_dns
+  emailScore                Float?   // 0.00 - 1.00
+  emailSubStatus            String?  // mailbox_verified | accept_all | role_based | mailbox_not_found | etc.
   website                   String?
   googleRating              Float?
   reviewCount               Int?
@@ -354,6 +362,8 @@ model Lead {
   @@index([companySizeCategory])
   @@index([decisionMakerFound])
   @@index([isLowPriorityOrExcluded])
+  @@index([emailStatus])
+  @@index([emailVerifiedAt])
 }
 
 /// Paid unlock — contact/export fields stay redacted until this exists.

@@ -69,6 +69,7 @@ export function AllLeadsFilters({ categories }: Props) {
   const age = searchParams.get("age") ?? "all";
   const size = searchParams.get("size") ?? "all";
   const dm = searchParams.get("dm") ?? "all";
+  const emailStatus = searchParams.get("emailStatus") ?? "all";
   const targetSme = searchParams.get("targetSme") === "1";
   const excludeEnterprise = searchParams.get("excludeEnterprise") === "1";
 
@@ -98,6 +99,7 @@ export function AllLeadsFilters({ categories }: Props) {
     age !== "all" ||
     size !== "all" ||
     dm !== "all" ||
+    emailStatus !== "all" ||
     targetSme ||
     excludeEnterprise ||
     Boolean(q.trim());
@@ -202,7 +204,7 @@ export function AllLeadsFilters({ categories }: Props) {
 
       {/* SME Intelligence & Decision-Maker Row */}
       <div className="flex flex-col gap-2 pt-2 border-t border-border/60 lg:flex-row lg:items-end">
-        <div className="grid min-w-0 flex-1 grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="grid min-w-0 flex-1 grid-cols-2 gap-2 sm:grid-cols-5">
           <FilterSelect
             label="Business age"
             value={age}
@@ -242,6 +244,19 @@ export function AllLeadsFilters({ categories }: Props) {
             <option value="email">✉️ Direct DM Email</option>
             <option value="phone">📞 Direct DM Phone</option>
             <option value="missing">❌ No DM (Generic only)</option>
+          </FilterSelect>
+
+          <FilterSelect
+            label="Email verification"
+            value={emailStatus}
+            onChange={(value) => pushParams({ emailStatus: value })}
+          >
+            <option value="all">All Email Statuses</option>
+            <option value="safe">🟢 Safe (Valid)</option>
+            <option value="catchall">🟡 Catchall (Accept-All)</option>
+            <option value="role">🟠 Role Account (info/admin)</option>
+            <option value="invalid">🔴 Invalid (Hard Bounce)</option>
+            <option value="unknown">⚪ Unverified</option>
           </FilterSelect>
 
           <FilterSelect

@@ -5,6 +5,13 @@ export type ExportLead = {
   ownerName: string | null;
   phone: string | null;
   email: string | null;
+  emailStatus?: string | null;
+  emailBounceRisk?: string | null;
+  isRoleAccount?: boolean | null;
+  emailVerifySource?: string | null;
+  emailScore?: number | null;
+  emailSubStatus?: string | null;
+  emailVerifiedAt?: Date | string | null;
   website: string | null;
   googleRating: number | null;
   reviewCount: number | null;
@@ -63,6 +70,12 @@ const HEADERS = [
   "Owner Name",
   "Phone",
   "Email",
+  "Email Status (Safe/Catchall/Role/Invalid)",
+  "Email Bounce Risk",
+  "Role Account",
+  "Email Confidence Score",
+  "Email Verify Source",
+  "Email Verified At",
   "Website",
   "Verified Decision Maker",
   "Decision Maker Role",
@@ -120,6 +133,16 @@ function rowFromLead(lead: ExportLead) {
     lead.decisionMakerName ?? lead.ownerName ?? "",
     lead.phone ?? "",
     lead.email ?? "",
+    lead.emailStatus ?? "unknown",
+    lead.emailBounceRisk ?? "",
+    lead.isRoleAccount ? "YES" : "NO",
+    lead.emailScore != null ? lead.emailScore : "",
+    lead.emailVerifySource ?? "",
+    lead.emailVerifiedAt
+      ? lead.emailVerifiedAt instanceof Date
+        ? lead.emailVerifiedAt.toISOString()
+        : String(lead.emailVerifiedAt)
+      : "",
     lead.website ?? "",
     lead.decisionMakerFound ? "YES" : "NO",
     lead.decisionMakerRole ?? "",

@@ -41,8 +41,10 @@ import {
   HiOutlineShieldCheck,
   HiOutlineBookmark,
   HiOutlinePaperAirplane,
+  HiOutlineDocumentArrowUp,
 } from "react-icons/hi2";
 import { FaLinkedin, FaFacebook, FaInstagram } from "react-icons/fa";
+import { SpreadsheetImporter } from "@/components/campaigns/spreadsheet-importer";
 
 type ContactLead = {
   id: string;
@@ -100,8 +102,13 @@ export function BulkEmailFinderView() {
   const [customCount, setCustomCount] = useState("");
   const [companySize, setCompanySize] = useState<CompanySizeFilter>("all");
 
-  // Mode: "live" (Real-time live finder) or "database" (Database lead pool)
-  const [mode, setMode] = useState<"live" | "database">("live");
+  // Mode: "live" (Real-time live finder), "database" (Database lead pool), or "datasheet" (Upload CSV/XLSX & Waterfall Enrich)
+  const [mode, setMode] = useState<"live" | "database" | "datasheet">("live");
+
+  // Waterfall Enrichment state
+  const [waterfallCreditCost, setWaterfallCreditCost] = useState<number>(2);
+  const [enrichingId, setEnrichingId] = useState<string | null>(null);
+  const [bulkEnriching, setBulkEnriching] = useState(false);
 
   // Data State
   const [loading, setLoading] = useState(false);
@@ -178,10 +185,127 @@ export function BulkEmailFinderView() {
         }
       })
       .catch(() => {});
+
+    fetch("/api/leads/waterfall-enrich")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (mounted && typeof d?.creditCostPerLead === "number") {
+          setWaterfallCreditCost(d.creditCostPerLead);
+        }
+      })
+      .catch(() => {});
+
     return () => {
       mounted = false;
     };
   }, []);
+
+  async function handleWaterfallEnrichSingle(lead: ContactLead) {
+    if (enrichingId || bulkEnriching) return;
+    setEnrichingId(lead.id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/leads/${lead.id}/enrich-waterfall`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || data.error || "Waterfall enrichment failed");
+      }
+      if (data.lead) {
+        setLeads((prev) =>
+          prev.map((item) =>
+            item.id === lead.id ? { ...item, ...data.lead } : item,
+          ),
+        );
+      }
+      if (data.message) {
+        setResultMessage(data.message);
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Waterfall enrichment failed");
+    } finally {
+      setEnrichingId(null);
+    }
+  }
+
+  async function handleWaterfallEnrichSelected() {
+    if (bulkEnriching || enrichingId) return;
+    const pool =
+      selectedIds.size > 0
+        ? filteredLeads.filter((l) => selectedIds.has(l.id))
+        : filteredLeads;
+    const missingTargets = pool.filter(
+      (l) => !l.email || !l.phone || !l.ownerName,
+    );
+    if (missingTargets.length === 0) {
+      setResultMessage("All selected leads already have complete Email, Phone, and Owner info.");
+      return;
+    }
+
+    setBulkEnriching(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/leads/waterfall-enrich", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: missingTargets.map((l) => ({
+            leadId: l.id,
+            businessName: l.businessName,
+            website: l.website,
+            ownerName: l.ownerName,
+            ownerTitle: l.ownerTitle,
+            email: l.email,
+            phone: l.phone,
+            city: l.city,
+            state: l.state,
+            zip: l.zip,
+            country: l.country,
+            address: l.address,
+            industry: l.industry,
+          })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || data.error || "Bulk waterfall enrichment failed");
+      }
+
+      if (Array.isArray(data.results)) {
+        const byLeadId = new Map<string, Record<string, unknown>>();
+        for (const r of data.results) {
+          if (r.leadId) byLeadId.set(r.leadId, r);
+        }
+        setLeads((prev) =>
+          prev.map((item) => {
+            const match = byLeadId.get(item.id);
+            if (!match) return item;
+            return {
+              ...item,
+              email: (match.email as string) || item.email,
+              phone: (match.phone as string) || item.phone,
+              ownerName: (match.ownerName as string) || item.ownerName,
+              ownerTitle: (match.ownerTitle as string) || item.ownerTitle,
+              website: (match.website as string) || item.website,
+              linkedinUrl: (match.linkedinUrl as string) || item.linkedinUrl,
+            };
+          }),
+        );
+      }
+
+      const st = data.stats;
+      setResultMessage(
+        `Waterfall enriched ${st?.enrichedCount ?? 0} of ${
+          st?.totalProcessed ?? missingTargets.length
+        } lead(s) (${st?.totalCharged ?? 0} credits used).`,
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Bulk waterfall enrichment failed");
+    } finally {
+      setBulkEnriching(false);
+    }
+  }
 
   useEffect(() => {
     if (mode === "database" && activeIndustry) {
@@ -509,7 +633,7 @@ export function BulkEmailFinderView() {
         <CardContent className="p-6 space-y-6">
           {/* Mode toggle */}
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
-            <div className="flex rounded-xl border border-border bg-[var(--input-bg)] p-1">
+            <div className="flex flex-wrap rounded-xl border border-border bg-[var(--input-bg)] p-1">
               <button
                 type="button"
                 onClick={() => setMode("live")}
@@ -521,7 +645,7 @@ export function BulkEmailFinderView() {
                 )}
               >
                 <HiOutlineMagnifyingGlass className="h-3.5 w-3.5 text-brand-600" />
-                Live Email Finder & Scraper
+                Live Email Finder &amp; Scraper
               </button>
               <button
                 type="button"
@@ -536,6 +660,19 @@ export function BulkEmailFinderView() {
                 <HiOutlineSparkles className="h-3.5 w-3.5 text-amber-500" />
                 Database Verified Pool ({niches.reduce((acc, n) => acc + n.count, 0)} leads)
               </button>
+              <button
+                type="button"
+                onClick={() => setMode("datasheet")}
+                className={cn(
+                  "flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition",
+                  mode === "datasheet"
+                    ? "bg-[var(--surface)] text-ink shadow-sm ring-1 ring-border"
+                    : "text-ink-muted hover:text-ink",
+                )}
+              >
+                <HiOutlineDocumentArrowUp className="h-3.5 w-3.5 text-emerald-600" />
+                Upload Datasheet &amp; Waterfall Enrich ({waterfallCreditCost} cr)
+              </button>
             </div>
 
             <div className="flex flex-wrap items-center gap-1.5 text-xs text-ink-muted">
@@ -547,217 +684,226 @@ export function BulkEmailFinderView() {
             </div>
           </div>
 
-          {/* Form Fields */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            {/* Industry / Niche Field */}
-            <div className="sm:col-span-2 lg:col-span-2">
-              <AdminIndustryField
-                selectValue={industrySelect}
-                customValue={customIndustry}
-                onSelectChange={setIndustrySelect}
-                onCustomChange={setCustomIndustry}
-                knownNiches={knownNicheNames}
-                label="Target Service / Niche"
-              />
+          {/* Datasheet Upload & Waterfall Enrichment Mode */}
+          {mode === "datasheet" ? (
+            <div className="pt-2">
+              <SpreadsheetImporter />
             </div>
+          ) : (
+            <>
+              {/* Form Fields */}
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                {/* Industry / Niche Field */}
+                <div className="sm:col-span-2 lg:col-span-2">
+                  <AdminIndustryField
+                    selectValue={industrySelect}
+                    customValue={customIndustry}
+                    onSelectChange={setIndustrySelect}
+                    onCustomChange={setCustomIndustry}
+                    knownNiches={knownNicheNames}
+                    label="Target Service / Niche"
+                  />
+                </div>
 
-            {/* Company Size / Revenue Filter */}
-            <div className="sm:col-span-2 lg:col-span-1">
-              <label className="mb-1 flex items-center justify-between text-xs font-semibold text-ink">
-                <span>Target Profile</span>
-                {companySize === "solo_target" || companySize === "micro" || companySize === "small" ? (
-                  <span className="text-[10px] font-bold text-emerald-600">Solo / Under-Marketed</span>
-                ) : null}
-              </label>
-              <select
-                value={companySize}
-                onChange={(e) => setCompanySize(e.target.value as CompanySizeFilter)}
-                className="h-10 w-full rounded-xl border border-border bg-[var(--surface)] px-3 text-xs font-medium text-ink focus:border-brand-500 focus:outline-none"
-              >
-                <option value="solo_target">Solo / Under-Marketed (5-40 reviews, $ Tier, No Secretary)</option>
-                <option value="all">All Company Sizes</option>
-                <option value="micro">Micro / Solo (&lt;$300k, &le;25 reviews)</option>
-                <option value="small">Small Business ($300k–$750k, &le;55 reviews)</option>
-                <option value="small_medium">Small-to-Mid (&lt;$1.5M, &le;85 reviews)</option>
-                <option value="mid">Mid-Sized ($1.5M–$5M, 50-250 reviews)</option>
-                <option value="large">Large Enterprise (&gt;$5M, &gt;150 reviews)</option>
-              </select>
-            </div>
+                {/* Company Size / Revenue Filter */}
+                <div className="sm:col-span-2 lg:col-span-1">
+                  <label className="mb-1 flex items-center justify-between text-xs font-semibold text-ink">
+                    <span>Target Profile</span>
+                    {companySize === "solo_target" || companySize === "micro" || companySize === "small" ? (
+                      <span className="text-[10px] font-bold text-emerald-600">Solo / Under-Marketed</span>
+                    ) : null}
+                  </label>
+                  <select
+                    value={companySize}
+                    onChange={(e) => setCompanySize(e.target.value as CompanySizeFilter)}
+                    className="h-10 w-full rounded-xl border border-border bg-[var(--surface)] px-3 text-xs font-medium text-ink focus:border-brand-500 focus:outline-none"
+                  >
+                    <option value="solo_target">Solo / Under-Marketed (5-40 reviews, $ Tier, No Secretary)</option>
+                    <option value="all">All Company Sizes</option>
+                    <option value="micro">Micro / Solo (&lt;$300k, &le;25 reviews)</option>
+                    <option value="small">Small Business ($300k–$750k, &le;55 reviews)</option>
+                    <option value="small_medium">Small-to-Mid (&lt;$1.5M, &le;85 reviews)</option>
+                    <option value="mid">Mid-Sized ($1.5M–$5M, 50-250 reviews)</option>
+                    <option value="large">Large Enterprise (&gt;$5M, &gt;150 reviews)</option>
+                  </select>
+                </div>
 
-            {/* Country Selector */}
-            <div>
-              <label className="mb-1 block text-xs font-semibold text-ink">Country</label>
-              <select
-                value={country}
-                onChange={(e) => {
-                  setCountry(e.target.value);
-                  setState("");
-                }}
-                className="h-10 w-full rounded-xl border border-border bg-[var(--surface)] px-3 text-xs font-medium text-ink focus:border-brand-500 focus:outline-none"
-              >
-                {TIER_ONE_COUNTRIES.map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.name} ({c.code})
-                  </option>
-                ))}
-              </select>
-            </div>
+                {/* Country Selector */}
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-ink">Country</label>
+                  <select
+                    value={country}
+                    onChange={(e) => {
+                      setCountry(e.target.value);
+                      setState("");
+                    }}
+                    className="h-10 w-full rounded-xl border border-border bg-[var(--surface)] px-3 text-xs font-medium text-ink focus:border-brand-500 focus:outline-none"
+                  >
+                    {TIER_ONE_COUNTRIES.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.name} ({c.code})
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-            {/* Target Count */}
-            <div>
-              <label className="mb-1 block text-xs font-semibold text-ink">Batch Size</label>
-              <select
-                value={targetCount}
-                onChange={(e) => setTargetCount(Number(e.target.value))}
-                className="h-10 w-full rounded-xl border border-border bg-[var(--surface)] px-3 text-xs font-medium text-ink focus:border-brand-500 focus:outline-none"
-              >
-                <option value={25}>25 Contacts</option>
-                <option value={50}>50 Contacts (Recommended)</option>
-                <option value={100}>100 Contacts</option>
-                <option value={250}>250 Contacts</option>
-                <option value={500}>500 Contacts</option>
-                <option value={-1}>Custom Count…</option>
-              </select>
-              {targetCount === -1 && (
-                <Input
-                  type="number"
-                  placeholder="Enter 1–1000"
-                  value={customCount}
-                  onChange={(e) => setCustomCount(e.target.value)}
-                  className="mt-2 h-9 text-xs"
-                />
-              )}
-            </div>
-          </div>
-
-          {/* Location Details (for live mode) */}
-          {mode === "live" && (
-            <div className="grid gap-3 rounded-xl border border-border bg-[var(--input-bg)] p-4 sm:grid-cols-2 lg:grid-cols-5">
-              <div className="lg:col-span-1">
-                <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-ink-faint">
-                  Scope
-                </label>
-                <select
-                  value={locationScope}
-                  onChange={(e) => setLocationScope(e.target.value as "local" | "country")}
-                  className="h-9 w-full rounded-lg border border-border bg-[var(--surface)] px-2.5 text-xs text-ink"
-                >
-                  <option value="local">City / Region</option>
-                  <option value="country">Anywhere in {countryMeta.name}</option>
-                </select>
+                {/* Target Count */}
+                <div>
+                  <label className="mb-1 block text-xs font-semibold text-ink">Batch Size</label>
+                  <select
+                    value={targetCount}
+                    onChange={(e) => setTargetCount(Number(e.target.value))}
+                    className="h-10 w-full rounded-xl border border-border bg-[var(--surface)] px-3 text-xs font-medium text-ink focus:border-brand-500 focus:outline-none"
+                  >
+                    <option value={25}>25 Contacts</option>
+                    <option value={50}>50 Contacts (Recommended)</option>
+                    <option value={100}>100 Contacts</option>
+                    <option value={250}>250 Contacts</option>
+                    <option value={500}>500 Contacts</option>
+                    <option value={-1}>Custom Count…</option>
+                  </select>
+                  {targetCount === -1 && (
+                    <Input
+                      type="number"
+                      placeholder="Enter 1–1000"
+                      value={customCount}
+                      onChange={(e) => setCustomCount(e.target.value)}
+                      className="mt-2 h-9 text-xs"
+                    />
+                  )}
+                </div>
               </div>
 
-              {locationScope === "local" && (
-                <>
-                  <div>
+              {/* Location Details (for live mode) */}
+              {mode === "live" && (
+                <div className="grid gap-3 rounded-xl border border-border bg-[var(--input-bg)] p-4 sm:grid-cols-2 lg:grid-cols-5">
+                  <div className="lg:col-span-1">
                     <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-ink-faint">
-                      {countryMeta.regionLabel}
+                      Scope
                     </label>
                     <select
-                      value={state}
-                      onChange={(e) => setState(e.target.value)}
+                      value={locationScope}
+                      onChange={(e) => setLocationScope(e.target.value as "local" | "country")}
                       className="h-9 w-full rounded-lg border border-border bg-[var(--surface)] px-2.5 text-xs text-ink"
                     >
-                      <option value="">{getRegionAnyLabel(country)}</option>
-                      {getRegionsForCountry(country).map((r) => (
-                        <option key={r.code} value={r.code}>
-                          {r.name}
-                        </option>
-                      ))}
+                      <option value="local">City / Region</option>
+                      <option value="country">Anywhere in {countryMeta.name}</option>
                     </select>
                   </div>
 
-                  <div>
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-ink-faint">
-                      City
-                    </label>
-                    <Input
-                      placeholder="e.g. Austin, Miami"
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      className="h-9 text-xs"
-                    />
-                  </div>
+                  {locationScope === "local" && (
+                    <>
+                      <div>
+                        <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-ink-faint">
+                          {countryMeta.regionLabel}
+                        </label>
+                        <select
+                          value={state}
+                          onChange={(e) => setState(e.target.value)}
+                          className="h-9 w-full rounded-lg border border-border bg-[var(--surface)] px-2.5 text-xs text-ink"
+                        >
+                          <option value="">{getRegionAnyLabel(country)}</option>
+                          {getRegionsForCountry(country).map((r) => (
+                            <option key={r.code} value={r.code}>
+                              {r.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
 
-                  <div>
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-ink-faint">
-                      Postal / Zip
-                    </label>
-                    <Input
-                      placeholder="e.g. 78701"
-                      value={zip}
-                      onChange={(e) => setZip(e.target.value)}
-                      className="h-9 text-xs"
-                    />
-                  </div>
+                      <div>
+                        <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-ink-faint">
+                          City
+                        </label>
+                        <Input
+                          placeholder="e.g. Austin, Miami"
+                          value={city}
+                          onChange={(e) => setCity(e.target.value)}
+                          className="h-9 text-xs"
+                        />
+                      </div>
 
-                  <div>
-                    <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-ink-faint">
-                      Radius (Miles)
-                    </label>
-                    <select
-                      value={radius}
-                      onChange={(e) => setRadius(Number(e.target.value))}
-                      className="h-9 w-full rounded-lg border border-border bg-[var(--surface)] px-2.5 text-xs text-ink"
-                    >
-                      <option value={10}>10 miles</option>
-                      <option value={25}>25 miles</option>
-                      <option value={50}>50 miles</option>
-                      <option value={100}>100 miles</option>
-                    </select>
-                  </div>
-                </>
+                      <div>
+                        <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-ink-faint">
+                          Postal / Zip
+                        </label>
+                        <Input
+                          placeholder="e.g. 78701"
+                          value={zip}
+                          onChange={(e) => setZip(e.target.value)}
+                          className="h-9 text-xs"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-ink-faint">
+                          Radius (Miles)
+                        </label>
+                        <select
+                          value={radius}
+                          onChange={(e) => setRadius(Number(e.target.value))}
+                          className="h-9 w-full rounded-lg border border-border bg-[var(--surface)] px-2.5 text-xs text-ink"
+                        >
+                          <option value={10}>10 miles</option>
+                          <option value={25}>25 miles</option>
+                          <option value={50}>50 miles</option>
+                          <option value={100}>100 miles</option>
+                        </select>
+                      </div>
+                    </>
+                  )}
+                </div>
               )}
-            </div>
+
+              {/* Action Button & Status */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                <div className="text-xs text-ink-muted">
+                  {resultMessage && <span className="font-semibold text-emerald-700">{resultMessage}</span>}
+                  {copyFeedback && <span className="font-semibold text-brand-600 ml-2">{copyFeedback}</span>}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {mode === "live" ? (
+                    <Button
+                      onClick={runFinder}
+                      disabled={loading || !activeIndustry}
+                      className="h-11 px-6 bg-brand-600 text-white hover:bg-brand-700 rounded-xl font-semibold shadow-sm"
+                    >
+                      {loading ? (
+                        <>
+                          <HiOutlineArrowPath className="mr-2 h-4 w-4 animate-spin" />
+                          Discovering & Enriching Contacts…
+                        </>
+                      ) : (
+                        <>
+                          <HiOutlineMagnifyingGlass className="mr-2 h-4 w-4" />
+                          Find Bulk Emails ({resolvedTargetCount} leads)
+                        </>
+                      )}
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => activeIndustry && loadDatabaseLeads(activeIndustry)}
+                      disabled={loadingPool || !activeIndustry}
+                      className="h-11 px-6 bg-brand-600 text-white hover:bg-brand-700 rounded-xl font-semibold shadow-sm"
+                    >
+                      {loadingPool ? (
+                        <>
+                          <HiOutlineArrowPath className="mr-2 h-4 w-4 animate-spin" />
+                          Loading Pool…
+                        </>
+                      ) : (
+                        <>
+                          <HiOutlineSparkles className="mr-2 h-4 w-4" />
+                          Load Database Contacts
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </>
           )}
-
-          {/* Action Button & Status */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-            <div className="text-xs text-ink-muted">
-              {resultMessage && <span className="font-semibold text-emerald-700">{resultMessage}</span>}
-              {copyFeedback && <span className="font-semibold text-brand-600 ml-2">{copyFeedback}</span>}
-            </div>
-
-            <div className="flex items-center gap-2">
-              {mode === "live" ? (
-                <Button
-                  onClick={runFinder}
-                  disabled={loading || !activeIndustry}
-                  className="h-11 px-6 bg-brand-600 text-white hover:bg-brand-700 rounded-xl font-semibold shadow-sm"
-                >
-                  {loading ? (
-                    <>
-                      <HiOutlineArrowPath className="mr-2 h-4 w-4 animate-spin" />
-                      Discovering & Enriching Contacts…
-                    </>
-                  ) : (
-                    <>
-                      <HiOutlineMagnifyingGlass className="mr-2 h-4 w-4" />
-                      Find Bulk Emails ({resolvedTargetCount} leads)
-                    </>
-                  )}
-                </Button>
-              ) : (
-                <Button
-                  onClick={() => activeIndustry && loadDatabaseLeads(activeIndustry)}
-                  disabled={loadingPool || !activeIndustry}
-                  className="h-11 px-6 bg-brand-600 text-white hover:bg-brand-700 rounded-xl font-semibold shadow-sm"
-                >
-                  {loadingPool ? (
-                    <>
-                      <HiOutlineArrowPath className="mr-2 h-4 w-4 animate-spin" />
-                      Loading Pool…
-                    </>
-                  ) : (
-                    <>
-                      <HiOutlineSparkles className="mr-2 h-4 w-4" />
-                      Load Database Contacts
-                    </>
-                  )}
-                </Button>
-              )}
-            </div>
-          </div>
 
           {error && (
             <div className="rounded-xl border border-rose-200 bg-rose-50/70 p-4 text-[13px] text-rose-900">
@@ -932,6 +1078,19 @@ export function BulkEmailFinderView() {
                 <Button
                   size="sm"
                   variant="secondary"
+                  onClick={handleWaterfallEnrichSelected}
+                  disabled={bulkEnriching || Boolean(enrichingId)}
+                  className="h-8 text-xs font-semibold text-amber-800 border-amber-300 bg-amber-50/70 hover:bg-amber-100"
+                >
+                  <HiOutlineSparkles className="mr-1.5 h-3.5 w-3.5 text-amber-600" />
+                  {bulkEnriching
+                    ? "Waterfall Enriching…"
+                    : `Waterfall Enrich Missing (${waterfallCreditCost} cr)`}
+                </Button>
+
+                <Button
+                  size="sm"
+                  variant="secondary"
                   onClick={saveSelectedToCrm}
                   disabled={savingLeads}
                   className="h-8 text-xs font-semibold text-brand-700 hover:bg-brand-50"
@@ -1028,11 +1187,24 @@ export function BulkEmailFinderView() {
                             )}
                           </td>
 
-                          <td className="py-3 px-4 font-mono text-[12px]">
+                          <td
+                            className="py-3 px-4 font-mono text-[12px]"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             {l.email ? (
                               <span className="text-emerald-700 font-semibold">{l.email}</span>
                             ) : (
-                              <span className="text-ink-faint">—</span>
+                              <button
+                                type="button"
+                                onClick={() => void handleWaterfallEnrichSingle(l)}
+                                disabled={Boolean(enrichingId) || bulkEnriching}
+                                className="inline-flex items-center gap-1 rounded-lg border border-amber-400/60 bg-amber-50 hover:bg-amber-100 px-2 py-1 font-sans text-[11px] font-bold text-amber-800 transition disabled:opacity-50"
+                              >
+                                <HiOutlineSparkles className="h-3 w-3 text-amber-600" />
+                                {enrichingId === l.id
+                                  ? "Enriching…"
+                                  : `Enrich (${waterfallCreditCost} cr)`}
+                              </button>
                             )}
                           </td>
 

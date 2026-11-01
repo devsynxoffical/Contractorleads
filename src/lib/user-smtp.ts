@@ -12,6 +12,8 @@ import {
   pickSystemRotationSender,
   systemRowToSenderConfig,
   HOSTINGER_DEFAULT_MAILBOXES,
+  GODADDY_DEFAULT_MAILBOXES,
+  systemRowToPayload,
 } from "@/lib/system-smtp";
 
 export type SmtpPayload = {
@@ -761,7 +763,7 @@ async function sendViaUserResend(
   };
 }
 
-async function sendViaSmtpDirect(
+export async function sendViaSmtpDirect(
   cfg: SmtpPayload,
   mail: {
     from: string;
@@ -816,21 +818,100 @@ async function sendViaSmtpDirect(
 }
 
 export const HOSTINGER_RELAY_ENDPOINTS = [
-  "https://sevenfigurestudio.us/mailer.php",
-  "http://sevenfigurestudio.us/mailer.php",
   "https://roofingclients.us/mailer.php",
-  "http://roofingclients.us/mailer.php",
-  "https://roofingagency.us/mailer.php",
-  "http://roofingagency.us/mailer.php",
-  "https://roofinggrowth.us/mailer.php",
-  "http://roofinggrowth.us/mailer.php",
-  "https://roofingmedia.us/mailer.php",
-  "http://roofingmedia.us/mailer.php",
   "https://roofingpartners.us/mailer.php",
-  "http://roofingpartners.us/mailer.php",
+  "https://roofingagency.us/mailer.php",
+  "https://roofinggrowth.us/mailer.php",
+  "https://roofingmedia.us/mailer.php",
+  "https://sevenfigurestudio.us/mailer.php",
 ];
 export const HOSTINGER_RELAY_SECRET =
   process.env.HOSTINGER_RELAY_SECRET?.trim() || "ContractorLeads_Hostinger_Relay_Key_2026";
+
+/**
+ * Resolve authenticated SMTP credentials for any email address (Hostinger seeds, GoDaddy seeds, system DB, or user DB)
+ */
+export async function resolveSmtpCredentialsForEmail(fromEmail: string): Promise<SmtpPayload | null> {
+  const normEmail = fromEmail.toLowerCase().trim();
+
+  // 1. Check known Hostinger mailboxes
+  const knownHostinger = HOSTINGER_DEFAULT_MAILBOXES.find(
+    (m) => m.email.toLowerCase() === normEmail
+  );
+  if (knownHostinger?.pass) {
+    return {
+      host: "smtp.hostinger.com",
+      port: 465,
+      secure: true,
+      username: knownHostinger.email,
+      password: knownHostinger.pass,
+      fromEmail: knownHostinger.email,
+      fromName: knownHostinger.name,
+    };
+  }
+
+  // 2. Check known GoDaddy mailboxes
+  const knownGoDaddy = GODADDY_DEFAULT_MAILBOXES.find(
+    (m) => m.email.toLowerCase() === normEmail
+  );
+  if (knownGoDaddy?.pass) {
+    return {
+      host: "smtpout.secureserver.net",
+      port: 465,
+      secure: true,
+      username: knownGoDaddy.email,
+      password: knownGoDaddy.pass,
+      fromEmail: knownGoDaddy.email,
+      fromName: knownGoDaddy.name,
+    };
+  }
+
+  // 3. Check SystemSmtpAccount in DB
+  try {
+    const sysRow = await prisma.systemSmtpAccount.findFirst({
+      where: {
+        OR: [
+          { fromEmail: { equals: normEmail, mode: "insensitive" } },
+          { username: { equals: normEmail, mode: "insensitive" } },
+        ],
+      },
+    });
+    if (sysRow) {
+      return systemRowToPayload(sysRow);
+    }
+  } catch {}
+
+  // 4. Check user SmtpAccount in DB
+  try {
+    const userRow = await prisma.smtpAccount.findFirst({
+      where: {
+        OR: [
+          { fromEmail: { equals: normEmail, mode: "insensitive" } },
+          { username: { equals: normEmail, mode: "insensitive" } },
+        ],
+      },
+    });
+    if (userRow) {
+      let password = "";
+      try {
+        password = decryptSecret(userRow.passwordEnc);
+      } catch {}
+      return {
+        id: userRow.id,
+        label: userRow.label,
+        host: userRow.host,
+        port: userRow.port,
+        secure: userRow.secure,
+        username: userRow.username,
+        password,
+        fromEmail: userRow.fromEmail,
+        fromName: userRow.fromName,
+      };
+    }
+  } catch {}
+
+  return null;
+}
 
 export async function sendViaHostingerRelay(opts: {
   fromEmail: string;
@@ -859,9 +940,8 @@ export async function sendViaHostingerRelay(opts: {
   // Prioritize primary working sevenfigurestudio.us gateway, followed by custom URL and fallbacks
   const endpoints = Array.from(
     new Set([
-      customUrl || "https://sevenfigurestudio.us/mailer.php",
-      "https://sevenfigurestudio.us/mailer.php",
-      "http://sevenfigurestudio.us/mailer.php",
+      customUrl || "https://roofingclients.us/mailer.php",
+      "https://roofingclients.us/mailer.php",
       ...HOSTINGER_RELAY_ENDPOINTS,
     ].filter(Boolean) as string[])
   );

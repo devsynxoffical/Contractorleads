@@ -1,4 +1,11 @@
-import { HOSTINGER_RELAY_ENDPOINTS, HOSTINGER_RELAY_SECRET } from "@/lib/user-smtp";
+import {
+  HOSTINGER_RELAY_ENDPOINTS,
+  HOSTINGER_RELAY_SECRET,
+  sendViaSmtpDirect,
+  resolveSmtpCredentialsForEmail,
+  type SmtpPayload,
+} from "@/lib/user-smtp";
+import { testSmtpConnection } from "@/lib/system-smtp";
 
 export type MailboxRelayPayload = {
   fromEmail: string;
@@ -34,8 +41,6 @@ export function getRelayEndpoints(): string[] {
     new Set(
       [
         customUrl,
-        "https://roofingclients.us/mailer.php",
-        "https://sevenfigurestudio.us/mailer.php",
         ...HOSTINGER_RELAY_ENDPOINTS,
       ].filter(Boolean) as string[]
     )
@@ -146,6 +151,30 @@ export async function testAccountViaHostingerRelay(payload: MailboxRelayPayload)
     }
   }
 
+  // Fallback: Test directly via authenticated SMTP socket if HTTP relay returned 404 or unreachable
+  try {
+    const creds = await resolveSmtpCredentialsForEmail(payload.fromEmail);
+    const testPayload: SmtpPayload = {
+      host: payload.host || creds?.host || "smtp.hostinger.com",
+      port: payload.port || creds?.port || 465,
+      secure: payload.port === 465 || creds?.port === 465 || true,
+      username: creds?.username || payload.fromEmail,
+      password: payload.password || creds?.password || "",
+      fromEmail: payload.fromEmail,
+      fromName: payload.fromName || "",
+    };
+
+    if (testPayload.password) {
+      const direct = await testSmtpConnection(testPayload);
+      if (direct.ok) {
+        return { ok: true, message: `Connected & verified directly via ${testPayload.host}:${testPayload.port}` };
+      }
+      return { ok: false, error: direct.message };
+    }
+  } catch (directErr: any) {
+    lastErr = `Hostinger relay unreachable (mailer.php 404). Direct test also failed: ${directErr?.message || directErr}`;
+  }
+
   return { ok: false, error: lastErr };
 }
 
@@ -213,6 +242,40 @@ export async function sendEmailViaHostingerRelay(opts: SendRelayOptions): Promis
     } catch (e: any) {
       lastErr = `${url} failed: ${e.message || String(e)}`;
     }
+  }
+
+  // --- AUTOMATIC DIRECT SMTP FALLBACK ---
+  // If HTTP relay gateway returned 404 or was unreachable, seamlessly try direct authenticated SMTP
+  console.warn(`[Hostinger Relay Fallback] HTTP relay unreachable (${lastErr}). Falling back to direct SMTP for ${opts.fromEmail}...`);
+  try {
+    const creds = await resolveSmtpCredentialsForEmail(opts.fromEmail);
+    const smtpPayload: SmtpPayload = {
+      host: opts.host || creds?.host || "smtp.hostinger.com",
+      port: opts.port || creds?.port || 465,
+      secure: opts.port === 465 || creds?.port === 465 || true,
+      username: creds?.username || opts.fromEmail,
+      password: opts.password || creds?.password || "",
+      fromEmail: opts.fromEmail,
+      fromName: opts.fromName || "Contractor Leads",
+    };
+
+    if (smtpPayload.password) {
+      const direct = await sendViaSmtpDirect(smtpPayload, {
+        from: opts.fromName ? `"${opts.fromName}" <${opts.fromEmail}>` : opts.fromEmail,
+        to: opts.to,
+        subject: opts.subject,
+        text: opts.text || "",
+        html: opts.html,
+        inReplyTo: opts.inReplyTo,
+        references: opts.references,
+      });
+      return { ok: true, messageId: direct.messageId };
+    } else {
+      lastErr = `Hostinger relay returned 404 (mailer.php not uploaded to host). Direct SMTP could not find password for ${opts.fromEmail}. Please upload public/mailer.php to your Hostinger public_html or set HOSTINGER_RELAY_URL.`;
+    }
+  } catch (directErr: any) {
+    console.error("[Hostinger Relay Fallback] Direct SMTP error:", directErr);
+    lastErr = `Hostinger relay returned 404 (mailer.php not found on server). Direct SMTP also failed: ${directErr?.message || directErr}. Please upload public/mailer.php to your Hostinger public_html or configure HOSTINGER_RELAY_URL.`;
   }
 
   return { ok: false, error: lastErr };

@@ -38,6 +38,7 @@ import { LeadIntelligenceReportCard } from "@/components/leads/lead-intelligence
 import { LeadActivityPanel } from "@/components/leads/lead-activity-panel";
 import { EnrollEmailSequenceButton } from "@/components/leads/enroll-email-sequence-button";
 import { LeadSendEmailCard } from "@/components/leads/lead-send-email-card";
+import { EmailStatusBadge } from "@/components/leads/email-status-badge";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
 import { BackLink, PageCrumbs } from "@/components/layout/back-nav";
 import { adminScrapeLeadIds } from "@/lib/client/search-session";
@@ -62,6 +63,13 @@ type Lead = {
   phone: string | null;
   email: string | null;
   emailSourceUrl: string | null;
+  emailStatus?: string | null;
+  emailBounceRisk?: string | null;
+  isRoleAccount?: boolean | null;
+  emailVerifySource?: string | null;
+  emailScore?: number | null;
+  emailSubStatus?: string | null;
+  emailVerifiedAt?: string | null;
   website: string | null;
   googleRating: number | null;
   reviewCount: number | null;
@@ -573,6 +581,50 @@ export function LeadDetailView({
   const [qualificationRefreshing, setQualificationRefreshing] = useState(false);
   const [checkingAds, setCheckingAds] = useState(false);
   const [refreshingSme, setRefreshingSme] = useState(false);
+  const [waterfallEnriching, setWaterfallEnriching] = useState(false);
+  const [waterfallCreditCost, setWaterfallCreditCost] = useState<number>(2);
+
+  useEffect(() => {
+    fetch("/api/leads/waterfall-enrich")
+      .then((r) => r.json())
+      .then((d) => {
+        if (typeof d.creditCostPerLead === "number") {
+          setWaterfallCreditCost(d.creditCostPerLead);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  async function runWaterfallEnrich() {
+    setWaterfallEnriching(true);
+    try {
+      const res = await fetch(`/api/leads/${leadId}/enrich-waterfall`, {
+        method: "POST",
+        signal: AbortSignal.timeout(60000),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Waterfall enrichment failed");
+      if (data.lead) mergeLead(data.lead);
+      setPopup({
+        kind: data.waterfall?.found ? "success" : "info",
+        title: data.waterfall?.found
+          ? `Verified via ${data.waterfall.sourceLabel}`
+          : "No new verified contact found",
+        message:
+          data.message ??
+          "Waterfall enrichment completed across all configured providers.",
+      });
+    } catch (e) {
+      setPopup({
+        kind: "error",
+        title: "Waterfall Enrichment Error",
+        message:
+          e instanceof Error ? e.message : "Failed to run waterfall enrichment",
+      });
+    } finally {
+      setWaterfallEnriching(false);
+    }
+  }
 
   function mergeLead(updated: Lead) {
     setLead((prev) => ({
@@ -1272,8 +1324,18 @@ export function LeadDetailView({
       <div className="mt-6 grid gap-5 lg:grid-cols-3">
         <div className="space-y-5 lg:col-span-2">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
               <CardTitle>Contact information</CardTitle>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={runWaterfallEnrich}
+                loading={waterfallEnriching}
+                disabled={waterfallEnriching}
+                className="border border-brand-200 bg-brand-50/70 text-brand-700 hover:bg-brand-100"
+              >
+                ⚡ Waterfall Enrich ({waterfallCreditCost} cr)
+              </Button>
             </CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-2">
               <div className="flex items-center gap-3 rounded-xl border border-border bg-[#faf8fc] px-3.5 py-3 text-sm">
@@ -1362,7 +1424,18 @@ export function LeadDetailView({
                     {lead.email ?? "Not available"}
                   </p>
                   {lead.email && (
-                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                      <EmailStatusBadge
+                        leadId={lead.id}
+                        email={lead.email}
+                        emailStatus={lead.emailStatus}
+                        emailBounceRisk={lead.emailBounceRisk}
+                        isRoleAccount={lead.isRoleAccount}
+                        emailVerifySource={lead.emailVerifySource}
+                        emailScore={lead.emailScore}
+                        emailSubStatus={lead.emailSubStatus}
+                        emailVerifiedAt={lead.emailVerifiedAt}
+                      />
                       <a
                         href={`/inbox?tab=compose&leadId=${lead.id}&to=${encodeURIComponent(lead.email)}&name=${encodeURIComponent(lead.businessName)}`}
                         className="inline-flex items-center gap-1 rounded-md bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-700 transition hover:bg-brand-100"

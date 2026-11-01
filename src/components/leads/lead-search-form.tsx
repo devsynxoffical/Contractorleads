@@ -65,6 +65,13 @@ type Lead = SearchSessionLead & {
   phone: string | null;
   industry: string | null;
   verificationStatus?: "verified" | "invalid" | string | null;
+  emailStatus?: string | null;
+  emailBounceRisk?: string | null;
+  isRoleAccount?: boolean | null;
+  emailVerifySource?: string | null;
+  emailScore?: number | null;
+  emailSubStatus?: string | null;
+  emailVerifiedAt?: string | null;
 };
 
 function hasLinkedInAndSocial(lead: Lead): boolean {
@@ -185,6 +192,9 @@ export function LeadSearchForm() {
   const [segmentSuccessMsg, setSegmentSuccessMsg] = useState<string | null>(null);
   const [segmentError, setSegmentError] = useState<string | null>(null);
   const [verifyingEmails, setVerifyingEmails] = useState(false);
+  const [emailStatusFilter, setEmailStatusFilter] = useState<
+    "all" | "safe" | "catchall" | "role" | "invalid" | "unknown"
+  >("all");
   const [verifyResultMsg, setVerifyResultMsg] = useState<{
     type: "success" | "error" | "info";
     text: string;
@@ -197,7 +207,7 @@ export function LeadSearchForm() {
     setVerifyingEmails(true);
     setVerifyResultMsg(null);
     try {
-      const res = await fetch("/api/segments/verify", {
+      const res = await fetch("/api/leads/bulk-verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -213,17 +223,44 @@ export function LeadSearchForm() {
         return;
       }
 
-      const invalidSet = new Set<string>(data.invalidLeadIds || []);
-      const riskySet = new Set<string>(data.riskyLeadIds || []);
+      const byLeadId = new Map<
+        string,
+        {
+          emailStatus: string;
+          emailBounceRisk: string | null;
+          isRoleAccount: boolean;
+          emailVerifySource: string | null;
+          emailScore: number | null;
+          emailSubStatus: string | null;
+          emailVerifiedAt: string | null;
+        }
+      >();
+      if (Array.isArray(data.results)) {
+        for (const r of data.results) {
+          byLeadId.set(r.leadId, r);
+        }
+      }
+
       // Preserve all leads so phone numbers remain accessible for calls & SMS!
       const nextLeads = leads.map((l) => {
-        if (invalidSet.has(l.id)) {
-          return { ...l, verificationStatus: "invalid" as const };
-        }
-        if (riskySet.has(l.id)) {
-          return { ...l, verificationStatus: "risky" as const };
-        }
-        return { ...l, verificationStatus: "verified" as const };
+        const v = byLeadId.get(l.id);
+        if (!v) return l;
+        return {
+          ...l,
+          verificationStatus:
+            v.emailStatus === "invalid"
+              ? ("invalid" as const)
+              : v.emailStatus === "safe"
+                ? ("verified" as const)
+                : ("risky" as const),
+          emailStatus: v.emailStatus,
+          emailBounceRisk: v.emailBounceRisk,
+          isRoleAccount: v.isRoleAccount,
+          emailVerifySource: v.emailVerifySource,
+          emailScore: v.emailScore,
+          emailSubStatus: v.emailSubStatus,
+          emailVerifiedAt: v.emailVerifiedAt,
+        };
       });
       setLeads(nextLeads);
 
@@ -239,12 +276,14 @@ export function LeadSearchForm() {
         selectedLeadIds: nextLeads.map((l) => l.id),
       });
 
-      const invalidCount = data.invalidCount ?? invalidSet.size;
-      const validCount = data.validCount ?? (nextLeads.length - invalidCount);
+      const safeCount = data.safeCount ?? 0;
+      const catchallCount = data.catchallCount ?? 0;
+      const roleCount = data.roleCount ?? 0;
+      const invalidCount = data.invalidCount ?? 0;
 
       setVerifyResultMsg({
         type: "success",
-        text: `Triple-check complete: ${validCount} deliverable emails verified! ${invalidCount} non-working emails flagged (phone numbers preserved for calling/SMS).`,
+        text: `Verification complete: 🟢 ${safeCount} Safe · 🟡 ${catchallCount} Catchall · 🟠 ${roleCount} Role Acct · 🔴 ${invalidCount} Invalid (phone numbers preserved for calling/SMS).`,
       });
     } catch {
       setVerifyResultMsg({
@@ -1380,7 +1419,7 @@ export function LeadSearchForm() {
                   ) : (
                     <HiOutlineShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                   )}
-                  {verifyingEmails ? "Verifying Leads..." : "Triple-Check & Clean Emails"}
+                  {verifyingEmails ? "Verifying All..." : "Verify All Emails"}
                 </button>
                 <ExportLeadsButtons
                   size="sm"
@@ -1414,11 +1453,111 @@ export function LeadSearchForm() {
               </button>
             </div>
           )}
-          <LeadResultsList
-            leads={leads}
-            openInNewTab={true}
-            profileHrefFor={(lead) => `/leads/${lead.id}?from=search`}
-          />
+
+          {/* Section 08 & 10: Email Verification Filter Bar + Monitoring Stats */}
+          {(() => {
+            const safeLeads = leads.filter((l) => (l.emailStatus || "unknown") === "safe");
+            const catchallLeads = leads.filter((l) => (l.emailStatus || "unknown") === "catchall");
+            const roleLeads = leads.filter((l) => (l.emailStatus || "unknown") === "role");
+            const invalidLeads = leads.filter((l) => (l.emailStatus || "unknown") === "invalid");
+            const unknownLeads = leads.filter(
+              (l) => !l.emailStatus || l.emailStatus === "unknown",
+            );
+            const verifiedTotal =
+              safeLeads.length + catchallLeads.length + roleLeads.length + invalidLeads.length;
+            const pctVerified =
+              leads.length > 0 ? Math.round((verifiedTotal / leads.length) * 100) : 0;
+            const pctSafe =
+              verifiedTotal > 0 ? Math.round((safeLeads.length / verifiedTotal) * 100) : 0;
+
+            const filteredDisplayLeads =
+              emailStatusFilter === "all"
+                ? leads
+                : leads.filter((l) => (l.emailStatus || "unknown") === emailStatusFilter);
+
+            return (
+              <>
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-[var(--surface)] px-4 py-3 text-xs shadow-[var(--shadow-soft)]">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="mr-1 font-semibold text-ink-muted">
+                      Filter by Email Status:
+                    </span>
+                    {[
+                      { id: "all", label: `All (${leads.length})`, dot: "bg-brand-500" },
+                      {
+                        id: "safe",
+                        label: `Safe ✓ (${safeLeads.length})`,
+                        dot: "bg-emerald-500",
+                      },
+                      {
+                        id: "catchall",
+                        label: `Catchall (${catchallLeads.length})`,
+                        dot: "bg-amber-500",
+                      },
+                      {
+                        id: "role",
+                        label: `Role Acct (${roleLeads.length})`,
+                        dot: "bg-orange-500",
+                      },
+                      {
+                        id: "invalid",
+                        label: `Invalid (${invalidLeads.length})`,
+                        dot: "bg-rose-500",
+                      },
+                      {
+                        id: "unknown",
+                        label: `Unverified (${unknownLeads.length})`,
+                        dot: "bg-slate-400",
+                      },
+                    ].map((pill) => (
+                      <button
+                        key={pill.id}
+                        type="button"
+                        onClick={() =>
+                          setEmailStatusFilter(
+                            pill.id as
+                              | "all"
+                              | "safe"
+                              | "catchall"
+                              | "role"
+                              | "invalid"
+                              | "unknown",
+                          )
+                        }
+                        className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 font-semibold transition ${
+                          emailStatusFilter === pill.id
+                            ? "border-brand-600 bg-brand-600 text-white shadow-xs"
+                            : "border-border bg-[var(--input-bg)] text-ink-muted hover:border-brand-300 hover:text-ink"
+                        }`}
+                      >
+                        <span className={`h-2 w-2 rounded-full ${pill.dot}`} />
+                        {pill.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-3 text-[11px] font-medium text-ink-muted">
+                    <span>
+                      Verified:{" "}
+                      <strong className="text-ink">{pctVerified}%</strong>
+                    </span>
+                    {verifiedTotal > 0 && (
+                      <span>
+                        Safe Rate:{" "}
+                        <strong className="text-emerald-700">{pctSafe}%</strong>
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <LeadResultsList
+                  leads={filteredDisplayLeads}
+                  openInNewTab={true}
+                  profileHrefFor={(lead) => `/leads/${lead.id}?from=search`}
+                />
+              </>
+            );
+          })()}
         </div>
       )}
 

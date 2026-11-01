@@ -21,15 +21,17 @@ import {
 import {
   HiOutlineBookmark,
   HiOutlineEnvelope,
-  HiOutlineLockClosed,
   HiXMark,
   HiOutlineLightBulb,
+  HiOutlineSparkles,
+  HiOutlineDocumentArrowUp,
 } from "react-icons/hi2";
 import { OUTREACH_HOOKS } from "@/lib/outreach-hooks";
 import {
   AddonLockNotice,
   isMessagingAddonLocked,
 } from "@/components/billing/addon-lock-notice";
+import { SpreadsheetImporter } from "@/components/campaigns/spreadsheet-importer";
 
 type SavedLeadRow = {
   id: string;
@@ -115,6 +117,7 @@ export function SavedLeadsManager({
   mailboxes: Mailbox[];
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [localLeads, setLocalLeads] = useState<SavedLeadRow[]>(leads);
   const [industryFilter, setIndustryFilter] = useState("all");
   const [whenFilter, setWhenFilter] = useState("all");
   const [tierFilter, setTierFilter] = useState("all");
@@ -125,6 +128,10 @@ export function SavedLeadsManager({
   const [selectedSegmentId, setSelectedSegmentId] = useState<string>("");
   const [activeHookId, setActiveHookId] = useState<number | null>(null);
   const [composeOpen, setComposeOpen] = useState(false);
+  const [datasheetOpen, setDatasheetOpen] = useState(false);
+  const [waterfallCreditCost, setWaterfallCreditCost] = useState<number>(2);
+  const [enrichingLeadId, setEnrichingLeadId] = useState<string | null>(null);
+  const [enrichNotice, setEnrichNotice] = useState<string | null>(null);
   const [subject, setSubject] = useState("");
   const [bodyText, setBodyText] = useState("");
   const [smtpAccountId, setSmtpAccountId] = useState(
@@ -146,6 +153,56 @@ export function SavedLeadsManager({
     if (!hook) return;
     setSubject(hook.subject);
     setBodyText(hook.body);
+  }
+
+  useEffect(() => {
+    setLocalLeads(leads);
+  }, [leads]);
+
+  useEffect(() => {
+    fetch("/api/leads/waterfall-enrich")
+      .then((r) => r.json())
+      .then((d) => {
+        if (typeof d.creditCostPerLead === "number") {
+          setWaterfallCreditCost(d.creditCostPerLead);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  async function waterfallEnrichLead(leadId: string) {
+    setEnrichingLeadId(leadId);
+    setEnrichNotice(null);
+    try {
+      const res = await fetch(`/api/leads/${leadId}/enrich-waterfall`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setEnrichNotice(data.error || "Waterfall enrichment failed");
+        return;
+      }
+      if (data.lead?.email) {
+        setLocalLeads((prev) =>
+          prev.map((row) =>
+            row.lead.id === leadId
+              ? {
+                  ...row,
+                  lead: {
+                    ...row.lead,
+                    email: data.lead.email,
+                  },
+                }
+              : row,
+          ),
+        );
+      }
+      setEnrichNotice(data.message || "Waterfall enrichment complete");
+    } catch {
+      setEnrichNotice("Waterfall enrichment failed");
+    } finally {
+      setEnrichingLeadId(null);
+    }
   }
 
   useEffect(() => {
@@ -191,7 +248,7 @@ export function SavedLeadsManager({
   }
 
   const filteredLeads = useMemo(() => {
-    return leads.filter((s) => {
+    return localLeads.filter((s) => {
       if (
         industryFilter !== "all" &&
         s.lead.industry?.toLowerCase() !== industryFilter.toLowerCase()
@@ -207,7 +264,7 @@ export function SavedLeadsManager({
       return true;
     });
   }, [
-    leads,
+    localLeads,
     industryFilter,
     whenFilter,
     tierFilter,
@@ -288,7 +345,19 @@ export function SavedLeadsManager({
 
   return (
     <div className="space-y-3">
-      {leads.length > 0 ? (
+      {enrichNotice && (
+        <div className="flex items-center justify-between rounded-xl border border-brand-200 bg-brand-50/70 px-4 py-2.5 text-xs font-medium text-brand-900">
+          <span>{enrichNotice}</span>
+          <button
+            type="button"
+            onClick={() => setEnrichNotice(null)}
+            className="text-brand-600 hover:underline"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+      {localLeads.length > 0 ? (
         <div className="space-y-3 rounded-xl border border-border bg-[var(--surface)] px-4 py-3">
           {segments.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5 pb-2 border-b border-border">
@@ -448,6 +517,15 @@ export function SavedLeadsManager({
                   : "Select all with email"}
             </label>
             <div className="flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setDatasheetOpen(true)}
+                className="border border-brand-200 text-brand-700 bg-white hover:bg-brand-50"
+              >
+                <HiOutlineDocumentArrowUp className="h-4 w-4" />
+                Upload Datasheet &amp; Enrich ({waterfallCreditCost} cr)
+              </Button>
               <Link
                 href={
                   selectedSegmentId
@@ -533,6 +611,19 @@ export function SavedLeadsManager({
                   <span className="text-sm font-semibold tabular-nums text-brand-600">
                     Score {s.lead.leadScore}
                   </span>
+                  {!emailable && (
+                    <button
+                      type="button"
+                      disabled={enrichingLeadId === s.lead.id}
+                      onClick={() => waterfallEnrichLead(s.lead.id)}
+                      className="inline-flex items-center gap-1 rounded-lg border border-brand-300 bg-brand-50 px-2.5 py-1 text-[11px] font-semibold text-brand-700 transition hover:bg-brand-100 disabled:opacity-50"
+                    >
+                      <HiOutlineSparkles className="h-3.5 w-3.5" />
+                      {enrichingLeadId === s.lead.id
+                        ? "Enriching…"
+                        : `Waterfall Enrich (${waterfallCreditCost} cr)`}
+                    </button>
+                  )}
                   <EnrollEmailSequenceButton
                     savedLeadId={s.id}
                     hasEmail={emailable}
@@ -753,6 +844,35 @@ export function SavedLeadsManager({
               >
                 Send to {selectedCount}
               </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {datasheetOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-3xl overflow-hidden rounded-2xl border border-border bg-[var(--surface)] shadow-xl">
+            <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
+              <div>
+                <h3 className="text-[15px] font-semibold text-ink">
+                  Upload Datasheet &amp; Waterfall Enrich
+                </h3>
+                <p className="text-[12px] text-ink-muted">
+                  Upload a CSV or Excel sheet with missing emails/phones and enrich rows on-demand ({waterfallCreditCost} credit{waterfallCreditCost === 1 ? "" : "s"} per verified match).
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDatasheetOpen(false)}
+                className="rounded-lg p-1.5 text-ink-muted hover:bg-[var(--input-bg)]"
+              >
+                <HiXMark className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="max-h-[75vh] overflow-y-auto p-5">
+              <SpreadsheetImporter
+                onClose={() => setDatasheetOpen(false)}
+              />
             </div>
           </div>
         </div>

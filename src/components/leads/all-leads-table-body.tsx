@@ -5,7 +5,8 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { HiOutlineViewColumns } from "react-icons/hi2";
+import { HiOutlineViewColumns, HiOutlineShieldCheck } from "react-icons/hi2";
+import { EmailStatusBadge } from "@/components/leads/email-status-badge";
 
 export type AllLeadsTableRow = {
   id: string;
@@ -18,6 +19,14 @@ export type AllLeadsTableRow = {
   decisionMakerName?: string | null;
   decisionMakerRole?: string | null;
   decisionMakerEmail?: string | null;
+  email?: string | null;
+  emailStatus?: string | null;
+  emailBounceRisk?: string | null;
+  isRoleAccount?: boolean | null;
+  emailVerifySource?: string | null;
+  emailScore?: number | null;
+  emailSubStatus?: string | null;
+  emailVerifiedAt?: string | null;
   decisionMakerDirectPhone?: string | null;
   businessAgeYears?: number | null;
   businessMaturity?: string | null;
@@ -38,8 +47,37 @@ export function AllLeadsTableBody({
   const pipelineSet = useMemo(() => new Set(pipelineLeadIds), [pipelineLeadIds]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
+  const [verifyingBulk, setVerifyingBulk] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  async function verifyAllEmails() {
+    if (verifyingBulk || !leads.length) return;
+    setVerifyingBulk(true);
+    setError(null);
+    setFeedback(null);
+    try {
+      const targetIds =
+        selected.size > 0
+          ? [...selected]
+          : leads.slice(0, 200).map((l) => l.id);
+      const res = await fetch("/api/leads/bulk-verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leadIds: targetIds }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Bulk verification failed");
+      setFeedback(
+        `Verified ${data.totalChecked} leads: 🟢 ${data.safeCount} Safe · 🟡 ${data.catchallCount} Catchall · 🟠 ${data.roleCount} Role · 🔴 ${data.invalidCount} Invalid`,
+      );
+      router.refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Bulk verification failed");
+    } finally {
+      setVerifyingBulk(false);
+    }
+  }
 
   const addableIds = useMemo(
     () => leads.filter((l) => !pipelineSet.has(l.id)).map((l) => l.id),
@@ -122,6 +160,19 @@ export function AllLeadsTableBody({
             ) : null}
             <Button
               size="sm"
+              variant="secondary"
+              loading={verifyingBulk}
+              disabled={verifyingBulk || busy}
+              onClick={() => void verifyAllEmails()}
+              className="border border-emerald-300 bg-emerald-50/70 text-emerald-800 hover:bg-emerald-100"
+            >
+              <HiOutlineShieldCheck className="h-4 w-4" />
+              {selectedCount > 0
+                ? `Verify ${selectedCount} Selected`
+                : "Verify All Emails"}
+            </Button>
+            <Button
+              size="sm"
               loading={busy}
               disabled={selectedCount === 0 || busy}
               onClick={() => void addToPipeline()}
@@ -133,12 +184,13 @@ export function AllLeadsTableBody({
         </div>
       ) : null}
 
-      <table className="w-full min-w-[800px] text-left text-sm">
+      <table className="w-full min-w-[900px] text-left text-sm">
         <thead className="border-b border-border bg-[var(--canvas)] text-xs uppercase tracking-wide text-ink-muted">
           <tr>
             <th className="w-10 px-4 py-3 font-medium" aria-label="Select" />
             <th className="px-4 py-3 font-medium">Business & Industry</th>
             <th className="px-4 py-3 font-medium">Verified Decision-Maker</th>
+            <th className="px-4 py-3 font-medium">Email & Verification</th>
             <th className="px-4 py-3 font-medium">Business Age</th>
             <th className="px-4 py-3 font-medium">Team Size</th>
             <th className="px-4 py-3 font-medium">SME Score</th>
@@ -236,6 +288,31 @@ export function AllLeadsTableBody({
                     <span className="inline-flex items-center gap-1 rounded bg-amber-50/80 px-2 py-0.5 text-[11px] font-medium text-amber-800">
                       <span>⚠️ Gatekeeper only</span>
                     </span>
+                  )}
+                </td>
+
+                {/* Email & Verification column */}
+                <td className="px-4 py-3.5" onClick={(e) => e.stopPropagation()}>
+                  {lead.decisionMakerEmail || lead.email ? (
+                    <div className="flex flex-col gap-1">
+                      <span className="max-w-[200px] truncate text-[12px] font-medium text-ink">
+                        {lead.decisionMakerEmail || lead.email}
+                      </span>
+                      <EmailStatusBadge
+                        leadId={lead.id}
+                        email={lead.decisionMakerEmail || lead.email}
+                        emailStatus={lead.emailStatus}
+                        emailBounceRisk={lead.emailBounceRisk}
+                        isRoleAccount={lead.isRoleAccount}
+                        emailVerifySource={lead.emailVerifySource}
+                        emailScore={lead.emailScore}
+                        emailSubStatus={lead.emailSubStatus}
+                        emailVerifiedAt={lead.emailVerifiedAt}
+                        compact
+                      />
+                    </div>
+                  ) : (
+                    <span className="text-[11px] text-ink-muted">No email</span>
                   )}
                 </td>
 
