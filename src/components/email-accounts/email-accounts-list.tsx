@@ -235,12 +235,15 @@ export function EmailAccountsList() {
     return Object.values(map).filter((f: any) => f.mailboxes.length > 0);
   }, [data, paginatedRows]);
 
+  // Zeros while loading: never show made-up numbers.
   const summary = data?.summary || {
-    totalMailboxes: 65,
-    warmingCount: 12,
-    readyCount: 53,
+    totalMailboxes: 0,
+    warmingCount: 0,
+    readyCount: 0,
     atRiskCount: 0,
-    avgPlatformHealth: 98.3,
+    failingCount: 0,
+    unmeasuredCount: 0,
+    avgPlatformHealth: null,
   };
 
   return (
@@ -288,7 +291,11 @@ export function EmailAccountsList() {
             {summary.atRiskCount}
             <span className="text-xs font-normal text-slate-500 dark:text-slate-400">mailboxes</span>
           </div>
-          <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Auto-paused from sends</div>
+          <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
+            {summary.failingCount > 0
+              ? `${summary.failingCount} can't send right now`
+              : "Auto-paused from sends"}
+          </div>
         </div>
 
         <div className="p-4 rounded-2xl bg-white dark:bg-[#141326] border border-slate-200 dark:border-[#26253c] shadow-xs">
@@ -296,10 +303,16 @@ export function EmailAccountsList() {
             Platform Avg Health
           </div>
           <div className="text-2xl font-black text-purple-600 dark:text-purple-400 mt-1 flex items-baseline gap-2">
-            {summary.avgPlatformHealth}%
+            {summary.avgPlatformHealth == null ? "—" : `${summary.avgPlatformHealth}%`}
             <span className="text-xs font-normal text-slate-500 dark:text-slate-400">inbox rate</span>
           </div>
-          <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">7-Day rolling average</div>
+          <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
+            {summary.avgPlatformHealth == null
+              ? "No sends measured yet"
+              : summary.unmeasuredCount > 0
+                ? `7-day average · ${summary.unmeasuredCount} not measured yet`
+                : "7-Day rolling average"}
+          </div>
         </div>
       </div>
 
@@ -594,8 +607,19 @@ export function EmailAccountsList() {
                     {/* Avg Health */}
                     <div className="flex items-center gap-1 text-slate-600 dark:text-slate-300">
                       <HiOutlineHeart className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" />
-                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                        {folder.avgHealth}%
+                      <span
+                        className={`font-semibold ${
+                          folder.failingCount > 0
+                            ? "text-rose-600 dark:text-rose-400"
+                            : "text-emerald-600 dark:text-emerald-400"
+                        }`}
+                        title={
+                          folder.failingCount > 0
+                            ? `${folder.failingCount} mailbox(es) on this domain cannot send`
+                            : undefined
+                        }
+                      >
+                        {folder.healthKnown === false ? "—" : `${folder.avgHealth}%`}
                       </span>
                     </div>
 
@@ -651,6 +675,14 @@ export function EmailAccountsList() {
                                 </span>
                               </div>
                               <div className="truncate text-[11px] text-slate-500 dark:text-slate-400">{row.senderName}</div>
+                              {row.sendStatus === "failing" && (
+                                <div
+                                  className="mt-0.5 truncate text-[11px] font-semibold text-rose-600 dark:text-rose-400"
+                                  title={row.lastSendError || undefined}
+                                >
+                                  {row.lastSendError || "Last send failed"}
+                                </div>
+                              )}
                             </div>
 
                             {/* Status Pill */}
@@ -658,8 +690,17 @@ export function EmailAccountsList() {
                               className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
                                 row.status === "Active"
                                   ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30"
-                                  : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
+                                  : row.status === "Sending failed"
+                                    ? "bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-rose-500/30"
+                                    : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
                               }`}
+                              title={
+                                row.sendStatus === "failing"
+                                  ? `${row.lastSendError || "Last send failed"}${
+                                      row.lastSendErrorAt ? ` (${new Date(row.lastSendErrorAt).toLocaleString()})` : ""
+                                    }`
+                                  : undefined
+                              }
                             >
                               {row.status}
                             </span>
@@ -716,7 +757,7 @@ export function EmailAccountsList() {
                                     : "text-rose-600 dark:text-rose-400"
                                 }`}
                               >
-                                {row.healthScore}%
+                                {row.healthKnown === false ? "—" : `${row.healthScore}%`}
                               </span>
                             </div>
 

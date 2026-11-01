@@ -6,6 +6,7 @@ import {
   type SmtpPayload,
 } from "@/lib/user-smtp";
 import { testSmtpConnection } from "@/lib/system-smtp";
+import { recordMailboxSendResult } from "@/lib/mailbox-send-status";
 
 export type MailboxRelayPayload = {
   fromEmail: string;
@@ -173,7 +174,18 @@ export async function testAccountViaHostingerRelay(payload: MailboxRelayPayload)
 /**
  * Send an email (campaign or warmup) via Hostinger relay
  */
+/** Send (campaign or warmup) and record the outcome on the mailbox (shown on Email Accounts). */
 export async function sendEmailViaHostingerRelay(opts: SendRelayOptions): Promise<{
+  ok: boolean;
+  messageId?: string | null;
+  error?: string;
+}> {
+  const res = await sendEmailViaHostingerRelayRaw(opts);
+  await recordMailboxSendResult(opts.fromEmail, res.ok, res.error);
+  return res;
+}
+
+async function sendEmailViaHostingerRelayRaw(opts: SendRelayOptions): Promise<{
   ok: boolean;
   messageId?: string | null;
   error?: string;

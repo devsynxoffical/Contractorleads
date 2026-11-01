@@ -1284,6 +1284,11 @@ model WarmupSettings {
   healthScore     Float     @default(98.0)
   startedAt       DateTime  @default(now())
   lastCycleAt     DateTime?
+  /// Result of the most recent real send attempt (warmup or campaign) from this mailbox
+  lastSendOkAt            DateTime?
+  lastSendErrorAt         DateTime?
+  lastSendError           String?
+  consecutiveSendFailures Int       @default(0)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 

@@ -53,7 +53,8 @@ export async function GET(request: Request) {
   todayStart.setHours(0, 0, 0, 0);
 
   // 1. Fetch today's campaign logs to count sends per mailbox
-  const [todayCampaignLogs, todayWarmupLogs, activeCampaigns, warmupSettingsList, cachedDnsList] = await Promise.all([
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const [todayCampaignLogs, todayWarmupLogs, activeCampaigns, warmupSettingsList, cachedDnsList, recentWarmup] = await Promise.all([
     prisma.campaignLog.findMany({
       where: { sentAt: { gte: todayStart } },
       select: { mailboxId: true, fromEmail: true, status: true },
@@ -68,7 +69,40 @@ export async function GET(request: Request) {
     }),
     prisma.warmupSettings.findMany(),
     prisma.domainDnsCache.findMany(),
+    // Mailboxes with any real warmup traffic in the last 7 days have a measured health score
+    prisma.warmupMessage.findMany({
+      where: { sentAt: { gte: sevenDaysAgo } },
+      select: { fromEmail: true, toEmail: true },
+    }),
   ]);
+
+  const mailboxesWithTraffic = new Set<string>();
+  for (const m of recentWarmup) {
+    mailboxesWithTraffic.add(m.fromEmail.toLowerCase());
+    mailboxesWithTraffic.add(m.toEmail.toLowerCase());
+  }
+
+  /**
+   * Real sending state for a mailbox. "failing" when the latest send attempt failed
+   * (e.g. wrong password): health is then 0, because the mailbox cannot deliver anything.
+   * "unknown" when nothing has been sent or measured yet, so no score is claimed.
+   */
+  const sendState = (email: string, storedHealth: number) => {
+    const w = warmupSettingsMap.get(email);
+    const failing =
+      Boolean(w?.lastSendErrorAt) &&
+      (w?.consecutiveSendFailures ?? 0) > 0 &&
+      (!w?.lastSendOkAt || new Date(w.lastSendErrorAt) > new Date(w.lastSendOkAt));
+    const known = failing || Boolean(w?.lastSendOkAt) || mailboxesWithTraffic.has(email);
+    return {
+      sendStatus: (failing ? "failing" : known ? "ok" : "unknown") as "failing" | "ok" | "unknown",
+      lastSendError: failing ? (w?.lastSendError as string | null) ?? "Last send failed" : null,
+      lastSendErrorAt: failing && w?.lastSendErrorAt ? new Date(w.lastSendErrorAt).toISOString() : null,
+      lastSendOkAt: w?.lastSendOkAt ? new Date(w.lastSendOkAt).toISOString() : null,
+      healthKnown: known,
+      healthScore: failing ? 0 : storedHealth,
+    };
+  };
 
   const warmupSettingsMap = new Map<string, any>();
   for (const w of warmupSettingsList) {
@@ -129,7 +163,8 @@ export async function GET(request: Request) {
       const campaignSent = campaignSendsToday.get(s.id) || campaignSendsToday.get(email) || s.campaignSentToday || 0;
       const dailyCampaignLimit = s.dailyLimit || 30;
 
-      const healthScore = wSettings ? wSettings.healthScore : s.healthScore || 98.3;
+      const state = sendState(email, wSettings ? wSettings.healthScore : s.healthScore || 98.3);
+      const healthScore = state.healthScore;
       const attachedCount = attachedCampaignsMap.get(s.id) || 1;
 
       return {
@@ -139,7 +174,8 @@ export async function GET(request: Request) {
         domain,
         provider: s.provider || "hostinger",
         type: "system",
-        status: s.enabled ? "Active" : "Paused",
+        status: !s.enabled ? "Paused" : state.sendStatus === "failing" ? "Sending failed" : "Active",
+        ...state,
         campaignSends: { sent: campaignSent, limit: dailyCampaignLimit },
         warmupSends: { sent: warmupSent, target: ramp.warmupTarget },
         warmupEnabled: wSettings ? wSettings.enabled : s.warmupEnabled,
@@ -148,7 +184,7 @@ export async function GET(request: Request) {
         bounceRate: s.bounceRate || 1.7,
         attachedCampaigns: attachedCount,
         tags: s.tags ? s.tags.split(",").map((t) => t.trim()).filter(Boolean) : [],
-        isReady: s.enabled && healthScore >= 90 && ramp.status !== "warming",
+        isReady: s.enabled && state.sendStatus === "ok" && healthScore >= 90 && ramp.status !== "warming",
         warmingDays: ramp.dayNumber,
         rampStatus: ramp.status,
       };
@@ -164,7 +200,8 @@ export async function GET(request: Request) {
 
       const warmupSent = warmupSendsToday.get(email) || 0;
       const campaignSent = campaignSendsToday.get(u.id) || campaignSendsToday.get(email) || 0;
-      const healthScore = wSettings ? wSettings.healthScore : 97.5;
+      const state = sendState(email, wSettings ? wSettings.healthScore : 97.5);
+      const healthScore = state.healthScore;
 
       return {
         id: u.id,
@@ -173,7 +210,8 @@ export async function GET(request: Request) {
         domain,
         provider: "custom",
         type: "user",
-        status: u.enabled ? "Active" : "Paused",
+        status: !u.enabled ? "Paused" : state.sendStatus === "failing" ? "Sending failed" : "Active",
+        ...state,
         campaignSends: { sent: campaignSent, limit: 30 },
         warmupSends: { sent: warmupSent, target: ramp.warmupTarget },
         warmupEnabled: wSettings ? wSettings.enabled : true,
@@ -182,7 +220,7 @@ export async function GET(request: Request) {
         bounceRate: 1.2,
         attachedCampaigns: attachedCampaignsMap.get(u.id) || 0,
         tags: ["custom-smtp"],
-        isReady: u.enabled && healthScore >= 90,
+        isReady: u.enabled && state.sendStatus === "ok" && healthScore >= 90,
         warmingDays: ramp.dayNumber,
         rampStatus: ramp.status,
       };
@@ -332,21 +370,27 @@ export async function GET(request: Request) {
 
   // Calculate folder avg health
   for (const folder of Object.values(domainFolders)) {
-    if (folder.mailboxes.length > 0) {
-      const sum = folder.mailboxes.reduce((acc, m) => acc + m.healthScore, 0);
-      folder.avgHealth = Math.round((sum / folder.mailboxes.length) * 10) / 10;
+    const measured = folder.mailboxes.filter((m) => m.healthKnown);
+    if (measured.length > 0) {
+      const sum = measured.reduce((acc, m) => acc + m.healthScore, 0);
+      folder.avgHealth = Math.round((sum / measured.length) * 10) / 10;
     }
+    (folder as any).healthKnown = measured.length > 0;
+    (folder as any).failingCount = folder.mailboxes.filter((m) => m.sendStatus === "failing").length;
   }
 
   // Summary KPIs
   const totalMailboxes = rows.length;
   const warmingCount = rows.filter((r) => r.warmupEnabled).length;
   const readyCount = rows.filter((r) => r.isReady).length;
-  const atRiskCount = rows.filter((r) => r.healthScore < 80).length;
+  const failingCount = rows.filter((r) => r.sendStatus === "failing").length;
+  const measuredRows = rows.filter((r) => r.healthKnown);
+  const atRiskCount = measuredRows.filter((r) => r.healthScore < 80).length;
+  // Average only over mailboxes with real data; null means nothing has been measured yet.
   const avgPlatformHealth =
-    totalMailboxes > 0
-      ? Math.round((rows.reduce((acc, r) => acc + r.healthScore, 0) / totalMailboxes) * 10) / 10
-      : 98.0;
+    measuredRows.length > 0
+      ? Math.round((measuredRows.reduce((acc, r) => acc + r.healthScore, 0) / measuredRows.length) * 10) / 10
+      : null;
 
   return NextResponse.json({
     ok: true,
@@ -355,6 +399,8 @@ export async function GET(request: Request) {
       warmingCount,
       readyCount,
       atRiskCount,
+      failingCount,
+      unmeasuredCount: totalMailboxes - measuredRows.length,
       avgPlatformHealth,
     },
     domainFolders: Object.values(domainFolders),
