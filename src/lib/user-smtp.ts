@@ -6,7 +6,7 @@ import { decryptSecret, encryptSecret } from "@/lib/crypto-secret";
 import { sendUserResendEmail, verifyResendApiKey } from "@/lib/email";
 import { assertPublicSmtpHost, BlockedUrlError } from "@/lib/safe-fetch";
 import { appBaseUrl } from "@/lib/email-brand";
-import { recordMailboxSendResult } from "@/lib/mailbox-send-status";
+import { publicMailError, recordMailboxSendResult } from "@/lib/mailbox-send-status";
 
 import {
   getSystemSenderConfig,
@@ -851,6 +851,17 @@ export const HOSTINGER_RELAY_SECRET =
 export async function resolveSmtpCredentialsForEmail(fromEmail: string): Promise<SmtpPayload | null> {
   const normEmail = fromEmail.toLowerCase().trim();
 
+  // 0. A pool mailbox whose credentials a user corrected in the app wins over the defaults.
+  try {
+    const fixed = await prisma.systemSmtpAccount.findFirst({
+      where: {
+        fromEmail: { equals: normEmail, mode: "insensitive" },
+        passwordUpdatedByUserAt: { not: null },
+      },
+    });
+    if (fixed) return systemRowToPayload(fixed);
+  } catch {}
+
   // 1. Check known Hostinger mailboxes
   const knownHostinger = HOSTINGER_DEFAULT_MAILBOXES.find(
     (m) => m.email.toLowerCase() === normEmail
@@ -937,6 +948,10 @@ export async function sendViaHostingerRelay(
   const res = await sendViaHostingerRelayRaw(opts);
   if ((opts.action || "send") === "send") {
     await recordMailboxSendResult(opts.fromEmail, res.ok, res.error);
+  }
+  if (!res.ok) {
+    console.warn(`[mail] relay send failed for ${opts.fromEmail}: ${res.error}`);
+    return { ...res, error: publicMailError(res.error) };
   }
   return res;
 }

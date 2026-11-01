@@ -240,7 +240,7 @@ export function WarmupSettingsModal({
               <div className="p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-500/30 text-emerald-800 dark:text-emerald-200 text-xs space-y-1">
                 <div className="flex items-center gap-1.5 font-bold">
                   <HiOutlineCheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                  <span>Verified! Warmup email dispatched via Hostinger relay (200 OK)</span>
+                  <span>Test warmup email sent.</span>
                 </div>
                 <div className="pl-5 text-[11px] text-emerald-700 dark:text-emerald-300 font-mono space-y-0.5">
                   <div><span className="font-semibold text-emerald-900 dark:text-emerald-100">From:</span> {testResult.from}</div>

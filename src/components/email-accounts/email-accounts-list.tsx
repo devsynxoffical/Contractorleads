@@ -31,6 +31,7 @@ import { AnalyticsDrawer } from "./analytics-drawer";
 import { AddAccountModal } from "./add-account-modal";
 import { WarmupSettingsModal } from "./warmup-settings-modal";
 import { WarmupMessagesDrawer } from "./warmup-messages-drawer";
+import { FixMailboxModal } from "./fix-mailbox-modal";
 
 export function EmailAccountsList() {
   const [data, setData] = useState<any>(null);
@@ -46,6 +47,7 @@ export function EmailAccountsList() {
   const [fixDrawerDomain, setFixDrawerDomain] = useState<string | null>(null);
   const [analyticsMailbox, setAnalyticsMailbox] = useState<string | null>(null);
   const [warmupInboxMailbox, setWarmupInboxMailbox] = useState<string | null>(null);
+  const [fixMailbox, setFixMailbox] = useState<{ id: string; email: string } | null>(null);
   const [warmupSettingsMailbox, setWarmupSettingsMailbox] = useState<any | null>(null);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [dnsRefreshingDomain, setDnsRefreshingDomain] = useState<string | null>(null);
@@ -258,6 +260,44 @@ export function EmailAccountsList() {
 
   return (
     <div className="space-y-6">
+      {/* Mailboxes that cannot send, each with a direct fix */}
+      {(() => {
+        const failing = (data?.mailboxes || []).filter((m: any) => m.sendStatus === "failing");
+        if (!failing.length) return null;
+        return (
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 dark:border-rose-500/30 dark:bg-rose-500/10">
+            <p className="text-sm font-bold text-rose-900 dark:text-rose-100">
+              {`${failing.length} mailbox${failing.length === 1 ? "" : "es"} can't send right now`}
+            </p>
+            <p className="mt-0.5 text-xs text-rose-800/90 dark:text-rose-200/90">
+              Campaigns skip them until they work again. Open one to see what is wrong and fix it.
+            </p>
+            <ul className="mt-3 space-y-1.5">
+              {failing.slice(0, 6).map((m: any) => (
+                <li key={m.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white/70 px-3 py-2 dark:bg-black/20">
+                  <span className="min-w-0">
+                    <span className="block truncate font-mono text-xs font-semibold text-slate-900 dark:text-white">{m.email}</span>
+                    <span className="block truncate text-[11px] text-rose-700 dark:text-rose-300">{m.lastSendError}</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setFixMailbox({ id: m.id, email: m.email })}
+                    className="shrink-0 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-rose-700"
+                  >
+                    {m.sendProblem === "wrong_password" ? "Fix password" : "Fix"}
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {failing.length > 6 && (
+              <p className="mt-2 text-[11px] text-rose-800 dark:text-rose-200">
+                +{failing.length - 6} more, marked "Sending failed" in the list below.
+              </p>
+            )}
+          </div>
+        );
+      })()}
+
       {/* 1. TOP SUMMARY KPI CARDS */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
         <div className="p-4 rounded-2xl bg-white dark:bg-[#141326] border border-slate-200 dark:border-[#26253c] shadow-xs">
@@ -654,11 +694,20 @@ export function EmailAccountsList() {
                               </div>
                               <div className="truncate text-[11px] text-slate-500 dark:text-slate-400">{row.senderName}</div>
                               {row.sendStatus === "failing" && (
-                                <div
-                                  className="mt-0.5 truncate text-[11px] font-semibold text-rose-600 dark:text-rose-400"
-                                  title={row.lastSendError || undefined}
-                                >
-                                  {row.lastSendError || "Last send failed"}
+                                <div className="mt-0.5 flex min-w-0 items-center gap-2">
+                                  <span
+                                    className="truncate text-[11px] font-semibold text-rose-600 dark:text-rose-400"
+                                    title={row.lastSendError || undefined}
+                                  >
+                                    {row.lastSendError || "Last send failed"}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setFixMailbox({ id: row.id, email: row.email })}
+                                    className="shrink-0 rounded-md bg-rose-600 px-2 py-0.5 text-[10px] font-bold text-white hover:bg-rose-700"
+                                  >
+                                    {row.sendProblem === "wrong_password" ? "Fix password" : "Fix"}
+                                  </button>
                                 </div>
                               )}
                             </div>
@@ -669,9 +718,11 @@ export function EmailAccountsList() {
                                 row.status === "Active"
                                   ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30"
                                   : row.status === "Sending failed"
-                                    ? "bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-rose-500/30"
+                                    ? "cursor-pointer bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-rose-500/30 hover:bg-rose-200"
                                     : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
                               }`}
+                              role={row.sendStatus === "failing" ? "button" : undefined}
+                              onClick={row.sendStatus === "failing" ? () => setFixMailbox({ id: row.id, email: row.email }) : undefined}
                               title={
                                 row.sendStatus === "failing"
                                   ? `${row.lastSendError || "Last send failed"}${
@@ -893,6 +944,16 @@ export function EmailAccountsList() {
                                 </button>
                                 <button
                                   onClick={() => {
+                                    setFixMailbox({ id: row.id, email: row.email });
+                                    setActiveMenuId(null);
+                                  }}
+                                  className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                                >
+                                  <HiOutlineShieldCheck className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                                  Fix / update login
+                                </button>
+                                <button
+                                  onClick={() => {
                                     setWarmupInboxMailbox(row.email);
                                     setActiveMenuId(null);
                                   }}
@@ -945,6 +1006,16 @@ export function EmailAccountsList() {
             data?.domainFolders?.find((f: any) => f.domain === fixDrawerDomain)?.dns
           }
           onRefreshDns={refreshDomainDns}
+        />
+      )}
+
+      {fixMailbox && (
+        <FixMailboxModal
+          key={fixMailbox.id}
+          mailboxId={fixMailbox.id}
+          mailboxEmail={fixMailbox.email}
+          onClose={() => setFixMailbox(null)}
+          onFixed={() => loadAccounts(true)}
         />
       )}
 

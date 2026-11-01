@@ -13,6 +13,7 @@ import {
   calculate7DayHealthScore,
 } from "@/lib/warmup-engine";
 import { seedSystemMailboxes } from "@/lib/system-smtp";
+import { clearMailboxFailure, diagnoseMailboxError, publicMailError } from "@/lib/mailbox-send-status";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -162,7 +163,9 @@ export async function GET(request: Request) {
     const known = failing || measured != null;
     return {
       sendStatus: (failing ? "failing" : known ? "ok" : "unknown") as "failing" | "ok" | "unknown",
-      lastSendError: failing ? (w?.lastSendError as string | null) ?? "Last send failed" : null,
+      // Always rebuilt from the raw error, so stored wording can never expose internals.
+      lastSendError: failing ? publicMailError(w?.lastSendErrorRaw || w?.lastSendError) : null,
+      sendProblem: failing ? diagnoseMailboxError(w?.lastSendErrorRaw || w?.lastSendError).problem : null,
       lastSendErrorAt: failing && w?.lastSendErrorAt ? new Date(w.lastSendErrorAt).toISOString() : null,
       lastSendOkAt: w?.lastSendOkAt ? new Date(w.lastSendOkAt).toISOString() : null,
       healthKnown: known,
@@ -513,6 +516,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Mailbox password is required" }, { status: 400 });
   }
 
+  // A pool mailbox already connected to another account cannot be taken over here.
+  const existingMailbox = await prisma.systemSmtpAccount.findUnique({ where: { fromEmail: email } });
+  if (existingMailbox && !isGlobalSuperAdmin(user) && existingMailbox.assignedUserId && existingMailbox.assignedUserId !== user.id) {
+    return NextResponse.json(
+      { error: "This mailbox is already connected to another account. Ask an admin to reassign it." },
+      { status: 409 },
+    );
+  }
+
   // 1. Test connectivity via Hostinger Relay (bypassing Railway TCP port restrictions)
   const testRes = await testAccountViaHostingerRelay({
     fromEmail: email,
@@ -522,9 +534,13 @@ export async function POST(request: Request) {
   });
 
   if (!testRes.ok) {
+    const admin = isGlobalSuperAdmin(user);
+    const diagnosis = diagnoseMailboxError(testRes.error || "", { admin });
     return NextResponse.json(
       {
-        error: `Could not connect to mail server: ${testRes.error || "Authentication failed"}. Please verify your SMTP host, port, and password.`,
+        error: `${diagnosis.title}. ${diagnosis.explanation}`,
+        detail: admin ? testRes.error || null : null,
+        diagnosis,
       },
       { status: 400 }
     );
@@ -556,6 +572,9 @@ export async function POST(request: Request) {
       dailyLimit,
       enabled: true,
       lastTestedAt: new Date(),
+      // Re-adding with a verified password counts as a user correction: seeds keep it.
+      passwordUpdatedByUserAt: new Date(),
+      ...(existingMailbox && !existingMailbox.assignedUserId ? { assignedUserId: user.id } : {}),
     },
     create: {
       fromEmail: email,
@@ -570,8 +589,12 @@ export async function POST(request: Request) {
       enabled: true,
       assignedUserId: user.id,
       lastTestedAt: new Date(),
+      passwordUpdatedByUserAt: new Date(),
     },
   });
+
+  // A verified login clears any earlier "Sending failed" state.
+  await clearMailboxFailure(email);
 
   // 4. Initialize Warmup Settings
   await prisma.warmupSettings.upsert({
@@ -627,7 +650,7 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     ok: true,
-    message: "Mailbox connected and registered on Hostinger gateway successfully",
+    message: "Mailbox connected and verified",
     account: {
       id: newAccount.id,
       email: newAccount.fromEmail,
