@@ -12,6 +12,14 @@ export const PLATFORM_KEY_FIELDS = [
   "googlePlacesApiKey2",
   "openaiApiKey",
   "ninjapearApiKey",
+  "apolloApiKey",
+  "hunterApiKey",
+  "prospeoApiKey",
+  "zerobounceApiKey",
+  "neverbounceApiKey",
+  "millionverifierApiKey",
+  "bouncerApiKey",
+  "emaillistverifyApiKey",
   "yelpFusionApiKey",
   "metaAccessToken",
   "metaAppId",
@@ -40,6 +48,14 @@ const ENV_VARS: Record<PlatformKeyField, string[]> = {
   googlePlacesApiKey2: ["GOOGLE_PLACES_API_KEY_2"],
   openaiApiKey: ["OPENAI_API_KEY"],
   ninjapearApiKey: ["NINJAPEAR_API_KEY", "LINKEDIN_DATA_API_KEY"],
+  apolloApiKey: ["APOLLO_API_KEY"],
+  hunterApiKey: ["HUNTER_API_KEY"],
+  prospeoApiKey: ["PROSPEO_API_KEY"],
+  zerobounceApiKey: ["ZEROBOUNCE_API_KEY"],
+  neverbounceApiKey: ["NEVERBOUNCE_API_KEY"],
+  millionverifierApiKey: ["MILLIONVERIFIER_API_KEY"],
+  bouncerApiKey: ["BOUNCER_API_KEY"],
+  emaillistverifyApiKey: ["EMAILLISTVERIFY_API_KEY"],
   yelpFusionApiKey: ["YELP_FUSION_API_KEY"],
   metaAccessToken: ["META_ACCESS_TOKEN", "FACEBOOK_ACCESS_TOKEN"],
   metaAppId: ["META_APP_ID", "FACEBOOK_APP_ID"],
@@ -52,6 +68,14 @@ const GROUPS: Record<PlatformKeyField, string> = {
   googlePlacesApiKey2: "Lead sources",
   openaiApiKey: "AI",
   ninjapearApiKey: "Enrichment",
+  apolloApiKey: "Enrichment",
+  hunterApiKey: "Enrichment",
+  prospeoApiKey: "Enrichment",
+  zerobounceApiKey: "Email Verification",
+  neverbounceApiKey: "Email Verification",
+  millionverifierApiKey: "Email Verification",
+  bouncerApiKey: "Email Verification",
+  emaillistverifyApiKey: "Email Verification",
   yelpFusionApiKey: "Lead sources",
   metaAccessToken: "Meta",
   metaAppId: "Meta",
@@ -75,9 +99,26 @@ function fromEnv(field: PlatformKeyField): string {
 export async function getPlatformKeyRow(): Promise<PlatformKeyRow> {
   if (cachedRow && Date.now() - cachedAt < CACHE_TTL_MS) return cachedRow;
 
-  const row = await prisma.platformKeyConfig
-    .findUnique({ where: { id: "default" } })
-    .catch(() => null);
+  const [row, pricingRow] = await Promise.all([
+    prisma.platformKeyConfig
+      .findUnique({ where: { id: "default" } })
+      .catch(() => null),
+    prisma.planPricingConfig
+      .findUnique({ where: { id: "default" } })
+      .catch(() => null),
+  ]);
+
+  let extraKeys: Record<string, string> = {};
+  if (pricingRow?.pricesJson) {
+    try {
+      const parsed = JSON.parse(pricingRow.pricesJson) as Record<string, unknown>;
+      if (parsed._platformKeys && typeof parsed._platformKeys === "object") {
+        extraKeys = parsed._platformKeys as Record<string, string>;
+      }
+    } catch {
+      extraKeys = {};
+    }
+  }
 
   cachedRow = {
     serperApiKey: row?.serperApiKey ?? "",
@@ -85,6 +126,14 @@ export async function getPlatformKeyRow(): Promise<PlatformKeyRow> {
     googlePlacesApiKey2: row?.googlePlacesApiKey2 ?? "",
     openaiApiKey: row?.openaiApiKey ?? "",
     ninjapearApiKey: row?.ninjapearApiKey ?? "",
+    apolloApiKey: extraKeys.apolloApiKey ?? "",
+    hunterApiKey: extraKeys.hunterApiKey ?? "",
+    prospeoApiKey: extraKeys.prospeoApiKey ?? "",
+    zerobounceApiKey: extraKeys.zerobounceApiKey ?? "",
+    neverbounceApiKey: extraKeys.neverbounceApiKey ?? "",
+    millionverifierApiKey: extraKeys.millionverifierApiKey ?? "",
+    bouncerApiKey: extraKeys.bouncerApiKey ?? "",
+    emaillistverifyApiKey: extraKeys.emaillistverifyApiKey ?? "",
     yelpFusionApiKey: row?.yelpFusionApiKey ?? "",
     metaAccessToken: row?.metaAccessToken ?? "",
     metaAppId: row?.metaAppId ?? "",
@@ -120,25 +169,76 @@ export async function getGooglePlacesKeys(): Promise<{
   };
 }
 
+const EXTRA_KEY_FIELDS = new Set<PlatformKeyField>([
+  "apolloApiKey",
+  "hunterApiKey",
+  "prospeoApiKey",
+  "zerobounceApiKey",
+  "neverbounceApiKey",
+  "millionverifierApiKey",
+  "bouncerApiKey",
+  "emaillistverifyApiKey",
+]);
+
 export async function savePlatformKeyConfig(
   input: PlatformKeyInput,
 ): Promise<void> {
   const current = await getPlatformKeyRow();
-  const update: PlatformKeyInput = {};
-  const create: PlatformKeyInput = {};
+  const update: Record<string, string> = {};
+  const create: Record<string, string> = {};
+  const extraUpdate: Record<string, string> = {
+    apolloApiKey: current.apolloApiKey,
+    hunterApiKey: current.hunterApiKey,
+    prospeoApiKey: current.prospeoApiKey,
+    zerobounceApiKey: current.zerobounceApiKey,
+    neverbounceApiKey: current.neverbounceApiKey,
+    millionverifierApiKey: current.millionverifierApiKey,
+    bouncerApiKey: current.bouncerApiKey,
+    emaillistverifyApiKey: current.emaillistverifyApiKey,
+  };
+  let hasExtraUpdate = false;
 
   for (const field of PLATFORM_KEY_FIELDS) {
     if (field in input) {
-      update[field] = input[field]?.trim() ?? current[field];
-      create[field] = input[field]?.trim() ?? "";
+      const val = input[field]?.trim() ?? current[field];
+      if (EXTRA_KEY_FIELDS.has(field)) {
+        extraUpdate[field] = val;
+        hasExtraUpdate = true;
+      } else {
+        update[field] = val;
+        create[field] = input[field]?.trim() ?? "";
+      }
     }
   }
 
-  await prisma.platformKeyConfig.upsert({
-    where: { id: "default" },
-    update,
-    create: { id: "default", ...create },
-  });
+  if (Object.keys(update).length > 0) {
+    await prisma.platformKeyConfig.upsert({
+      where: { id: "default" },
+      update,
+      create: { id: "default", ...create },
+    });
+  }
+
+  if (hasExtraUpdate) {
+    const existingPricing = await prisma.planPricingConfig
+      .findUnique({ where: { id: "default" } })
+      .catch(() => null);
+    let rawObj: Record<string, unknown> = {};
+    if (existingPricing?.pricesJson) {
+      try {
+        rawObj = JSON.parse(existingPricing.pricesJson) as Record<string, unknown>;
+      } catch {
+        rawObj = {};
+      }
+    }
+    rawObj._platformKeys = extraUpdate;
+    await prisma.planPricingConfig.upsert({
+      where: { id: "default" },
+      update: { pricesJson: JSON.stringify(rawObj) },
+      create: { id: "default", pricesJson: JSON.stringify(rawObj) },
+    });
+  }
+
   await refreshPlatformKeyRow();
 }
 

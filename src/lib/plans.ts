@@ -266,6 +266,17 @@ export async function savePlanPriceMap(
   input: Partial<Record<string, number>>,
 ): Promise<PlanPriceMap> {
   const { prisma } = await import("@/lib/prisma");
+  const existingRow = await prisma.planPricingConfig
+    .findUnique({ where: { id: "default" } })
+    .catch(() => null);
+  let rawObj: Record<string, unknown> = {};
+  if (existingRow?.pricesJson) {
+    try {
+      rawObj = JSON.parse(existingRow.pricesJson) as Record<string, unknown>;
+    } catch {
+      rawObj = {};
+    }
+  }
   const current = await getPlanPriceMap();
   for (const id of PLAN_IDS) {
     if (input[id] === undefined) continue;
@@ -274,15 +285,70 @@ export async function savePlanPriceMap(
       current[id] = Math.round(n * 100) / 100;
     }
   }
+  const merged = { ...rawObj, ...current };
   const row = await prisma.planPricingConfig.upsert({
     where: { id: "default" },
-    update: { pricesJson: JSON.stringify(current) },
+    update: { pricesJson: JSON.stringify(merged) },
     create: {
       id: "default",
-      pricesJson: JSON.stringify(current),
+      pricesJson: JSON.stringify(merged),
     },
   });
   return parsePriceMap(row.pricesJson);
+}
+
+/**
+ * Admin-editable credit cost per lead enriched via Waterfall Enrichment.
+ * Stored inside PlanPricingConfig.pricesJson under `_waterfallEnrichCost` (default: 2).
+ */
+export async function getWaterfallEnrichCreditCost(): Promise<number> {
+  try {
+    const { prisma } = await import("@/lib/prisma");
+    const row = await prisma.planPricingConfig.findUnique({
+      where: { id: "default" },
+    });
+    if (row?.pricesJson) {
+      const parsed = JSON.parse(row.pricesJson) as Record<string, unknown>;
+      const val = Number(parsed._waterfallEnrichCost);
+      if (Number.isFinite(val) && val >= 0) {
+        return Math.round(val * 100) / 100;
+      }
+    }
+  } catch {
+    // Fallback to default
+  }
+  return 2;
+}
+
+export async function saveWaterfallEnrichCreditCost(
+  cost: number,
+): Promise<number> {
+  const { prisma } = await import("@/lib/prisma");
+  const cleanCost = Math.max(0, Math.round(Number(cost) * 100) / 100);
+  const existingRow = await prisma.planPricingConfig
+    .findUnique({ where: { id: "default" } })
+    .catch(() => null);
+  let rawObj: Record<string, unknown> = { ...defaultPriceMap() };
+  if (existingRow?.pricesJson) {
+    try {
+      rawObj = {
+        ...rawObj,
+        ...(JSON.parse(existingRow.pricesJson) as Record<string, unknown>),
+      };
+    } catch {
+      // ignore
+    }
+  }
+  rawObj._waterfallEnrichCost = cleanCost;
+  await prisma.planPricingConfig.upsert({
+    where: { id: "default" },
+    update: { pricesJson: JSON.stringify(rawObj) },
+    create: {
+      id: "default",
+      pricesJson: JSON.stringify(rawObj),
+    },
+  });
+  return cleanCost;
 }
 
 /** Effective monthly list price (admin override or catalog default). */

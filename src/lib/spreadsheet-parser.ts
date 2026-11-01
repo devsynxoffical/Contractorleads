@@ -4,11 +4,21 @@ export type ParsedLead = {
   email: string;
   businessName: string;
   ownerName?: string;
+  ownerTitle?: string;
   phone?: string;
   city?: string;
   state?: string;
   country?: string;
   website?: string;
+  linkedinUrl?: string;
+  leadId?: string;
+  enrichedSource?: string;
+  emailVerified?: boolean;
+};
+
+export type ParseSheetOptions = {
+  /** When true, rows with a businessName or website are kept even if email is missing so they can be enriched via Waterfall API. */
+  allowMissingEmail?: boolean;
 };
 
 export type ParseSheetResult = {
@@ -17,6 +27,8 @@ export type ParseSheetResult = {
   validCount: number;
   duplicateCount: number;
   invalidEmailCount: number;
+  /** Number of rows missing an email or phone that can be enriched via Waterfall */
+  needsEnrichmentCount?: number;
   headers: string[];
   detectedColumns: {
     emailCol?: string;
@@ -93,7 +105,11 @@ function guessColumnMapping(headers: string[]) {
 /**
  * Parses raw text (CSV, TSV, comma/tab separated lines).
  */
-export function parseSpreadsheetText(rawText: string): ParseSheetResult {
+export function parseSpreadsheetText(
+  rawText: string,
+  options?: ParseSheetOptions,
+): ParseSheetResult {
+  const allowMissingEmail = options?.allowMissingEmail ?? true;
   if (!rawText || typeof rawText !== "string") {
     return {
       leads: [],
@@ -101,6 +117,7 @@ export function parseSpreadsheetText(rawText: string): ParseSheetResult {
       validCount: 0,
       duplicateCount: 0,
       invalidEmailCount: 0,
+      needsEnrichmentCount: 0,
       headers: [],
       detectedColumns: {},
     };
@@ -118,6 +135,7 @@ export function parseSpreadsheetText(rawText: string): ParseSheetResult {
       validCount: 0,
       duplicateCount: 0,
       invalidEmailCount: 0,
+      needsEnrichmentCount: 0,
       headers: [],
       detectedColumns: {},
     };
@@ -249,21 +267,33 @@ export function parseSpreadsheetText(rawText: string): ParseSheetResult {
     }
 
     const cleanEmail = safeStr(email).toLowerCase();
-    if (!cleanEmail || !cleanEmail.includes("@") || !cleanEmail.includes(".")) {
+    const hasValidEmail = Boolean(
+      cleanEmail && cleanEmail.includes("@") && cleanEmail.includes("."),
+    );
+
+    if (!hasValidEmail) {
       invalidEmailCount++;
-      continue;
+      if (!allowMissingEmail || (!businessName && !website)) {
+        continue;
+      }
     }
 
-    if (seenEmails.has(cleanEmail)) {
+    const dedupeKey = hasValidEmail
+      ? `email:${cleanEmail}`
+      : `biz:${safeStr(businessName).toLowerCase()}|${safeStr(website).toLowerCase()}|${safeStr(city).toLowerCase()}`;
+
+    if (seenEmails.has(dedupeKey)) {
       duplicateCount++;
       continue;
     }
 
-    seenEmails.add(cleanEmail);
+    seenEmails.add(dedupeKey);
 
     leads.push({
-      email: cleanEmail,
-      businessName: safeStr(businessName) || cleanEmail.split("@")[0],
+      email: hasValidEmail ? cleanEmail : "",
+      businessName:
+        safeStr(businessName) ||
+        (hasValidEmail ? cleanEmail.split("@")[0] : safeStr(website) || "Contractor Lead"),
       ownerName: safeStr(ownerName) || undefined,
       phone: safeStr(phone) || undefined,
       city: safeStr(city) || undefined,
@@ -273,12 +303,17 @@ export function parseSpreadsheetText(rawText: string): ParseSheetResult {
     });
   }
 
+  const needsEnrichmentCount = leads.filter(
+    (l) => !l.email || !l.phone || !l.ownerName,
+  ).length;
+
   return {
     leads,
     totalRows: Math.max(0, lines.length - rowStartIndex),
-    validCount: leads.length,
+    validCount: leads.filter((l) => Boolean(l.email)).length,
     duplicateCount,
     invalidEmailCount,
+    needsEnrichmentCount,
     headers,
     detectedColumns: mapping,
   };
@@ -287,7 +322,11 @@ export function parseSpreadsheetText(rawText: string): ParseSheetResult {
 /**
  * Parses an Excel binary Buffer / ArrayBuffer (.xlsx / .xls).
  */
-export async function parseExcelBuffer(buffer: ArrayBuffer | Buffer): Promise<ParseSheetResult> {
+export async function parseExcelBuffer(
+  buffer: ArrayBuffer | Buffer,
+  options?: ParseSheetOptions,
+): Promise<ParseSheetResult> {
+  const allowMissingEmail = options?.allowMissingEmail ?? true;
   const workbook = new ExcelJS.Workbook();
   const nodeBuf = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer);
   await workbook.xlsx.load(nodeBuf as any);
@@ -300,6 +339,7 @@ export async function parseExcelBuffer(buffer: ArrayBuffer | Buffer): Promise<Pa
       validCount: 0,
       duplicateCount: 0,
       invalidEmailCount: 0,
+      needsEnrichmentCount: 0,
       headers: [],
       detectedColumns: {},
     };
@@ -323,6 +363,7 @@ export async function parseExcelBuffer(buffer: ArrayBuffer | Buffer): Promise<Pa
       validCount: 0,
       duplicateCount: 0,
       invalidEmailCount: 0,
+      needsEnrichmentCount: 0,
       headers: [],
       detectedColumns: {},
     };
@@ -413,21 +454,33 @@ export async function parseExcelBuffer(buffer: ArrayBuffer | Buffer): Promise<Pa
     }
 
     const cleanEmail = safeStr(email).toLowerCase();
-    if (!cleanEmail || !cleanEmail.includes("@") || !cleanEmail.includes(".")) {
+    const hasValidEmail = Boolean(
+      cleanEmail && cleanEmail.includes("@") && cleanEmail.includes("."),
+    );
+
+    if (!hasValidEmail) {
       invalidEmailCount++;
-      continue;
+      if (!allowMissingEmail || (!businessName && !website)) {
+        continue;
+      }
     }
 
-    if (seenEmails.has(cleanEmail)) {
+    const dedupeKey = hasValidEmail
+      ? `email:${cleanEmail}`
+      : `biz:${safeStr(businessName).toLowerCase()}|${safeStr(website).toLowerCase()}|${safeStr(city).toLowerCase()}`;
+
+    if (seenEmails.has(dedupeKey)) {
       duplicateCount++;
       continue;
     }
 
-    seenEmails.add(cleanEmail);
+    seenEmails.add(dedupeKey);
 
     leads.push({
-      email: cleanEmail,
-      businessName: safeStr(businessName) || cleanEmail.split("@")[0],
+      email: hasValidEmail ? cleanEmail : "",
+      businessName:
+        safeStr(businessName) ||
+        (hasValidEmail ? cleanEmail.split("@")[0] : safeStr(website) || "Contractor Lead"),
       ownerName: safeStr(ownerName) || undefined,
       phone: safeStr(phone) || undefined,
       city: safeStr(city) || undefined,
@@ -437,12 +490,17 @@ export async function parseExcelBuffer(buffer: ArrayBuffer | Buffer): Promise<Pa
     });
   }
 
+  const needsEnrichmentCount = leads.filter(
+    (l) => !l.email || !l.phone || !l.ownerName,
+  ).length;
+
   return {
     leads,
     totalRows: Math.max(0, rawRows.length - rowStartIndex),
-    validCount: leads.length,
+    validCount: leads.filter((l) => Boolean(l.email)).length,
     duplicateCount,
     invalidEmailCount,
+    needsEnrichmentCount,
     headers,
     detectedColumns: mapping,
   };

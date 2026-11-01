@@ -9,8 +9,34 @@ import {
   unlockLeads,
 } from "@/lib/lead-access";
 import { CREDIT_COSTS } from "@/lib/constants";
+import { ensureEmailVerificationColumns } from "@/lib/email-verifier-db";
 
 type Scope = "all" | "saved" | "hot";
+
+function filterLeadsByEmailOption<
+  T extends {
+    email?: string | null;
+    decisionMakerEmail?: string | null;
+    emailStatus?: string | null;
+    verificationStatus?: string | null;
+  },
+>(leads: T[], emailFilter?: string | null): T[] {
+  if (!emailFilter || emailFilter === "all") return leads;
+  return leads.filter((l) => {
+    const hasEmail = Boolean((l.decisionMakerEmail || l.email)?.includes("@"));
+    const status = (l.emailStatus || "unknown").toLowerCase();
+    if (emailFilter === "safe_only") {
+      return hasEmail && status === "safe";
+    }
+    if (emailFilter === "safe_and_catchall") {
+      return hasEmail && (status === "safe" || status === "catchall");
+    }
+    if (emailFilter === "exclude_invalid") {
+      return status !== "invalid" && l.verificationStatus !== "invalid";
+    }
+    return true;
+  });
+}
 
 async function loadUserLeads(userId: string, scope: Scope) {
   if (scope === "saved") {
@@ -177,15 +203,27 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  await ensureEmailVerificationColumns();
+
   const { searchParams } = new URL(request.url);
   const format = searchParams.get("format") === "xlsx" ? "xlsx" : "csv";
   const scopeParam = searchParams.get("scope") ?? "all";
+  const emailFilter = searchParams.get("emailFilter") ?? "all";
   const scope: Scope =
     scopeParam === "saved" || scopeParam === "hot" ? scopeParam : "all";
 
-  const leads = await loadUserLeads(user.id, scope);
+  const rawLeads = await loadUserLeads(user.id, scope);
+  const leads = filterLeadsByEmailOption(rawLeads, emailFilter);
   if (!leads.length) {
-    return NextResponse.json({ error: "No leads to export" }, { status: 400 });
+    return NextResponse.json(
+      {
+        error:
+          emailFilter === "safe_only"
+            ? "No leads with 'Safe' verified emails found. Run 'Verify All' first or change the export filter."
+            : "No leads to export",
+      },
+      { status: 400 },
+    );
   }
 
   const billed = await billAndSelectForExport(user.id, leads);
@@ -225,8 +263,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  await ensureEmailVerificationColumns();
+
   const body = await request.json();
   const format = body.format === "xlsx" ? "xlsx" : "csv";
+  const emailFilter = typeof body.emailFilter === "string" ? body.emailFilter : "all";
   const leadIds = Array.isArray(body.leadIds) ? body.leadIds : [];
 
   if (leadIds.length === 0) {
@@ -249,9 +290,22 @@ export async function POST(request: Request) {
 
   // Preserve request order when possible
   const byId = new Map(leads.map((l) => [l.id, l]));
-  const ordered = (leadIds as string[])
+  const orderedRaw = (leadIds as string[])
     .map((id) => byId.get(id))
     .filter((l): l is (typeof leads)[number] => Boolean(l));
+  const ordered = filterLeadsByEmailOption(orderedRaw, emailFilter);
+
+  if (!ordered.length) {
+    return NextResponse.json(
+      {
+        error:
+          emailFilter === "safe_only"
+            ? "None of the selected leads have 'Safe' verified emails yet. Verify emails first or adjust your export filter."
+            : "No leads match the selected export filter.",
+      },
+      { status: 400 },
+    );
+  }
 
   const billed = await billAndSelectForExport(user.id, ordered);
   if (!billed.ok) return billed.response;

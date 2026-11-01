@@ -28,6 +28,7 @@ type CreditCosts = {
   assistant: number;
   outreach: number;
   starterFreeCredits: number;
+  waterfallEnrich?: number;
 };
 
 const FEATURE_LABELS: Record<string, string> = {
@@ -45,6 +46,7 @@ export default function AdminPlansPage() {
   const [plans, setPlans] = useState<PlanRow[]>([]);
   const [prices, setPrices] = useState<Record<string, number>>({});
   const [creditCosts, setCreditCosts] = useState<CreditCosts | null>(null);
+  const [waterfallEnrichCost, setWaterfallEnrichCost] = useState<number>(2);
   const [featureKeys, setFeatureKeys] = useState<string[]>([]);
   const [legacy, setLegacy] = useState<
     Array<{ plan: string; label: string; count: number }>
@@ -57,6 +59,9 @@ export default function AdminPlansPage() {
     setPlans(d.plans ?? []);
     setPrices(d.prices ?? {});
     setCreditCosts(d.creditCosts ?? null);
+    if (typeof d.creditCosts?.waterfallEnrich === "number") {
+      setWaterfallEnrichCost(d.creditCosts.waterfallEnrich);
+    }
     setFeatureKeys(d.featureKeys ?? []);
     setLegacy(d.legacy ?? []);
   }
@@ -73,13 +78,16 @@ export default function AdminPlansPage() {
       const res = await fetch("/api/admin/plans", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prices }),
+        body: JSON.stringify({ prices, waterfallEnrichCost }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Save failed");
       setPrices(json.prices ?? prices);
+      if (typeof json.waterfallEnrichCost === "number") {
+        setWaterfallEnrichCost(json.waterfallEnrichCost);
+      }
       setMessage(
-        "Plan prices saved. Homepage, /pricing, Billing, and referral commissions now use these amounts.",
+        "Plan prices & Waterfall Enrichment credit fee saved. Homepage, /pricing, Billing, and Enrichment tools now use these amounts.",
       );
       await load();
     } catch (e) {
@@ -94,11 +102,11 @@ export default function AdminPlansPage() {
     <div>
       <AdminPageHeader
         title="Plans & Entitlements"
-        description="Monthly prices sync to the homepage, /pricing, and Billing. Credit allotments (1 credit = 1 lead) are shared with customers."
+        description="Monthly prices sync to the homepage, /pricing, and Billing. Credit allotments (1 credit = 1 lead) and Waterfall Enrichment fees are shared with customers."
         actions={
           <div className="flex flex-wrap gap-2">
             <Button onClick={savePrices} loading={busy} disabled={busy}>
-              Save prices
+              Save prices &amp; credit fee
             </Button>
             <Link
               href="/admin/referrals"
@@ -125,10 +133,10 @@ export default function AdminPlansPage() {
       {creditCosts ? (
         <HudPanel
           title="Credit costs"
-          subtitle="Shared with Lead Finder, Billing, and marketing pages"
+          subtitle="Shared with Lead Finder, Waterfall Enrichment, Billing, and marketing pages"
           className="mb-6"
         >
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <div className="rounded-xl border border-border/70 bg-[var(--surface)] px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
                 Per lead
@@ -137,6 +145,32 @@ export default function AdminPlansPage() {
                 {creditCosts.lead}
               </p>
               <p className="text-[11px] text-ink-muted">credit = 1 lead</p>
+            </div>
+            <div className="rounded-xl border border-brand-500/40 bg-brand-50/40 dark:bg-brand-950/20 px-4 py-3">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-700 dark:text-brand-300">
+                Waterfall Enrichment Fee
+              </p>
+              <div className="mt-1 flex items-center gap-2">
+                <input
+                  type="number"
+                  min={0}
+                  step="0.5"
+                  className="saas-input !h-8 !w-24 !px-2.5 !py-1 text-sm font-bold tabular-nums"
+                  value={waterfallEnrichCost}
+                  onChange={(e) =>
+                    setWaterfallEnrichCost(
+                      Math.max(0, Number(e.target.value) || 0),
+                    )
+                  }
+                  disabled={busy}
+                />
+                <span className="text-[11px] font-medium text-ink-muted">
+                  credits / found lead
+                </span>
+              </div>
+              <p className="mt-1 text-[10.5px] text-ink-muted">
+                Charged only when API finds verified data
+              </p>
             </div>
             <div className="rounded-xl border border-border/70 bg-[var(--surface)] px-4 py-3">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-ink-faint">

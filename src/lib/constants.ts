@@ -236,6 +236,8 @@ export const CREDIT_COSTS = {
   leadReport: 2,
   /** Detail page for one qualification score card. */
   qualificationDetail: 1,
+  /** Default credits charged per lead when Waterfall Enrichment finds verified contact info (admin-editable). */
+  waterfallEnrich: 2,
 } as const;
 
 export const EXPERT_COPYWRITER_SYSTEM_PROMPT = `You are an elite direct-response copywriter and agency closer with 20+ years selling websites, SEO, Google Ads, Instagram/social, and local reputation services to home-service contractors (roofing, HVAC, plumbing, electrical, landscaping, remodeling, and related trades).

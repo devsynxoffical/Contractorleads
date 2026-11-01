@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
 import { FaWhatsapp } from "react-icons/fa";
 import { toE164 } from "@/lib/phone";
+import { EmailStatusBadge } from "@/components/leads/email-status-badge";
 
 export type LeadResult = {
   id: string;
@@ -29,6 +30,13 @@ export type LeadResult = {
   address?: string | null;
   phone?: string | null;
   email?: string | null;
+  emailStatus?: string | null;
+  emailBounceRisk?: string | null;
+  isRoleAccount?: boolean | null;
+  emailVerifySource?: string | null;
+  emailScore?: number | null;
+  emailSubStatus?: string | null;
+  emailVerifiedAt?: string | Date | null;
   website?: string | null;
   googleRating?: number | null;
   reviewCount?: number | null;
@@ -332,13 +340,32 @@ export function LeadResultCard({
                 {lead.website ? "Website found" : "No website"}
               </span>
             </div>
-            <div className="flex items-center gap-2 rounded-xl bg-[#faf8fc] px-3 py-2 text-[12px] text-ink-muted">
-              <HiOutlineEnvelope className="h-3.5 w-3.5 shrink-0 text-brand-500" />
-              <span className="truncate">
-                {lead.decisionMakerEmail || lead.email || "Email N/A"}
-                {lead.decisionMakerEmailType === "decision_maker" && " (Direct DM)"}
-                {lead.decisionMakerEmailType === "generic" && " (Generic Inbox)"}
-              </span>
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#faf8fc] px-3 py-2 text-[12px] text-ink-muted">
+              <div className="flex min-w-0 items-center gap-2">
+                <HiOutlineEnvelope className="h-3.5 w-3.5 shrink-0 text-brand-500" />
+                <span className="truncate font-medium text-ink">
+                  {lead.decisionMakerEmail || lead.email || "Email N/A"}
+                </span>
+                {lead.decisionMakerEmailType === "decision_maker" && (
+                  <span className="text-[10px] font-semibold text-emerald-700">
+                    (Direct DM)
+                  </span>
+                )}
+              </div>
+              {(lead.decisionMakerEmail || lead.email) && (
+                <EmailStatusBadge
+                  leadId={lead.id}
+                  email={lead.decisionMakerEmail || lead.email}
+                  emailStatus={lead.emailStatus}
+                  emailBounceRisk={lead.emailBounceRisk}
+                  isRoleAccount={lead.isRoleAccount}
+                  emailVerifySource={lead.emailVerifySource}
+                  emailScore={lead.emailScore}
+                  emailSubStatus={lead.emailSubStatus}
+                  emailVerifiedAt={lead.emailVerifiedAt}
+                  compact
+                />
+              )}
             </div>
           </div>
 

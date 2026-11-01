@@ -93,10 +93,58 @@ const PLATFORM_FIELDS: Array<{
     group: "Enrichment",
   },
   {
+    field: "apolloApiKey",
+    label: "Apollo.io API key (Waterfall #1)",
+    placeholder: "Apollo API key for people/email/phone enrichment",
+    group: "Enrichment",
+  },
+  {
+    field: "hunterApiKey",
+    label: "Hunter.io API key (Waterfall #2)",
+    placeholder: "Hunter.io key for domain & email finder",
+    group: "Enrichment",
+  },
+  {
+    field: "prospeoApiKey",
+    label: "Prospeo API key (Waterfall #3)",
+    placeholder: "Prospeo key for verified work email & phone",
+    group: "Enrichment",
+  },
+  {
     field: "ninjapearApiKey",
-    label: "NinjaPear API key",
+    label: "NinjaPear API key (Waterfall #4)",
     placeholder: "NinjaPear (nubela.co) key",
     group: "Enrichment",
+  },
+  {
+    field: "zerobounceApiKey",
+    label: "ZeroBounce API key (Primary Email Verifier)",
+    placeholder: "ZeroBounce API key (99%+ accuracy + Catchall detection)",
+    group: "Email Verification",
+  },
+  {
+    field: "neverbounceApiKey",
+    label: "NeverBounce API key",
+    placeholder: "NeverBounce API key (secret_...)",
+    group: "Email Verification",
+  },
+  {
+    field: "millionverifierApiKey",
+    label: "MillionVerifier API key",
+    placeholder: "MillionVerifier API key",
+    group: "Email Verification",
+  },
+  {
+    field: "bouncerApiKey",
+    label: "Bouncer.io API key",
+    placeholder: "Bouncer API key",
+    group: "Email Verification",
+  },
+  {
+    field: "emaillistverifyApiKey",
+    label: "EmailListVerify API key",
+    placeholder: "EmailListVerify API key",
+    group: "Email Verification",
   },
   {
     field: "metaAppId",
@@ -118,7 +166,7 @@ const PLATFORM_FIELDS: Array<{
   },
 ];
 
-const PLATFORM_GROUPS = ["Lead sources", "AI", "Enrichment", "Meta"] as const;
+const PLATFORM_GROUPS = ["Lead sources", "AI", "Enrichment", "Email Verification", "Meta"] as const;
 
 export default function AdminSystemPage() {
   const [keys, setKeys] = useState<EnvKeyStatus[]>([]);

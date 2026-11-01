@@ -288,8 +288,9 @@ async function syncMailboxViaRelay(
     new Set(
       [
         process.env.HOSTINGER_RELAY_URL?.trim(),
-        "https://sevenfigurestudio.us/mailer.php",
+        "https://roofingclients.us/mailer.php",
         "https://roofingpartners.us/mailer.php",
+        "https://sevenfigurestudio.us/mailer.php",
       ].filter(Boolean) as string[],
     ),
   );
