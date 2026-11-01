@@ -151,7 +151,11 @@ const inboxInterval = setInterval(async () => {
 }, 300_000);
 
 // Background automated mailbox warmup runner: executes warmup cycle every 3 minutes
+let warmupRunning = false;
 const warmupInterval = setInterval(async () => {
+  // Never start a cycle while the previous one is still sending.
+  if (warmupRunning) return;
+  warmupRunning = true;
   try {
     const url = `http://127.0.0.1:${port}/api/cron/warmup`;
     const headers = {};
@@ -167,6 +171,8 @@ const warmupInterval = setInterval(async () => {
     }
   } catch {
     // server might still be booting or restarting, ignore gracefully
+  } finally {
+    warmupRunning = false;
   }
 }, 180_000);
 
