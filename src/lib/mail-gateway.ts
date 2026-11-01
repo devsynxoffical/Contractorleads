@@ -6,7 +6,7 @@ import {
   type SmtpPayload,
 } from "@/lib/user-smtp";
 import { testSmtpConnection } from "@/lib/system-smtp";
-import { recordMailboxSendResult } from "@/lib/mailbox-send-status";
+import { publicMailError, recordMailboxSendResult } from "@/lib/mailbox-send-status";
 
 export type MailboxRelayPayload = {
   fromEmail: string;
@@ -105,12 +105,16 @@ export async function testAccountViaHostingerRelay(payload: MailboxRelayPayload)
   error?: string;
 }> {
   const endpoints = getRelayEndpoints();
-  let lastErr = "Relay endpoint unreachable";
+  const relayErrors: string[] = [];
+  // Once a relay answers with its own error (e.g. "Auth failed"), that is the real answer:
+  // a direct SMTP test from this host is blocked on Railway and would only hide it.
+  let relayAnswered = false;
 
   for (const url of endpoints) {
     try {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 12000);
+      // GoDaddy tests try two ports with a 15s socket timeout each on the relay side.
+      const timer = setTimeout(() => controller.abort(), 45000);
 
       const res = await fetch(url, {
         method: "POST",
@@ -122,50 +126,62 @@ export async function testAccountViaHostingerRelay(payload: MailboxRelayPayload)
           secret: HOSTINGER_RELAY_SECRET,
           action: "test",
           fromEmail: payload.fromEmail.toLowerCase().trim(),
-          password: payload.password || "",
-          host: payload.host || "",
+          ...(payload.password ? { password: payload.password } : {}),
+          ...(payload.host ? { host: payload.host } : {}),
           port: payload.port || 465,
         }),
         signal: controller.signal,
       });
       clearTimeout(timer);
 
-      if (res.ok) {
-        const data = await res.json().catch(() => ({}));
-        if (data.ok) {
-          return { ok: true, message: data.message || "Connection & authentication verified via Hostinger" };
-        }
-        if (data.error) lastErr = data.error;
-      } else {
-        lastErr = `${url} returned status ${res.status}`;
+      const text = await res.text().catch(() => "");
+      let data: { ok?: boolean; message?: string; error?: string } = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        data = {};
       }
-    } catch (e: any) {
-      lastErr = `${url} failed: ${e.message || String(e)}`;
+      if (res.ok && data.ok) {
+        return { ok: true, message: data.message || "Connection & authentication verified via the mail relay" };
+      }
+      if (data.error) {
+        relayAnswered = true;
+        relayErrors.push(`${url} error: ${data.error}`);
+      } else {
+        relayErrors.push(`${url} returned status ${res.status}${text ? ` (${text.slice(0, 200)})` : ""}`);
+      }
+    } catch (e: unknown) {
+      relayErrors.push(`${url} failed: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 
-  // Fallback: Test directly via authenticated SMTP socket if HTTP relay returned 404 or unreachable
+  const lastErr = relayErrors.join(" | ") || "Relay endpoint unreachable";
+  if (relayAnswered) return { ok: false, error: lastErr };
+
+  // Relay unreachable: try a direct authenticated SMTP test (works where outbound SMTP is allowed).
   try {
     const creds = await resolveSmtpCredentialsForEmail(payload.fromEmail);
     const testPayload: SmtpPayload = {
       host: payload.host || creds?.host || "smtp.hostinger.com",
       port: payload.port || creds?.port || 465,
-      secure: payload.port === 465 || creds?.port === 465 || true,
+      secure: (payload.port || creds?.port || 465) !== 587,
       username: creds?.username || payload.fromEmail,
       password: payload.password || creds?.password || "",
       fromEmail: payload.fromEmail,
       fromName: payload.fromName || "",
     };
-
     if (testPayload.password) {
       const direct = await testSmtpConnection(testPayload);
       if (direct.ok) {
         return { ok: true, message: `Connected & verified directly via ${testPayload.host}:${testPayload.port}` };
       }
-      return { ok: false, error: direct.message };
+      return { ok: false, error: `${lastErr} | Direct SMTP test: ${direct.message}` };
     }
-  } catch (directErr: any) {
-    lastErr = `Hostinger relay unreachable (mailer.php 404). Direct test also failed: ${directErr?.message || directErr}`;
+  } catch (directErr: unknown) {
+    return {
+      ok: false,
+      error: `${lastErr} | Direct SMTP test failed: ${directErr instanceof Error ? directErr.message : String(directErr)}`,
+    };
   }
 
   return { ok: false, error: lastErr };
@@ -182,6 +198,11 @@ export async function sendEmailViaHostingerRelay(opts: SendRelayOptions): Promis
 }> {
   const res = await sendEmailViaHostingerRelayRaw(opts);
   await recordMailboxSendResult(opts.fromEmail, res.ok, res.error);
+  if (!res.ok) {
+    // Full detail for operators in the server log; a plain reason for the app and its users.
+    console.warn(`[mail] send failed for ${opts.fromEmail}: ${res.error}`);
+    return { ...res, error: publicMailError(res.error) };
+  }
   return res;
 }
 
@@ -306,11 +327,11 @@ async function sendEmailViaHostingerRelayRaw(opts: SendRelayOptions): Promise<{
       });
       return { ok: true, messageId: direct.messageId };
     } else {
-      lastErr = `Hostinger relay returned 404 (mailer.php not uploaded to host). Direct SMTP could not find password for ${opts.fromEmail}. Please upload public/mailer.php to your Hostinger public_html or set HOSTINGER_RELAY_URL.`;
+      lastErr = `Sending gateway unavailable (${lastErr}). No saved password for ${opts.fromEmail} to try direct SMTP.`;
     }
   } catch (directErr: any) {
     console.error("[Hostinger Relay Fallback] Direct SMTP error:", directErr);
-    lastErr = `Hostinger relay returned 404 (mailer.php not found on server). Direct SMTP also failed: ${directErr?.message || directErr}. Please upload public/mailer.php to your Hostinger public_html or configure HOSTINGER_RELAY_URL.`;
+    lastErr = `Sending gateway unavailable (${lastErr}). Direct SMTP also failed: ${directErr?.message || directErr}`;
   }
 
   return { ok: false, error: lastErr };

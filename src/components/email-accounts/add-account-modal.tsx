@@ -23,7 +23,8 @@ export function AddAccountModal({
   onAccountAdded,
 }: AddAccountModalProps) {
   const [mounted, setMounted] = useState(false);
-  const [tab, setTab] = useState<"smtp" | "google" | "microsoft" | "csv">("smtp");
+  const [tab, setTab] = useState<"smtp" | "godaddy" | "google" | "microsoft" | "csv">("smtp");
+  const [errorSteps, setErrorSteps] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -58,9 +59,9 @@ export function AddAccountModal({
   async function handleSingleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setErrorSteps([]);
     setSuccess(null);
     setLoading(true);
-
     try {
       const res = await fetch("/api/email-accounts", {
         method: "POST",
@@ -75,19 +76,18 @@ export function AddAccountModal({
           dailyLimit,
         }),
       });
-
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
+        setErrorSteps(Array.isArray(data?.diagnosis?.steps) ? data.diagnosis.steps : []);
         throw new Error(data.error || "Failed to add account");
       }
-
-      setSuccess("Account successfully verified and connected via Hostinger gateway!");
+      setSuccess("Login verified. The mailbox is connected and warmup will start at day 1.");
       await onAccountAdded();
       setTimeout(() => {
         onClose();
       }, 1500);
-    } catch (err: any) {
-      setError(err.message || "An unexpected error occurred");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
       setLoading(false);
     }
@@ -175,7 +175,7 @@ export function AddAccountModal({
         </div>
 
         {/* Tab Selector */}
-        <div className="grid grid-cols-4 gap-1 p-1 bg-slate-100 dark:bg-[#1b1a32] rounded-xl border border-slate-200 dark:border-[#2b2a45] my-4 text-xs font-semibold">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-1 p-1 bg-slate-100 dark:bg-[#1b1a32] rounded-xl border border-slate-200 dark:border-[#2b2a45] my-4 text-xs font-semibold">
           <button
             type="button"
             onClick={() => {
@@ -189,6 +189,20 @@ export function AddAccountModal({
             }`}
           >
             Hostinger / SMTP
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setTab("godaddy");
+              setHost("smtpout.secureserver.net");
+              setPort(465);
+              setProvider("godaddy");
+            }}
+            className={`py-1.5 rounded-lg transition ${
+              tab === "godaddy" ? "bg-indigo-600 text-white shadow-xs" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+            }`}
+          >
+            GoDaddy
           </button>
           <button
             type="button"
@@ -231,9 +245,18 @@ export function AddAccountModal({
 
         {/* Alert Feedback */}
         {error && (
-          <div className="mb-4 p-3 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-rose-800 dark:text-rose-300 text-xs flex items-center gap-2">
-            <HiOutlineExclamationCircle className="w-4 h-4 shrink-0 text-rose-500 dark:text-rose-400" />
-            <span>{error}</span>
+          <div className="mb-4 p-3 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-rose-800 dark:text-rose-300 text-xs flex items-start gap-2">
+            <HiOutlineExclamationCircle className="mt-0.5 w-4 h-4 shrink-0 text-rose-500 dark:text-rose-400" />
+            <div className="min-w-0">
+              <p>{error}</p>
+              {errorSteps.length > 0 && (
+                <ol className="mt-1.5 list-decimal space-y-0.5 pl-4">
+                  {errorSteps.map((st) => (
+                    <li key={st}>{st}</li>
+                  ))}
+                </ol>
+              )}
+            </div>
           </div>
         )}
         {success && (
@@ -322,7 +345,7 @@ export function AddAccountModal({
                 <input
                   type="number"
                   value={port}
-                  onChange={(e) => setPort(parseInt(e.target.value, 10))}
+                  onChange={(e) => setPort(Number(e.target.value) || 465)}
                   className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#0f0e1e] border border-slate-200 dark:border-[#2b2a45] text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500 transition font-mono"
                 />
               </div>
@@ -342,7 +365,7 @@ export function AddAccountModal({
                 className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-white transition disabled:opacity-50 shadow-sm"
               >
                 {loading && <HiOutlineArrowPath className="w-4 h-4 animate-spin" />}
-                {loading ? "Verifying via Relay..." : "Connect & Verify Account"}
+                {loading ? "Testing login…" : "Connect & Verify Account"}
               </button>
             </div>
           </form>

@@ -323,7 +323,8 @@ export async function seedSystemMailboxes(forceUpdatePasswords = true) {
         },
       });
       createdCount++;
-    } else if (forceUpdatePasswords) {
+    } else if (forceUpdatePasswords && !existing.passwordUpdatedByUserAt) {
+      // Credentials a user fixed in the app are never overwritten by the defaults.
       await prisma.systemSmtpAccount.update({
         where: { id: existing.id },
         data: {
@@ -368,7 +369,7 @@ export async function seedSystemMailboxes(forceUpdatePasswords = true) {
         },
       });
       createdCount++;
-    } else if (forceUpdatePasswords) {
+    } else if (forceUpdatePasswords && !existing.passwordUpdatedByUserAt) {
       await prisma.systemSmtpAccount.update({
         where: { id: existing.id },
         data: {
@@ -474,12 +475,28 @@ export function systemRowToPayload(row: {
   passwordEnc: string;
   fromEmail: string;
   fromName: string | null;
+  passwordUpdatedByUserAt?: Date | null;
 }): SmtpPayload {
   let password = "";
   try {
     password = decryptSecret(row.passwordEnc);
   } catch {
     password = "";
+  }
+
+  // A user corrected this mailbox in the app: use exactly what they saved.
+  if (row.passwordUpdatedByUserAt && password) {
+    return {
+      id: row.id,
+      label: row.label,
+      host: row.host?.trim() || "smtp.hostinger.com",
+      port: row.port || 465,
+      secure: row.port !== 587,
+      username: row.username || row.fromEmail,
+      password,
+      fromEmail: row.fromEmail,
+      fromName: row.fromName,
+    };
   }
   
   const knownHostinger = HOSTINGER_DEFAULT_MAILBOXES.find(
@@ -531,6 +548,7 @@ export function systemRowToSenderConfig(row: {
   fromEmail: string;
   fromName: string | null;
   assignedUserId?: string | null;
+  passwordUpdatedByUserAt?: Date | null;
 }): SenderConfig {
   return {
     id: row.id,

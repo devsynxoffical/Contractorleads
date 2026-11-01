@@ -130,9 +130,53 @@ $GODADDY_MAILBOXES = [
 
 $ALL_MAILBOXES = array_merge($HOSTINGER_MAILBOXES, $GODADDY_MAILBOXES);
 
-// Load dynamic custom user mailboxes stored on Hostinger
-$CUSTOM_ACCOUNTS_FILE = __DIR__ . "/custom_accounts.json";
-$CUSTOM_ACCOUNTS = file_exists($CUSTOM_ACCOUNTS_FILE) ? (json_decode(file_get_contents($CUSTOM_ACCOUNTS_FILE), true) ?? []) : [];
+// ----------------------------------------------------------------------
+// Mailboxes saved by users from the app (new mailboxes and corrected passwords).
+// Stored OUTSIDE the public web folder so they can never be downloaded. If the
+// private folder cannot be created, a .php store is used: requesting it over HTTP
+// only runs its exit line and returns nothing.
+// ----------------------------------------------------------------------
+$STORE_GUARD = "<?php http_response_code(404); exit; ?>\n";
+$PRIVATE_DIR = dirname(__DIR__) . "/contractorleads_private";
+if (!is_dir($PRIVATE_DIR)) {
+    @mkdir($PRIVATE_DIR, 0700, true);
+}
+$CUSTOM_ACCOUNTS_FILE = (is_dir($PRIVATE_DIR) && is_writable($PRIVATE_DIR))
+    ? $PRIVATE_DIR . "/custom_accounts.json.php"
+    : __DIR__ . "/custom_accounts.store.php";
+$LEGACY_ACCOUNTS_FILE = __DIR__ . "/custom_accounts.json"; // old, publicly readable location
+
+function loadCustomAccounts($file) {
+    if (!file_exists($file)) return [];
+    $raw = @file_get_contents($file);
+    if ($raw === false) return [];
+    $raw = preg_replace('/^<\?php.*?\?>\s*/s', '', $raw);
+    $decoded = json_decode($raw, true);
+    return is_array($decoded) ? $decoded : [];
+}
+
+function saveCustomAccounts($file, $accounts, $guard) {
+    $ok = @file_put_contents($file, $guard . json_encode($accounts, JSON_PRETTY_PRINT), LOCK_EX) !== false;
+    if ($ok) @chmod($file, 0600);
+    return $ok;
+}
+
+$CUSTOM_ACCOUNTS = loadCustomAccounts($CUSTOM_ACCOUNTS_FILE);
+
+// One-time move of the old public file into the protected store, then delete it.
+if (file_exists($LEGACY_ACCOUNTS_FILE)) {
+    $legacy = json_decode(@file_get_contents($LEGACY_ACCOUNTS_FILE), true);
+    if (is_array($legacy)) {
+        foreach ($legacy as $lEmail => $lData) {
+            if (!isset($CUSTOM_ACCOUNTS[$lEmail])) $CUSTOM_ACCOUNTS[$lEmail] = $lData;
+        }
+    }
+    if (saveCustomAccounts($CUSTOM_ACCOUNTS_FILE, $CUSTOM_ACCOUNTS, $STORE_GUARD)) {
+        @unlink($LEGACY_ACCOUNTS_FILE);
+    }
+}
+
+// User-saved passwords take priority over the built-in ones.
 foreach ($CUSTOM_ACCOUNTS as $cEmail => $cData) {
     if (!empty($cData["password"])) {
         $ALL_MAILBOXES[$cEmail] = $cData["password"];
@@ -183,16 +227,24 @@ if (($data["action"] ?? "") === "save_account") {
         echo json_encode(["ok" => false, "error" => "fromEmail is required"]);
         exit;
     }
+    // Merge with what is already stored: an empty field never wipes a saved value.
+    $prev = $CUSTOM_ACCOUNTS[$email] ?? [];
+    $newPassword = (string)($data["password"] ?? "");
+    $newHost = trim($data["host"] ?? "");
     $CUSTOM_ACCOUNTS[$email] = [
         "email" => $email,
-        "fromName" => trim($data["fromName"] ?? ""),
-        "password" => trim($data["password"] ?? ""),
-        "host" => trim($data["host"] ?? ""),
-        "port" => intval($data["port"] ?? 465),
-        "provider" => trim($data["provider"] ?? "custom"),
+        "fromName" => trim($data["fromName"] ?? "") !== "" ? trim($data["fromName"]) : ($prev["fromName"] ?? ""),
+        "password" => $newPassword !== "" ? $newPassword : ($prev["password"] ?? ""),
+        "host" => $newHost !== "" ? $newHost : ($prev["host"] ?? ""),
+        "port" => intval($data["port"] ?? ($prev["port"] ?? 465)),
+        "provider" => trim($data["provider"] ?? "") !== "" ? trim($data["provider"]) : ($prev["provider"] ?? "custom"),
         "updatedAt" => date("c")
     ];
-    @file_put_contents($CUSTOM_ACCOUNTS_FILE, json_encode($CUSTOM_ACCOUNTS, JSON_PRETTY_PRINT));
+    if (!saveCustomAccounts($CUSTOM_ACCOUNTS_FILE, $CUSTOM_ACCOUNTS, $STORE_GUARD)) {
+        http_response_code(500);
+        echo json_encode(["ok" => false, "error" => "Could not store the mailbox on the relay (storage not writable)."]);
+        exit;
+    }
     echo json_encode([
         "ok" => true,
         "message" => "Account successfully saved on Hostinger gateway",
@@ -213,16 +265,12 @@ if (($data["action"] ?? "") === "test") {
     $host = !empty($data["host"]) ? trim($data["host"]) : (!empty($CUSTOM_ACCOUNTS[$fromEmail]["host"]) ? $CUSTOM_ACCOUNTS[$fromEmail]["host"] : ($isGoDaddy ? "smtpout.secureserver.net" : "smtp.hostinger.com"));
     $port = intval($data["port"] ?? (!empty($CUSTOM_ACCOUNTS[$fromEmail]["port"]) ? $CUSTOM_ACCOUNTS[$fromEmail]["port"] : 465));
 
-    $socket = @fsockopen("ssl://" . $host, $port, $errno, $errstr, 12);
+    list($socket, $sessionErr) = smtpOpenSession($host, $port, $domain, 12);
     if (!$socket) {
         http_response_code(500);
-        echo json_encode(["ok" => false, "error" => "SMTP socket connection failed to {$host}:{$port} ($errstr)"]);
+        echo json_encode(["ok" => false, "error" => $sessionErr]);
         exit;
     }
-    stream_set_timeout($socket, 12);
-    getSmtpResponse($socket);
-    fputs($socket, "EHLO " . $domain . "\r\n");
-    getSmtpResponse($socket);
     fputs($socket, "AUTH LOGIN\r\n");
     getSmtpResponse($socket);
     fputs($socket, base64_encode($fromEmail) . "\r\n");
@@ -306,6 +354,31 @@ if (($data["action"] ?? "") === "fetch") {
 
     echo json_encode(["ok" => true, "mailbox" => $mbox, "total" => $total, "messages" => $messages]);
     exit;
+}
+
+/**
+ * Open an SMTP session ready for AUTH: implicit SSL on 465 / 3535, or STARTTLS on 587
+ * (Microsoft 365 and many hosts only accept 587). Returns [socket, error].
+ */
+function smtpOpenSession($host, $port, $domain, $timeout) {
+    $useStartTls = intval($port) === 587;
+    $socket = @fsockopen(($useStartTls ? "tcp://" : "ssl://") . $host, $port, $errno, $errstr, $timeout);
+    if (!$socket) return [null, "SMTP socket connection failed to {$host}:{$port} ({$errstr})"];
+    stream_set_timeout($socket, $timeout);
+    getSmtpResponse($socket);
+    fputs($socket, "EHLO " . $domain . "\r\n");
+    getSmtpResponse($socket);
+    if ($useStartTls) {
+        fputs($socket, "STARTTLS\r\n");
+        $tlsRes = getSmtpResponse($socket);
+        if (substr($tlsRes, 0, 3) !== "220" || !@stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
+            fclose($socket);
+            return [null, "STARTTLS failed on {$host}:{$port}: " . trim($tlsRes)];
+        }
+        fputs($socket, "EHLO " . $domain . "\r\n");
+        getSmtpResponse($socket);
+    }
+    return [$socket, ""];
 }
 
 function getSmtpResponse($socket) {
@@ -453,8 +526,11 @@ if (empty($to) || empty($subject) || empty($fromEmail)) {
 $domain = explode("@", $fromEmail)[1] ?? "sevenfigurestudio.us";
 $isGoDaddy = isset($GODADDY_MAILBOXES[$fromEmail]) || (strpos($domain, "frankmiller") !== false) || ($domain === "meetfrankmiller.com") || ($domain === "connectwithbdefrank.com");
 
-$smtpHost = $isGoDaddy ? "smtpout.secureserver.net" : "smtp.hostinger.com";
-$password = $data["password"] ?? ($ALL_MAILBOXES[$fromEmail] ?? ($isGoDaddy ? $GODADDY_PASS : ""));
+// Server: requested > saved by the user > provider default.
+$savedAccount = $CUSTOM_ACCOUNTS[$fromEmail] ?? [];
+$smtpHost = !empty($data["host"]) ? trim($data["host"]) : (!empty($savedAccount["host"]) ? $savedAccount["host"] : ($isGoDaddy ? "smtpout.secureserver.net" : "smtp.hostinger.com"));
+// An empty password means "use the stored one" (PHP ?? would keep the empty string).
+$password = !empty($data["password"]) ? $data["password"] : $ALL_MAILBOXES[$fromEmail] ?? ($isGoDaddy ? $GODADDY_PASS : "");
 
 $msgId = "<" . bin2hex(random_bytes(16)) . "@" . $domain . ">";
 $boundary = "b_" . bin2hex(random_bytes(12));
@@ -499,14 +575,10 @@ $bodyContent .= "--" . $boundary . "--\r\n";
 // Method 1: Authenticated Direct SMTP socket to Provider Mail Server
 // ----------------------------------------------------------------------
 function sendViaSmtpSocket($host, $port, $domain, $fromEmail, $password, $to, $bodyContent, $msgId, $provider) {
-    $socket = @fsockopen("ssl://" . $host, $port, $errno, $errstr, 15);
+    list($socket, $sessionErr) = smtpOpenSession($host, $port, $domain, 15);
     if (!$socket) {
-        return ["ok" => false, "error" => "Connect failed to {$host}:{$port} ($errstr)"];
+        return ["ok" => false, "error" => $sessionErr];
     }
-    stream_set_timeout($socket, 15);
-    getSmtpResponse($socket);
-    fputs($socket, "EHLO " . $domain . "\r\n");
-    getSmtpResponse($socket);
     fputs($socket, "AUTH LOGIN\r\n");
     getSmtpResponse($socket);
     fputs($socket, base64_encode($fromEmail) . "\r\n");
@@ -552,7 +624,8 @@ function sendViaSmtpSocket($host, $port, $domain, $fromEmail, $password, $to, $b
 }
 
 // Try primary and secondary ports
-$portsToTry = $isGoDaddy ? [465, 3535] : [465];
+$requestedPort = intval($data["port"] ?? ($savedAccount["port"] ?? 0));
+$portsToTry = array_values(array_unique(array_filter(array_merge([$requestedPort], $isGoDaddy ? [465, 3535] : [465]))));
 $lastSmtpErr = "";
 
 foreach ($portsToTry as $port) {

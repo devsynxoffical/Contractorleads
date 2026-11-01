@@ -190,6 +190,15 @@ export async function bootstrapHostingerMailboxes() {
   let count = 0;
   for (const item of HOSTINGER_DEFAULT_MAILBOXES) {
     const passwordEnc = encryptSecret(item.pass);
+    const existing = await prisma.systemSmtpAccount.findUnique({
+      where: { fromEmail: item.email.toLowerCase().trim() },
+      select: { passwordUpdatedByUserAt: true },
+    });
+    // Never overwrite credentials a user corrected in the app.
+    if (existing?.passwordUpdatedByUserAt) {
+      count++;
+      continue;
+    }
     await prisma.systemSmtpAccount.upsert({
       where: { fromEmail: item.email.toLowerCase().trim() },
       update: {

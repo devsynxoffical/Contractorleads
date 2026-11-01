@@ -51,7 +51,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       ok: true,
-      message: `Warmup email successfully dispatched via Hostinger relay!`,
+      message: "Test warmup email sent.",
       details: {
         from: email,
         to: result.recipient,

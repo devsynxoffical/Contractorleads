@@ -919,6 +919,9 @@ model SystemSmtpAccount {
   replyRate      Float       @default(3.2)
   bounceRate     Float       @default(1.2)
   tags           String      @default("")
+  /// Set when a user corrected this mailbox's password / host in the app. Seeds never overwrite
+  /// these credentials, and sending uses them instead of the built-in defaults.
+  passwordUpdatedByUserAt DateTime?
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
   emails         LeadEmail[]
@@ -1288,6 +1291,8 @@ model WarmupSettings {
   lastSendOkAt            DateTime?
   lastSendErrorAt         DateTime?
   lastSendError           String?
+  /// Original relay / SMTP error text for the last failure (used to classify the problem)
+  lastSendErrorRaw        String?
   consecutiveSendFailures Int       @default(0)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
