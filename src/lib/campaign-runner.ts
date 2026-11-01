@@ -258,6 +258,38 @@ export async function processCampaignSends(opts?: {
       eligibleMailboxes = systemMailboxes.filter((m) => m.enabled);
     }
 
+    // Protection: skip mailboxes that cannot send right now (2+ failed sends in a row, e.g.
+    // a wrong password) or whose measured 7-day sending health is under 80%.
+    {
+      const emails = eligibleMailboxes.map((m) => m.fromEmail.toLowerCase());
+      const settings = emails.length
+        ? await prisma.warmupSettings.findMany({ where: { mailboxEmail: { in: emails } } })
+        : [];
+      const byEmail = new Map(settings.map((w) => [w.mailboxEmail.toLowerCase(), w]));
+      const blocked = new Set<string>();
+      for (const m of eligibleMailboxes) {
+        const w = byEmail.get(m.fromEmail.toLowerCase());
+        if (!w) continue;
+        const failing =
+          w.consecutiveSendFailures >= 2 &&
+          Boolean(w.lastSendErrorAt) &&
+          (!w.lastSendOkAt || w.lastSendErrorAt! > w.lastSendOkAt);
+        const measuredLow = Boolean(w.lastSendOkAt || w.lastSendErrorAt) && w.healthScore < 80;
+        if (failing || measuredLow) blocked.add(m.id);
+      }
+      if (blocked.size > 0) {
+        const healthy = eligibleMailboxes.filter((m) => !blocked.has(m.id));
+        if (healthy.length === 0) {
+          campaignResult.errors.push(
+            "Every sender mailbox for this campaign is paused: they are failing to send or their health is under 80%. Fix them under Email Accounts.",
+          );
+          results.push(campaignResult);
+          continue;
+        }
+        eligibleMailboxes = healthy;
+      }
+    }
+
     const availableMailboxes = eligibleMailboxes.filter((m) => {
       if (opts?.ignoreTimeWindow) {
         return true;

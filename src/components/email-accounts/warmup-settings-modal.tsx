@@ -27,12 +27,13 @@ export function WarmupSettingsModal({
 }: WarmupSettingsModalProps) {
   const [mounted, setMounted] = useState(false);
   const [enabled, setEnabled] = useState(mailbox?.warmupEnabled ?? true);
-  const [startVolume, setStartVolume] = useState(3);
-  const [increment, setIncrement] = useState(2);
-  const [maxPerDay, setMaxPerDay] = useState(25);
-  const [replyRate, setReplyRate] = useState(35);
-  const [weekdaysOnly, setWeekdaysOnly] = useState(true);
+  // Start from this mailbox's saved settings (the parent remounts the modal per mailbox).
+  const [startVolume, setStartVolume] = useState<number>(mailbox?.warmupConfig?.startVolume ?? 3);
+  const [increment, setIncrement] = useState<number>(mailbox?.warmupConfig?.dailyIncrement ?? 2);
+  const [maxPerDay, setMaxPerDay] = useState<number>(mailbox?.warmupConfig?.maxDailyWarmup ?? 25);
+  const [weekdaysOnly, setWeekdaysOnly] = useState<boolean>(mailbox?.warmupConfig?.weekdaysOnly ?? false);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<any>(null);
   const [testError, setTestError] = useState<string | null>(null);
@@ -79,21 +80,27 @@ export function WarmupSettingsModal({
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-
+    setSaveError(null);
     try {
-      await fetch("/api/email-accounts", {
+      const res = await fetch("/api/email-accounts", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           mailboxIds: [mailbox.id],
-          action: enabled ? "warmup_on" : "warmup_off",
+          action: "update_settings",
+          enabled,
+          startVolume,
+          dailyIncrement: increment,
+          maxDailyWarmup: maxPerDay,
+          weekdaysOnly,
         }),
       });
-
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Could not save warmup settings");
       await onSettingsSaved();
       onClose();
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      setSaveError(err instanceof Error ? err.message : "Could not save warmup settings");
     } finally {
       setSaving(false);
     }
@@ -126,7 +133,7 @@ export function WarmupSettingsModal({
             <div>
               <div className="font-semibold text-slate-900 dark:text-white">Enable Automated Warmup</div>
               <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                Exchanges peer-to-peer warmup emails across the 65 mailbox pool
+                Sends a few emails a day to other mailboxes in your warmup pool
               </div>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
@@ -148,7 +155,7 @@ export function WarmupSettingsModal({
                 min="1"
                 max="10"
                 value={startVolume}
-                onChange={(e) => setStartVolume(parseInt(e.target.value, 10))}
+                onChange={(e) => setStartVolume(Number(e.target.value) || 0)}
                 className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#0f0e1e] border border-slate-200 dark:border-[#2b2a45] text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500"
               />
             </div>
@@ -157,10 +164,10 @@ export function WarmupSettingsModal({
               <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Daily Increment</label>
               <input
                 type="number"
-                min="1"
+                min="0"
                 max="5"
                 value={increment}
-                onChange={(e) => setIncrement(parseInt(e.target.value, 10))}
+                onChange={(e) => setIncrement(Number(e.target.value) || 0)}
                 className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#0f0e1e] border border-slate-200 dark:border-[#2b2a45] text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500"
               />
             </div>
@@ -171,24 +178,16 @@ export function WarmupSettingsModal({
               <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Max Warmup Emails / Day</label>
               <input
                 type="number"
-                min="10"
+                min="5"
                 max="50"
                 value={maxPerDay}
-                onChange={(e) => setMaxPerDay(parseInt(e.target.value, 10))}
+                onChange={(e) => setMaxPerDay(Number(e.target.value) || 0)}
                 className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#0f0e1e] border border-slate-200 dark:border-[#2b2a45] text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500"
               />
             </div>
-
-            <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-semibold mb-1">Target Reply Rate %</label>
-              <input
-                type="number"
-                min="10"
-                max="50"
-                value={replyRate}
-                onChange={(e) => setReplyRate(parseInt(e.target.value, 10))}
-                className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#0f0e1e] border border-slate-200 dark:border-[#2b2a45] text-slate-900 dark:text-white focus:outline-hidden focus:border-indigo-500"
-              />
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-[11px] leading-snug text-slate-500 dark:border-[#2b2a45] dark:bg-[#0f0e1e] dark:text-slate-400">
+              Today&apos;s target: <span className="font-semibold text-slate-800 dark:text-slate-200">{mailbox?.warmupSends?.target ?? "—"}</span>/day
+              (day {mailbox?.warmingDays ?? 1}). Automatic warmup replies are not sent, so there is no reply-rate setting.
             </div>
           </div>
 
@@ -260,6 +259,11 @@ export function WarmupSettingsModal({
             )}
           </div>
 
+          {saveError && (
+            <div className="p-2.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-500/30 text-rose-800 dark:text-rose-200 text-xs">
+              {saveError}
+            </div>
+          )}
           <div className="pt-3 border-t border-slate-200 dark:border-[#26253c] flex items-center justify-between">
             <button
               type="button"

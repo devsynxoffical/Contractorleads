@@ -27,8 +27,8 @@ export default async function EmailAccountsPage() {
             </span>
           </div>
           <p className="text-xs text-ink-muted dark:text-slate-400 mt-1 max-w-2xl">
-            Centralized sending infrastructure for all 65 system mailboxes and connected custom accounts.
-            Warmed up 24/7 with automated spam-rescue and real-time SPF, DKIM, DMARC, and MX compliance checks.
+            Your sending mailboxes and connected accounts. Warmup sends a few emails a day between pool
+            mailboxes, and SPF, DKIM, DMARC and MX are checked against live DNS.
           </p>
         </div>
       </div>

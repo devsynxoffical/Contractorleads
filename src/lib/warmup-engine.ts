@@ -44,39 +44,25 @@ export function calculateRampTarget(startedAt: Date, config?: { startVolume?: nu
   const diffMs = Math.max(0, now.getTime() - startedAt.getTime());
   const dayNumber = Math.max(1, Math.floor(diffMs / (24 * 60 * 60 * 1000)) + 1);
 
-  const start = config?.startVolume ?? 3;
-  const inc = config?.increment ?? 2;
-  const max = config?.maxPerDay ?? 25;
+  const start = Math.max(1, config?.startVolume ?? 3);
+  const inc = Math.max(0, config?.increment ?? 2);
+  const max = Math.max(1, config?.maxPerDay ?? 25);
 
-  let warmupTarget = Math.min(max, start + (dayNumber - 1) * inc);
+  // The mailbox's own settings drive the volume on every day: start + increment per day, capped at max.
+  const warmupTarget = Math.min(max, start + (dayNumber - 1) * inc);
+
+  // Campaign sending opens up only after two weeks of warmup.
   let campaignAllowance = 0;
   let status: "warming" | "ready_limited" | "ready" = "warming";
-
-  if (dayNumber >= 1 && dayNumber <= 7) {
-    warmupTarget = Math.min(max, start + (dayNumber - 1) * inc);
-    campaignAllowance = 0;
-    status = "warming";
-  } else if (dayNumber >= 8 && dayNumber <= 14) {
-    warmupTarget = Math.min(max, 15 + Math.floor((dayNumber - 8) * 1.5));
-    campaignAllowance = 0;
-    status = "warming";
-  } else if (dayNumber >= 15 && dayNumber <= 21) {
-    warmupTarget = Math.min(max, 25);
-    campaignAllowance = 15;
-    status = "ready_limited";
-  } else {
-    // 22+ days: Maintenance mode
-    warmupTarget = Math.min(max, 20);
+  if (dayNumber >= 22) {
     campaignAllowance = 35;
     status = "ready";
+  } else if (dayNumber >= 15) {
+    campaignAllowance = 15;
+    status = "ready_limited";
   }
 
-  return {
-    dayNumber,
-    warmupTarget,
-    campaignAllowance,
-    status,
-  };
+  return { dayNumber, warmupTarget, campaignAllowance, status };
 }
 
 /**
@@ -169,7 +155,7 @@ export async function runMailboxWarmupCycle(
       mailboxEmail: email,
       enabled: true,
       weekdaysOnly: false,
-      startedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // Default to day 14 mature
+      startedAt: new Date(), // a new warmup starts at day 1
     },
   });
 
@@ -293,60 +279,59 @@ export async function runMailboxWarmupCycle(
 }
 
 /**
- * Calculate 7-day rolling health score: inbox / (inbox + spam)
+ * 7-day sending health, from real outcomes only:
+ * successful sends ÷ all send attempts, with campaign bounces counted as failures.
+ * Inbox-vs-spam placement is not measured, so it is not part of the score.
+ * healthScore is null when the mailbox has not attempted any send in 7 days.
  */
 export async function calculate7DayHealthScore(mailboxEmail: string): Promise<{
-  healthScore: number;
-  totalReceived: number;
-  inboxCount: number;
-  spamCount: number;
-  status: "healthy" | "watch" | "at_risk";
+  healthScore: number | null;
+  known: boolean;
+  attempts: number;
+  ok: number;
+  failed: number;
+  bounced: number;
+  status: "healthy" | "watch" | "at_risk" | "unknown";
 }> {
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const email = mailboxEmail.toLowerCase().trim();
+  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const sinceStr = since.toISOString().split("T")[0];
 
-  const messages = await prisma.warmupMessage.findMany({
-    where: {
-      toEmail: mailboxEmail.toLowerCase().trim(),
-      sentAt: { gte: sevenDaysAgo },
-    },
-    select: { landed: true, rescued: true },
-  });
+  const [daily, warmupSent, campaignDelivered, campaignFailed, bounced] = await Promise.all([
+    prisma.mailboxDailyStat.findMany({
+      where: { mailboxEmail: email, date: { gte: sinceStr } },
+      select: { sendOk: true, sendFailures: true },
+    }),
+    prisma.warmupMessage.count({ where: { fromEmail: email, sentAt: { gte: since } } }),
+    prisma.campaignLog.count({
+      where: { fromEmail: { equals: email, mode: "insensitive" }, sentAt: { gte: since }, status: { notIn: ["failed", "bounced"] } },
+    }),
+    prisma.campaignLog.count({
+      where: { fromEmail: { equals: email, mode: "insensitive" }, sentAt: { gte: since }, status: "failed" },
+    }),
+    prisma.campaignLog.count({
+      where: {
+        fromEmail: { equals: email, mode: "insensitive" },
+        sentAt: { gte: since },
+        OR: [{ status: "bounced" }, { bouncedAt: { not: null } }],
+      },
+    }),
+  ]);
 
-  if (messages.length === 0) {
-    // Mature baseline
-    return {
-      healthScore: 98.5,
-      totalReceived: 0,
-      inboxCount: 0,
-      spamCount: 0,
-      status: "healthy",
-    };
+  const recordedOk = daily.reduce((a, d) => a + d.sendOk, 0);
+  const recordedFail = daily.reduce((a, d) => a + d.sendFailures, 0);
+  // Sends logged before attempt counters existed are still counted once.
+  const ok = Math.max(recordedOk, warmupSent + campaignDelivered);
+  const failed = Math.max(recordedFail, campaignFailed);
+  const attempts = ok + failed + bounced;
+
+  if (attempts === 0) {
+    return { healthScore: null, known: false, attempts: 0, ok: 0, failed: 0, bounced: 0, status: "unknown" };
   }
 
-  let inbox = 0;
-  let spam = 0;
-
-  for (const m of messages) {
-    if (m.landed === "inbox") inbox++;
-    else if (m.landed === "spam") spam++;
-  }
-
-  const total = inbox + spam;
-  const score = total > 0 ? Math.round((inbox / total) * 1000) / 10 : 98.0;
-
-  let status: "healthy" | "watch" | "at_risk" = "healthy";
-  if (score >= 90) status = "healthy";
-  else if (score >= 80) status = "watch";
-  else status = "at_risk";
-
-  return {
-    healthScore: score,
-    totalReceived: total,
-    inboxCount: inbox,
-    spamCount: spam,
-    status,
-  };
+  const score = Math.max(0, Math.round((ok / attempts) * 1000) / 10);
+  const status = score >= 90 ? "healthy" : score >= 80 ? "watch" : "at_risk";
+  return { healthScore: score, known: true, attempts, ok, failed, bounced, status };
 }
 
 /**
@@ -359,6 +344,10 @@ export async function applyMailboxProtectionRules(mailboxEmail: string): Promise
 }> {
   const email = mailboxEmail.toLowerCase().trim();
   const { healthScore, status } = await calculate7DayHealthScore(email);
+  if (healthScore == null) {
+    // Nothing sent in 7 days: keep the stored score, nothing to judge.
+    return { healthScore: 0, autoPaused: false };
+  }
 
   // Update in settings and system accounts
   await prisma.warmupSettings.updateMany({

@@ -23,6 +23,16 @@ export async function recordMailboxSendResult(mailboxEmail: string, ok: boolean,
   if (!email.includes("@")) return;
   const now = new Date();
   try {
+    const date = now.toISOString().split("T")[0];
+    await prisma.mailboxDailyStat.upsert({
+      where: { mailboxEmail_date: { mailboxEmail: email, date } },
+      update: ok ? { sendOk: { increment: 1 } } : { sendFailures: { increment: 1 } },
+      create: { mailboxEmail: email, date, sendOk: ok ? 1 : 0, sendFailures: ok ? 0 : 1 },
+    });
+  } catch {
+    // ignore
+  }
+  try {
     const existing = await prisma.warmupSettings.findUnique({ where: { mailboxEmail: email } });
     if (existing) {
       await prisma.warmupSettings.update({
@@ -48,7 +58,7 @@ export async function recordMailboxSendResult(mailboxEmail: string, ok: boolean,
         mailboxEmail: email,
         enabled: system ? system.warmupEnabled : true,
         weekdaysOnly: false,
-        startedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
+        startedAt: new Date(),
         ...(ok
           ? { lastSendOkAt: now }
           : { lastSendErrorAt: now, lastSendError: summarizeSendError(error || ""), consecutiveSendFailures: 1 }),
