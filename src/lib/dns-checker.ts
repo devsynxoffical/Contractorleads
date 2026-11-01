@@ -1,6 +1,13 @@
 import { promises as dns } from "node:dns";
 
-export type DnsStatus = "pass" | "warn" | "fail";
+/** "unknown" = the lookup itself failed (timeout, resolver error), so nothing is claimed either way. */
+export type DnsStatus = "pass" | "warn" | "fail" | "unknown";
+
+/** DNS answers that mean "this record does not exist" (as opposed to "could not look it up"). */
+function isNoRecord(err: unknown): boolean {
+  const code = (err as { code?: string } | null)?.code;
+  return ["ENOTFOUND", "ENODATA", "NXDOMAIN", "ENONAME"].includes(code ?? "");
+}
 
 export type RecordCheckResult = {
   status: DnsStatus;
@@ -22,16 +29,24 @@ export type DomainDnsReport = {
 };
 
 const COMMON_DKIM_SELECTORS = [
-  "google",
+  // Hostinger
+  "hostingermail-a",
+  "hostingermail-b",
+  "hostingermail-c",
+  // Microsoft 365 (also GoDaddy Microsoft 365 email)
   "selector1",
   "selector2",
+  // Google Workspace
+  "google",
+  // Common generic selectors
+  "default",
+  "dkim",
+  "mail",
   "s1",
   "s2",
   "k1",
-  "default",
-  "mail",
-  "hostingermail1",
-  "hostingermail2",
+  "k2",
+  "zoho",
 ];
 
 /**
@@ -89,17 +104,18 @@ export async function checkSpf(domain: string): Promise<RecordCheckResult> {
       reason: "Valid SPF record configured with secure policy.",
     };
   } catch (err: any) {
-    if (err.code === "ENOTFOUND" || err.code === "ENODATA") {
+    if (isNoRecord(err)) {
       return {
         status: "fail",
         record: null,
-        reason: "No TXT records found on domain root.",
+        reason: "No SPF record: the domain has no TXT records.",
+        instructions: "Add a TXT record with host '@' and value 'v=spf1 include:<provider_include> ~all'.",
       };
     }
     return {
-      status: "fail",
+      status: "unknown",
       record: null,
-      reason: `DNS lookup failed: ${err.message || String(err)}`,
+      reason: `Could not check SPF right now (${err.code || err.message || "DNS error"}). Re-check in a minute.`,
     };
   }
 }
@@ -115,36 +131,49 @@ export async function checkDkim(
     ? [preferredSelector, ...COMMON_DKIM_SELECTORS.filter((s) => s !== preferredSelector)]
     : COMMON_DKIM_SELECTORS;
 
-  for (const sel of selectorsToTest) {
-    const dkimHost = `${sel}._domainkey.${domain}`;
-    try {
-      const records = await dns.resolveTxt(dkimHost);
-      const joined = records.map((r) => r.join("")).join("");
-
-      if (joined.includes("v=DKIM1") || joined.includes("p=")) {
-        // Found DKIM!
-        const isWeak = joined.includes("p=") && joined.length < 150; // short key < 1024/2048 bit
-        return {
-          status: isWeak ? "warn" : "pass",
-          selector: sel,
-          record: joined.slice(0, 80) + (joined.length > 80 ? "..." : ""),
-          reason: isWeak
-            ? `DKIM found on selector "${sel}", but key length appears under 2048-bit.`
-            : `Valid DKIM signature verified on selector "${sel}".`,
-        };
+  // Look up every selector in parallel; DKIM keys are often CNAMEs, which resolveTxt follows.
+  const lookups = await Promise.all(
+    selectorsToTest.map(async (sel) => {
+      try {
+        const records = await dns.resolveTxt(`${sel}._domainkey.${domain}`);
+        return { sel, joined: records.map((r) => r.join("")).join(""), err: null as unknown };
+      } catch (err: unknown) {
+        return { sel, joined: "", err };
       }
-    } catch {
-      // Selector not found, check next
-      continue;
-    }
+    }),
+  );
+
+  const found = lookups.find((l) => /v=DKIM1/i.test(l.joined) || /(^|;)\s*p=[A-Za-z0-9+/]/.test(l.joined));
+  if (found) {
+    // A 1024-bit RSA key is ~216 base64 chars; 2048-bit is ~392.
+    const key = (found.joined.match(/p=([A-Za-z0-9+/=]+)/) || [])[1] || "";
+    const isWeak = key.length > 0 && key.length < 300;
+    return {
+      status: isWeak ? "warn" : "pass",
+      selector: found.sel,
+      record: found.joined.slice(0, 80) + (found.joined.length > 80 ? "..." : ""),
+      reason: isWeak
+        ? `DKIM key found on selector "${found.sel}", but it looks shorter than 2048-bit.`
+        : `DKIM key found on selector "${found.sel}".`,
+    };
   }
 
-  // If no public selector TXT is found on the client apex, check if provider handles DKIM envelope signing
+  // Every lookup failed with a resolver error (not "no such record"): we could not check.
+  if (lookups.every((l) => l.err && !isNoRecord(l.err))) {
+    return {
+      status: "unknown",
+      selector: preferredSelector || "",
+      record: null,
+      reason: "Could not check DKIM right now (DNS lookups failed). Re-check in a minute.",
+    };
+  }
+
   return {
-    status: "pass",
-    selector: preferredSelector || "provider-relay",
-    record: "Provider-managed authentication & relay envelope",
-    reason: "Cryptographically authenticated via mail provider relay envelope (compliant with RFC 7489).",
+    status: "warn",
+    selector: preferredSelector || "",
+    record: null,
+    reason: `No DKIM key found on the common selectors (${selectorsToTest.slice(0, 6).join(", ")}…). If your provider uses another selector, DKIM may still be set up; otherwise turn on DKIM in your email host's DNS settings.`,
+    instructions: "Enable DKIM in your email provider (Hostinger: Emails → your domain → DNS records) and add the record it gives you.",
   };
 }
 
@@ -184,11 +213,19 @@ export async function checkDmarc(domain: string): Promise<RecordCheckResult> {
     }
 
     return {
-      status: "pass",
+      status: "warn",
       record: joined,
-      reason: "DMARC policy verified on domain.",
+      reason: "DMARC record found, but it has no p= policy tag.",
+      instructions: "Add a policy, e.g. 'v=DMARC1; p=none; rua=mailto:dmarc@yourdomain'.",
     };
   } catch (err: any) {
+    if (!isNoRecord(err)) {
+      return {
+        status: "unknown",
+        record: null,
+        reason: `Could not check DMARC right now (${err.code || err.message || "DNS error"}). Re-check in a minute.`,
+      };
+    }
     return {
       status: "fail",
       record: null,
@@ -229,11 +266,20 @@ export async function checkMx(
       reason: `Verified ${mxRecords.length} mail exchange server(s).`,
     };
   } catch (err: any) {
+    if (!isNoRecord(err)) {
+      return {
+        status: "unknown",
+        record: null,
+        mailServers: [],
+        reason: `Could not check MX right now (${err.code || err.message || "DNS error"}). Re-check in a minute.`,
+      };
+    }
     return {
       status: "fail",
       record: null,
       mailServers: [],
-      reason: `MX DNS lookup failed: ${err.message || String(err)}`,
+      reason: "No MX records: this domain cannot receive mail, and many servers reject mail from it.",
+      instructions: "Point MX records to your mail server (Google, Microsoft, Hostinger, etc.).",
     };
   }
 }
@@ -271,12 +317,11 @@ export async function checkDomainDns(
 
   const provider = detectProvider(mx.mailServers, spf.record);
 
+  const statuses = [spf.status, dkim.status, dmarc.status, mx.status];
   let overallStatus: DnsStatus = "pass";
-  if (spf.status === "fail" || dkim.status === "fail" || dmarc.status === "fail" || mx.status === "fail") {
-    overallStatus = "fail";
-  } else if (spf.status === "warn" || dkim.status === "warn" || dmarc.status === "warn") {
-    overallStatus = "warn";
-  }
+  if (statuses.includes("fail")) overallStatus = "fail";
+  else if (statuses.includes("unknown")) overallStatus = "unknown";
+  else if (statuses.includes("warn")) overallStatus = "warn";
 
   return {
     domain: cleanDomain,
@@ -303,21 +348,21 @@ export function getDnsFixInstructions(
     google: {
       spf: "v=spf1 include:_spf.google.com ~all",
       dkimHost: "google._domainkey",
-      dkimVal: "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...",
+      dkimVal: "Generate it in Google Admin → Apps → Gmail → Authenticate email, then paste that exact value here.",
       dmarc: `v=DMARC1; p=quarantine; rua=mailto:dmarc-reports@${cleanDomain}`,
       mx: [{ host: "@", priority: 1, target: "smtp.google.com" }],
     },
     microsoft: {
       spf: "v=spf1 include:spf.protection.outlook.com -all",
       dkimHost: "selector1._domainkey",
-      dkimVal: "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...",
+      dkimVal: "CNAME given in Microsoft 365 Defender → Email authentication → DKIM (one for selector1 and selector2).",
       dmarc: `v=DMARC1; p=quarantine; rua=mailto:dmarc-reports@${cleanDomain}`,
       mx: [{ host: "@", priority: 0, target: `${cleanDomain.replace(/\./g, "-")}.mail.protection.outlook.com` }],
     },
     hostinger: {
       spf: "v=spf1 include:_spf.mail.hostinger.com ~all",
-      dkimHost: "hostingermail1._domainkey",
-      dkimVal: "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...",
+      dkimHost: "hostingermail-a._domainkey",
+      dkimVal: "CNAME values shown in hPanel → Emails → your domain → DNS records (hostingermail-a, -b and -c).",
       dmarc: `v=DMARC1; p=quarantine; rua=mailto:dmarc-reports@${cleanDomain}`,
       mx: [
         { host: "@", priority: 5, target: "mx1.hostinger.com" },
@@ -326,8 +371,8 @@ export function getDnsFixInstructions(
     },
     godaddy: {
       spf: "v=spf1 include:secureserver.net ~all",
-      dkimHost: "s1._domainkey",
-      dkimVal: "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...",
+      dkimHost: "selector1._domainkey",
+      dkimVal: "Turn on DKIM in your GoDaddy email settings; it gives the exact record (Microsoft 365 email uses selector1 / selector2).",
       dmarc: `v=DMARC1; p=quarantine; rua=mailto:dmarc-reports@${cleanDomain}`,
       mx: [
         { host: "@", priority: 0, target: "smtp.secureserver.net" },
@@ -337,7 +382,7 @@ export function getDnsFixInstructions(
     custom: {
       spf: "v=spf1 a mx ~all",
       dkimHost: "default._domainkey",
-      dkimVal: "v=DKIM1; k=rsa; p=<YOUR_PUBLIC_KEY>",
+      dkimVal: "The DKIM public key from your mail server or email provider.",
       dmarc: `v=DMARC1; p=quarantine; rua=mailto:dmarc@${cleanDomain}`,
       mx: [{ host: "@", priority: 10, target: `mail.${cleanDomain}` }],
     },

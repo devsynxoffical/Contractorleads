@@ -6,6 +6,7 @@ import { decryptSecret, encryptSecret } from "@/lib/crypto-secret";
 import { sendUserResendEmail, verifyResendApiKey } from "@/lib/email";
 import { assertPublicSmtpHost, BlockedUrlError } from "@/lib/safe-fetch";
 import { appBaseUrl } from "@/lib/email-brand";
+import { recordMailboxSendResult } from "@/lib/mailbox-send-status";
 
 import {
   getSystemSenderConfig,
@@ -398,13 +399,17 @@ export async function listAvailableSenders(userId: string) {
  */
 export async function pickRotationSender(userId: string): Promise<SenderConfig | null> {
   await migrateLegacySmtpIfNeeded(userId);
+  // "Auto-rotate" in the UI means the Hostinger / GoDaddy mailbox pool. Use it whenever this
+  // user may (assigned mailboxes, or super admin). Otherwise a personal Resend sender with an
+  // unverified domain was picked first and every send failed with a Resend domain error.
+  const pooled = await pickSystemRotationSender(userId);
+  if (pooled) return pooled;
+
   const accounts = await prisma.smtpAccount.findMany({
     where: { userId, enabled: true },
     orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
   });
   if (!accounts.length) {
-    const sys = await pickSystemRotationSender(userId);
-    if (sys) return sys;
     return getUserSenderConfig(userId);
   }
 
@@ -925,7 +930,18 @@ export async function resolveSmtpCredentialsForEmail(fromEmail: string): Promise
   return null;
 }
 
-export async function sendViaHostingerRelay(opts: {
+/** Send through the relay and record the outcome on the mailbox (shown on Email Accounts). */
+export async function sendViaHostingerRelay(
+  opts: Parameters<typeof sendViaHostingerRelayRaw>[0],
+): ReturnType<typeof sendViaHostingerRelayRaw> {
+  const res = await sendViaHostingerRelayRaw(opts);
+  if ((opts.action || "send") === "send") {
+    await recordMailboxSendResult(opts.fromEmail, res.ok, res.error);
+  }
+  return res;
+}
+
+async function sendViaHostingerRelayRaw(opts: {
   fromEmail: string;
   fromName?: string | null;
   password?: string;

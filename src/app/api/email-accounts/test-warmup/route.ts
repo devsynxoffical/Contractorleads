@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { runMailboxWarmupCycle } from "@/lib/warmup-engine";
+import { userCanAccessMailbox } from "@/lib/mailbox-access";
+import { isGlobalSuperAdmin } from "@/lib/roles";
 
 export const maxDuration = 30;
 export const dynamic = "force-dynamic";
@@ -18,16 +20,20 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   let email = (body.mailboxEmail || "").toLowerCase().trim();
 
-  // If no email specified, pick the first active mailbox
+  // If no email specified, pick the user's first active mailbox
   if (!email) {
     const firstAccount = await prisma.systemSmtpAccount.findFirst({
-      where: { enabled: true },
+      where: { enabled: true, ...(isGlobalSuperAdmin(user) ? {} : { assignedUserId: user.id }) },
       select: { fromEmail: true },
     });
     if (!firstAccount) {
       return NextResponse.json({ error: "No active sending mailboxes found" }, { status: 400 });
     }
     email = firstAccount.fromEmail.toLowerCase();
+  }
+
+  if (!(await userCanAccessMailbox(user, email))) {
+    return NextResponse.json({ error: "Mailbox not found" }, { status: 404 });
   }
 
   try {
@@ -51,7 +57,7 @@ export async function POST(request: Request) {
         to: result.recipient,
         subject: result.subject,
         messageId: result.messageId,
-        gatewayStatus: "200 OK",
+
         timestamp: new Date().toISOString(),
       },
     });

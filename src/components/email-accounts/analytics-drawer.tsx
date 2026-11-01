@@ -11,6 +11,15 @@ import {
   HiOutlineArrowTrendingUp,
 } from "react-icons/hi2";
 
+type ChartPoint = {
+  date: string;
+  warmupSent: number;
+  warmupReceived: number;
+  campaignSent: number;
+  failed: number;
+  bounced: number;
+};
+
 export type AnalyticsDrawerProps = {
   isOpen: boolean;
   onClose: () => void;
@@ -57,7 +66,14 @@ export function AnalyticsDrawer({
   if (!isOpen || !mounted) return null;
 
   const chartData = stats?.chartData || [];
-  const healthReport = stats?.healthReport || { healthScore: 98.3, status: "healthy" };
+  const healthReport = stats?.healthReport || { healthScore: null, known: false, attempts: 0, ok: 0, failed: 0, bounced: 0 };
+  const ramp = stats?.ramp || null;
+  const lastSend = stats?.lastSend || null;
+  const lastSendFailing =
+    Boolean(lastSend?.errorAt) &&
+    (lastSend?.consecutiveFailures ?? 0) > 0 &&
+    (!lastSend?.okAt || new Date(lastSend.errorAt) > new Date(lastSend.okAt));
+  const maxBar = Math.max(1, ...(chartData as ChartPoint[]).map((p) => (p.warmupSent || 0) + (p.campaignSent || 0) + (p.failed || 0) + (p.bounced || 0)));
 
   return createPortal(
     <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 z-[100] flex justify-end bg-black/50 dark:bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200">
@@ -110,133 +126,191 @@ export function AnalyticsDrawer({
           </div>
         </div>
 
-        {/* Key KPI Cards */}
+        {lastSendFailing && (
+          <div className="mb-5 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">
+            <div className="font-bold">This mailbox cannot send right now</div>
+            <div className="mt-0.5">{lastSend?.error || "The last send attempt failed."}</div>
+            <div className="mt-1 text-[11px] opacity-80">
+              {lastSend?.consecutiveFailures} failed attempt(s) in a row · last at{" "}
+              {lastSend?.errorAt ? new Date(lastSend.errorAt).toLocaleString() : "—"}
+            </div>
+          </div>
+        )}
+
+        {/* Key KPI Cards (all from logged sends) */}
         <div className="grid grid-cols-3 gap-3 mb-6">
           <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-[#17162b] border border-slate-200 dark:border-[#26253c]">
             <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mb-1">
-              <HiOutlineHeart className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" /> 7d Health Score
+              <HiOutlineHeart className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" /> 7-day health
             </div>
-            <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
-              {healthReport.healthScore}%
+            <div
+              className={`text-xl font-bold ${
+                healthReport.healthScore == null
+                  ? "text-slate-400"
+                  : healthReport.healthScore >= 90
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : healthReport.healthScore >= 80
+                  ? "text-amber-600 dark:text-amber-400"
+                  : "text-rose-600 dark:text-rose-400"
+              }`}
+            >
+              {loading ? "…" : healthReport.healthScore == null ? "—" : `${healthReport.healthScore}%`}
             </div>
-            <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Inbox Placement</div>
+            <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
+              {healthReport.healthScore == null
+                ? "No sends in the last 7 days"
+                : `${healthReport.ok} sent of ${healthReport.attempts} attempts`}
+            </div>
           </div>
-
           <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-[#17162b] border border-slate-200 dark:border-[#26253c]">
             <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mb-1">
-              <HiOutlineFire className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" /> Warmup Volume
+              <HiOutlineFire className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" /> Warmup sent
             </div>
             <div className="text-xl font-bold text-indigo-600 dark:text-indigo-300">
-              {chartData.reduce((acc: number, c: any) => acc + (c.warmupSent || 0), 0)}
+              {chartData.reduce((acc: number, c: ChartPoint) => acc + (c.warmupSent || 0), 0)}
             </div>
-            <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Warmup Emails Sent</div>
+            <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
+              {chartData.reduce((acc: number, c: ChartPoint) => acc + (c.warmupReceived || 0), 0)} received · last {days} days
+            </div>
           </div>
-
           <div className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-[#17162b] border border-slate-200 dark:border-[#26253c]">
             <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mb-1">
-              <HiOutlinePaperAirplane className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400" /> Campaign Sends
+              <HiOutlinePaperAirplane className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400" /> Campaign sends
             </div>
             <div className="text-xl font-bold text-slate-800 dark:text-slate-200">
-              {chartData.reduce((acc: number, c: any) => acc + (c.campaignSent || 0), 0)}
+              {chartData.reduce((acc: number, c: ChartPoint) => acc + (c.campaignSent || 0), 0)}
             </div>
-            <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Cold Leads Contacted</div>
+            <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
+              {chartData.reduce((acc: number, c: ChartPoint) => acc + (c.failed || 0) + (c.bounced || 0), 0)} failed or bounced
+            </div>
           </div>
         </div>
 
-        {/* Deliverability Bar Chart */}
+        {/* Daily sends chart */}
         <div className="p-4 rounded-xl bg-slate-50/70 dark:bg-[#17162b] border border-slate-200 dark:border-[#26253c] mb-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
             <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
               <HiOutlineArrowTrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              Inbox vs Spam Placement Over Time
+              Sends per day
             </span>
             <div className="flex items-center gap-3 text-[11px]">
-              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" /> Inbox
+              <span className="flex items-center gap-1 text-indigo-600 dark:text-indigo-300 font-semibold">
+                <span className="w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block" /> Warmup
+              </span>
+              <span className="flex items-center gap-1 text-cyan-600 dark:text-cyan-400 font-semibold">
+                <span className="w-2.5 h-2.5 rounded-full bg-cyan-500 inline-block" /> Campaign
               </span>
               <span className="flex items-center gap-1 text-rose-600 dark:text-rose-400 font-semibold">
-                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block" /> Spam / Rescued
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block" /> Failed / bounced
               </span>
             </div>
           </div>
-
           {loading ? (
             <div className="h-44 flex items-center justify-center text-xs text-slate-500 dark:text-slate-400">
-              Loading deliverability history...
+              Loading history…
+            </div>
+          ) : (chartData as ChartPoint[]).every((p) => !p.warmupSent && !p.campaignSent && !p.failed && !p.bounced) ? (
+            <div className="h-44 flex items-center justify-center text-center text-xs text-slate-500 dark:text-slate-400">
+              No sends from this mailbox in the last {days} days.
             </div>
           ) : (
-            <div className="space-y-2">
-              <div className="h-40 flex items-end gap-1.5 pt-4 border-b border-slate-200 dark:border-[#2b2a45]">
-                {chartData.slice(-14).map((pt: any, idx: number) => {
-                  const maxH = 25;
-                  const inboxH = Math.min(100, (pt.inboxCount / maxH) * 100);
-                  const spamH = Math.min(100, (pt.spamCount / maxH) * 100);
+            <div className="h-40 flex items-end gap-1 pt-4 border-b border-slate-200 dark:border-[#2b2a45]">
+              {(chartData as ChartPoint[]).slice(-14).map((pt) => {
+                const seg = (n: number) => `${(n / maxBar) * 100}%`;
+                const bad = (pt.failed || 0) + (pt.bounced || 0);
+                return (
+                  <div key={pt.date} className="group relative flex h-full flex-1 flex-col items-center justify-end">
+                    <div className="pointer-events-none absolute -top-12 z-10 hidden flex-col items-center whitespace-nowrap rounded border border-slate-700 bg-black/90 px-2 py-1 text-[10px] text-white group-hover:flex">
+                      <span>{pt.date}</span>
+                      <span className="text-indigo-300">Warmup: {pt.warmupSent}</span>
+                      <span className="text-cyan-300">Campaign: {pt.campaignSent}</span>
+                      <span className="text-rose-300">Failed / bounced: {bad}</span>
+                    </div>
+                    <div className="flex h-full w-full max-w-[14px] flex-col justify-end">
+                      {bad > 0 && <div style={{ height: seg(bad) }} className="w-full rounded-t bg-rose-500/80" />}
+                      {pt.campaignSent > 0 && <div style={{ height: seg(pt.campaignSent) }} className="w-full bg-cyan-500/80" />}
+                      {pt.warmupSent > 0 && <div style={{ height: seg(pt.warmupSent) }} className="w-full rounded-b bg-indigo-500/80" />}
+                    </div>
+                    <span className="mt-1 text-[9px] text-slate-500">{pt.date.split("-").slice(1).join("/")}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <p className="mt-2 text-[10px] text-slate-400 dark:text-slate-500">
+            Inbox-vs-spam placement is not measured, so health is based on delivery: successful sends out of all attempts, bounces counted as failures.
+          </p>
+        </div>
 
+        {/* Ramp-up from this mailbox's own settings */}
+        <div className="p-4 rounded-xl bg-slate-50/70 dark:bg-[#17162b] border border-slate-200 dark:border-[#26253c] space-y-3">
+          <div className="text-xs font-bold text-slate-900 dark:text-white">Warmup ramp-up</div>
+          {!ramp ? (
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Warmup has not run for this mailbox yet. The schedule starts on its first warmup send.
+            </p>
+          ) : (
+            <>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="rounded-lg border border-slate-200 bg-white p-2 dark:border-[#201f35] dark:bg-[#141326]">
+                  <div className="text-[10px] text-slate-500">Day</div>
+                  <div className="font-bold text-slate-900 dark:text-white">{ramp.dayNumber}</div>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-white p-2 dark:border-[#201f35] dark:bg-[#141326]">
+                  <div className="text-[10px] text-slate-500">Warmup target today</div>
+                  <div className="font-bold text-slate-900 dark:text-white">{ramp.warmupTarget} / day</div>
+                </div>
+                <div className="rounded-lg border border-slate-200 bg-white p-2 dark:border-[#201f35] dark:bg-[#141326]">
+                  <div className="text-[10px] text-slate-500">Stage</div>
+                  <div className="font-bold text-slate-900 dark:text-white">
+                    {!ramp.enabled
+                      ? "Warmup paused"
+                      : ramp.status === "warming"
+                      ? "Warming (no campaigns)"
+                      : ramp.status === "ready_limited"
+                      ? "Early outreach"
+                      : "Full scale"}
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-1.5 text-xs">
+                {[
+                  { from: 1, to: 14, label: "Days 1–14", note: "warmup only, no campaign sends" },
+                  { from: 15, to: 21, label: "Days 15–21", note: "up to 15 campaign sends / day" },
+                  { from: 22, to: Infinity, label: "Day 22+", note: "up to 35 campaign sends / day" },
+                ].map((st) => {
+                  const state = ramp.dayNumber > st.to ? "Done" : ramp.dayNumber >= st.from ? "Current" : "Next";
                   return (
                     <div
-                      key={idx}
-                      className="flex-1 flex flex-col justify-end items-center h-full group relative"
+                      key={st.label}
+                      className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white p-2 dark:border-[#201f35] dark:bg-[#141326]"
                     >
-                      {/* Tooltip on hover */}
-                      <div className="absolute -top-10 hidden group-hover:flex flex-col items-center bg-black/90 text-white text-[10px] py-1 px-2 rounded pointer-events-none z-10 whitespace-nowrap border border-slate-700">
-                        <span>{pt.date}</span>
-                        <span className="text-emerald-400">Inbox: {pt.inboxCount}</span>
-                        <span className="text-rose-400">Spam: {pt.spamCount}</span>
-                      </div>
-
-                      {/* Bar columns */}
-                      <div className="w-full max-w-[14px] flex flex-col justify-end h-full">
-                        {spamH > 0 && (
-                          <div
-                            style={{ height: `${spamH}%` }}
-                            className="w-full bg-rose-500/80 rounded-t"
-                          />
-                        )}
-                        <div
-                          style={{ height: `${Math.max(8, inboxH)}%` }}
-                          className="w-full bg-emerald-500/80 rounded-t"
-                        />
-                      </div>
-                      <span className="text-[9px] text-slate-500 mt-1">
-                        {pt.date.split("-").slice(1).join("/")}
+                      <span className="font-semibold text-slate-700 dark:text-slate-300">{st.label}</span>
+                      <span className="flex-1 text-slate-500 dark:text-slate-400">{st.note}</span>
+                      <span
+                        className={
+                          state === "Done"
+                            ? "font-medium text-emerald-600 dark:text-emerald-400"
+                            : state === "Current"
+                            ? "font-medium text-indigo-600 dark:text-indigo-400"
+                            : "font-medium text-slate-400"
+                        }
+                      >
+                        {state}
                       </span>
                     </div>
                   );
                 })}
               </div>
-            </div>
+              <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                Warmup volume: starts at {ramp.startVolume}/day, +{ramp.dailyIncrement} per day, up to {ramp.maxDailyWarmup}/day. Change it in Warmup Settings.
+              </p>
+            </>
           )}
         </div>
 
-        {/* Ramp-Up Schedule Roadmap */}
-        <div className="p-4 rounded-xl bg-[#17162b] border border-[#26253c] space-y-3">
-          <div className="text-xs font-bold text-white">4-Week Safe Ramp-Up Roadmap</div>
-          <div className="space-y-2 text-xs">
-            <div className="flex items-center justify-between p-2 rounded-lg bg-[#141326] border border-[#201f35]">
-              <span className="font-semibold text-slate-300">Days 1–7 (Start):</span>
-              <span className="text-slate-400 font-mono">2–5 warmup/day · 0 campaign</span>
-              <span className="text-emerald-400 font-medium">Completed</span>
-            </div>
-            <div className="flex items-center justify-between p-2 rounded-lg bg-[#141326] border border-[#201f35]">
-              <span className="font-semibold text-slate-300">Days 8–14 (Building):</span>
-              <span className="text-slate-400 font-mono">15–25 warmup/day · 0 campaign</span>
-              <span className="text-emerald-400 font-medium">Completed</span>
-            </div>
-            <div className="flex items-center justify-between p-2 rounded-lg bg-[#141326] border border-[#201f35]">
-              <span className="font-semibold text-slate-300">Days 15–21 (Early Outreach):</span>
-              <span className="text-slate-400 font-mono">25–30 warmup/day · 10–15 campaign</span>
-              <span className="text-indigo-400 font-medium">Active Stage</span>
-            </div>
-            <div className="flex items-center justify-between p-2 rounded-lg bg-[#141326] border border-[#201f35]">
-              <span className="font-semibold text-slate-300">Days 22+ (Full Scale):</span>
-              <span className="text-slate-400 font-mono">20 maintenance · up to 35 campaign/day</span>
-              <span className="text-slate-500 font-medium">Next</span>
-            </div>
-          </div>
-        </div>
-
         {/* Footer */}
-        <div className="pt-4 border-t border-[#26253c] mt-auto flex justify-end">
+        <div className="pt-4 border-t border-slate-200 dark:border-[#26253c] mt-6 flex justify-end">
           <button
             onClick={onClose}
             className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-medium text-xs transition"

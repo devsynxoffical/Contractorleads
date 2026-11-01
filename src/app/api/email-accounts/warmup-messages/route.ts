@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isGlobalSuperAdmin } from "@/lib/roles";
+import { userCanAccessMailbox } from "@/lib/mailbox-access";
 
 export const dynamic = "force-dynamic";
 
@@ -26,20 +26,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "mailbox is required" }, { status: 400 });
   }
 
-  if (!isGlobalSuperAdmin(user)) {
-    const [system, own] = await Promise.all([
-      prisma.systemSmtpAccount.findFirst({
-        where: { fromEmail: { equals: mailbox, mode: "insensitive" }, assignedUserId: user.id },
-        select: { id: true },
-      }),
-      prisma.smtpAccount.findFirst({
-        where: { fromEmail: { equals: mailbox, mode: "insensitive" }, userId: user.id },
-        select: { id: true },
-      }),
-    ]);
-    if (!system && !own) {
-      return NextResponse.json({ error: "Mailbox not found" }, { status: 404 });
-    }
+  if (!(await userCanAccessMailbox(user, mailbox))) {
+    return NextResponse.json({ error: "Mailbox not found" }, { status: 404 });
   }
 
   const sentWhere = { fromEmail: { equals: mailbox, mode: "insensitive" as const } };

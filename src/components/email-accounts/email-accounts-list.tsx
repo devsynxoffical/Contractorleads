@@ -73,7 +73,7 @@ export function EmailAccountsList() {
       }
       setTestBanner({
         type: "success",
-        message: `⚡ Live Warmup Test Succeeded! Sent from ${data.details.from} to ${data.details.to} ("${data.details.subject}") via Hostinger Relay.`,
+        message: `Test warmup email sent from ${data.details.from} to ${data.details.to} ("${data.details.subject}").`,
       });
       await loadAccounts(true);
     } catch (err: any) {
@@ -149,9 +149,8 @@ export function EmailAccountsList() {
   // Bulk actions
   async function handleBulkAction(action: string, extra?: Record<string, any>) {
     if (selectedMailboxIds.length === 0) return;
-    const count = selectedMailboxIds.length;
     try {
-      await fetch("/api/email-accounts", {
+      const res = await fetch("/api/email-accounts", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -160,6 +159,8 @@ export function EmailAccountsList() {
           ...extra,
         }),
       });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(result.error || "The change could not be applied");
       await loadAccounts(true);
       setSelectedMailboxIds([]);
       setIsBulkLimitOpen(false);
@@ -169,13 +170,17 @@ export function EmailAccountsList() {
         pause: "Paused",
         activate: "Activated",
         set_limit: `Daily limit set to ${extra?.limit || 30}`,
+        add_tag: "Tag added",
       };
+      // Report what the server actually changed, not what was selected.
       setTestBanner({
-        type: "success",
-        message: `${actionLabels[action] || action} for ${count} selected mailbox(es).`,
+        type: result.skipped > 0 ? "error" : "success",
+        message: `${actionLabels[action] || action}: ${result.message || "done"}${
+          result.skipped > 0 && action === "set_limit" ? " Daily limits apply to pool mailboxes only." : ""
+        }`,
       });
-    } catch {
-      // ignore
+    } catch (err: any) {
+      setTestBanner({ type: "error", message: err.message || "The change could not be applied" });
     }
   }
 
@@ -206,10 +211,15 @@ export function EmailAccountsList() {
           mailboxIds: [row.id],
           action: row.warmupEnabled ? "warmup_off" : "warmup_on",
         }),
+      }).then(async (res) => {
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({}));
+          throw new Error(d.error || "Could not change warmup");
+        }
       });
       await loadAccounts(true);
-    } catch {
-      // ignore
+    } catch (err: any) {
+      setTestBanner({ type: "error", message: err.message || "Could not change warmup" });
     }
   }
 
@@ -235,12 +245,15 @@ export function EmailAccountsList() {
     return Object.values(map).filter((f: any) => f.mailboxes.length > 0);
   }, [data, paginatedRows]);
 
+  // Zeros while loading: never show made-up numbers.
   const summary = data?.summary || {
-    totalMailboxes: 65,
-    warmingCount: 12,
-    readyCount: 53,
+    totalMailboxes: 0,
+    warmingCount: 0,
+    readyCount: 0,
     atRiskCount: 0,
-    avgPlatformHealth: 98.3,
+    failingCount: 0,
+    unmeasuredCount: 0,
+    avgPlatformHealth: null,
   };
 
   return (
@@ -253,9 +266,9 @@ export function EmailAccountsList() {
           </div>
           <div className="text-2xl font-black text-slate-900 dark:text-white mt-1 flex items-baseline gap-2">
             {summary.totalMailboxes}
-            <span className="text-xs font-normal text-indigo-600 dark:text-indigo-400">active pool</span>
+            <span className="text-xs font-normal text-indigo-600 dark:text-indigo-400">mailboxes</span>
           </div>
-          <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Across Hostinger & GoDaddy</div>
+          <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Pool and connected accounts</div>
         </div>
 
         <div className="p-4 rounded-2xl bg-white dark:bg-[#141326] border border-slate-200 dark:border-[#26253c] shadow-xs">
@@ -266,7 +279,7 @@ export function EmailAccountsList() {
             {summary.readyCount}
             <span className="text-xs font-normal text-slate-500 dark:text-slate-400">mailboxes</span>
           </div>
-          <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Health ≥90% & Day 14+</div>
+          <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Sending OK, health ≥90%, day 14+</div>
         </div>
 
         <div className="p-4 rounded-2xl bg-white dark:bg-[#141326] border border-slate-200 dark:border-[#26253c] shadow-xs">
@@ -288,7 +301,11 @@ export function EmailAccountsList() {
             {summary.atRiskCount}
             <span className="text-xs font-normal text-slate-500 dark:text-slate-400">mailboxes</span>
           </div>
-          <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">Auto-paused from sends</div>
+          <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
+            {summary.failingCount > 0
+              ? `${summary.failingCount} can't send right now`
+              : "Skipped by campaigns until fixed"}
+          </div>
         </div>
 
         <div className="p-4 rounded-2xl bg-white dark:bg-[#141326] border border-slate-200 dark:border-[#26253c] shadow-xs">
@@ -296,10 +313,16 @@ export function EmailAccountsList() {
             Platform Avg Health
           </div>
           <div className="text-2xl font-black text-purple-600 dark:text-purple-400 mt-1 flex items-baseline gap-2">
-            {summary.avgPlatformHealth}%
-            <span className="text-xs font-normal text-slate-500 dark:text-slate-400">inbox rate</span>
+            {summary.avgPlatformHealth == null ? "—" : `${summary.avgPlatformHealth}%`}
+            <span className="text-xs font-normal text-slate-500 dark:text-slate-400">sending health</span>
           </div>
-          <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">7-Day rolling average</div>
+          <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
+            {summary.avgPlatformHealth == null
+              ? "No sends measured yet"
+              : summary.unmeasuredCount > 0
+                ? `7-day average · ${summary.unmeasuredCount} not measured yet`
+                : "7-Day rolling average"}
+          </div>
         </div>
       </div>
 
@@ -545,48 +568,16 @@ export function EmailAccountsList() {
                       }}
                       title="Click to view DNS authentication status & Fix Drawer"
                     >
-                      <span
-                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono ${
-                          dns.spfStatus === "pass"
-                            ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
-                            : dns.spfStatus === "warn"
-                            ? "bg-amber-500/20 text-amber-400 border border-amber-500/40"
-                            : "bg-rose-500/20 text-rose-400 border border-rose-500/40"
-                        }`}
-                      >
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono ${dnsBadgeClass(dns.spfStatus)}`} title={dnsBadgeTitle("SPF", dns.spfStatus, dns.spfRecord ?? dns.spfRecords, dns.lastCheckedAt)}>
                         SPF
                       </span>
-                      <span
-                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono ${
-                          dns.dkimStatus === "pass"
-                            ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
-                            : dns.dkimStatus === "warn"
-                            ? "bg-amber-500/20 text-amber-400 border border-amber-500/40"
-                            : "bg-rose-500/20 text-rose-400 border border-rose-500/40"
-                        }`}
-                      >
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono ${dnsBadgeClass(dns.dkimStatus)}`} title={dnsBadgeTitle("DKIM", dns.dkimStatus, dns.dkimRecord ?? dns.dkimRecords, dns.lastCheckedAt)}>
                         DKIM
                       </span>
-                      <span
-                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono ${
-                          dns.dmarcStatus === "pass"
-                            ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
-                            : dns.dmarcStatus === "warn"
-                            ? "bg-amber-500/20 text-amber-400 border border-amber-500/40"
-                            : "bg-rose-500/20 text-rose-400 border border-rose-500/40"
-                        }`}
-                      >
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono ${dnsBadgeClass(dns.dmarcStatus)}`} title={dnsBadgeTitle("DMARC", dns.dmarcStatus, dns.dmarcRecord ?? dns.dmarcRecords, dns.lastCheckedAt)}>
                         DMARC
                       </span>
-                      <span
-                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono ${
-                          dns.mxStatus === "pass"
-                            ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
-                            : dns.mxStatus === "warn"
-                            ? "bg-amber-500/20 text-amber-400 border border-amber-500/40"
-                            : "bg-rose-500/20 text-rose-400 border border-rose-500/40"
-                        }`}
-                      >
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono ${dnsBadgeClass(dns.mxStatus)}`} title={dnsBadgeTitle("MX", dns.mxStatus, dns.mxRecord ?? dns.mxRecords, dns.lastCheckedAt)}>
                         MX
                       </span>
                     </div>
@@ -594,8 +585,19 @@ export function EmailAccountsList() {
                     {/* Avg Health */}
                     <div className="flex items-center gap-1 text-slate-600 dark:text-slate-300">
                       <HiOutlineHeart className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" />
-                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                        {folder.avgHealth}%
+                      <span
+                        className={`font-semibold ${
+                          folder.failingCount > 0
+                            ? "text-rose-600 dark:text-rose-400"
+                            : "text-emerald-600 dark:text-emerald-400"
+                        }`}
+                        title={
+                          folder.failingCount > 0
+                            ? `${folder.failingCount} mailbox(es) on this domain cannot send`
+                            : undefined
+                        }
+                      >
+                        {folder.healthKnown === false ? "—" : `${folder.avgHealth}%`}
                       </span>
                     </div>
 
@@ -651,6 +653,14 @@ export function EmailAccountsList() {
                                 </span>
                               </div>
                               <div className="truncate text-[11px] text-slate-500 dark:text-slate-400">{row.senderName}</div>
+                              {row.sendStatus === "failing" && (
+                                <div
+                                  className="mt-0.5 truncate text-[11px] font-semibold text-rose-600 dark:text-rose-400"
+                                  title={row.lastSendError || undefined}
+                                >
+                                  {row.lastSendError || "Last send failed"}
+                                </div>
+                              )}
                             </div>
 
                             {/* Status Pill */}
@@ -658,8 +668,17 @@ export function EmailAccountsList() {
                               className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
                                 row.status === "Active"
                                   ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/30"
-                                  : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
+                                  : row.status === "Sending failed"
+                                    ? "bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-rose-500/30"
+                                    : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
                               }`}
+                              title={
+                                row.sendStatus === "failing"
+                                  ? `${row.lastSendError || "Last send failed"}${
+                                      row.lastSendErrorAt ? ` (${new Date(row.lastSendErrorAt).toLocaleString()})` : ""
+                                    }`
+                                  : undefined
+                              }
                             >
                               {row.status}
                             </span>
@@ -696,7 +715,7 @@ export function EmailAccountsList() {
                             {/* Heart: Health Score % */}
                             <div
                               className="flex items-center gap-1.5 min-w-[65px]"
-                              title="7-day rolling Warmup Health score (% of emails landing in Inbox vs Spam)"
+                              title="7-day sending health: successful sends out of all attempts, bounces count as failures (— = no sends yet)"
                             >
                               <HiOutlineHeart
                                 className={`w-3.5 h-3.5 ${
@@ -716,35 +735,35 @@ export function EmailAccountsList() {
                                     : "text-rose-600 dark:text-rose-400"
                                 }`}
                               >
-                                {row.healthScore}%
+                                {row.healthKnown === false ? "—" : `${row.healthScore}%`}
                               </span>
                             </div>
 
                             {/* Reply Arrow: Reply rate % */}
                             <div
                               className="hidden items-center gap-1 text-slate-600 dark:text-slate-300 min-w-[55px] lg:flex"
-                              title="Campaign reply rate"
+                              title="Campaign reply rate, last 30 days (— = no campaign sends yet)"
                             >
                               <HiOutlineArrowUturnLeft className="w-3.5 h-3.5 text-slate-400" />
-                              <span className="font-mono">{row.replyRate}%</span>
+                              <span className="font-mono">{row.replyRate == null ? "—" : `${row.replyRate}%`}</span>
                             </div>
 
                             {/* Down-right Arrow: Bounce rate % */}
                             <div
                               className="hidden items-center gap-1 min-w-[55px] lg:flex"
-                              title="Hard bounce rate (should stay under 2-3%)"
+                              title="Campaign bounce rate, last 30 days; keep under 2% (— = no campaign sends yet)"
                             >
                               <HiOutlineArrowTrendingDown
                                 className={`w-3.5 h-3.5 ${
-                                  row.bounceRate > 2 ? "text-amber-500 dark:text-amber-400" : "text-slate-400"
+                                  (row.bounceRate ?? 0) > 2 ? "text-amber-500 dark:text-amber-400" : "text-slate-400"
                                 }`}
                               />
                               <span
                                 className={`font-mono ${
-                                  row.bounceRate > 2 ? "text-amber-600 dark:text-amber-400 font-bold" : "text-slate-600 dark:text-slate-300"
+                                  (row.bounceRate ?? 0) > 2 ? "text-amber-600 dark:text-amber-400 font-bold" : "text-slate-600 dark:text-slate-300"
                                 }`}
                               >
-                                {row.bounceRate}%
+                                {row.bounceRate == null ? "—" : `${row.bounceRate}%`}
                               </span>
                             </div>
 
@@ -763,44 +782,18 @@ export function EmailAccountsList() {
                               onClick={() => setFixDrawerDomain(row.domain)}
                               title="Click to open DNS Fix Drawer"
                             >
-                              <span
-                                className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono ${
-                                  dns.spfStatus === "pass"
-                                    ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-transparent"
-                                    : "bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-transparent"
-                                }`}
-                              >
-                                SPF
-                              </span>
-                              <span
-                                className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono ${
-                                  dns.dkimStatus === "pass"
-                                    ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-transparent"
-                                    : "bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-transparent"
-                                }`}
-                              >
-                                DKIM
-                              </span>
-                              <span
-                                className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono ${
-                                  dns.dmarcStatus === "pass"
-                                    ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-transparent"
-                                    : dns.dmarcStatus === "warn"
-                                    ? "bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-transparent"
-                                    : "bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-transparent"
-                                }`}
-                              >
-                                DMARC
-                              </span>
-                              <span
-                                className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono ${
-                                  dns.mxStatus === "pass"
-                                    ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-transparent"
-                                    : "bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-transparent"
-                                }`}
-                              >
-                                MX
-                              </span>
+                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono ${dnsBadgeClass(dns.spfStatus)}`} title={dnsBadgeTitle("SPF", dns.spfStatus, dns.spfRecord ?? dns.spfRecords, dns.lastCheckedAt)}>
+                        SPF
+                      </span>
+                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono ${dnsBadgeClass(dns.dkimStatus)}`} title={dnsBadgeTitle("DKIM", dns.dkimStatus, dns.dkimRecord ?? dns.dkimRecords, dns.lastCheckedAt)}>
+                        DKIM
+                      </span>
+                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono ${dnsBadgeClass(dns.dmarcStatus)}`} title={dnsBadgeTitle("DMARC", dns.dmarcStatus, dns.dmarcRecord ?? dns.dmarcRecords, dns.lastCheckedAt)}>
+                        DMARC
+                      </span>
+                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono ${dnsBadgeClass(dns.mxStatus)}`} title={dnsBadgeTitle("MX", dns.mxStatus, dns.mxRecord ?? dns.mxRecords, dns.lastCheckedAt)}>
+                        MX
+                      </span>
                             </div>
                           </div>
 
@@ -980,6 +973,7 @@ export function EmailAccountsList() {
 
       {warmupSettingsMailbox && (
         <WarmupSettingsModal
+          key={warmupSettingsMailbox.id}
           isOpen={Boolean(warmupSettingsMailbox)}
           onClose={() => setWarmupSettingsMailbox(null)}
           mailbox={warmupSettingsMailbox}
@@ -988,4 +982,25 @@ export function EmailAccountsList() {
       )}
     </div>
   );
+}
+
+/** One colour scheme for DNS badges: green pass, amber warn, red fail, grey not checked. */
+function dnsBadgeClass(status?: string | null): string {
+  switch (status) {
+    case "pass":
+      return "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-500/40";
+    case "warn":
+      return "bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-500/40";
+    case "fail":
+      return "bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-rose-500/40";
+    default:
+      return "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-slate-600";
+  }
+}
+
+function dnsBadgeTitle(label: string, status?: string | null, record?: string | null, checkedAt?: string | null): string {
+  const word =
+    status === "pass" ? "OK" : status === "warn" ? "Needs attention" : status === "fail" ? "Missing or broken" : "Not checked yet";
+  const when = checkedAt ? ` · checked ${new Date(checkedAt).toLocaleString()}` : "";
+  return `${label}: ${word}${record ? ` — ${record}` : ""}${when}. Click for details and fix steps.`;
 }

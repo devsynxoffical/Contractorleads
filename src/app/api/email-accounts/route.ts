@@ -53,7 +53,9 @@ export async function GET(request: Request) {
   todayStart.setHours(0, 0, 0, 0);
 
   // 1. Fetch today's campaign logs to count sends per mailbox
-  const [todayCampaignLogs, todayWarmupLogs, activeCampaigns, warmupSettingsList, cachedDnsList] = await Promise.all([
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const [todayCampaignLogs, todayWarmupLogs, activeCampaigns, warmupSettingsList, cachedDnsList, recentWarmup, attempts7d, campaign7d, campaignOutcomes] = await Promise.all([
     prisma.campaignLog.findMany({
       where: { sentAt: { gte: todayStart } },
       select: { mailboxId: true, fromEmail: true, status: true },
@@ -64,11 +66,109 @@ export async function GET(request: Request) {
     }),
     prisma.campaign.findMany({
       where: { status: "active" },
-      select: { id: true, selectedMailboxIds: true },
+      select: { id: true, selectedMailboxIds: true, userId: true, user: { select: { role: true, email: true } } },
     }),
     prisma.warmupSettings.findMany(),
     prisma.domainDnsCache.findMany(),
+    // Mailboxes with any real warmup traffic in the last 7 days have a measured health score
+    prisma.warmupMessage.findMany({
+      where: { sentAt: { gte: sevenDaysAgo } },
+      select: { fromEmail: true, toEmail: true },
+    }),
+    // Real send attempts per mailbox over the last 7 days (health)
+    prisma.mailboxDailyStat.groupBy({
+      by: ["mailboxEmail"],
+      where: { date: { gte: sevenDaysAgo.toISOString().split("T")[0] } },
+      _sum: { sendOk: true, sendFailures: true },
+    }),
+    prisma.campaignLog.groupBy({
+      by: ["fromEmail", "status"],
+      where: { sentAt: { gte: sevenDaysAgo } },
+      _count: { _all: true },
+    }),
+    // Real reply / bounce rates per sending mailbox over the last 30 days
+    prisma.campaignLog.groupBy({
+      by: ["fromEmail", "status"],
+      where: { sentAt: { gte: thirtyDaysAgo } },
+      _count: { _all: true },
+    }),
   ]);
+
+  const outcomeByMailbox = new Map<string, { sent: number; replied: number; bounced: number }>();
+  for (const o of campaignOutcomes) {
+    const key = (o.fromEmail || "").toLowerCase();
+    const cur = outcomeByMailbox.get(key) || { sent: 0, replied: 0, bounced: 0 };
+    if (o.status !== "failed") cur.sent += o._count._all;
+    if (o.status === "replied") cur.replied += o._count._all;
+    if (o.status === "bounced") cur.bounced += o._count._all;
+    outcomeByMailbox.set(key, cur);
+  }
+  /** null = no campaign sends in 30 days, so no rate is shown. */
+  const rates = (email: string) => {
+    const o = outcomeByMailbox.get(email);
+    if (!o || o.sent === 0) return { replyRate: null as number | null, bounceRate: null as number | null, campaignSent30d: 0 };
+    return {
+      replyRate: Math.round((o.replied / o.sent) * 1000) / 10,
+      bounceRate: Math.round((o.bounced / o.sent) * 1000) / 10,
+      campaignSent30d: o.sent,
+    };
+  };
+
+  const mailboxesWithTraffic = new Set<string>();
+  const warmupSent7d = new Map<string, number>();
+  for (const m of recentWarmup) {
+    const from = m.fromEmail.toLowerCase();
+    mailboxesWithTraffic.add(from);
+    mailboxesWithTraffic.add(m.toEmail.toLowerCase());
+    warmupSent7d.set(from, (warmupSent7d.get(from) || 0) + 1);
+  }
+  const attemptsByMailbox = new Map(
+    attempts7d.map((a) => [a.mailboxEmail.toLowerCase(), { ok: a._sum.sendOk || 0, failed: a._sum.sendFailures || 0 }]),
+  );
+  const campaign7dByMailbox = new Map<string, { delivered: number; failed: number; bounced: number }>();
+  for (const c of campaign7d) {
+    const key = (c.fromEmail || "").toLowerCase();
+    const cur = campaign7dByMailbox.get(key) || { delivered: 0, failed: 0, bounced: 0 };
+    if (c.status === "failed") cur.failed += c._count._all;
+    else if (c.status === "bounced") cur.bounced += c._count._all;
+    else cur.delivered += c._count._all;
+    campaign7dByMailbox.set(key, cur);
+  }
+  /**
+   * Live 7-day sending health (same rule as calculate7DayHealthScore): successful sends ÷ all
+   * attempts, bounces counted as failures. null when the mailbox attempted nothing in 7 days.
+   */
+  const liveHealth = (email: string): number | null => {
+    const a = attemptsByMailbox.get(email) || { ok: 0, failed: 0 };
+    const c = campaign7dByMailbox.get(email) || { delivered: 0, failed: 0, bounced: 0 };
+    const ok = Math.max(a.ok, (warmupSent7d.get(email) || 0) + c.delivered);
+    const failed = Math.max(a.failed, c.failed);
+    const total = ok + failed + c.bounced;
+    return total > 0 ? Math.round((ok / total) * 1000) / 10 : null;
+  };
+
+  /**
+   * Real sending state for a mailbox. "failing" when the latest send attempt failed
+   * (e.g. wrong password): health is then 0, because the mailbox cannot deliver anything.
+   * "unknown" when nothing has been sent or measured yet, so no score is claimed.
+   */
+  const sendState = (email: string) => {
+    const w = warmupSettingsMap.get(email);
+    const measured = liveHealth(email);
+    const failing =
+      Boolean(w?.lastSendErrorAt) &&
+      (w?.consecutiveSendFailures ?? 0) > 0 &&
+      (!w?.lastSendOkAt || new Date(w.lastSendErrorAt) > new Date(w.lastSendOkAt));
+    const known = failing || measured != null;
+    return {
+      sendStatus: (failing ? "failing" : known ? "ok" : "unknown") as "failing" | "ok" | "unknown",
+      lastSendError: failing ? (w?.lastSendError as string | null) ?? "Last send failed" : null,
+      lastSendErrorAt: failing && w?.lastSendErrorAt ? new Date(w.lastSendErrorAt).toISOString() : null,
+      lastSendOkAt: w?.lastSendOkAt ? new Date(w.lastSendOkAt).toISOString() : null,
+      healthKnown: known,
+      healthScore: failing ? 0 : measured ?? 0,
+    };
+  };
 
   const warmupSettingsMap = new Map<string, any>();
   for (const w of warmupSettingsList) {
@@ -83,6 +183,7 @@ export async function GET(request: Request) {
   // Count campaign sends today per mailbox
   const campaignSendsToday = new Map<string, number>();
   for (const log of todayCampaignLogs) {
+    if (log.status === "failed") continue;
     const key = (log.mailboxId || log.fromEmail || "").toLowerCase();
     campaignSendsToday.set(key, (campaignSendsToday.get(key) || 0) + 1);
   }
@@ -96,18 +197,23 @@ export async function GET(request: Request) {
 
   // Count attached campaigns per mailbox
   const attachedCampaignsMap = new Map<string, number>();
+  // Campaigns set to "ALL" mailboxes use every mailbox their owner can send from.
+  const allCampaignsByUser = new Map<string, number>();
+  let superAdminAllCampaigns = 0;
   for (const c of activeCampaigns) {
+    let ids: unknown = "ALL";
     try {
-      if (c.selectedMailboxIds) {
-        const ids = JSON.parse(c.selectedMailboxIds);
-        if (Array.isArray(ids)) {
-          for (const mId of ids) {
-            attachedCampaignsMap.set(mId, (attachedCampaignsMap.get(mId) || 0) + 1);
-          }
-        }
-      }
+      ids = c.selectedMailboxIds ? JSON.parse(c.selectedMailboxIds) : "ALL";
     } catch {
-      // ignore parsing error
+      ids = "ALL";
+    }
+    if (Array.isArray(ids) && ids.length > 0) {
+      for (const mId of ids) {
+        attachedCampaignsMap.set(String(mId), (attachedCampaignsMap.get(String(mId)) || 0) + 1);
+      }
+    } else {
+      allCampaignsByUser.set(c.userId, (allCampaignsByUser.get(c.userId) || 0) + 1);
+      if (isGlobalSuperAdmin(c.user)) superAdminAllCampaigns++;
     }
   }
 
@@ -122,15 +228,25 @@ export async function GET(request: Request) {
       uniqueDomains.add(domain);
 
       const wSettings = warmupSettingsMap.get(email);
-      const startedAt = wSettings ? new Date(wSettings.startedAt) : new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
-      const ramp = calculateRampTarget(startedAt);
+      // No settings row yet means warmup has not started: day 1, not a made-up "day 14".
+      const startedAt = wSettings ? new Date(wSettings.startedAt) : new Date();
+      const ramp = calculateRampTarget(startedAt, {
+        startVolume: wSettings?.startVolume,
+        increment: wSettings?.dailyIncrement,
+        maxPerDay: wSettings?.maxDailyWarmup,
+      });
 
-      const warmupSent = warmupSendsToday.get(email) || s.warmupSentToday || 0;
-      const campaignSent = campaignSendsToday.get(s.id) || campaignSendsToday.get(email) || s.campaignSentToday || 0;
+      // Only real logged sends: no stored counters that may be stale.
+      const warmupSent = warmupSendsToday.get(email) || 0;
+      const campaignSent = (campaignSendsToday.get(s.id.toLowerCase()) || 0) + (campaignSendsToday.get(email) || 0);
       const dailyCampaignLimit = s.dailyLimit || 30;
 
-      const healthScore = wSettings ? wSettings.healthScore : s.healthScore || 98.3;
-      const attachedCount = attachedCampaignsMap.get(s.id) || 1;
+      const state = sendState(email);
+      const healthScore = state.healthScore;
+      const attachedCount =
+        (attachedCampaignsMap.get(s.id) || 0) +
+        superAdminAllCampaigns +
+        (s.assignedUserId ? allCampaignsByUser.get(s.assignedUserId) || 0 : 0);
 
       return {
         id: s.id,
@@ -139,16 +255,22 @@ export async function GET(request: Request) {
         domain,
         provider: s.provider || "hostinger",
         type: "system",
-        status: s.enabled ? "Active" : "Paused",
+        status: !s.enabled ? "Paused" : state.sendStatus === "failing" ? "Sending failed" : "Active",
+        ...state,
         campaignSends: { sent: campaignSent, limit: dailyCampaignLimit },
         warmupSends: { sent: warmupSent, target: ramp.warmupTarget },
         warmupEnabled: wSettings ? wSettings.enabled : s.warmupEnabled,
+        warmupConfig: {
+          startVolume: wSettings?.startVolume ?? 3,
+          dailyIncrement: wSettings?.dailyIncrement ?? 2,
+          maxDailyWarmup: wSettings?.maxDailyWarmup ?? 25,
+          weekdaysOnly: wSettings?.weekdaysOnly ?? false,
+        },
         healthScore: Math.round(healthScore * 10) / 10,
-        replyRate: s.replyRate || 3.4,
-        bounceRate: s.bounceRate || 1.7,
+        ...rates(email),
         attachedCampaigns: attachedCount,
         tags: s.tags ? s.tags.split(",").map((t) => t.trim()).filter(Boolean) : [],
-        isReady: s.enabled && healthScore >= 90 && ramp.status !== "warming",
+        isReady: s.enabled && state.sendStatus === "ok" && healthScore >= 90 && ramp.status !== "warming",
         warmingDays: ramp.dayNumber,
         rampStatus: ramp.status,
       };
@@ -159,12 +281,18 @@ export async function GET(request: Request) {
       uniqueDomains.add(domain);
 
       const wSettings = warmupSettingsMap.get(email);
-      const startedAt = wSettings ? new Date(wSettings.startedAt) : new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
-      const ramp = calculateRampTarget(startedAt);
+      // No settings row yet means warmup has not started: day 1, not a made-up "day 14".
+      const startedAt = wSettings ? new Date(wSettings.startedAt) : new Date();
+      const ramp = calculateRampTarget(startedAt, {
+        startVolume: wSettings?.startVolume,
+        increment: wSettings?.dailyIncrement,
+        maxPerDay: wSettings?.maxDailyWarmup,
+      });
 
       const warmupSent = warmupSendsToday.get(email) || 0;
-      const campaignSent = campaignSendsToday.get(u.id) || campaignSendsToday.get(email) || 0;
-      const healthScore = wSettings ? wSettings.healthScore : 97.5;
+      const campaignSent = (campaignSendsToday.get(u.id.toLowerCase()) || 0) + (campaignSendsToday.get(email) || 0);
+      const state = sendState(email);
+      const healthScore = state.healthScore;
 
       return {
         id: u.id,
@@ -173,102 +301,91 @@ export async function GET(request: Request) {
         domain,
         provider: "custom",
         type: "user",
-        status: u.enabled ? "Active" : "Paused",
+        status: !u.enabled ? "Paused" : state.sendStatus === "failing" ? "Sending failed" : "Active",
+        ...state,
         campaignSends: { sent: campaignSent, limit: 30 },
         warmupSends: { sent: warmupSent, target: ramp.warmupTarget },
         warmupEnabled: wSettings ? wSettings.enabled : true,
+        warmupConfig: {
+          startVolume: wSettings?.startVolume ?? 3,
+          dailyIncrement: wSettings?.dailyIncrement ?? 2,
+          maxDailyWarmup: wSettings?.maxDailyWarmup ?? 25,
+          weekdaysOnly: wSettings?.weekdaysOnly ?? false,
+        },
         healthScore: Math.round(healthScore * 10) / 10,
-        replyRate: 2.8,
-        bounceRate: 1.2,
-        attachedCampaigns: attachedCampaignsMap.get(u.id) || 0,
+        ...rates(email),
+        attachedCampaigns: (attachedCampaignsMap.get(u.id) || 0) + (allCampaignsByUser.get(u.userId) || 0),
         tags: ["custom-smtp"],
-        isReady: u.enabled && healthScore >= 90,
+        isReady: u.enabled && state.sendStatus === "ok" && healthScore >= 90,
         warmingDays: ramp.dayNumber,
         rampStatus: ramp.status,
       };
     }),
   ];
 
-  // 2. Fetch DNS status for all unique domains
+  // 2. Real DNS status per domain. Domains never checked (or checked over 24h ago) are
+  // checked now; if a check cannot finish within a few seconds the domain shows "unknown"
+  // (grey) instead of a made-up pass, and the result is stored when it completes.
+  const DNS_STALE_MS = 24 * 60 * 60 * 1000;
   const domainDnsMap: Record<string, any> = {};
 
-  for (const domain of Array.from(uniqueDomains)) {
-    let cached = dnsCacheMap.get(domain);
-    if (!cached) {
-      cached = {
-        domain,
-        overallStatus: "pass",
-        spfStatus: "pass",
-        dkimStatus: "pass",
-        dmarcStatus: "pass",
-        mxStatus: "pass",
-      };
-      // Asynchronously populate cache in background without blocking the user
-      checkDomainDns(domain)
-        .then((dnsReport) => {
-          return prisma.domainDnsCache.upsert({
-            where: { domain },
-            update: {
-              overallStatus: dnsReport.overallStatus,
-              spfStatus: dnsReport.spf.status,
-              dkimStatus: dnsReport.dkim.status,
-              dmarcStatus: dnsReport.dmarc.status,
-              mxStatus: dnsReport.mx.status,
-            },
-            create: {
-              domain,
-              provider: dnsReport.provider,
-              overallStatus: dnsReport.overallStatus,
-              spfStatus: dnsReport.spf.status,
-              spfRecord: dnsReport.spf.record,
-              dkimStatus: dnsReport.dkim.status,
-              dkimSelector: dnsReport.dkim.selector,
-              dkimRecord: dnsReport.dkim.record,
-              dmarcStatus: dnsReport.dmarc.status,
-              dmarcRecord: dnsReport.dmarc.record,
-              mxStatus: dnsReport.mx.status,
-              mxRecords: dnsReport.mx.record,
-            },
-          });
-        })
-        .catch(() => {});
-    } else {
-      // Auto-upgrade legacy cached records where dkim/dmarc were overly strict
-      let needsDbUpdate = false;
-      const normalized = { ...cached };
+  const saveReport = async (domain: string) => {
+    const report = await checkDomainDns(domain);
+    const data = {
+      provider: report.provider,
+      overallStatus: report.overallStatus,
+      spfStatus: report.spf.status,
+      spfRecord: report.spf.record,
+      dkimStatus: report.dkim.status,
+      dkimSelector: report.dkim.selector || null,
+      dkimRecord: report.dkim.record,
+      dmarcStatus: report.dmarc.status,
+      dmarcRecord: report.dmarc.record,
+      mxStatus: report.mx.status,
+      mxRecords: report.mx.record,
+      lastCheckedAt: new Date(),
+    };
+    return prisma.domainDnsCache.upsert({
+      where: { domain },
+      update: data,
+      create: { domain, ...data },
+    });
+  };
 
-      if (normalized.dkimStatus === "fail") {
-        normalized.dkimStatus = "pass";
-        normalized.dkimRecord = "Provider-managed authentication & relay envelope";
-        needsDbUpdate = true;
-      }
-      if (normalized.dmarcStatus === "warn" || (normalized.dmarcRecord && normalized.dmarcRecord.includes("p=none"))) {
-        normalized.dmarcStatus = "pass";
-        needsDbUpdate = true;
-      }
-      if (normalized.spfStatus === "pass" && normalized.mxStatus === "pass" && normalized.dkimStatus === "pass" && normalized.dmarcStatus === "pass") {
-        normalized.overallStatus = "pass";
-        needsDbUpdate = true;
-      }
+  const unknownDns = (domain: string) => ({
+    domain,
+    overallStatus: "unknown",
+    spfStatus: "unknown",
+    dkimStatus: "unknown",
+    dmarcStatus: "unknown",
+    mxStatus: "unknown",
+    lastCheckedAt: null,
+  });
 
-      if (needsDbUpdate) {
-        cached = normalized;
-        // Non-blocking update in DB
-        prisma.domainDnsCache
-          .update({
-            where: { domain },
-            data: {
-              dkimStatus: normalized.dkimStatus,
-              dmarcStatus: normalized.dmarcStatus,
-              overallStatus: normalized.overallStatus,
-              dkimRecord: normalized.dkimRecord,
-            },
-          })
-          .catch(() => {});
+  await Promise.all(
+    Array.from(uniqueDomains).map(async (domain) => {
+      const cached = dnsCacheMap.get(domain);
+      // Results written by the old checker (made-up DKIM "pass") are always re-checked.
+      const legacyFake =
+        cached?.dkimSelector === "provider-relay" ||
+        cached?.dkimRecord === "Provider-managed authentication & relay envelope";
+      const fresh =
+        !legacyFake &&
+        cached?.lastCheckedAt &&
+        Date.now() - new Date(cached.lastCheckedAt).getTime() < DNS_STALE_MS;
+      if (cached && fresh) {
+        domainDnsMap[domain] = cached;
+        return;
       }
-    }
-    domainDnsMap[domain] = cached;
-  }
+      const pending = saveReport(domain).catch(() => null);
+      const result = await Promise.race([
+        pending,
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 6000)),
+      ]);
+      // Fall back to the last real result if there is one, else "unknown".
+      domainDnsMap[domain] = result || (cached && !legacyFake ? cached : unknownDns(domain));
+    }),
+  );
 
   // Filter rows
   let filteredRows = rows;
@@ -309,12 +426,7 @@ export async function GET(request: Request) {
 
   for (const row of filteredRows) {
     if (!domainFolders[row.domain]) {
-      const dns = domainDnsMap[row.domain] || {
-        spfStatus: "pass",
-        dkimStatus: "pass",
-        dmarcStatus: "pass",
-        mxStatus: "pass",
-      };
+      const dns = domainDnsMap[row.domain] || unknownDns(row.domain);
       domainFolders[row.domain] = {
         domain: row.domain,
         dns,
@@ -325,6 +437,11 @@ export async function GET(request: Request) {
       };
     }
     const folder = domainFolders[row.domain];
+    // When DNS could not identify the provider, use the mailbox's own provider so fix steps
+    // match (e.g. GoDaddy mailboxes get GoDaddy records, not Hostinger ones).
+    if ((!folder.dns.provider || folder.dns.provider === "custom") && (row.provider === "godaddy" || row.provider === "hostinger")) {
+      folder.dns = { ...folder.dns, provider: row.provider };
+    }
     folder.mailboxes.push(row);
     folder.mailboxCount++;
     folder.totalDailyCapacity += row.campaignSends.limit;
@@ -332,21 +449,27 @@ export async function GET(request: Request) {
 
   // Calculate folder avg health
   for (const folder of Object.values(domainFolders)) {
-    if (folder.mailboxes.length > 0) {
-      const sum = folder.mailboxes.reduce((acc, m) => acc + m.healthScore, 0);
-      folder.avgHealth = Math.round((sum / folder.mailboxes.length) * 10) / 10;
+    const measured = folder.mailboxes.filter((m) => m.healthKnown);
+    if (measured.length > 0) {
+      const sum = measured.reduce((acc, m) => acc + m.healthScore, 0);
+      folder.avgHealth = Math.round((sum / measured.length) * 10) / 10;
     }
+    (folder as any).healthKnown = measured.length > 0;
+    (folder as any).failingCount = folder.mailboxes.filter((m) => m.sendStatus === "failing").length;
   }
 
   // Summary KPIs
   const totalMailboxes = rows.length;
   const warmingCount = rows.filter((r) => r.warmupEnabled).length;
   const readyCount = rows.filter((r) => r.isReady).length;
-  const atRiskCount = rows.filter((r) => r.healthScore < 80).length;
+  const failingCount = rows.filter((r) => r.sendStatus === "failing").length;
+  const measuredRows = rows.filter((r) => r.healthKnown);
+  const atRiskCount = measuredRows.filter((r) => r.healthScore < 80).length;
+  // Average only over mailboxes with real data; null means nothing has been measured yet.
   const avgPlatformHealth =
-    totalMailboxes > 0
-      ? Math.round((rows.reduce((acc, r) => acc + r.healthScore, 0) / totalMailboxes) * 10) / 10
-      : 98.0;
+    measuredRows.length > 0
+      ? Math.round((measuredRows.reduce((acc, r) => acc + r.healthScore, 0) / measuredRows.length) * 10) / 10
+      : null;
 
   return NextResponse.json({
     ok: true,
@@ -355,6 +478,8 @@ export async function GET(request: Request) {
       warmingCount,
       readyCount,
       atRiskCount,
+      failingCount,
+      unmeasuredCount: totalMailboxes - measuredRows.length,
       avgPlatformHealth,
     },
     domainFolders: Object.values(domainFolders),
@@ -520,8 +645,9 @@ export async function PATCH(request: Request) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json().catch(() => ({}));
-  const mailboxIds: string[] = body.mailboxIds || [];
-  const action: string = body.action; // "warmup_on" | "warmup_off" | "pause" | "activate" | "set_limit" | "add_tag"
+  const mailboxIds: string[] = Array.isArray(body.mailboxIds) ? body.mailboxIds.map(String) : [];
+  // "warmup_on" | "warmup_off" | "pause" | "activate" | "set_limit" | "add_tag" | "update_settings"
+  const action: string = body.action;
   const limit: number = parseInt(body.limit || "30", 10);
   const tag: string = (body.tag || "").trim();
 
@@ -529,69 +655,97 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "No mailboxes selected" }, { status: 400 });
   }
 
-  const accounts = await prisma.systemSmtpAccount.findMany({
-    where: { id: { in: mailboxIds } },
-    select: { id: true, fromEmail: true, tags: true },
-  });
+  const isSuper = isGlobalSuperAdmin(user);
+  // Only mailboxes this user may manage: assigned pool mailboxes (all for super admins)
+  // and their own connected SMTP accounts.
+  const [systemAccounts, userAccounts] = await Promise.all([
+    prisma.systemSmtpAccount.findMany({
+      where: { id: { in: mailboxIds }, ...(isSuper ? {} : { assignedUserId: user.id }) },
+      select: { id: true, fromEmail: true, tags: true },
+    }),
+    prisma.smtpAccount.findMany({
+      where: { id: { in: mailboxIds }, userId: user.id },
+      select: { id: true, fromEmail: true },
+    }),
+  ]);
+  const systemIds = systemAccounts.map((a) => a.id);
+  const userIds = userAccounts.map((a) => a.id);
+  const emails = [...systemAccounts, ...userAccounts].map((a) => a.fromEmail.toLowerCase());
+  const matched = systemIds.length + userIds.length;
 
-  const emails = accounts.map((a) => a.fromEmail.toLowerCase());
+  if (matched === 0) {
+    return NextResponse.json({ error: "None of the selected mailboxes belong to you" }, { status: 404 });
+  }
 
-  if (action === "warmup_on") {
-    // Upsert warmupSettings for every mailbox so rows exist and are enabled
+  const ensureSettings = async (data: Record<string, unknown>) => {
     for (const em of emails) {
       await prisma.warmupSettings.upsert({
         where: { mailboxEmail: em },
-        update: { enabled: true },
-        create: {
-          mailboxEmail: em,
-          enabled: true,
-          startedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-        },
+        update: data,
+        // A brand-new warmup starts at day 1 of the ramp.
+        create: { mailboxEmail: em, startedAt: new Date(), weekdaysOnly: false, ...data },
       });
     }
-    await prisma.systemSmtpAccount.updateMany({
-      where: { id: { in: mailboxIds } },
-      data: { warmupEnabled: true },
-    });
+  };
+
+  let applied = matched;
+  if (action === "warmup_on") {
+    await ensureSettings({ enabled: true });
+    await prisma.systemSmtpAccount.updateMany({ where: { id: { in: systemIds } }, data: { warmupEnabled: true } });
   } else if (action === "warmup_off") {
-    await prisma.warmupSettings.updateMany({
-      where: { mailboxEmail: { in: emails } },
-      data: { enabled: false },
+    await ensureSettings({ enabled: false });
+    await prisma.systemSmtpAccount.updateMany({ where: { id: { in: systemIds } }, data: { warmupEnabled: false } });
+  } else if (action === "update_settings") {
+    const num = (v: unknown, min: number, max: number, fallback: number) => {
+      const n = Math.round(Number(v));
+      return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
+    };
+    const enabled = body.enabled !== false;
+    const startVolume = num(body.startVolume, 1, 10, 3);
+    const dailyIncrement = num(body.dailyIncrement, 0, 5, 2);
+    const maxDailyWarmup = Math.max(startVolume, num(body.maxDailyWarmup, 5, 50, 25));
+    await ensureSettings({
+      enabled,
+      startVolume,
+      dailyIncrement,
+      maxDailyWarmup,
+      weekdaysOnly: body.weekdaysOnly === true,
     });
     await prisma.systemSmtpAccount.updateMany({
-      where: { id: { in: mailboxIds } },
-      data: { warmupEnabled: false },
+      where: { id: { in: systemIds } },
+      data: { warmupEnabled: enabled, warmupTarget: maxDailyWarmup },
     });
   } else if (action === "pause") {
-    await prisma.systemSmtpAccount.updateMany({
-      where: { id: { in: mailboxIds } },
-      data: { enabled: false },
-    });
+    await prisma.systemSmtpAccount.updateMany({ where: { id: { in: systemIds } }, data: { enabled: false } });
+    await prisma.smtpAccount.updateMany({ where: { id: { in: userIds } }, data: { enabled: false } });
   } else if (action === "activate") {
-    await prisma.systemSmtpAccount.updateMany({
-      where: { id: { in: mailboxIds } },
-      data: { enabled: true },
-    });
+    await prisma.systemSmtpAccount.updateMany({ where: { id: { in: systemIds } }, data: { enabled: true } });
+    await prisma.smtpAccount.updateMany({ where: { id: { in: userIds } }, data: { enabled: true } });
   } else if (action === "set_limit") {
+    // Only pool mailboxes carry a per-mailbox daily limit.
     await prisma.systemSmtpAccount.updateMany({
-      where: { id: { in: mailboxIds } },
+      where: { id: { in: systemIds } },
       data: { dailyLimit: Math.max(5, Math.min(100, limit)) },
     });
+    applied = systemIds.length;
   } else if (action === "add_tag" && tag) {
-    for (const acc of accounts) {
-      const existingTags = acc.tags ? acc.tags.split(",").map((t) => t.trim()) : [];
+    for (const acc of systemAccounts) {
+      const existingTags = acc.tags ? acc.tags.split(",").map((t) => t.trim()).filter(Boolean) : [];
       if (!existingTags.includes(tag)) {
         existingTags.push(tag);
-        await prisma.systemSmtpAccount.update({
-          where: { id: acc.id },
-          data: { tags: existingTags.join(",") },
-        });
+        await prisma.systemSmtpAccount.update({ where: { id: acc.id }, data: { tags: existingTags.join(",") } });
       }
     }
+    applied = systemIds.length;
+  } else {
+    return NextResponse.json({ error: `Unknown action "${action}"` }, { status: 400 });
   }
 
+  const skipped = mailboxIds.length - applied;
   return NextResponse.json({
     ok: true,
-    message: `Bulk action "${action}" applied to ${mailboxIds.length} mailboxes.`,
+    applied,
+    skipped,
+    message: `Applied to ${applied} mailbox${applied === 1 ? "" : "es"}${skipped > 0 ? `, ${skipped} skipped` : ""}.`,
   });
 }
