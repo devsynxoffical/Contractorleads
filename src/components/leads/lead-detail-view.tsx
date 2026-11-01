@@ -1332,9 +1332,10 @@ export function LeadDetailView({
                 onClick={runWaterfallEnrich}
                 loading={waterfallEnriching}
                 disabled={waterfallEnriching}
-                className="border border-brand-200 bg-brand-50/70 text-brand-700 hover:bg-brand-100"
+                title="Optional: Query external APIs for verified owner name, mobile phone & direct email"
+                className="border border-brand-200 bg-brand-50/70 text-brand-700 hover:bg-brand-100 font-semibold"
               >
-                ⚡ Waterfall Enrich ({waterfallCreditCost} cr)
+                ⚡ Deep Enrich (+{waterfallCreditCost} cr)
               </Button>
             </CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-2">

@@ -43,9 +43,9 @@ export const PLAN_MONTHLY_CREDITS: Record<
   Exclude<PlanId, "enterprise">,
   number
 > = {
-  starter: 500,
-  growth: 2000,
-  agency: 5000,
+  starter: 750,
+  growth: 2500,
+  agency: 6000,
 };
 
 export const PLAN_API_LIMITS: Record<PlanId, number> = {
