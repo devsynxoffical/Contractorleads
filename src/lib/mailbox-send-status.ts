@@ -172,9 +172,33 @@ export function publicMailError(raw: string | null | undefined): string {
  * show "Sending failed" instead of a healthy score. Never throws: status tracking must not
  * break sending.
  */
+/** Problems with the sending gateway itself, not with any one mailbox. */
+export function isPlatformProblem(raw: string | null | undefined): boolean {
+  const p = diagnoseMailboxError(raw).problem;
+  return p === "relay_unreachable" || p === "relay_token";
+}
+
+/** Last gateway-wide problem seen by this server (shown to platform admins only). */
+let lastGatewayIssue: { at: string; error: string; count: number } | null = null;
+export function getGatewayIssue() {
+  return lastGatewayIssue;
+}
+
 export async function recordMailboxSendResult(mailboxEmail: string, ok: boolean, error?: string) {
   const email = (mailboxEmail || "").toLowerCase().trim();
   if (!email.includes("@")) return;
+  // A busy or unreachable gateway says nothing about this mailbox: do not mark it broken
+  // (that made every mailbox look failed and campaigns skip them).
+  if (!ok && isPlatformProblem(error)) {
+    const recent = lastGatewayIssue && Date.now() - new Date(lastGatewayIssue.at).getTime() < 60 * 60 * 1000;
+    lastGatewayIssue = {
+      at: new Date().toISOString(),
+      error: (error || "").slice(0, 300),
+      count: recent ? lastGatewayIssue!.count + 1 : 1,
+    };
+    console.warn(`[mail] gateway problem (not counted against ${email}): ${(error || "").slice(0, 300)}`);
+    return;
+  }
   const now = new Date();
   try {
     const date = now.toISOString().split("T")[0];

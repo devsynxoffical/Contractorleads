@@ -1,3 +1,4 @@
+import { relayFetch } from "@/lib/relay-fetch";
 import { ImapFlow } from "imapflow";
 import { prisma } from "@/lib/prisma";
 import { decryptSecret } from "@/lib/crypto-secret";
@@ -291,7 +292,7 @@ async function syncMailboxViaRelay(
     try {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 25000);
-      const res = await fetch(url, {
+      const res = await relayFetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

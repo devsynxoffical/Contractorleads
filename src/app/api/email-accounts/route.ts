@@ -13,7 +13,7 @@ import {
   calculate7DayHealthScore,
 } from "@/lib/warmup-engine";
 import { seedSystemMailboxes } from "@/lib/system-smtp";
-import { clearMailboxFailure, diagnoseMailboxError, publicMailError } from "@/lib/mailbox-send-status";
+import { clearMailboxFailure, diagnoseMailboxError, getGatewayIssue, isPlatformProblem, publicMailError } from "@/lib/mailbox-send-status";
 
 export const maxDuration = 60;
 export const dynamic = "force-dynamic";
@@ -159,7 +159,9 @@ export async function GET(request: Request) {
     const failing =
       Boolean(w?.lastSendErrorAt) &&
       (w?.consecutiveSendFailures ?? 0) > 0 &&
-      (!w?.lastSendOkAt || new Date(w.lastSendErrorAt) > new Date(w.lastSendOkAt));
+      (!w?.lastSendOkAt || new Date(w.lastSendErrorAt) > new Date(w.lastSendOkAt)) &&
+      // Gateway outages recorded before this rule are not the mailbox's fault.
+      !isPlatformProblem(w?.lastSendErrorRaw || w?.lastSendError);
     const known = failing || measured != null;
     return {
       sendStatus: (failing ? "failing" : known ? "ok" : "unknown") as "failing" | "ok" | "unknown",
@@ -484,6 +486,13 @@ export async function GET(request: Request) {
       failingCount,
       unmeasuredCount: totalMailboxes - measuredRows.length,
       avgPlatformHealth,
+      // Gateway-wide problems in the last hour (platform admins only)
+      gatewayIssue: isSuper
+        ? (() => {
+            const g = getGatewayIssue();
+            return g && Date.now() - new Date(g.at).getTime() < 60 * 60 * 1000 ? g : null;
+          })()
+        : null,
     },
     domainFolders: Object.values(domainFolders),
     mailboxes: filteredRows,

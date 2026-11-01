@@ -1,3 +1,4 @@
+import { relayFetch } from "@/lib/relay-fetch";
 import {
   relayEndpoints,
   HOSTINGER_RELAY_SECRET,
@@ -56,7 +57,7 @@ export async function saveAccountToHostingerRelay(payload: MailboxRelayPayload):
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 12000);
 
-      const res = await fetch(url, {
+      const res = await relayFetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -108,7 +109,7 @@ export async function relayPortCheck(host: string): Promise<{
   const errors: string[] = [];
   for (const url of getRelayEndpoints()) {
     try {
-      const res = await fetch(url, {
+      const res = await relayFetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${HOSTINGER_RELAY_SECRET}` },
         body: JSON.stringify({ secret: HOSTINGER_RELAY_SECRET, action: "port_check", host }),
@@ -143,7 +144,7 @@ export async function testAccountViaHostingerRelay(payload: MailboxRelayPayload)
       // The gateway may try up to four ports (8s connect each) for GoDaddy.
       const timer = setTimeout(() => controller.abort(), 60000);
 
-      const res = await fetch(url, {
+      const res = await relayFetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -282,7 +283,7 @@ async function sendEmailViaHostingerRelayRaw(opts: SendRelayOptions): Promise<{
       // The gateway may try up to four ports (8s connect each) for GoDaddy.
       const timer = setTimeout(() => controller.abort(), 60000);
 
-      const res = await fetch(url, {
+      const res = await relayFetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
