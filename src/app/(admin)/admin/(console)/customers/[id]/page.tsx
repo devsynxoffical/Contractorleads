@@ -52,6 +52,10 @@ type Customer = {
   ghlWebhookUrl: string | null;
   ghlEnabled: boolean;
   emailMarketingOptIn: boolean;
+  /** Paid add-on state from billing: inactive | active | trialing | past_due | canceled */
+  messagingAddonStatus?: string | null;
+  /** Free access granted by an admin */
+  messagingAddonManual?: boolean;
   teamMembers: Array<{
     id: string;
     email: string;
@@ -861,6 +865,39 @@ export default function AdminCustomerDetailPage() {
             >
               Save webhooks &amp; opt-in
             </Button>
+          </section>
+
+          {/* Messaging add-on: email + SMS sending. Admins can grant it for free. */}
+          <section className="space-y-3 rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
+            <h2 className="text-sm font-semibold text-ink">Messaging add-on (email &amp; SMS sending)</h2>
+            {(() => {
+              const paid = ["active", "trialing"].includes((customer.messagingAddonStatus || "").toLowerCase());
+              const free = Boolean(customer.messagingAddonManual);
+              return (
+                <>
+                  <p className="text-[12px] text-ink-muted">
+                    Status:{" "}
+                    <span className={`font-semibold ${paid || free ? "text-emerald-700" : "text-rose-700"}`}>
+                      {free ? "Unlocked (free access from admin)" : paid ? "Unlocked (paid subscription)" : "Locked"}
+                    </span>
+                    {paid && free ? " · also has a paid subscription" : ""}
+                  </p>
+                  <p className="text-[12px] text-ink-muted">
+                    Free access unlocks one-to-one email, bulk email, sequences, campaigns and SMS for this customer without a payment. It takes effect on their next page load.
+                  </p>
+                  <Button
+                    disabled={saving}
+                    variant={free ? "secondary" : "default"}
+                    onClick={() => {
+                      if (free && !window.confirm("Remove free messaging access from this customer?")) return;
+                      void save({ messagingAddonManual: !free });
+                    }}
+                  >
+                    {free ? "Remove free access" : "Give free messaging access"}
+                  </Button>
+                </>
+              );
+            })()}
           </section>
 
           <section className="space-y-3 rounded-2xl border border-border/80 bg-[var(--surface)] p-5 shadow-[var(--shadow-card)]">
