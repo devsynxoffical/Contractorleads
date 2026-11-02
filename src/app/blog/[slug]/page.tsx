@@ -19,7 +19,8 @@ import {
   breadcrumbJsonLd,
   faqPageJsonLd,
 } from "@/components/seo/json-ld";
-import { BLOG_CLUSTER_LABELS, BLOG_POSTS, blogWordCount, getBlogPost } from "@/lib/blog-content";
+import { BLOG_CLUSTER_LABELS, BLOG_POSTS, blogWordCount, getBlogPost, relatedBlogPosts } from "@/lib/blog-content";
+import { LinkedText, createLinkBudget } from "@/components/blog/linked-text";
 import { buildMetadata, getTradeBySlug } from "@/lib/seo";
 
 type Params = { params: Promise<{ slug: string }> };
@@ -50,13 +51,13 @@ export default async function BlogPostPage({ params }: Params) {
   const post = getBlogPost(slug);
   if (!post) notFound();
 
-  const sameCluster = BLOG_POSTS.filter(
-    (p) => p.slug !== post.slug && p.cluster === post.cluster,
-  );
-  const others = BLOG_POSTS.filter(
-    (p) => p.slug !== post.slug && p.cluster !== post.cluster,
-  );
-  const related = [...sameCluster, ...others].slice(0, 3);
+  // Topical matches (shared trades, cluster, keywords) rather than file order.
+  const related = relatedBlogPosts(post, 3);
+  // In-text links: explicit [label](/path) plus the first mention of key topics.
+  const linkBudget = createLinkBudget(`/blog/${post.slug}`, [
+    ...post.sections.flatMap((sec) => [sec.body, ...(sec.bullets ?? [])]),
+    ...post.faqs.map((f) => f.a),
+  ]);
   const industries = (post.relatedIndustries ?? [])
     .map((slug) => getTradeBySlug(slug))
     .filter((t): t is NonNullable<typeof t> => Boolean(t));
@@ -186,7 +187,7 @@ export default async function BlogPostPage({ params }: Params) {
             )}
 
             <p className="text-[15px] leading-relaxed text-slate-700 whitespace-pre-line">
-              {section.body}
+              <LinkedText text={section.body} budget={linkBudget} id={`s${idx}`} />
             </p>
 
             {section.callout && (
@@ -203,7 +204,9 @@ export default async function BlogPostPage({ params }: Params) {
                 {section.bullets.map((b, bi) => (
                   <li key={bi} className="flex items-start gap-2.5 text-[14.5px] text-slate-700 leading-relaxed">
                     <HiOutlineCheckCircle className="h-5 w-5 text-fuchsia-600 shrink-0 mt-0.5" />
-                    <span>{b}</span>
+                    <span>
+                      <LinkedText text={b} budget={linkBudget} id={`s${idx}b${bi}`} />
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -251,7 +254,9 @@ export default async function BlogPostPage({ params }: Params) {
               {post.faqs.map((faq, fi) => (
                 <div key={fi} className="border-b border-slate-100 pb-4 last:border-none last:pb-0">
                   <h3 className="font-semibold text-slate-900 text-[15px]">{faq.q}</h3>
-                  <p className="mt-2 text-[14px] leading-relaxed text-slate-600">{faq.a}</p>
+                  <p className="mt-2 text-[14px] leading-relaxed text-slate-600">
+                    <LinkedText text={faq.a} budget={linkBudget} id={`f${fi}`} />
+                  </p>
                 </div>
               ))}
             </div>

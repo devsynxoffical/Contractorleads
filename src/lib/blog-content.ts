@@ -7,6 +7,7 @@
 
 import { GROWTH_POSTS } from "@/lib/blog-posts-growth";
 import { PLAYBOOK_POSTS } from "@/lib/blog-posts-playbooks";
+import { PROSPECTING_POSTS } from "@/lib/blog-posts-prospecting";
 
 export type BlogFaq = {
   q: string;
@@ -885,7 +886,33 @@ const CORE_POSTS: BlogPost[] = [
 ];
 
 /** All public blog posts: core guides plus trade / tooling playbooks. */
-export const BLOG_POSTS: BlogPost[] = [...CORE_POSTS, ...PLAYBOOK_POSTS, ...GROWTH_POSTS];
+export const BLOG_POSTS: BlogPost[] = [...CORE_POSTS, ...PLAYBOOK_POSTS, ...GROWTH_POSTS, ...PROSPECTING_POSTS];
+
+/**
+ * Most related guides for a post: shared trades weigh most, then same cluster, then
+ * overlapping keywords. Used for "Related guides" so links follow topic, not file order.
+ */
+export function relatedBlogPosts(post: BlogPost, limit = 3): BlogPost[] {
+  const words = (p: BlogPost) =>
+    new Set(
+      [p.primaryKeyword, ...p.secondaryKeywords]
+        .join(" ")
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .filter((w) => w.length > 3),
+    );
+  const mine = words(post);
+  const myTrades = new Set(post.relatedIndustries ?? []);
+  return BLOG_POSTS.filter((p) => p.slug !== post.slug)
+    .map((p) => {
+      const trades = (p.relatedIndustries ?? []).filter((t) => myTrades.has(t)).length;
+      const kw = [...words(p)].filter((w) => mine.has(w)).length;
+      return { p, score: trades * 3 + (p.cluster === post.cluster ? 2 : 0) + kw };
+    })
+    .sort((a, b) => b.score - a.score || b.p.publishedDate.localeCompare(a.p.publishedDate))
+    .slice(0, limit)
+    .map((x) => x.p);
+}
 /** Approximate word count across all rendered copy (for BlogPosting.wordCount). */
 export function blogWordCount(post: BlogPost): number {
   const parts: string[] = [post.title, post.directAnswer, post.summary];
@@ -899,7 +926,7 @@ export function blogWordCount(post: BlogPost): number {
     }
   }
   for (const f of post.faqs) parts.push(f.q, f.a);
-  return parts.join(" ").split(/\s+/).filter(Boolean).length;
+  return parts.join(" ").replace(/\[([^\]]+)\]\((\/[^)\s]*)\)/g, "$1").split(/\s+/).filter(Boolean).length;
 }
 
 export function getBlogPost(slug: string): BlogPost | undefined {
