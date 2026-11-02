@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { AdminPageHeader } from "@/components/admin/admin-shell";
 import { ADMIN_PLANS, SUBSCRIPTION_STATUSES } from "@/lib/admin";
@@ -357,6 +358,12 @@ export default function AdminCustomerDetailPage() {
             <Button onClick={testAsCustomer} disabled={!customer.isActive}>
               Test as Customer
             </Button>
+            <Link
+              href={`/admin/activity/${id}`}
+              className="inline-flex h-10 items-center rounded-xl border border-border bg-[var(--surface)] px-4 text-sm font-semibold text-ink hover:border-brand-400"
+            >
+              View activity
+            </Link>
             <Button
               variant="secondary"
               onClick={() => save({ isActive: !customer.isActive })}

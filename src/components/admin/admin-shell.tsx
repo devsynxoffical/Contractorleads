@@ -123,7 +123,7 @@ const NAV_SECTIONS: NavSection[] = [
   {
     title: "System",
     items: [
-      { href: "/admin/activity", label: "Activity Log", icon: HiOutlineClipboardDocumentList, permission: "activity" },
+      { href: "/admin/activity", label: "Activity Monitor", icon: HiOutlineClipboardDocumentList, permission: "activity" },
       { href: "/admin/health", label: "Feature Health Audit", icon: HiOutlineHeart, permission: "health" },
       { href: "/admin/system", label: "System & API Keys", icon: HiOutlineKey, permission: "system" },
       { href: "/admin/team", label: "Team & Roles", icon: HiOutlineUserGroup, permission: "staff" },
