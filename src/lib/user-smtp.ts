@@ -7,7 +7,7 @@ import { decryptSecret, encryptSecret } from "@/lib/crypto-secret";
 import { sendUserResendEmail, verifyResendApiKey } from "@/lib/email";
 import { assertPublicSmtpHost, BlockedUrlError } from "@/lib/safe-fetch";
 import { appBaseUrl } from "@/lib/email-brand";
-import { publicMailError, recordMailboxSendResult } from "@/lib/mailbox-send-status";
+import { isPlatformProblem, publicMailError, recordMailboxSendResult } from "@/lib/mailbox-send-status";
 
 import {
   getSystemSenderConfig,
@@ -945,14 +945,15 @@ export async function resolveSmtpCredentialsForEmail(fromEmail: string): Promise
 /** Send through the relay and record the outcome on the mailbox (shown on Email Accounts). */
 export async function sendViaHostingerRelay(
   opts: Parameters<typeof sendViaHostingerRelayRaw>[0],
-): ReturnType<typeof sendViaHostingerRelayRaw> {
+): Promise<{ ok: boolean; messageId: string | null; error?: string; rawError?: string }> {
   const res = await sendViaHostingerRelayRaw(opts);
   if ((opts.action || "send") === "send") {
     await recordMailboxSendResult(opts.fromEmail, res.ok, res.error);
   }
   if (!res.ok) {
     console.warn(`[mail] relay send failed for ${opts.fromEmail}: ${res.error}`);
-    return { ...res, error: publicMailError(res.error) };
+    // error: safe to show users. rawError: server-side decisions only, never returned to clients.
+    return { ...res, error: publicMailError(res.error), rawError: res.error };
   }
   return res;
 }
@@ -1004,7 +1005,8 @@ async function sendViaHostingerRelayRaw(opts: {
     headers: relayHeaders,
   };
 
-  let lastError = "Hostinger mail relay unreachable";
+  const lastError = "Hostinger mail relay unreachable";
+  const relayErrors: string[] = [];
   for (const url of endpoints) {
     try {
       const controller = new AbortController();
@@ -1021,28 +1023,30 @@ async function sendViaHostingerRelayRaw(opts: {
       });
       clearTimeout(timeoutId);
 
-      if (res.ok) {
-        const data = (await res.json().catch(() => ({}))) as {
-          ok?: boolean;
-          messageId?: string;
-          error?: string;
-        };
-        if (data.ok) {
-          console.log(`[Hostinger Relay OK] Sent via ${url} for ${opts.fromEmail}`);
-          return { ok: true, messageId: data.messageId || null };
-        }
-        if (data.error) {
-          lastError = `${url} error: ${data.error}`;
-        }
-      } else {
-        lastError = `${url} returned status ${res.status}`;
+      // The gateway reports SMTP failures (e.g. a refused login) as HTTP 500 with a JSON body:
+      // read the reason whatever the status code.
+      const text = await res.text().catch(() => "");
+      let data: { ok?: boolean; messageId?: string; error?: string } = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        data = {};
       }
+      if (res.ok && data.ok) {
+        console.log(`[Hostinger Relay OK] Sent via ${url} for ${opts.fromEmail}`);
+        return { ok: true, messageId: data.messageId || null };
+      }
+      if (data.error) {
+        // The gateway answered with its own reason: that is final, other hosts would not change it.
+        return { ok: false, messageId: null, error: `${url} error: ${data.error}` };
+      }
+      relayErrors.push(`${url} returned status ${res.status}${text ? ` (${text.slice(0, 160)})` : ""}`);
     } catch (err) {
-      lastError = `${url} failed: ${err instanceof Error ? err.message : String(err)}`;
+      relayErrors.push(`${url} failed: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 
-  return { ok: false, messageId: null, error: lastError };
+  return { ok: false, messageId: null, error: relayErrors.join(" | ") || lastError };
 }
 
 /** Send lead/outreach email via the user's Resend key or their SMTP server. */
@@ -1102,6 +1106,8 @@ export async function sendOutboundEmail(opts: {
     ? `"${sender.fromName}" <${sender.fromEmail}>`
     : sender.fromEmail;
 
+  let relayPlatformError: string | null = null;
+
   // 1. Primary for Cloud / Railway: Attempt Hostinger HTTPS/HTTP Mail Relay (bypasses Railway SMTP port blocks)
   // The relay does not carry attachments, so skip it when any are present (never drop them silently).
   const hasAttachments = Boolean(opts.attachments && opts.attachments.length > 0);
@@ -1138,9 +1144,20 @@ export async function sendOutboundEmail(opts: {
       };
     }
     if (!hasAttachments) {
-      console.warn("[Hostinger Relay Notice] Relay send unsuccessful, falling back to direct SMTP:", relayRes.error);
+      // The gateway answered with a mailbox-level reason (wrong password, server unreachable,
+      // recipient refused): that is the real answer. Retrying direct SMTP from the app host
+      // (blocked on Railway) would only replace it with a misleading "SMTP timed out".
+      const raw = (relayRes as { rawError?: string }).rawError || relayRes.error || "";
+      if (!isPlatformProblem(raw)) {
+        throw new Error(relayRes.error || "Sending failed");
+      }
+      relayPlatformError = relayRes.error || null;
+      console.warn("[Hostinger Relay Notice] Gateway unavailable, trying direct SMTP:", raw);
     }
   } catch (relayErr) {
+    if (relayErr instanceof Error && relayErr.message && !/fetch|network|ECONN|abort/i.test(relayErr.message)) {
+      throw relayErr;
+    }
     console.warn("[Hostinger Relay Error] Falling back to direct SMTP:", relayErr);
   }
 
@@ -1178,7 +1195,8 @@ export async function sendOutboundEmail(opts: {
         smtpAccountId: sender.id ?? null,
       };
     }
-    throw new Error(formatSmtpError(smtpErr));
+    // When the gateway was down, report that plainly instead of the direct-SMTP timeout.
+    throw new Error(relayPlatformError || formatSmtpError(smtpErr));
   }
 }
 

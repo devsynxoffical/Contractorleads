@@ -316,10 +316,14 @@ async function sendEmailViaHostingerRelayRaw(opts: SendRelayOptions): Promise<{
         }
         relayAnswered = true;
         relayErrors.push(`${url} error: ${data.error || "relay answered without ok"}`);
+        break; // the gateway's own answer is final
       } else {
         const detail = await res.text().catch(() => "");
-        if (detail.trim().startsWith("{")) relayAnswered = true;
         relayErrors.push(`${url} returned status ${res.status}${detail ? ` (${detail.slice(0, 200)})` : ""}`);
+        if (detail.trim().startsWith("{")) {
+          relayAnswered = true;
+          break; // the gateway's own answer is final
+        }
       }
     } catch (e: any) {
       relayErrors.push(`${url} failed: ${e.message || String(e)}`);
