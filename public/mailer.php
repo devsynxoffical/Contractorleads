@@ -624,7 +624,10 @@ $headers[] = "List-Unsubscribe-Post: List-Unsubscribe=One-Click";
 // Custom headers (Warmup markers, In-Reply-To, References)
 if (!empty($data["headers"]) && is_array($data["headers"])) {
     foreach ($data["headers"] as $hKey => $hVal) {
-        $headers[] = trim($hKey) . ": " . trim($hVal);
+        // Strip line breaks so a value can never break the header block.
+        $hKey = preg_replace('/[^A-Za-z0-9-]/', '', (string)$hKey);
+        $hVal = trim(preg_replace('/[\r\n]+/', ' ', (string)$hVal));
+        if ($hKey !== "" && $hVal !== "") $headers[] = $hKey . ": " . $hVal;
     }
 }
 
@@ -632,17 +635,26 @@ $headers[] = "Content-Type: multipart/alternative; boundary=\"" . $boundary . "\
 
 $bodyContent = implode("\r\n", $headers) . "\r\n\r\n";
 $bodyContent .= "--" . $boundary . "\r\n";
+// Parts are base64-encoded in 76-character CRLF lines: strict servers (GoDaddy) reject
+// bare LF line endings ("552 ... bare LF"), over-long lines, and unescaped leading dots.
+$plainPart = !empty($textContent) ? $textContent : strip_tags($htmlContent);
+$plainPart = preg_replace("/\r\n|\r|\n/", "\r\n", (string)$plainPart);
 $bodyContent .= "Content-Type: text/plain; charset=UTF-8\r\n";
-$bodyContent .= "Content-Transfer-Encoding: 8bit\r\n\r\n";
-$bodyContent .= (!empty($textContent) ? $textContent : strip_tags($htmlContent)) . "\r\n\r\n";
+$bodyContent .= "Content-Transfer-Encoding: base64\r\n\r\n";
+$bodyContent .= chunk_split(base64_encode($plainPart), 76, "\r\n") . "\r\n";
 
 if (!empty($htmlContent)) {
+    $htmlPart = preg_replace("/\r\n|\r|\n/", "\r\n", (string)$htmlContent);
     $bodyContent .= "--" . $boundary . "\r\n";
     $bodyContent .= "Content-Type: text/html; charset=UTF-8\r\n";
-    $bodyContent .= "Content-Transfer-Encoding: 8bit\r\n\r\n";
-    $bodyContent .= $htmlContent . "\r\n\r\n";
+    $bodyContent .= "Content-Transfer-Encoding: base64\r\n\r\n";
+    $bodyContent .= chunk_split(base64_encode($htmlPart), 76, "\r\n") . "\r\n";
 }
 $bodyContent .= "--" . $boundary . "--\r\n";
+
+// Final safety net for the whole message: CRLF line endings only, and SMTP dot-stuffing.
+$bodyContent = preg_replace("/\r\n|\r|\n/", "\r\n", $bodyContent);
+$bodyContent = preg_replace('/^\./m', '..', $bodyContent);
 
 // ----------------------------------------------------------------------
 // Method 1: Authenticated Direct SMTP socket to Provider Mail Server
