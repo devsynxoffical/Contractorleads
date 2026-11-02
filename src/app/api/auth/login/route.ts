@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logActivity } from "@/lib/credits";
 import { prisma } from "@/lib/prisma";
 import {
   createSessionToken,
@@ -72,6 +73,15 @@ export async function POST(request: Request) {
 
     const token = await createSessionToken(user.id);
     await setSessionCookie(token);
+    try {
+      // Sign-ins show in the admin activity monitor.
+      await logActivity(user.id, "login", "Signed in", {
+        ip: request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null,
+        userAgent: request.headers.get("user-agent")?.slice(0, 200) || null,
+      });
+    } catch {
+      /* non-blocking */
+    }
     try {
       await linkMarketingVisitorToUser(user.id, user.email);
     } catch {

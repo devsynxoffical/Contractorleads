@@ -23,7 +23,7 @@ export const ADMIN_PERMISSIONS = [
   { key: "referrals", label: "Referrals & Affiliates", href: "/admin/referrals" },
   { key: "communications", label: "Email & SMS dashboards", href: "/admin/communications" },
   { key: "exports", label: "Exports Log", href: "/admin/exports" },
-  { key: "activity", label: "Activity Log", href: "/admin/activity" },
+  { key: "activity", label: "Activity Monitor", href: "/admin/activity" },
   { key: "health", label: "Feature Health Audit", href: "/admin/health" },
   { key: "system", label: "System & API Keys", href: "/admin/system" },
 ] as const;
