@@ -11,6 +11,17 @@ import {
 } from "@/components/marketing/marketing-subpage";
 import { JsonLd, breadcrumbJsonLd, faqPageJsonLd } from "@/components/seo/json-ld";
 import { ALL_FAQS, FAQ_GROUPS } from "@/lib/faq-content";
+import { BLOG_POSTS } from "@/lib/blog-content";
+
+/** Guides that go deeper on each FAQ topic (internal links for readers and crawlers). */
+const GROUP_GUIDES: Record<string, string[]> = {
+  product: ["how-to-get-contractor-leads", "best-contractor-lead-generation-companies"],
+  data: ["google-maps-lead-generation", "how-to-find-business-owner-name"],
+  pricing: ["how-much-do-contractor-leads-cost", "pay-per-lead-for-contractors"],
+  outreach: ["cold-email-for-agencies", "cold-email-subject-lines-for-contractors", "cold-calling-contractors-script"],
+  integrations: ["agency-lead-generation"],
+  affiliates: ["how-to-get-clients-for-marketing-agency"],
+};
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
@@ -81,6 +92,22 @@ export default function FaqPage() {
               </div>
             ))}
           </dl>
+          {(GROUP_GUIDES[group.id] ?? []).length > 0 && (
+            <p className="mx-auto mt-4 max-w-3xl text-[13px] text-slate-600">
+              Go deeper:{" "}
+              {(GROUP_GUIDES[group.id] ?? [])
+                .map((slug) => BLOG_POSTS.find((p) => p.slug === slug))
+                .filter((p): p is NonNullable<typeof p> => Boolean(p))
+                .map((p, i, arr) => (
+                  <span key={p.slug}>
+                    <Link href={`/blog/${p.slug}`} className="font-semibold text-fuchsia-700 hover:underline">
+                      {p.title}
+                    </Link>
+                    {i < arr.length - 1 ? " · " : ""}
+                  </span>
+                ))}
+            </p>
+          )}
         </SubpageSection>
       ))}
 

@@ -209,7 +209,14 @@ export default function ContractorLeadGenerationSoftwarePage() {
     (PRIORITY_TRADE_SLUGS as readonly string[]).includes(t.slug),
   );
   const guides = BLOG_POSTS.filter((p) =>
-    ["agency-lead-generation", "how-to-get-contractor-leads", "cold-email-for-agencies", "apollo-vs-google-maps-scraper"].includes(p.slug),
+    [
+      "agency-lead-generation",
+      "how-to-get-contractor-leads",
+      "google-maps-lead-generation",
+      "how-to-get-clients-for-marketing-agency",
+      "how-to-find-businesses-without-websites",
+      "cold-email-for-agencies",
+    ].includes(p.slug),
   );
 
   return (

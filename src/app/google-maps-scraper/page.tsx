@@ -25,6 +25,16 @@ import {
   softwareApplicationJsonLd,
 } from "@/components/seo/json-ld";
 import { buildMetadata } from "@/lib/seo";
+import { BLOG_POSTS } from "@/lib/blog-content";
+
+const SCRAPER_GUIDES = BLOG_POSTS.filter((p) =>
+  [
+    "google-maps-lead-generation",
+    "how-to-find-businesses-without-websites",
+    "apollo-vs-google-maps-scraper",
+    "how-to-find-business-owner-name",
+  ].includes(p.slug),
+);
 
 export const metadata: Metadata = buildMetadata({
   title: "Google Maps Scraper for Contractor Leads With Owner Data",
@@ -491,6 +501,27 @@ export default function GoogleMapsScraperPage() {
             </div>
           ))}
         </div>
+      </SubpageSection>
+
+      {/* Guides: topical internal links */}
+      <SubpageSection
+        tone="tint"
+        eyebrow="Keep reading"
+        title="Guides on turning Google Maps listings into clients"
+      >
+        <ul className="mx-auto grid max-w-4xl gap-4 sm:grid-cols-2">
+          {SCRAPER_GUIDES.map((g) => (
+            <li key={g.slug}>
+              <Link
+                href={`/blog/${g.slug}`}
+                className="block h-full rounded-2xl border border-violet-100 bg-white p-5 shadow-xs transition hover:border-fuchsia-300"
+              >
+                <h3 className="font-[family-name:var(--font-display)] text-[16px] font-semibold text-slate-900">{g.title}</h3>
+                <p className="mt-2 text-[13.5px] leading-relaxed text-slate-600">{g.summary}</p>
+              </Link>
+            </li>
+          ))}
+        </ul>
       </SubpageSection>
 
       <SubpageCtaBand
