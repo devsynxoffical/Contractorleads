@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   HiOutlineArrowDownTray,
   HiOutlineShieldCheck,
@@ -36,6 +37,21 @@ export function ExportLeadsButtons({
   const [emailFilter, setEmailFilter] = useState<EmailExportFilter>("all");
   const [verifyBeforeExport, setVerifyBeforeExport] = useState<boolean>(true);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  // Lock page scroll and close on Escape while the dialog is open.
+  useEffect(() => {
+    if (!dialogFormat) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !busy) setDialogFormat(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [dialogFormat, busy]);
 
   const canExport = !disabled && (scope || (leadIds && leadIds.length > 0));
 
@@ -97,8 +113,14 @@ export function ExportLeadsButtons({
       a.href = url;
       const suffix = emailFilter === "safe_only" ? "-safe-verified" : "";
       a.download = `contractor-leads${suffix}.${format === "xlsx" ? "xlsx" : "csv"}`;
+      a.rel = "noopener";
+      a.style.display = "none";
+      // The link must be in the document for Firefox/Safari to start the download, and the
+      // object URL must outlive the click or the browser cancels the file.
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 
       setDialogFormat(null);
 
@@ -144,13 +166,15 @@ export function ExportLeadsButtons({
       </div>
 
       {/* Section 08 Export Dialog with 'Export only Safe emails' toggle */}
-      {dialogFormat && (
+      {dialogFormat && typeof document !== "undefined" && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs"
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs"
           onClick={() => !busy && setDialogFormat(null)}
         >
           <div
-            className="w-full max-w-md overflow-hidden rounded-2xl border border-border bg-[var(--surface)] shadow-2xl"
+            className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-border bg-[var(--surface)] shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-border px-5 py-4">
@@ -268,7 +292,8 @@ export function ExportLeadsButtons({
               </Button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );
