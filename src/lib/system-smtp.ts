@@ -580,6 +580,32 @@ export async function getSystemSenderConfig(
  * Pick a system sender via weighted round-robin distribution.
  * If a userId is passed, prioritizes system mailboxes assigned specifically to that user.
  */
+/**
+ * Drop mailboxes whose latest sends failed for a mailbox-level reason (wrong password,
+ * unreachable server). If every mailbox is failing, keep the list so the caller still
+ * gets a real error instead of "no sender".
+ */
+async function withoutFailingMailboxes<T extends { fromEmail: string }>(rows: T[]): Promise<T[]> {
+  if (rows.length <= 1) return rows;
+  const { isPlatformProblem } = await import("@/lib/mailbox-send-status");
+  const settings = await prisma.warmupSettings.findMany({
+    where: { mailboxEmail: { in: rows.map((r) => r.fromEmail.toLowerCase()) }, consecutiveSendFailures: { gt: 0 } },
+    select: { mailboxEmail: true, lastSendErrorAt: true, lastSendOkAt: true, lastSendErrorRaw: true, lastSendError: true },
+  });
+  const failing = new Set(
+    settings
+      .filter(
+        (w) =>
+          w.lastSendErrorAt &&
+          (!w.lastSendOkAt || w.lastSendErrorAt > w.lastSendOkAt) &&
+          !isPlatformProblem(w.lastSendErrorRaw || w.lastSendError),
+      )
+      .map((w) => w.mailboxEmail.toLowerCase()),
+  );
+  const healthy = rows.filter((r) => !failing.has(r.fromEmail.toLowerCase()));
+  return healthy.length ? healthy : rows;
+}
+
 export async function pickSystemRotationSender(userId?: string): Promise<SenderConfig | null> {
   await ensureSystemSmtpSeeded();
 
@@ -591,10 +617,13 @@ export async function pickSystemRotationSender(userId?: string): Promise<SenderC
     });
     const isSuper = isGlobalSuperAdmin(user);
 
-    const assigned = await prisma.systemSmtpAccount.findMany({
-      where: { enabled: true, assignedUserId: userId },
-      orderBy: [{ createdAt: "asc" }],
-    });
+    // Auto-rotate never picks a mailbox that is currently failing (e.g. wrong password).
+    const assigned = await withoutFailingMailboxes(
+      await prisma.systemSmtpAccount.findMany({
+        where: { enabled: true, assignedUserId: userId },
+        orderBy: [{ createdAt: "asc" }],
+      }),
+    );
     if (assigned.length > 0) {
       const pick = assigned[Math.floor(Math.random() * assigned.length)];
       return systemRowToSenderConfig(pick);
@@ -607,10 +636,12 @@ export async function pickSystemRotationSender(userId?: string): Promise<SenderC
   }
 
   // Otherwise, use system mailboxes for Super Admins / background tasks
-  const accounts = await prisma.systemSmtpAccount.findMany({
-    where: { enabled: true },
-    orderBy: [{ provider: "asc" }, { domain: "asc" }, { createdAt: "asc" }],
-  });
+  const accounts = await withoutFailingMailboxes(
+    await prisma.systemSmtpAccount.findMany({
+      where: { enabled: true },
+      orderBy: [{ provider: "asc" }, { domain: "asc" }, { createdAt: "asc" }],
+    }),
+  );
   if (!accounts.length) {
     return null;
   }
