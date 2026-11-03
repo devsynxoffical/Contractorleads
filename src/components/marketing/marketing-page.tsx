@@ -967,27 +967,30 @@ function Faq() {
                   type="button"
                   className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left"
                   onClick={() => setOpen(isOpen ? null : i)}
+                  aria-expanded={isOpen}
+                  aria-controls={`home-faq-${i}`}
                 >
                   <span className="text-[14px] font-semibold text-slate-900">{f.q}</span>
                   <motion.span animate={{ rotate: isOpen ? 180 : 0 }}>
                     <HiOutlineChevronDown className="h-4 w-4 text-slate-400" />
                   </motion.span>
                 </button>
-                <AnimatePresence initial={false}>
-                  {isOpen ? (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.28 }}
-                      className="overflow-hidden"
-                    >
-                      <p className="px-5 pb-4 text-[14px] leading-relaxed text-slate-500">
-                        {f.a}
-                      </p>
-                    </motion.div>
-                  ) : null}
-                </AnimatePresence>
+                {/* Every answer stays in the HTML (collapsed with CSS) so search engines can
+                    read it; the FAQ structured data on this page must match visible content. */}
+                <div
+                  id={`home-faq-${i}`}
+                  role="region"
+                  aria-hidden={!isOpen}
+                  className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${
+                    isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                  }`}
+                >
+                  <div className="overflow-hidden">
+                    <p className="px-5 pb-4 text-[14px] leading-relaxed text-slate-500">
+                      {f.a}
+                    </p>
+                  </div>
+                </div>
                 </div>
               </StaggerItem>
             );

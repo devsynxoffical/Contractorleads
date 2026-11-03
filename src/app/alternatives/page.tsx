@@ -10,7 +10,7 @@ import {
   SubpageSection,
 } from "@/components/marketing/marketing-subpage";
 import { Reveal } from "@/components/marketing/marketing-ui";
-import { JsonLd, breadcrumbJsonLd, faqPageJsonLd } from "@/components/seo/json-ld";
+import { JsonLd, breadcrumbJsonLd, collectionPageJsonLd, faqPageJsonLd } from "@/components/seo/json-ld";
 import { ALTERNATIVES } from "@/lib/alternatives-content";
 import { buildMetadata } from "@/lib/seo";
 
@@ -52,7 +52,16 @@ export default function AlternativesHubPage() {
             { name: "Home", path: "/" },
             { name: "Alternatives", path: "/alternatives" },
           ]),
-          faqPageJsonLd(HUB_FAQS),
+          faqPageJsonLd(HUB_FAQS, "/alternatives"),
+          collectionPageJsonLd({
+            name: "Contractor Leads alternatives and comparisons",
+            description: "How Contractor Leads compares with Apollo, Hunter, Prospeo, Outscraper and other lead tools.",
+            path: "/alternatives",
+            items: [
+              { name: "Apollo.io alternative", path: "/apollo-alternative" },
+              ...ALTERNATIVES.map((a) => ({ name: `${a.name} alternative`, path: `/alternatives/${a.slug}` })),
+            ],
+          }),
         ]}
       />
       <MarketingSubpageHero

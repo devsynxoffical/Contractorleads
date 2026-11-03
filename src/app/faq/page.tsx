@@ -52,7 +52,7 @@ export default function FaqPage() {
             { name: "Home", path: "/" },
             { name: "FAQ", path: "/faq" },
           ]),
-          faqPageJsonLd(ALL_FAQS),
+          faqPageJsonLd(ALL_FAQS, "/faq"),
         ]}
       />
       <MarketingSubpageHero

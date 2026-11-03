@@ -3,6 +3,7 @@ import Link from "next/link";
 import { AuthSiteFooter, AuthSiteHeader } from "@/components/auth/auth-chrome";
 import { EMAIL_BRAND } from "@/lib/email-brand";
 import { buildMetadata } from "@/lib/seo";
+import { JsonLd, breadcrumbJsonLd, webPageJsonLd } from "@/components/seo/json-ld";
 
 export const metadata: Metadata = buildMetadata({
   title: "Terms of Service | Contractor Leads",
@@ -14,6 +15,19 @@ export const metadata: Metadata = buildMetadata({
 export default function TermsPage() {
   return (
     <div className="marketing-site flex min-h-[100dvh] flex-col bg-[#ffffff] text-slate-900">
+      <JsonLd
+        data={[
+          webPageJsonLd({
+            name: "Terms of Service",
+            description: "Terms of Service for Contractor Leads.",
+            path: "/terms",
+          }),
+          breadcrumbJsonLd([
+            { name: "Home", path: "/" },
+            { name: "Terms of Service", path: "/terms" },
+          ]),
+        ]}
+      />
       <AuthSiteHeader mode="login" />
       <main className="mx-auto w-full max-w-3xl flex-1 px-5 py-12 sm:px-8">
         <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-fuchsia-600">
