@@ -69,7 +69,7 @@ export const ALTERNATIVES: Alternative[] = [
     name: "Outscraper",
     category: "Google Maps scraping service",
     website: "outscraper.com",
-    titleTag: "Outscraper Alternative for Contractor Leads With Owner Data",
+    titleTag: "Outscraper Alternative for Contractor Leads (2026)",
     metaDescription:
       "Looking for an Outscraper alternative? Compare its Google Maps export with Contractor Leads' live data, verified owner names, AI lead scores and outreach.",
     h1: "The Outscraper alternative for agencies that sell to contractors",
@@ -140,7 +140,7 @@ export const ALTERNATIVES: Alternative[] = [
     name: "Apify Google Maps Scraper",
     category: "Scraping platform with Google Maps actors",
     website: "apify.com",
-    titleTag: "Apify Google Maps Scraper Alternative for Contractor Leads",
+    titleTag: "Apify Alternative for Google Maps Contractor Leads (2026)",
     metaDescription:
       "An Apify Google Maps Scraper alternative for agencies: skip actor setup and get live contractor data with owner names, AI scores and outreach scripts. 10 free leads.",
     h1: "The Apify Google Maps Scraper alternative with owner names and scores",
@@ -424,7 +424,7 @@ export const ALTERNATIVES: Alternative[] = [
     name: "D7 Lead Finder",
     category: "Local business lead finder",
     website: "d7leadfinder.com",
-    titleTag: "D7 Lead Finder Alternative With AI Scoring and Owner Names",
+    titleTag: "D7 Lead Finder Alternative for Contractor Leads (2026)",
     metaDescription:
       "Comparing D7 Lead Finder alternatives? Contractor Leads adds AI gap scores, verified owner names, Meta ad status and outreach scripts to local contractor data.",
     h1: "The D7 Lead Finder alternative for agencies that sell to contractors",

@@ -73,7 +73,7 @@ const CORE_POSTS: BlogPost[] = [
     slug: "local-service-ads",
     type: "pillar",
     title: "Local Service Ads for Agencies: How to Sell and Manage Google LSAs for Contractors",
-    titleTag: "Local Service Ads for Agencies: Sell and Manage Google LSAs",
+    titleTag: "Local Service Ads for Agencies: Sell & Manage LSAs (2026)",
     metaDescription: "Local Service Ads explained for agencies: how Google LSAs work, what they cost per lead, how to set them up for contractors and how to price it.",
     primaryKeyword: "local service ads",
     secondaryKeywords: [
@@ -245,7 +245,7 @@ const CORE_POSTS: BlogPost[] = [
     slug: "facebook-ads-for-contractors",
     type: "cluster",
     title: "Facebook Ads for Contractors: The Offer and Ad Setup Agencies Use",
-    titleTag: "Facebook Ads for Contractors: Offer and Ad Setup Guide",
+    titleTag: "Facebook Ads for Contractors: Offers & Ad Setup (2026)",
     metaDescription: "Facebook ads for contractors that work: the offer, audience, creative and lead form setup agencies use for roofers and HVAC. Check any contractor's ads.",
     primaryKeyword: "facebook ads for contractors",
     secondaryKeywords: [
@@ -329,8 +329,8 @@ const CORE_POSTS: BlogPost[] = [
   {
     slug: "how-to-get-more-roofing-leads",
     type: "cluster",
-    title: "How to Get More Roofing Leads: 9 Methods Ranked",
-    titleTag: "How to Get More Roofing Leads: 9 Methods Ranked",
+    title: "How to Get More Roofing Leads: 9 Methods Ranked (2026)",
+    titleTag: "How to Get More Roofing Leads: 9 Methods Ranked (2026)",
     metaDescription: "How to get more roofing leads: 9 methods ranked by cost, speed and lead quality, from Local Service Ads to referrals. With setup steps for each.",
     primaryKeyword: "how to get more roofing leads",
     secondaryKeywords: [
@@ -487,7 +487,7 @@ const CORE_POSTS: BlogPost[] = [
     slug: "agency-lead-generation",
     type: "pillar",
     title: "Agency Lead Generation: How to Find Clients for Your Marketing Agency",
-    titleTag: "Agency Lead Generation: How to Find Agency Clients",
+    titleTag: "Agency Lead Generation: How to Find Agency Clients (2026)",
     metaDescription: "Agency lead generation that works: pick a niche, build a scored list, open with an audit and follow up. A playbook for agencies selling to contractors.",
     primaryKeyword: "agency lead generation",
     secondaryKeywords: [
@@ -656,7 +656,7 @@ const CORE_POSTS: BlogPost[] = [
     slug: "hvac-marketing-agency",
     type: "cluster",
     title: "HVAC Marketing Agency: What HVAC Owners Expect and How to Pitch Them",
-    titleTag: "HVAC Marketing Agency: What Owners Expect, How to Pitch",
+    titleTag: "HVAC Marketing Agency: What Owners Expect & How to Pitch",
     metaDescription: "What HVAC owners expect from an HVAC marketing agency, which services to offer, how to price them and a pitch script that books the first call.",
     primaryKeyword: "hvac marketing agency",
     secondaryKeywords: [
@@ -731,8 +731,8 @@ const CORE_POSTS: BlogPost[] = [
   {
     slug: "pay-per-lead-for-contractors",
     type: "cluster",
-    title: "Pay per Lead for Contractors: How Agencies Price It",
-    titleTag: "Pay per Lead for Contractors: How Agencies Price It",
+    title: "Pay Per Lead for Contractors: How Agencies Price It (2026)",
+    titleTag: "Pay Per Lead for Contractors: How Agencies Price It (2026)",
     metaDescription: "Pay per lead for contractors explained: how the model works, how agencies set a price per lead, what counts as a valid lead and how to avoid disputes.",
     primaryKeyword: "pay per lead",
     secondaryKeywords: [
@@ -803,8 +803,8 @@ const CORE_POSTS: BlogPost[] = [
   {
     slug: "lsa-ads-cost-setup",
     type: "cluster",
-    title: "LSA Ads Cost and Setup Checklist for Contractors",
-    titleTag: "LSA Ads Cost and Setup Checklist for Contractors",
+    title: "LSA Ads Cost & Setup Checklist for Contractors (2026)",
+    titleTag: "LSA Ads Cost & Setup Checklist for Contractors (2026)",
     metaDescription: "How much LSA ads cost, how Google charges per lead and a step-by-step LSA ads setup checklist for contractors, updated for the move into Google Ads.",
     primaryKeyword: "lsa ads",
     secondaryKeywords: [

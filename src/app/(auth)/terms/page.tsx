@@ -5,7 +5,7 @@ import { EMAIL_BRAND } from "@/lib/email-brand";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
-  title: "Terms of Service",
+  title: "Terms of Service | Contractor Leads",
   description:
     "Terms of Service for Contractor Leads — the agency platform for verified contractor lead generation.",
   path: "/terms",

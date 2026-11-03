@@ -21,7 +21,7 @@ export const TRADE_GUIDE_POSTS: BlogPost[] = [
     slug: "general-contractor-leads",
     type: "cluster",
     title: "General Contractor Leads: How Agencies Find and Win GC Clients",
-    titleTag: "General Contractor Leads for Agencies: Find & Win GC Clients",
+    titleTag: "General Contractor Leads: Find & Win GC Clients (2026)",
     metaDescription:
       "How agencies find and win general contractor leads: where GC leads come from, residential vs commercial builders, what GCs buy and an outreach plan.",
     primaryKeyword: "general contractor leads",
@@ -269,7 +269,7 @@ export const TRADE_GUIDE_POSTS: BlogPost[] = [
     slug: "pest-control-leads",
     type: "cluster",
     title: "Pest Control Leads: How Agencies Find and Win Pest Control Companies",
-    titleTag: "Pest Control Leads for Agencies: Find & Win Exterminators",
+    titleTag: "Pest Control Leads: Find & Win Exterminator Clients (2026)",
     metaDescription:
       "How agencies find and win pest control leads: where exterminators are, the seasonal calendar, the recurring-revenue pitch and the gaps that signal a sale.",
     primaryKeyword: "pest control leads",
@@ -370,7 +370,7 @@ export const TRADE_GUIDE_POSTS: BlogPost[] = [
     slug: "concrete-contractor-leads",
     type: "cluster",
     title: "Concrete Contractor Leads: How Agencies Find and Win Concrete Companies",
-    titleTag: "Concrete Contractor Leads for Agencies (Driveways, Patios & More)",
+    titleTag: "Concrete Contractor Leads: Find & Win Concrete Jobs (2026)",
     metaDescription:
       "How agencies find and win concrete contractors: residential vs commercial targeting, where the leads are, gaps that signal a sale, seasonality and offers.",
     primaryKeyword: "concrete contractor leads",
@@ -471,7 +471,7 @@ export const TRADE_GUIDE_POSTS: BlogPost[] = [
     slug: "cleaning-business-leads",
     type: "cluster",
     title: "Cleaning Business Leads: How Agencies Find and Win Cleaning Companies",
-    titleTag: "Cleaning Business Leads for Agencies: Residential & Commercial",
+    titleTag: "Cleaning Business Leads: Find & Win Cleaning Clients (2026)",
     metaDescription:
       "How agencies find and win residential and commercial cleaning companies: where cleaning business leads are, how to qualify them and what cleaners buy.",
     primaryKeyword: "cleaning business leads",
@@ -572,7 +572,7 @@ export const TRADE_GUIDE_POSTS: BlogPost[] = [
     slug: "email-warmup-for-cold-email",
     type: "cluster",
     title: "Email Warmup for Cold Email: How to Warm Up a Domain and Stay Out of Spam",
-    titleTag: "Email Warmup for Cold Email: Warm Up a Domain the Right Way",
+    titleTag: "Email Warmup for Cold Email: Schedule & Limits (2026)",
     metaDescription:
       "Email warmup for cold email: set up SPF, DKIM and DMARC, how long to warm up a new domain, safe daily sending limits and how to stay out of spam.",
     primaryKeyword: "email warmup",

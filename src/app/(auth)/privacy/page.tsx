@@ -5,7 +5,7 @@ import { EMAIL_BRAND } from "@/lib/email-brand";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
-  title: "Privacy Policy",
+  title: "Privacy Policy | Contractor Leads",
   description:
     "Privacy Policy for Contractor Leads — how we collect, use, and protect agency account and usage data.",
   path: "/privacy",

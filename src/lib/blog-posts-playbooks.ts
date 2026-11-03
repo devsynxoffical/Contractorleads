@@ -19,7 +19,7 @@ export const PLAYBOOK_POSTS: BlogPost[] = [
     slug: "how-to-get-contractor-leads",
     type: "cluster",
     title: "How to Get Contractor Leads: 11 Channels Ranked by Cost, Speed and Quality",
-    titleTag: "How to Get Contractor Leads: 11 Channels Ranked",
+    titleTag: "How to Get Contractor Leads: 11 Channels Ranked (2026)",
     metaDescription:
       "How to get contractor leads in 2026: 11 channels ranked by cost per lead, time to first lead and quality, with what agencies should sell contractors for each.",
     primaryKeyword: "how to get contractor leads",
@@ -172,7 +172,7 @@ export const PLAYBOOK_POSTS: BlogPost[] = [
     slug: "plumbing-contractor-leads",
     type: "cluster",
     title: "Plumbing Contractor Leads for Agencies: How to Find, Qualify and Pitch Plumbers",
-    titleTag: "Plumbing Contractor Leads for Agencies: Find and Pitch Plumbers",
+    titleTag: "Plumbing Contractor Leads: Find & Pitch Plumbers (2026)",
     metaDescription:
       "How agencies find plumbing contractor leads, which plumbers to pitch first, what plumbing owners buy, and the outreach that books calls. Includes a 7-day sequence.",
     primaryKeyword: "plumbing contractor leads",
@@ -285,7 +285,7 @@ export const PLAYBOOK_POSTS: BlogPost[] = [
     slug: "solar-contractor-leads",
     type: "cluster",
     title: "Solar Contractor Leads for Agencies: Pitching Installers in a Tighter Market",
-    titleTag: "Solar Contractor Leads for Agencies: How to Pitch Installers",
+    titleTag: "Solar Contractor Leads: How to Pitch Installers (2026)",
     metaDescription:
       "How agencies find and pitch solar contractor leads: which installers to target in a tighter market, what they buy and cost per lead benchmarks.",
     primaryKeyword: "solar contractor leads",
@@ -507,7 +507,7 @@ export const PLAYBOOK_POSTS: BlogPost[] = [
     slug: "how-to-sell-seo-to-contractors",
     type: "cluster",
     title: "How to Sell SEO to Contractors: Audit, Pitch and Pricing That Closes",
-    titleTag: "How to Sell SEO to Contractors: Audit, Pitch and Pricing",
+    titleTag: "How to Sell SEO to Contractors: Pitch & Pricing (2026)",
     metaDescription:
       "How to sell SEO to contractors: who to target, a 5-minute audit that proves the gap, pitch scripts, pricing tiers and answers to common objections.",
     primaryKeyword: "how to sell seo to contractors",
@@ -628,7 +628,7 @@ export const PLAYBOOK_POSTS: BlogPost[] = [
     slug: "cold-calling-contractors-script",
     type: "cluster",
     title: "Cold Calling Contractors: Scripts, Timing and Openers That Get Past the Office",
-    titleTag: "Cold Calling Contractors: Scripts and Openers That Work",
+    titleTag: "Cold Calling Contractors: Scripts & Openers That Work (2026)",
     metaDescription:
       "Cold calling contractors for agency sales: when to call, getting past the office, openers that reference their business, voicemail scripts and follow-ups.",
     primaryKeyword: "cold calling contractors",

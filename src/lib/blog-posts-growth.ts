@@ -236,7 +236,7 @@ export const GROWTH_POSTS: BlogPost[] = [
     slug: "google-business-profile-optimization-for-contractors",
     type: "cluster",
     title: "Google Business Profile Optimization for Contractors: The Agency Checklist",
-    titleTag: "Google Business Profile Optimization for Contractors: Checklist",
+    titleTag: "Google Business Profile Optimization for Contractors (2026)",
     metaDescription:
       "Google Business Profile optimization checklist for contractors: categories, services, photos, reviews, posts and Q&A, plus how agencies sell it.",
     primaryKeyword: "google business profile optimization for contractors",
@@ -348,7 +348,7 @@ export const GROWTH_POSTS: BlogPost[] = [
     slug: "how-to-find-business-owner-name",
     type: "cluster",
     title: "How to Find the Owner of a Contracting Business: 9 Methods Ranked",
-    titleTag: "How to Find a Contracting Business Owner's Name: 9 Methods",
+    titleTag: "How to Find a Business Owner's Name: 9 Methods (2026)",
     metaDescription:
       "Nine ways to find who owns a contracting business, from the website and licence boards to Secretary of State records, ranked by speed and accuracy.",
     primaryKeyword: "how to find the owner of a business",
@@ -452,7 +452,7 @@ export const GROWTH_POSTS: BlogPost[] = [
     slug: "electrical-contractor-leads",
     type: "cluster",
     title: "Electrical Contractor Leads for Agencies: EV Chargers, Panels and the Pitch That Lands",
-    titleTag: "Electrical Contractor Leads for Agencies: Pitch Electricians",
+    titleTag: "Electrical Contractor Leads: Pitch Electricians (2026)",
     metaDescription:
       "How agencies find and pitch electrical contractor leads: the EV charger and panel-upgrade angle, which electricians to call first and what they buy.",
     primaryKeyword: "electrical contractor leads",

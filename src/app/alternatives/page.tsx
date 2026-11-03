@@ -15,7 +15,7 @@ import { ALTERNATIVES } from "@/lib/alternatives-content";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
-  title: "Contractor Leads vs Scrapers, Databases and Lead Finders",
+  title: "Apollo, Hunter, Prospeo & Outscraper Alternatives (2026)",
   description:
     "Compare Contractor Leads with Apollo, Hunter, Prospeo, Outscraper, ZoomInfo, Lusha, D7 Lead Finder and more for finding and pitching home-service contractors.",
   path: "/alternatives",

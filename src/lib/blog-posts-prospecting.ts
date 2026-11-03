@@ -209,7 +209,7 @@ export const PROSPECTING_POSTS: BlogPost[] = [
     slug: "how-to-get-clients-for-marketing-agency",
     type: "pillar",
     title: "How to Get Clients for Your Marketing Agency: 9 Channels That Work in 2026",
-    titleTag: "How to Get Clients for a Marketing Agency (9 Proven Channels)",
+    titleTag: "How to Get Clients for a Marketing Agency: 9 Channels (2026)",
     metaDescription:
       "How to get clients for a marketing agency: nine proven channels, from niche outbound and referrals to partnerships, with costs and time to results.",
     primaryKeyword: "how to get clients for marketing agency",
@@ -399,7 +399,7 @@ export const PROSPECTING_POSTS: BlogPost[] = [
     slug: "landscaping-leads",
     type: "cluster",
     title: "Landscaping Leads: How Agencies Find and Win Landscaping Clients",
-    titleTag: "Landscaping Leads for Agencies: Find & Win Landscaping Clients",
+    titleTag: "Landscaping Leads: Find & Win Landscaping Clients (2026)",
     metaDescription:
       "How agencies find and win landscaping leads: where landscaping and lawn care companies are, the gaps to look for, seasonality and what landscapers buy.",
     primaryKeyword: "landscaping leads",

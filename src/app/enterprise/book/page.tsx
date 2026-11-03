@@ -10,7 +10,7 @@ import { JsonLd, breadcrumbJsonLd } from "@/components/seo/json-ld";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
-  title: "Book an Enterprise call",
+  title: "Book an Enterprise Demo | Contractor Leads",
   description:
     "Schedule a strategy call with Contractor Leads to discuss Enterprise volume, white-label, API access, and dedicated support.",
   path: "/enterprise/book",

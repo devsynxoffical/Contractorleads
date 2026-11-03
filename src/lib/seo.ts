@@ -15,7 +15,7 @@ export const CONTENT_LAST_UPDATED = "2026-11-03";
 
 export const SEO = {
   siteName: "Contractor Leads",
-  defaultTitle: "Contractor Leads: AI-Scored Leads for Agencies",
+  defaultTitle: "Contractor Leads: Verified Contractor Leads for Agencies",
   titleTemplate: "%s | Contractor Leads",
   defaultDescription:
     "Contractor leads for agencies: live Google data, AI scores, owner names and outreach in one tool. Start with 10 free leads, no card needed.",
