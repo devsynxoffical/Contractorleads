@@ -1,3 +1,4 @@
+import { renderSpintax } from "@/lib/spintax-engine";
 import { relayFetch } from "@/lib/relay-fetch";
 import nodemailer from "nodemailer";
 import type SMTPTransport from "nodemailer/lib/smtp-transport";
@@ -1257,7 +1258,8 @@ export function renderSequenceTemplate(
   template: string,
   vars: Record<string, string>,
 ) {
-  return template.replace(/\{\{(\w+)\}\}/g, (_, key: string) => vars[key] ?? "");
+  // Spintax + variables, seeded per lead so each lead gets its own stable variation.
+  return renderSpintax(template, vars, { seed: `sequence:${JSON.stringify(vars)}:${template}` }).text;
 }
 
 export function maskSmtpAccount(row: {

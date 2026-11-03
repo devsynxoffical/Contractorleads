@@ -44,8 +44,8 @@ export async function POST(req: Request) {
     };
 
     const senderName = user.ownerName || user.name || user.companyName || "Our Team";
-    const renderedSubj = `[TEST] ${renderCampaignTemplate(subject || "Quick question", sampleProspect, senderName)}`;
-    const renderedBody = renderCampaignTemplate(bodyText || "Hi John,\n\nTest outreach email.", sampleProspect, senderName);
+    const renderedSubj = `[TEST] ${renderCampaignTemplate(subject || "Quick question", sampleProspect, senderName, {}, { seed: `test:${Date.now()}` })}`;
+    const renderedBody = renderCampaignTemplate(bodyText || "Hi John,\n\nTest outreach email.", sampleProspect, senderName, {}, { seed: `test:${Date.now()}` });
 
     const stepAttachments: CampaignAttachment[] = Array.isArray(attachments) ? attachments : [];
     const baseAppUrl = appBaseUrl();

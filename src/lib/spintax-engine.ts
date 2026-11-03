@@ -52,90 +52,131 @@ const SPAM_TRIGGER_WORDS = [
   "bank transfer",
 ];
 
+/** "{{random|a|b}}", also "{{ RANDOM | a | b }}" and "{{spin|a|b}}". */
+const SPIN_PREFIX = /^\s*(random|spin|spintax)\s*\|/i;
+
+/** Index of the "}}" that closes the "{{" opened just before `from`, honouring nesting. */
+function findClosingBraces(t: string, from: number): number {
+  let depth = 1;
+  let i = from;
+  while (i < t.length - 1) {
+    if (t[i] === "{" && t[i + 1] === "{") {
+      depth++;
+      i += 2;
+    } else if (t[i] === "}" && t[i + 1] === "}") {
+      depth--;
+      if (depth === 0) return i;
+      i += 2;
+    } else {
+      i++;
+    }
+  }
+  return -1;
+}
+
 /**
- * Parse a template string into AST tokens supporting {{random|opt1|opt2|opt3}} and {{variable|fallback}}
+ * Parse a template string into AST tokens. Supports:
+ * - {{random|opt1|opt2|opt3}} (any case, spaces allowed, options may contain variables
+ *   or nested spintax: {{random|Hi {{firstName|there}}|Hey}})
+ * - classic single-brace spintax {opt1|opt2|opt3}
+ * - {{variable}} and {{variable|fallback}}
  */
 export function parseSpintax(template: string): SpintaxNode[] {
   if (!template) return [];
 
   const nodes: SpintaxNode[] = [];
   let cursor = 0;
+  let text = "";
   const len = template.length;
+  const flushText = () => {
+    if (text) nodes.push({ type: "text", value: text });
+    text = "";
+  };
 
   while (cursor < len) {
-    const openIndex = template.indexOf("{{", cursor);
+    const ch = template[cursor];
 
-    if (openIndex === -1) {
-      nodes.push({ type: "text", value: template.slice(cursor) });
-      break;
-    }
+    if (ch === "{" && template[cursor + 1] === "{") {
+      const closeIndex = findClosingBraces(template, cursor + 2);
+      if (closeIndex === -1) {
+        // Unclosed braces: keep the rest as plain text
+        text += template.slice(cursor);
+        break;
+      }
+      const inner = template.slice(cursor + 2, closeIndex);
+      const raw = template.slice(cursor, closeIndex + 2);
+      flushText();
 
-    if (openIndex > cursor) {
-      nodes.push({ type: "text", value: template.slice(cursor, openIndex) });
-    }
-
-    // Find closing }}
-    const closeIndex = template.indexOf("}}", openIndex + 2);
-    if (closeIndex === -1) {
-      // Unclosed brace, treat remainder as plain text
-      nodes.push({ type: "text", value: template.slice(openIndex) });
-      break;
-    }
-
-    const inner = template.slice(openIndex + 2, closeIndex);
-
-    if (inner.startsWith("random|")) {
-      // Spintax block: {{random|Option 1|Option 2|Option 3}}
-      const optionsRaw = splitSpintaxOptions(inner.slice(7));
-      const parsedOptions: SpintaxNode[][] = optionsRaw.map((opt) => parseSpintax(opt));
-      nodes.push({
-        type: "spin",
-        options: parsedOptions,
-        raw: template.slice(openIndex, closeIndex + 2),
-      });
-    } else {
-      // Variable node: {{firstName}} or {{firstName|fallback}}
-      const pipeIndex = inner.indexOf("|");
-      if (pipeIndex !== -1) {
-        nodes.push({
-          type: "var",
-          name: inner.slice(0, pipeIndex).trim(),
-          fallback: inner.slice(pipeIndex + 1).trim(),
-        });
+      const spin = inner.match(SPIN_PREFIX);
+      if (spin) {
+        const optionsRaw = splitSpintaxOptions(inner.slice(spin[0].length));
+        nodes.push({ type: "spin", options: optionsRaw.map((opt) => parseSpintax(opt)), raw });
       } else {
+        // Variable node: {{firstName}} or {{firstName|fallback}}
+        const pipeIndex = inner.indexOf("|");
+        if (pipeIndex !== -1) {
+          nodes.push({
+            type: "var",
+            name: inner.slice(0, pipeIndex).trim(),
+            fallback: inner.slice(pipeIndex + 1).trim(),
+          });
+        } else {
+          nodes.push({ type: "var", name: inner.trim() });
+        }
+      }
+      cursor = closeIndex + 2;
+      continue;
+    }
+
+    if (ch === "{") {
+      // Classic spintax {a|b|c}: no braces inside and at least one pipe
+      const closeIndex = template.indexOf("}", cursor + 1);
+      const inner = closeIndex === -1 ? "" : template.slice(cursor + 1, closeIndex);
+      if (closeIndex !== -1 && !inner.includes("{") && inner.includes("|")) {
+        flushText();
         nodes.push({
-          type: "var",
-          name: inner.trim(),
+          type: "spin",
+          options: splitSpintaxOptions(inner).map((opt) => parseSpintax(opt)),
+          raw: template.slice(cursor, closeIndex + 1),
         });
+        cursor = closeIndex + 1;
+        continue;
       }
     }
 
-    cursor = closeIndex + 2;
+    text += ch;
+    cursor++;
   }
 
+  flushText();
   return nodes;
 }
 
 /**
- * Split options on unescaped pipe |
+ * Split options on pipes that are not escaped (\|) and not inside nested braces.
  */
 function splitSpintaxOptions(content: string): string[] {
   const options: string[] = [];
   let current = "";
+  let depth = 0;
   let i = 0;
 
   while (i < content.length) {
-    if (content[i] === "\\" && i + 1 < content.length && content[i + 1] === "|") {
+    const c = content[i];
+    if (c === "\\" && content[i + 1] === "|") {
       current += "|";
       i += 2;
-    } else if (content[i] === "|") {
+      continue;
+    }
+    if (c === "{") depth++;
+    else if (c === "}") depth = Math.max(0, depth - 1);
+    if (c === "|" && depth === 0) {
       options.push(current);
       current = "";
-      i++;
     } else {
-      current += content[i];
-      i++;
+      current += c;
     }
+    i++;
   }
   options.push(current);
   return options;
@@ -177,6 +218,21 @@ export function validateSpintax(
   }
 
   findSpinNodes(nodes);
+
+  // Unknown variables render blank in sent emails; flag them before launch.
+  const known = new Set(KNOWN_TEMPLATE_VARIABLES.map((v) => v.toLowerCase().replace(/[^a-z0-9]/g, "")));
+  const unknown = new Set<string>();
+  const collectVars = (list: SpintaxNode[]) => {
+    for (const n of list) {
+      if (n.type === "var" && !n.fallback && !known.has(n.name.toLowerCase().replace(/[^a-z0-9]/g, ""))) unknown.add(n.name);
+      if (n.type === "spin") n.options.forEach(collectVars);
+    }
+  };
+  collectVars(nodes);
+  if (subjectTemplate) collectVars(parseSpintax(subjectTemplate));
+  for (const name of unknown) {
+    warnings.push(`Unknown variable {{${name}}} will be blank in sent emails. Use a known variable or add a fallback, e.g. {{${name}|there}}.`);
+  }
   if (subjectTemplate) {
     findSpinNodes(parseSpintax(subjectTemplate));
   }
@@ -315,8 +371,7 @@ function renderNodes(
     if (node.type === "text") {
       result += node.value;
     } else if (node.type === "var") {
-      const val = lead[node.name] ?? lead[camelToSnake(node.name)] ?? node.fallback ?? "";
-      result += String(val);
+      result += String(lookupVar(lead, node.name) ?? node.fallback ?? "");
     } else if (node.type === "spin") {
       const opts = node.options;
       if (opts.length === 0) continue;
@@ -352,10 +407,32 @@ function camelToSnake(str: string): string {
   return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
 }
 
+const looseKey = (k: string) => k.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+/** Value for {{name}}: exact key, then snake_case, then case/underscore-insensitive. Empty counts as missing. */
+function lookupVar(lead: Record<string, unknown>, name: string): unknown {
+  const present = (v: unknown) => v !== undefined && v !== null && v !== "";
+  if (present(lead[name])) return lead[name];
+  if (present(lead[camelToSnake(name)])) return lead[camelToSnake(name)];
+  const want = looseKey(name);
+  for (const [k, v] of Object.entries(lead)) if (looseKey(k) === want && present(v)) return v;
+  return undefined;
+}
+
+/** Variables every template can use (case and underscores are ignored when matching). */
+export const KNOWN_TEMPLATE_VARIABLES = [
+  "firstName", "lastName", "ownerName", "businessName", "company", "companyName",
+  "city", "state", "country", "industry", "phone", "email", "outreachAngle",
+  "custom_personalised_opening_line", "lastSubject",
+  "fromName", "senderName", "yourName", "myName", "yourCompany", "myCompany",
+];
+
 /**
  * Normalizes lead record for variable interpolation
  */
 export function normalizeLeadVars(lead: Record<string, any>): Record<string, any> {
+  const sender = lead.fromName || lead.senderName || "Our Team";
+  const senderCompany = lead.fromCompany || lead.senderCompany || sender;
   const firstName =
     lead.firstName ||
     (lead.ownerName || "").trim().split(/\s+/)[0] ||
@@ -386,9 +463,19 @@ export function normalizeLeadVars(lead: Record<string, any>): Record<string, any
     email: lead.email || "",
     outreachAngle: lead.outreachAngle || "",
     custom_personalised_opening_line: lead.outreachAngle || `I noticed your roofing business presence in ${lead.city || "your area"}.`,
-    fromName: lead.fromName || "Our Team",
-    from_name: lead.fromName || "Our Team",
-    ...lead,
+    fromName: sender,
+    from_name: sender,
+    // Sender aliases people use in templates: {{your_name}}, {{sender_name}}, {{my_name}}…
+    senderName: sender,
+    yourName: sender,
+    myName: sender,
+    yourCompany: senderCompany,
+    myCompany: senderCompany,
+    // Lead values override the defaults above only when they hold a real value, so a
+    // missing city or owner keeps its fallback ("your area", "there") instead of blank.
+    ...Object.fromEntries(
+      Object.entries(lead).filter(([, v]) => v !== undefined && v !== null && v !== ""),
+    ),
   };
 }
 

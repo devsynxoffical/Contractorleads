@@ -1,3 +1,4 @@
+import { renderSpintax } from "@/lib/spintax-engine";
 export type CampaignAttachment = {
   id: string;
   name: string;
@@ -263,7 +264,7 @@ export type CampaignMailboxLimitsConfig = {
   rampUp?: CampaignWeeklyRampUp;
 };
 
-/** Render campaign email template with prospect variables */
+/** Render a campaign email template (spintax + variables) for a prospect */
 export function renderCampaignTemplate(
   template: string,
   prospect: {
@@ -274,7 +275,9 @@ export function renderCampaignTemplate(
     country?: string | null;
   },
   senderName: string = "Our Team",
-  extraVars: Record<string, string> = {}
+  extraVars: Record<string, string> = {},
+  /** Seed for picking spintax variations; the same seed always gives the same email. */
+  options: { seed?: string } = {}
 ): string {
   const firstName =
     (prospect.ownerName || "").trim().split(/\s+/)[0] ||
@@ -295,16 +298,14 @@ export function renderCampaignTemplate(
     fromName: senderName,
     senderName,
     myName: senderName,
+    yourName: senderName,
     myCompany: senderName,
     ...extraVars,
   };
 
-  let rendered = template;
-  for (const [key, value] of Object.entries(vars)) {
-    const regex = new RegExp(`{{\\s*${key}\\s*}}`, "gi");
-    rendered = rendered.replace(regex, value);
-  }
-  return rendered;
+  // Same engine as live sends, so previews and test emails resolve spintax
+  // ({{random|a|b}}, {a|b}) and every variable exactly like a real campaign email.
+  return renderSpintax(template, vars, { seed: options.seed ?? `preview:${template}` }).text;
 }
 
 export function formatBytes(bytes?: number): string {
