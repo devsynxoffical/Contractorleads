@@ -48,9 +48,16 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const trade = getTradeBySlug(slug);
   if (!trade) return {};
+  // Keyword first, then the offer (the pattern Hunter and Prospeo use on tool pages).
+  const leads = /contractors$/i.test(trade.name)
+    ? `${trade.name.replace(/s$/i, "")} Leads`
+    : `${trade.name} Contractor Leads`;
+  const fullTitle = `${leads} for Agencies (10 Free Leads)`;
+  const title = fullTitle.length <= 60 ? fullTitle : `${leads} (10 Free Leads)`;
+  const withOffer = `${trade.description} Start with 10 free leads.`;
   return buildMetadata({
-    title: trade.headline,
-    description: trade.description,
+    title,
+    description: withOffer.length <= 160 ? withOffer : trade.description,
     path: `/industries/${trade.slug}`,
     keywords: trade.keywords,
   });

@@ -211,7 +211,7 @@ export const ALTERNATIVES: Alternative[] = [
     name: "PhantomBuster",
     category: "Social and web automation platform",
     website: "phantombuster.com",
-    titleTag: "PhantomBuster Alternative for Contractor Lead Generation",
+    titleTag: "PhantomBuster Alternative for Contractor Leads (2026)",
     metaDescription:
       "A PhantomBuster alternative for agencies prospecting contractors: live Google data, verified owner names, AI lead scores and outreach scripts.",
     h1: "The PhantomBuster alternative built for contractor prospecting",
@@ -282,7 +282,7 @@ export const ALTERNATIVES: Alternative[] = [
     name: "ZoomInfo",
     category: "Enterprise B2B contact database",
     website: "zoominfo.com",
-    titleTag: "ZoomInfo Alternative for Local Contractor Leads",
+    titleTag: "ZoomInfo Alternative for Local Contractor Leads (2026)",
     metaDescription:
       "Need a ZoomInfo alternative for small local contractors? Contractor Leads covers owner-run roofing, HVAC and plumbing companies ZoomInfo misses, from $19.99 a month.",
     h1: "The ZoomInfo alternative for agencies selling to local contractors",
@@ -353,7 +353,7 @@ export const ALTERNATIVES: Alternative[] = [
     name: "Lusha",
     category: "B2B contact enrichment tool",
     website: "lusha.com",
-    titleTag: "Lusha Alternative for Contractor and Home-Service Leads",
+    titleTag: "Lusha Alternative for Contractor Leads (2026)",
     metaDescription:
       "A Lusha alternative for agencies selling to contractors: find businesses from live Google data, then get owner names, marketing scores and outreach scripts.",
     h1: "The Lusha alternative that finds the contractor, not just the contact",
@@ -495,7 +495,7 @@ export const ALTERNATIVES: Alternative[] = [
     name: "UpLead",
     category: "B2B contact database",
     website: "uplead.com",
-    titleTag: "UpLead Alternative for Local Contractor Leads",
+    titleTag: "UpLead Alternative for Local Contractor Leads (2026)",
     metaDescription:
       "An UpLead alternative for agencies prospecting roofers, HVAC and plumbers: live Google data, owner names, AI lead scores and outreach. 10 free leads.",
     h1: "The UpLead alternative for agencies prospecting local contractors",
@@ -560,6 +560,155 @@ export const ALTERNATIVES: Alternative[] = [
       },
     ],
     relatedIndustries: ["hvac", "solar", "general-contractors"],
+  },
+  {
+    slug: "hunter-alternative",
+    name: "Hunter",
+    category: "B2B email finder and verifier",
+    website: "hunter.io",
+    titleTag: "Hunter.io Alternative for Local Contractor Leads (2026)",
+    metaDescription:
+      "A Hunter.io alternative for agencies selling to contractors: find local businesses by trade and city, then get owner names, AI lead scores and outreach.",
+    h1: "The Hunter.io alternative that finds local contractors, not just email addresses",
+    intro:
+      "Hunter is an email finder and verifier: give it a company domain, or a person's name and domain, and it returns professional email addresses with a confidence score. It works best when you already know which companies you want. Most contractors have no domain-based email pattern to find, and many use Gmail or Outlook addresses that Hunter does not search. Contractor Leads starts earlier: it finds every contractor in a trade and market from live Google data, scores the marketing gap, and surfaces the owner and the contact details published by the business.",
+    keywords: [
+      "hunter.io alternative",
+      "hunter alternative",
+      "hunter.io alternatives",
+      "hunter.io vs",
+      "email finder for local businesses",
+    ],
+    bestFor: [
+      "Finding work email addresses at companies with their own domain",
+      "Verifying a list of B2B email addresses before sending",
+      "Domain searches on mid-size and larger companies",
+    ],
+    gaps: [
+      "Does not build the list; you need the companies or domains first",
+      "Searches professional domains, so many contractors' Gmail or Outlook addresses are out of scope",
+      "No local business data such as ratings, reviews, trade or service area",
+      "No marketing-gap scoring or outreach written from the business's own audit",
+    ],
+    rows: [
+      {
+        point: "Starting point",
+        them: "A company domain, or a person's name and domain",
+        us: "A trade and a market; Contractor Leads finds the businesses",
+      },
+      {
+        point: "Contact data",
+        them: "Professional email addresses with confidence scores",
+        us: "Business phone from Google, owner name and contacts from the business website",
+      },
+      {
+        point: "Business-level signals",
+        them: "Not the focus",
+        us: "Rating, review velocity, website and SEO scores, ad status",
+      },
+      {
+        point: "Email verification",
+        them: "Built-in verifier",
+        us: "Built-in verification before export and sending",
+      },
+      ...SHARED_ROWS_TAIL,
+    ],
+    pricingNote:
+      "Hunter offers a free plan with a limited number of monthly searches and paid plans billed in credits; check hunter.io for current pricing. Contractor Leads charges one credit per lead returned, with 10 free leads and plans from $19.99 a month.",
+    switchSteps: [
+      "Pick one trade and city you prospect today",
+      "Run it in Contractor Leads and note how many owners and contacts you get",
+      "Compare reply rates using Outreach Studio drafts built from each lead's audit",
+      "Keep Hunter for B2B companies outside home services if you still need it",
+    ],
+    faqs: [
+      {
+        q: "Is Contractor Leads a replacement for Hunter.io?",
+        a: "For agencies prospecting home-service contractors, yes: it builds the list, scores each business and finds the owner. For finding emails at larger B2B companies with their own domain, Hunter remains a good fit.",
+      },
+      {
+        q: "Why can't Hunter find many contractors' emails?",
+        a: "Hunter is built around company domains and professional email addresses. Many small contractors use a free Gmail or Outlook address or have no website at all, so there is no domain to search.",
+      },
+      {
+        q: "Can I use Hunter and Contractor Leads together?",
+        a: "Yes. Build and score the contractor list in Contractor Leads, then run any remaining companies with their own domain through Hunter.",
+      },
+    ],
+    relatedIndustries: ["roofing", "hvac", "plumbing"],
+    updatedDate: "2026-11-03",
+  },
+  {
+    slug: "prospeo-alternative",
+    name: "Prospeo",
+    category: "B2B email and mobile finder",
+    website: "prospeo.io",
+    titleTag: "Prospeo Alternative for Local Contractor Leads (2026)",
+    metaDescription:
+      "A Prospeo alternative for agencies prospecting contractors: find local businesses by trade and city, then get owner names, AI lead scores and outreach.",
+    h1: "The Prospeo alternative built for finding and pitching local contractors",
+    intro:
+      "Prospeo finds work emails and mobile numbers for people you already know, from a name and company, a domain, or a profile URL, and sells lookups in monthly credits. It suits B2B teams enriching known contacts. Contractor Leads is built for agencies selling to home-service businesses: it discovers every contractor in a trade and area from live Google data, scores how much marketing help each one needs, and gives you the owner and an outreach draft for that specific business.",
+    keywords: [
+      "prospeo alternative",
+      "prospeo alternatives",
+      "prospeo vs",
+      "prospeo.io alternative",
+      "contact finder for local businesses",
+    ],
+    bestFor: [
+      "Finding work emails and mobile numbers for known B2B contacts",
+      "Enriching CSV lists of names and companies",
+      "Chrome-extension lookups on profiles and company sites",
+    ],
+    gaps: [
+      "Does not discover local businesses by trade and city",
+      "Relies on professional profiles and domains that many contractors do not have",
+      "No local signals such as ratings, reviews and service area",
+      "No marketing-gap scoring or business-specific outreach",
+    ],
+    rows: [
+      {
+        point: "Starting point",
+        them: "A person, company, domain or profile URL",
+        us: "A trade and a market; Contractor Leads finds the businesses",
+      },
+      {
+        point: "Contact data",
+        them: "Work emails and mobile numbers",
+        us: "Business phone from Google, owner name and contacts from the business website",
+      },
+      {
+        point: "Business-level signals",
+        them: "Not the focus",
+        us: "Rating, review velocity, website and SEO scores, ad status",
+      },
+      ...SHARED_ROWS_TAIL,
+    ],
+    pricingNote:
+      "Prospeo lists a free plan with monthly credits and paid plans from about $49 a month, with mobile numbers costing more credits than emails; check prospeo.io for current pricing. Contractor Leads charges one credit per lead returned, with 10 free leads and plans from $19.99 a month.",
+    switchSteps: [
+      "Pick one trade and metro you prospect today",
+      "Run it in Contractor Leads and compare owner and contact coverage",
+      "Send Outreach Studio drafts to a test batch and compare replies",
+      "Keep Prospeo for enriching B2B contacts outside home services if needed",
+    ],
+    faqs: [
+      {
+        q: "What is the difference between Prospeo and Contractor Leads?",
+        a: "Prospeo enriches people you have already found with emails and phone numbers. Contractor Leads finds the local contractors for you, scores their marketing gaps and gives you the owner and outreach for each business.",
+      },
+      {
+        q: "Is Contractor Leads cheaper than Prospeo for contractor prospecting?",
+        a: "For home-service prospecting it usually costs less per usable lead, because one credit returns a scored business with its contact details rather than a single lookup. Compare both on the same trade and city before deciding.",
+      },
+      {
+        q: "Can I use both tools together?",
+        a: "Yes. Build and score the list in Contractor Leads, then use Prospeo for any remaining contacts that have a professional profile.",
+      },
+    ],
+    relatedIndustries: ["remodeling", "electrical", "solar"],
+    updatedDate: "2026-11-03",
   },
 ];
 

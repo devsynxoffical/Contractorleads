@@ -120,7 +120,7 @@ export const GROWTH_POSTS: BlogPost[] = [
     slug: "best-contractor-lead-generation-companies",
     type: "cluster",
     title: "Best Contractor Lead Generation Companies and Tools in 2026 (By Use Case)",
-    titleTag: "Best Contractor Lead Generation Companies and Tools 2026",
+    titleTag: "Best Contractor Lead Generation Companies & Tools (2026)",
     metaDescription:
       "The best contractor lead generation companies and tools in 2026 by use case: lead marketplaces, Local Services Ads, agencies and prospecting software.",
     primaryKeyword: "best contractor lead generation companies",

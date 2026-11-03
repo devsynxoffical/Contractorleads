@@ -392,7 +392,7 @@ export const PLAYBOOK_POSTS: BlogPost[] = [
     slug: "apollo-vs-google-maps-scraper",
     type: "cluster",
     title: "Apollo.io vs Google Maps Scraper vs Contractor Leads: Which Finds Local Contractors?",
-    titleTag: "Apollo vs Google Maps Scraper for Contractor Leads: Compared",
+    titleTag: "Apollo vs Google Maps Scraper for Contractor Leads (2026)",
     metaDescription:
       "Apollo.io vs Google Maps scrapers vs Contractor Leads for finding local contractors: data source, owner contacts, scoring, legality and cost compared.",
     primaryKeyword: "apollo vs google maps scraper",
