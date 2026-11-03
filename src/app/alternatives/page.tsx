@@ -15,9 +15,9 @@ import { ALTERNATIVES } from "@/lib/alternatives-content";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
-  title: "Contractor Leads vs Alternatives: Scrapers, Databases and Lead Finders",
+  title: "Contractor Leads vs Scrapers, Databases and Lead Finders",
   description:
-    "Compare Contractor Leads with Outscraper, Apify, PhantomBuster, ZoomInfo, Lusha, D7 Lead Finder, UpLead and Apollo for finding and pitching home-service contractors.",
+    "Compare Contractor Leads with Outscraper, Apify, PhantomBuster, ZoomInfo, Lusha, D7 Lead Finder, UpLead and Apollo for finding home-service contractors.",
   path: "/alternatives",
   keywords: [
     "contractor leads alternatives",

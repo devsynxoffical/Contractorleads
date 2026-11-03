@@ -22,7 +22,7 @@ export const PROSPECTING_POSTS: BlogPost[] = [
     title: "How to Find Local Businesses Without a Website (and Sell Them One)",
     titleTag: "How to Find Businesses Without Websites: 2026 Agency Guide",
     metaDescription:
-      "Step-by-step ways to find local businesses with no website, using Google Maps, directories and lead tools, plus how to qualify them and pitch a website that actually closes.",
+      "How to find local businesses without a website using Google Maps, directories and lead tools, plus how to qualify them and pitch a site that closes.",
     primaryKeyword: "how to find businesses without websites",
     secondaryKeywords: [
       "businesses without websites",
@@ -116,7 +116,7 @@ export const PROSPECTING_POSTS: BlogPost[] = [
     title: "Google Maps Lead Generation: How Agencies Turn Map Listings Into Clients",
     titleTag: "Google Maps Lead Generation for Agencies (2026 Guide)",
     metaDescription:
-      "How to use Google Maps for B2B lead generation: what data you can get, manual vs automated extraction, how to score listings, and a compliant outreach workflow for agencies.",
+      "Google Maps lead generation for agencies: what data you can get, manual vs automated extraction, how to score listings and a compliant outreach workflow.",
     primaryKeyword: "google maps lead generation",
     secondaryKeywords: [
       "google maps leads",
@@ -211,7 +211,7 @@ export const PROSPECTING_POSTS: BlogPost[] = [
     title: "How to Get Clients for Your Marketing Agency: 9 Channels That Work in 2026",
     titleTag: "How to Get Clients for a Marketing Agency (9 Proven Channels)",
     metaDescription:
-      "Nine ways marketing agencies win clients in 2026, from niche outbound and referrals to partnerships and content, with what each costs, how fast it works, and how to pick a niche first.",
+      "How to get clients for a marketing agency: nine proven channels, from niche outbound and referrals to partnerships, with costs and time to results.",
     primaryKeyword: "how to get clients for marketing agency",
     secondaryKeywords: [
       "how to get agency clients",
@@ -310,7 +310,7 @@ export const PROSPECTING_POSTS: BlogPost[] = [
     title: "How to Sell Websites to Contractors: Pricing, Pitch and Proof",
     titleTag: "How to Sell Websites to Contractors (Pricing + Pitch Script)",
     metaDescription:
-      "How web designers and agencies sell websites to roofers, plumbers, HVAC and other contractors: who to target, what to build, how to price it, and a pitch that ties the site to booked jobs.",
+      "How to sell websites to contractors: who to target, what to build, how to price it and a pitch script that ties the site to booked jobs.",
     primaryKeyword: "how to sell websites to contractors",
     secondaryKeywords: [
       "web design for contractors",
@@ -401,7 +401,7 @@ export const PROSPECTING_POSTS: BlogPost[] = [
     title: "Landscaping Leads: How Agencies Find and Win Landscaping Clients",
     titleTag: "Landscaping Leads for Agencies: Find & Win Landscaping Clients",
     metaDescription:
-      "How marketing agencies find landscaping and lawn care companies to work with: where the best leads are, what gaps to look for, seasonality, and the services landscapers actually buy.",
+      "How agencies find and win landscaping leads: where landscaping and lawn care companies are, the gaps to look for, seasonality and what landscapers buy.",
     primaryKeyword: "landscaping leads",
     secondaryKeywords: [
       "landscaping clients",

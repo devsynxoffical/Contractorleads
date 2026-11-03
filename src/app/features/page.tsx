@@ -43,7 +43,7 @@ import { TRADE_PAGES, buildMetadata } from "@/lib/seo";
 export const metadata: Metadata = buildMetadata({
   title: "Features: AI Contractor Lead Finder for Agencies",
   description:
-    "Lead Finder, AI scoring, owner enrichment, Meta ads intel, Outreach Studio, pipeline CRM, email & SMS — everything agencies need to prospect home-service contractors.",
+    "Lead Finder, AI scoring, owner enrichment, Meta ads intel, outreach, pipeline CRM, email and SMS: everything agencies need to prospect contractors.",
   path: "/features",
   keywords: [
     "contractor lead generation software",

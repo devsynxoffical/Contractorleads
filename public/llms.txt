@@ -47,6 +47,12 @@ Important facts:
 - [How to sell websites to contractors](https://www.contractorleads.us/blog/how-to-sell-websites-to-contractors)
 - [Landscaping leads for agencies](https://www.contractorleads.us/blog/landscaping-leads)
 - [Painting contractor leads for agencies](https://www.contractorleads.us/blog/painting-contractor-leads)
+- [General contractor leads for agencies](https://www.contractorleads.us/blog/general-contractor-leads)
+- [Remodeling contractor leads for agencies](https://www.contractorleads.us/blog/remodeling-contractor-leads)
+- [Pest control leads for agencies](https://www.contractorleads.us/blog/pest-control-leads)
+- [Concrete contractor leads for agencies](https://www.contractorleads.us/blog/concrete-contractor-leads)
+- [Cleaning business leads for agencies](https://www.contractorleads.us/blog/cleaning-business-leads)
+- [Email warmup for cold email: SPF, DKIM, DMARC and a safe schedule](https://www.contractorleads.us/blog/email-warmup-for-cold-email)
 
 ## FAQ
 - [Frequently asked questions](https://www.contractorleads.us/faq): plain-language answers on data sources, pricing, credits, email and SMS, integrations and the affiliate program

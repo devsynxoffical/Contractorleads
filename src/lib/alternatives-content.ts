@@ -71,7 +71,7 @@ export const ALTERNATIVES: Alternative[] = [
     website: "outscraper.com",
     titleTag: "Outscraper Alternative for Contractor Leads With Owner Data",
     metaDescription:
-      "Looking for an Outscraper alternative for contractor leads? Compare Outscraper's Maps data export with Contractor Leads' live Google data, owner names, AI scores and outreach.",
+      "Looking for an Outscraper alternative? Compare its Google Maps export with Contractor Leads' live data, verified owner names, AI lead scores and outreach.",
     h1: "The Outscraper alternative for agencies that sell to contractors",
     intro:
       "Outscraper is a cloud scraping service that exports Google Maps, reviews and other public data into spreadsheets, priced by usage. It is a capable data tool. Contractor Leads solves a narrower problem: giving agencies and sales teams a ranked, enriched list of home-service contractors with the owner's name, a marketing-gap score, ad status and the first email already drafted.",
@@ -213,7 +213,7 @@ export const ALTERNATIVES: Alternative[] = [
     website: "phantombuster.com",
     titleTag: "PhantomBuster Alternative for Contractor Lead Generation",
     metaDescription:
-      "A PhantomBuster alternative for agencies prospecting contractors: live Google data, verified owner names, AI lead scores and outreach scripts instead of social automations.",
+      "A PhantomBuster alternative for agencies prospecting contractors: live Google data, verified owner names, AI lead scores and outreach scripts.",
     h1: "The PhantomBuster alternative built for contractor prospecting",
     intro:
       "PhantomBuster runs automations called 'Phantoms' that extract and act on data from LinkedIn, Google Maps, Instagram and other platforms. It is strong for social-led prospecting of people with active profiles. Most contractors are owner-operators who live on Google Maps and their own website rather than LinkedIn, which is the gap Contractor Leads is built around.",
@@ -355,7 +355,7 @@ export const ALTERNATIVES: Alternative[] = [
     website: "lusha.com",
     titleTag: "Lusha Alternative for Contractor and Home-Service Leads",
     metaDescription:
-      "A Lusha alternative for agencies that sell to contractors: find the business first from live Google data, then get owner names, marketing scores and outreach. 10 free leads.",
+      "A Lusha alternative for agencies selling to contractors: find businesses from live Google data, then get owner names, marketing scores and outreach scripts.",
     h1: "The Lusha alternative that finds the contractor, not just the contact",
     intro:
       "Lusha is a contact enrichment tool: you find a person on LinkedIn or a company site and Lusha supplies the phone or email, sold in monthly credits. It is useful once you know who you are looking for. Contractor Leads starts a step earlier for home services, finding every contractor in a trade and area, scoring the marketing gap, and only then surfacing the owner.",
@@ -426,7 +426,7 @@ export const ALTERNATIVES: Alternative[] = [
     website: "d7leadfinder.com",
     titleTag: "D7 Lead Finder Alternative With AI Scoring and Owner Names",
     metaDescription:
-      "Comparing D7 Lead Finder alternatives? Contractor Leads adds AI marketing-gap scores, verified owner names, Meta ad status and outreach scripts to local contractor data.",
+      "Comparing D7 Lead Finder alternatives? Contractor Leads adds AI gap scores, verified owner names, Meta ad status and outreach scripts to local contractor data.",
     h1: "The D7 Lead Finder alternative for agencies that sell to contractors",
     intro:
       "D7 Lead Finder is a popular tool for agencies that want local business lists by keyword and city, with basic website and social checks. It is close in spirit to Contractor Leads. The difference is depth: Contractor Leads specialises in home-service trades, pulls live Google data, scores each business on four marketing dimensions, finds the owner from the business website, checks Meta ads and writes the outreach.",
@@ -497,7 +497,7 @@ export const ALTERNATIVES: Alternative[] = [
     website: "uplead.com",
     titleTag: "UpLead Alternative for Local Contractor Leads",
     metaDescription:
-      "An UpLead alternative for agencies prospecting roofers, HVAC and plumbers: live Google business data, owner names, AI lead scores and outreach scripts. Start with 10 free leads.",
+      "An UpLead alternative for agencies prospecting roofers, HVAC and plumbers: live Google data, owner names, AI lead scores and outreach. 10 free leads.",
     h1: "The UpLead alternative for agencies prospecting local contractors",
     intro:
       "UpLead is a B2B database with verified work emails, technographics and intent data, sold in monthly credits. It performs well for companies with employees online. Owner-run contractors rarely appear with the depth a database needs, so agencies selling to them are better served by a tool that starts from Google business data and the contractor's own website.",

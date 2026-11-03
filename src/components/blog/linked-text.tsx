@@ -33,6 +33,12 @@ const AUTO_LINKS: AutoLink[] = [
   { pattern: /\bsolar installers\b|\bsolar compan(y|ies)\b/i, href: "/industries/solar" },
   { pattern: /\blandscapers\b|\blandscaping compan(y|ies)\b/i, href: "/industries/landscaping" },
   { pattern: /\bpainters\b|\bpainting compan(y|ies)\b/i, href: "/industries/painting" },
+  { pattern: /\bwarm(ed)?[- ]?up\b|\bwarming up\b|\bdeliverability\b/i, href: "/blog/email-warmup-for-cold-email" },
+  { pattern: /\bgeneral contractors?\b|\bGCs\b/i, href: "/blog/general-contractor-leads" },
+  { pattern: /\bremodelers\b|\bremodeling (contractors|compan(y|ies))\b/i, href: "/blog/remodeling-contractor-leads" },
+  { pattern: /\bpest control (compan(y|ies)|operators?)\b|\bexterminators\b/i, href: "/blog/pest-control-leads" },
+  { pattern: /\bconcrete (contractors?|compan(y|ies))\b/i, href: "/blog/concrete-contractor-leads" },
+  { pattern: /\bcleaning (compan(y|ies)|business(es)?)\b|\bcleaners\b/i, href: "/blog/cleaning-business-leads" },
 ];
 
 const MAX_AUTO_LINKS = 8;

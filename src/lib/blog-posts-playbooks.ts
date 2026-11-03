@@ -287,7 +287,7 @@ export const PLAYBOOK_POSTS: BlogPost[] = [
     title: "Solar Contractor Leads for Agencies: Pitching Installers in a Tighter Market",
     titleTag: "Solar Contractor Leads for Agencies: How to Pitch Installers",
     metaDescription:
-      "How agencies find and pitch solar contractor leads: which installers survive a tighter market, what they buy, cost per lead benchmarks, and an outreach angle built on ad intelligence.",
+      "How agencies find and pitch solar contractor leads: which installers to target in a tighter market, what they buy and cost per lead benchmarks.",
     primaryKeyword: "solar contractor leads",
     secondaryKeywords: [
       "solar leads for agencies",
@@ -394,7 +394,7 @@ export const PLAYBOOK_POSTS: BlogPost[] = [
     title: "Apollo.io vs Google Maps Scraper vs Contractor Leads: Which Finds Local Contractors?",
     titleTag: "Apollo vs Google Maps Scraper for Contractor Leads: Compared",
     metaDescription:
-      "Apollo.io, Google Maps scrapers and Contractor Leads compared for finding local contractors: data source, owner contacts, scoring, legality, cost and the right tool for each job.",
+      "Apollo.io vs Google Maps scrapers vs Contractor Leads for finding local contractors: data source, owner contacts, scoring, legality and cost compared.",
     primaryKeyword: "apollo vs google maps scraper",
     secondaryKeywords: [
       "apollo io vs google maps",
@@ -509,7 +509,7 @@ export const PLAYBOOK_POSTS: BlogPost[] = [
     title: "How to Sell SEO to Contractors: Audit, Pitch and Pricing That Closes",
     titleTag: "How to Sell SEO to Contractors: Audit, Pitch and Pricing",
     metaDescription:
-      "How to sell SEO services to contractors: who to target, the 5-minute audit that proves the gap, pitch scripts, pricing tiers and the objections roofers, plumbers and HVAC owners raise.",
+      "How to sell SEO to contractors: who to target, a 5-minute audit that proves the gap, pitch scripts, pricing tiers and answers to common objections.",
     primaryKeyword: "how to sell seo to contractors",
     secondaryKeywords: [
       "selling seo to contractors",
@@ -630,7 +630,7 @@ export const PLAYBOOK_POSTS: BlogPost[] = [
     title: "Cold Calling Contractors: Scripts, Timing and Openers That Get Past the Office",
     titleTag: "Cold Calling Contractors: Scripts and Openers That Work",
     metaDescription:
-      "Cold calling contractors for agency sales: when to call, how to get past the office, openers that reference the owner's own business, voicemail scripts and a follow-up cadence.",
+      "Cold calling contractors for agency sales: when to call, getting past the office, openers that reference their business, voicemail scripts and follow-ups.",
     primaryKeyword: "cold calling contractors",
     secondaryKeywords: [
       "cold call script for contractors",

@@ -8,6 +8,7 @@
 import { GROWTH_POSTS } from "@/lib/blog-posts-growth";
 import { PLAYBOOK_POSTS } from "@/lib/blog-posts-playbooks";
 import { PROSPECTING_POSTS } from "@/lib/blog-posts-prospecting";
+import { TRADE_GUIDE_POSTS } from "@/lib/blog-posts-trades";
 
 export type BlogFaq = {
   q: string;
@@ -886,7 +887,13 @@ const CORE_POSTS: BlogPost[] = [
 ];
 
 /** All public blog posts: core guides plus trade / tooling playbooks. */
-export const BLOG_POSTS: BlogPost[] = [...CORE_POSTS, ...PLAYBOOK_POSTS, ...GROWTH_POSTS, ...PROSPECTING_POSTS];
+export const BLOG_POSTS: BlogPost[] = [
+  ...CORE_POSTS,
+  ...PLAYBOOK_POSTS,
+  ...GROWTH_POSTS,
+  ...PROSPECTING_POSTS,
+  ...TRADE_GUIDE_POSTS,
+];
 
 /**
  * Most related guides for a post: shared trades weigh most, then same cluster, then
