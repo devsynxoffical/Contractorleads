@@ -53,15 +53,17 @@ export async function POST(
 
     const senderName =
       user.ownerName || user.name || user.companyName || "Our Team";
+    // A fresh seed per test, so repeated tests show different spintax variations.
+    const seed = { seed: `test:${Date.now()}` };
 
     if (stepIndex === 0) {
       const hook = hooks.find((h) => h.id === hookId) || hooks[0];
-      subject = `[TEST] ${renderCampaignTemplate(hook.subject, sampleProspect, senderName)}`;
-      bodyText = renderCampaignTemplate(hook.body, sampleProspect, senderName);
+      subject = `[TEST] ${renderCampaignTemplate(hook.subject, sampleProspect, senderName, {}, seed)}`;
+      bodyText = renderCampaignTemplate(hook.body, sampleProspect, senderName, {}, seed);
     } else {
       const step = steps[stepIndex - 1] || steps[0];
-      subject = `[TEST] ${renderCampaignTemplate(step.subject, sampleProspect, senderName, { lastSubject: "Quick question for Acme Roofing Pros" })}`;
-      bodyText = renderCampaignTemplate(step.body, sampleProspect, senderName, { lastSubject: "Quick question for Acme Roofing Pros" });
+      subject = `[TEST] ${renderCampaignTemplate(step.subject, sampleProspect, senderName, { lastSubject: "Quick question for Acme Roofing Pros" }, seed)}`;
+      bodyText = renderCampaignTemplate(step.body, sampleProspect, senderName, { lastSubject: "Quick question for Acme Roofing Pros" }, seed);
     }
 
     const result = await sendOutboundEmail({

@@ -1,3 +1,4 @@
+import { renderSpintax } from "@/lib/spintax-engine";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/credits";
 import { dispatchCrmWebhook } from "@/lib/crm-webhook";
@@ -227,8 +228,9 @@ export function leadTemplateVars(
   };
 }
 
+/** Spintax + variables, seeded per lead so each lead gets its own stable variation. */
 function renderTemplate(template: string, vars: Record<string, string>) {
-  return template.replace(/\{\{(\w+)\}\}/g, (_, key: string) => vars[key] ?? "");
+  return renderSpintax(template, vars, { seed: `bulk:${JSON.stringify(vars)}:${template}` }).text;
 }
 
 export type BulkEmailResult = {
