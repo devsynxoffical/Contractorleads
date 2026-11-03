@@ -14,7 +14,7 @@ import {
 } from "@/components/marketing/marketing-subpage";
 import { Reveal } from "@/components/marketing/marketing-ui";
 import { INDUSTRIES, TIER_ONE_COUNTRIES } from "@/lib/constants";
-import { JsonLd, breadcrumbJsonLd, organizationJsonLd, personJsonLd } from "@/components/seo/json-ld";
+import { JsonLd, breadcrumbJsonLd, organizationJsonLd, personJsonLd, webPageJsonLd } from "@/components/seo/json-ld";
 import { buildMetadata } from "@/lib/seo";
 import { EMAIL_BRAND } from "@/lib/email-brand";
 import { FaFacebookF, FaLinkedinIn } from "react-icons/fa6";
@@ -38,6 +38,14 @@ export default function AboutPage() {
     <MarketingSiteShell>
       <JsonLd data={organizationJsonLd()} />
       <JsonLd data={personJsonLd()} />
+      <JsonLd
+        data={webPageJsonLd({
+          type: "AboutPage",
+          name: "About Contractor Leads",
+          description: "Who builds Contractor Leads, why, and how the product finds and scores home-service contractors for agencies.",
+          path: "/about",
+        })}
+      />
       <JsonLd
         data={breadcrumbJsonLd([
           { name: "Home", path: "/" },

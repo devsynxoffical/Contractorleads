@@ -10,14 +10,14 @@ import {
   SubpageSection,
 } from "@/components/marketing/marketing-subpage";
 import { Reveal } from "@/components/marketing/marketing-ui";
-import { JsonLd, breadcrumbJsonLd, faqPageJsonLd } from "@/components/seo/json-ld";
+import { JsonLd, breadcrumbJsonLd, collectionPageJsonLd, faqPageJsonLd } from "@/components/seo/json-ld";
 import { ALTERNATIVES } from "@/lib/alternatives-content";
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
-  title: "Contractor Leads vs Alternatives: Scrapers, Databases and Lead Finders",
+  title: "Apollo, Hunter, Prospeo & Outscraper Alternatives (2026)",
   description:
-    "Compare Contractor Leads with Outscraper, Apify, PhantomBuster, ZoomInfo, Lusha, D7 Lead Finder, UpLead and Apollo for finding and pitching home-service contractors.",
+    "Compare Contractor Leads with Apollo, Hunter, Prospeo, Outscraper, ZoomInfo, Lusha, D7 Lead Finder and more for finding and pitching home-service contractors.",
   path: "/alternatives",
   keywords: [
     "contractor leads alternatives",
@@ -52,7 +52,16 @@ export default function AlternativesHubPage() {
             { name: "Home", path: "/" },
             { name: "Alternatives", path: "/alternatives" },
           ]),
-          faqPageJsonLd(HUB_FAQS),
+          faqPageJsonLd(HUB_FAQS, "/alternatives"),
+          collectionPageJsonLd({
+            name: "Contractor Leads alternatives and comparisons",
+            description: "How Contractor Leads compares with Apollo, Hunter, Prospeo, Outscraper and other lead tools.",
+            path: "/alternatives",
+            items: [
+              { name: "Apollo.io alternative", path: "/apollo-alternative" },
+              ...ALTERNATIVES.map((a) => ({ name: `${a.name} alternative`, path: `/alternatives/${a.slug}` })),
+            ],
+          }),
         ]}
       />
       <MarketingSubpageHero

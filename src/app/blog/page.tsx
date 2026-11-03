@@ -11,7 +11,7 @@ import {
   SubpageSection,
 } from "@/components/marketing/marketing-subpage";
 import { Reveal } from "@/components/marketing/marketing-ui";
-import { JsonLd, breadcrumbJsonLd } from "@/components/seo/json-ld";
+import { JsonLd, breadcrumbJsonLd, collectionPageJsonLd } from "@/components/seo/json-ld";
 import { BLOG_CLUSTER_LABELS, BLOG_POSTS } from "@/lib/blog-content";
 import { absoluteUrl, buildMetadata } from "@/lib/seo";
 
@@ -49,6 +49,16 @@ export default function BlogIndexPage() {
           { name: "Home", path: "/" },
           { name: "Blog", path: "/blog" },
         ])}
+      />
+      <JsonLd
+        data={collectionPageJsonLd({
+          as: "Blog",
+          name: "Agency Growth Blog",
+          description:
+            "Playbooks, benchmarks, and guides for marketing agencies, media buyers, and sales teams that sell to home-service contractors.",
+          path: "/blog",
+          items: [...pillars, ...clusters].map((p) => ({ name: p.title, path: `/blog/${p.slug}` })),
+        })}
       />
 
       <MarketingSubpageHero

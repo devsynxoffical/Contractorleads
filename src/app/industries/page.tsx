@@ -11,14 +11,14 @@ import {
   SubpageStats,
 } from "@/components/marketing/marketing-subpage";
 import { Reveal } from "@/components/marketing/marketing-ui";
-import { JsonLd, breadcrumbJsonLd } from "@/components/seo/json-ld";
+import { JsonLd, breadcrumbJsonLd, collectionPageJsonLd } from "@/components/seo/json-ld";
 import { TIER_ONE_COUNTRIES } from "@/lib/constants";
 import { SEO_REGIONS, TRADE_PAGES, buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
   title: "Contractor Leads by Trade: Roofing, HVAC, Plumbing and More",
   description:
-    "Browse verified contractor lead verticals for agencies: roofing, HVAC, plumbing, electrical, solar, landscaping, remodeling, and more home-service trades.",
+    "Contractor leads for 18 home-service trades: roofing, HVAC, plumbing, electrical, solar, remodeling and more, with owner contacts. 10 free leads.",
   path: "/industries",
   keywords: [
     "contractor leads by industry",
@@ -32,6 +32,14 @@ export const metadata: Metadata = buildMetadata({
 export default function TradesIndexPage() {
   return (
     <MarketingSiteShell>
+      <JsonLd
+        data={collectionPageJsonLd({
+          name: "Contractor leads by trade",
+          description: "Contractor lead finders for 18 home-service trades, each with owner contacts and AI scores.",
+          path: "/industries",
+          items: TRADE_PAGES.map((t) => ({ name: `${t.name} contractor leads`, path: `/industries/${t.slug}` })),
+        })}
+      />
       <JsonLd
         data={breadcrumbJsonLd([
           { name: "Home", path: "/" },

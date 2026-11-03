@@ -11,11 +11,11 @@ export function seoBaseUrl() {
 }
 
 /** Last date the core marketing pages changed. Bump when you edit copy; sitemaps use it for lastmod. */
-export const CONTENT_LAST_UPDATED = "2026-11-02";
+export const CONTENT_LAST_UPDATED = "2026-11-03";
 
 export const SEO = {
   siteName: "Contractor Leads",
-  defaultTitle: "Contractor Leads: AI-Scored Leads for Agencies",
+  defaultTitle: "Contractor Leads: Verified Contractor Leads for Agencies",
   titleTemplate: "%s | Contractor Leads",
   defaultDescription:
     "Contractor leads for agencies: live Google data, AI scores, owner names and outreach in one tool. Start with 10 free leads, no card needed.",

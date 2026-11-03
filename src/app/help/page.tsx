@@ -7,7 +7,7 @@ import {
   SubpageSection,
 } from "@/components/marketing/marketing-subpage";
 import { Reveal } from "@/components/marketing/marketing-ui";
-import { JsonLd, breadcrumbJsonLd } from "@/components/seo/json-ld";
+import { JsonLd, breadcrumbJsonLd, collectionPageJsonLd } from "@/components/seo/json-ld";
 import {
   ACADEMY_ARTICLES,
   ACADEMY_CATEGORIES,
@@ -36,6 +36,16 @@ export default function HelpCenterIndexPage() {
 
   return (
     <MarketingSiteShell>
+      <JsonLd
+        data={collectionPageJsonLd({
+          name: "Contractor Leads Help Center",
+          description: "Setup guides, credit and billing answers, and outreach how-tos for Contractor Leads.",
+          path: "/help",
+          items: ACADEMY_CATEGORIES.flatMap((c) =>
+            articles.filter((a) => a.category === c.id).map((a) => ({ name: a.title, path: `/help/${a.slug}` })),
+          ),
+        })}
+      />
       <JsonLd
         data={breadcrumbJsonLd([
           { name: "Home", path: "/" },

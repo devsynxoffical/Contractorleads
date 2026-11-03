@@ -18,7 +18,12 @@ const GROUP_GUIDES: Record<string, string[]> = {
   product: ["how-to-get-contractor-leads", "best-contractor-lead-generation-companies"],
   data: ["google-maps-lead-generation", "how-to-find-business-owner-name"],
   pricing: ["how-much-do-contractor-leads-cost", "pay-per-lead-for-contractors"],
-  outreach: ["cold-email-for-agencies", "cold-email-subject-lines-for-contractors", "cold-calling-contractors-script"],
+  outreach: [
+    "cold-email-for-agencies",
+    "email-warmup-for-cold-email",
+    "cold-email-subject-lines-for-contractors",
+    "cold-calling-contractors-script",
+  ],
   integrations: ["agency-lead-generation"],
   affiliates: ["how-to-get-clients-for-marketing-agency"],
 };
@@ -27,7 +32,7 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata: Metadata = buildMetadata({
   title: "Contractor Leads FAQ: Pricing, Data, Email and Affiliates",
   description:
-    "Plain-language answers about Contractor Leads: what it is, where the data comes from, how credits and pricing work, email and SMS sending, integrations and the affiliate program.",
+    "Answers about Contractor Leads: where the data comes from, how credits and pricing work, email and SMS sending, integrations and the affiliate program.",
   path: "/faq",
   keywords: [
     "contractor leads faq",
@@ -47,7 +52,7 @@ export default function FaqPage() {
             { name: "Home", path: "/" },
             { name: "FAQ", path: "/faq" },
           ]),
-          faqPageJsonLd(ALL_FAQS),
+          faqPageJsonLd(ALL_FAQS, "/faq"),
         ]}
       />
       <MarketingSubpageHero

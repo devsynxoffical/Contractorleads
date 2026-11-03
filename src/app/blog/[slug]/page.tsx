@@ -75,6 +75,8 @@ export default async function BlogPostPage({ params }: Params) {
           image: `/blog/${post.slug}/opengraph-image`,
           author: { name: post.author.name, url: "/about", image: post.author.image },
           wordCount: blogWordCount(post),
+          section: BLOG_CLUSTER_LABELS[post.cluster],
+          readingMinutes: post.readingMinutes,
         })}
       />
       <JsonLd

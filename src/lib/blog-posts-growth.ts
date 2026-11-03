@@ -21,7 +21,7 @@ export const GROWTH_POSTS: BlogPost[] = [
     title: "How Much Do Contractor Leads Cost in 2026? Benchmarks by Trade and Channel",
     titleTag: "How Much Do Contractor Leads Cost? 2026 Benchmarks by Trade",
     metaDescription:
-      "Contractor lead costs in 2026: typical cost per lead for roofing, HVAC, plumbing, electrical and solar across LSAs, Google Ads, Meta, marketplaces and SEO, plus what agencies should charge.",
+      "Contractor lead costs in 2026: typical cost per lead for roofing, HVAC, plumbing, electrical and solar across LSAs, Google Ads, Meta and marketplaces.",
     primaryKeyword: "how much do contractor leads cost",
     secondaryKeywords: [
       "contractor lead cost",
@@ -120,9 +120,9 @@ export const GROWTH_POSTS: BlogPost[] = [
     slug: "best-contractor-lead-generation-companies",
     type: "cluster",
     title: "Best Contractor Lead Generation Companies and Tools in 2026 (By Use Case)",
-    titleTag: "Best Contractor Lead Generation Companies and Tools 2026",
+    titleTag: "Best Contractor Lead Generation Companies & Tools (2026)",
     metaDescription:
-      "The best contractor lead generation companies and tools in 2026, grouped by use case: marketplaces, Local Services Ads, agencies, and prospecting software for agencies that sell to contractors.",
+      "The best contractor lead generation companies and tools in 2026 by use case: lead marketplaces, Local Services Ads, agencies and prospecting software.",
     primaryKeyword: "best contractor lead generation companies",
     secondaryKeywords: [
       "contractor lead generation companies",
@@ -236,9 +236,9 @@ export const GROWTH_POSTS: BlogPost[] = [
     slug: "google-business-profile-optimization-for-contractors",
     type: "cluster",
     title: "Google Business Profile Optimization for Contractors: The Agency Checklist",
-    titleTag: "Google Business Profile Optimization for Contractors: Checklist",
+    titleTag: "Google Business Profile Optimization for Contractors (2026)",
     metaDescription:
-      "A complete Google Business Profile optimization checklist for contractors, written for agencies: categories, services, photos, reviews, posts, Q&A, and how to sell GBP as a first retainer.",
+      "Google Business Profile optimization checklist for contractors: categories, services, photos, reviews, posts and Q&A, plus how agencies sell it.",
     primaryKeyword: "google business profile optimization for contractors",
     secondaryKeywords: [
       "google business profile for contractors",
@@ -348,9 +348,9 @@ export const GROWTH_POSTS: BlogPost[] = [
     slug: "how-to-find-business-owner-name",
     type: "cluster",
     title: "How to Find the Owner of a Contracting Business: 9 Methods Ranked",
-    titleTag: "How to Find a Contracting Business Owner's Name: 9 Methods",
+    titleTag: "How to Find a Business Owner's Name: 9 Methods (2026)",
     metaDescription:
-      "Nine ways to find who owns a contracting business, from the website and state licence boards to Secretary of State records and Contractor Leads owner enrichment, ranked by speed and accuracy.",
+      "Nine ways to find who owns a contracting business, from the website and licence boards to Secretary of State records, ranked by speed and accuracy.",
     primaryKeyword: "how to find the owner of a business",
     secondaryKeywords: [
       "find business owner name",
@@ -452,9 +452,9 @@ export const GROWTH_POSTS: BlogPost[] = [
     slug: "electrical-contractor-leads",
     type: "cluster",
     title: "Electrical Contractor Leads for Agencies: EV Chargers, Panels and the Pitch That Lands",
-    titleTag: "Electrical Contractor Leads for Agencies: How to Pitch Electricians",
+    titleTag: "Electrical Contractor Leads: Pitch Electricians (2026)",
     metaDescription:
-      "How agencies find and pitch electrical contractor leads: the EV charger and panel-upgrade angle, which electricians to call first, what they buy, and a first-touch email that works.",
+      "How agencies find and pitch electrical contractor leads: the EV charger and panel-upgrade angle, which electricians to call first and what they buy.",
     primaryKeyword: "electrical contractor leads",
     secondaryKeywords: [
       "electrician leads for agencies",
@@ -554,7 +554,7 @@ export const GROWTH_POSTS: BlogPost[] = [
     title: "47 Cold Email Subject Lines for Contractors, Grouped by Angle and Tested Logic",
     titleTag: "47 Cold Email Subject Lines for Contractors (By Angle)",
     metaDescription:
-      "47 cold email subject lines for pitching contractors, grouped by angle: reviews, rankings, ads, website, seasonal and referral, with the rules that keep agency email out of spam.",
+      "47 cold email subject lines for pitching contractors, grouped by angle (reviews, rankings, ads, website, seasonal), plus rules that keep you out of spam.",
     primaryKeyword: "cold email subject lines for contractors",
     secondaryKeywords: [
       "subject lines for cold email to contractors",

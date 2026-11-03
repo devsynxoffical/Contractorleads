@@ -53,6 +53,11 @@ export function generateStaticParams() {
   return params;
 }
 
+/** "Roofing Contractor Leads", but "General Contractor Leads" (not "General Contractors Contractor Leads"). */
+function tradeLeadsLabel(name: string) {
+  return /contractors$/i.test(name) ? `${name.replace(/s$/i, "")} Leads` : `${name} Contractor Leads`;
+}
+
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug, region: regionSlug } = await params;
   const trade = getTradeBySlug(slug);
@@ -62,18 +67,20 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const priority = isPriorityTrade(trade.slug);
   const market = getStateMarketData(trade.slug, trade.name, region.slug, region.name, region.code);
 
-  // Priority trade titles follow: "[Trade] Contractor Leads in [State]: [N] Businesses Scored" (< 60 chars)
-  const fullTitle = `${trade.name} Contractor Leads in ${region.name} for Agencies`;
-  const title = fullTitle.length <= 60 ? fullTitle : `${trade.name} Contractor Leads in ${region.name}`;
+  // "[Trade] Contractor Leads in [State] for Agencies" when it fits in 60 chars.
+  const leads = tradeLeadsLabel(trade.name);
+  const fullTitle = `${leads} in ${region.name} for Agencies`;
+  const title = fullTitle.length <= 60 ? fullTitle : `${leads} in ${region.name}`;
 
-  const description = `Find ${trade.name.toLowerCase()} contractor leads in ${region.name}: live Google data, AI scores, owner contacts and outreach scripts. An estimated ${market.noWebsitePct}% have no website. Start with 10 free leads.`;
+  // Kept under ~160 chars so Google shows it without cutting it off.
+  const description = `${leads} in ${region.name}: live Google data, owner contacts and AI scores. About ${market.noWebsitePct}% have no website. Start with 10 free leads.`;
 
   return buildMetadata({
     title,
     description,
     path: `/industries/${trade.slug}/${region.slug}`,
     keywords: [
-      `${trade.name.toLowerCase()} contractor leads ${region.name}`,
+      `${leads.toLowerCase()} ${region.name}`,
       `${region.name} ${trade.name.toLowerCase()} contractors`,
       `${trade.name.toLowerCase()} leads for agencies`,
       "verified contractor leads",
@@ -140,7 +147,7 @@ export default async function TradeRegionPage({ params }: Params) {
 
       <MarketingSubpageHero
         eyebrow={`${trade.name} · ${region.name}`}
-        title={`${trade.name} contractor leads in ${region.name}`}
+        title={`${tradeLeadsLabel(trade.name)} in ${region.name}`}
         description={`Find verified ${lower} contractors in ${region.name} (${region.code}) — live Google data, AI opportunity scores, owner contacts, and outreach scripts.`}
       >
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">

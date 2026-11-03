@@ -52,7 +52,7 @@ function usd(n: number) {
 export const metadata: Metadata = buildMetadata({
   title: "Contractor Leads Affiliate Program: 30% Recurring Commission",
   description:
-    "Join the Contractor Leads Affiliate Program. Earn 30% recurring cash commission on every deal and ongoing subscription renewal. 30-day tracking cookie, $500 payout threshold.",
+    "Join the Contractor Leads Affiliate Program: earn 30% recurring commission on every subscription and renewal, with a 30-day cookie and a $500 payout threshold.",
   path: "/affiliates",
   keywords: [
     "contractor leads affiliate program",
