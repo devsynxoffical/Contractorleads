@@ -11,7 +11,7 @@ export function seoBaseUrl() {
 }
 
 /** Last date the core marketing pages changed. Bump when you edit copy; sitemaps use it for lastmod. */
-export const CONTENT_LAST_UPDATED = "2026-11-03";
+export const CONTENT_LAST_UPDATED = "2026-11-05";
 
 export const SEO = {
   siteName: "Contractor Leads",

@@ -53,6 +53,12 @@ Important facts:
 - [Concrete contractor leads for agencies](https://www.contractorleads.us/blog/concrete-contractor-leads)
 - [Cleaning business leads for agencies](https://www.contractorleads.us/blog/cleaning-business-leads)
 - [Email warmup for cold email: SPF, DKIM, DMARC and a safe schedule](https://www.contractorleads.us/blog/email-warmup-for-cold-email)
+- [Best Google Maps scrapers for lead generation (2026)](https://www.contractorleads.us/blog/best-google-maps-scrapers)
+- [Cold email follow-up: how many, when, and six templates](https://www.contractorleads.us/blog/cold-email-follow-up)
+- [Flooring contractor leads for agencies](https://www.contractorleads.us/blog/flooring-contractor-leads)
+- [Fencing contractor leads for agencies](https://www.contractorleads.us/blog/fencing-contractor-leads)
+- [Pool service leads for agencies](https://www.contractorleads.us/blog/pool-service-leads)
+- [Garage door leads for agencies](https://www.contractorleads.us/blog/garage-door-leads)
 
 ## FAQ
 - [Frequently asked questions](https://www.contractorleads.us/faq): plain-language answers on data sources, pricing, credits, email and SMS, integrations and the affiliate program

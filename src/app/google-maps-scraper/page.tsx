@@ -29,6 +29,7 @@ import { BLOG_POSTS } from "@/lib/blog-content";
 
 const SCRAPER_GUIDES = BLOG_POSTS.filter((p) =>
   [
+    "best-google-maps-scrapers",
     "google-maps-lead-generation",
     "how-to-find-businesses-without-websites",
     "apollo-vs-google-maps-scraper",

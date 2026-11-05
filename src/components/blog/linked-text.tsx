@@ -39,6 +39,12 @@ const AUTO_LINKS: AutoLink[] = [
   { pattern: /\bpest control (compan(y|ies)|operators?)\b|\bexterminators\b/i, href: "/blog/pest-control-leads" },
   { pattern: /\bconcrete (contractors?|compan(y|ies))\b/i, href: "/blog/concrete-contractor-leads" },
   { pattern: /\bcleaning (compan(y|ies)|business(es)?)\b|\bcleaners\b/i, href: "/blog/cleaning-business-leads" },
+  { pattern: /\bGoogle Maps (scrapers?|data extractors?)\b/i, href: "/blog/best-google-maps-scrapers" },
+  { pattern: /\bfollow[- ]ups?\b|\bfollowing up\b/i, href: "/blog/cold-email-follow-up" },
+  { pattern: /\bflooring (contractors|compan(y|ies)|installers|showrooms)\b/i, href: "/blog/flooring-contractor-leads" },
+  { pattern: /\bfenc(e|ing) (contractors?|compan(y|ies)|installers?)\b/i, href: "/blog/fencing-contractor-leads" },
+  { pattern: /\bpool (service|cleaning) (compan(y|ies)|business(es)?)\b|\bpool (builders|companies)\b/i, href: "/blog/pool-service-leads" },
+  { pattern: /\bgarage door (compan(y|ies)|contractors?|installers?)\b/i, href: "/blog/garage-door-leads" },
 ];
 
 const MAX_AUTO_LINKS = 8;
@@ -65,7 +71,13 @@ function autoLink(text: string, budget: LinkBudget, keyBase: string): ReactNode[
     for (const a of AUTO_LINKS) {
       if (budget.used.has(a.href)) continue;
       const m = a.pattern.exec(rest);
-      if (m && (best === null || m.index < best.index)) best = { index: m.index, length: m[0].length, href: a.href };
+      if (
+        m &&
+        (best === null ||
+          m.index < best.index ||
+          (m.index === best.index && m[0].length > best.length)) // longer phrase wins a tie
+      )
+        best = { index: m.index, length: m[0].length, href: a.href };
     }
     if (!best) break;
     if (best.index > 0) out.push(rest.slice(0, best.index));
