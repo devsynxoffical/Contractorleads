@@ -23,7 +23,7 @@ export const NOVEMBER_POSTS: BlogPost[] = [
     title: "Best Google Maps Scrapers for Lead Generation (2026)",
     titleTag: "Best Google Maps Scrapers for Lead Generation (2026)",
     metaDescription:
-      "The best Google Maps scrapers for lead generation in 2026 compared: data fields, owner contacts, ease of use and pricing models, with the right pick for each job.",
+      "The best Google Maps scrapers for lead generation in 2026 compared on data, owner contacts, ease of use and pricing, with the right pick for each job.",
     primaryKeyword: "best google maps scraper",
     secondaryKeywords: [
       "google maps scraper",
@@ -194,7 +194,7 @@ export const NOVEMBER_POSTS: BlogPost[] = [
     title: "Cold Email Follow-Up: How Many, When, and What to Say",
     titleTag: "Cold Email Follow-Up: How Many, When & Templates (2026)",
     metaDescription:
-      "How to follow up on cold emails: how many follow-ups to send, how long to wait between them, and six templates that get replies from busy contractor owners.",
+      "How to follow up on cold emails: how many follow-ups to send, how long to wait between them, and six templates that get replies from busy contractors.",
     primaryKeyword: "cold email follow up",
     secondaryKeywords: [
       "how many follow up emails",
@@ -329,7 +329,7 @@ export const NOVEMBER_POSTS: BlogPost[] = [
     slug: "flooring-contractor-leads",
     type: "cluster",
     title: "Flooring Contractor Leads: How Agencies Find and Win Flooring Companies",
-    titleTag: "Flooring Contractor Leads: Find & Win Flooring Clients (2026)",
+    titleTag: "Flooring Contractor Leads: Find & Win Clients (2026)",
     metaDescription:
       "How agencies find and win flooring contractors: where flooring leads come from, installers vs showrooms, the gaps that signal a sale and what they buy.",
     primaryKeyword: "flooring contractor leads",

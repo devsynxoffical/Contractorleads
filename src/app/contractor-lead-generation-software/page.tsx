@@ -28,6 +28,7 @@ import {
   breadcrumbJsonLd,
   faqPageJsonLd,
   softwareApplicationJsonLd,
+  serviceJsonLd,
 } from "@/components/seo/json-ld";
 import { INDUSTRIES, TIER_ONE_COUNTRIES } from "@/lib/constants";
 import { BLOG_POSTS } from "@/lib/blog-content";
@@ -200,7 +201,7 @@ const FAQS = [
   },
   {
     q: "Can I send outreach from the software?",
-    a: "Yes. Connect your own Gmail, Outlook or SMTP mailbox so emails come from your domain and replies land where you already work. SMS follow-up is available through Twilio with the Messaging add-on.",
+    a: "Yes. Connect your own Gmail, Outlook or SMTP mailbox so emails come from your domain and replies land where you already work. Campaigns vary wording with spintax, send follow-ups in the same thread and stop when a lead replies or unsubscribes. SMS follow-up is available through Twilio with the Messaging add-on.",
   },
 ];
 
@@ -231,7 +232,14 @@ export default function ContractorLeadGenerationSoftwarePage() {
             },
           ]),
           softwareApplicationJsonLd(),
-          faqPageJsonLd(FAQS),
+          faqPageJsonLd(FAQS, "/contractor-lead-generation-software"),
+          serviceJsonLd({
+            name: "Contractor lead generation software for agencies",
+            description:
+              "Find home-service contractors from live Google data with owner names, verified emails, AI marketing-gap scores and outreach.",
+            path: "/contractor-lead-generation-software",
+            serviceType: "Contractor lead generation software",
+          }),
         ]}
       />
 
@@ -252,9 +260,9 @@ export default function ContractorLeadGenerationSoftwarePage() {
             Contractor lead generation software built for agencies
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-[16px] leading-relaxed text-white/75">
-            Contractor Leads finds home-service businesses from live Google data, scores each one
-            for marketing fit, adds the owner&apos;s name and Meta ad status, and writes the first
-            email. This page explains what to look for in contractor prospecting software and how
+            Contractor Leads is contractor lead generation software that finds home-service businesses
+            from live Google data, scores each one for marketing fit, adds the owner&apos;s name and
+            Meta ad status, and writes the first email. This page explains what to look for in contractor prospecting software and how
             Contractor Leads measures up.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
@@ -286,6 +294,19 @@ export default function ContractorLeadGenerationSoftwarePage() {
           </ul>
         </div>
       </header>
+
+      {/* Quick answer (SEO page plan standard) */}
+      <section className="mx-auto max-w-3xl px-5 pt-12 sm:px-8">
+        <div className="rounded-2xl border border-fuchsia-200 bg-gradient-to-br from-fuchsia-50 to-violet-50 p-6">
+          <h2 className="font-[family-name:var(--font-display)] text-[20px] font-bold text-slate-900 sm:text-[22px]">
+            What is contractor lead generation software?
+          </h2>
+          <p className="mt-3 text-[15.5px] leading-relaxed text-slate-700">
+            Contractor lead generation software finds home-service businesses for agencies and sales teams to pitch. Contractor Leads searches live Google data by trade and city, adds owner names and verified emails, scores each business on website, SEO and ad gaps, and writes outreach, so you contact the contractors most likely to buy first.
+          </p>
+        </div>
+      </section>
+
 
       <SubpageSection tone="tint">
         <SubpageStats

@@ -22,7 +22,7 @@ import { FaFacebookF, FaLinkedinIn } from "react-icons/fa6";
 export const metadata: Metadata = buildMetadata({
   title: "About Contractor Leads: AI Lead Intelligence for Agencies",
   description:
-    "Contractor Leads is prospecting software for marketing agencies, media buyers and sales teams that sell to home-service contractors. Founded by Vaishali Kapoor.",
+    "Contractor Leads is prospecting software for agencies, media buyers and sales teams that sell to home-service contractors. Founded by Vaishali Kapoor.",
   path: "/about",
   keywords: [
     "about contractor leads",

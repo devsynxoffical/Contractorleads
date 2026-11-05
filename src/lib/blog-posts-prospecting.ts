@@ -209,7 +209,7 @@ export const PROSPECTING_POSTS: BlogPost[] = [
     slug: "how-to-get-clients-for-marketing-agency",
     type: "pillar",
     title: "How to Get Clients for Your Marketing Agency: 9 Channels That Work in 2026",
-    titleTag: "How to Get Clients for a Marketing Agency: 9 Channels (2026)",
+    titleTag: "How to Get Clients for a Marketing Agency: 9 Ways (2026)",
     metaDescription:
       "How to get clients for a marketing agency: nine proven channels, from niche outbound and referrals to partnerships, with costs and time to results.",
     primaryKeyword: "how to get clients for marketing agency",
@@ -308,7 +308,7 @@ export const PROSPECTING_POSTS: BlogPost[] = [
     slug: "how-to-sell-websites-to-contractors",
     type: "cluster",
     title: "How to Sell Websites to Contractors: Pricing, Pitch and Proof",
-    titleTag: "How to Sell Websites to Contractors (Pricing + Pitch Script)",
+    titleTag: "How to Sell Websites to Contractors: Pricing & Pitch (2026)",
     metaDescription:
       "How to sell websites to contractors: who to target, what to build, how to price it and a pitch script that ties the site to booked jobs.",
     primaryKeyword: "how to sell websites to contractors",
@@ -484,7 +484,7 @@ export const PROSPECTING_POSTS: BlogPost[] = [
     title: "Painting Contractor Leads: How Agencies Find and Win Painting Companies",
     titleTag: "Painting Contractor Leads for Agencies (2026 Playbook)",
     metaDescription:
-      "How agencies find residential and commercial painting contractors to work with, the marketing gaps painters have, typical lead costs, and the offers that close.",
+      "How agencies find residential and commercial painting contractors, the marketing gaps painters have, typical lead costs and the offers that close.",
     primaryKeyword: "painting contractor leads",
     secondaryKeywords: [
       "painting leads",

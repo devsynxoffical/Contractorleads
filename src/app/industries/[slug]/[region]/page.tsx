@@ -25,11 +25,7 @@ import {
   breadcrumbJsonLd,
   faqPageJsonLd,
 } from "@/components/seo/json-ld";
-import {
-  leadFinderDeepLink,
-  siblingStateCodes,
-  usRegionLabelForState,
-} from "@/lib/marketing-us-regions";
+import { leadFinderDeepLink } from "@/lib/marketing-us-regions";
 import {
   SEO_REGIONS,
   TRADE_PAGES,
@@ -38,8 +34,8 @@ import {
   getTradeBySlug,
   isPriorityTrade,
 } from "@/lib/seo";
-import { getStateMarketData } from "@/lib/state-market-data";
-import { StateDataBlocks } from "@/components/marketing/state-data-blocks";
+import { buildStateInsight, getStateProfile, topCitiesForState } from "@/lib/state-profiles";
+import { StateInsights } from "@/components/marketing/state-insights";
 
 type Params = { params: Promise<{ slug: string; region: string }> };
 
@@ -65,15 +61,16 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!trade || !region) return {};
 
   const priority = isPriorityTrade(trade.slug);
-  const market = getStateMarketData(trade.slug, trade.name, region.slug, region.name, region.code);
 
-  // "[Trade] Contractor Leads in [State] for Agencies" when it fits in 60 chars.
+  // "[Trade] Contractor Leads in [State] for Agencies" when it stays under 60 chars.
   const leads = tradeLeadsLabel(trade.name);
   const fullTitle = `${leads} in ${region.name} for Agencies`;
-  const title = fullTitle.length <= 60 ? fullTitle : `${leads} in ${region.name}`;
+  const title = fullTitle.length < 60 ? fullTitle : `${leads} in ${region.name}`;
 
-  // Kept under ~160 chars so Google shows it without cutting it off.
-  const description = `${leads} in ${region.name}: live Google data, owner contacts and AI scores. About ${market.noWebsitePct}% have no website. Start with 10 free leads.`;
+  // Under 155 chars; only true statements (no modeled numbers in search results).
+  const longDesc = `${leads} in ${region.name}: live Google data, owner contacts, AI scores and when to pitch in ${region.name}. 10 free leads.`;
+  const description =
+    longDesc.length < 155 ? longDesc : `${leads} in ${region.name}: live Google data, owner contacts and AI scores. 10 free leads.`;
 
   return buildMetadata({
     title,
@@ -97,15 +94,16 @@ export default async function TradeRegionPage({ params }: Params) {
 
   const priority = isPriorityTrade(trade.slug);
   const lower = trade.name.toLowerCase();
-  const regionLabel = usRegionLabelForState(region.code);
-  const siblingCodes = siblingStateCodes(region.code, 10);
-  const siblingRegions = siblingCodes
+  const profile = getStateProfile(region.code);
+  if (!profile) notFound();
+  const topCities = topCitiesForState(region.code);
+  const insight = buildStateInsight(trade.slug, trade.name, region.name, profile, topCities);
+  // The four neighbouring (or nearest) states, per the internal linking plan.
+  const neighbourRegions = profile.neighbours
     .map((code) => SEO_REGIONS.find((r) => r.code === code))
     .filter(Boolean) as typeof SEO_REGIONS;
   const otherTrades = TRADE_PAGES.filter((t) => t.slug !== trade.slug);
   const finderHref = leadFinderDeepLink(trade.name, region.code);
-
-  const market = getStateMarketData(trade.slug, trade.name, region.slug, region.name, region.code);
 
   const workflow = [
     {
@@ -143,7 +141,7 @@ export default async function TradeRegionPage({ params }: Params) {
           },
         ])}
       />
-      {priority && <JsonLd data={faqPageJsonLd(market.faqs)} />}
+      {priority && <JsonLd data={faqPageJsonLd(insight.faqs, `/industries/${trade.slug}/${region.slug}`)} />}
 
       <MarketingSubpageHero
         eyebrow={`${trade.name} · ${region.name}`}
@@ -177,17 +175,18 @@ export default async function TradeRegionPage({ params }: Params) {
         </ul>
       </MarketingSubpageHero>
 
-      {/* Main Content Area: Data Blocks for Priority Trades */}
+      {/* State-specific guidance built from real state facts */}
       <section className="mx-auto max-w-6xl px-5 py-12 sm:px-8">
-        {priority ? (
-          <StateDataBlocks data={market} />
-        ) : (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-6 text-slate-700">
-            <p className="text-[14px]">
-              Detailed {region.name} market estimates are published for our seven highest-volume trades. {trade.name} leads in {region.name} are fully searchable in the app with the same live Google data, AI scores and owner enrichment.
-            </p>
-          </div>
-        )}
+        <StateInsights
+          tradeName={trade.name}
+          leadsLabel={tradeLeadsLabel(trade.name)}
+          stateName={region.name}
+          stateCode={region.code}
+          profile={profile}
+          insight={insight}
+          topCities={topCities}
+          finderHref={finderHref}
+        />
       </section>
 
       {/* Compact 4-Step Process Section */}
@@ -217,14 +216,14 @@ export default async function TradeRegionPage({ params }: Params) {
       {/* Neighbouring Markets */}
       <SubpageSection
         tone="light"
-        eyebrow="More markets"
-        title={`Other ${regionLabel} states for ${trade.name}`}
-        description={`Browse neighbouring ${regionLabel} markets, or open the full ${trade.name} state list.`}
+        eyebrow="Neighbouring markets"
+        title={`${trade.name} leads in states near ${region.name}`}
+        description={`${profile.allBordering ? "Neighbouring" : "Neighbouring and nearby"} states for ${trade.name.toLowerCase()} prospecting, plus the full ${trade.name} state list.`}
       >
         <Reveal>
           <SubpageLinkGrid
             columns={4}
-            items={siblingRegions.map((r) => ({
+            items={neighbourRegions.map((r) => ({
               href: `/industries/${trade.slug}/${r.slug}`,
               label: r.name,
             }))}

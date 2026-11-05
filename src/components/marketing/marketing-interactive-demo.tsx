@@ -1083,7 +1083,7 @@ export function MarketingInteractiveDemo() {
                   <button
                     type="button"
                     onClick={() => setTourOpen(false)}
-                    className="absolute right-3 top-3 rounded-lg p-1 text-white/50 hover:bg-white/10 hover:text-white"
+                    className="absolute right-2 top-2 rounded-lg p-2.5 text-white/50 hover:bg-white/10 hover:text-white"
                     aria-label="Close tour"
                   >
                     <HiOutlineXMark className="h-4 w-4" />

@@ -142,7 +142,7 @@ export const ALTERNATIVES: Alternative[] = [
     website: "apify.com",
     titleTag: "Apify Alternative for Google Maps Contractor Leads (2026)",
     metaDescription:
-      "An Apify Google Maps Scraper alternative for agencies: skip actor setup and get live contractor data with owner names, AI scores and outreach scripts. 10 free leads.",
+      "An Apify Google Maps Scraper alternative for agencies: skip actor setup and get live contractor data with owner names, AI scores and outreach.",
     h1: "The Apify Google Maps Scraper alternative with owner names and scores",
     intro:
       "Apify is a developer platform where you run 'actors', including several Google Maps scrapers, and pay for compute and results. It is flexible and powerful if you are comfortable configuring runs and handling output. Contractor Leads is the no-setup route for agencies: pick a trade and a city, and get scored contractor leads with owner names and a drafted first email.",
@@ -284,7 +284,7 @@ export const ALTERNATIVES: Alternative[] = [
     website: "zoominfo.com",
     titleTag: "ZoomInfo Alternative for Local Contractor Leads (2026)",
     metaDescription:
-      "Need a ZoomInfo alternative for small local contractors? Contractor Leads covers owner-run roofing, HVAC and plumbing companies ZoomInfo misses, from $19.99 a month.",
+      "Need a ZoomInfo alternative for local contractors? Contractor Leads covers owner-run roofing, HVAC and plumbing firms ZoomInfo misses, from $19.99/mo.",
     h1: "The ZoomInfo alternative for agencies selling to local contractors",
     intro:
       "ZoomInfo is an enterprise go-to-market platform with deep company and contact data, intent signals and sales engagement, sold on annual contracts. It is excellent for selling into companies with departments. Owner-run contractors with two to twenty staff are largely outside its coverage and its price point, which is the segment Contractor Leads serves.",
@@ -355,7 +355,7 @@ export const ALTERNATIVES: Alternative[] = [
     website: "lusha.com",
     titleTag: "Lusha Alternative for Contractor Leads (2026)",
     metaDescription:
-      "A Lusha alternative for agencies selling to contractors: find businesses from live Google data, then get owner names, marketing scores and outreach scripts.",
+      "A Lusha alternative for agencies selling to contractors: find businesses from live Google data, then get owner names, marketing scores and outreach.",
     h1: "The Lusha alternative that finds the contractor, not just the contact",
     intro:
       "Lusha is a contact enrichment tool: you find a person on LinkedIn or a company site and Lusha supplies the phone or email, sold in monthly credits. It is useful once you know who you are looking for. Contractor Leads starts a step earlier for home services, finding every contractor in a trade and area, scoring the marketing gap, and only then surfacing the owner.",
@@ -426,7 +426,7 @@ export const ALTERNATIVES: Alternative[] = [
     website: "d7leadfinder.com",
     titleTag: "D7 Lead Finder Alternative for Contractor Leads (2026)",
     metaDescription:
-      "Comparing D7 Lead Finder alternatives? Contractor Leads adds AI gap scores, verified owner names, Meta ad status and outreach scripts to local contractor data.",
+      "Comparing D7 Lead Finder alternatives? Contractor Leads adds AI gap scores, verified owner names, Meta ad status and outreach to local contractor data.",
     h1: "The D7 Lead Finder alternative for agencies that sell to contractors",
     intro:
       "D7 Lead Finder is a popular tool for agencies that want local business lists by keyword and city, with basic website and social checks. It is close in spirit to Contractor Leads. The difference is depth: Contractor Leads specialises in home-service trades, pulls live Google data, scores each business on four marketing dimensions, finds the owner from the business website, checks Meta ads and writes the outreach.",
