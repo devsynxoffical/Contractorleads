@@ -1,15 +1,15 @@
-import { CONTENT_LAST_UPDATED, TRADE_PAGES, seoBaseUrl } from "@/lib/seo";
+import { TRADE_PAGES, seoBaseUrl } from "@/lib/seo";
+import { TRADE_HUB_DEFAULT_UPDATED, TRADE_HUB_UPDATED } from "@/lib/page-dates";
 
 export const dynamic = "force-static";
 
 export async function GET() {
   const base = seoBaseUrl();
-  const now = CONTENT_LAST_UPDATED;
 
   const urls = TRADE_PAGES.map(
     (t) => `  <url>
     <loc>${base}/industries/${t.slug}</loc>
-    <lastmod>${now}</lastmod>
+    <lastmod>${TRADE_HUB_UPDATED[t.slug] ?? TRADE_HUB_DEFAULT_UPDATED}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>`,

@@ -21,6 +21,7 @@ const GROUP_GUIDES: Record<string, string[]> = {
   outreach: [
     "cold-email-for-agencies",
     "email-warmup-for-cold-email",
+    "cold-email-follow-up",
     "cold-email-subject-lines-for-contractors",
     "cold-calling-contractors-script",
   ],

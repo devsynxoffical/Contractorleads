@@ -9,6 +9,7 @@ import { GROWTH_POSTS } from "@/lib/blog-posts-growth";
 import { PLAYBOOK_POSTS } from "@/lib/blog-posts-playbooks";
 import { PROSPECTING_POSTS } from "@/lib/blog-posts-prospecting";
 import { TRADE_GUIDE_POSTS } from "@/lib/blog-posts-trades";
+import { NOVEMBER_POSTS } from "@/lib/blog-posts-november";
 
 export type BlogFaq = {
   q: string;
@@ -893,6 +894,7 @@ export const BLOG_POSTS: BlogPost[] = [
   ...GROWTH_POSTS,
   ...PROSPECTING_POSTS,
   ...TRADE_GUIDE_POSTS,
+  ...NOVEMBER_POSTS,
 ];
 
 /**

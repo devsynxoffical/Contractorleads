@@ -23,12 +23,14 @@ import {
   breadcrumbJsonLd,
   faqPageJsonLd,
   softwareApplicationJsonLd,
+  serviceJsonLd,
 } from "@/components/seo/json-ld";
 import { buildMetadata } from "@/lib/seo";
 import { BLOG_POSTS } from "@/lib/blog-content";
 
 const SCRAPER_GUIDES = BLOG_POSTS.filter((p) =>
   [
+    "best-google-maps-scrapers",
     "google-maps-lead-generation",
     "how-to-find-businesses-without-websites",
     "apollo-vs-google-maps-scraper",
@@ -59,19 +61,19 @@ const SCRAPER_FAQS = [
   },
   {
     q: "What is the best Google Maps scraper for leads?",
-    a: "For agencies that sell to contractors, the best option is one that adds owner names, ad status and a score to each business, so you can decide who to call first. Contractor Leads does this for 18 home-service trades.",
+    a: "For agencies that sell to contractors, the best option is one that adds owner names, ad status and a score to each business, so you can decide who to call first. Contractor Leads does this for 18 home-service trades. For raw data across any category, see our comparison of the best Google Maps scrapers.",
   },
   {
     q: "Can a Google Maps scraper find emails?",
-    a: "Maps listings do not show emails. Contractor Leads looks for owner names and contact details on the business's own website and leaves the field blank when it cannot verify one.",
+    a: "Maps listings do not show emails. Contractor Leads looks for owner names and contact details on the business's own website and leaves the field blank when it cannot verify one. Every email found is then checked and labelled safe, catch-all, role-based or invalid before you export or send.",
   },
   {
     q: "Can I export Google Maps leads to Excel?",
-    a: "Yes. Saved leads export to CSV or Excel on every plan, including the free 10 leads.",
+    a: "Yes. Saved leads export to CSV or Excel on every plan, including the free 10 leads. You can filter the export to verified-safe emails only, and each row includes the business name, phone, website, rating, reviews, owner name and AI scores.",
   },
   {
     q: "Is there a free Google Maps scraper?",
-    a: "Contractor Leads gives every new account 10 free scored leads with no credit card. Paid plans start at $19.99 a month for 500 credits.",
+    a: "Contractor Leads gives every new account 10 free scored leads with no credit card, so you can test the data in your own market. Paid plans start at $19.99 a month for 500 credits, where one credit equals one lead, and you can cancel at any time.",
   },
 ];
 
@@ -85,7 +87,16 @@ export default function GoogleMapsScraperPage() {
           { name: "Google Maps Scraper", path: "/google-maps-scraper" },
         ])}
       />
-      <JsonLd data={faqPageJsonLd(SCRAPER_FAQS)} />
+      <JsonLd data={faqPageJsonLd(SCRAPER_FAQS, "/google-maps-scraper")} />
+      <JsonLd
+        data={serviceJsonLd({
+          name: "Google Maps scraper for contractor leads",
+          description:
+            "Google business data for home-service contractors with owner names, verified emails, AI scores and Excel export.",
+          path: "/google-maps-scraper",
+          serviceType: "Google Maps lead scraping and enrichment",
+        })}
+      />
 
       {/* Hero Section */}
       <header className="relative overflow-hidden border-b border-white/10 bg-[#07040f] py-16 sm:py-24">
@@ -131,6 +142,19 @@ export default function GoogleMapsScraperPage() {
           </p>
         </div>
       </header>
+
+      {/* Quick answer (SEO page plan standard) */}
+      <section className="mx-auto max-w-3xl px-5 pt-12 sm:px-8">
+        <div className="rounded-2xl border border-fuchsia-200 bg-gradient-to-br from-fuchsia-50 to-violet-50 p-6">
+          <h2 className="font-[family-name:var(--font-display)] text-[20px] font-bold text-slate-900 sm:text-[22px]">
+            What is a Google Maps scraper for leads?
+          </h2>
+          <p className="mt-3 text-[15.5px] leading-relaxed text-slate-700">
+            A Google Maps scraper collects business listings, such as name, phone, website, rating and reviews, from Google Maps for a category and area. Contractor Leads does this for home-service contractors with live Google data, then adds owner names, verified emails, Meta ad status and AI scores, and exports to CSV or Excel.
+          </p>
+        </div>
+      </section>
+
 
       {/* What a Scraper Does & Where It Stops */}
       <SubpageSection

@@ -21,7 +21,7 @@ export const PLAYBOOK_POSTS: BlogPost[] = [
     title: "How to Get Contractor Leads: 11 Channels Ranked by Cost, Speed and Quality",
     titleTag: "How to Get Contractor Leads: 11 Channels Ranked (2026)",
     metaDescription:
-      "How to get contractor leads in 2026: 11 channels ranked by cost per lead, time to first lead and quality, with what agencies should sell contractors for each.",
+      "How to get contractor leads in 2026: 11 channels ranked by cost per lead, speed and quality, with what agencies should sell contractors for each.",
     primaryKeyword: "how to get contractor leads",
     secondaryKeywords: [
       "contractor leads",
@@ -174,7 +174,7 @@ export const PLAYBOOK_POSTS: BlogPost[] = [
     title: "Plumbing Contractor Leads for Agencies: How to Find, Qualify and Pitch Plumbers",
     titleTag: "Plumbing Contractor Leads: Find & Pitch Plumbers (2026)",
     metaDescription:
-      "How agencies find plumbing contractor leads, which plumbers to pitch first, what plumbing owners buy, and the outreach that books calls. Includes a 7-day sequence.",
+      "How agencies find plumbing contractor leads, which plumbers to pitch first, what plumbing owners buy and outreach that books calls, with a 7-day sequence.",
     primaryKeyword: "plumbing contractor leads",
     secondaryKeywords: [
       "plumbing leads for agencies",
@@ -628,7 +628,7 @@ export const PLAYBOOK_POSTS: BlogPost[] = [
     slug: "cold-calling-contractors-script",
     type: "cluster",
     title: "Cold Calling Contractors: Scripts, Timing and Openers That Get Past the Office",
-    titleTag: "Cold Calling Contractors: Scripts & Openers That Work (2026)",
+    titleTag: "Cold Calling Contractors: Scripts and Openers (2026)",
     metaDescription:
       "Cold calling contractors for agency sales: when to call, getting past the office, openers that reference their business, voicemail scripts and follow-ups.",
     primaryKeyword: "cold calling contractors",

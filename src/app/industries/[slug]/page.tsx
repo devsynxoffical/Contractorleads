@@ -27,6 +27,8 @@ import {
   JsonLd,
   breadcrumbJsonLd,
   softwareApplicationJsonLd,
+  faqPageJsonLd,
+  serviceJsonLd,
 } from "@/components/seo/json-ld";
 import { TIER_ONE_COUNTRIES } from "@/lib/constants";
 import {
@@ -37,6 +39,7 @@ import {
   isPriorityTrade,
 } from "@/lib/seo";
 import { BLOG_POSTS } from "@/lib/blog-content";
+import { getTradeHubContent } from "@/lib/trade-hub-content";
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -99,6 +102,11 @@ export default async function TradePage({ params }: Params) {
   const lower = trade.name.toLowerCase();
   const related = TRADE_PAGES.filter((t) => t.slug !== trade.slug).slice(0, 6);
   const priority = isPriorityTrade(trade.slug);
+  const hub = getTradeHubContent(trade.slug);
+  const quickAnswer = hub?.quickAnswer ?? {
+    q: `How do agencies find ${lower} contractor leads?`,
+    a: `Search live Google data for ${lower} businesses by city or state, then prioritise the ones with strong reviews but weak websites or no ads. ${trade.description} Every lead includes AI scores for website, SEO, ads and marketing, and your first 10 leads are free.`,
+  };
   const playbooks = BLOG_POSTS.filter((p) =>
     p.relatedIndustries?.includes(trade.slug),
   ).slice(0, 4);
@@ -106,6 +114,15 @@ export default async function TradePage({ params }: Params) {
   return (
     <MarketingSiteShell>
       <JsonLd data={softwareApplicationJsonLd()} />
+      <JsonLd
+        data={serviceJsonLd({
+          name: `${trade.name} contractor leads for agencies`,
+          description: trade.description,
+          path: `/industries/${trade.slug}`,
+          serviceType: `${trade.name} contractor lead generation data`,
+        })}
+      />
+      {hub && <JsonLd data={faqPageJsonLd(hub.faqs, `/industries/${trade.slug}`)} />}
       <JsonLd
         data={breadcrumbJsonLd([
           { name: "Home", path: "/" },
@@ -163,51 +180,39 @@ export default async function TradePage({ params }: Params) {
         />
       </SubpageSection>
 
-      {/* Trade-Level Market Benchmark Block */}
+      {/* Trade-specific quick answer and buying guide (no illustrative statistics) */}
       <section className="mx-auto max-w-6xl px-5 pt-8 sm:px-8">
         <div className="rounded-3xl border border-violet-100 bg-gradient-to-r from-violet-50/60 to-fuchsia-50/60 p-6 sm:p-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-violet-200/60 pb-6">
-            <div>
-              <p className="text-[12px] font-bold uppercase tracking-wider text-fuchsia-600">
-                Typical {trade.name} Benchmarks
-              </p>
-              <h2 className="mt-1 font-[family-name:var(--font-display)] text-[22px] font-bold text-slate-900">
-                {trade.name} Market Opportunities for Agencies
-              </h2>
-              <p className="mt-1 text-[12.5px] text-slate-500">
-                Illustrative ranges from typical Contractor Leads searches. Your market will differ; run a live search for exact numbers.
-              </p>
-            </div>
-            <Link
-              href="/register"
-              className="inline-flex rounded-full bg-slate-900 px-5 py-2 text-[13px] font-semibold text-white hover:bg-slate-800 transition"
-            >
-              Scan {trade.name} Leads
-            </Link>
-          </div>
+          <h2 className="font-[family-name:var(--font-display)] text-[22px] font-bold text-slate-900">
+            {quickAnswer.q}
+          </h2>
+          <p className="mt-3 max-w-3xl text-[15px] leading-relaxed text-slate-700">{quickAnswer.a}</p>
 
-          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <div className="rounded-xl border border-white/80 bg-white/90 p-4 shadow-2xs">
-              <p className="text-[12px] font-medium text-slate-500">Median Rating</p>
-              <p className="mt-1 text-[22px] font-extrabold text-slate-900">4.7 ★</p>
-              <p className="text-[11px] text-slate-500">Strong customer satisfaction</p>
+          {hub && (
+            <div className="mt-6 grid gap-5 md:grid-cols-2">
+              <div className="rounded-2xl border border-white/80 bg-white/90 p-5 shadow-2xs">
+                <h3 className="text-[15px] font-bold text-slate-900">What {lower} owners buy from agencies</h3>
+                <ul className="mt-3 space-y-2">
+                  {hub.buys.map((b) => (
+                    <li key={b} className="flex gap-2 text-[14px] leading-relaxed text-slate-700">
+                      <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-fuchsia-500" aria-hidden />
+                      <span>{b}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="rounded-2xl border border-white/80 bg-white/90 p-5 shadow-2xs">
+                <h3 className="text-[15px] font-bold text-slate-900">When {lower} companies buy marketing</h3>
+                <p className="mt-3 text-[14px] leading-relaxed text-slate-700">{hub.season}</p>
+                <Link
+                  href={`#states`}
+                  className="mt-4 inline-flex text-[13px] font-semibold text-fuchsia-700 hover:underline"
+                >
+                  See timing for your state →
+                </Link>
+              </div>
             </div>
-            <div className="rounded-xl border border-white/80 bg-white/90 p-4 shadow-2xs">
-              <p className="text-[12px] font-medium text-slate-500">No Website Rate</p>
-              <p className="mt-1 text-[22px] font-extrabold text-rose-600">~28%</p>
-              <p className="text-[11px] text-slate-500">Prime web & GBP design pitches</p>
-            </div>
-            <div className="rounded-xl border border-white/80 bg-white/90 p-4 shadow-2xs">
-              <p className="text-[12px] font-medium text-slate-500">Running Meta Ads</p>
-              <p className="mt-1 text-[22px] font-extrabold text-emerald-600">~12%</p>
-              <p className="text-[11px] text-slate-500">Low paid social competition</p>
-            </div>
-            <div className="rounded-xl border border-white/80 bg-white/90 p-4 shadow-2xs">
-              <p className="text-[12px] font-medium text-slate-500">Owner Verification</p>
-              <p className="mt-1 text-[22px] font-extrabold text-violet-600">65%+</p>
-              <p className="text-[11px] text-slate-500">Direct decision-maker contacts</p>
-            </div>
-          </div>
+          )}
 
           {/* Related guides for this trade (driven by BLOG_POSTS.relatedIndustries) */}
           {playbooks.length > 0 && (
@@ -331,6 +336,19 @@ export default async function TradePage({ params }: Params) {
               }))}
             />
           </Reveal>
+        </SubpageSection>
+      )}
+
+      {hub && (
+        <SubpageSection tone="light" eyebrow="FAQ" title={`${trade.name} contractor leads: FAQ`}>
+          <dl className="mx-auto max-w-3xl divide-y divide-violet-100 rounded-2xl border border-violet-100 bg-white px-6 shadow-xs">
+            {hub.faqs.map((f) => (
+              <div key={f.q} className="py-5">
+                <dt className="text-[15.5px] font-semibold text-slate-900">{f.q}</dt>
+                <dd className="mt-2 text-[14px] leading-relaxed text-slate-600">{f.a}</dd>
+              </div>
+            ))}
+          </dl>
         </SubpageSection>
       )}
 

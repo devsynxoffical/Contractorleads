@@ -266,6 +266,100 @@ function ScrollNav() {
   );
 }
 
+/** Pages people search for most; linked from the homepage per the SEO page plan. */
+const MOST_SEARCHED: Array<{ href: string; label: string }> = [
+  { href: "/industries/roofing", label: "Roofing contractor leads" },
+  { href: "/industries/hvac", label: "HVAC contractor leads" },
+  { href: "/industries/plumbing", label: "Plumbing contractor leads" },
+  { href: "/industries/solar", label: "Solar contractor leads" },
+  { href: "/industries/hvac/georgia", label: "HVAC leads in Georgia" },
+  { href: "/industries/general-contractors/ohio", label: "Contractor leads in Ohio" },
+  { href: "/industries/electrical/louisiana", label: "Electrical leads in Louisiana" },
+  { href: "/contractor-email-finder", label: "Contractor email finder" },
+  { href: "/google-maps-scraper", label: "Google Maps scraper" },
+  { href: "/contractor-lead-generation-software", label: "Lead generation software" },
+  { href: "/exclusive-contractor-leads", label: "Exclusive contractor leads" },
+  { href: "/alternatives", label: "Apollo, Hunter & Prospeo alternatives" },
+  { href: "/blog/how-to-get-contractor-leads", label: "How to get contractor leads" },
+  { href: "/blog/how-much-do-contractor-leads-cost", label: "Contractor lead costs" },
+  { href: "/blog/best-google-maps-scrapers", label: "Best Google Maps scrapers" },
+  { href: "/pricing", label: "Pricing and free leads" },
+];
+
+/** Product facts only; client results are added once real case studies are published. */
+const PROOF_FACTS: Array<{ value: string; label: string }> = [
+  { value: "18", label: "home-service trades covered" },
+  { value: "50", label: "US states, plus Canada, UK, Australia and NZ" },
+  { value: "0-100", label: "AI scores for website, SEO, ads and marketing" },
+  { value: "10", label: "free leads to start, no credit card" },
+];
+
+function HomeQuickAnswer() {
+  return (
+    <section aria-labelledby="what-are-contractor-leads" className="relative bg-[#ffffff] py-16 sm:py-20">
+      <div className="mx-auto max-w-6xl px-5 sm:px-8">
+        <div className="grid gap-10 lg:grid-cols-12">
+          <div className="lg:col-span-7">
+            <h2
+              id="what-are-contractor-leads"
+              className="font-[family-name:var(--font-display)] text-[28px] font-semibold tracking-tight text-slate-900 sm:text-[34px]"
+            >
+              What are contractor leads?
+            </h2>
+            <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
+              Contractor leads are contact records for home-service businesses such as roofers, HVAC
+              companies and plumbers, used by agencies and sales teams that sell to them. Contractor
+              Leads finds them from live Google data, adds owner names and verified emails, and scores
+              each business on website, SEO and ad gaps, so you pitch the ones most likely to buy.
+            </p>
+            <p className="mt-4 text-[14px] leading-relaxed text-slate-500">
+              Are you a contractor looking for homeowner jobs instead? Read our honest guide to{" "}
+              <Link href="/homeowner-leads" className="font-semibold text-fuchsia-700 hover:underline">
+                where contractors get homeowner leads
+              </Link>{" "}
+              and{" "}
+              <Link href="/exclusive-contractor-leads" className="font-semibold text-fuchsia-700 hover:underline">
+                exclusive vs shared leads
+              </Link>
+              .
+            </p>
+            <dl className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+              {PROOF_FACTS.map((f) => (
+                <div key={f.label} className="rounded-2xl border border-violet-100 bg-violet-50/60 p-4">
+                  <dt className="sr-only">{f.label}</dt>
+                  <dd>
+                    <span className="block font-[family-name:var(--font-display)] text-[26px] font-semibold text-slate-900">
+                      {f.value}
+                    </span>
+                    <span className="mt-1 block text-[12.5px] leading-snug text-slate-600">{f.label}</span>
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+          <nav aria-labelledby="most-searched" className="lg:col-span-5">
+            <h2 id="most-searched" className="text-[13px] font-bold uppercase tracking-[0.16em] text-fuchsia-700">
+              Most searched
+            </h2>
+            <ul className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {MOST_SEARCHED.map((l) => (
+                <li key={l.href}>
+                  <Link
+                    href={l.href}
+                    className="flex h-full items-center rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-[13.5px] font-semibold text-slate-800 transition hover:border-fuchsia-300 hover:text-fuchsia-700"
+                  >
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function SocialProof() {
   return (
     <section
@@ -1087,6 +1181,7 @@ export function MarketingPage({
       <ScrollNav />
       <MarketingHeroSyntra />
       <SocialProof />
+      <HomeQuickAnswer />
       <MarketingInteractiveDemo />
       <FeaturesGrid />
       <MarketingComparison />

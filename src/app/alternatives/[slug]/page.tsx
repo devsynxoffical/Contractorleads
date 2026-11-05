@@ -44,7 +44,12 @@ export default async function AlternativePage({ params }: Params) {
   const alt = getAlternative(slug);
   if (!alt) notFound();
 
-  const others = ALTERNATIVES.filter((a) => a.slug !== alt.slug).slice(0, 3);
+  // The next three comparisons after this one (wrapping around), so every comparison
+  // page receives internal links evenly instead of only the first few in the list.
+  const idx = ALTERNATIVES.findIndex((a) => a.slug === alt.slug);
+  const others = [1, 2, 3]
+    .map((n) => ALTERNATIVES[(idx + n) % ALTERNATIVES.length])
+    .filter((a) => a.slug !== alt.slug);
   const industries = alt.relatedIndustries
     .map((s) => getTradeBySlug(s))
     .filter((t): t is NonNullable<typeof t> => Boolean(t));
@@ -271,6 +276,24 @@ export default async function AlternativePage({ params }: Params) {
           </ul>
         </SubpageSection>
       )}
+
+      <SubpageSection tone="light" eyebrow="Before you switch" title="Compare costs and lead types">
+        <p className="mx-auto max-w-3xl text-center text-[15px] leading-relaxed text-slate-600">
+          See exactly what each lead costs on our{" "}
+          <Link href="/pricing" className="font-semibold text-fuchsia-700 hover:underline">
+            pricing page
+          </Link>
+          , how{" "}
+          <Link href="/exclusive-contractor-leads" className="font-semibold text-fuchsia-700 hover:underline">
+            exclusive and shared contractor leads
+          </Link>{" "}
+          differ, or how the{" "}
+          <Link href="/contractor-email-finder" className="font-semibold text-fuchsia-700 hover:underline">
+            contractor email finder
+          </Link>{" "}
+          verifies owner emails before you send.
+        </p>
+      </SubpageSection>
 
       <SubpageCtaBand
         title={`Run your ${alt.name} list's trade and city in Lead Finder`}

@@ -92,7 +92,7 @@ export const TRADE_GUIDE_POSTS: BlogPost[] = [
       {
         heading: "Qualify by segment before you pitch",
         level: 2,
-        body: "\"General contractor\" covers very different businesses. Sort your list into segments first, because each one buys differently and needs its own message.",
+        body: "\"General contractor\" covers very different businesses. Sort your list into segments first, because each one buys differently and needs its own message. Commercial and new-build firms mostly win work through bids and builder relationships, as our guides to [commercial contractor leads](/commercial-contractor-leads) and [new construction leads](/new-construction-leads) explain, so search marketing changes less for them.",
         table: {
           headers: ["Segment", "How they win work", "Fit for an agency"],
           rows: [

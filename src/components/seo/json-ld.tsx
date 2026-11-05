@@ -335,6 +335,45 @@ export function personJsonLd() {
   };
 }
 
+/**
+ * A service the company provides (industry and service landing pages), per the page plan:
+ * "Service on service, industry and platform pages".
+ */
+export function serviceJsonLd(opts: {
+  name: string;
+  description: string;
+  path: string;
+  serviceType: string;
+  audience?: string;
+}) {
+  const url = absoluteUrl(opts.path);
+  return {
+    "@context": CONTEXT,
+    "@type": "Service",
+    "@id": `${url}#service`,
+    name: opts.name,
+    description: opts.description,
+    url,
+    serviceType: opts.serviceType,
+    provider: orgRef(),
+    areaServed: AREA_SERVED,
+    audience: {
+      "@type": "BusinessAudience",
+      audienceType:
+        opts.audience ?? "Marketing agencies, media buyers and sales teams that sell to home-service contractors",
+    },
+    offers: {
+      "@type": "Offer",
+      url: absoluteUrl("/pricing"),
+      price: "0",
+      priceCurrency: "USD",
+      description: "Start with 10 free leads; paid plans from $19.99 a month",
+      availability: "https://schema.org/InStock",
+    },
+    isRelatedTo: { "@id": SCHEMA_IDS.software() },
+  };
+}
+
 /** A web page of a specific kind (about, legal, contact) tied to the site and company. */
 export function webPageJsonLd(opts: {
   type?: "WebPage" | "AboutPage" | "ContactPage" | "CollectionPage";

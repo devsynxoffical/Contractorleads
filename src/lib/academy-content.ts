@@ -760,7 +760,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
     slug: "ask-expert-playbook",
     type: "blog",
     category: "ai",
-    title: "Ask Expert playbook: prompts that save credits",
+    title: "Ask Expert: prompts that save credits",
     summary:
       "How to brief Ask Expert so one request produces usable ads, emails, and offers — without burning credits on vague chats.",
     readingMinutes: 7,

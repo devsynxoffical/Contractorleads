@@ -22,6 +22,7 @@ const NAV_PRIMARY: Array<[string, string]> = [
 const NAV_SECONDARY: Array<[string, string]> = [
   ["Lead Gen Software", "/contractor-lead-generation-software"],
   ["Google Maps Scraper", "/google-maps-scraper"],
+  ["Contractor Email Finder", "/contractor-email-finder"],
   ["Apollo Alternative", "/apollo-alternative"],
   ["Compare Alternatives", "/alternatives"],
   ["Affiliate Program", "/affiliates"],
@@ -223,6 +224,21 @@ export function MarketingSiteFooter() {
             })}
           </ul>
         </div>
+      </div>
+
+      {/* Partner sites (cross-site links from the SEO page plan) */}
+      <div className="border-t border-slate-200">
+        <p className="mx-auto max-w-7xl px-5 py-4 text-[13px] text-slate-600 sm:px-8">
+          <span className="text-[11px] uppercase tracking-wider text-slate-400">Partner sites</span>
+          <span className="mx-2 text-slate-300" aria-hidden>·</span>
+          <a href="https://rankempire.us" target="_blank" rel="noopener" className="font-semibold text-slate-800 hover:text-fuchsia-700">
+            RankEmpire: SEO for contractors
+          </a>
+          <span className="mx-2 text-slate-300" aria-hidden>·</span>
+          <a href="https://funnelsthatprint.com" target="_blank" rel="noopener" className="font-semibold text-slate-800 hover:text-fuchsia-700">
+            Funnels That Print
+          </a>
+        </p>
       </div>
 
       {/* Legal row */}

@@ -1,10 +1,10 @@
-import { CONTENT_LAST_UPDATED, seoBaseUrl } from "@/lib/seo";
+import { seoBaseUrl } from "@/lib/seo";
+import { pageUpdated } from "@/lib/page-dates";
 
 export const dynamic = "force-static";
 
 export async function GET() {
   const base = seoBaseUrl();
-  const now = CONTENT_LAST_UPDATED;
 
   const coreRoutes = [
     { path: "/", priority: "1.0", changefreq: "weekly" },
@@ -23,13 +23,23 @@ export async function GET() {
     { path: "/enterprise/book", priority: "0.7", changefreq: "monthly" },
     { path: "/privacy", priority: "0.3", changefreq: "yearly" },
     { path: "/terms", priority: "0.3", changefreq: "yearly" },
+    { path: "/exclusive-contractor-leads", priority: "0.85", changefreq: "monthly" },
+    { path: "/contractor-lead-tracking", priority: "0.8", changefreq: "monthly" },
+    { path: "/contractor-lead-management", priority: "0.8", changefreq: "monthly" },
+    { path: "/contractor-crm", priority: "0.8", changefreq: "monthly" },
+    { path: "/sms-marketing-for-contractors", priority: "0.8", changefreq: "monthly" },
+    { path: "/contractor-email-finder", priority: "0.85", changefreq: "monthly" },
+    { path: "/homeowner-leads", priority: "0.8", changefreq: "monthly" },
+    { path: "/commercial-contractor-leads", priority: "0.8", changefreq: "monthly" },
+    { path: "/storm-damage-leads", priority: "0.8", changefreq: "monthly" },
+    { path: "/new-construction-leads", priority: "0.8", changefreq: "monthly" },
   ];
 
   const urls = coreRoutes
     .map(
       (r) => `  <url>
     <loc>${base}${r.path}</loc>
-    <lastmod>${now}</lastmod>
+    <lastmod>${pageUpdated(r.path)}</lastmod>
     <changefreq>${r.changefreq}</changefreq>
     <priority>${r.priority}</priority>
   </url>`,

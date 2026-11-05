@@ -1,10 +1,11 @@
-import { CONTENT_LAST_UPDATED, PRIORITY_TRADE_SLUGS, SEO_REGIONS, seoBaseUrl } from "@/lib/seo";
+import { PRIORITY_TRADE_SLUGS, SEO_REGIONS, seoBaseUrl } from "@/lib/seo";
+import { STATE_PAGES_UPDATED } from "@/lib/page-dates";
 
 export const dynamic = "force-static";
 
 export async function GET() {
   const base = seoBaseUrl();
-  const now = CONTENT_LAST_UPDATED;
+  const now = STATE_PAGES_UPDATED;
 
   // Only the 7 priority trades pass the uniqueness/index threshold (350 pages max)
   const priorityRoutes: Array<{ trade: string; state: string }> = [];

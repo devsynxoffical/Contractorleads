@@ -4,7 +4,7 @@ import { MarketingSiteShell, MarketingSubpageHero } from "@/components/marketing
 import { MarketingPricingSection } from "@/components/marketing/marketing-pricing-section";
 import { MarketingComparison } from "@/components/marketing/marketing-comparison";
 import { SubpageCtaBand, SubpageSection } from "@/components/marketing/marketing-subpage";
-import { getMarketingPlansLive } from "@/components/marketing/marketing-plans-data";
+import { formatPlanPrice, getMarketingPlansLive } from "@/components/marketing/marketing-plans-data";
 import {
   JsonLd,
   breadcrumbJsonLd,
@@ -27,6 +27,14 @@ export const metadata: Metadata = buildMetadata({
 });
 
 const PRICING_FAQS = [
+  {
+    q: "How much does Contractor Leads cost?",
+    a: "Plans start at $19.99 a month for 500 credits (Starter), then $49 for 2,000 credits (Growth) and $99 for 5,000 credits (Agency). One credit equals one lead, so the cost per lead falls from about 4 cents to 2 cents as you move up. Every new account starts with 10 free leads.",
+  },
+  {
+    q: "Which plan should I choose?",
+    a: "Pick by how many leads you contact each month. Freelancers and small agencies testing one or two trades usually start on Starter. Agencies running daily outbound across several markets fit Growth, and teams with several callers or high-volume campaigns fit Agency. You can change plans at any time, so start small and upgrade when replies justify it.",
+  },
   {
     q: "Is there a free plan or trial?",
     a: "Yes. Every new account receives 10 free scored leads on Starter with zero credit card required. You can search live Google Places data, view AI scores, test owner enrichment, and export to Excel before subscribing.",
@@ -54,6 +62,12 @@ export const dynamic = "force-dynamic";
 
 export default async function PricingPage() {
   const plans = await getMarketingPlansLive();
+  // Cost-per-lead rows from the live prices, so the table never drifts from the plan cards.
+  const perLeadRows = plans.flatMap((p) =>
+    p.priceMonthly && p.leadsIncluded
+      ? [{ id: p.id, name: p.name, monthly: p.priceMonthly, leads: p.leadsIncluded, annual: p.priceAnnualMonthly }]
+      : [],
+  );
 
   return (
     <MarketingSiteShell>
@@ -64,12 +78,12 @@ export default async function PricingPage() {
           { name: "Pricing", path: "/pricing" },
         ])}
       />
-      <JsonLd data={faqPageJsonLd(PRICING_FAQS)} />
+      <JsonLd data={faqPageJsonLd(PRICING_FAQS, "/pricing")} />
 
       <MarketingSubpageHero
         eyebrow="Transparent Plans"
-        title="Plans built for contractor outreach desks"
-        description="Pick the seat that matches how many searches and closers you run. Start free with 10 leads, prove ROI, and scale your outbound engine."
+        title="Contractor Leads pricing: plans from $19.99"
+        description="Pick the plan that matches how many leads you contact each month. Start free with 10 leads, prove ROI, and scale your outbound engine."
       >
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Link
@@ -87,9 +101,74 @@ export default async function PricingPage() {
         </div>
       </MarketingSubpageHero>
 
+      {/* Quick answer */}
+      <section className="mx-auto max-w-3xl px-5 pt-14 sm:px-8">
+        <div className="rounded-2xl border border-fuchsia-200 bg-gradient-to-br from-fuchsia-50 to-violet-50 p-6">
+          <h2 className="font-[family-name:var(--font-display)] text-[20px] font-bold text-slate-900 sm:text-[22px]">
+            How much does Contractor Leads cost?
+          </h2>
+          <p className="mt-3 text-[15px] leading-relaxed text-slate-700">
+            Contractor Leads costs from $19.99 a month for 500 lead credits, and every new account
+            gets 10 free leads with no credit card. One credit is one lead, and each lead includes
+            live Google data, an owner name where available, AI scores and outreach scripts. Larger
+            plans lower the cost per lead to about 2 cents.
+          </p>
+        </div>
+      </section>
+
       <section className="mx-auto max-w-6xl px-5 py-16 sm:px-8">
         <MarketingPricingSection plans={plans} />
       </section>
+
+      {/* Cost per lead, calculated from the live plan prices above */}
+      <SubpageSection
+        tone="light"
+        eyebrow="Cost per lead"
+        title="What each lead costs on every plan"
+        description="Calculated from the current plan prices and monthly credits. One credit equals one lead."
+      >
+        <div className="mx-auto max-w-3xl overflow-x-auto rounded-2xl border border-violet-100 bg-white shadow-xs">
+          <table className="w-full min-w-[520px] text-left text-[14px]">
+            <thead className="bg-violet-50 text-[12px] uppercase tracking-wider text-slate-600">
+              <tr>
+                <th className="px-4 py-3 font-semibold">Plan</th>
+                <th className="px-4 py-3 font-semibold">Monthly price</th>
+                <th className="px-4 py-3 font-semibold">Leads a month</th>
+                <th className="px-4 py-3 font-semibold">Cost per lead</th>
+                <th className="px-4 py-3 font-semibold">Billed annually</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-violet-50 text-slate-700">
+              {perLeadRows.map((r) => (
+                <tr key={r.id}>
+                  <td className="px-4 py-3 font-semibold text-slate-900">{r.name}</td>
+                  <td className="px-4 py-3">${formatPlanPrice(r.monthly)}</td>
+                  <td className="px-4 py-3">{r.leads.toLocaleString()}</td>
+                  <td className="px-4 py-3">${(r.monthly / r.leads).toFixed(3)}</td>
+                  <td className="px-4 py-3">
+                    {r.annual ? `$${(r.annual / r.leads).toFixed(3)} per lead` : "Not offered"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="mx-auto mt-4 max-w-3xl text-center text-[13px] text-slate-500">
+          For what contractors themselves pay for homeowner leads, see our{" "}
+          <Link href="/blog/how-much-do-contractor-leads-cost" className="font-semibold text-fuchsia-700 hover:underline">
+            contractor lead cost benchmarks
+          </Link>
+          . Comparing tools? See{" "}
+          <Link href="/alternatives" className="font-semibold text-fuchsia-700 hover:underline">
+            Apollo, Hunter and Prospeo alternatives
+          </Link>{" "}
+          or the{" "}
+          <Link href="/contractor-email-finder" className="font-semibold text-fuchsia-700 hover:underline">
+            contractor email finder
+          </Link>
+          .
+        </p>
+      </SubpageSection>
 
       {/* The difference: what every plan includes vs lists and scrapers */}
       <MarketingComparison />

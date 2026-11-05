@@ -1,5 +1,6 @@
 import { ALTERNATIVES } from "@/lib/alternatives-content";
-import { CONTENT_LAST_UPDATED, seoBaseUrl } from "@/lib/seo";
+import { seoBaseUrl } from "@/lib/seo";
+import { ALTERNATIVES_DEFAULT_UPDATED } from "@/lib/page-dates";
 
 export const dynamic = "force-static";
 
@@ -10,7 +11,7 @@ export async function GET() {
   const urls = ALTERNATIVES.map(
     (a) => `  <url>
     <loc>${base}/alternatives/${a.slug}</loc>
-    <lastmod>${a.updatedDate ?? CONTENT_LAST_UPDATED}</lastmod>
+    <lastmod>${a.updatedDate ?? ALTERNATIVES_DEFAULT_UPDATED}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>`,
