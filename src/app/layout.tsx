@@ -149,6 +149,7 @@ export default function RootLayout({
         <noscript>
           <iframe
             src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
+            title="Google Tag Manager"
             height="0"
             width="0"
             style={{ display: "none", visibility: "hidden" }}
@@ -160,6 +161,7 @@ export default function RootLayout({
             height="1"
             width="1"
             style={{ display: "none" }}
+            alt=""
             src={`https://www.facebook.com/tr?id=${metaPixelId}&ev=PageView&noscript=1`}
           />
         </noscript>

@@ -40,6 +40,7 @@ import {
 } from "@/lib/seo";
 import { BLOG_POSTS } from "@/lib/blog-content";
 import { getTradeHubContent } from "@/lib/trade-hub-content";
+import { EMAIL_LIST_TRADES } from "@/lib/email-list-pages";
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -52,11 +53,14 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const trade = getTradeBySlug(slug);
   if (!trade) return {};
   // Keyword first, then the offer (the pattern Hunter and Prospeo use on tool pages).
-  const leads = /contractors$/i.test(trade.name)
-    ? `${trade.name.replace(/s$/i, "")} Leads`
-    : `${trade.name} Contractor Leads`;
+  const name = trade.titleName ?? trade.name;
+  const leads = /contractors$/i.test(name)
+    ? `${name.replace(/s$/i, "")} Leads`
+    : /company$/i.test(name)
+      ? `${name} Leads`
+      : `${name} Contractor Leads`;
   const fullTitle = `${leads} for Agencies (10 Free Leads)`;
-  const title = fullTitle.length <= 60 ? fullTitle : `${leads} (10 Free Leads)`;
+  const title = fullTitle.length < 60 ? fullTitle : `${leads} (10 Free Leads)`;
   const withOffer = `${trade.description} Start with 10 free leads.`;
   return buildMetadata({
     title,
@@ -187,6 +191,15 @@ export default async function TradePage({ params }: Params) {
             {quickAnswer.q}
           </h2>
           <p className="mt-3 max-w-3xl text-[15px] leading-relaxed text-slate-700">{quickAnswer.a}</p>
+          {EMAIL_LIST_TRADES.some((t) => t.slug === trade.slug) ? (
+            <p className="mt-3 max-w-3xl text-[14.5px] leading-relaxed text-slate-700">
+              Need contacts to email?{" "}
+              <Link href={`/email-lists/${trade.slug}`} className="font-semibold text-fuchsia-700 underline decoration-fuchsia-200 underline-offset-2 hover:decoration-fuchsia-500">
+                Build a verified {lower} email list
+              </Link>{" "}
+              for any city or state, with owner names and checked emails.
+            </p>
+          ) : null}
 
           {hub && (
             <div className="mt-6 grid gap-5 md:grid-cols-2">

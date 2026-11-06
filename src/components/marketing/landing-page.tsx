@@ -48,6 +48,7 @@ export function LandingPageView({ slug }: { slug: string }) {
         data={[
           breadcrumbJsonLd([
             { name: "Home", path: "/" },
+            ...(page.parent ? [page.parent] : []),
             { name: page.breadcrumb, path },
           ]),
           page.kind === "product"

@@ -6,7 +6,7 @@
  * whenever its visible content changes (not for code-only changes).
  */
 export const PAGE_UPDATED: Record<string, string> = {
-  "/": "2026-11-05",
+  "/": "2026-11-06",
   "/features": "2026-11-03",
   "/pricing": "2026-11-05",
   "/contractor-lead-generation-software": "2026-11-05",
@@ -14,7 +14,7 @@ export const PAGE_UPDATED: Record<string, string> = {
   "/apollo-alternative": "2026-11-03",
   "/alternatives": "2026-11-03",
   "/industries": "2026-11-03",
-  "/blog": "2026-11-05",
+  "/blog": "2026-11-06",
   "/help": "2026-11-03",
   "/faq": "2026-11-05",
   "/about": "2026-11-03",
@@ -33,6 +33,15 @@ export const PAGE_UPDATED: Record<string, string> = {
   "/commercial-contractor-leads": "2026-11-05",
   "/storm-damage-leads": "2026-11-05",
   "/new-construction-leads": "2026-11-05",
+  // Contractor email list pages (6 November)
+  "/email-lists": "2026-11-06",
+  "/email-lists/roofing": "2026-11-06",
+  "/email-lists/hvac": "2026-11-06",
+  "/email-lists/plumbing": "2026-11-06",
+  "/email-lists/electrical": "2026-11-06",
+  "/email-lists/solar": "2026-11-06",
+  "/email-lists/general-contractors": "2026-11-06",
+  "/email-lists/remodeling": "2026-11-06",
 };
 
 /** Trade hubs that received trade-specific content on this date. */

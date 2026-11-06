@@ -37,7 +37,7 @@ function MotionBackdrop({
       aria-hidden
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt="" className="h-full w-full object-cover" />
+      <img src={src} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
     </div>
   );
 }

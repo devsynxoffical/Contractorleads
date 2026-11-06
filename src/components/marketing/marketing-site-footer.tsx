@@ -23,6 +23,7 @@ const NAV_SECONDARY: Array<[string, string]> = [
   ["Lead Gen Software", "/contractor-lead-generation-software"],
   ["Google Maps Scraper", "/google-maps-scraper"],
   ["Contractor Email Finder", "/contractor-email-finder"],
+  ["Contractor Email Lists", "/email-lists"],
   ["Apollo Alternative", "/apollo-alternative"],
   ["Compare Alternatives", "/alternatives"],
   ["Affiliate Program", "/affiliates"],

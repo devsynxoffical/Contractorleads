@@ -94,6 +94,8 @@ export type TradeSeo = {
   description: string;
   angle: string;
   keywords: string[];
+  /** Natural search phrase for titles when the display name reads badly (e.g. "Garage Door"). */
+  titleName?: string;
 };
 
 function slugifyIndustry(name: string) {
@@ -106,7 +108,7 @@ function slugifyIndustry(name: string) {
 
 const TRADE_COPY: Record<
   string,
-  Pick<TradeSeo, "headline" | "description" | "angle">
+  Pick<TradeSeo, "headline" | "description" | "angle" | "titleName">
 > = {
   roofing: {
     headline: "Roofing contractor leads for agencies",
@@ -164,8 +166,53 @@ const TRADE_COPY: Record<
     angle:
       "High local competition rewards agencies that can own Google Maps and review velocity.",
   },
+  "home-improvement": {
+    headline: "Home improvement contractor leads for agencies",
+    description:
+      "Find home improvement companies with owner names, verified emails, ratings and AI marketing-gap scores.",
+    angle:
+      "Broad home improvement firms sell many services, so they need clear positioning and steady lead flow.",
+  },
+  flooring: {
+    headline: "Flooring contractor leads for agencies",
+    description:
+      "Find flooring installers and showrooms with owner contacts, reviews and AI-scored marketing gaps.",
+    angle:
+      "Flooring jobs are visual and comparison-shopped, which rewards strong galleries, reviews and ads.",
+  },
+  concrete: {
+    headline: "Concrete contractor leads for agencies",
+    description:
+      "Find concrete contractors for driveways, patios and foundations with owner contacts and AI scores.",
+    angle:
+      "Many concrete firms run on referrals with little web presence, leaving room for local SEO and ads.",
+  },
+  "windows-and-doors": {
+    titleName: "Window and Door",
+    headline: "Window and door contractor leads for agencies",
+    description:
+      "Find window and door installers and replacement companies with owner contacts and AI marketing scores.",
+    angle:
+      "High-ticket replacement projects make window and door companies receptive to paid search and financing offers.",
+  },
+  fencing: {
+    headline: "Fencing contractor leads for agencies",
+    description:
+      "Find fence installers and fencing companies with owner names, verified emails and AI opportunity scores.",
+    angle:
+      "Seasonal demand and quote-driven sales make fence companies a good fit for ads and fast follow-up systems.",
+  },
+  "garage-doors": {
+    titleName: "Garage Door",
+    headline: "Garage door contractor leads for agencies",
+    description:
+      "Find garage door repair and installation companies with owner contacts, reviews and AI marketing scores.",
+    angle:
+      "Urgent repair searches make garage door companies big buyers of Google Ads and Local Services Ads.",
+  },
   "cleaning-services": {
-    headline: "Cleaning services contractor leads",
+    titleName: "Cleaning Company",
+    headline: "Cleaning company leads for agencies",
     description:
       "Find commercial and residential cleaning companies with phones, websites, and AI fit scores.",
     angle:
@@ -179,7 +226,8 @@ const TRADE_COPY: Record<
       "Route density and seasonal spikes create strong PPC and LSA conversations.",
   },
   "pool-services": {
-    headline: "Pool services contractor leads for agencies",
+    titleName: "Pool Service",
+    headline: "Pool service company leads for agencies",
     description:
       "Reach pool builders and service companies with live enrichment and outreach studio scripts.",
     angle:
@@ -206,9 +254,9 @@ export const TRADE_PAGES: TradeSeo[] = INDUSTRIES.map((name) => {
     name,
     ...copy,
     keywords: [
-      `${name.toLowerCase()} contractor leads`,
-      `${name.toLowerCase()} leads for agencies`,
-      `verified ${name.toLowerCase()} contractors`,
+      `${(copy.titleName ?? name).toLowerCase()} contractor leads`,
+      `${(copy.titleName ?? name).toLowerCase()} leads for agencies`,
+      `verified ${(copy.titleName ?? name).toLowerCase()} contractors`,
       "contractor prospecting software",
     ],
   };

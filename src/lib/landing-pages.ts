@@ -10,6 +10,8 @@
  * homeowner leads, and the pages say so.
  */
 
+import { EMAIL_LIST_PAGES } from "@/lib/email-list-pages";
+
 export type LandingSection = {
   heading: string;
   body: string;
@@ -41,6 +43,8 @@ export type LandingPage = {
   cta: { href: string; label: string };
   ctaBand: { title: string; description: string };
   serviceType?: string;
+  /** Parent page for nested pages (breadcrumb), e.g. /email-lists for /email-lists/roofing. */
+  parent?: { name: string; path: string };
 };
 
 const AGENCY_NOTE =
@@ -546,7 +550,7 @@ export const LANDING_PAGES: LandingPage[] = [
     kind: "product",
     serviceType: "Contractor email finder and verification",
     primaryKeyword: "contractor email finder",
-    secondaryKeywords: ["find contractor email addresses", "contractor owner email", "contractor email list", "roofer email finder"],
+    secondaryKeywords: ["find contractor email addresses", "contractor owner email", "contractor email lookup", "roofer email finder"],
     titleTag: "Contractor Email Finder: Owner Emails, Verified",
     metaDescription: "Contractor email finder for agencies: find owner names and verified emails for roofers, HVAC, plumbers and 15 more trades. Start with 10 free leads.",
     breadcrumb: "Contractor email finder",
@@ -623,7 +627,7 @@ export const LANDING_PAGES: LandingPage[] = [
       },
     ],
     related: [
-      { href: "/google-maps-scraper", label: "Google Maps scraper" },
+      { href: "/email-lists", label: "Contractor email lists by trade" },
       { href: "/contractor-lead-generation-software", label: "Contractor lead generation software" },
       { href: "/alternatives/hunter-alternative", label: "Hunter.io alternative" },
       { href: "/blog/how-to-find-business-owner-name", label: "How to find a business owner's name" },
@@ -1005,5 +1009,5 @@ export const LANDING_PAGES: LandingPage[] = [
 ];
 
 export function getLandingPage(slug: string): LandingPage | undefined {
-  return LANDING_PAGES.find((p) => p.slug === slug);
+  return LANDING_PAGES.find((p) => p.slug === slug) ?? EMAIL_LIST_PAGES.find((p) => p.slug === slug);
 }

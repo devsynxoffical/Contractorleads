@@ -45,6 +45,10 @@ const AUTO_LINKS: AutoLink[] = [
   { pattern: /\bfenc(e|ing) (contractors?|compan(y|ies)|installers?)\b/i, href: "/blog/fencing-contractor-leads" },
   { pattern: /\bpool (service|cleaning) (compan(y|ies)|business(es)?)\b|\bpool (builders|companies)\b/i, href: "/blog/pool-service-leads" },
   { pattern: /\bgarage door (compan(y|ies)|contractors?|installers?)\b/i, href: "/blog/garage-door-leads" },
+  { pattern: /\bCAN-SPAM\b/, href: "/blog/can-spam-cold-email-contractors" },
+  { pattern: /\blicen[cs]e (lookups?|records?|boards?)\b/i, href: "/blog/contractor-license-lookup-owner-name" },
+  { pattern: /\b(bought|purchased|pre-made) (email |contact )?lists?\b/i, href: "/blog/buy-vs-build-contractor-email-list" },
+  { pattern: /\bcontractors? (email|mailing|contact) lists?\b/i, href: "/email-lists" },
 ];
 
 const MAX_AUTO_LINKS = 8;

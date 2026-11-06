@@ -36,6 +36,7 @@ import {
 } from "@/lib/seo";
 import { buildStateInsight, getStateProfile, topCitiesForState } from "@/lib/state-profiles";
 import { StateInsights } from "@/components/marketing/state-insights";
+import { EMAIL_LIST_TRADES } from "@/lib/email-list-pages";
 
 type Params = { params: Promise<{ slug: string; region: string }> };
 
@@ -187,6 +188,15 @@ export default async function TradeRegionPage({ params }: Params) {
           topCities={topCities}
           finderHref={finderHref}
         />
+        {EMAIL_LIST_TRADES.some((t) => t.slug === trade.slug) ? (
+          <p className="mt-6 text-center text-[14.5px] text-slate-700">
+            Want a ready-to-send file?{" "}
+            <Link href={`/email-lists/${trade.slug}`} className="font-semibold text-fuchsia-700 underline decoration-fuchsia-200 underline-offset-2 hover:decoration-fuchsia-500">
+              Build a {lower} email list for {region.name}
+            </Link>{" "}
+            with owner names and verified emails.
+          </p>
+        ) : null}
       </section>
 
       {/* Compact 4-Step Process Section */}
