@@ -16,7 +16,8 @@
     "db:seed": "node prisma/seed.mjs",
     "postinstall": "prisma generate",
     "package:cpanel": "node scripts/package-cpanel.mjs",
-    "build:vercel": "node scripts/vercel-build.mjs"
+    "build:vercel": "node scripts/vercel-build.mjs",
+    "test": "vitest run"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.13",
@@ -67,7 +68,8 @@
     "eslint-config-next": "16.2.10",
     "tailwindcss": "^4",
     "tsx": "^4.23.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.4"
   },
   "engines": {
     "node": ">=20"

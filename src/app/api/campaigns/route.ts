@@ -10,6 +10,7 @@ import {
   DEFAULT_FOLLOWUP_SEQUENCE,
 } from "@/lib/campaign-engine";
 import { processCampaignSends } from "@/lib/campaign-runner";
+import { overlayWorkspaceContacts } from "@/lib/enrichment/workspace-contacts";
 
 export async function GET() {
   const user = await getSessionUser();
@@ -224,7 +225,7 @@ export async function POST(req: Request) {
               const leadsFromDb = await prisma.lead.findMany({
                 where: { id: { in: parsedIds } },
               });
-              rawLeads = leadsFromDb;
+              rawLeads = await overlayWorkspaceContacts(user.id, leadsFromDb);
             }
           } catch {
             /* ignore */
@@ -246,14 +247,14 @@ export async function POST(req: Request) {
             take: 2500,
             orderBy: { createdAt: "desc" },
           });
-          rawLeads = matching;
+          rawLeads = await overlayWorkspaceContacts(user.id, matching);
         }
       }
     } else if (Array.isArray(leadIds) && leadIds.length > 0) {
       const leadsFromDb = await prisma.lead.findMany({
         where: { id: { in: leadIds } },
       });
-      rawLeads = leadsFromDb;
+      rawLeads = await overlayWorkspaceContacts(user.id, leadsFromDb);
     } else if (body.leads && Array.isArray(body.leads)) {
       rawLeads = body.leads;
     }

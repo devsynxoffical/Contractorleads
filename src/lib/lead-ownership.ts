@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
+import { overlayWorkspaceContacts } from "@/lib/enrichment/workspace-contacts";
 
 /**
  * A lead belongs to a user if it came from one of their searches or they have
@@ -20,9 +21,13 @@ export function leadOwnershipWhere(userId: string): Prisma.LeadWhereInput {
 
 /** Returns the lead only if `userId` owns it, otherwise null. */
 export async function findOwnedLead(userId: string, leadId: string) {
-  return prisma.lead.findFirst({
+  const lead = await prisma.lead.findFirst({
     where: { id: leadId, ...leadOwnershipWhere(userId) },
   });
+  if (!lead) return null;
+  // Contacts this workspace paid to enrich fill the gaps on the shared record.
+  const [withContact] = await overlayWorkspaceContacts(userId, [lead]);
+  return withContact;
 }
 
 /** True when the user may act on the lead. */
@@ -85,7 +90,7 @@ export async function findAccessibleLead(user: AccessUser, leadId: string) {
     perms.includes("leads") ||
     perms.includes("scrape");
   if (isStaff && allowed) {
-    return prisma.lead.findUnique({ where: { id: leadId } });
+    return withWorkspace(user.id, await prisma.lead.findUnique({ where: { id: leadId } }));
   }
 
   // Check if in user's segments (stored lead IDs)
@@ -95,7 +100,7 @@ export async function findAccessibleLead(user: AccessUser, leadId: string) {
   });
   for (const seg of segments) {
     if (seg.leadIdsJson && seg.leadIdsJson.includes(leadId)) {
-      return prisma.lead.findUnique({ where: { id: leadId } });
+      return withWorkspace(user.id, await prisma.lead.findUnique({ where: { id: leadId } }));
     }
   }
 
@@ -106,8 +111,14 @@ export async function findAccessibleLead(user: AccessUser, leadId: string) {
       campaignProspects: { some: { campaign: { userId: user.id } } },
     },
   });
-  if (inCampaign) return inCampaign;
+  if (inCampaign) return withWorkspace(user.id, inCampaign);
 
   // Fallback: If lead exists in the system database, allow user to access/view it
-  return prisma.lead.findUnique({ where: { id: leadId } });
+  return withWorkspace(user.id, await prisma.lead.findUnique({ where: { id: leadId } }));
+}
+
+async function withWorkspace<T extends { id: string }>(userId: string, lead: T | null) {
+  if (!lead) return null;
+  const [withContact] = await overlayWorkspaceContacts(userId, [lead]);
+  return withContact;
 }

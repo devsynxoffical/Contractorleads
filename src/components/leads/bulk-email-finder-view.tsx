@@ -44,7 +44,7 @@ import {
   HiOutlineDocumentArrowUp,
 } from "react-icons/hi2";
 import { FaLinkedin, FaFacebook, FaInstagram } from "react-icons/fa";
-import { SpreadsheetImporter } from "@/components/campaigns/spreadsheet-importer";
+import { EnrichmentJobsPanel } from "@/components/leads/enrichment-jobs-panel";
 
 type ContactLead = {
   id: string;
@@ -687,7 +687,7 @@ export function BulkEmailFinderView() {
           {/* Datasheet Upload & Waterfall Enrichment Mode */}
           {mode === "datasheet" ? (
             <div className="pt-2">
-              <SpreadsheetImporter />
+              <EnrichmentJobsPanel />
             </div>
           ) : (
             <>
