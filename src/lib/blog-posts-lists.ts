@@ -40,6 +40,11 @@ export const LIST_POSTS: BlogPost[] = [
     readingMinutes: 9,
     author: AUTHOR,
     relatedIndustries: ["roofing", "hvac", "plumbing", "electrical", "general-contractors"],
+    sources: [
+      { label: "California CSLB: Check a license", url: "https://www.cslb.ca.gov/onlineservices/checklicenseII/checklicense.aspx" },
+      { label: "California CSLB: Public data portal", url: "https://www.cslb.ca.gov/onlineservices/dataportal/" },
+      { label: "FTC: CAN-SPAM Act, a compliance guide for business", url: "https://www.ftc.gov/business-guidance/resources/can-spam-act-compliance-guide-business" },
+    ],
     directAnswer:
       "To find the owner of a contracting business, search the company in your state's contractor license lookup: most records show the license holder or qualifying individual, who is often the owner in small firms. Confirm the name against the state business registry, the company website's About page and its Google Business Profile replies. Not every trade is licensed in every state, so combine sources, and verify the email before you send anything.",
     summary:
@@ -144,6 +149,11 @@ export const LIST_POSTS: BlogPost[] = [
     readingMinutes: 8,
     author: AUTHOR,
     relatedIndustries: ["roofing", "hvac", "plumbing", "solar"],
+    sources: [
+      { label: "Google: Email sender guidelines (Gmail Help)", url: "https://support.google.com/mail/answer/81126" },
+      { label: "Google: Email sender guidelines FAQ", url: "https://support.google.com/mail/answer/14229414" },
+      { label: "FTC: CAN-SPAM Act, a compliance guide for business", url: "https://www.ftc.gov/business-guidance/resources/can-spam-act-compliance-guide-business" },
+    ],
     directAnswer:
       "Buying a contractor email list is quick, but the data is a snapshot that starts ageing the day it is compiled, owner names are often missing, and old addresses raise your bounce rate. Building a list from live data for your exact trade and area costs a little more effort but gives fresher contacts, owner names and verified emails. Buy only for one-off, broad uses such as market sizing or direct mail; build for cold email.",
     summary:
@@ -246,6 +256,11 @@ export const LIST_POSTS: BlogPost[] = [
     readingMinutes: 8,
     author: AUTHOR,
     relatedIndustries: [],
+    sources: [
+      { label: "FTC: CAN-SPAM Act, a compliance guide for business", url: "https://www.ftc.gov/business-guidance/resources/can-spam-act-compliance-guide-business" },
+      { label: "Google: Email sender guidelines (Gmail Help)", url: "https://support.google.com/mail/answer/81126" },
+      { label: "Google: Email sender guidelines FAQ", url: "https://support.google.com/mail/answer/14229414" },
+    ],
     directAnswer:
       "Cold email to contractors is legal in the US under the CAN-SPAM Act, which has no business-to-business exemption but does not require prior consent. Every email must use accurate sender and header information, an honest subject line, a disclosure that it is commercial, a valid postal address and a clear way to opt out, and you must honour opt-outs within 10 business days. Canada, the UK and the EU have stricter consent rules.",
     summary:

@@ -67,6 +67,8 @@ export type BlogPost = {
   sections: BlogPostSection[];
   /** Industry slugs (see TRADE_PAGES) this guide is most relevant to; drives cross-links. */
   relatedIndustries?: string[];
+  /** Primary sources for factual claims, shown as a "Sources" list and as schema citations. */
+  sources?: Array<{ label: string; url: string }>;
 };
 
 const CORE_POSTS: BlogPost[] = [
@@ -95,8 +97,13 @@ const CORE_POSTS: BlogPost[] = [
     growth: "+18%",
     cluster: "lsa",
     relatedIndustries: ["roofing", "hvac", "plumbing", "electrical"],
+    sources: [
+      { label: "Google: How leads work (Local Services Help)", url: "https://support.google.com/localservices/answer/7195435" },
+      { label: "Google: Local Services Ads move to Performance Max with pay-per-lead goals", url: "https://support.google.com/google-ads/answer/17213585" },
+      { label: "Google: Getting started with Local Services Ads (US)", url: "https://support.google.com/localservices/answer/6224841" },
+    ],
     publishedDate: "2026-10-22",
-    updatedDate: "2026-10-22",
+    updatedDate: "2026-11-07",
     readingMinutes: 16,
     author: {
       name: "Vaishali Kapoor",
@@ -148,7 +155,7 @@ const CORE_POSTS: BlogPost[] = [
       {
         heading: "What changes as LSAs move into Google Ads in 2026",
         level: 3,
-        body: "Google has been moving Local Services Ads management out of the standalone LSA portal and into the Google Ads interface, with leads handled in Google Ads Lead Manager. Expect the remaining standalone features to follow. Key operational updates include: budgets transitioned from weekly to daily schedules, manual bidding replaced by Target CPA bid automation, and unified billing across search and local campaigns. Agencies must download historical dispute records prior to migration.",
+        body: "Google has been moving Local Services Ads management out of the standalone LSA portal and into the Google Ads interface, with leads handled in Google Ads Lead Manager. Expect the remaining standalone features to follow. Google now moves Local Services Ads campaigns into a specialised Performance Max campaign type with pay-per-lead goals, where manual max-per-lead bidding is no longer supported. Key operational updates include: budgets transitioned from weekly to daily schedules, manual bidding replaced by automated bidding, and unified billing across search and local campaigns. Agencies must download historical dispute records prior to migration.",
       },
       {
         heading: "How much do Local Service Ads cost?",
@@ -823,6 +830,11 @@ const CORE_POSTS: BlogPost[] = [
     growth: "+65%",
     cluster: "lsa",
     relatedIndustries: ["plumbing", "hvac", "electrical", "roofing"],
+    sources: [
+      { label: "Google: How leads work (Local Services Help)", url: "https://support.google.com/localservices/answer/7195435" },
+      { label: "Google: Local Services Ads move to Performance Max with pay-per-lead goals", url: "https://support.google.com/google-ads/answer/17213585" },
+      { label: "Google: Getting started with Local Services Ads (US)", url: "https://support.google.com/localservices/answer/6224841" },
+    ],
     publishedDate: "2026-10-22",
     updatedDate: "2026-10-22",
     readingMinutes: 11,

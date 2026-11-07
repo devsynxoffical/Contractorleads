@@ -77,6 +77,7 @@ export default async function BlogPostPage({ params }: Params) {
           wordCount: blogWordCount(post),
           section: BLOG_CLUSTER_LABELS[post.cluster],
           readingMinutes: post.readingMinutes,
+          citations: post.sources,
         })}
       />
       <JsonLd
@@ -245,6 +246,22 @@ export default async function BlogPostPage({ params }: Params) {
             )}
           </section>
         ))}
+
+        {/* Sources: primary references for the factual claims above */}
+        {post.sources && post.sources.length > 0 && (
+          <section className="rounded-2xl border border-slate-200 bg-slate-50/60 p-6">
+            <h2 className="font-[family-name:var(--font-display)] text-[18px] font-bold text-slate-900">Sources</h2>
+            <ul className="mt-3 list-disc space-y-1.5 pl-5 text-[14px] leading-relaxed text-slate-700">
+              {post.sources.map((s) => (
+                <li key={s.url}>
+                  <a href={s.url} target="_blank" rel="noopener noreferrer" className="font-medium text-fuchsia-700 underline decoration-fuchsia-200 underline-offset-2 hover:decoration-fuchsia-500">
+                    {s.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {/* FAQs */}
         {post.faqs.length > 0 && (

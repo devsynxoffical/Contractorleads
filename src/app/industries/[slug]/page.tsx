@@ -37,6 +37,7 @@ import {
   buildMetadata,
   getTradeBySlug,
   isPriorityTrade,
+  lowerTradeLabel,
 } from "@/lib/seo";
 import { BLOG_POSTS } from "@/lib/blog-content";
 import { getTradeHubContent } from "@/lib/trade-hub-content";
@@ -59,12 +60,14 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     : /company$/i.test(name)
       ? `${name} Leads`
       : `${name} Contractor Leads`;
-  const fullTitle = `${leads} for Agencies (10 Free Leads)`;
-  const title = fullTitle.length < 60 ? fullTitle : `${leads} (10 Free Leads)`;
+  // "for Marketing Agencies" makes the intent explicit: "[trade] contractor leads" on its own
+  // is mostly searched by contractors who want homeowner leads.
+  const titleOptions = [`${leads} for Marketing Agencies`, `${leads} for Agencies`, leads];
+  const title = titleOptions.find((t) => t.length < 60) ?? leads;
   const withOffer = `${trade.description} Start with 10 free leads.`;
   return buildMetadata({
     title,
-    description: withOffer.length <= 160 ? withOffer : trade.description,
+    description: withOffer.length < 155 ? withOffer : trade.description,
     path: `/industries/${trade.slug}`,
     keywords: trade.keywords,
   });
@@ -103,7 +106,7 @@ export default async function TradePage({ params }: Params) {
   const trade = getTradeBySlug(slug);
   if (!trade) notFound();
 
-  const lower = trade.name.toLowerCase();
+  const lower = lowerTradeLabel(trade.name);
   const related = TRADE_PAGES.filter((t) => t.slug !== trade.slug).slice(0, 6);
   const priority = isPriorityTrade(trade.slug);
   const hub = getTradeHubContent(trade.slug);
@@ -137,7 +140,7 @@ export default async function TradePage({ params }: Params) {
 
       <MarketingSubpageHero
         eyebrow={`${trade.name} leads`}
-        title={trade.headline}
+        title={trade.headline.replace(/ for agencies$/i, " for marketing agencies")}
         description={trade.description}
       >
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">

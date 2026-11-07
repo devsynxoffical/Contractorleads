@@ -253,6 +253,8 @@ export function blogPostingJsonLd(opts: {
   wordCount?: number;
   section?: string;
   readingMinutes?: number;
+  /** Primary sources the article relies on (schema.org citation). */
+  citations?: Array<{ label: string; url: string }>;
 }) {
   const url = absoluteUrl(opts.path);
   const isFounder = !opts.author || opts.author.name === "Vaishali Kapoor";
@@ -278,6 +280,9 @@ export function blogPostingJsonLd(opts: {
     ...(opts.wordCount ? { wordCount: opts.wordCount } : {}),
     ...(opts.readingMinutes ? { timeRequired: `PT${opts.readingMinutes}M` } : {}),
     ...(opts.section ? { articleSection: opts.section } : {}),
+    ...(opts.citations?.length
+      ? { citation: opts.citations.map((c) => ({ "@type": "CreativeWork", name: c.label, url: c.url })) }
+      : {}),
     author: isFounder
       ? founderRef()
       : {

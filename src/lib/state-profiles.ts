@@ -218,7 +218,7 @@ export function buildStateInsight(
   profile: StateProfile,
   topCities: string[],
 ): StateInsight {
-  const trade = tradeName.toLowerCase();
+  const trade = tradeName.toLowerCase().replace(/\bhvac\b/g, "HVAC");
   const drivers: string[] = [];
   const timing: string[] = [];
   let angle = "";
@@ -388,8 +388,8 @@ export function buildStateInsight(
       a: `Start with the largest metros, ${cityList}, where there are the most ${trade} businesses to compare. Then expand to smaller cities, where competition between agencies is lower and owners are often easier to reach.`,
     },
     {
-      q: `Do ${trade} contractors in ${stateName} need a license?`,
-      a: `Licensing is set by each state and sometimes by cities or counties, and the rules differ by trade and job size. Check the current ${stateName} contractor licensing requirements before you mention licensing in your outreach or ads.`,
+      q: `How do I confirm who owns a ${trade} company in ${stateName}?`,
+      a: `Use two sources that agree: the ${stateName} contractor license lookup where the trade is licensed (it usually names the license holder or qualifier), the ${stateName} secretary of state business filing, the company website's About page, or owner replies to Google reviews. Contractor Leads adds owner names where they can be confirmed.`,
     },
     {
       q: `How many ${trade} businesses can I find in ${stateName}?`,
