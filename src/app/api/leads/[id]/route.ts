@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { CREDIT_COSTS } from "@/lib/constants";
 import { parseLeadFrom, type AppLeadFrom } from "@/lib/nav-context";
 import { findAccessibleLead } from "@/lib/lead-ownership";
+import { overlayWorkspaceContacts } from "@/lib/enrichment/inline";
 
 async function orderedIdsForFrom(
   userId: string,
@@ -177,8 +178,11 @@ export async function GET(
     total: orderedIds.length,
   };
 
+  // This workspace's private enrichment results (paid owner / email / mobile) for the lead.
+  const [withContact] = await overlayWorkspaceContacts(user.id, [lead]);
+
   return NextResponse.json({
-    lead: { ...lead, unlocked: true },
+    lead: { ...withContact, unlocked: true },
     unlock: {
       unlocked: true,
       cost: CREDIT_COSTS.lead,

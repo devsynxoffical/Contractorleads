@@ -591,6 +591,11 @@ export const TRADE_GUIDE_POSTS: BlogPost[] = [
     readingMinutes: 10,
     author: AUTHOR,
     relatedIndustries: [],
+    sources: [
+      { label: "Google: Email sender guidelines (Gmail Help)", url: "https://support.google.com/mail/answer/81126" },
+      { label: "Google: Email sender guidelines FAQ", url: "https://support.google.com/mail/answer/14229414" },
+      { label: "Google: Bulk email best practices (Gmail Help)", url: "https://support.google.com/mail/answer/10979322" },
+    ],
     directAnswer:
       "Email warmup means building a new mailbox's sending reputation gradually before you use it for cold email. Set up SPF, DKIM and DMARC on a separate sending domain, then send a small number of real, engaging emails per day and increase slowly over two to four weeks. Most teams start around 5 to 10 emails a day, aim for 30 to 50 per mailbox per day once warm, and keep spam complaints well below 0.3%. Keep warmup running at a low level even after launch, and spread volume across several mailboxes instead of pushing one.",
     summary:

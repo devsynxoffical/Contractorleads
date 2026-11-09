@@ -216,6 +216,31 @@ const emailSequencesInterval = setInterval(async () => {
   }
 }, 600_000);
 
+// Enrichment jobs worker: every 10 seconds, never overlapping
+let enrichmentRunning = false;
+const enrichmentInterval = setInterval(async () => {
+  if (enrichmentRunning) return;
+  enrichmentRunning = true;
+  try {
+    const url = `http://127.0.0.1:${port}/api/cron/enrichment`;
+    const headers = {};
+    if (process.env.CRON_SECRET) {
+      headers["Authorization"] = `Bearer ${process.env.CRON_SECRET}`;
+    }
+    const res = await fetch(url, { headers });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.processed > 0) {
+        console.log(`[cron] Enrichment worker processed ${data.processed} row(s).`);
+      }
+    }
+  } catch {
+    // server might still be booting or restarting, ignore gracefully
+  } finally {
+    enrichmentRunning = false;
+  }
+}, 10_000);
+
 // Morning daily digest: hourly (the route itself picks the local 7–9am window)
 const dailyDigestInterval = setInterval(async () => {
   try {
@@ -244,6 +269,7 @@ for (const sig of ["SIGTERM", "SIGINT"]) {
     clearInterval(checkoutRecoveryInterval);
     clearInterval(emailSequencesInterval);
     clearInterval(dailyDigestInterval);
+    clearInterval(enrichmentInterval);
     child.kill(sig);
   });
 }

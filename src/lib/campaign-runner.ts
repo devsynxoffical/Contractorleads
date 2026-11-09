@@ -668,16 +668,19 @@ export async function processCampaignSends(opts?: {
 export async function triggerFollowUpStopLogic(
   email: string,
   reason: "replied" | "unsubscribed" | "bounced" | "manual_stop",
-  meta?: { campaignId?: string }
+  meta?: { campaignId?: string; userId?: string }
 ) {
   const normalizedEmail = email.trim().toLowerCase();
   const now = new Date();
 
+  // Scope to the workspace that received the reply: the same address may be a prospect
+  // in another workspace's campaigns, which must not be stopped (workspace isolation).
   const prospects = await prisma.campaignProspect.findMany({
     where: {
-      email: normalizedEmail,
+      email: { equals: normalizedEmail, mode: "insensitive" },
       status: { in: ["pending", "in_progress"] },
       ...(meta?.campaignId ? { campaignId: meta.campaignId } : {}),
+      ...(meta?.userId ? { campaign: { userId: meta.userId } } : {}),
     },
   });
 

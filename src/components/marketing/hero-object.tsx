@@ -15,7 +15,7 @@ import { usePrefersReducedMotion } from "./marketing-motion";
  * halo, a spinning conic light ring and orbiting glow particles. Everything
  * stops under prefers-reduced-motion.
  */
-const HERO_OBJECT_SRC = "/marketing/hero-knot.jpg";
+const HERO_OBJECT_SRC = "/marketing/hero-knot.webp";
 
 const ORBITS = [
   { size: "118%", duration: 22, delay: 0, dot: "#f0abfc", tilt: 62 },
@@ -106,8 +106,13 @@ export function HeroObject({ className = "" }: { className?: string }) {
           src={HERO_OBJECT_SRC}
           alt=""
           draggable={false}
+          fetchPriority="high"
+          decoding="async"
+          width={1024}
+          height={1024}
           className="h-full w-full select-none object-contain"
-          initial={{ opacity: 0, scale: 0.92 }}
+          // Visible in the server HTML (not opacity 0) so it paints before hydration: it is the LCP element.
+          initial={{ opacity: 1, scale: 0.96 }}
           animate={
             reduced
               ? { opacity: 1, scale: 1 }

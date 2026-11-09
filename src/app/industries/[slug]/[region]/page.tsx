@@ -33,9 +33,12 @@ import {
   getRegionBySlug,
   getTradeBySlug,
   isPriorityTrade,
+  lowerTradeLabel,
+  tradeCompaniesLabel,
 } from "@/lib/seo";
 import { buildStateInsight, getStateProfile, topCitiesForState } from "@/lib/state-profiles";
 import { StateInsights } from "@/components/marketing/state-insights";
+import { EMAIL_LIST_TRADES } from "@/lib/email-list-pages";
 
 type Params = { params: Promise<{ slug: string; region: string }> };
 
@@ -62,21 +65,35 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
   const priority = isPriorityTrade(trade.slug);
 
-  // "[Trade] Contractor Leads in [State] for Agencies" when it stays under 60 chars.
+  // List intent ("roofing companies in Texas"), which matches what the page offers. The old
+  // "[Trade] Contractor Leads in [State]" phrasing is mostly searched by contractors who
+  // want homeowner leads, so those results are dominated by lead sellers.
   const leads = tradeLeadsLabel(trade.name);
-  const fullTitle = `${leads} in ${region.name} for Agencies`;
-  const title = fullTitle.length < 60 ? fullTitle : `${leads} in ${region.name}`;
+  const companies = tradeCompaniesLabel(trade.slug, trade.name);
+  const titleOptions = [
+    `${companies} in ${region.name}: List With Owner Emails`,
+    `${companies} in ${region.name}: Owner Emails`,
+    `${companies} in ${region.name} List`,
+    `${companies} in ${region.name}`,
+  ];
+  const title = titleOptions.find((t) => t.length < 60) ?? titleOptions[titleOptions.length - 1];
 
   // Under 155 chars; only true statements (no modeled numbers in search results).
-  const longDesc = `${leads} in ${region.name}: live Google data, owner contacts, AI scores and when to pitch in ${region.name}. 10 free leads.`;
-  const description =
-    longDesc.length < 155 ? longDesc : `${leads} in ${region.name}: live Google data, owner contacts and AI scores. 10 free leads.`;
+  const lower = lowerTradeLabel(companies);
+  const descOptions = [
+    `Build a list of ${lower} in ${region.name} from live Google data, with owner names, verified emails and AI marketing scores. 10 free leads.`,
+    `List ${lower} in ${region.name} from live Google data, with owner names, verified emails and AI scores. 10 free leads.`,
+    `${companies} in ${region.name} with owner names, verified emails and AI scores. 10 free leads.`,
+  ];
+  const description = descOptions.find((d) => d.length < 155) ?? descOptions[descOptions.length - 1];
 
   return buildMetadata({
     title,
     description,
     path: `/industries/${trade.slug}/${region.slug}`,
     keywords: [
+      `${lower} in ${region.name}`,
+      `list of ${lower} in ${region.name}`,
       `${leads.toLowerCase()} ${region.name}`,
       `${region.name} ${trade.name.toLowerCase()} contractors`,
       `${trade.name.toLowerCase()} leads for agencies`,
@@ -93,7 +110,7 @@ export default async function TradeRegionPage({ params }: Params) {
   if (!trade || !region) notFound();
 
   const priority = isPriorityTrade(trade.slug);
-  const lower = trade.name.toLowerCase();
+  const lower = lowerTradeLabel(trade.name);
   const profile = getStateProfile(region.code);
   if (!profile) notFound();
   const topCities = topCitiesForState(region.code);
@@ -145,8 +162,8 @@ export default async function TradeRegionPage({ params }: Params) {
 
       <MarketingSubpageHero
         eyebrow={`${trade.name} · ${region.name}`}
-        title={`${tradeLeadsLabel(trade.name)} in ${region.name}`}
-        description={`Find verified ${lower} contractors in ${region.name} (${region.code}) — live Google data, AI opportunity scores, owner contacts, and outreach scripts.`}
+        title={`${tradeCompaniesLabel(trade.slug, trade.name)} in ${region.name}: list with owner emails`}
+        description={`Build a fresh list of ${lowerTradeLabel(tradeCompaniesLabel(trade.slug, trade.name))} in ${region.name} (${region.code}) for agency outreach: live Google data, owner names, verified emails, AI opportunity scores and outreach scripts.`}
       >
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Link
@@ -180,6 +197,7 @@ export default async function TradeRegionPage({ params }: Params) {
         <StateInsights
           tradeName={trade.name}
           leadsLabel={tradeLeadsLabel(trade.name)}
+          companiesLabel={tradeCompaniesLabel(trade.slug, trade.name)}
           stateName={region.name}
           stateCode={region.code}
           profile={profile}
@@ -187,6 +205,15 @@ export default async function TradeRegionPage({ params }: Params) {
           topCities={topCities}
           finderHref={finderHref}
         />
+        {EMAIL_LIST_TRADES.some((t) => t.slug === trade.slug) ? (
+          <p className="mt-6 text-center text-[14.5px] text-slate-700">
+            Want a ready-to-send file?{" "}
+            <Link href={`/email-lists/${trade.slug}`} className="font-semibold text-fuchsia-700 underline decoration-fuchsia-200 underline-offset-2 hover:decoration-fuchsia-500">
+              Build a {lower} email list for {region.name}
+            </Link>{" "}
+            with owner names and verified emails.
+          </p>
+        ) : null}
       </section>
 
       {/* Compact 4-Step Process Section */}

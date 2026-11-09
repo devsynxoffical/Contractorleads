@@ -431,13 +431,23 @@ export async function ingestInboundEmail(opts: {
   body: string;
   messageId?: string;
   inReplyTo?: string;
+  /** Raw References header (space-separated Message-IDs) */
+  references?: string;
+  /** Lower-case auto-reply related headers, e.g. { "auto-submitted": "auto-replied" } */
+  headers?: Record<string, string>;
   systemSmtpAccountId?: string | null;
   smtpAccountId?: string | null;
   receivedAt?: Date | null;
 }) {
-  const from = opts.fromEmail.trim().toLowerCase();
+  const sender = opts.fromEmail.trim().toLowerCase();
   const to = opts.toEmail.trim().toLowerCase();
-  if (!from || !to) throw new Error("fromEmail and toEmail are required");
+  if (!sender || !to) throw new Error("fromEmail and toEmail are required");
+  // A bounce comes from mailer-daemon: file it under the lead it was sent to.
+  const isDaemon =
+    /^(mailer-daemon|postmaster)@/.test(sender) ||
+    (opts.headers?.["content-type"] ?? "").toLowerCase().includes("multipart/report");
+  const { bouncedRecipientFromBody } = await import("@/lib/unibox/threads");
+  const from = (isDaemon && bouncedRecipientFromBody(opts.body || "")) || sender;
 
   // Prefer matching a lead email owned by an agency that uses `to` as SMTP from
   const smtpOwners = await prisma.smtpAccount.findMany({
@@ -513,13 +523,15 @@ export async function ingestInboundEmail(opts: {
           null,
         systemSmtpAccountId: opts.systemSmtpAccountId || null,
         direction: "inbound",
-        fromEmail: from,
+        fromEmail: sender,
         toEmail: to,
         subject: opts.subject || "(no subject)",
         body: opts.body || "",
         status: "received",
         messageId: opts.messageId || null,
         inReplyTo: opts.inReplyTo || null,
+        references: opts.references || null,
+        headersJson: opts.headers && Object.keys(opts.headers).length ? JSON.stringify(opts.headers) : null,
         createdAt: opts.receivedAt || new Date(),
       },
     });
@@ -529,10 +541,24 @@ export async function ingestInboundEmail(opts: {
       data: { status: "paused", lastError: "Paused — lead replied" },
     });
 
-    // Stop future campaign follow-ups for this prospect immediately
+    // Unibox: thread, campaign match and label (never blocks ingestion)
+    let thread: Awaited<ReturnType<typeof import("@/lib/unibox/threads").attachInboundMessage>> = null;
+    try {
+      const { attachInboundMessage } = await import("@/lib/unibox/threads");
+      thread = await attachInboundMessage(email.id);
+    } catch (err) {
+      console.error("[unibox] thread attach failed", err instanceof Error ? err.message : err);
+    }
+
+    // Any reply stops this workspace's follow-ups to the lead (spec rule 1); a bounce marks
+    // the prospect bounced instead. Scoped to this workspace's campaigns only.
     try {
       const { triggerFollowUpStopLogic } = await import("@/lib/campaign-runner");
-      await triggerFollowUpStopLogic(from, "replied");
+      if (thread?.classification.bounce) {
+        await triggerFollowUpStopLogic(thread.contactEmail, "bounced", { userId });
+      } else {
+        await triggerFollowUpStopLogic(from, "replied", { userId });
+      }
     } catch {
       /* ignore */
     }

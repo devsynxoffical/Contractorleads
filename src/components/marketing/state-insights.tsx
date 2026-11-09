@@ -8,6 +8,7 @@ import {
 } from "react-icons/hi2";
 import type { StateInsight, StateProfile } from "@/lib/state-profiles";
 import { exposureLabels } from "@/lib/state-profiles";
+import { lowerTradeLabel } from "@/lib/seo";
 
 /**
  * State-specific guidance for a trade, built from real state facts (climate, growth,
@@ -16,6 +17,7 @@ import { exposureLabels } from "@/lib/state-profiles";
 export function StateInsights({
   tradeName,
   leadsLabel,
+  companiesLabel,
   stateName,
   stateCode,
   profile,
@@ -25,6 +27,7 @@ export function StateInsights({
 }: {
   tradeName: string;
   leadsLabel: string;
+  companiesLabel: string;
   stateName: string;
   stateCode: string;
   profile: StateProfile;
@@ -32,7 +35,7 @@ export function StateInsights({
   topCities: string[];
   finderHref: string;
 }) {
-  const trade = tradeName.toLowerCase();
+  const trade = lowerTradeLabel(tradeName);
   const exposures = exposureLabels(profile);
 
   return (
@@ -40,13 +43,13 @@ export function StateInsights({
       {/* Quick answer */}
       <div className="rounded-2xl border border-fuchsia-200 bg-gradient-to-br from-fuchsia-50 to-violet-50 p-6">
         <h2 className="font-[family-name:var(--font-display)] text-[20px] font-bold text-slate-900 sm:text-[22px]">
-          How do you find {leadsLabel.toLowerCase()} in {stateName}?
+          How do I get a list of {lowerTradeLabel(companiesLabel)} in {stateName}?
         </h2>
         <p className="mt-3 text-[15px] leading-relaxed text-slate-700">
-          Search live Google data for {trade} businesses in {stateName}, starting with{" "}
+          Search live Google data for {lowerTradeLabel(companiesLabel)} in {stateName}, starting with{" "}
           {topCities.slice(0, 3).join(", ")}. Contractor Leads adds owner names, verified emails and
-          an AI score for website, SEO and ad gaps, so you pitch the businesses that need marketing
-          most first. Your first 10 leads are free, with no credit card.
+          an AI score for website, SEO and ad gaps, so your list shows which businesses need marketing
+          most. Export it to CSV or Excel; your first 10 leads are free, with no credit card.
         </p>
       </div>
 

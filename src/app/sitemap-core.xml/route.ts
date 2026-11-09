@@ -1,5 +1,6 @@
 import { seoBaseUrl } from "@/lib/seo";
 import { pageUpdated } from "@/lib/page-dates";
+import { EMAIL_LIST_TRADES } from "@/lib/email-list-pages";
 
 export const dynamic = "force-static";
 
@@ -33,6 +34,8 @@ export async function GET() {
     { path: "/commercial-contractor-leads", priority: "0.8", changefreq: "monthly" },
     { path: "/storm-damage-leads", priority: "0.8", changefreq: "monthly" },
     { path: "/new-construction-leads", priority: "0.8", changefreq: "monthly" },
+    { path: "/email-lists", priority: "0.85", changefreq: "monthly" },
+    ...EMAIL_LIST_TRADES.map((t) => ({ path: `/email-lists/${t.slug}`, priority: "0.8", changefreq: "monthly" })),
   ];
 
   const urls = coreRoutes

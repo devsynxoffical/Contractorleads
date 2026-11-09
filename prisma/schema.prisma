@@ -10,159 +10,162 @@ datasource db {
 }
 
 model User {
-  id                  String   @id @default(cuid())
-  email               String   @unique
-  passwordHash        String
-  name                String?
-  phone               String?
-  emailVerifiedAt     DateTime?
-  role                String   @default("USER")
-  plan                String   @default("starter")
-  subscriptionStatus  String   @default("trialing")
-  stripeCustomerId    String?  @unique
-  stripeSubscriptionId String? @unique
-  stripePriceId       String?
-  razorpayCustomerId   String?  @unique
-  razorpaySubscriptionId String? @unique
-  razorpayPaymentId    String?
-  razorpayOrderId      String?
-  isActive            Boolean  @default(true)
-  adminNotes          String?
+  id                     String    @id @default(cuid())
+  email                  String    @unique
+  passwordHash           String
+  name                   String?
+  phone                  String?
+  emailVerifiedAt        DateTime?
+  role                   String    @default("USER")
+  plan                   String    @default("starter")
+  subscriptionStatus     String    @default("trialing")
+  stripeCustomerId       String?   @unique
+  stripeSubscriptionId   String?   @unique
+  stripePriceId          String?
+  razorpayCustomerId     String?   @unique
+  razorpaySubscriptionId String?   @unique
+  razorpayPaymentId      String?
+  razorpayOrderId        String?
+  isActive               Boolean   @default(true)
+  adminNotes             String?
   /// Bumped on password change/reset so previously issued JWTs stop validating
-  sessionVersion      Int      @default(0)
+  sessionVersion         Int       @default(0)
   /// Messaging add-on ($30/mo): unlocks bulk email + SMS. inactive|active|past_due|canceled
-  messagingAddonStatus String  @default("inactive")
+  messagingAddonStatus   String    @default("inactive")
   /// Stripe subscription id for the messaging add-on (separate from the plan sub)
-  messagingAddonSubId String?  @unique
+  messagingAddonSubId    String?   @unique
   /// Admin-granted messaging add-on (comped, bypasses Stripe)
-  messagingAddonManual Boolean @default(false)
-  creditsRemaining    Float    @default(13.3)
-  onboardingComplete  Boolean  @default(false)
+  messagingAddonManual   Boolean   @default(false)
+  creditsRemaining       Float     @default(13.3)
+  onboardingComplete     Boolean   @default(false)
   /// Post-purchase product walkthrough dismissed or finished
-  productTourCompleted Boolean @default(false)
-  darkMode            Boolean  @default(false)
-  companyName         String?
+  productTourCompleted   Boolean   @default(false)
+  darkMode               Boolean   @default(false)
+  companyName            String?
   /// Agency branding for client-facing reports / PDFs
-  companyLogoData     String?  // data URL (image/png|jpeg|webp), compressed
-  companyWebsite      String?
-  companyTagline      String?
-  companyAddress      String?
-  reportAccentColor   String?  // hex e.g. #3D1078
+  companyLogoData        String? // data URL (image/png|jpeg|webp), compressed
+  companyWebsite         String?
+  companyTagline         String?
+  companyAddress         String?
+  reportAccentColor      String? // hex e.g. #3D1078
   /// Agency owner contact (managed from admin + settings)
-  ownerName           String?
-  ownerEmail          String?
-  ownerPhone          String?
-  businessDescription String?
-  services            String?
-  idealCustomer       String?
-  serviceAreas        String?
-  mainGoal            String?
+  ownerName              String?
+  ownerEmail             String?
+  ownerPhone             String?
+  businessDescription    String?
+  services               String?
+  idealCustomer          String?
+  serviceAreas           String?
+  mainGoal               String?
   /// Per-agency custom instructions injected into AI answers (voice, rules, offers).
-  aiCustomInstructions String?
-  crmWebhookUrl       String?
-  crmWebhookSecret   String?
-  crmWebhookEnabled   Boolean  @default(false)
-  slackWebhookUrl     String?
-  slackEnabled        Boolean  @default(false)
-  ghlWebhookUrl       String?
-  ghlEnabled          Boolean  @default(false)
+  aiCustomInstructions   String?
+  crmWebhookUrl          String?
+  crmWebhookSecret       String?
+  crmWebhookEnabled      Boolean   @default(false)
+  slackWebhookUrl        String?
+  slackEnabled           Boolean   @default(false)
+  ghlWebhookUrl          String?
+  ghlEnabled             Boolean   @default(false)
   /// Admin kill-switches (default on — plan still gates availability)
-  ssoEnabled          Boolean  @default(true)
-  apiEnabled          Boolean  @default(true)
-  mcpEnabled          Boolean  @default(true)
-  apiMonthlyLimit     Int?
-  apiMonthlyUsed      Int      @default(0)
-  apiUsageResetAt     DateTime?
-  apiKeyHash          String?
-  apiKeyLast4         String?
+  ssoEnabled             Boolean   @default(true)
+  apiEnabled             Boolean   @default(true)
+  mcpEnabled             Boolean   @default(true)
+  apiMonthlyLimit        Int?
+  apiMonthlyUsed         Int       @default(0)
+  apiUsageResetAt        DateTime?
+  apiKeyHash             String?
+  apiKeyLast4            String?
   /// Facebook profile sync (OAuth) for Ads / FB hub
-  facebookUserId      String?
-  facebookName        String?
-  facebookPictureUrl  String?
+  facebookUserId         String?
+  facebookName           String?
+  facebookPictureUrl     String?
   facebookAccessTokenEnc String?
   facebookTokenExpiresAt DateTime?
-  facebookConnectedAt DateTime?
+  facebookConnectedAt    DateTime?
   /// Product / scrape notification emails (CAN-SPAM opt-in)
-  emailMarketingOptIn Boolean  @default(true)
+  emailMarketingOptIn    Boolean   @default(true)
   /// Unique shareable referral / affiliate code
-  referralCode        String?  @unique
+  referralCode           String?   @unique
   /// Withdrawable referral commission balance (USD)
-  referralBalanceUsd  Float    @default(0)
+  referralBalanceUsd     Float     @default(0)
   /// Who referred this user (agency signup attribution)
-  referredByUserId    String?
-  referredBy          User?    @relation("UserReferrals", fields: [referredByUserId], references: [id], onDelete: SetNull)
-  referralsMade       User[]   @relation("UserReferrals")
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  referredByUserId       String?
+  referredBy             User?     @relation("UserReferrals", fields: [referredByUserId], references: [id], onDelete: SetNull)
+  referralsMade          User[]    @relation("UserReferrals")
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 
-  searches        Search[]
-  savedLeads      SavedLead[]
-  scripts         Script[]
-  creditLedger    CreditLedger[]
-  activities      ActivityLog[]
-  exports         Export[]
-  aiConversations AiConversation[]
-  smtpSettings    UserSmtpSettings?
-  smtpAccounts    SmtpAccount[]
-  leadEmails      LeadEmail[]
-  leadSms         LeadSms[]
-  emailSequence   EmailSequence?
-  emailEnrollments EmailEnrollment[]
-  passwordResets  PasswordResetToken[]
-  referralsAsReferrer Referral[] @relation("ReferrerReferrals")
-  referralAsReferred  Referral?  @relation("ReferredReferral")
-  referralWithdrawals ReferralWithdrawal[]
-  referralEarnings    ReferralEarningLedger[]
-  teamMembers     TeamMember[]
-  leadUnlocks     LeadUnlock[]
-  couponRedemptions CouponRedemption[]
-  digestSubscription DigestSubscription?
-  digestDeliveries   DigestDelivery[]
-  assignedSystemMailboxes SystemSmtpAccount[] @relation("AssignedSystemMailboxes")
-  leadSegments       LeadSegment[]
-  digestEmailSegments DigestEmailSegment[]
-  campaigns          Campaign[]
-  checkoutAttempts   CheckoutAttempt[]
+  searches                Search[]
+  savedLeads              SavedLead[]
+  scripts                 Script[]
+  creditLedger            CreditLedger[]
+  activities              ActivityLog[]
+  exports                 Export[]
+  aiConversations         AiConversation[]
+  smtpSettings            UserSmtpSettings?
+  smtpAccounts            SmtpAccount[]
+  leadEmails              LeadEmail[]
+  leadSms                 LeadSms[]
+  emailSequence           EmailSequence?
+  emailEnrollments        EmailEnrollment[]
+  passwordResets          PasswordResetToken[]
+  referralsAsReferrer     Referral[]              @relation("ReferrerReferrals")
+  referralAsReferred      Referral?               @relation("ReferredReferral")
+  referralWithdrawals     ReferralWithdrawal[]
+  referralEarnings        ReferralEarningLedger[]
+  teamMembers             TeamMember[]
+  leadUnlocks             LeadUnlock[]
+  couponRedemptions       CouponRedemption[]
+  digestSubscription      DigestSubscription?
+  digestDeliveries        DigestDelivery[]
+  assignedSystemMailboxes SystemSmtpAccount[]     @relation("AssignedSystemMailboxes")
+  leadSegments            LeadSegment[]
+  digestEmailSegments     DigestEmailSegment[]
+  campaigns               Campaign[]
+  enrichmentJobs          EnrichmentJob[]
+  workspaceContacts       WorkspaceLeadContact[]
+  inboxThreads            InboxThread[]
+  checkoutAttempts        CheckoutAttempt[]
 }
 
 /// Morning email of fresh verified leads matching the user's saved filters.
 model DigestSubscription {
-  id             String   @id @default(cuid())
-  userId         String   @unique
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  enabled        Boolean  @default(false)
-  industry       String   @default("Roofing")
-  country        String   @default("US")
+  id             String           @id @default(cuid())
+  userId         String           @unique
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enabled        Boolean          @default(false)
+  industry       String           @default("Roofing")
+  country        String           @default("US")
   /// local = state/city; country = entire country
-  locationScope  String   @default("local")
+  locationScope  String           @default("local")
   state          String?
   city           String?
   /// Allowed: 20 | 50 | 100
-  dailyLeadCount Int      @default(20)
+  dailyLeadCount Int              @default(20)
   /// IANA timezone for morning delivery window (default US Central)
-  timezone       String   @default("America/Chicago")
+  timezone       String           @default("America/Chicago")
   lastRunAt      DateTime?
   lastError      String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
   deliveries     DigestDelivery[]
 }
 
 /// One morning delivery batch (leads emailed to the subscriber).
 model DigestDelivery {
-  id             String   @id @default(cuid())
+  id             String             @id @default(cuid())
   userId         String
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   subscriptionId String
   subscription   DigestSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
   leadCount      Int
   /// JSON array of lead ids
   leadIds        String
-  creditsCharged Float    @default(0)
+  creditsCharged Float              @default(0)
   /// sent | skipped | failed
-  emailStatus    String   @default("sent")
+  emailStatus    String             @default("sent")
   error          String?
-  createdAt      DateTime @default(now())
+  createdAt      DateTime           @default(now())
 
   @@index([userId, createdAt])
   @@index([subscriptionId, createdAt])
@@ -211,80 +214,80 @@ model AiMessage {
 }
 
 model Lead {
-  id                        String   @id @default(cuid())
-  businessName              String
-  ownerName                 String?
-  ownerTitle                String?
-  ownerSourceUrl            String?
-  ownerConfidence           Int?
-  teamMembersJson           String?
-  peopleEnrichedAt          DateTime?
-  phone                     String?
-  email                     String?
-  emailSourceUrl            String?
+  id                           String    @id @default(cuid())
+  businessName                 String
+  ownerName                    String?
+  ownerTitle                   String?
+  ownerSourceUrl               String?
+  ownerConfidence              Int?
+  teamMembersJson              String?
+  peopleEnrichedAt             DateTime?
+  phone                        String?
+  email                        String?
+  emailSourceUrl               String?
   // --- Email Verification Fields (Section 06) ---
-  emailStatus               String   @default("unknown") // safe | catchall | role | invalid | unknown
-  emailVerifiedAt           DateTime?
-  emailBounceRisk           String?  // low | medium | high | critical
-  isRoleAccount             Boolean  @default(false)
-  emailVerifySource         String?  // zerobounce | neverbounce | millionverifier | hunter | bouncer | smtp_handshake | mx_dns
-  emailScore                Float?   // 0.00 - 1.00
-  emailSubStatus            String?  // mailbox_verified | accept_all | role_based | mailbox_not_found | etc.
-  website                   String?
-  googleRating              Float?
-  reviewCount               Int?
-  address                   String?
-  googleMapsLink            String?
-  yearsInBusiness           Int?
-  leadScore                 Int      @default(0)
-  serviceCategory           String?
-  revenueRangeEstimate      String?
-  websiteQualityScore       Int?
-  marketingOpportunityScore Int?
-  ppcOpportunityScore       Int?
-  seoOpportunityScore       Int?
-  outreachAngle             String?
-  facebook                  String?
-  instagram                 String?
-  yelpUrl                   String?
-  yelpRating                Float?
-  yelpReviews               Int?
-  tiktok                    String?
-  nextdoor                  String?
-  houzzUrl                  String?
-  houzzRating               Float?
-  houzzReviews              Int?
-  linkedinUrl               String?
-  linkedinCompanyUrl        String?
-  linkedinOwnerUrl          String?
-  linkedinConfidenceScore   Float?
+  emailStatus                  String    @default("unknown") // safe | catchall | role | invalid | unknown
+  emailVerifiedAt              DateTime?
+  emailBounceRisk              String? // low | medium | high | critical
+  isRoleAccount                Boolean   @default(false)
+  emailVerifySource            String? // zerobounce | neverbounce | millionverifier | hunter | bouncer | smtp_handshake | mx_dns
+  emailScore                   Float? // 0.00 - 1.00
+  emailSubStatus               String? // mailbox_verified | accept_all | role_based | mailbox_not_found | etc.
+  website                      String?
+  googleRating                 Float?
+  reviewCount                  Int?
+  address                      String?
+  googleMapsLink               String?
+  yearsInBusiness              Int?
+  leadScore                    Int       @default(0)
+  serviceCategory              String?
+  revenueRangeEstimate         String?
+  websiteQualityScore          Int?
+  marketingOpportunityScore    Int?
+  ppcOpportunityScore          Int?
+  seoOpportunityScore          Int?
+  outreachAngle                String?
+  facebook                     String?
+  instagram                    String?
+  yelpUrl                      String?
+  yelpRating                   Float?
+  yelpReviews                  Int?
+  tiktok                       String?
+  nextdoor                     String?
+  houzzUrl                     String?
+  houzzRating                  Float?
+  houzzReviews                 Int?
+  linkedinUrl                  String?
+  linkedinCompanyUrl           String?
+  linkedinOwnerUrl             String?
+  linkedinConfidenceScore      Float?
   linkedinOwnerConfidenceScore Float?
-  linkedinType              String   @default("none")
-  youtube                   String?
-  facebookAdsData           String?
-  facebookAdsCheckedAt      DateTime?
-  socialEnrichedAt          DateTime?
-  verificationStatus        String   @default("verified")
-  industry                  String?
-  country                   String   @default("US")
-  state                     String?
-  city                      String?
-  zip                       String?
-  latitude                  Float?
-  longitude                 Float?
-  qualityTier               String?
-  searchId                  String?
-  search                    Search?  @relation(fields: [searchId], references: [id], onDelete: SetNull)
-  createdAt                 DateTime @default(now())
+  linkedinType                 String    @default("none")
+  youtube                      String?
+  facebookAdsData              String?
+  facebookAdsCheckedAt         DateTime?
+  socialEnrichedAt             DateTime?
+  verificationStatus           String    @default("verified")
+  industry                     String?
+  country                      String    @default("US")
+  state                        String?
+  city                         String?
+  zip                          String?
+  latitude                     Float?
+  longitude                    Float?
+  qualityTier                  String?
+  searchId                     String?
+  search                       Search?   @relation(fields: [searchId], references: [id], onDelete: SetNull)
+  createdAt                    DateTime  @default(now())
 
   // --- SME Business Data Extraction & Validation ---
-  businessEstablishedDate   DateTime?
-  businessRegistrationDate  DateTime?
-  businessAgeYears          Int?
-  businessAgeSource         String?
-  businessAgeConfidence     Int?
-  businessAgeLastVerified   DateTime?
-  businessMaturity          String?  @default("growing") // emerging | growing | established | mature | highly_established
+  businessEstablishedDate  DateTime?
+  businessRegistrationDate DateTime?
+  businessAgeYears         Int?
+  businessAgeSource        String?
+  businessAgeConfidence    Int?
+  businessAgeLastVerified  DateTime?
+  businessMaturity         String?   @default("growing") // emerging | growing | established | mature | highly_established
 
   // --- Domain / WHOIS / RDAP Intelligence ---
   domainName                String?
@@ -296,61 +299,61 @@ model Lead {
   domainRegistrationCountry String?
   domainSource              String?
   domainConfidence          Int?
-  domainPrivacyStatus       String?  @default("unknown") // protected | public | unknown
+  domainPrivacyStatus       String?   @default("unknown") // protected | public | unknown
 
   // --- Business Registration Information ---
-  legalBusinessName         String?
-  tradingDbaName            String?
-  registrationNumber        String?
-  registrationJurisdiction  String?
-  registeredState           String?
-  registeredCountry         String?
-  entityType                String?
-  registrationStatus        String?
-  registrationSourceUrl     String?
-  registrationLastVerified  DateTime?
+  legalBusinessName        String?
+  tradingDbaName           String?
+  registrationNumber       String?
+  registrationJurisdiction String?
+  registeredState          String?
+  registeredCountry        String?
+  entityType               String?
+  registrationStatus       String?
+  registrationSourceUrl    String?
+  registrationLastVerified DateTime?
 
   // --- Company Size / Team Size Signals ---
   employeeCount             Int?
   employeeCountSource       String?
   employeeCountConfidence   Int?
   employeeCountLastVerified DateTime?
-  companySizeCategory       String?  @default("2-5") // solo | 2-5 | 6-10 | 11-15 | 16-20 | 21-50 | 51-100 | 100+
-  locationCount             Int?     @default(1)
-  isFranchiseOrEnterprise   Boolean  @default(false)
+  companySizeCategory       String?   @default("2-5") // solo | 2-5 | 6-10 | 11-15 | 16-20 | 21-50 | 51-100 | 100+
+  locationCount             Int?      @default(1)
+  isFranchiseOrEnterprise   Boolean   @default(false)
 
   // --- Decision-Maker Identification (Strict Non-Generic) ---
-  decisionMakerFound        Boolean  @default(false)
-  decisionMakerName         String?
-  decisionMakerFirstName    String?
-  decisionMakerLastName     String?
-  decisionMakerTitle        String?
-  decisionMakerRole         String?  // owner | founder | ceo | president | managing_director | partner | principal | general_manager
-  decisionMakerLinkedIn     String?
+  decisionMakerFound               Boolean   @default(false)
+  decisionMakerName                String?
+  decisionMakerFirstName           String?
+  decisionMakerLastName            String?
+  decisionMakerTitle               String?
+  decisionMakerRole                String? // owner | founder | ceo | president | managing_director | partner | principal | general_manager
+  decisionMakerLinkedIn            String?
   decisionMakerProfessionalProfile String?
-  decisionMakerEmail        String?
-  decisionMakerEmailType    String?  @default("generic") // decision_maker | personal_business | generic
-  decisionMakerEmailVerification String? @default("unverified") // verified | unverified | invalid | risky
-  decisionMakerDirectPhone  String?
-  decisionMakerPhoneType    String?  @default("main_company") // direct_mobile | direct_office | main_company
-  decisionMakerSource       String?
-  decisionMakerVerified     Boolean  @default(false)
-  decisionMakerVerificationDate DateTime?
-  decisionMakerConfidence   Int?     @default(0)
+  decisionMakerEmail               String?
+  decisionMakerEmailType           String?   @default("generic") // decision_maker | personal_business | generic
+  decisionMakerEmailVerification   String?   @default("unverified") // verified | unverified | invalid | risky
+  decisionMakerDirectPhone         String?
+  decisionMakerPhoneType           String?   @default("main_company") // direct_mobile | direct_office | main_company
+  decisionMakerSource              String?
+  decisionMakerVerified            Boolean   @default(false)
+  decisionMakerVerificationDate    DateTime?
+  decisionMakerConfidence          Int?      @default(0)
 
   // --- Multi-Source Validation & SME Quality Scoring ---
-  sourcesCount              Int      @default(1)
-  sourcesUsedJson           String?
-  businessVerified          Boolean  @default(false)
-  smeQualityScore           Int      @default(0) // 100-point rubric
-  isLowPriorityOrExcluded   Boolean  @default(false)
-  exclusionReasonsJson      String?  // JSON array of exclusion flags
-  lastVerifiedAt            DateTime?
+  sourcesCount            Int       @default(1)
+  sourcesUsedJson         String?
+  businessVerified        Boolean   @default(false)
+  smeQualityScore         Int       @default(0) // 100-point rubric
+  isLowPriorityOrExcluded Boolean   @default(false)
+  exclusionReasonsJson    String? // JSON array of exclusion flags
+  lastVerifiedAt          DateTime?
 
-  savedBy SavedLead[]
-  emails  LeadEmail[]
-  sms     LeadSms[]
-  unlocks LeadUnlock[]
+  savedBy           SavedLead[]
+  emails            LeadEmail[]
+  sms               LeadSms[]
+  unlocks           LeadUnlock[]
   campaignProspects CampaignProspect[]
 
   @@unique([googleMapsLink])
@@ -381,36 +384,36 @@ model LeadUnlock {
 }
 
 model Search {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  industry    String
-  country     String   @default("US")
-  locationScope String @default("local")
-  state       String?
-  city        String?
-  zip         String?
-  radius      Int?
-  resultCount Int      @default(0)
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  industry      String
+  country       String   @default("US")
+  locationScope String   @default("local")
+  state         String?
+  city          String?
+  zip           String?
+  radius        Int?
+  resultCount   Int      @default(0)
+  createdAt     DateTime @default(now())
 
   leads Lead[]
 }
 
 model SavedLead {
-  id        String     @id @default(cuid())
-  userId    String
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  leadId    String
-  lead      Lead       @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  status    String     @default("new")
-  favorite  Boolean    @default(false)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  notes     LeadNote[]
+  id               String            @id @default(cuid())
+  userId           String
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leadId           String
+  lead             Lead              @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  status           String            @default("new")
+  favorite         Boolean           @default(false)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  notes            LeadNote[]
   emailEnrollments EmailEnrollment[]
-  emails    LeadEmail[]
-  sms       LeadSms[]
+  emails           LeadEmail[]
+  sms              LeadSms[]
 
   @@unique([userId, leadId])
 }
@@ -467,22 +470,22 @@ model Export {
 /// that the user can one-click apply on the All Leads page and optionally
 /// use as the target for a daily digest subscription.
 model LeadSegment {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name      String
-  industry  String?
-  country   String?  @default("US")
-  state     String?
-  city      String?
-  leadCount Int      @default(0)
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  industry    String?
+  country     String?  @default("US")
+  state       String?
+  city        String?
+  leadCount   Int      @default(0)
   leadIdsJson String?
-  when      String?  // all | today | yesterday | week | month | 90days
-  tier      String?  // all | hot | warm | nurture
-  strength  String?  // all | strong | medium | developing
-  q         String?
-  sort      String?  // newest | score | oldest
-  createdAt DateTime @default(now())
+  when        String? // all | today | yesterday | week | month | 90days
+  tier        String? // all | hot | warm | nurture
+  strength    String? // all | strong | medium | developing
+  q           String?
+  sort        String? // newest | score | oldest
+  createdAt   DateTime @default(now())
 
   campaigns Campaign[]
 
@@ -493,24 +496,24 @@ model LeadSegment {
 /// different industry / location / time window. Replaces the single
 /// DigestSubscription for users who want segmented morning emails.
 model DigestEmailSegment {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name          String   // e.g. "Plumbing – Dallas"
-  enabled       Boolean  @default(true)
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name           String // e.g. "Plumbing – Dallas"
+  enabled        Boolean   @default(true)
   /// Target industry (e.g. "Plumbing")
-  industry      String
-  country       String   @default("US")
-  locationScope String   @default("local")  // local | country
-  state         String?
-  city          String?
+  industry       String
+  country        String    @default("US")
+  locationScope  String    @default("local") // local | country
+  state          String?
+  city           String?
   /// Daily lead count: 20 | 50 | 100
-  dailyLeadCount Int     @default(20)
-  timezone      String   @default("America/Chicago")
-  lastRunAt     DateTime?
-  lastError     String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  dailyLeadCount Int       @default(20)
+  timezone       String    @default("America/Chicago")
+  lastRunAt      DateTime?
+  lastError      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@index([userId])
   @@index([enabled, lastRunAt])
@@ -582,21 +585,21 @@ model PlanPricingConfig {
 
 /// Admin-editable Stripe Billing keys (overrides env when set).
 model StripeBillingConfig {
-  id             String   @id @default("default")
-  secretKey      String   @default("")
-  publishableKey String   @default("")
-  webhookSecret  String   @default("")
-  priceStarter   String   @default("")
-  priceStarterAnnual String @default("")
-  priceGrowth    String   @default("")
-  priceGrowthAnnual String @default("")
-  priceAgency    String   @default("")
-  priceAgencyAnnual String @default("")
+  id                 String   @id @default("default")
+  secretKey          String   @default("")
+  publishableKey     String   @default("")
+  webhookSecret      String   @default("")
+  priceStarter       String   @default("")
+  priceStarterAnnual String   @default("")
+  priceGrowth        String   @default("")
+  priceGrowthAnnual  String   @default("")
+  priceAgency        String   @default("")
+  priceAgencyAnnual  String   @default("")
   /// $30/mo Messaging add-on (bulk email + SMS)
-  priceMessaging String   @default("")
+  priceMessaging     String   @default("")
   /// $15 AI Website + SEO report add-on (one-time checkout per report)
-  priceSeoReport String   @default("")
-  updatedAt      DateTime @updatedAt
+  priceSeoReport     String   @default("")
+  updatedAt          DateTime @updatedAt
 }
 
 /// Admin-editable Razorpay Billing keys (overrides env when set).
@@ -619,30 +622,30 @@ model EmailProviderConfig {
 
 /// Platform Twilio credentials for SMS (Messaging add-on). Admin-editable; env fallback.
 model TwilioConfig {
-  id                   String   @id @default("default")
-  accountSid           String   @default("")
-  authToken            String   @default("")
+  id                  String   @id @default("default")
+  accountSid          String   @default("")
+  authToken           String   @default("")
   /// E.164 Twilio number used as the From address, e.g. +15551234567
-  fromNumber           String   @default("")
+  fromNumber          String   @default("")
   /// Optional Messaging Service SID (MG…) — preferred over fromNumber when set
-  messagingServiceSid  String   @default("")
-  updatedAt            DateTime @updatedAt
+  messagingServiceSid String   @default("")
+  updatedAt           DateTime @updatedAt
 }
 
 /// Platform API secrets (Serper, Google Places, OpenAI, NinjaPear, Yelp, Meta).
 /// Admin-editable; env fallback. Non-empty DB fields win over env.
 model PlatformKeyConfig {
-  id                 String   @id @default("default")
-  serperApiKey       String   @default("")
-  googlePlacesApiKey String   @default("")
-  googlePlacesApiKey2 String  @default("")
-  openaiApiKey       String   @default("")
-  ninjapearApiKey    String   @default("")
-  yelpFusionApiKey   String   @default("")
-  metaAccessToken    String   @default("")
-  metaAppId          String   @default("")
-  metaAppSecret      String   @default("")
-  updatedAt          DateTime @updatedAt
+  id                  String   @id @default("default")
+  serperApiKey        String   @default("")
+  googlePlacesApiKey  String   @default("")
+  googlePlacesApiKey2 String   @default("")
+  openaiApiKey        String   @default("")
+  ninjapearApiKey     String   @default("")
+  yelpFusionApiKey    String   @default("")
+  metaAccessToken     String   @default("")
+  metaAppId           String   @default("")
+  metaAppSecret       String   @default("")
+  updatedAt           DateTime @updatedAt
 }
 
 /// Outbound and inbound SMS tied to a lead (Twilio).
@@ -676,25 +679,25 @@ model LeadSms {
 
 /// One signup attributed to a referrer. Commission pays on plan purchases and renewals.
 model Referral {
-  id                String    @id @default(cuid())
-  referrerId        String
-  referrer          User      @relation("ReferrerReferrals", fields: [referrerId], references: [id], onDelete: Cascade)
-  referredUserId    String    @unique
-  referredUser      User      @relation("ReferredReferral", fields: [referredUserId], references: [id], onDelete: Cascade)
-  status            String    @default("pending") // pending | rewarded | blocked
+  id                 String         @id @default(cuid())
+  referrerId         String
+  referrer           User           @relation("ReferrerReferrals", fields: [referrerId], references: [id], onDelete: Cascade)
+  referredUserId     String         @unique
+  referredUser       User           @relation("ReferredReferral", fields: [referredUserId], references: [id], onDelete: Cascade)
+  status             String         @default("pending") // pending | rewarded | blocked
   /// Legacy credit fields (unused — kept for existing rows)
-  rewardCredits     Float     @default(0)
-  milestoneBonus    Float     @default(0)
-  commissionUsd     Float     @default(0)
-  milestoneBonusUsd Float     @default(0)
-  planAtReward      String?
-  purchaseAmountUsd Float?
-  totalRevenueUsd   Float     @default(0)
-  totalCommissionUsd Float    @default(0)
-  totalSalesCount   Int       @default(0)
-  createdAt         DateTime  @default(now())
-  rewardedAt        DateTime?
-  sales             ReferralSale[]
+  rewardCredits      Float          @default(0)
+  milestoneBonus     Float          @default(0)
+  commissionUsd      Float          @default(0)
+  milestoneBonusUsd  Float          @default(0)
+  planAtReward       String?
+  purchaseAmountUsd  Float?
+  totalRevenueUsd    Float          @default(0)
+  totalCommissionUsd Float          @default(0)
+  totalSalesCount    Int            @default(0)
+  createdAt          DateTime       @default(now())
+  rewardedAt         DateTime?
+  sales              ReferralSale[]
 
   @@index([referrerId, createdAt])
   @@index([status])
@@ -702,20 +705,20 @@ model Referral {
 
 /// Individual sales and renewals attributed to an affiliate.
 model ReferralSale {
-  id                String    @id @default(cuid())
-  referralId        String
-  referral          Referral  @relation(fields: [referralId], references: [id], onDelete: Cascade)
-  referrerId        String
-  referredUserId    String
-  amountUsd         Float
-  commissionUsd     Float
-  commissionRate    Float     @default(30)
-  plan              String
-  type              String    @default("initial") // initial | renewal | upgrade | addon
-  paymentProvider   String?   // stripe | razorpay | manual
-  invoiceId         String?   @unique
-  status            String    @default("completed") // completed | refunded
-  createdAt         DateTime  @default(now())
+  id              String   @id @default(cuid())
+  referralId      String
+  referral        Referral @relation(fields: [referralId], references: [id], onDelete: Cascade)
+  referrerId      String
+  referredUserId  String
+  amountUsd       Float
+  commissionUsd   Float
+  commissionRate  Float    @default(30)
+  plan            String
+  type            String   @default("initial") // initial | renewal | upgrade | addon
+  paymentProvider String? // stripe | razorpay | manual
+  invoiceId       String?  @unique
+  status          String   @default("completed") // completed | refunded
+  createdAt       DateTime @default(now())
 
   @@index([referralId, createdAt])
   @@index([referrerId, createdAt])
@@ -756,14 +759,14 @@ model ReferralWithdrawal {
 
 /// Append-only cash ledger for referral earnings and withdrawals.
 model ReferralEarningLedger {
-  id         String   @id @default(cuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  amountUsd  Float
-  action     String // commission | milestone | withdrawal | withdrawal_reversal
-  reference  String?
-  metaJson   String?
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amountUsd Float
+  action    String // commission | milestone | withdrawal | withdrawal_reversal
+  reference String?
+  metaJson  String?
+  createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
   @@index([action])
@@ -771,14 +774,14 @@ model ReferralEarningLedger {
 
 /// One-time password reset links (forgot password flow).
 model PasswordResetToken {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   /// SHA-256 of the opaque token emailed to the user (never store the raw token)
-  token     String   @unique
+  token     String    @unique
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
   @@index([userId])
 }
@@ -815,77 +818,77 @@ model CheckoutAttempt {
 
 /// Admin-editable branded email templates (verify, welcome, reset, scrape).
 model EmailTemplate {
-  id                 String   @id @default(cuid())
-  key                String   @unique // verify | welcome | reset | scrape
-  label              String
-  enabled            Boolean  @default(true)
-  subject            String
-  preheader          String
-  heroTitle          String
-  heroSubtitle       String
-  headline           String
-  body               String
-  ctaLabel           String
-  ctaPath            String
-  feature1Title      String?
-  feature1Body       String?
-  feature2Title      String?
-  feature2Body       String?
-  feature3Title      String?
-  feature3Body       String?
-  secondaryTitle     String?
-  secondaryBody      String?
-  secondaryCtaLabel  String?
-  secondaryCtaPath   String?
-  updatedAt          DateTime @updatedAt
-  createdAt          DateTime @default(now())
+  id                String   @id @default(cuid())
+  key               String   @unique // verify | welcome | reset | scrape
+  label             String
+  enabled           Boolean  @default(true)
+  subject           String
+  preheader         String
+  heroTitle         String
+  heroSubtitle      String
+  headline          String
+  body              String
+  ctaLabel          String
+  ctaPath           String
+  feature1Title     String?
+  feature1Body      String?
+  feature2Title     String?
+  feature2Body      String?
+  feature3Title     String?
+  feature3Body      String?
+  secondaryTitle    String?
+  secondaryBody     String?
+  secondaryCtaLabel String?
+  secondaryCtaPath  String?
+  updatedAt         DateTime @updatedAt
+  createdAt         DateTime @default(now())
 }
 
 /// Per-agency SMTP so outreach sends from their own mailbox.
 /// @deprecated Prefer SmtpAccount (multiple mailboxes). Kept for migration.
 model UserSmtpSettings {
-  id           String   @id @default(cuid())
-  userId       String   @unique
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String    @id @default(cuid())
+  userId       String    @unique
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   host         String
-  port         Int      @default(587)
-  secure       Boolean  @default(false)
+  port         Int       @default(587)
+  secure       Boolean   @default(false)
   username     String
   /// AES-encrypted SMTP password
   passwordEnc  String
   fromEmail    String
   fromName     String?
-  enabled      Boolean  @default(true)
+  enabled      Boolean   @default(true)
   lastTestedAt DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }
 
 /// Multiple SMTP / from-addresses per agency (Gmail, Outlook, team inboxes).
 model SmtpAccount {
-  id           String      @id @default(cuid())
-  userId       String
-  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  label        String      @default("Primary")
-  host         String
-  port         Int         @default(587)
-  secure       Boolean     @default(false)
-  username     String
-  passwordEnc  String
+  id              String      @id @default(cuid())
+  userId          String
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label           String      @default("Primary")
+  host            String
+  port            Int         @default(587)
+  secure          Boolean     @default(false)
+  username        String
+  passwordEnc     String
   /// AES-encrypted Resend API key (re_…) for lead/outreach email
-  resendApiKeyEnc String @default("")
-  fromEmail    String
-  fromName     String?
+  resendApiKeyEnc String      @default("")
+  fromEmail       String
+  fromName        String?
   /// platform = user's own Resend API key; smtp = user's SMTP server
-  deliveryMode String      @default("platform")
-  enabled      Boolean     @default(true)
-  isDefault    Boolean     @default(false)
+  deliveryMode    String      @default("platform")
+  enabled         Boolean     @default(true)
+  isDefault       Boolean     @default(false)
   /// Proportional share of cold-outreach volume in weighted rotation (1 = one unit)
-  sendWeight   Int         @default(1)
-  lastTestedAt DateTime?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  emails       LeadEmail[]
+  sendWeight      Int         @default(1)
+  lastTestedAt    DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  emails          LeadEmail[]
 
   @@index([userId, isDefault])
   @@index([userId, enabled])
@@ -893,38 +896,38 @@ model SmtpAccount {
 
 /// System / Super Admin shared SMTP mailboxes pool (Hostinger, GoDaddy, etc.) for user outreach
 model SystemSmtpAccount {
-  id             String      @id @default(cuid())
-  label          String      @default("Hostinger")
-  provider       String      @default("hostinger") // hostinger | godaddy | custom
-  domain         String      @default("")
-  host           String      @default("smtp.hostinger.com")
-  port           Int         @default(465)
-  secure         Boolean     @default(true)
-  username       String
-  passwordEnc    String
-  fromEmail      String      @unique
-  fromName       String?
-  enabled        Boolean     @default(true)
-  isDefault      Boolean     @default(false)
-  sendWeight     Int         @default(1)
-  assignedUserId String?
-  assignedUser   User?       @relation("AssignedSystemMailboxes", fields: [assignedUserId], references: [id], onDelete: SetNull)
-  lastTestedAt   DateTime?
-  dailyLimit     Int         @default(30)
-  warmupEnabled  Boolean     @default(true)
-  warmupTarget   Int         @default(25)
-  warmupSentToday Int        @default(0)
-  campaignSentToday Int      @default(0)
-  healthScore    Float       @default(98.0)
-  replyRate      Float       @default(3.2)
-  bounceRate     Float       @default(1.2)
-  tags           String      @default("")
+  id                      String      @id @default(cuid())
+  label                   String      @default("Hostinger")
+  provider                String      @default("hostinger") // hostinger | godaddy | custom
+  domain                  String      @default("")
+  host                    String      @default("smtp.hostinger.com")
+  port                    Int         @default(465)
+  secure                  Boolean     @default(true)
+  username                String
+  passwordEnc             String
+  fromEmail               String      @unique
+  fromName                String?
+  enabled                 Boolean     @default(true)
+  isDefault               Boolean     @default(false)
+  sendWeight              Int         @default(1)
+  assignedUserId          String?
+  assignedUser            User?       @relation("AssignedSystemMailboxes", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  lastTestedAt            DateTime?
+  dailyLimit              Int         @default(30)
+  warmupEnabled           Boolean     @default(true)
+  warmupTarget            Int         @default(25)
+  warmupSentToday         Int         @default(0)
+  campaignSentToday       Int         @default(0)
+  healthScore             Float       @default(98.0)
+  replyRate               Float       @default(3.2)
+  bounceRate              Float       @default(1.2)
+  tags                    String      @default("")
   /// Set when a user corrected this mailbox's password / host in the app. Seeds never overwrite
   /// these credentials, and sending uses them instead of the built-in defaults.
   passwordUpdatedByUserAt DateTime?
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
-  emails         LeadEmail[]
+  createdAt               DateTime    @default(now())
+  updatedAt               DateTime    @updatedAt
+  emails                  LeadEmail[]
 
   @@index([enabled])
   @@index([provider])
@@ -946,24 +949,31 @@ model LeadEmail {
   systemSmtpAccountId String?
   systemSmtpAccount   SystemSmtpAccount? @relation(fields: [systemSmtpAccountId], references: [id], onDelete: SetNull)
   /// outbound | inbound
-  direction     String
-  fromEmail     String
-  toEmail       String
-  subject       String
-  body          String
+  direction           String
+  fromEmail           String
+  toEmail             String
+  subject             String
+  body                String
   /// sent | failed | received
-  status        String
-  error         String?
-  messageId     String?
-  inReplyTo     String?
-  enrollmentId  String?
+  status              String
+  error               String?
+  messageId           String?
+  inReplyTo           String?
+  enrollmentId        String?
   /// Set when an agent opens an inbound message in the inbox
-  readAt        DateTime?
+  readAt              DateTime?
   /// Unique unguessable token used by the open-tracking pixel
-  trackingToken String?    @unique
+  trackingToken       String?            @unique
+  /// Unibox conversation this message belongs to
+  threadId            String?
+  thread              InboxThread?       @relation(fields: [threadId], references: [id], onDelete: SetNull)
+  /// Raw References header (space-separated Message-IDs), for thread matching
+  references          String?
+  /// Auto-reply related headers (Auto-Submitted, X-Autoreply, Precedence, ...) as JSON
+  headersJson         String?
   /// Set once when the recipient's mail client loads the tracking pixel
-  openedAt      DateTime?
-  createdAt     DateTime     @default(now())
+  openedAt            DateTime?
+  createdAt           DateTime           @default(now())
 
   @@index([userId, leadId, createdAt])
   @@index([userId, createdAt])
@@ -971,26 +981,28 @@ model LeadEmail {
   @@index([userId, openedAt])
   @@index([fromEmail])
   @@index([toEmail])
+  @@index([threadId, createdAt])
+  @@index([messageId])
 }
 
 /// Multi-day email automation templates for scraped/saved leads.
 /// Steps live in stepsJson ([{day, subject, body}, …]); the legacy day1–3
 /// columns remain as the fallback for sequences saved before multi-day.
 model EmailSequence {
-  id          String   @id @default(cuid())
-  userId      String   @unique
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name        String   @default("Lead nurture")
-  enabled     Boolean  @default(true)
+  id          String            @id @default(cuid())
+  userId      String            @unique
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String            @default("Lead nurture")
+  enabled     Boolean           @default(true)
   stepsJson   String?
-  day1Subject String   @default("Quick intro")
-  day1Body    String   @default("Hi {{ownerName}},\n\nI noticed {{businessName}} and thought we could help with more booked jobs.\n\nWorth a quick chat?\n\n{{fromName}}")
-  day2Subject String   @default("Following up")
-  day2Body    String   @default("Hi {{ownerName}},\n\nJust bumping this in case you missed it — happy to share how agencies like yours are filling their calendar.\n\n{{fromName}}")
-  day3Subject String   @default("Last note from me")
-  day3Body    String   @default("Hi {{ownerName}},\n\nI'll close the loop here. If timing is better later, just reply and I'll send details.\n\n{{fromName}}")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  day1Subject String            @default("Quick intro")
+  day1Body    String            @default("Hi {{ownerName}},\n\nI noticed {{businessName}} and thought we could help with more booked jobs.\n\nWorth a quick chat?\n\n{{fromName}}")
+  day2Subject String            @default("Following up")
+  day2Body    String            @default("Hi {{ownerName}},\n\nJust bumping this in case you missed it — happy to share how agencies like yours are filling their calendar.\n\n{{fromName}}")
+  day3Subject String            @default("Last note from me")
+  day3Body    String            @default("Hi {{ownerName}},\n\nI'll close the loop here. If timing is better later, just reply and I'll send details.\n\n{{fromName}}")
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
   enrollments EmailEnrollment[]
 }
 
@@ -1020,34 +1032,34 @@ model EmailEnrollment {
 
 /// Discount coupons created in admin and synced to Stripe Promotion Codes.
 model Coupon {
-  id                    String   @id @default(cuid())
+  id                    String             @id @default(cuid())
   /// Uppercase code customers enter (e.g. SAVE20)
-  code                  String   @unique
+  code                  String             @unique
   name                  String
   description           String?
   /// percent | amount
-  discountType          String   @default("percent")
+  discountType          String             @default("percent")
   /// 1–100 when discountType = percent
   percentOff            Float?
   /// USD cents when discountType = amount (e.g. 1000 = $10)
   amountOffCents        Int?
   /// once | repeating | forever
-  duration              String   @default("once")
+  duration              String             @default("once")
   /// Required when duration = repeating
   durationInMonths      Int?
   maxRedemptions        Int?
-  redemptionCount       Int      @default(0)
+  redemptionCount       Int                @default(0)
   /// One redemption per customer account
-  oncePerCustomer       Boolean  @default(true)
+  oncePerCustomer       Boolean            @default(true)
   expiresAt             DateTime?
   /// JSON string array of plan ids, or empty / null = all checkout plans
-  applicablePlansJson   String   @default("[]")
-  active                Boolean  @default(true)
+  applicablePlansJson   String             @default("[]")
+  active                Boolean            @default(true)
   stripeCouponId        String?
   stripePromotionCodeId String?
   createdByEmail        String?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
   redemptions           CouponRedemption[]
 
   @@index([active, expiresAt])
@@ -1127,45 +1139,46 @@ model EnterpriseBookingConfig {
 /// Outreach Campaign with multi-hook Day 0, automated multi-step follow-ups,
 /// mailbox rotation, timezone scheduling, and detailed step/hook analytics.
 model Campaign {
-  id                     String             @id @default(cuid())
+  id                     String       @id @default(cuid())
   userId                 String
-  user                   User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   name                   String
-  status                 String             @default("draft") // draft | scheduled | active | paused | completed | stopped
+  status                 String       @default("draft") // draft | scheduled | active | paused | completed | stopped
   segmentId              String?
-  segment                LeadSegment?       @relation(fields: [segmentId], references: [id], onDelete: SetNull)
+  segment                LeadSegment? @relation(fields: [segmentId], references: [id], onDelete: SetNull)
   industry               String?
-  country                String             @default("US")
+  country                String       @default("US")
   state                  String?
   city                   String?
-  leadCount              Int                @default(0)
-  duplicateDetectedCount Int                @default(0)
-  uniqueEmailCount       Int                @default(0)
+  leadCount              Int          @default(0)
+  duplicateDetectedCount Int          @default(0)
+  uniqueEmailCount       Int          @default(0)
   /// Array of Day 0 hooks: [{ id: "A", label: "Hook A", subject: "...", body: "...", active: true }, ...]
   hooksJson              String?
   /// Array of follow-up steps: [{ id: "1", label: "Follow-Up 1: Value", dayDelay: 2, subject: "...", body: "...", active: true, sendingTime: "09:00", sendingDays: ["mon","tue","wed","thu","fri"] }, ...]
   stepsJson              String?
   /// JSON array of selected mailbox IDs: ["mailbox-1", "mailbox-2"] or "ALL"
-  selectedMailboxIds     String?            @default("\"ALL\"")
-  dailyLimitPerMailbox   Int                @default(10)
-  mailboxLimitsJson      String?            // Custom override map: { [mailboxId: string]: number }
-  minDelayMinutes        Int                @default(4)
-  maxDelayMinutes        Int                @default(7)
-  timezone               String             @default("America/New_York")
-  useRecipientTimezone   Boolean            @default(true)
-  sendingDaysJson        String?            @default("[\"mon\",\"tue\",\"wed\",\"thu\",\"fri\"]")
-  sendingWindowStart     String             @default("09:00")
-  sendingWindowEnd       String             @default("17:00")
+  selectedMailboxIds     String?      @default("\"ALL\"")
+  dailyLimitPerMailbox   Int          @default(10)
+  mailboxLimitsJson      String? // Custom override map: { [mailboxId: string]: number }
+  minDelayMinutes        Int          @default(4)
+  maxDelayMinutes        Int          @default(7)
+  timezone               String       @default("America/New_York")
+  useRecipientTimezone   Boolean      @default(true)
+  sendingDaysJson        String?      @default("[\"mon\",\"tue\",\"wed\",\"thu\",\"fri\"]")
+  sendingWindowStart     String       @default("09:00")
+  sendingWindowEnd       String       @default("17:00")
   scheduledStartDate     DateTime?
   startedAt              DateTime?
   completedAt            DateTime?
   stoppedAt              DateTime?
   stopReason             String?
-  createdAt              DateTime           @default(now())
-  updatedAt              DateTime           @updatedAt
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
 
-  prospects              CampaignProspect[]
-  logs                   CampaignLog[]
+  prospects    CampaignProspect[]
+  logs         CampaignLog[]
+  inboxThreads InboxThread[]
 
   @@index([userId, status])
   @@index([userId, createdAt])
@@ -1174,11 +1187,11 @@ model Campaign {
 
 /// Enrolled lead in an outreach campaign with hook assignment and follow-up tracking
 model CampaignProspect {
-  id               String        @id @default(cuid())
+  id               String    @id @default(cuid())
   campaignId       String
-  campaign         Campaign      @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaign         Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   leadId           String?
-  lead             Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  lead             Lead?     @relation(fields: [leadId], references: [id], onDelete: SetNull)
   savedLeadId      String?
   businessName     String
   ownerName        String?
@@ -1186,29 +1199,29 @@ model CampaignProspect {
   phone            String?
   city             String?
   state            String?
-  country          String        @default("US")
+  country          String    @default("US")
   timezone         String?
-  status           String        @default("pending") // pending | in_progress | completed | replied | unsubscribed | bounced | failed | paused | stopped
-  assignedHookId   String?       // "A" | "B" | "C" | "D"
-  currentStepIndex Int           @default(0) // 0 = Day 0 hook, 1 = Follow-up 1, etc.
+  status           String    @default("pending") // pending | in_progress | completed | replied | unsubscribed | bounced | failed | paused | stopped
+  assignedHookId   String? // "A" | "B" | "C" | "D"
+  currentStepIndex Int       @default(0) // 0 = Day 0 hook, 1 = Follow-up 1, etc.
   lastSentAt       DateTime?
   nextSendDueAt    DateTime?
   lastMailboxId    String?
   lastFromEmail    String?
   lastSubject      String?
   openedAt         DateTime?
-  openCount        Int           @default(0)
+  openCount        Int       @default(0)
   clickedAt        DateTime?
-  clickCount       Int           @default(0)
+  clickCount       Int       @default(0)
   repliedAt        DateTime?
   bouncedAt        DateTime?
   unsubscribedAt   DateTime?
-  stopReason       String?       // "replied" | "unsubscribed" | "bounced" | "manual_stop" | "invalid_email"
+  stopReason       String? // "replied" | "unsubscribed" | "bounced" | "manual_stop" | "invalid_email"
   historyJson      String?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
-  logs             CampaignLog[]
+  logs CampaignLog[]
 
   @@index([campaignId, status])
   @@index([campaignId, assignedHookId])
@@ -1218,30 +1231,30 @@ model CampaignProspect {
 
 /// Event log for every sent email and interaction in a campaign
 model CampaignLog {
-  id            String           @id @default(cuid())
-  campaignId    String
-  campaign      Campaign         @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  prospectId    String
-  prospect      CampaignProspect @relation(fields: [prospectId], references: [id], onDelete: Cascade)
-  stepIndex     Int              // 0 for Day 0, 1 for FU1, etc.
-  hookId        String?          // "A", "B", "C", "D"
-  mailboxId     String?
-  fromEmail     String
-  toEmail       String
-  subject       String
-  body          String
-  status        String           // sent | delivered | opened | clicked | replied | bounced | failed
-  error         String?
-  trackingToken String?          @unique
-  messageId     String?
-  variantLabel  String?          // "1A", "1B", "Hook A", etc.
-  spinChoicesJson String?        // JSON array e.g. "[2,0,1,1,0,1]"
-  renderedHash  String?          // sha256 hash of subject+body
-  openedAt      DateTime?
-  clickedAt     DateTime?
-  repliedAt     DateTime?
-  bouncedAt     DateTime?
-  sentAt        DateTime         @default(now())
+  id              String           @id @default(cuid())
+  campaignId      String
+  campaign        Campaign         @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  prospectId      String
+  prospect        CampaignProspect @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+  stepIndex       Int // 0 for Day 0, 1 for FU1, etc.
+  hookId          String? // "A", "B", "C", "D"
+  mailboxId       String?
+  fromEmail       String
+  toEmail         String
+  subject         String
+  body            String
+  status          String // sent | delivered | opened | clicked | replied | bounced | failed
+  error           String?
+  trackingToken   String?          @unique
+  messageId       String?
+  variantLabel    String? // "1A", "1B", "Hook A", etc.
+  spinChoicesJson String? // JSON array e.g. "[2,0,1,1,0,1]"
+  renderedHash    String? // sha256 hash of subject+body
+  openedAt        DateTime?
+  clickedAt       DateTime?
+  repliedAt       DateTime?
+  bouncedAt       DateTime?
+  sentAt          DateTime         @default(now())
 
   @@index([campaignId, status])
   @@index([campaignId, hookId])
@@ -1276,17 +1289,17 @@ model DomainDnsCache {
 
 /// Mailbox warmup configuration and ramp-up pacing
 model WarmupSettings {
-  id              String    @id @default(cuid())
-  mailboxEmail    String    @unique
-  enabled         Boolean   @default(true)
-  startVolume     Int       @default(3)
-  dailyIncrement  Int       @default(2)
-  maxDailyWarmup  Int       @default(25)
-  replyRate       Float     @default(0.35)
-  weekdaysOnly    Boolean   @default(true)
-  healthScore     Float     @default(98.0)
-  startedAt       DateTime  @default(now())
-  lastCycleAt     DateTime?
+  id                      String    @id @default(cuid())
+  mailboxEmail            String    @unique
+  enabled                 Boolean   @default(true)
+  startVolume             Int       @default(3)
+  dailyIncrement          Int       @default(2)
+  maxDailyWarmup          Int       @default(25)
+  replyRate               Float     @default(0.35)
+  weekdaysOnly            Boolean   @default(true)
+  healthScore             Float     @default(98.0)
+  startedAt               DateTime  @default(now())
+  lastCycleAt             DateTime?
   /// Result of the most recent real send attempt (warmup or campaign) from this mailbox
   lastSendOkAt            DateTime?
   lastSendErrorAt         DateTime?
@@ -1294,8 +1307,8 @@ model WarmupSettings {
   /// Original relay / SMTP error text for the last failure (used to classify the problem)
   lastSendErrorRaw        String?
   consecutiveSendFailures Int       @default(0)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
 
   @@index([mailboxEmail])
   @@index([enabled])
@@ -1326,7 +1339,7 @@ model WarmupMessage {
 model MailboxDailyStat {
   id             String   @id @default(cuid())
   mailboxEmail   String
-  date           String   // YYYY-MM-DD
+  date           String // YYYY-MM-DD
   warmupSent     Int      @default(0)
   warmupTarget   Int      @default(25)
   warmupReceived Int      @default(0)
@@ -1351,8 +1364,8 @@ model MailboxDailyStat {
 model StepVariant {
   id                String   @id @default(cuid())
   campaignId        String
-  stepIndex         Int      // 0 for Day 0, 1 for FU1, etc.
-  label             String   // "1A", "1B", "Hook A", etc.
+  stepIndex         Int // 0 for Day 0, 1 for FU1, etc.
+  label             String // "1A", "1B", "Hook A", etc.
   subjectTemplate   String
   preheaderTemplate String?
   bodyTemplate      String
@@ -1365,4 +1378,227 @@ model StepVariant {
   @@index([campaignId, stepIndex])
 }
 
+// ---------------------------------------------------------------------------
+// Multi-provider enrichment (see docs/enrichment). "Workspace" = the user account.
+// ---------------------------------------------------------------------------
 
+/// One enrichment run over uploaded rows or existing leads. Processed in the background.
+model EnrichmentJob {
+  id              String          @id @default(cuid())
+  userId          String
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String?
+  /// upload | leads
+  source          String          @default("upload")
+  /// JSON array of requested targets: owner | work_email | phone | mobile
+  targetsJson     String
+  /// JSON snapshot of the preset used (provider order + acceptance policy)
+  presetJson      String
+  /// queued | running | completed | cancelled | failed
+  status          String          @default("queued")
+  idempotencyKey  String?
+  /// Customer credit cap for the whole job, and credits currently reserved / spent
+  budgetCredits   Float
+  creditsReserved Float           @default(0)
+  creditsUsed     Float           @default(0)
+  /// Customer credits charged per row that gains a requested field
+  feePerRow       Float           @default(0)
+  totalRows       Int
+  doneRows        Int             @default(0)
+  cancelRequested Boolean         @default(false)
+  startedAt       DateTime?
+  finishedAt      DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  rows            EnrichmentRow[]
+
+  @@unique([userId, idempotencyKey])
+  @@index([userId, createdAt])
+  @@index([status])
+}
+
+/// One input record inside a job, with its per-track progress and accepted result.
+model EnrichmentRow {
+  id             String            @id @default(cuid())
+  jobId          String
+  job            EnrichmentJob     @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  rowIndex       Int
+  leadId         String?
+  /// Original input as uploaded/selected (never overwritten)
+  inputJson      String
+  /// queued | running | waiting_provider | succeeded | partial | not_found | needs_input
+  /// | budget_exceeded | failed | cancelled
+  status         String            @default("queued")
+  /// Per-track state: next provider position, pending attempt, accepted value
+  trackStateJson String?
+  /// Accepted fields with provenance (provider, verification, checked time, source URL)
+  resultJson     String?
+  /// Credits charged to the customer for this row (0 if nothing new was accepted)
+  charged        Float             @default(0)
+  lastError      String?
+  nextRunAt      DateTime          @default(now())
+  lockedAt       DateTime?
+  lockedBy       String?
+  runCount       Int               @default(0)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  attempts       ProviderAttempt[]
+
+  @@unique([jobId, rowIndex])
+  @@index([status, nextRunAt])
+}
+
+/// One call (or async submission) to one provider for one row and target. The unique
+/// attemptKey makes retries, restarts and duplicate callbacks reuse the same record
+/// instead of paying the vendor again.
+model ProviderAttempt {
+  id                String        @id @default(cuid())
+  attemptKey        String        @unique
+  rowId             String
+  row               EnrichmentRow @relation(fields: [rowId], references: [id], onDelete: Cascade)
+  jobId             String
+  userId            String
+  provider          String
+  target            String
+  adapterVersion    String
+  inputHash         String
+  /// submitting | succeeded | not_found | pending | rate_limited | error | no_credit | unknown | skipped
+  status            String
+  upstreamRequestId String?
+  /// Native provider status (e.g. "valid", "FOUND", "VERIFIED"), kept as returned
+  providerStatus    String?
+  sanitizedError    String?
+  /// Vendor cost in the vendor's own unit; null = unknown (never assumed zero)
+  vendorUnits       Float?
+  vendorUnit        String?
+  /// Normalized candidate fields returned (no raw payloads, no secrets)
+  resultJson        String?
+  retryCount        Int           @default(0)
+  nextCheckAt       DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([jobId])
+  @@index([userId, provider, createdAt])
+  @@index([status, nextCheckAt])
+}
+
+/// Per-workspace cache of provider outcomes and email verifications, so repeated lookups
+/// within the freshness window are not paid for twice. Never shared across workspaces.
+model EnrichmentCache {
+  id         String   @id @default(cuid())
+  userId     String
+  cacheKey   String
+  provider   String
+  target     String
+  /// positive | negative
+  kind       String
+  resultJson String?
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, cacheKey])
+  @@index([expiresAt])
+}
+
+/// Customer credit charge for one row; the unique rowId prevents double billing.
+model EnrichmentCharge {
+  id        String   @id @default(cuid())
+  rowId     String   @unique
+  jobId     String
+  userId    String
+  credits   Float
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+/// Paid person-level contact data found for a lead, private to one workspace.
+/// Public business data (website, business phone, socials) may still update the shared Lead.
+model WorkspaceLeadContact {
+  id             String    @id @default(cuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leadId         String
+  ownerName      String?
+  ownerTitle     String?
+  email          String?
+  /// valid | catch_all | unknown | role | invalid
+  emailStatus    String?
+  emailProvider  String?
+  emailCheckedAt DateTime?
+  mobile         String?
+  mobileProvider String?
+  linkedinUrl    String?
+  /// Per-field provenance JSON
+  provenanceJson String?
+  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime  @default(now())
+
+  @@unique([userId, leadId])
+  @@index([leadId])
+}
+
+/// Unibox conversation: one thread per workspace, contact, receiving mailbox and campaign.
+/// Holds the current label (one per thread), the campaign it belongs to and follow-up dates.
+model InboxThread {
+  id              String               @id @default(cuid())
+  userId          String
+  user            User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Stable identity used to attach new messages: contact|mailbox|campaign
+  threadKey       String
+  leadId          String?
+  campaignId      String?
+  campaign        Campaign?            @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  prospectId      String?
+  /// How the campaign was matched: in_reply_to | references | prospect_email | none
+  campaignMatch   String               @default("none")
+  contactEmail    String
+  contactName     String?
+  /// Our mailbox that received the replies
+  mailboxEmail    String
+  subject         String
+  preview         String               @default("")
+  /// Label id from src/lib/unibox/labels.ts; exactly one per thread
+  label           String               @default("unlabelled")
+  /// auto | manual: auto-tagging never overrides a manual label
+  labelSource     String               @default("auto")
+  labelReason     String?
+  labelChangedAt  DateTime?
+  /// Out of office return date or bad-timing follow-up date
+  followUpAt      DateTime?
+  /// Contact named in a wrong-person or referral reply
+  referredEmail   String?
+  referredName    String?
+  unread          Boolean              @default(true)
+  status          String               @default("open") // open | archived
+  messageCount    Int                  @default(0)
+  lastMessageAt   DateTime             @default(now())
+  lastInboundAt   DateTime?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  messages        LeadEmail[]
+  labelHistory    InboxLabelHistory[]
+
+  @@unique([userId, threadKey])
+  @@index([userId, lastMessageAt])
+  @@index([userId, campaignId, lastMessageAt])
+  @@index([userId, label, lastMessageAt])
+}
+
+/// Audit trail of every label change on a thread (manual or automatic).
+model InboxLabelHistory {
+  id         String      @id @default(cuid())
+  threadId   String
+  thread     InboxThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  userId     String
+  oldLabel   String?
+  newLabel   String
+  /// User who changed it (null for automatic)
+  changedBy  String?
+  changeType String // auto | manual
+  reason     String?
+  createdAt  DateTime    @default(now())
+
+  @@index([threadId, createdAt])
+}

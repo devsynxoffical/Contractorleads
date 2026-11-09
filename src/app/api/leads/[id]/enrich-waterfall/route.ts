@@ -1,14 +1,19 @@
 import { NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { deductCredits, logActivity } from "@/lib/credits";
+import { logActivity } from "@/lib/credits";
 import { getWaterfallEnrichCreditCost } from "@/lib/plans";
 import { insufficientCreditsPayload } from "@/lib/lead-access";
 import { findAccessibleLead } from "@/lib/lead-ownership";
-import { runWaterfallEnrichment } from "@/lib/services/waterfall-enrichment";
+import { enrichInline, overlayWorkspaceContacts } from "@/lib/enrichment/inline";
 
 export const maxDuration = 60;
 
+/**
+ * Enrich one lead with the provider waterfall. Runs on the shared enrichment engine:
+ * per-field stop rules, verified-only acceptance, a single charge per lead, and the paid
+ * person data saved to this workspace only (never onto the shared lead record).
+ */
 export async function POST(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -33,78 +38,64 @@ export async function POST(
   }
 
   try {
-    const waterfall = await runWaterfallEnrichment({
-      leadId: lead.id,
-      businessName: lead.businessName,
-      website: lead.website,
-      ownerName: lead.ownerName,
-      ownerTitle: lead.ownerTitle,
-      email: lead.email,
-      phone: lead.phone,
-      city: lead.city,
-      state: lead.state,
-      zip: lead.zip,
-      country: lead.country,
-      address: lead.address,
-      industry: lead.industry,
+    const { jobId, results, handedOff } = await enrichInline({
+      userId: user.id,
+      source: "leads",
+      name: lead.businessName,
+      feePerRow: creditCost,
+      timeBudgetMs: 50_000,
+      rows: [
+        {
+          leadId: lead.id,
+          businessName: lead.businessName,
+          website: lead.website,
+          ownerName: lead.ownerName,
+          ownerTitle: lead.ownerTitle,
+          email: lead.email,
+          phone: lead.phone,
+          city: lead.city,
+          state: lead.state,
+          country: lead.country,
+        },
+      ],
     });
+    const waterfall = results[0];
+    const charged = waterfall?.charged ?? 0;
 
-    const shouldBill =
-      creditCost > 0 &&
-      (waterfall.newlyFoundFields.length > 0 ||
-        (waterfall.emailVerified && !lead.email));
-
-    let creditsRemaining = user.creditsRemaining;
-    let charged = 0;
-
-    if (shouldBill) {
-      creditsRemaining = await deductCredits(
-        user.id,
-        creditCost,
-        "waterfall_enrich",
-        lead.id,
-      );
-      charged = creditCost;
-
+    if (charged > 0) {
       await logActivity(
         user.id,
         "waterfall_enrich",
-        `Waterfall enriched ${lead.businessName} via ${waterfall.winningSource || "Multi-Source"} (${charged} credits)`,
-        {
-          leadId: lead.id,
-          winningSource: waterfall.winningSource,
-          newlyFoundFields: waterfall.newlyFoundFields,
-          charged,
-        },
-      );
+        `Waterfall enriched ${lead.businessName} via ${waterfall.winningSource || "multi-source"} (${charged} credits)`,
+        { leadId: lead.id, winningSource: waterfall.winningSource, newlyFoundFields: waterfall.newlyFoundFields, charged, jobId },
+      ).catch(() => null);
     }
 
-    const updatedLead = await prisma.lead.findUnique({
-      where: { id: lead.id },
-    });
+    const fresh = await prisma.user.findUnique({ where: { id: user.id }, select: { creditsRemaining: true } });
+    const [withContact] = await overlayWorkspaceContacts(user.id, [lead]);
+    const pending = handedOff > 0;
 
     return NextResponse.json({
       ok: true,
-      lead: updatedLead ?? lead,
-      waterfall,
+      lead: withContact,
+      waterfall: waterfall
+        ? { ...waterfall, found: waterfall.foundVerifiedContact, sourceLabel: waterfall.winningSource ?? "waterfall" }
+        : null,
+      jobId,
+      pending,
       charged,
       creditCost,
-      creditsRemaining,
-      message:
-        waterfall.newlyFoundFields.length > 0
-          ? `Found ${waterfall.newlyFoundFields.join(", ")} via ${waterfall.winningSource || "Waterfall API"}`
-          : waterfall.foundVerifiedContact
-            ? `Verified existing contact data (${waterfall.winningSource || "Internal DB"}) — 0 extra credits charged`
-            : "No additional verified contact data found across providers — 0 credits charged",
+      creditsRemaining: fresh?.creditsRemaining ?? user.creditsRemaining,
+      message: pending
+        ? "Still waiting on a provider: the result will appear in Enrichment jobs shortly."
+        : waterfall?.newlyFoundFields.length
+          ? `Found ${waterfall.newlyFoundFields.join(", ")} via ${waterfall.winningSource || "the waterfall"}`
+          : waterfall?.emailForReview
+            ? `Found ${waterfall.emailForReview} (${waterfall.emailStatus === "catch_all" ? "catch-all domain" : "unconfirmed"}), kept for review; 0 credits charged`
+            : "No new verified contact data found across providers; 0 credits charged",
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Waterfall enrichment failed";
-    if (msg === "INSUFFICIENT_CREDITS") {
-      return NextResponse.json(
-        insufficientCreditsPayload(creditCost, user.creditsRemaining),
-        { status: 402 },
-      );
-    }
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

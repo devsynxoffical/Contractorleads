@@ -65,7 +65,7 @@ const DISPOSABLE_DOMAINS = new Set([
 ]);
 
 // Free webmail providers
-const FREE_EMAIL_PROVIDERS = new Set([
+export const FREE_EMAIL_PROVIDERS = new Set([
   "gmail.com",
   "googlemail.com",
   "yahoo.com",

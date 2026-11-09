@@ -37,9 +37,11 @@ import {
   buildMetadata,
   getTradeBySlug,
   isPriorityTrade,
+  lowerTradeLabel,
 } from "@/lib/seo";
 import { BLOG_POSTS } from "@/lib/blog-content";
 import { getTradeHubContent } from "@/lib/trade-hub-content";
+import { EMAIL_LIST_TRADES } from "@/lib/email-list-pages";
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -52,15 +54,20 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const trade = getTradeBySlug(slug);
   if (!trade) return {};
   // Keyword first, then the offer (the pattern Hunter and Prospeo use on tool pages).
-  const leads = /contractors$/i.test(trade.name)
-    ? `${trade.name.replace(/s$/i, "")} Leads`
-    : `${trade.name} Contractor Leads`;
-  const fullTitle = `${leads} for Agencies (10 Free Leads)`;
-  const title = fullTitle.length <= 60 ? fullTitle : `${leads} (10 Free Leads)`;
+  const name = trade.titleName ?? trade.name;
+  const leads = /contractors$/i.test(name)
+    ? `${name.replace(/s$/i, "")} Leads`
+    : /company$/i.test(name)
+      ? `${name} Leads`
+      : `${name} Contractor Leads`;
+  // "for Marketing Agencies" makes the intent explicit: "[trade] contractor leads" on its own
+  // is mostly searched by contractors who want homeowner leads.
+  const titleOptions = [`${leads} for Marketing Agencies`, `${leads} for Agencies`, leads];
+  const title = titleOptions.find((t) => t.length < 60) ?? leads;
   const withOffer = `${trade.description} Start with 10 free leads.`;
   return buildMetadata({
     title,
-    description: withOffer.length <= 160 ? withOffer : trade.description,
+    description: withOffer.length < 155 ? withOffer : trade.description,
     path: `/industries/${trade.slug}`,
     keywords: trade.keywords,
   });
@@ -99,7 +106,7 @@ export default async function TradePage({ params }: Params) {
   const trade = getTradeBySlug(slug);
   if (!trade) notFound();
 
-  const lower = trade.name.toLowerCase();
+  const lower = lowerTradeLabel(trade.name);
   const related = TRADE_PAGES.filter((t) => t.slug !== trade.slug).slice(0, 6);
   const priority = isPriorityTrade(trade.slug);
   const hub = getTradeHubContent(trade.slug);
@@ -133,7 +140,7 @@ export default async function TradePage({ params }: Params) {
 
       <MarketingSubpageHero
         eyebrow={`${trade.name} leads`}
-        title={trade.headline}
+        title={trade.headline.replace(/ for agencies$/i, " for marketing agencies")}
         description={trade.description}
       >
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
@@ -187,6 +194,15 @@ export default async function TradePage({ params }: Params) {
             {quickAnswer.q}
           </h2>
           <p className="mt-3 max-w-3xl text-[15px] leading-relaxed text-slate-700">{quickAnswer.a}</p>
+          {EMAIL_LIST_TRADES.some((t) => t.slug === trade.slug) ? (
+            <p className="mt-3 max-w-3xl text-[14.5px] leading-relaxed text-slate-700">
+              Need contacts to email?{" "}
+              <Link href={`/email-lists/${trade.slug}`} className="font-semibold text-fuchsia-700 underline decoration-fuchsia-200 underline-offset-2 hover:decoration-fuchsia-500">
+                Build a verified {lower} email list
+              </Link>{" "}
+              for any city or state, with owner names and checked emails.
+            </p>
+          ) : null}
 
           {hub && (
             <div className="mt-6 grid gap-5 md:grid-cols-2">

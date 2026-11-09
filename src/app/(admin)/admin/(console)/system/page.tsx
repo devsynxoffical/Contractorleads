@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AdminPageHeader } from "@/components/admin/admin-shell";
+import { EnrichmentProvidersPanel } from "@/components/admin/enrichment-providers-panel";
 import { Button } from "@/components/ui/button";
 import type { EnvKeyStatus } from "@/lib/admin";
 import {
@@ -108,6 +109,24 @@ const PLATFORM_FIELDS: Array<{
     field: "prospeoApiKey",
     label: "Prospeo API key (Waterfall #3)",
     placeholder: "Prospeo key for verified work email & phone",
+    group: "Enrichment",
+  },
+  {
+    field: "findymailApiKey",
+    label: "Findymail API key",
+    placeholder: "Findymail key (work email from name + domain)",
+    group: "Enrichment",
+  },
+  {
+    field: "leadmagicApiKey",
+    label: "LeadMagic API key",
+    placeholder: "LeadMagic key (work email finder)",
+    group: "Enrichment",
+  },
+  {
+    field: "icypeasApiKey",
+    label: "Icypeas API key",
+    placeholder: "Icypeas key (async email search)",
     group: "Enrichment",
   },
   {
@@ -825,6 +844,8 @@ export default function AdminSystemPage() {
           </div>
         </form>
       </section>
+
+      <EnrichmentProvidersPanel />
 
       {note && (
         <p className="mb-4 rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-[13px] text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
