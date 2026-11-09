@@ -35,6 +35,7 @@ import {
   isPriorityTrade,
   lowerTradeLabel,
   tradeCompaniesLabel,
+  tradeFindLabel,
 } from "@/lib/seo";
 import { buildStateInsight, getStateProfile, topCitiesForState } from "@/lib/state-profiles";
 import { StateInsights } from "@/components/marketing/state-insights";
@@ -70,10 +71,11 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   // want homeowner leads, so those results are dominated by lead sellers.
   const leads = tradeLeadsLabel(trade.name);
   const companies = tradeCompaniesLabel(trade.slug, trade.name);
+  // "Find [Trade] Leads in [State]" + "Company List": the find-leads phrasing with list intent.
+  const find = tradeFindLabel(trade);
   const titleOptions = [
-    `${companies} in ${region.name}: List With Owner Emails`,
-    `${companies} in ${region.name}: Owner Emails`,
-    `${companies} in ${region.name} List`,
+    `Find ${find} in ${region.name}: Company List`,
+    `Find ${find} in ${region.name}`,
     `${companies} in ${region.name}`,
   ];
   const title = titleOptions.find((t) => t.length < 60) ?? titleOptions[titleOptions.length - 1];
@@ -81,8 +83,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   // Under 155 chars; only true statements (no modeled numbers in search results).
   const lower = lowerTradeLabel(companies);
   const descOptions = [
-    `Build a list of ${lower} in ${region.name} from live Google data, with owner names, verified emails and AI marketing scores. 10 free leads.`,
-    `List ${lower} in ${region.name} from live Google data, with owner names, verified emails and AI scores. 10 free leads.`,
+    `Find ${lowerTradeLabel(find)} in ${region.name}: ${lower} with owner names, verified emails and AI scores, from live Google data. 10 free leads.`,
+    `Find ${lowerTradeLabel(find)} in ${region.name}: ${lower} with owner names, verified emails and AI scores. 10 free leads.`,
     `${companies} in ${region.name} with owner names, verified emails and AI scores. 10 free leads.`,
   ];
   const description = descOptions.find((d) => d.length < 155) ?? descOptions[descOptions.length - 1];
@@ -92,6 +94,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     description,
     path: `/industries/${trade.slug}/${region.slug}`,
     keywords: [
+      `find ${lowerTradeLabel(find)} in ${region.name}`,
+      `${lowerTradeLabel(find)} ${region.name}`,
       `${lower} in ${region.name}`,
       `list of ${lower} in ${region.name}`,
       `${leads.toLowerCase()} ${region.name}`,
@@ -162,7 +166,7 @@ export default async function TradeRegionPage({ params }: Params) {
 
       <MarketingSubpageHero
         eyebrow={`${trade.name} · ${region.name}`}
-        title={`${tradeCompaniesLabel(trade.slug, trade.name)} in ${region.name}: list with owner emails`}
+        title={`Find ${lowerTradeLabel(tradeFindLabel(trade))} in ${region.name}`}
         description={`Build a fresh list of ${lowerTradeLabel(tradeCompaniesLabel(trade.slug, trade.name))} in ${region.name} (${region.code}) for agency outreach: live Google data, owner names, verified emails, AI opportunity scores and outreach scripts.`}
       >
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
@@ -196,7 +200,7 @@ export default async function TradeRegionPage({ params }: Params) {
       <section className="mx-auto max-w-6xl px-5 py-12 sm:px-8">
         <StateInsights
           tradeName={trade.name}
-          leadsLabel={tradeLeadsLabel(trade.name)}
+          leadsLabel={tradeFindLabel(trade)}
           companiesLabel={tradeCompaniesLabel(trade.slug, trade.name)}
           stateName={region.name}
           stateCode={region.code}

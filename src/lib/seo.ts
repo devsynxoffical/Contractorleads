@@ -15,13 +15,19 @@ export const CONTENT_LAST_UPDATED = "2026-11-05";
 
 export const SEO = {
   siteName: "Contractor Leads",
-  defaultTitle: "Contractor Leads: Contractor Prospecting for Agencies",
+  defaultTitle: "Find Contractor Leads for Your Agency | Contractor Leads",
   titleTemplate: "%s | Contractor Leads",
   defaultDescription:
-    "Contractor Leads helps marketing agencies find roofers, HVAC, plumbers and 15 more trades: live Google data, owner emails, AI scores and outreach.",
+    "Find contractor leads with owner names and verified emails. Search roofers, HVAC, plumbers and 15 more trades by city or state. 10 free leads.",
   keywords: [
+    "find contractor leads",
+    "find roofing leads",
+    "find HVAC leads",
+    "find plumbing leads",
+    "contractor leads for agencies",
+    "list of contractors",
+    "contractor email list",
     "contractorleads.us",
-    "www.contractorleads.us",
     "Contractor Leads",
     "contractor leads",
     "verified contractor leads",
@@ -291,6 +297,16 @@ const TRADE_COMPANIES: Record<string, string> = {
 
 export function tradeCompaniesLabel(slug: string, name: string): string {
   return TRADE_COMPANIES[slug] ?? `${name} Companies`;
+}
+
+/**
+ * Short "[Trade] Leads" phrase for "find" keywords (find roofing leads, find HVAC leads),
+ * the phrasing Apollo ("Find B2B Leads") and Prospeo ("B2B roofing leads") rank with.
+ */
+export function tradeFindLabel(trade: { name: string; titleName?: string }): string {
+  const name = trade.titleName ?? trade.name;
+  if (/contractors$/i.test(name)) return `${name.replace(/s$/i, "")} Leads`;
+  return `${name} Leads`;
 }
 
 /** Lower-case form for running text, keeping acronyms such as HVAC upper case. */
