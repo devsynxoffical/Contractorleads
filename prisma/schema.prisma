@@ -124,6 +124,7 @@ model User {
   campaigns               Campaign[]
   enrichmentJobs          EnrichmentJob[]
   workspaceContacts       WorkspaceLeadContact[]
+  inboxThreads            InboxThread[]
   checkoutAttempts        CheckoutAttempt[]
 }
 
@@ -963,6 +964,13 @@ model LeadEmail {
   readAt              DateTime?
   /// Unique unguessable token used by the open-tracking pixel
   trackingToken       String?            @unique
+  /// Unibox conversation this message belongs to
+  threadId            String?
+  thread              InboxThread?       @relation(fields: [threadId], references: [id], onDelete: SetNull)
+  /// Raw References header (space-separated Message-IDs), for thread matching
+  references          String?
+  /// Auto-reply related headers (Auto-Submitted, X-Autoreply, Precedence, ...) as JSON
+  headersJson         String?
   /// Set once when the recipient's mail client loads the tracking pixel
   openedAt            DateTime?
   createdAt           DateTime           @default(now())
@@ -973,6 +981,8 @@ model LeadEmail {
   @@index([userId, openedAt])
   @@index([fromEmail])
   @@index([toEmail])
+  @@index([threadId, createdAt])
+  @@index([messageId])
 }
 
 /// Multi-day email automation templates for scraped/saved leads.
@@ -1166,8 +1176,9 @@ model Campaign {
   createdAt              DateTime     @default(now())
   updatedAt              DateTime     @updatedAt
 
-  prospects CampaignProspect[]
-  logs      CampaignLog[]
+  prospects    CampaignProspect[]
+  logs         CampaignLog[]
+  inboxThreads InboxThread[]
 
   @@index([userId, status])
   @@index([userId, createdAt])
@@ -1526,4 +1537,68 @@ model WorkspaceLeadContact {
 
   @@unique([userId, leadId])
   @@index([leadId])
+}
+
+/// Unibox conversation: one thread per workspace, contact, receiving mailbox and campaign.
+/// Holds the current label (one per thread), the campaign it belongs to and follow-up dates.
+model InboxThread {
+  id              String               @id @default(cuid())
+  userId          String
+  user            User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Stable identity used to attach new messages: contact|mailbox|campaign
+  threadKey       String
+  leadId          String?
+  campaignId      String?
+  campaign        Campaign?            @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  prospectId      String?
+  /// How the campaign was matched: in_reply_to | references | prospect_email | none
+  campaignMatch   String               @default("none")
+  contactEmail    String
+  contactName     String?
+  /// Our mailbox that received the replies
+  mailboxEmail    String
+  subject         String
+  preview         String               @default("")
+  /// Label id from src/lib/unibox/labels.ts; exactly one per thread
+  label           String               @default("unlabelled")
+  /// auto | manual: auto-tagging never overrides a manual label
+  labelSource     String               @default("auto")
+  labelReason     String?
+  labelChangedAt  DateTime?
+  /// Out of office return date or bad-timing follow-up date
+  followUpAt      DateTime?
+  /// Contact named in a wrong-person or referral reply
+  referredEmail   String?
+  referredName    String?
+  unread          Boolean              @default(true)
+  status          String               @default("open") // open | archived
+  messageCount    Int                  @default(0)
+  lastMessageAt   DateTime             @default(now())
+  lastInboundAt   DateTime?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  messages        LeadEmail[]
+  labelHistory    InboxLabelHistory[]
+
+  @@unique([userId, threadKey])
+  @@index([userId, lastMessageAt])
+  @@index([userId, campaignId, lastMessageAt])
+  @@index([userId, label, lastMessageAt])
+}
+
+/// Audit trail of every label change on a thread (manual or automatic).
+model InboxLabelHistory {
+  id         String      @id @default(cuid())
+  threadId   String
+  thread     InboxThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  userId     String
+  oldLabel   String?
+  newLabel   String
+  /// User who changed it (null for automatic)
+  changedBy  String?
+  changeType String // auto | manual
+  reason     String?
+  createdAt  DateTime    @default(now())
+
+  @@index([threadId, createdAt])
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { EmailInboxPanel } from "@/components/email/email-inbox-panel";
+import { UniboxPanel } from "@/components/email/unibox-panel";
 import { EmailComposePanel } from "@/components/email/email-compose-panel";
 import { EmailBulkPanel } from "@/components/email/email-bulk-panel";
 import {
@@ -18,6 +19,7 @@ import {
   HiOutlineCog6Tooth,
   HiOutlineHome,
   HiOutlineInbox,
+  HiOutlineInboxStack,
   HiOutlinePaperAirplane,
   HiOutlinePencilSquare,
   HiOutlineQueueList,
@@ -31,7 +33,8 @@ const TABS: Array<{
 }> = [
   { id: "overview", label: "Overview", icon: HiOutlineHome },
   { id: "campaigns", label: "Campaigns", icon: HiOutlinePaperAirplane },
-  { id: "inbox", label: "Inbox", icon: HiOutlineInbox },
+  { id: "unibox", label: "Unibox", icon: HiOutlineInboxStack },
+  { id: "inbox", label: "All mail", icon: HiOutlineInbox },
   { id: "compose", label: "Compose", icon: HiOutlinePencilSquare },
   { id: "bulk", label: "Bulk send", icon: HiOutlineUsers },
   { id: "setup", label: "Setup email", icon: HiOutlineCog6Tooth },
@@ -100,6 +103,8 @@ export function EmailWorkspace({
       ) : null}
 
       {tab === "campaigns" ? <CampaignsDashboard /> : null}
+
+      {tab === "unibox" ? <UniboxPanel /> : null}
 
       {tab === "inbox" ? <EmailInboxPanel /> : null}
 

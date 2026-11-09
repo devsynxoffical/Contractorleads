@@ -32,6 +32,26 @@ export type SyncMailboxOptions = {
 /**
  * Determine default IMAP host and port based on email domain and provider
  */
+/** Headers the Unibox rules engine needs (RFC 3834 auto-reply markers, DSN content type). */
+const UNIBOX_HEADER_KEYS = ["auto-submitted", "x-autoreply", "x-auto-reply", "x-autorespond", "precedence", "content-type"];
+
+function uniboxHeaders(parsed: { headers?: Map<string, unknown> }): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const key of UNIBOX_HEADER_KEYS) {
+    const v = parsed.headers?.get(key);
+    if (v == null) continue;
+    const value = typeof v === "string" ? v : typeof v === "object" && v && "value" in v ? String((v as { value: unknown }).value) : String(v);
+    if (value) out[key] = value.slice(0, 200);
+  }
+  return out;
+}
+
+function referencesHeader(parsed: { references?: string | string[] }): string | undefined {
+  const r = parsed.references;
+  if (!r) return undefined;
+  return (Array.isArray(r) ? r.join(" ") : r).slice(0, 2000);
+}
+
 export function getImapConfig(opts: {
   email: string;
   host?: string;
@@ -199,10 +219,14 @@ export async function syncMailboxImap(opts: SyncMailboxOptions): Promise<ImapSyn
             // Parse text body with mailparser
             let bodyText = "";
             let parsedSubject = subject;
+            let headers: Record<string, string> = {};
+            let references: string | undefined;
             if (msg.source) {
               try {
                 const { simpleParser } = await import("mailparser");
                 const parsed = await simpleParser(msg.source);
+                headers = uniboxHeaders(parsed);
+                references = referencesHeader(parsed);
                 bodyText =
                   parsed.text ||
                   (typeof parsed.html === "string"
@@ -230,6 +254,8 @@ export async function syncMailboxImap(opts: SyncMailboxOptions): Promise<ImapSyn
               body: bodyText.trim().slice(0, 5000),
               messageId: messageId || undefined,
               inReplyTo: msg.envelope?.inReplyTo || undefined,
+              references,
+              headers,
               systemSmtpAccountId: opts.systemSmtpAccountId || undefined,
               smtpAccountId: opts.smtpAccountId || undefined,
               receivedAt: new Date(date),
@@ -373,6 +399,8 @@ async function syncMailboxViaRelay(
             body: bodyText.trim().slice(0, 5000),
             messageId,
             inReplyTo: typeof parsed.inReplyTo === "string" ? parsed.inReplyTo : undefined,
+            references: referencesHeader(parsed),
+            headers: uniboxHeaders(parsed),
             systemSmtpAccountId: opts.systemSmtpAccountId || undefined,
             smtpAccountId: opts.smtpAccountId || undefined,
             receivedAt: new Date(date),

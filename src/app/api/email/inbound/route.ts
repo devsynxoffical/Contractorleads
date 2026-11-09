@@ -44,6 +44,8 @@ export async function POST(request: Request) {
       body: text,
       messageId: body.messageId ? String(body.messageId) : undefined,
       inReplyTo: body.inReplyTo ? String(body.inReplyTo) : undefined,
+      references: body.references ? String(body.references).slice(0, 2000) : undefined,
+      headers: pickHeaders(body.headers),
     });
     return NextResponse.json({ ok: true, ...result });
   } catch (e) {
@@ -57,4 +59,16 @@ export async function POST(request: Request) {
 function extractAngle(raw: string) {
   const m = raw.match(/<([^>]+)>/);
   return (m?.[1] || raw).trim();
+}
+
+/** Optional `headers` object from the webhook payload: keep only the auto-reply markers. */
+function pickHeaders(raw: unknown): Record<string, string> | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const keys = ["auto-submitted", "x-autoreply", "x-auto-reply", "x-autorespond", "precedence", "content-type"];
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    const key = k.toLowerCase();
+    if (keys.includes(key) && v != null) out[key] = String(v).slice(0, 200);
+  }
+  return Object.keys(out).length ? out : undefined;
 }
