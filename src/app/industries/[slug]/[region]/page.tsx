@@ -40,6 +40,7 @@ import {
 import { buildStateInsight, getStateProfile, topCitiesForState } from "@/lib/state-profiles";
 import { StateInsights } from "@/components/marketing/state-insights";
 import { EMAIL_LIST_TRADES } from "@/lib/email-list-pages";
+import { buildStatePitch } from "@/lib/state-pitch";
 
 type Params = { params: Promise<{ slug: string; region: string }> };
 
@@ -119,6 +120,7 @@ export default async function TradeRegionPage({ params }: Params) {
   if (!profile) notFound();
   const topCities = topCitiesForState(region.code);
   const insight = buildStateInsight(trade.slug, trade.name, region.name, profile, topCities);
+  const pitch = buildStatePitch(trade.slug, region.name, profile, topCities);
   // The four neighbouring (or nearest) states, per the internal linking plan.
   const neighbourRegions = profile.neighbours
     .map((code) => SEO_REGIONS.find((r) => r.code === code))
@@ -224,6 +226,51 @@ export default async function TradeRegionPage({ params }: Params) {
             </Link>{" "}
             with owner names and verified emails.
           </p>
+        ) : null}
+
+        {pitch ? (
+          <div className="mt-10 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+            <h2 className="font-[family-name:var(--font-display)] text-[22px] font-bold text-slate-900">
+              Searches to check before you pitch {lower} companies in {region.name}
+            </h2>
+            <p className="mt-3 max-w-3xl text-[15px] leading-relaxed text-slate-700">{pitch.angle}</p>
+            <p className="mt-2 max-w-3xl text-[14.5px] leading-relaxed text-slate-600">
+              Search each one in Google for the prospect&apos;s city. If the company is missing from the map pack or the first page, that gap is your opening line.
+            </p>
+            {pitch.grid.length ? (
+              <div className="mt-5 overflow-x-auto">
+                <table className="w-full min-w-[520px] border-collapse text-left text-[14px]">
+                  <caption className="sr-only">
+                    {trade.name} searches to check by city in {region.name}
+                  </caption>
+                  <thead>
+                    <tr className="border-b border-slate-200 text-[12px] uppercase tracking-wider text-slate-500">
+                      <th scope="col" className="py-2 pr-4 font-semibold">City</th>
+                      <th scope="col" className="py-2 font-semibold">Searches to check</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pitch.grid.map((row) => (
+                      <tr key={row.city} className="border-b border-slate-100 align-top">
+                        <th scope="row" className="py-2.5 pr-4 font-semibold text-slate-900">{row.city}</th>
+                        <td className="py-2.5 text-slate-700">{row.searches.join(" · ")}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
+            <p className="mt-5 text-[13px] text-slate-600">
+              Other searches {lower} companies in {region.name} want to rank for: {pitch.terms.slice(3).join(", ")}.
+            </p>
+            <div className="mt-6 rounded-2xl bg-slate-50 p-5">
+              <h3 className="text-[15px] font-bold text-slate-900">Example opener for a {lower} company in {region.name}</h3>
+              <p className="mt-2 font-mono text-[13.5px] leading-relaxed text-slate-700">{pitch.opener}</p>
+              <p className="mt-2 text-[12.5px] text-slate-500">
+                Edit it to what you actually found for that company; never claim a gap you have not checked.
+              </p>
+            </div>
+          </div>
         ) : null}
       </section>
 

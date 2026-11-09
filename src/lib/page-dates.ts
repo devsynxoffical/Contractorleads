@@ -46,12 +46,12 @@ export const PAGE_UPDATED: Record<string, string> = {
 
 /** Trade hubs that received trade-specific content on this date. */
 export const TRADE_HUB_UPDATED: Record<string, string> = {
-  roofing: "2026-11-07",
-  hvac: "2026-11-07",
-  plumbing: "2026-11-07",
-  electrical: "2026-11-07",
-  solar: "2026-11-07",
-  "general-contractors": "2026-11-07",
+  roofing: "2026-11-09",
+  hvac: "2026-11-09",
+  plumbing: "2026-11-09",
+  electrical: "2026-11-09",
+  solar: "2026-11-09",
+  "general-contractors": "2026-11-09",
   remodeling: "2026-11-07",
 };
 /** Other trade hubs last changed when their titles were updated. */
