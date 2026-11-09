@@ -1,6 +1,7 @@
 import { seoBaseUrl } from "@/lib/seo";
 import { pageUpdated } from "@/lib/page-dates";
 import { EMAIL_LIST_TRADES } from "@/lib/email-list-pages";
+import { NOINDEX_LANDING_SLUGS } from "@/lib/landing-pages";
 
 export const dynamic = "force-static";
 
@@ -39,6 +40,8 @@ export async function GET() {
   ];
 
   const urls = coreRoutes
+    // noindex guides stay out of the sitemap (a sitemap should list only indexable pages)
+    .filter((r) => !NOINDEX_LANDING_SLUGS.has(r.path.slice(1)))
     .map(
       (r) => `  <url>
     <loc>${base}${r.path}</loc>

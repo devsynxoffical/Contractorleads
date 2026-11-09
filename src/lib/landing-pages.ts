@@ -1008,6 +1008,23 @@ export const LANDING_PAGES: LandingPage[] = [
   },
 ];
 
+/**
+ * Guides whose searchers are contractors looking for homeowner jobs. They stay published
+ * for visitors but are kept out of Google's index (noindex, follow) and the sitemap, so
+ * the site is classified as B2B lead-finding software, not as homeowner leads.
+ */
+export const NOINDEX_LANDING_SLUGS = new Set([
+  "homeowner-leads",
+  "exclusive-contractor-leads",
+  "storm-damage-leads",
+  "contractor-lead-tracking",
+  "contractor-lead-management",
+  "contractor-crm",
+  "sms-marketing-for-contractors",
+  "commercial-contractor-leads",
+  "new-construction-leads",
+]);
+
 export function getLandingPage(slug: string): LandingPage | undefined {
   return LANDING_PAGES.find((p) => p.slug === slug) ?? EMAIL_LIST_PAGES.find((p) => p.slug === slug);
 }
