@@ -5,6 +5,7 @@ import { use, useEffect, useState } from "react";
 import { HiOutlineArrowLeft } from "react-icons/hi2";
 import { AdminPageHeader, AdminStatCard } from "@/components/admin/admin-shell";
 import { ActivityFeed, PeriodSelect } from "@/components/admin/activity-feed";
+import { LoginAsButton } from "@/components/admin/login-as-button";
 
 type Stats = {
   emailsSent: number;
@@ -169,6 +170,7 @@ export default function AdminUserActivityPage({ params }: { params: Promise<{ us
                     Customer profile
                   </Link>
                 ) : null}
+                {u ? <LoginAsButton userId={u.id} disabled={!u.isActive} className="h-10 rounded-xl px-4 text-sm" /> : null}
               </>
             }
           />

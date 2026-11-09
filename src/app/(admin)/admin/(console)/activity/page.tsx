@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { LoginAsButton } from "@/components/admin/login-as-button";
 import { useEffect, useState } from "react";
 import { HiOutlineMagnifyingGlass } from "react-icons/hi2";
 import { AdminPageHeader, AdminStatCard } from "@/components/admin/admin-shell";
@@ -233,15 +234,18 @@ export default function AdminActivityPage() {
                   {(loading ? [] : (data?.rows ?? [])).map((r) => (
                     <tr key={r.user.id} className="hover:bg-[var(--input-bg)]">
                       <td className="max-w-[16rem] px-4 py-2.5">
-                        <Link href={`/admin/activity/${r.user.id}`} className="block min-w-0">
-                          <span className="block truncate font-semibold text-ink hover:text-brand-600">
-                            {r.user.companyName || r.user.name || r.user.email}
-                          </span>
-                          <span className="block truncate text-[11.5px] text-ink-muted">
-                            {r.user.email} · {r.user.plan}
-                            {r.user.isActive ? "" : " · suspended"}
-                          </span>
-                        </Link>
+                        <div className="flex items-center gap-2">
+                          <Link href={`/admin/activity/${r.user.id}`} className="block min-w-0 flex-1">
+                            <span className="block truncate font-semibold text-ink hover:text-brand-600">
+                              {r.user.companyName || r.user.name || r.user.email}
+                            </span>
+                            <span className="block truncate text-[11.5px] text-ink-muted">
+                              {r.user.email} · {r.user.plan}
+                              {r.user.isActive ? "" : " · suspended"}
+                            </span>
+                          </Link>
+                          <LoginAsButton userId={r.user.id} disabled={!r.user.isActive} className="shrink-0" />
+                        </div>
                       </td>
                       {COLUMNS.map((c) => (
                         <td

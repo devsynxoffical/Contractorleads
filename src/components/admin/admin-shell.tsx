@@ -34,6 +34,7 @@ import {
 } from "react-icons/hi2";
 import { cn } from "@/lib/utils";
 import type { SessionUser } from "@/lib/session-user";
+import { CanImpersonateProvider } from "@/components/admin/login-as-button";
 import { OWNER_ROLE, SUPER_ADMIN_ROLE } from "@/lib/roles";
 import {
   firstAllowedAdminPath,
@@ -330,7 +331,9 @@ export function AdminShell({
         </div>
 
         <main className="hud-shell-main scrollbar-thin relative z-[1] min-h-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
-          <AdminRouteGuard user={user}>{children}</AdminRouteGuard>
+          <CanImpersonateProvider value={user.role === SUPER_ADMIN_ROLE || user.role === OWNER_ROLE}>
+            <AdminRouteGuard user={user}>{children}</AdminRouteGuard>
+          </CanImpersonateProvider>
         </main>
       </div>
     </div>

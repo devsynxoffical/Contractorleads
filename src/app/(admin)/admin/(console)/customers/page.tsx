@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { LoginAsButton } from "@/components/admin/login-as-button";
 import { AdminPageHeader } from "@/components/admin/admin-shell";
 import { ADMIN_PLANS } from "@/lib/admin";
 import { Button } from "@/components/ui/button";
@@ -359,12 +360,15 @@ export default function AdminCustomersPage() {
                   {c._count.searches} searches · {c._count.savedLeads} saved
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <Link
-                    href={`/admin/customers/${c.id}`}
-                    className="font-semibold text-brand-600 hover:underline"
-                  >
-                    Manage
-                  </Link>
+                  <div className="flex items-center justify-end gap-3">
+                    <LoginAsButton userId={c.id} disabled={c.isActive === false} />
+                    <Link
+                      href={`/admin/customers/${c.id}`}
+                      className="font-semibold text-brand-600 hover:underline"
+                    >
+                      Manage
+                    </Link>
+                  </div>
                 </td>
               </tr>
             ))}
