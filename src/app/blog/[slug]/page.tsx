@@ -22,6 +22,7 @@ import {
 import { BLOG_CLUSTER_LABELS, BLOG_POSTS, blogWordCount, getBlogPost, relatedBlogPosts } from "@/lib/blog-content";
 import { LinkedText, createLinkBudget } from "@/components/blog/linked-text";
 import { buildMetadata, getTradeBySlug } from "@/lib/seo";
+import { FREE_TOOLS } from "@/lib/tools";
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -246,6 +247,20 @@ export default async function BlogPostPage({ params }: Params) {
             )}
           </section>
         ))}
+
+        {/* Free tools for the agency readers of every guide */}
+        <aside className="rounded-2xl border border-violet-100 bg-violet-50/50 p-6">
+          <h2 className="font-[family-name:var(--font-display)] text-[18px] font-bold text-slate-900">Free tools</h2>
+          <ul className="mt-3 grid gap-2 sm:grid-cols-3">
+            {FREE_TOOLS.map((t) => (
+              <li key={t.slug}>
+                <Link href={`/tools/${t.slug}`} className="text-[14px] font-semibold text-fuchsia-700 underline decoration-fuchsia-200 underline-offset-2 hover:decoration-fuchsia-500">
+                  {t.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </aside>
 
         {/* Sources: primary references for the factual claims above */}
         {post.sources && post.sources.length > 0 && (

@@ -40,6 +40,14 @@ function jwtKey(): Uint8Array {
 
 const COOKIE_NAME = "leadflow_session";
 const IMPERSONATE_COOKIE = "leadflow_impersonate";
+const IMPERSONATE_RETURN_COOKIE = "leadflow_impersonate_return";
+
+/** Only same-site admin paths are accepted as the place to return to after impersonating. */
+export function safeAdminReturnPath(path: unknown): string {
+  if (typeof path !== "string") return "/admin/customers";
+  if (!/^\/admin(\/|\?|$)/.test(path) || path.startsWith("//") || path.includes("\\")) return "/admin/customers";
+  return path.slice(0, 500);
+}
 const SESSION_DURATION = "7d";
 
 function toSessionUser(
@@ -270,7 +278,7 @@ export async function requirePermission(
   return real;
 }
 
-export async function startImpersonation(targetUserId: string) {
+export async function startImpersonation(targetUserId: string, returnTo?: string) {
   const admin = await requireSuperAdmin();
   if (!admin) throw new Error("FORBIDDEN");
 
@@ -286,9 +294,21 @@ export async function startImpersonation(targetUserId: string) {
     path: "/",
     maxAge: 60 * 60 * 4,
   });
+  cookieStore.set(IMPERSONATE_RETURN_COOKIE, safeAdminReturnPath(returnTo), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 4,
+  });
 }
 
-export async function stopImpersonation() {
+/** Ends impersonation and returns the admin page to go back to. */
+export async function stopImpersonation(): Promise<{ returnTo: string; targetUserId: string | null }> {
   const cookieStore = await cookies();
+  const targetUserId = cookieStore.get(IMPERSONATE_COOKIE)?.value ?? null;
+  const returnTo = safeAdminReturnPath(cookieStore.get(IMPERSONATE_RETURN_COOKIE)?.value);
   cookieStore.delete(IMPERSONATE_COOKIE);
+  cookieStore.delete(IMPERSONATE_RETURN_COOKIE);
+  return { returnTo, targetUserId };
 }

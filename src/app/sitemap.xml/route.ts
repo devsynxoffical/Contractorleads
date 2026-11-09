@@ -1,4 +1,5 @@
 import { CONTENT_LAST_UPDATED, seoBaseUrl } from "@/lib/seo";
+import { LOCATIONS_UPDATED, TOOLS_UPDATED } from "@/lib/page-dates";
 
 export const dynamic = "force-static";
 
@@ -19,6 +20,14 @@ export async function GET() {
   <sitemap>
     <loc>${base}/sitemap-states.xml</loc>
     <lastmod>${now}</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>${base}/sitemap-locations.xml</loc>
+    <lastmod>${LOCATIONS_UPDATED}</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>${base}/sitemap-tools.xml</loc>
+    <lastmod>${TOOLS_UPDATED}</lastmod>
   </sitemap>
   <sitemap>
     <loc>${base}/sitemap-help.xml</loc>

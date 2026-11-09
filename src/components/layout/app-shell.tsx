@@ -576,19 +576,21 @@ export function AppShell({
       </Suspense>
       {user.impersonating && (
         <div className="fixed inset-x-0 top-0 z-[60] flex items-center justify-center gap-3 bg-[#1a1224] px-4 py-2 text-[12px] text-white">
-          <span>
-            Testing as{" "}
+          <span className="min-w-0 truncate">
+            Logged in as{" "}
             <strong>{user.companyName || user.name || user.email}</strong>
+            <span className="hidden text-white/60 sm:inline"> · {user.email}</span>
           </span>
           <button
             type="button"
-            className="rounded-lg bg-white/15 px-2.5 py-1 font-semibold text-white transition hover:bg-white/25"
+            className="shrink-0 rounded-lg bg-white px-3 py-1 font-semibold text-[#1a1224] transition hover:bg-white/85"
             onClick={async () => {
-              await fetch("/api/admin/impersonate/exit", { method: "POST" });
-              window.location.href = "/admin/customers";
+              const res = await fetch("/api/admin/impersonate/exit", { method: "POST" }).catch(() => null);
+              const data = res ? await res.json().catch(() => ({})) : {};
+              window.location.href = data.redirectTo || "/admin/customers";
             }}
           >
-            Exit
+            ← Back to admin
           </button>
         </div>
       )}

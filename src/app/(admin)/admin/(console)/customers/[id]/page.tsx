@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { LoginAsButton } from "@/components/admin/login-as-button";
 import { useParams, useRouter } from "next/navigation";
 import { AdminPageHeader } from "@/components/admin/admin-shell";
 import { ADMIN_PLANS, SUBSCRIPTION_STATUSES } from "@/lib/admin";
@@ -307,19 +308,6 @@ export default function AdminCustomerDetailPage() {
     load();
   }
 
-  async function testAsCustomer() {
-    const res = await fetch(`/api/admin/customers/${id}/impersonate`, {
-      method: "POST",
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setMessage(data.error ?? "Could not start test session");
-      return;
-    }
-    router.push(data.redirectTo || "/auth/splash");
-    router.refresh();
-  }
-
   async function regenerateApiKey() {
     setMessage(null);
     setLatestApiKey(null);
@@ -355,9 +343,13 @@ export default function AdminCustomerDetailPage() {
         description={customer.email}
         actions={
           <div className="flex flex-wrap gap-2">
-            <Button onClick={testAsCustomer} disabled={!customer.isActive}>
-              Test as Customer
-            </Button>
+            <LoginAsButton
+              userId={customer.id}
+              disabled={!customer.isActive}
+              label="Log in as this user"
+              onError={setMessage}
+              className="h-10 rounded-xl px-4 text-sm"
+            />
             <Link
               href={`/admin/activity/${id}`}
               className="inline-flex h-10 items-center rounded-xl border border-border bg-[var(--surface)] px-4 text-sm font-semibold text-ink hover:border-brand-400"

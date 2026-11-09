@@ -7,6 +7,10 @@ export type TradeHubContent = {
   quickAnswer: { q: string; a: string };
   buys: string[];
   season: string;
+  /** Searches homeowners use to find this trade, used to frame the pitch (no volumes claimed). */
+  searchTerms?: string[];
+  /** Common mistakes agencies make when pitching this trade. Each starts with a short sentence. */
+  mistakes?: string[];
   faqs: Array<{ q: string; a: string }>;
 };
 
@@ -23,6 +27,13 @@ export const TRADE_HUB_CONTENT: Record<string, TradeHubContent> = {
       "Websites with project galleries and service-area pages",
     ],
     season: "Roofers buy marketing in late winter and early spring, before storm and replacement season, and again after major storms when demand outruns their crews.",
+    searchTerms: ["roof repair", "roof replacement", "roofing contractor", "roof leak repair", "storm damage roof repair", "metal roofing", "roof inspection"],
+    mistakes: [
+      "Pitching during storm cleanup. Right after hail or wind, owners are on roofs and adjusters' calls, not reading cold email. Pitch before the season or once the backlog clears.",
+      "Selling generic SEO. Roofers judge marketing by signed roofs, so tie the pitch to repair, replacement and insurance-claim searches, not rankings in general.",
+      "Ignoring Local Services Ads and reviews. In many cities the Google Guaranteed badge and review count decide who gets the call; check both before you pitch.",
+      "Promising more leads to a crew that is already booked. Ask about capacity first; a roofer turning work away needs higher-margin jobs, not more volume.",
+    ],
     faqs: [
       {
         q: "Why are roofers good clients for marketing agencies?",
@@ -58,6 +69,13 @@ export const TRADE_HUB_CONTENT: Record<string, TradeHubContent> = {
       "Call tracking and missed-call text-back during peak season",
     ],
     season: "HVAC owners plan marketing before each peak: late winter and spring for cooling season, late summer for heating season.",
+    searchTerms: ["AC repair", "furnace repair", "HVAC company", "air conditioner installation", "heat pump installation", "emergency AC repair", "HVAC maintenance"],
+    mistakes: [
+      "Pitching at peak season. In the first heatwave or cold snap, owners are running calls themselves. Shoulder seasons (spring and autumn) are when they plan marketing.",
+      "Ignoring maintenance plans. Recurring service agreements smooth out seasonal cash flow, so a pitch that grows memberships often lands better than one that only adds repair calls.",
+      "Overlooking missed and after-hours calls. Many HVAC searches are emergencies; if calls go to voicemail, more ads only waste money. Test the phone line before you pitch.",
+      "Using one pitch for residential and commercial. Commercial HVAC buyers are facility managers on contracts, a different funnel from homeowners searching for AC repair.",
+    ],
     faqs: [
       {
         q: "Why do agencies target HVAC companies?",
@@ -93,6 +111,13 @@ export const TRADE_HUB_CONTENT: Record<string, TradeHubContent> = {
       "Review generation and Google Business Profile management",
     ],
     season: "Plumbing demand is steady year-round, with extra urgency before winter in cold states and before storm season on the coasts.",
+    searchTerms: ["plumber", "emergency plumber", "drain cleaning", "water heater repair", "water heater installation", "leak detection", "sewer line repair"],
+    mistakes: [
+      "Not checking answer speed. Plumbing searches are urgent and the first company to answer usually wins the job; call the number before you pitch and mention what happened.",
+      "Ignoring emergency intent. Pages and ads for burst pipes, blocked drains and no hot water convert far better than a generic services page.",
+      "Pitching a new website when the gap is click-to-call. On phones, call buttons, Local Services Ads and the Google Business Profile often matter more than the site design.",
+      "Missing service-area pages. Plumbers cover several towns; separate pages for the suburbs they serve are an easy, concrete win to show.",
+    ],
     faqs: [
       {
         q: "Why are plumbers strong agency clients?",
@@ -128,6 +153,13 @@ export const TRADE_HUB_CONTENT: Record<string, TradeHubContent> = {
       "Review generation and Google Business Profile management",
     ],
     season: "Electricians respond well before storm and winter seasons, when generator and panel demand rises, and year-round for EV charger installs.",
+    searchTerms: ["electrician", "emergency electrician", "panel upgrade", "EV charger installation", "generator installation", "electrical repair", "electrical contractor"],
+    mistakes: [
+      "Using one pitch for residential and commercial. Commercial electrical contractors win work through bids and general contractors, not homeowner searches.",
+      "Ignoring the EV charger and generator niches. These are higher-ticket, searchable services many electricians want more of; a pitch built around one niche stands out.",
+      "Leading with a generic website redesign. Show the specific searches (panel upgrade, EV charger installation) where they do not appear today.",
+      "Forgetting licensing and trust signals. Licence numbers, insurance and reviews on the site and profile matter more for electrical work than for most trades.",
+    ],
     faqs: [
       {
         q: "Why should agencies target electricians?",
@@ -163,6 +195,13 @@ export const TRADE_HUB_CONTENT: Record<string, TradeHubContent> = {
       "Review generation and reputation management in a trust-sensitive market",
     ],
     season: "Solar installers market most heavily in late winter and spring, when homeowners notice energy bills and plan home projects.",
+    searchTerms: ["solar installers", "solar panel installation", "solar companies", "home battery installation", "solar roofing", "solar panel cost"],
+    mistakes: [
+      "Selling more leads when the problem is acquisition cost. Many solar companies already buy leads; the stronger pitch is a lower cost per signed contract.",
+      "Ignoring incentive changes. Tax credits, net metering and state rebates change often and move demand; check what has changed in their state before you write.",
+      "Treating installers and sales organisations the same. Some solar companies install, others only sell; their margins, funnels and decision makers differ.",
+      "Promising volume without a qualification step. Shade, roof condition and credit kill many solar leads; offer filtering, not just more forms.",
+    ],
     faqs: [
       {
         q: "Why are solar installers good agency clients?",
@@ -198,6 +237,13 @@ export const TRADE_HUB_CONTENT: Record<string, TradeHubContent> = {
       "Estimate follow-up systems that recover quotes that go quiet",
     ],
     season: "General contractors in cold states book spring and summer work in winter; elsewhere they can be pitched year-round.",
+    searchTerms: ["general contractor", "home addition contractor", "ADU builder", "commercial general contractor", "custom home builder", "home renovation contractor"],
+    mistakes: [
+      "Pitching homeowner lead gen to commercial GCs. Commercial general contractors win work through bids, architects and relationships, not Google searches.",
+      "Ignoring the portfolio. For large projects, buyers judge GCs by finished work; project pages with photos and scope often beat ads as a first step.",
+      "Expecting quick results. Additions, ADUs and custom homes have long sales cycles; set expectations in months, and measure consultations, not just calls.",
+      "Missing niche services. ADUs, additions and design-build are searched separately; a page per service gives the pitch something concrete.",
+    ],
     faqs: [
       {
         q: "Are general contractors good clients for agencies?",
@@ -233,6 +279,13 @@ export const TRADE_HUB_CONTENT: Record<string, TradeHubContent> = {
       "Email and retargeting nurture for homeowners who research for months",
     ],
     season: "Remodelers plan marketing in January and February, with a second window in late summer for projects homeowners want finished before the holidays.",
+    searchTerms: ["kitchen remodeling", "bathroom remodeling", "basement finishing", "home remodeling contractor", "bathroom renovation", "kitchen renovation"],
+    mistakes: [
+      "Pitching without visuals. Remodeling is sold on before-and-after photos; a contractor with a thin gallery needs that fixed before ads will work.",
+      "Ignoring Houzz and Google Business Profile photos. Homeowners browse photos on these profiles before they visit a website.",
+      "Missing seasonality. Many homeowners plan interior projects after the holidays and outdoor work in spring; time the pitch before those windows.",
+      "Selling cheap leads. Remodelers lose money on price shoppers; focus on qualified consultations and average project value.",
+    ],
     faqs: [
       {
         q: "Why are remodelers good agency clients?",

@@ -48,12 +48,15 @@ const PRIVATE_SECTIONS = [
 
 export default function robots(): MetadataRoute.Robots {
   const base = seoBaseUrl();
+  const disallow = PRIVATE_SECTIONS.flatMap((s) => [`/${s}$`, `/${s}/`]);
   return {
     rules: [
+      { userAgent: "*", allow: "/", disallow },
+      // Search and AI crawlers are explicitly welcome on public pages (and /llms.txt).
       {
-        userAgent: "*",
+        userAgent: ["Googlebot", "Bingbot", "GPTBot", "OAI-SearchBot", "ChatGPT-User", "PerplexityBot", "ClaudeBot", "Claude-SearchBot", "Google-Extended", "Applebot"],
         allow: "/",
-        disallow: PRIVATE_SECTIONS.flatMap((s) => [`/${s}$`, `/${s}/`]),
+        disallow,
       },
     ],
     sitemap: `${base}/sitemap.xml`,

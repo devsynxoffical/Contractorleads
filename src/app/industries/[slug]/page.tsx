@@ -237,6 +237,38 @@ export default async function TradePage({ params }: Params) {
             </div>
           )}
 
+          {hub?.searchTerms?.length ? (
+            <div className="mt-5 rounded-2xl border border-white/80 bg-white/90 p-5 shadow-2xs">
+              <h3 className="text-[15px] font-bold text-slate-900">Searches {lower} companies want to rank for</h3>
+              <p className="mt-2 text-[14px] leading-relaxed text-slate-700">
+                These are the searches homeowners use to find {lower} companies. Check where a prospect appears for them in its own city before you pitch, and lead with the gap you find.
+              </p>
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {hub.searchTerms.map((t) => (
+                  <li key={t} className="rounded-full bg-violet-50 px-3 py-1 text-[13px] font-medium text-violet-800 ring-1 ring-violet-100">
+                    {t} + city
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {hub?.mistakes?.length ? (
+            <div className="mt-5 rounded-2xl border border-white/80 bg-white/90 p-5 shadow-2xs">
+              <h3 className="text-[15px] font-bold text-slate-900">Mistakes agencies make pitching {lower} companies</h3>
+              <ul className="mt-3 space-y-3">
+                {hub.mistakes.map((m) => {
+                  const dot = m.indexOf(". ");
+                  return (
+                    <li key={m} className="text-[14px] leading-relaxed text-slate-700">
+                      <b className="text-slate-900">{m.slice(0, dot + 1)}</b> {m.slice(dot + 2)}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ) : null}
+
           {/* Related guides for this trade (driven by BLOG_POSTS.relatedIndustries) */}
           {playbooks.length > 0 && (
             <div className="mt-6 rounded-2xl border border-violet-200 bg-white p-4">

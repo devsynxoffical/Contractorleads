@@ -354,6 +354,8 @@ export function serviceJsonLd(opts: {
   path: string;
   serviceType: string;
   audience?: string;
+  /** Narrower area, e.g. one US state (defaults to all served countries) */
+  areaServed?: Record<string, unknown>;
 }) {
   const url = absoluteUrl(opts.path);
   return {
@@ -365,7 +367,7 @@ export function serviceJsonLd(opts: {
     url,
     serviceType: opts.serviceType,
     provider: orgRef(),
-    areaServed: AREA_SERVED,
+    areaServed: opts.areaServed ?? AREA_SERVED,
     audience: {
       "@type": "BusinessAudience",
       audienceType:
@@ -460,5 +462,23 @@ export function collectionPageJsonLd(opts: {
     isPartOf: { "@id": SCHEMA_IDS.website() },
     publisher: orgRef(),
     mainEntity: list,
+  };
+}
+
+/** Free browser tool (price 0). */
+export function webApplicationJsonLd(opts: { name: string; description: string; path: string; category?: string }) {
+  const url = absoluteUrl(opts.path);
+  return {
+    "@context": CONTEXT,
+    "@type": "WebApplication",
+    "@id": `${url}#app`,
+    name: opts.name,
+    description: opts.description,
+    url,
+    applicationCategory: opts.category ?? "BusinessApplication",
+    operatingSystem: "Web",
+    isAccessibleForFree: true,
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    provider: orgRef(),
   };
 }
