@@ -13,7 +13,7 @@ import {
   webPageJsonLd,
 } from "@/components/seo/json-ld";
 import { buildMetadata } from "@/lib/seo";
-import { getLandingPage, type LandingPage } from "@/lib/landing-pages";
+import { NOINDEX_LANDING_SLUGS, getLandingPage, type LandingPage } from "@/lib/landing-pages";
 import { pageUpdated } from "@/lib/page-dates";
 
 /** Product facts used as the proof block until client case studies are published. */
@@ -32,6 +32,7 @@ export function landingMetadata(slug: string): Metadata {
     description: page.metaDescription,
     path: `/${page.slug}`,
     keywords: [page.primaryKeyword, ...page.secondaryKeywords],
+    noIndex: NOINDEX_LANDING_SLUGS.has(page.slug),
   });
 }
 

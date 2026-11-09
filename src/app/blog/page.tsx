@@ -17,9 +17,9 @@ import { absoluteUrl, buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = {
   ...buildMetadata({
-  title: "Agency Growth Blog: Selling Marketing to Contractors",
+  title: "Contractor Lead Generation Blog for Agencies",
   description:
-    "Playbooks, benchmarks, and guides for marketing agencies, media buyers, and sales teams that sell to home-service contractors.",
+    "Guides to find contractor leads, write cold emails and sell marketing to roofers, HVAC companies, plumbers and other home-service contractors.",
   path: "/blog",
   keywords: [
     "agency growth blog",
@@ -55,7 +55,7 @@ export default function BlogIndexPage() {
           as: "Blog",
           name: "Agency Growth Blog",
           description:
-            "Playbooks, benchmarks, and guides for marketing agencies, media buyers, and sales teams that sell to home-service contractors.",
+            "Guides to find contractor leads, write cold emails and sell marketing to roofers, HVAC companies, plumbers and other home-service contractors.",
           path: "/blog",
           items: [...pillars, ...clusters].map((p) => ({ name: p.title, path: `/blog/${p.slug}` })),
         })}
@@ -63,7 +63,7 @@ export default function BlogIndexPage() {
 
       <MarketingSubpageHero
         eyebrow="Agency Growth Playbooks"
-        title="Agency Growth Blog: Selling Marketing to Contractors"
+        title="Contractor Lead Generation Blog for Agencies"
         description="Data-driven guides, pricing blueprints, and outreach playbooks for agencies and media buyers that sell to home-service contractors."
       >
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">

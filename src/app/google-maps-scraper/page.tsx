@@ -39,9 +39,9 @@ const SCRAPER_GUIDES = BLOG_POSTS.filter((p) =>
 );
 
 export const metadata: Metadata = buildMetadata({
-  title: "Google Maps Scraper: Free Contractor Leads With Owner Names",
+  title: "Google Maps Scraper: Find Contractor Leads With Emails",
   description:
-    "A Google Maps scraper alternative built for agencies: live Google business data, owner names, AI scores and Excel export. Try 10 free leads.",
+    "Find contractor leads with a Google Maps scraper for agencies: business data, owner names, verified emails, AI scores and Excel export. 10 free leads.",
   path: "/google-maps-scraper",
   keywords: [
     "google maps scraper",

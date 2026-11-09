@@ -38,6 +38,8 @@ import {
   getTradeBySlug,
   isPriorityTrade,
   lowerTradeLabel,
+  tradeCompaniesLabel,
+  tradeFindLabel,
 } from "@/lib/seo";
 import { BLOG_POSTS } from "@/lib/blog-content";
 import { getTradeHubContent } from "@/lib/trade-hub-content";
@@ -54,22 +56,27 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const trade = getTradeBySlug(slug);
   if (!trade) return {};
   // Keyword first, then the offer (the pattern Hunter and Prospeo use on tool pages).
-  const name = trade.titleName ?? trade.name;
-  const leads = /contractors$/i.test(name)
-    ? `${name.replace(/s$/i, "")} Leads`
-    : /company$/i.test(name)
-      ? `${name} Leads`
-      : `${name} Contractor Leads`;
-  // "for Marketing Agencies" makes the intent explicit: "[trade] contractor leads" on its own
-  // is mostly searched by contractors who want homeowner leads.
-  const titleOptions = [`${leads} for Marketing Agencies`, `${leads} for Agencies`, leads];
-  const title = titleOptions.find((t) => t.length < 60) ?? leads;
-  const withOffer = `${trade.description} Start with 10 free leads.`;
+  // "Find [Trade] Leads" (the user's target phrasing, as Apollo and Prospeo use it) plus
+  // "Companies for Agencies", which tells Google this is B2B prospecting, not homeowner leads.
+  const find = tradeFindLabel(trade);
+  const companies = tradeCompaniesLabel(trade.slug, trade.name);
+  const titleOptions = [`Find ${find}: ${companies} for Agencies`, `Find ${find} for Agencies`, `Find ${find}`];
+  const title = titleOptions.find((t) => t.length < 60) ?? `Find ${find}`;
+  const descOptions = [
+    `Find ${lowerTradeLabel(find)} for your agency: ${lowerTradeLabel(companies)} with owner names, verified emails and AI scores by city or state. 10 free leads.`,
+    `Find ${lowerTradeLabel(find)}: ${lowerTradeLabel(companies)} with owner names, verified emails and AI scores. 10 free leads.`,
+  ];
   return buildMetadata({
     title,
-    description: withOffer.length < 155 ? withOffer : trade.description,
+    description: descOptions.find((d) => d.length < 155) ?? descOptions[descOptions.length - 1],
     path: `/industries/${trade.slug}`,
-    keywords: trade.keywords,
+    keywords: [
+      `find ${lowerTradeLabel(find)}`,
+      lowerTradeLabel(find),
+      `list of ${lowerTradeLabel(companies)}`,
+      `${lowerTradeLabel(companies)} email list`,
+      ...trade.keywords,
+    ],
   });
 }
 
@@ -140,7 +147,7 @@ export default async function TradePage({ params }: Params) {
 
       <MarketingSubpageHero
         eyebrow={`${trade.name} leads`}
-        title={trade.headline.replace(/ for agencies$/i, " for marketing agencies")}
+        title={`Find ${lowerTradeLabel(tradeFindLabel(trade))} for your agency`}
         description={trade.description}
       >
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">

@@ -43,7 +43,7 @@ export function StateInsights({
       {/* Quick answer */}
       <div className="rounded-2xl border border-fuchsia-200 bg-gradient-to-br from-fuchsia-50 to-violet-50 p-6">
         <h2 className="font-[family-name:var(--font-display)] text-[20px] font-bold text-slate-900 sm:text-[22px]">
-          How do I get a list of {lowerTradeLabel(companiesLabel)} in {stateName}?
+          How do I find {lowerTradeLabel(leadsLabel)} in {stateName}?
         </h2>
         <p className="mt-3 text-[15px] leading-relaxed text-slate-700">
           Search live Google data for {lowerTradeLabel(companiesLabel)} in {stateName}, starting with{" "}

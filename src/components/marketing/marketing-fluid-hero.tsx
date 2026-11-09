@@ -214,7 +214,7 @@ export function MarketingFluidHero() {
         </div>
 
         <h1 className="mkt-flow-heading mt-4" data-reveal="hook">
-          Contractor leads for agencies, scored and ready to dial
+          Find contractor leads for your agency, scored and ready to dial
         </h1>
 
         <p className="mkt-flow-sub mkt-flow-sub--deck mt-4" data-reveal="sub">

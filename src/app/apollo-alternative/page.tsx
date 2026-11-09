@@ -25,9 +25,9 @@ import {
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
-  title: "Apollo.io Alternative for Local Contractor Leads (2026)",
+  title: "Apollo.io Alternative to Find Local Contractor Leads",
   description:
-    "Looking for an Apollo.io alternative for local contractor leads? Get live Google data, owner names and AI scores from $19.99 a month. 10 leads free.",
+    "An Apollo.io alternative to find local contractor leads: live Google data, owner names, verified emails and AI scores from $19.99/mo. 10 free leads.",
   path: "/apollo-alternative",
   keywords: [
     "apollo alternative",

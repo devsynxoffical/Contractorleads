@@ -551,8 +551,8 @@ export const LANDING_PAGES: LandingPage[] = [
     serviceType: "Contractor email finder and verification",
     primaryKeyword: "contractor email finder",
     secondaryKeywords: ["find contractor email addresses", "contractor owner email", "contractor email lookup", "roofer email finder"],
-    titleTag: "Contractor Email Finder: Owner Emails, Verified",
-    metaDescription: "Contractor email finder for agencies: find owner names and verified emails for roofers, HVAC, plumbers and 15 more trades. Start with 10 free leads.",
+    titleTag: "Contractor Email Finder: Find Owner Emails, Verified",
+    metaDescription: "Find owner emails with a contractor email finder: verified emails for roofers, HVAC, plumbers and 15 more trades, for agencies. 10 free leads.",
     breadcrumb: "Contractor email finder",
     eyebrow: "Contractor email finder",
     h1: "Contractor email finder: owner names and verified emails",
@@ -1007,6 +1007,23 @@ export const LANDING_PAGES: LandingPage[] = [
     },
   },
 ];
+
+/**
+ * Guides whose searchers are contractors looking for homeowner jobs. They stay published
+ * for visitors but are kept out of Google's index (noindex, follow) and the sitemap, so
+ * the site is classified as B2B lead-finding software, not as homeowner leads.
+ */
+export const NOINDEX_LANDING_SLUGS = new Set([
+  "homeowner-leads",
+  "exclusive-contractor-leads",
+  "storm-damage-leads",
+  "contractor-lead-tracking",
+  "contractor-lead-management",
+  "contractor-crm",
+  "sms-marketing-for-contractors",
+  "commercial-contractor-leads",
+  "new-construction-leads",
+]);
 
 export function getLandingPage(slug: string): LandingPage | undefined {
   return LANDING_PAGES.find((p) => p.slug === slug) ?? EMAIL_LIST_PAGES.find((p) => p.slug === slug);

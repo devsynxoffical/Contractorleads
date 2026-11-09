@@ -14,9 +14,9 @@ import {
 import { buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
-  title: "Contractor Leads Pricing: Plans From $19.99 (10 Free Leads)",
+  title: "Contractor Leads Pricing: Find Leads From $19.99/mo",
   description:
-    "Compare Contractor Leads plans for agencies. Start free with 10 leads, then $19.99 to $99/mo. 1 credit = 1 lead, AI scoring and outreach tools included.",
+    "Find contractor leads from $19.99 a month: 1 credit = 1 lead with owner names, verified emails and AI scores. Start with 10 free leads, no card.",
   path: "/pricing",
   keywords: [
     "contractor leads pricing",

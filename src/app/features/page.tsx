@@ -41,9 +41,9 @@ import { INDUSTRIES, TIER_ONE_COUNTRIES } from "@/lib/constants";
 import { TRADE_PAGES, buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
-  title: "Contractor Leads Features: Lead Finder, Scoring & Outreach",
+  title: "Find Contractor Leads: B2B Lead Finder Features",
   description:
-    "Lead Finder, AI scoring, owner enrichment, Meta ads intel, outreach, CRM, email and SMS for agencies prospecting contractors. Start with 10 free leads.",
+    "Find contractor leads by trade and city with a B2B lead finder: owner names, verified emails, AI scores, outreach and CRM in one tool. 10 free leads.",
   path: "/features",
   keywords: [
     "contractor lead generation software",
