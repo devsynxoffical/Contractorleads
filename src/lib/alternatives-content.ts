@@ -69,7 +69,7 @@ export const ALTERNATIVES: Alternative[] = [
     name: "Outscraper",
     category: "Google Maps scraping service",
     website: "outscraper.com",
-    titleTag: "Outscraper Alternative for Contractor Leads (2026)",
+    titleTag: "Outscraper Alternative to Find Contractor Leads (2026)",
     metaDescription:
       "Looking for an Outscraper alternative? Compare its Google Maps export with Contractor Leads' live data, verified owner names, AI lead scores and outreach.",
     h1: "The Outscraper alternative for agencies that sell to contractors",
@@ -211,7 +211,7 @@ export const ALTERNATIVES: Alternative[] = [
     name: "PhantomBuster",
     category: "Social and web automation platform",
     website: "phantombuster.com",
-    titleTag: "PhantomBuster Alternative for Contractor Leads (2026)",
+    titleTag: "PhantomBuster Alternative to Find Contractor Leads (2026)",
     metaDescription:
       "A PhantomBuster alternative for agencies prospecting contractors: live Google data, verified owner names, AI lead scores and outreach scripts.",
     h1: "The PhantomBuster alternative built for contractor prospecting",
@@ -282,7 +282,7 @@ export const ALTERNATIVES: Alternative[] = [
     name: "ZoomInfo",
     category: "Enterprise B2B contact database",
     website: "zoominfo.com",
-    titleTag: "ZoomInfo Alternative for Local Contractor Leads (2026)",
+    titleTag: "ZoomInfo Alternative to Find Contractor Leads (2026)",
     metaDescription:
       "Need a ZoomInfo alternative for local contractors? Contractor Leads covers owner-run roofing, HVAC and plumbing firms ZoomInfo misses, from $19.99/mo.",
     h1: "The ZoomInfo alternative for agencies selling to local contractors",
@@ -353,7 +353,7 @@ export const ALTERNATIVES: Alternative[] = [
     name: "Lusha",
     category: "B2B contact enrichment tool",
     website: "lusha.com",
-    titleTag: "Lusha Alternative for Contractor Leads (2026)",
+    titleTag: "Lusha Alternative to Find Contractor Leads (2026)",
     metaDescription:
       "A Lusha alternative for agencies selling to contractors: find businesses from live Google data, then get owner names, marketing scores and outreach.",
     h1: "The Lusha alternative that finds the contractor, not just the contact",
@@ -424,7 +424,7 @@ export const ALTERNATIVES: Alternative[] = [
     name: "D7 Lead Finder",
     category: "Local business lead finder",
     website: "d7leadfinder.com",
-    titleTag: "D7 Lead Finder Alternative for Contractor Leads (2026)",
+    titleTag: "D7 Lead Finder Alternative to Find Contractor Leads (2026)",
     metaDescription:
       "Comparing D7 Lead Finder alternatives? Contractor Leads adds AI gap scores, verified owner names, Meta ad status and outreach to local contractor data.",
     h1: "The D7 Lead Finder alternative for agencies that sell to contractors",
@@ -495,7 +495,7 @@ export const ALTERNATIVES: Alternative[] = [
     name: "UpLead",
     category: "B2B contact database",
     website: "uplead.com",
-    titleTag: "UpLead Alternative for Local Contractor Leads (2026)",
+    titleTag: "UpLead Alternative to Find Contractor Leads (2026)",
     metaDescription:
       "An UpLead alternative for agencies prospecting roofers, HVAC and plumbers: live Google data, owner names, AI lead scores and outreach. 10 free leads.",
     h1: "The UpLead alternative for agencies prospecting local contractors",
@@ -566,7 +566,7 @@ export const ALTERNATIVES: Alternative[] = [
     name: "Hunter",
     category: "B2B email finder and verifier",
     website: "hunter.io",
-    titleTag: "Hunter.io Alternative for Local Contractor Leads (2026)",
+    titleTag: "Hunter.io Alternative to Find Contractor Leads (2026)",
     metaDescription:
       "A Hunter.io alternative for agencies selling to contractors: find local businesses by trade and city, then get owner names, AI lead scores and outreach.",
     h1: "The Hunter.io alternative that finds local contractors, not just email addresses",
@@ -643,7 +643,7 @@ export const ALTERNATIVES: Alternative[] = [
     name: "Prospeo",
     category: "B2B email and mobile finder",
     website: "prospeo.io",
-    titleTag: "Prospeo Alternative for Local Contractor Leads (2026)",
+    titleTag: "Prospeo Alternative to Find Contractor Leads (2026)",
     metaDescription:
       "A Prospeo alternative for agencies prospecting contractors: find local businesses by trade and city, then get owner names, AI lead scores and outreach.",
     h1: "The Prospeo alternative built for finding and pitching local contractors",

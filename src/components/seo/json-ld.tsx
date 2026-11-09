@@ -34,7 +34,7 @@ export const SCHEMA_IDS = {
 };
 
 const COMPANY_DESCRIPTION =
-  "Contractor Leads is prospecting software for marketing agencies, media buyers and sales teams that sell to home-service contractors: it finds businesses from live Google data, scores them Hot, Warm or Nurture, adds owner names and Meta ad status, and writes the outreach.";
+  "Contractor Leads is B2B lead-finding software: marketing agencies, media buyers and sales teams use it to find contractor leads (roofers, HVAC, plumbers and 15 more trades) from live Google data, with owner names, verified emails, AI scores and outreach. It does not sell homeowner leads.";
 
 const ADDRESS = {
   "@type": "PostalAddress",
@@ -102,6 +102,10 @@ export function organizationJsonLd() {
       },
     ],
     knowsAbout: [
+      "B2B lead generation",
+      "Finding contractor leads",
+      "Contractor email lists",
+      "B2B email finder",
       "Contractor lead generation",
       "Home-service marketing",
       "Google Maps lead generation",

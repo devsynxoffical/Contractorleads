@@ -20,9 +20,9 @@ import { EMAIL_BRAND } from "@/lib/email-brand";
 import { FaFacebookF, FaLinkedinIn } from "react-icons/fa6";
 
 export const metadata: Metadata = buildMetadata({
-  title: "About Contractor Leads: AI Lead Intelligence for Agencies",
+  title: "About Contractor Leads: B2B Contractor Lead Finder",
   description:
-    "Contractor Leads is prospecting software for agencies, media buyers and sales teams that sell to home-service contractors. Founded by Vaishali Kapoor.",
+    "Contractor Leads is a B2B lead finder: agencies and sales teams find contractor leads with owner names and verified emails. Founded by Vaishali Kapoor.",
   path: "/about",
   keywords: [
     "about contractor leads",

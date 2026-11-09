@@ -33,7 +33,7 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata: Metadata = buildMetadata({
   title: "Contractor Leads FAQ: Pricing, Data, Email and Affiliates",
   description:
-    "Answers about Contractor Leads: where the data comes from, how credits and pricing work, email and SMS sending, integrations and the affiliate program.",
+    "Answers about Contractor Leads, the B2B tool to find contractor leads: data sources, credits, pricing, email and SMS sending, integrations, affiliates.",
   path: "/faq",
   keywords: [
     "contractor leads faq",
