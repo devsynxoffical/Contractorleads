@@ -209,6 +209,13 @@ export default async function TradeRegionPage({ params }: Params) {
           topCities={topCities}
           finderHref={finderHref}
         />
+        <p className="mt-6 text-center text-[14.5px] text-slate-700">
+          Prospecting other trades too?{" "}
+          <Link href={`/locations/${region.slug}`} className="font-semibold text-fuchsia-700 underline decoration-fuchsia-200 underline-offset-2 hover:decoration-fuchsia-500">
+            Find contractor leads in {region.name}
+          </Link>{" "}
+          across all 18 trades.
+        </p>
         {EMAIL_LIST_TRADES.some((t) => t.slug === trade.slug) ? (
           <p className="mt-6 text-center text-[14.5px] text-slate-700">
             Want a ready-to-send file?{" "}

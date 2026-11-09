@@ -58,7 +58,13 @@ export const TRADE_HUB_UPDATED: Record<string, string> = {
 export const TRADE_HUB_DEFAULT_UPDATED = "2026-11-07";
 
 /** State pages were rebuilt on real state facts on this date. */
-export const STATE_PAGES_UPDATED = "2026-11-07";
+export const STATE_PAGES_UPDATED = "2026-11-09";
+
+/** /locations hub and state location pages (first published). */
+export const LOCATIONS_UPDATED = "2026-11-09";
+
+/** /tools hub and free tool pages (first published). */
+export const TOOLS_UPDATED = "2026-11-09";
 
 /** Comparison pages without their own updatedDate. */
 export const ALTERNATIVES_DEFAULT_UPDATED = "2026-11-03";

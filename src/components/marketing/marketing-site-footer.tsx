@@ -24,6 +24,8 @@ const NAV_SECONDARY: Array<[string, string]> = [
   ["Google Maps Scraper", "/google-maps-scraper"],
   ["Contractor Email Finder", "/contractor-email-finder"],
   ["Contractor Email Lists", "/email-lists"],
+  ["Leads by State", "/locations"],
+  ["Free Tools", "/tools"],
   ["Apollo Alternative", "/apollo-alternative"],
   ["Compare Alternatives", "/alternatives"],
   ["Affiliate Program", "/affiliates"],
