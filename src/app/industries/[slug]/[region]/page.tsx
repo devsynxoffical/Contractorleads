@@ -74,7 +74,13 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const companies = tradeCompaniesLabel(trade.slug, trade.name);
   // "Find [Trade] Leads in [State]" + "Company List": the find-leads phrasing with list intent.
   const find = tradeFindLabel(trade);
+  // General contractor state pages show up for "construction leads [state]" and
+  // "commercial construction leads [state]" (Search Console), so they say "construction".
+  const isGc = trade.slug === "general-contractors";
   const titleOptions = [
+    ...(isGc
+      ? [`Find Construction & General Contractor Leads in ${region.name}`, `Construction Leads in ${region.name}: General Contractors`]
+      : []),
     `Find ${find} in ${region.name}: Company List`,
     `Find ${find} in ${region.name}`,
     `${companies} in ${region.name}`,
@@ -84,6 +90,12 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   // Under 155 chars; only true statements (no modeled numbers in search results).
   const lower = lowerTradeLabel(companies);
   const descOptions = [
+    ...(isGc
+      ? [
+          `Find construction and general contractor leads in ${region.name}: residential and commercial GCs with owner names, verified emails and AI scores. 10 free leads.`,
+          `Find construction and general contractor leads in ${region.name}: GCs with owner names, verified emails and AI scores. 10 free leads.`,
+        ]
+      : []),
     `Find ${lowerTradeLabel(find)} in ${region.name}: ${lower} with owner names, verified emails and AI scores, from live Google data. 10 free leads.`,
     `Find ${lowerTradeLabel(find)} in ${region.name}: ${lower} with owner names, verified emails and AI scores. 10 free leads.`,
     `${companies} in ${region.name} with owner names, verified emails and AI scores. 10 free leads.`,
@@ -95,6 +107,13 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     description,
     path: `/industries/${trade.slug}/${region.slug}`,
     keywords: [
+      ...(isGc
+        ? [
+            `construction leads ${region.name}`,
+            `commercial construction leads ${region.name}`,
+            `construction companies in ${region.name}`,
+          ]
+        : []),
       `find ${lowerTradeLabel(find)} in ${region.name}`,
       `${lowerTradeLabel(find)} ${region.name}`,
       `${lower} in ${region.name}`,
@@ -116,6 +135,7 @@ export default async function TradeRegionPage({ params }: Params) {
 
   const priority = isPriorityTrade(trade.slug);
   const lower = lowerTradeLabel(trade.name);
+  const companiesLower = lowerTradeLabel(tradeCompaniesLabel(trade.slug, trade.name));
   const profile = getStateProfile(region.code);
   if (!profile) notFound();
   const topCities = topCitiesForState(region.code);
@@ -168,7 +188,11 @@ export default async function TradeRegionPage({ params }: Params) {
 
       <MarketingSubpageHero
         eyebrow={`${trade.name} · ${region.name}`}
-        title={`Find ${lowerTradeLabel(tradeFindLabel(trade))} in ${region.name}`}
+        title={
+          trade.slug === "general-contractors"
+            ? `Find construction and general contractor leads in ${region.name}`
+            : `Find ${lowerTradeLabel(tradeFindLabel(trade))} in ${region.name}`
+        }
         description={`Build a fresh list of ${lowerTradeLabel(tradeCompaniesLabel(trade.slug, trade.name))} in ${region.name} (${region.code}) for agency outreach: live Google data, owner names, verified emails, AI opportunity scores and outreach scripts.`}
       >
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
@@ -231,7 +255,7 @@ export default async function TradeRegionPage({ params }: Params) {
         {pitch ? (
           <div className="mt-10 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
             <h2 className="font-[family-name:var(--font-display)] text-[22px] font-bold text-slate-900">
-              Searches to check before you pitch {lower} companies in {region.name}
+              Searches to check before you pitch {companiesLower} in {region.name}
             </h2>
             <p className="mt-3 max-w-3xl text-[15px] leading-relaxed text-slate-700">{pitch.angle}</p>
             <p className="mt-2 max-w-3xl text-[14.5px] leading-relaxed text-slate-600">
@@ -261,10 +285,10 @@ export default async function TradeRegionPage({ params }: Params) {
               </div>
             ) : null}
             <p className="mt-5 text-[13px] text-slate-600">
-              Other searches {lower} companies in {region.name} want to rank for: {pitch.terms.slice(3).join(", ")}.
+              Other searches {companiesLower} in {region.name} want to rank for: {pitch.terms.slice(3).join(", ")}.
             </p>
             <div className="mt-6 rounded-2xl bg-slate-50 p-5">
-              <h3 className="text-[15px] font-bold text-slate-900">Example opener for a {lower} company in {region.name}</h3>
+              <h3 className="text-[15px] font-bold text-slate-900">Example opener for {companiesLower} in {region.name}</h3>
               <p className="mt-2 font-mono text-[13.5px] leading-relaxed text-slate-700">{pitch.opener}</p>
               <p className="mt-2 text-[12.5px] text-slate-500">
                 Edit it to what you actually found for that company; never claim a gap you have not checked.
