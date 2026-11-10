@@ -3,10 +3,12 @@ import { prisma } from "@/lib/prisma";
 /** Clear a mailbox's failure state after a successful connection test or credential fix. */
 export async function clearMailboxFailure(mailboxEmail: string) {
   const email = (mailboxEmail || "").toLowerCase().trim();
+  softFailures.delete(email);
   await prisma.warmupSettings
     .updateMany({
       where: { mailboxEmail: email },
-      data: { consecutiveSendFailures: 0, lastSendErrorAt: null, lastSendError: null, lastSendErrorRaw: null },
+      // The login was just verified, so it counts as a recent success.
+      data: { consecutiveSendFailures: 0, lastSendErrorAt: null, lastSendError: null, lastSendErrorRaw: null, lastSendOkAt: new Date() },
     })
     .catch(() => {});
 }
@@ -17,6 +19,7 @@ export type MailboxProblem =
   | "relay_unreachable"
   | "relay_token"
   | "provider_blocked"
+  | "provider_throttled"
   | "recipient_rejected"
   | "unknown";
 
@@ -36,6 +39,19 @@ export type MailboxDiagnosis = {
  * Order matters: an SMTP auth error inside a relay response is a password problem,
  * not a relay problem.
  */
+/**
+ * The mail server refused the login only for now: a 4xx reply ("421 too many connections",
+ * "451 try again later"), or no reply at all, at the AUTH step. mailer.php reports every
+ * non-235 AUTH reply as "Auth failed on host:port: <reply>", so without this check a
+ * GoDaddy throttle looked like a wrong password.
+ */
+export function isTemporaryLoginRefusal(raw: string | null | undefined): boolean {
+  const e = raw || "";
+  if (/Auth failed on [\w.-]+:\d+:\s*(?:\)|$|\.|4\d\d\b)/i.test(e)) return true;
+  return /\b(421|450|451|452|454)\b|too many (connections|logins?|auth\w*|sessions)|try (again )?later|temporar(il)?y|rate.?limit|throttl/i.test(e) &&
+    !/\b535\b|\b534\b/.test(e);
+}
+
 export function diagnoseMailboxError(
   raw: string | null | undefined,
   opts: { admin?: boolean } = {},
@@ -54,6 +70,20 @@ export function diagnoseMailboxError(
     canUpdatePassword: false,
     canEditServer: false,
   });
+  if (isTemporaryLoginRefusal(e)) {
+    const provider = /secureserver/i.test(e) ? "GoDaddy" : /hostinger|titan/i.test(e) ? "Hostinger" : "The mail server";
+    return {
+      problem: "provider_throttled",
+      title: `${provider} is temporarily refusing logins`,
+      explanation: `${provider} turned away the login for now, usually because many mailboxes signed in from our sending server in a short time. The password is not the problem, and sending resumes on its own.`,
+      steps: [
+        "No change is needed. The mailbox is retried automatically after a short pause.",
+        "Click Re-test in a few minutes if you want to confirm it now.",
+      ],
+      canUpdatePassword: false,
+      canEditServer: false,
+    };
+  }
   if (/\b535\b|\b534\b|auth(entication)? failed|invalid (login|credentials)|username and password|authentication unsuccessful/i.test(e)) {
     return {
       problem: "wrong_password",
@@ -184,9 +214,55 @@ export function getGatewayIssue() {
   return lastGatewayIssue;
 }
 
+/**
+ * Temporary login refusals per mailbox (in memory: one app replica). They do not mark the
+ * mailbox broken; warmup pauses the mailbox for a while instead (see isMailboxCoolingDown).
+ */
+const SOFT_COOLDOWN_MS = 30 * 60 * 1000;
+/** A login refusal right after the same saved password worked is treated as temporary this many times in a row. */
+const MAX_SOFT_AUTH_FAILURES = 3;
+const RECENT_SUCCESS_MS = 12 * 60 * 60 * 1000;
+const softFailures = new Map<string, { count: number; until: number }>();
+
+/** True while a mailbox is paused after a temporary login refusal (warmup skips it). */
+export function isMailboxCoolingDown(mailboxEmail: string): boolean {
+  const s = softFailures.get((mailboxEmail || "").toLowerCase().trim());
+  return Boolean(s && s.until > Date.now());
+}
+
+function noteSoftFailure(email: string, error: string) {
+  const prev = softFailures.get(email);
+  const count = (prev?.count ?? 0) + 1;
+  softFailures.set(email, { count, until: Date.now() + SOFT_COOLDOWN_MS });
+  console.warn(`[mail] temporary login refusal for ${email} (${count} in a row, not marked broken): ${error.slice(0, 300)}`);
+}
+
 export async function recordMailboxSendResult(mailboxEmail: string, ok: boolean, error?: string) {
   const email = (mailboxEmail || "").toLowerCase().trim();
   if (!email.includes("@")) return;
+  if (ok) softFailures.delete(email);
+  if (!ok) {
+    const problem = diagnoseMailboxError(error).problem;
+    if (problem === "provider_throttled") {
+      noteSoftFailure(email, error || "");
+      return;
+    }
+    // A "wrong password" right after the same saved password worked is almost always the
+    // provider blocking logins for a while (GoDaddy does this when many mailboxes sign in
+    // from one server). Treat the first few as temporary; a real password change keeps
+    // failing and is marked after MAX_SOFT_AUTH_FAILURES attempts.
+    if (problem === "wrong_password" && (softFailures.get(email)?.count ?? 0) < MAX_SOFT_AUTH_FAILURES) {
+      const w = await prisma.warmupSettings
+        .findUnique({ where: { mailboxEmail: email }, select: { lastSendOkAt: true, lastSendErrorAt: true } })
+        .catch(() => null);
+      const okAt = w?.lastSendOkAt?.getTime() ?? 0;
+      const recentlyWorked = okAt > Date.now() - RECENT_SUCCESS_MS && (!w?.lastSendErrorAt || okAt > w.lastSendErrorAt.getTime());
+      if (recentlyWorked) {
+        noteSoftFailure(email, error || "");
+        return;
+      }
+    }
+  }
   // A busy or unreachable gateway says nothing about this mailbox: do not mark it broken
   // (that made every mailbox look failed and campaigns skip them).
   if (!ok && isPlatformProblem(error)) {

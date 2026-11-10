@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { randomBytes, createHash } from "node:crypto";
 import { HOSTINGER_DEFAULT_MAILBOXES, GODADDY_DEFAULT_MAILBOXES } from "@/lib/system-smtp";
 import { sendEmailViaHostingerRelay } from "@/lib/mail-gateway";
+import { isMailboxCoolingDown } from "@/lib/mailbox-send-status";
 
 export type WarmupRampSchedule = {
   dayNumber: number;
@@ -146,6 +147,12 @@ export async function runMailboxWarmupCycle(
 }> {
   const email = mailboxEmail.toLowerCase().trim();
   const domain = email.split("@")[1] || "";
+
+  // 0. The provider refused this mailbox's login a moment ago: give it a rest instead of
+  //    signing in again (repeated logins are what keep GoDaddy refusing them).
+  if (!options?.force && isMailboxCoolingDown(email)) {
+    return { dispatched: false, error: "Paused for a few minutes after the mail server refused a login" };
+  }
 
   // 1. Get or create WarmupSettings
   const settings = await prisma.warmupSettings.upsert({
