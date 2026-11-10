@@ -219,6 +219,10 @@ export function buildStateInsight(
   topCities: string[],
 ): StateInsight {
   const trade = tradeName.toLowerCase().replace(/\bhvac\b/g, "HVAC");
+  // "general contractors" / "a general contractor", never "general contractors companies".
+  const isContractors = /contractors$/.test(trade);
+  const companies = isContractors ? trade : `${trade} companies`;
+  const aCompany = isContractors ? `a ${trade.replace(/s$/, "")}` : `a ${trade} company`;
   const drivers: string[] = [];
   const timing: string[] = [];
   let angle = "";
@@ -376,7 +380,7 @@ export function buildStateInsight(
   const exposures = exposureLabels(profile);
   const faqs = [
     {
-      q: `When is the best time to pitch ${trade} companies in ${stateName}?`,
+      q: `When is the best time to pitch ${companies} in ${stateName}?`,
       a: `${timing[0]} ${timing[1] ?? ""}`.trim(),
     },
     {
@@ -388,7 +392,7 @@ export function buildStateInsight(
       a: `Start with the largest metros, ${cityList}, where there are the most ${trade} businesses to compare. Then expand to smaller cities, where competition between agencies is lower and owners are often easier to reach.`,
     },
     {
-      q: `How do I confirm who owns a ${trade} company in ${stateName}?`,
+      q: `How do I confirm who owns ${aCompany} in ${stateName}?`,
       a: `Use two sources that agree: the ${stateName} contractor license lookup where the trade is licensed (it usually names the license holder or qualifier), the ${stateName} secretary of state business filing, the company website's About page, or owner replies to Google reviews. Contractor Leads adds owner names where they can be confirmed.`,
     },
     {

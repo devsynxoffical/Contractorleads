@@ -60,9 +60,19 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   // "Companies for Agencies", which tells Google this is B2B prospecting, not homeowner leads.
   const find = tradeFindLabel(trade);
   const companies = tradeCompaniesLabel(trade.slug, trade.name);
-  const titleOptions = [`Find ${find}: ${companies} for Agencies`, `Find ${find} for Agencies`, `Find ${find}`];
+  // GC pages are shown for "construction leads" searches (Search Console), so they say it.
+  const isGc = trade.slug === "general-contractors";
+  const titleOptions = [
+    ...(isGc ? ["Find Construction & General Contractor Leads for Agencies"] : []),
+    `Find ${find}: ${companies} for Agencies`,
+    `Find ${find} for Agencies`,
+    `Find ${find}`,
+  ];
   const title = titleOptions.find((t) => t.length < 60) ?? `Find ${find}`;
   const descOptions = [
+    ...(isGc
+      ? ["Find construction and general contractor leads for your agency: residential and commercial GCs with owner names, verified emails and AI scores."]
+      : []),
     `Find ${lowerTradeLabel(find)} for your agency: ${lowerTradeLabel(companies)} with owner names, verified emails and AI scores by city or state. 10 free leads.`,
     `Find ${lowerTradeLabel(find)}: ${lowerTradeLabel(companies)} with owner names, verified emails and AI scores. 10 free leads.`,
   ];
@@ -71,6 +81,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     description: descOptions.find((d) => d.length < 155) ?? descOptions[descOptions.length - 1],
     path: `/industries/${trade.slug}`,
     keywords: [
+      ...(isGc ? ["construction leads", "find construction leads", "commercial construction leads"] : []),
       `find ${lowerTradeLabel(find)}`,
       lowerTradeLabel(find),
       `list of ${lowerTradeLabel(companies)}`,
@@ -114,6 +125,8 @@ export default async function TradePage({ params }: Params) {
   if (!trade) notFound();
 
   const lower = lowerTradeLabel(trade.name);
+  // "roofing companies", "general contractors", "electrical contractors" (never "general contractors companies").
+  const companiesLower = lowerTradeLabel(tradeCompaniesLabel(trade.slug, trade.name));
   const related = TRADE_PAGES.filter((t) => t.slug !== trade.slug).slice(0, 6);
   const priority = isPriorityTrade(trade.slug);
   const hub = getTradeHubContent(trade.slug);
@@ -147,7 +160,11 @@ export default async function TradePage({ params }: Params) {
 
       <MarketingSubpageHero
         eyebrow={`${trade.name} leads`}
-        title={`Find ${lowerTradeLabel(tradeFindLabel(trade))} for your agency`}
+        title={
+          trade.slug === "general-contractors"
+            ? "Find construction and general contractor leads for your agency"
+            : `Find ${lowerTradeLabel(tradeFindLabel(trade))} for your agency`
+        }
         description={trade.description}
       >
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
@@ -225,7 +242,7 @@ export default async function TradePage({ params }: Params) {
                 </ul>
               </div>
               <div className="rounded-2xl border border-white/80 bg-white/90 p-5 shadow-2xs">
-                <h3 className="text-[15px] font-bold text-slate-900">When {lower} companies buy marketing</h3>
+                <h3 className="text-[15px] font-bold text-slate-900">When {companiesLower} buy marketing</h3>
                 <p className="mt-3 text-[14px] leading-relaxed text-slate-700">{hub.season}</p>
                 <Link
                   href={`#states`}
@@ -239,9 +256,9 @@ export default async function TradePage({ params }: Params) {
 
           {hub?.searchTerms?.length ? (
             <div className="mt-5 rounded-2xl border border-white/80 bg-white/90 p-5 shadow-2xs">
-              <h3 className="text-[15px] font-bold text-slate-900">Searches {lower} companies want to rank for</h3>
+              <h3 className="text-[15px] font-bold text-slate-900">Searches {companiesLower} want to rank for</h3>
               <p className="mt-2 text-[14px] leading-relaxed text-slate-700">
-                These are the searches homeowners use to find {lower} companies. Check where a prospect appears for them in its own city before you pitch, and lead with the gap you find.
+                These are the searches homeowners use to find {companiesLower}. Check where a prospect appears for them in its own city before you pitch, and lead with the gap you find.
               </p>
               <ul className="mt-3 flex flex-wrap gap-2">
                 {hub.searchTerms.map((t) => (
@@ -255,7 +272,7 @@ export default async function TradePage({ params }: Params) {
 
           {hub?.mistakes?.length ? (
             <div className="mt-5 rounded-2xl border border-white/80 bg-white/90 p-5 shadow-2xs">
-              <h3 className="text-[15px] font-bold text-slate-900">Mistakes agencies make pitching {lower} companies</h3>
+              <h3 className="text-[15px] font-bold text-slate-900">Mistakes agencies make pitching {companiesLower}</h3>
               <ul className="mt-3 space-y-3">
                 {hub.mistakes.map((m) => {
                   const dot = m.indexOf(". ");
