@@ -9,6 +9,7 @@ import {
   HiOutlineUser,
 } from "react-icons/hi2";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
+import { trackEvent } from "@/lib/analytics";
 
 type RegisterFormProps = {
   onSwitchToLogin?: () => void;
@@ -66,6 +67,7 @@ function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
       return;
     }
 
+    trackEvent("sign_up", { method: "email" });
     setRegisteredEmail(email);
     setSuccess(
       data.message || "Check your business email for a verification link.",

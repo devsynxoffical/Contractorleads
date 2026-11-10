@@ -40,6 +40,13 @@ starts showing in data from about 13 November.
   /contractor-email-finder (Google allows about 10 a day per property).
 - Backlinks and brand mentions need accounts (directories, G2/Capterra, Product Hunt, partner sites).
 
+**Analytics (later on 10 Nov):** the site loads GTM-PCXWCRLQ, but the published container has no
+tags (`"tags":[]` in gtm.js), so GA4 was not collecting anything. GA4 G-0GD48CBLXK is now loaded
+directly (gtag.js; enhanced measurement covers client-side page changes), with `sign_up` on
+registration and `generate_lead` on enterprise bookings. Verified locally: a page view request to
+google-analytics.com/g/collect with tid=G-0GD48CBLXK. Owner to do: mark `sign_up` and `generate_lead`
+as key events in GA4, and connect the GA4 property in OpenSEO (Integrations) so sessions can read it.
+
 **Next:**
 1. Re-read Search Console for the 7–10 Nov changes (first data ~13 Nov); track the GC construction pages.
 2. Internal links to /pricing and /contractor-email-finder from indexed, crawled pages (blog, hubs),
