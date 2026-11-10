@@ -11,6 +11,7 @@ import { LOGO_GRADIENT } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { trackEvent } from "@/lib/analytics";
 import {
   ENTERPRISE_BOOKING_TZ,
   formatSlotLabel,
@@ -136,6 +137,7 @@ export function EnterpriseBookingForm({ source = "pricing" }: { source?: string 
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Booking failed");
+      trackEvent("generate_lead", { form: "enterprise_booking", source });
       setDone({ whenLabel: data.booking?.whenLabel ?? selectedWhen ?? "" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Booking failed");

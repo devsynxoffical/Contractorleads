@@ -6,6 +6,7 @@ import { ThemeScript } from "@/components/theme/theme-script";
 import { SEO, seoBaseUrl } from "@/lib/seo";
 import "./globals.css";
 import { MetaPixelTracker } from "@/components/pixel/meta-pixel-tracker";
+import { GA_MEASUREMENT_ID } from "@/lib/analytics";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -119,6 +120,27 @@ export default function RootLayout({
               j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
               'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
               })(window,document,'script','dataLayer','${gtmId}');
+            `,
+          }}
+        />
+        {/* Google Analytics 4 (the GTM container has no tags, so GA4 is loaded directly).
+            Enhanced measurement records client-side navigations as page views. */}
+        <Script
+          id="ga4-loader"
+          strategy="afterInteractive"
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+        />
+        <Script
+          id="ga4-config"
+          strategy="afterInteractive"
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              window.gtag = gtag;
+              gtag('js', new Date());
+              gtag('config', '${GA_MEASUREMENT_ID}');
             `,
           }}
         />
