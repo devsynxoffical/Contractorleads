@@ -20,6 +20,7 @@ export type MailboxProblem =
   | "relay_token"
   | "provider_blocked"
   | "provider_throttled"
+  | "account_restricted"
   | "recipient_rejected"
   | "unknown";
 
@@ -45,6 +46,27 @@ export type MailboxDiagnosis = {
  * non-235 AUTH reply as "Auth failed on host:port: <reply>", so without this check a
  * GoDaddy throttle looked like a wrong password.
  */
+/**
+ * The provider accepted the login but has blocked this mailbox from sending, e.g. GoDaddy:
+ * "535 <id> User x@y.com has been restricted." (returned after DATA). A new password does not
+ * help and Re-test (login only) passes, so this must not look like a password problem.
+ */
+export function isAccountRestricted(raw: string | null | undefined): boolean {
+  return /has been restricted|(account|user|mailbox) (is |has been )?(restricted|suspended|disabled|blocked)|sending (is |has been )?(blocked|suspended|restricted)|outbound[^.]{0,40}(blocked|restricted|suspended)/i.test(
+    raw || "",
+  );
+}
+
+/** How long a restricted mailbox is kept out of warmup and campaigns before it is tried again. */
+export const RESTRICTED_PAUSE_MS = 24 * 60 * 60 * 1000;
+
+/** A send from this mailbox was refused as restricted within the pause window. */
+export function isRecentlyRestricted(w: { lastSendErrorAt?: Date | null; lastSendErrorRaw?: string | null; lastSendOkAt?: Date | null } | null | undefined): boolean {
+  if (!w?.lastSendErrorAt || !isAccountRestricted(w.lastSendErrorRaw)) return false;
+  if (w.lastSendOkAt && w.lastSendOkAt > w.lastSendErrorAt) return false;
+  return Date.now() - w.lastSendErrorAt.getTime() < RESTRICTED_PAUSE_MS;
+}
+
 export function isTemporaryLoginRefusal(raw: string | null | undefined): boolean {
   const e = raw || "";
   if (/Auth failed on [\w.-]+:\d+:\s*(?:\)|$|\.|4\d\d\b)/i.test(e)) return true;
@@ -70,6 +92,21 @@ export function diagnoseMailboxError(
     canUpdatePassword: false,
     canEditServer: false,
   });
+  if (isAccountRestricted(e)) {
+    const provider = /secureserver/i.test(e) ? "GoDaddy" : /hostinger|titan/i.test(e) ? "Hostinger" : /office365|outlook/i.test(e) ? "Microsoft" : "The email provider";
+    return {
+      problem: "account_restricted",
+      title: `${provider} has restricted sending from this mailbox`,
+      explanation: `${provider} accepted the login (the password is correct) but refuses to send mail from this mailbox. Providers do this when a mailbox sends more than its plan allows or gets spam complaints. Re-test only checks the login, so it can pass while sending is still blocked.`,
+      steps: [
+        `Contact ${provider} support and ask them to lift the outbound sending restriction on this mailbox.`,
+        "Sending from it is paused for 24 hours so the restriction is not made worse; campaigns use your other mailboxes.",
+        "Once it is lifted, send less per day from it, and keep SPF, DKIM and DMARC passing.",
+      ],
+      canUpdatePassword: false,
+      canEditServer: false,
+    };
+  }
   if (isTemporaryLoginRefusal(e)) {
     const provider = /secureserver/i.test(e) ? "GoDaddy" : /hostinger|titan/i.test(e) ? "Hostinger" : "The mail server";
     return {
@@ -243,6 +280,11 @@ export async function recordMailboxSendResult(mailboxEmail: string, ok: boolean,
   if (ok) softFailures.delete(email);
   if (!ok) {
     const problem = diagnoseMailboxError(error).problem;
+    if (problem === "account_restricted") {
+      // Keep it out of warmup for the pause window (in memory; warmup also checks the DB).
+      softFailures.set(email, { count: MAX_SOFT_AUTH_FAILURES, until: Date.now() + RESTRICTED_PAUSE_MS });
+      console.warn(`[mail] ${email} is restricted by the provider; sending paused: ${(error || "").slice(0, 300)}`);
+    }
     if (problem === "provider_throttled") {
       noteSoftFailure(email, error || "");
       return;
@@ -297,7 +339,10 @@ export async function recordMailboxSendResult(mailboxEmail: string, ok: boolean,
               lastSendErrorAt: now,
               lastSendError: summarizeSendError(error || ""),
               lastSendErrorRaw: (error || "").slice(0, 1000),
-              consecutiveSendFailures: { increment: 1 },
+              // A restricted mailbox must be skipped by campaigns at once (they skip at 2+).
+              consecutiveSendFailures: isAccountRestricted(error)
+                ? Math.max(2, existing.consecutiveSendFailures + 1)
+                : { increment: 1 },
             },
       });
       return;
@@ -320,7 +365,7 @@ export async function recordMailboxSendResult(mailboxEmail: string, ok: boolean,
               lastSendErrorAt: now,
               lastSendError: summarizeSendError(error || ""),
               lastSendErrorRaw: (error || "").slice(0, 1000),
-              consecutiveSendFailures: 1,
+              consecutiveSendFailures: isAccountRestricted(error) ? 2 : 1,
             }),
       },
     });
