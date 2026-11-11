@@ -22,7 +22,7 @@ export const PROSPECTING_POSTS: BlogPost[] = [
     title: "How to Find Local Businesses Without a Website (and Sell Them One)",
     titleTag: "How to Find Businesses Without Websites: 2026 Agency Guide",
     metaDescription:
-      "How to find local businesses without a website using Google Maps, directories and lead tools, plus how to qualify them and pitch a site that closes.",
+      "Find local businesses without a website step by step: Google Maps checks, directories and lead tools, then qualify them and pitch a site that closes.",
     primaryKeyword: "how to find businesses without websites",
     secondaryKeywords: [
       "businesses without websites",
@@ -35,8 +35,8 @@ export const PROSPECTING_POSTS: BlogPost[] = [
     growth: "rising",
     cluster: "agency-growth",
     publishedDate: PUBLISHED,
-    updatedDate: PUBLISHED,
-    readingMinutes: 8,
+    updatedDate: "2026-11-11",
+    readingMinutes: 12,
     author: AUTHOR,
     relatedIndustries: ["landscaping", "painting", "cleaning-services", "concrete", "fencing"],
     directAnswer:
@@ -57,6 +57,14 @@ export const PROSPECTING_POSTS: BlogPost[] = [
         a: "Use a tool that pulls Google Maps listings for a trade and area and lets you filter on missing website. Contractor Leads scores every lead on website quality, so \"no site\" and \"broken site\" prospects surface at the top with owner names attached.",
       },
       {
+        q: "Can you filter Google Maps for businesses without a website?",
+        a: "No. Google Maps has no \"no website\" filter. You either open each listing and look for the Website button, or use a tool that pulls the listings for a trade and area and lets you keep only the ones with no website field.",
+      },
+      {
+        q: "Are businesses without websites good leads for SEO and ads agencies too?",
+        a: "Usually not as a first sale. A business with no site needs a website before SEO or ads can work, so lead with a simple site and offer SEO, reviews or Local Services Ads once it is live. Businesses with a weak site (slow, not mobile friendly, no service pages) are often the better SEO and ads prospects.",
+      },
+      {
         q: "What should I charge a small business for its first website?",
         a: "Small service businesses commonly pay $1,500 to $5,000 for a first site, or $100 to $300 a month on a website-as-a-service plan that includes hosting and edits. Monthly plans close faster because the upfront cost is low.",
       },
@@ -66,6 +74,29 @@ export const PROSPECTING_POSTS: BlogPost[] = [
         heading: "Method 1: Google Maps by hand",
         level: 2,
         body: "Search Google Maps for \"[trade] in [city]\", open each listing and check for a Website button. No button means no site is linked. Note the name, phone, review count and the date of the newest review. This is free and accurate, but slow: expect 30 to 50 checked listings an hour. It is the right way to test a niche before you invest in tooling.",
+      },
+      {
+        heading: "Step by step: find them on Google Maps",
+        level: 2,
+        body: "This is the free method, and the one to use first in a new niche or city.",
+        bullets: [
+          "Search Google Maps for \"[trade] in [city]\", for example \"fence contractor in Columbus\". Use one trade and one city per search.",
+          "Open each listing. If there is no Website button next to Directions and Call, no site is linked to the profile.",
+          "Search the business name in Google before you count it (see the next section): the site may exist but not be linked.",
+          "Record name, phone, city, review count, rating and the date of the newest review in a sheet.",
+          "Move to the next town or ZIP code once a search stops showing new businesses; one search shows a limited number of results.",
+        ],
+      },
+      {
+        heading: "Check before you count it as \"no website\"",
+        level: 2,
+        body: "A missing Website button does not always mean there is no website. Rule these out first, or your pitch will open with a mistake.",
+        bullets: [
+          "The site exists but is not linked: search the business name and town in Google. Pitching a site to someone who has one loses the deal.",
+          "The listing links to Facebook, Yelp or Instagram instead of a site: a real opportunity, and an easy pitch.",
+          "The link is broken, parked or shows a \"coming soon\" page: count it as no website.",
+          "The business has closed: no reviews in the last year and a phone that does not answer usually means it is not worth a call.",
+        ],
       },
       {
         heading: "Method 2: Directories and local sources",
@@ -87,6 +118,31 @@ export const PROSPECTING_POSTS: BlogPost[] = [
         },
       },
       {
+        heading: "Weak websites: the bigger market",
+        level: 2,
+        body: "Businesses with no site at all are a small share of any market, so the larger group to target is businesses whose site is not doing its job. They already believe in having a website, which makes the conversation easier.",
+        table: {
+          headers: ["Sign of a weak site", "How to check", "What to pitch"],
+          rows: [
+            ["Not mobile friendly", "Open it on your phone", "Mobile rebuild with click-to-call"],
+            ["No HTTPS or security warnings", "Look for the padlock in the browser", "Hosting and SSL setup"],
+            ["One page, no service pages", "Look for a page per service and town", "Service and service-area pages"],
+            ["No phone number at the top", "Load the home page on a phone", "Header call button, call tracking"],
+            ["Very slow to load", "Run it through Google PageSpeed Insights", "Speed fixes or a lighter rebuild"],
+          ],
+        },
+      },
+      {
+        heading: "Which trades to start with",
+        level: 2,
+        body: "Owner-operated trades that win work by referral are the most likely to have no site or a weak one. Landscaping, painting, cleaning, concrete and fencing are good first niches for website offers. Roofing, HVAC, plumbing and electrical companies more often have a site but a weak one, which suits SEO and ads offers: see the [roofing](/industries/roofing), [HVAC](/industries/hvac) and [plumbing](/industries/plumbing) guides for what those owners buy, and [leads by state](/locations) to pick a market.",
+      },
+      {
+        heading: "Get the owner's contact details",
+        level: 2,
+        body: "Google Maps gives you a phone number, not an email or the owner's name. For a few leads, check the business's Facebook Page and the state license lookup. For a list, the [contractor email finder](/contractor-email-finder) adds owner names and verified emails, and [contractor email lists](/email-lists) builds a ready-to-send file for one trade and area. Before you send, [check your sending domain](/tools/email-deliverability-checker) and [test your subject line](/tools/cold-email-subject-line-tester).",
+      },
+      {
         heading: "Qualify before you pitch",
         level: 2,
         body: "A missing website is a gap, not a guarantee. Keep a prospect when it shows signs of real demand and drop it when it does not.",
@@ -106,6 +162,14 @@ export const PROSPECTING_POSTS: BlogPost[] = [
           text: "\"Hi [Name], I searched 'landscaping in [City]' and [Competitor] shows up with a website and 40 reviews. You have 60 reviews but no site, so Google sends the click to them. I can fix that in a week.\"",
         },
       },
+      {
+        heading: "Stay compliant when you email them",
+        level: 2,
+        body: "Cold email to businesses is allowed in the US under CAN-SPAM if you use an honest subject line and sender, include your postal address, and honour opt-out requests promptly. Our [CAN-SPAM checklist](/blog/can-spam-cold-email-contractors) covers the details. Other countries have stricter rules, so check before you email businesses outside the US.",
+      },
+    ],
+    sources: [
+      { label: "FTC: CAN-SPAM Act, a compliance guide for business", url: "https://www.ftc.gov/business-guidance/resources/can-spam-act-compliance-guide-business" },
     ],
   },
 

@@ -50,6 +50,10 @@ const AUTO_LINKS: AutoLink[] = [
   { pattern: /\blicen[cs]e (lookups?|records?|boards?)\b/i, href: "/blog/contractor-license-lookup-owner-name" },
   { pattern: /\b(bought|purchased|pre-made) (email |contact )?lists?\b/i, href: "/blog/buy-vs-build-contractor-email-list" },
   { pattern: /\bcontractors? (email|mailing|contact) lists?\b/i, href: "/email-lists" },
+  { pattern: /\bverified (emails?|email address(es)?)\b/i, href: "/contractor-email-finder" },
+  { pattern: /\b10 free leads\b/i, href: "/pricing" },
+  { pattern: /\bcost per job( won)?\b|\bbreak-even close rate\b|\breturn on (ad|marketing) spend\b/i, href: "/tools/contractor-lead-cost-calculator" },
+  { pattern: /\bstate by state\b|\bby state\b/i, href: "/locations" },
 ];
 
 const MAX_AUTO_LINKS = 8;

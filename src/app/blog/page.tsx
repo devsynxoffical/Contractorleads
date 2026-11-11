@@ -15,6 +15,37 @@ import { JsonLd, breadcrumbJsonLd, collectionPageJsonLd } from "@/components/seo
 import { BLOG_CLUSTER_LABELS, BLOG_POSTS } from "@/lib/blog-content";
 import { absoluteUrl, buildMetadata } from "@/lib/seo";
 
+/** Topic map at the top of the blog: a direct answer plus the pages each step needs. */
+const START_HERE: Array<{ title: string; links: Array<{ href: string; label: string }> }> = [
+  {
+    title: "Find contractor leads",
+    links: [
+      { href: "/industries", label: "Leads by trade (roofing, HVAC, plumbing and more)" },
+      { href: "/locations", label: "Contractor leads by state" },
+      { href: "/blog/how-to-find-businesses-without-websites", label: "Find businesses without websites" },
+      { href: "/blog/google-maps-lead-generation", label: "Google Maps lead generation" },
+    ],
+  },
+  {
+    title: "Get owner names and emails",
+    links: [
+      { href: "/contractor-email-finder", label: "Contractor email finder" },
+      { href: "/email-lists", label: "Contractor email lists by trade" },
+      { href: "/blog/how-to-find-business-owner-name", label: "How to find a business owner's name" },
+      { href: "/blog/contractor-license-lookup-owner-name", label: "Owner names from license lookups" },
+    ],
+  },
+  {
+    title: "Reach out and price it",
+    links: [
+      { href: "/tools", label: "Free cold email tools" },
+      { href: "/blog/can-spam-cold-email-contractors", label: "CAN-SPAM checklist for cold email" },
+      { href: "/blog/how-much-do-contractor-leads-cost", label: "What contractor leads cost" },
+      { href: "/pricing", label: "Contractor Leads pricing and 10 free leads" },
+    ],
+  },
+];
+
 export const metadata: Metadata = {
   ...buildMetadata({
   title: "Contractor Lead Generation Blog for Agencies",
@@ -82,6 +113,37 @@ export default function BlogIndexPage() {
           </Link>
         </div>
       </MarketingSubpageHero>
+
+      {/* Start here: direct answer and topic map (answer-first for search and AI answers) */}
+      <section aria-labelledby="start-here" className="mx-auto max-w-6xl px-5 py-12 sm:px-8">
+        <div className="rounded-3xl border border-violet-100 bg-gradient-to-r from-violet-50/60 to-fuchsia-50/60 p-6 sm:p-8">
+          <h2 id="start-here" className="font-[family-name:var(--font-display)] text-[22px] font-bold text-slate-900">
+            How do agencies find contractor leads?
+          </h2>
+          <p className="mt-3 max-w-3xl text-[15px] leading-relaxed text-slate-700">
+            Agencies find contractor leads by searching Google Maps data for a trade and area, keeping the
+            businesses with clear marketing gaps (no website, few reviews, no ads), then adding the owner&apos;s
+            name and a verified email before reaching out. These guides cover each step, from building the list
+            to the first email.
+          </p>
+          <div className="mt-6 grid gap-5 md:grid-cols-3">
+            {START_HERE.map((group) => (
+              <div key={group.title} className="rounded-2xl border border-white/80 bg-white/90 p-5 shadow-2xs">
+                <h3 className="text-[15px] font-bold text-slate-900">{group.title}</h3>
+                <ul className="mt-3 space-y-2">
+                  {group.links.map((l) => (
+                    <li key={l.href}>
+                      <Link href={l.href} className="text-[14px] font-semibold text-fuchsia-700 hover:underline">
+                        {l.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* Flagship Pillars Section */}
       <SubpageSection

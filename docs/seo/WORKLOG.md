@@ -79,3 +79,39 @@ GA4 in OpenSEO, backlinks/listings).
 1. Read Search Console once data covers 7–10 Nov (from ~13 Nov).
 2. Link /pricing, /contractor-email-finder and /tools from the most relevant blog posts in context.
 3. Expand one high-intent guide per day with question-based answers (AEO) and sources (GEO).
+
+## 2026-11-11 (afternoon: growth session)
+
+**Data read (Search Console, 6 months to 8 Nov):** /blog ranks better than the homepage for
+"contractor leads" (pos ~49 vs ~71) and for "contract leads" (~30). The only agency-intent page query
+with impressions outside the trade pages is "businesses with no website" →
+/blog/how-to-find-businesses-without-websites (pos 64–91). "Contractor lead management / lead tracking"
+(~75 impressions) is contractors looking for a CRM: wrong audience, not targeted.
+Competitors in that SERP: short dev.to / Hashnode posts and Apify scraper listings; for trade lists,
+Bytescraper city lists, Orbital and Prospeo "roofing email list" pages (we cover these with /email-lists
+and state pages).
+
+**Indexing audit (URL Inspection, 20 URLs):** indexed: /industries, hvac, plumbing, electrical,
+general-contractors, remodeling hubs, /features, /blog, /about, the no-website guide, cold email,
+owner-name, LSA guide, /alternatives. Discovered, not crawled: /blog/google-maps-lead-generation,
+/contractor-lead-generation-software (plus /pricing, /contractor-email-finder, /locations, /email-lists).
+Unknown to Google: /industries/solar, /google-maps-scraper, /faq, /blog/can-spam-cold-email-contractors,
+/tools. All of these return 200, index/follow, self canonical, are in the sitemaps and allowed by
+robots.txt: no technical block, crawl priority only. The LSA guide's VideoObject warning in Search
+Console is from the 23 Oct crawl; the live page has no video markup any more.
+
+**Page speed (live, from the container):** LCP 1.2–1.6 s on hubs, state pages, guides and pricing;
+home 2.6 s; CLS 0. About 1 MB of JavaScript per page; /pricing loads ~660 KB of CSS (about twice the
+other pages) — to investigate.
+
+**Done (verified locally: build, crawl of 510 sitemap URLs, JSON-LD, mobile):**
+- /blog/how-to-find-businesses-without-websites expanded 914 → 1,635 words: step-by-step Google Maps
+  method, false "no website" checks, weak-website signals table, trades to start with, contact details,
+  compliance; 2 new FAQs; FTC source; dateModified 11 Nov; new meta description.
+- /blog: "How do agencies find contractor leads?" answer and a topic map linking trade hubs, /locations,
+  /email-lists, /contractor-email-finder, /tools, /pricing and key guides.
+- Contextual auto-links in all guides: "verified emails" → /contractor-email-finder, "10 free leads" →
+  /pricing, "cost per job / break-even close rate" → lead cost calculator, "by state" → /locations.
+
+**Needs the owner:** request indexing in Search Console for /industries/solar, /google-maps-scraper,
+/faq, /tools, /pricing, /contractor-email-finder, /locations, /email-lists (about 10 a day).
