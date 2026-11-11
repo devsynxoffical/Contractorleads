@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { randomBytes, createHash } from "node:crypto";
 import { HOSTINGER_DEFAULT_MAILBOXES, GODADDY_DEFAULT_MAILBOXES } from "@/lib/system-smtp";
 import { sendEmailViaHostingerRelay } from "@/lib/mail-gateway";
-import { isMailboxCoolingDown } from "@/lib/mailbox-send-status";
+import { isMailboxCoolingDown, isRecentlyRestricted } from "@/lib/mailbox-send-status";
 
 export type WarmupRampSchedule = {
   dayNumber: number;
@@ -168,6 +168,11 @@ export async function runMailboxWarmupCycle(
 
   if (!settings.enabled && !options?.force) {
     return { dispatched: false, error: "Warmup disabled for this mailbox" };
+  }
+
+  // The provider has restricted sending from this mailbox: more attempts can extend the block.
+  if (!options?.force && isRecentlyRestricted(settings)) {
+    return { dispatched: false, error: "Sending is restricted by the email provider; paused for 24 hours" };
   }
 
   // Check weekdays only (if active, send at gentle weekend maintenance volume of 5/day rather than dead stop)

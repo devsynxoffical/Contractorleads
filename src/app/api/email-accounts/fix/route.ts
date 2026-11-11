@@ -8,6 +8,7 @@ import { relayPortCheck, saveAccountToHostingerRelay, testAccountViaHostingerRel
 import {
   clearMailboxFailure,
   diagnoseMailboxError,
+  isRecentlyRestricted,
   publicMailError,
   recordMailboxSendResult,
 } from "@/lib/mailbox-send-status";
@@ -110,6 +111,15 @@ export async function POST(request: Request) {
       host: current.host,
       port: current.port,
     });
+    if (test.ok && isRecentlyRestricted(settings)) {
+      // The test only checks the login; a provider restriction blocks sending after login.
+      return NextResponse.json({
+        ok: false,
+        error:
+          "The login works, but the email provider has restricted sending from this mailbox. Re-test cannot check that. Ask the provider to lift the restriction; sending stays paused until a real send succeeds or 24 hours pass.",
+        ...describe(settings?.lastSendErrorRaw || settings?.lastSendError || null),
+      });
+    }
     if (test.ok) {
       // Remember the port that actually worked (the gateway may have used a fallback).
       if (test.port && test.port !== current.port) {
