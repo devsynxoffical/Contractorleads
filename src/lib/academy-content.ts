@@ -1194,6 +1194,22 @@ export const ACADEMY_FAQS: AcademyFaq[] = [
   },
 ];
 
+/**
+ * Short product how-to articles that are useful to customers but too thin to rank on their
+ * own. They stay reachable (noindex, follow) and are left out of the help sitemap, so search
+ * engines spend their crawling on pages that can rank. Remove a slug once its article is
+ * expanded into a full guide.
+ */
+export const NOINDEX_HELP_SLUGS = new Set([
+  "five-mistakes-that-waste-credits",
+  "api-mcp-sso-crm-webhooks",
+  "referral-cash-commission",
+  "ask-expert-vs-support",
+  "ask-expert-playbook",
+  "workspace-settings-teams",
+  "daily-agency-workflow",
+]);
+
 export function getAcademyArticle(slug: string) {
   return ACADEMY_ARTICLES.find((a) => a.slug === slug) ?? null;
 }

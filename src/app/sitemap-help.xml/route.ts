@@ -1,4 +1,4 @@
-import { ACADEMY_ARTICLES } from "@/lib/academy-content";
+import { ACADEMY_ARTICLES, NOINDEX_HELP_SLUGS } from "@/lib/academy-content";
 import { seoBaseUrl } from "@/lib/seo";
 
 export const dynamic = "force-static";
@@ -6,7 +6,7 @@ export const dynamic = "force-static";
 export async function GET() {
   const base = seoBaseUrl();
 
-  const urls = ACADEMY_ARTICLES.map(
+  const urls = ACADEMY_ARTICLES.filter((a) => !NOINDEX_HELP_SLUGS.has(a.slug)).map(
     (a) => `  <url>
     <loc>${base}/help/${a.slug}</loc>
     <lastmod>${a.updatedAt}</lastmod>

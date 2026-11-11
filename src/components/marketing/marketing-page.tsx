@@ -268,21 +268,21 @@ function ScrollNav() {
 
 /** Pages people search for most; linked from the homepage per the SEO page plan. */
 const MOST_SEARCHED: Array<{ href: string; label: string }> = [
-  { href: "/industries/roofing", label: "Roofing contractor leads" },
-  { href: "/industries/hvac", label: "HVAC contractor leads" },
-  { href: "/industries/plumbing", label: "Plumbing contractor leads" },
-  { href: "/industries/solar", label: "Solar contractor leads" },
-  { href: "/industries/hvac/georgia", label: "HVAC leads in Georgia" },
-  { href: "/industries/general-contractors/ohio", label: "Contractor leads in Ohio" },
-  { href: "/industries/electrical/louisiana", label: "Electrical leads in Louisiana" },
+  { href: "/industries/roofing", label: "Find roofing leads" },
+  { href: "/industries/hvac", label: "Find HVAC leads" },
+  { href: "/industries/plumbing", label: "Find plumbing leads" },
+  { href: "/industries/solar", label: "Find solar leads" },
+  { href: "/industries/general-contractors/ohio", label: "Construction leads in Ohio" },
+  { href: "/industries/hvac/georgia", label: "HVAC companies in Georgia" },
+  { href: "/industries/electrical/louisiana", label: "Electrical contractors in Louisiana" },
+  { href: "/locations", label: "Contractor leads by state" },
+  { href: "/email-lists", label: "Contractor email lists" },
   { href: "/contractor-email-finder", label: "Contractor email finder" },
+  { href: "/tools", label: "Free cold email tools" },
   { href: "/google-maps-scraper", label: "Google Maps scraper" },
   { href: "/contractor-lead-generation-software", label: "Lead generation software" },
-  { href: "/exclusive-contractor-leads", label: "Exclusive contractor leads" },
   { href: "/alternatives", label: "Apollo, Hunter & Prospeo alternatives" },
-  { href: "/blog/how-to-get-contractor-leads", label: "How to get contractor leads" },
   { href: "/blog/how-much-do-contractor-leads-cost", label: "Contractor lead costs" },
-  { href: "/blog/best-google-maps-scrapers", label: "Best Google Maps scrapers" },
   { href: "/pricing", label: "Pricing and free leads" },
 ];
 
