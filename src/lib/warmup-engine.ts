@@ -160,14 +160,14 @@ export async function runMailboxWarmupCycle(
     update: {},
     create: {
       mailboxEmail: email,
-      enabled: true,
+      enabled: false, // warmup is opt-in
       weekdaysOnly: false,
       startedAt: new Date(), // a new warmup starts at day 1
     },
   });
 
-  if (!settings.enabled && !options?.force) {
-    return { dispatched: false, error: "Warmup disabled for this mailbox" };
+  if ((!settings.enabled || !settings.warmupOptInAt) && !options?.force) {
+    return { dispatched: false, error: "Warmup is off for this mailbox (start it from Email Accounts)" };
   }
 
   // The provider has restricted sending from this mailbox: more attempts can extend the block.

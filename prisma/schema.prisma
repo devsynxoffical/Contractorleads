@@ -914,7 +914,7 @@ model SystemSmtpAccount {
   assignedUser            User?       @relation("AssignedSystemMailboxes", fields: [assignedUserId], references: [id], onDelete: SetNull)
   lastTestedAt            DateTime?
   dailyLimit              Int         @default(30)
-  warmupEnabled           Boolean     @default(true)
+  warmupEnabled           Boolean     @default(false)
   warmupTarget            Int         @default(25)
   warmupSentToday         Int         @default(0)
   campaignSentToday       Int         @default(0)
@@ -1307,6 +1307,9 @@ model WarmupSettings {
   /// Original relay / SMTP error text for the last failure (used to classify the problem)
   lastSendErrorRaw        String?
   consecutiveSendFailures Int       @default(0)
+  /// Set when a user starts warmup for this mailbox. Warmup is opt-in: the cron only warms
+  /// mailboxes with enabled = true and this set (rows created automatically leave it null).
+  warmupOptInAt           DateTime?
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
 

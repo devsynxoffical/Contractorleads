@@ -26,7 +26,7 @@ export function WarmupSettingsModal({
   onSettingsSaved,
 }: WarmupSettingsModalProps) {
   const [mounted, setMounted] = useState(false);
-  const [enabled, setEnabled] = useState(mailbox?.warmupEnabled ?? true);
+  const [enabled, setEnabled] = useState(mailbox?.warmupEnabled ?? false);
   // Start from this mailbox's saved settings (the parent remounts the modal per mailbox).
   const [startVolume, setStartVolume] = useState<number>(mailbox?.warmupConfig?.startVolume ?? 3);
   const [increment, setIncrement] = useState<number>(mailbox?.warmupConfig?.dailyIncrement ?? 2);
