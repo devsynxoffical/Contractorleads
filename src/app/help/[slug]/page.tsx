@@ -21,6 +21,7 @@ import {
   ACADEMY_ARTICLES,
   categoryLabel,
   getAcademyArticle,
+  NOINDEX_HELP_SLUGS,
 } from "@/lib/academy-content";
 import { buildMetadata } from "@/lib/seo";
 
@@ -47,6 +48,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     type: "article",
     publishedTime: article.updatedAt,
     modifiedTime: article.updatedAt,
+    noIndex: NOINDEX_HELP_SLUGS.has(article.slug),
   });
 }
 

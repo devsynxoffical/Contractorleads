@@ -54,3 +54,28 @@ as key events in GA4, and connect the GA4 property in OpenSEO (Integrations) so 
 3. Expand the 7 thin help articles or noindex them.
 4. Email-list pages for more trades, one at a time, only with trade-specific content.
 5. Comparison and "best tool for X" pages for AI answers (GEO), with sources.
+
+## 2026-11-11
+
+**Data read:** Search Console data runs to 8 Nov, so the 7–10 Nov changes are not in it yet
+(last 7 days: 42 impressions, 2 clicks). Only two queries in the top 40 for 28 days.
+URL Inspection: /locations and /email-lists moved from "unknown" to "Discovered – currently not
+indexed" (found via sitemap.xml). /pricing, /contractor-email-finder still "Discovered"; /tools
+still unknown; /industries/general-contractors/texas "Crawled – not indexed" (last crawl 8 Aug).
+Pages are discovered but not crawled, which points at crawl priority (few strong internal and
+external links), not at a technical block.
+
+**Done (verified locally: build, crawl of 510 sitemap URLs, JSON-LD validation, mobile check):**
+- Homepage "Most searched" block (high on the most-crawled page): now links /locations, /email-lists
+  and /tools from the page body, uses B2B "find" anchors ("Find roofing leads", "Construction leads in
+  Ohio"), and no longer links the noindexed /exclusive-contractor-leads.
+- 7 thin product help articles (under 500 words) set to noindex, follow and removed from
+  sitemap-help.xml (`NOINDEX_HELP_SLUGS` in academy-content.ts). They stay reachable for customers.
+
+**Needs the owner:** unchanged from 10 Nov (submit sitemaps, request indexing, GA4 key events,
+GA4 in OpenSEO, backlinks/listings).
+
+**Next:**
+1. Read Search Console once data covers 7–10 Nov (from ~13 Nov).
+2. Link /pricing, /contractor-email-finder and /tools from the most relevant blog posts in context.
+3. Expand one high-intent guide per day with question-based answers (AEO) and sources (GEO).
