@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { syncUserInboxes } from "@/lib/inbox-sync";
+import { GODADDY_MIN_SYNC_INTERVAL_MS, syncUserInboxes } from "@/lib/inbox-sync";
 import { OWNER_EMAIL, OWNER_ROLE, SUPER_ADMIN_ROLE } from "@/lib/roles";
 import { bearerToken, secretsMatch } from "@/lib/rate-limit";
 
@@ -59,6 +59,8 @@ export async function GET(request: Request) {
       }),
     ]);
 
+    // Assigned users and SMTP owners first, admins last: each mailbox is logged in to once per
+    // cycle (skipEmails), and mail lands with the user it is assigned to.
     const userIds = Array.from(
       new Set(
         [
@@ -68,13 +70,19 @@ export async function GET(request: Request) {
         ].filter(Boolean) as string[],
       ),
     );
+    const syncedThisCycle = new Set<string>();
 
     let totalSynced = 0;
     const failures: { userId: string; mailbox: string; error: string }[] = [];
 
     for (const userId of userIds) {
       try {
-        const r = await syncUserInboxes(userId, { fetchAll: false, limitPerMailbox: 25 });
+        const r = await syncUserInboxes(userId, {
+          fetchAll: false,
+          limitPerMailbox: 25,
+          skipEmails: syncedThisCycle,
+          minGoDaddyIntervalMs: GODADDY_MIN_SYNC_INTERVAL_MS,
+        });
         totalSynced += r.totalSynced;
         for (const res of r.results) {
           if (res.error) failures.push({ userId, mailbox: res.mailbox, error: res.error });

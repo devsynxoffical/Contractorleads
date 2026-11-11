@@ -2,7 +2,7 @@ import { relayFetch } from "@/lib/relay-fetch";
 import { ImapFlow } from "imapflow";
 import { prisma } from "@/lib/prisma";
 import { decryptSecret } from "@/lib/crypto-secret";
-import { HOSTINGER_DEFAULT_MAILBOXES, GODADDY_DEFAULT_MAILBOXES } from "@/lib/system-smtp";
+import { HOSTINGER_DEFAULT_MAILBOXES, GODADDY_DEFAULT_MAILBOXES, systemRowToPayload } from "@/lib/system-smtp";
 import { ingestInboundEmail } from "@/lib/lead-email";
 import { isGlobalSuperAdmin } from "@/lib/roles";
 import { HOSTINGER_RELAY_SECRET, relayEndpoints } from "@/lib/user-smtp";
@@ -13,7 +13,32 @@ export type ImapSyncResult = {
   synced: number;
   totalInBox?: number;
   error?: string;
+  /** Not contacted this cycle (recently synced, or paused after a refused login). */
+  skipped?: string;
 };
+
+/*
+ * GoDaddy locks a mailbox for a while after repeated or failed logins, and a locked mailbox
+ * then refuses SMTP logins too, which showed as "Wrong password" on Email Accounts. Inbox
+ * sync used to log in to every pool mailbox every 5 minutes, once per admin user, and on a
+ * refused login retried the same password through the relay. These guards keep IMAP logins
+ * to GoDaddy rare and never repeat a refused one. (In memory: one app replica.)
+ */
+const IMAP_AUTH_BACKOFF_MS = 60 * 60 * 1000;
+export const GODADDY_MIN_SYNC_INTERVAL_MS = 15 * 60 * 1000;
+const imapBackoffUntil = new Map<string, number>();
+const lastGoDaddySyncAt = new Map<string, number>();
+
+function isImapAuthFailure(err: unknown): boolean {
+  const e = err as { authenticationFailed?: boolean; responseText?: string; message?: string } | null;
+  if (e?.authenticationFailed) return true;
+  const text = `${e?.responseText ?? ""} ${e?.message ?? String(err ?? "")}`;
+  return /AUTHENTICATIONFAILED|authentication failed|invalid credentials|LOGIN failed|login refused|\bNO\b.*LOGIN|bad credentials/i.test(text);
+}
+
+function isGoDaddyMailbox(opts: SyncMailboxOptions): boolean {
+  return opts.provider === "godaddy" || /secureserver\.net/i.test(opts.host || "");
+}
 
 export type SyncMailboxOptions = {
   userId: string;
@@ -136,10 +161,26 @@ export function getImapConfig(opts: {
 /**
  * Sync a single mailbox over IMAP
  */
-export async function syncMailboxImap(opts: SyncMailboxOptions): Promise<ImapSyncResult> {
+export async function syncMailboxImap(
+  opts: SyncMailboxOptions,
+  guard: { minGoDaddyIntervalMs?: number } = {},
+): Promise<ImapSyncResult> {
   const email = opts.email.toLowerCase().trim();
   const limit = Math.max(1, Math.min(200, opts.limit ?? 50));
   const imapConfig = getImapConfig(opts);
+  const goDaddy = isGoDaddyMailbox(opts) || /secureserver\.net/i.test(imapConfig.host);
+
+  const pausedUntil = imapBackoffUntil.get(email) ?? 0;
+  if (pausedUntil > Date.now()) {
+    return { mailbox: email, provider: opts.provider, synced: 0, skipped: "paused after a refused login" };
+  }
+  if (goDaddy && guard.minGoDaddyIntervalMs) {
+    const last = lastGoDaddySyncAt.get(email) ?? 0;
+    if (Date.now() - last < guard.minGoDaddyIntervalMs) {
+      return { mailbox: email, provider: opts.provider, synced: 0, skipped: "synced recently" };
+    }
+  }
+  if (goDaddy) lastGoDaddySyncAt.set(email, Date.now());
 
   const client = new ImapFlow({
     host: imapConfig.host,
@@ -286,8 +327,20 @@ export async function syncMailboxImap(opts: SyncMailboxOptions): Promise<ImapSyn
     }
     const directError = err instanceof Error ? err.message : String(err);
 
+    // The server refused the login: retrying the same password through the relay is a
+    // second failed login, which is what gets GoDaddy mailboxes locked. Pause instead.
+    if (isImapAuthFailure(err)) {
+      imapBackoffUntil.set(email, Date.now() + IMAP_AUTH_BACKOFF_MS);
+      console.warn(`[inbox-sync] IMAP login refused for ${email}; paused for 60 minutes`);
+      return { mailbox: email, provider: opts.provider, synced: 0, totalInBox: 0, error: `Direct IMAP: ${directError}` };
+    }
+
     // Direct IMAP unreachable (cloud hosts often block 993) -> read via mailer.php relay.
     const relay = await syncMailboxViaRelay(opts, email, limit);
+    if (relay.error && /LOGIN|auth|credential|password/i.test(relay.error)) {
+      imapBackoffUntil.set(email, Date.now() + IMAP_AUTH_BACKOFF_MS);
+      console.warn(`[inbox-sync] relay IMAP login refused for ${email}; paused for 60 minutes`);
+    }
     if (!relay.error) {
       return { ...relay, provider: opts.provider };
     }
@@ -423,7 +476,14 @@ async function syncMailboxViaRelay(
  */
 export async function syncUserInboxes(
   userId: string,
-  opts?: { fetchAll?: boolean; limitPerMailbox?: number },
+  opts?: {
+    fetchAll?: boolean;
+    limitPerMailbox?: number;
+    /** Mailboxes already synced this cycle (by another user): skipped, so each is logged in to once. */
+    skipEmails?: Set<string>;
+    /** Background runs: contact a GoDaddy mailbox at most this often. */
+    minGoDaddyIntervalMs?: number;
+  },
 ): Promise<{
   totalSynced: number;
   results: ImapSyncResult[];
@@ -470,9 +530,20 @@ export async function syncUserInboxes(
 
   // Add system accounts
   for (const acc of systemAccounts) {
+    // Same password the app sends with (a user-corrected one, else the provider default),
+    // so IMAP never logs in with a different, possibly stale, password.
     let password = "";
-    if (acc.passwordEnc) {
-      password = decryptSecret(acc.passwordEnc);
+    try {
+      password = systemRowToPayload(acc).password;
+    } catch {
+      password = "";
+    }
+    if (!password && acc.passwordEnc) {
+      try {
+        password = decryptSecret(acc.passwordEnc);
+      } catch {
+        password = "";
+      }
     }
     if (!password) {
       const knownGodaddy = GODADDY_DEFAULT_MAILBOXES.find(
@@ -544,16 +615,34 @@ export async function syncUserInboxes(
 
   let totalSynced = 0;
   const results: ImapSyncResult[] = [];
+  const guard = { minGoDaddyIntervalMs: opts?.minGoDaddyIntervalMs };
 
-  // Run in concurrent chunks of 8 mailboxes for fast throughput
+  // Each mailbox once per cycle, whichever user reaches it first.
+  const toSync = mailboxesToSync.filter((mb) => {
+    const key = mb.email.toLowerCase().trim();
+    if (opts?.skipEmails?.has(key)) return false;
+    opts?.skipEmails?.add(key);
+    return true;
+  });
+  const goDaddy = toSync.filter((mb) => isGoDaddyMailbox(mb));
+  const others = toSync.filter((mb) => !isGoDaddyMailbox(mb));
+
+  // Other providers: concurrent chunks of 8.
   const CHUNK_SIZE = 8;
-  for (let i = 0; i < mailboxesToSync.length; i += CHUNK_SIZE) {
-    const chunk = mailboxesToSync.slice(i, i + CHUNK_SIZE);
-    const chunkResults = await Promise.all(chunk.map((mb) => syncMailboxImap(mb)));
+  for (let i = 0; i < others.length; i += CHUNK_SIZE) {
+    const chunk = others.slice(i, i + CHUNK_SIZE);
+    const chunkResults = await Promise.all(chunk.map((mb) => syncMailboxImap(mb, guard)));
     for (const res of chunkResults) {
       results.push(res);
       totalSynced += res.synced;
     }
+  }
+  // GoDaddy: one login at a time, a short gap between them.
+  for (const mb of goDaddy) {
+    const res = await syncMailboxImap(mb, guard);
+    results.push(res);
+    totalSynced += res.synced;
+    if (!res.skipped) await new Promise((r) => setTimeout(r, 1500));
   }
 
   return {
