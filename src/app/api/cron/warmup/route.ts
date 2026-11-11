@@ -21,44 +21,22 @@ export async function GET(request: Request) {
     }
   }
 
-  // 1. Fetch all mailboxes where warmup is enabled:
-  // - All active system accounts with warmupEnabled: true
-  // - All active user custom accounts
-  // - Plus any accounts explicitly enabled in WarmupSettings
-  // - Minus any accounts explicitly disabled in WarmupSettings
-  const [systemAccounts, userAccounts, disabledSettings, explicitlyEnabled] = await Promise.all([
-    prisma.systemSmtpAccount.findMany({
-      where: { enabled: true, warmupEnabled: true },
-      select: { fromEmail: true },
-    }),
-    prisma.smtpAccount.findMany({
-      where: { enabled: true },
-      select: { fromEmail: true },
-    }),
+  // 1. Warmup is opt-in: only mailboxes a user started warmup for (enabled + warmupOptInAt),
+  //    and only while the mailbox itself is active (pool or connected account).
+  const [optedIn, systemAccounts, userAccounts] = await Promise.all([
     prisma.warmupSettings.findMany({
-      where: { enabled: false },
+      where: { enabled: true, warmupOptInAt: { not: null } },
       select: { mailboxEmail: true },
     }),
-    prisma.warmupSettings.findMany({
-      where: { enabled: true },
-      select: { mailboxEmail: true },
-    }),
+    prisma.systemSmtpAccount.findMany({ where: { enabled: true }, select: { fromEmail: true } }),
+    prisma.smtpAccount.findMany({ where: { enabled: true }, select: { fromEmail: true } }),
   ]);
-
-  const disabledSet = new Set(disabledSettings.map((s) => s.mailboxEmail.toLowerCase().trim()));
-  const candidateEmails = new Set<string>();
-
-  for (const s of systemAccounts) {
-    const em = s.fromEmail.toLowerCase().trim();
-    if (!disabledSet.has(em)) candidateEmails.add(em);
-  }
-  for (const u of userAccounts) {
-    const em = u.fromEmail.toLowerCase().trim();
-    if (!disabledSet.has(em)) candidateEmails.add(em);
-  }
-  for (const e of explicitlyEnabled) {
-    candidateEmails.add(e.mailboxEmail.toLowerCase().trim());
-  }
+  const activeMailboxes = new Set(
+    [...systemAccounts, ...userAccounts].map((a) => a.fromEmail.toLowerCase().trim()),
+  );
+  const candidateEmails = new Set(
+    optedIn.map((s) => s.mailboxEmail.toLowerCase().trim()).filter((em) => activeMailboxes.has(em)),
+  );
 
   const mailboxesToWarm = Array.from(candidateEmails);
 

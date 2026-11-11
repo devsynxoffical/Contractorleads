@@ -264,7 +264,8 @@ export async function GET(request: Request) {
         ...state,
         campaignSends: { sent: campaignSent, limit: dailyCampaignLimit },
         warmupSends: { sent: warmupSent, target: ramp.warmupTarget },
-        warmupEnabled: wSettings ? wSettings.enabled : s.warmupEnabled,
+        // On only when a user started warmup (opt-in).
+        warmupEnabled: Boolean(wSettings?.enabled && wSettings.warmupOptInAt),
         warmupConfig: {
           startVolume: wSettings?.startVolume ?? 3,
           dailyIncrement: wSettings?.dailyIncrement ?? 2,
@@ -310,7 +311,7 @@ export async function GET(request: Request) {
         ...state,
         campaignSends: { sent: campaignSent, limit: 30 },
         warmupSends: { sent: warmupSent, target: ramp.warmupTarget },
-        warmupEnabled: wSettings ? wSettings.enabled : true,
+        warmupEnabled: Boolean(wSettings?.enabled && wSettings.warmupOptInAt),
         warmupConfig: {
           startVolume: wSettings?.startVolume ?? 3,
           dailyIncrement: wSettings?.dailyIncrement ?? 2,
@@ -608,13 +609,13 @@ export async function POST(request: Request) {
   // A verified login clears any earlier "Sending failed" state.
   await clearMailboxFailure(email);
 
-  // 4. Initialize Warmup Settings
+  // 4. Initialize Warmup Settings. Warmup is opt-in: the user starts it from Email Accounts.
   await prisma.warmupSettings.upsert({
     where: { mailboxEmail: email },
-    update: { enabled: true },
+    update: {},
     create: {
       mailboxEmail: email,
-      enabled: true,
+      enabled: false,
       startVolume: 3,
       dailyIncrement: 2,
       maxDailyWarmup: 25,
@@ -725,10 +726,11 @@ export async function PATCH(request: Request) {
 
   let applied = matched;
   if (action === "warmup_on") {
-    await ensureSettings({ enabled: true });
+    // Opt in; a (re)started warmup begins at day 1 of the ramp.
+    await ensureSettings({ enabled: true, warmupOptInAt: new Date(), startedAt: new Date() });
     await prisma.systemSmtpAccount.updateMany({ where: { id: { in: systemIds } }, data: { warmupEnabled: true } });
   } else if (action === "warmup_off") {
-    await ensureSettings({ enabled: false });
+    await ensureSettings({ enabled: false, warmupOptInAt: null });
     await prisma.systemSmtpAccount.updateMany({ where: { id: { in: systemIds } }, data: { warmupEnabled: false } });
   } else if (action === "update_settings") {
     const num = (v: unknown, min: number, max: number, fallback: number) => {
@@ -739,8 +741,24 @@ export async function PATCH(request: Request) {
     const startVolume = num(body.startVolume, 1, 10, 3);
     const dailyIncrement = num(body.dailyIncrement, 0, 5, 2);
     const maxDailyWarmup = Math.max(startVolume, num(body.maxDailyWarmup, 5, 50, 25));
+    // Saving with warmup on counts as starting it (keeps an existing start date).
+    const current = await prisma.warmupSettings.findMany({
+      where: { mailboxEmail: { in: emails } },
+      select: { mailboxEmail: true, warmupOptInAt: true },
+    });
+    const alreadyOn = new Set(current.filter((c) => c.warmupOptInAt).map((c) => c.mailboxEmail));
+    if (enabled) {
+      for (const em of emails.filter((e) => !alreadyOn.has(e))) {
+        await prisma.warmupSettings.upsert({
+          where: { mailboxEmail: em },
+          update: { warmupOptInAt: new Date(), startedAt: new Date() },
+          create: { mailboxEmail: em, startedAt: new Date(), weekdaysOnly: false, warmupOptInAt: new Date() },
+        });
+      }
+    }
     await ensureSettings({
       enabled,
+      ...(enabled ? {} : { warmupOptInAt: null }),
       startVolume,
       dailyIncrement,
       maxDailyWarmup,

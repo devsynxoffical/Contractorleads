@@ -27,8 +27,9 @@ export default async function EmailAccountsPage() {
             </span>
           </div>
           <p className="text-xs text-ink-muted dark:text-slate-400 mt-1 max-w-2xl">
-            Your sending mailboxes and connected accounts. Warmup sends a few emails a day between pool
-            mailboxes, and SPF, DKIM, DMARC and MX are checked against live DNS.
+            Your sending mailboxes and connected accounts. Warmup is off until you start it for a
+            mailbox; it then sends a few emails a day between pool mailboxes. SPF, DKIM, DMARC and MX
+            are checked against live DNS.
           </p>
         </div>
       </div>

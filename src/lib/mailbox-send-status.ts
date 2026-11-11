@@ -347,16 +347,11 @@ export async function recordMailboxSendResult(mailboxEmail: string, ok: boolean,
       });
       return;
     }
-    // First record for this mailbox: keep its current warmup on/off state so creating the
-    // row does not switch warmup on for a mailbox where it was turned off.
-    const system = await prisma.systemSmtpAccount.findFirst({
-      where: { fromEmail: { equals: email, mode: "insensitive" } },
-      select: { warmupEnabled: true },
-    });
+    // First record for this mailbox: it only tracks send status; warmup stays off (opt-in).
     await prisma.warmupSettings.create({
       data: {
         mailboxEmail: email,
-        enabled: system ? system.warmupEnabled : true,
+        enabled: false, // warmup is opt-in; this row only tracks send status
         weekdaysOnly: false,
         startedAt: new Date(),
         ...(ok
