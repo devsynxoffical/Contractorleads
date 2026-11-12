@@ -167,3 +167,7 @@ one contextual link each (those sites are not in this repository).
 starting a local lead generation business for home-service trades); "how to find b2b leads" 260 / KD 20;
 "landscaping lead generation services" 110 / KD 26. Contractor-buying-leads terms ("buy hvac leads",
 "plumbing leads for sale") stay out of scope: wrong audience for the product.
+- Owner uploaded contractorleads_disavow.txt in Google's Disavow Tool on 12 Nov 2026, 13:55 UTC+5
+  (property https://www.contractorleads.us/): "893 domains and 0 URLs are disavowed" (screenshot).
+  Future backlink exports: compare against this list; add new spam domains to the same file and
+  re-upload with "Replace".
