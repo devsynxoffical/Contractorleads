@@ -138,3 +138,32 @@ a measurement artefact (the files fetched twice with and without the deploy quer
 **Needs the owner:** unchanged (Search Console indexing requests, directory listings, Railway bill).
 
 **Next:** Search Console comparison when data covers 10–11 Nov; homepage LCP (2.6 s); one guide a day.
+
+## 2026-11-12 (owner's Ahrefs/Semrush baseline)
+
+**Data read (owner's export, 12 Nov):** Ahrefs DR 7, Semrush Authority Score 2. 904 referring domains,
+893 of them auto-generated spam created June–Sept 2026 (not built by us); 9 real. Semrush US: 10
+organic keywords (contract leads #19, contractor leads #55, contractors leads #59); 0 AI citations.
+Own sites link sitewide: funnelsthatprint.com (788 links), devsynx.com (76).
+Real backlinks still point at 5 old WordPress-era URLs that returned 404.
+
+**Done (verified on a local production build):**
+- 308 redirects for the 5 old URLs: HVAC marketing → /blog/hvac-marketing-agency, Facebook ads →
+  /blog/facebook-ads-for-contractors, electrician marketing → /blog/electrical-contractor-leads,
+  plumbing marketing → /blog/plumbing-contractor-leads, /service-packages → /pricing.
+- docs/seo/contractorleads_disavow.txt: 893 domains marked Disavow in the export (real links and own
+  sites excluded).
+- Best-companies guide H2 now "Best HVAC, roofing and plumbing lead generation companies"
+  ("best hvac lead generation companies": 320/mo, KD 8 per the export).
+
+**Needs the owner:** upload the disavow file in Google's Disavow Tool and in Bing Webmaster
+(Configure My Site → Disavow Links); change the funnelsthatprint.com and devsynx.com sitewide links to
+one contextual link each (those sites are not in this repository).
+
+**Keyword targets from the export (agency fit, low difficulty) for the next sessions:**
+"business with no websites" 390 / KD 2 (guide expanded 11 Nov); "best hvac lead generation companies"
+320 / KD 8 and "hvac lead generation companies" 260 / KD 12 (guide expanded 12 Nov);
+"local lead generation" 1,600 / KD 28 and "local lead generation business" 210 / KD 26 (new guide:
+starting a local lead generation business for home-service trades); "how to find b2b leads" 260 / KD 20;
+"landscaping lead generation services" 110 / KD 26. Contractor-buying-leads terms ("buy hvac leads",
+"plumbing leads for sale") stay out of scope: wrong audience for the product.

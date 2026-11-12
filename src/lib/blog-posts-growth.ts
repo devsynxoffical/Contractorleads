@@ -234,7 +234,7 @@ export const GROWTH_POSTS: BlogPost[] = [
         },
       },
       {
-        heading: "HVAC, roofing and plumbing lead generation companies",
+        heading: "Best HVAC, roofing and plumbing lead generation companies",
         level: 2,
         body: "The best option changes with the trade, because urgency and job size change what a lead is worth.",
         bullets: [
