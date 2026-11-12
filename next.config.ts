@@ -59,6 +59,13 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       { source: "/email", destination: "/inbox?tab=inbox", permanent: true },
+      // Old WordPress-era URLs that still have real backlinks (Ahrefs export, 12 Nov 2026):
+      // send them to the closest current page instead of a 404.
+      { source: "/ideas-to-improve-your-hvac-marketing-strategy", destination: "/blog/hvac-marketing-agency", permanent: true },
+      { source: "/the-best-facebook-ads-for-contractors", destination: "/blog/facebook-ads-for-contractors", permanent: true },
+      { source: "/tightening-up-your-electrician-marketing-efforts-strategy", destination: "/blog/electrical-contractor-leads", permanent: true },
+      { source: "/ways-to-improve-your-plumbing-marketing-strategy", destination: "/blog/plumbing-contractor-leads", permanent: true },
+      { source: "/service-packages", destination: "/pricing", permanent: true },
       { source: "/trades", destination: "/industries", permanent: true },
       { source: "/trades/:slug", destination: "/industries/:slug", permanent: true },
       {
