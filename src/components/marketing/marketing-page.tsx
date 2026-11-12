@@ -279,9 +279,9 @@ const MOST_SEARCHED: Array<{ href: string; label: string }> = [
   { href: "/email-lists", label: "Contractor email lists" },
   { href: "/contractor-email-finder", label: "Contractor email finder" },
   { href: "/tools", label: "Free cold email tools" },
-  { href: "/google-maps-scraper", label: "Google Maps scraper" },
   { href: "/contractor-lead-generation-software", label: "Lead generation software" },
-  { href: "/alternatives", label: "Apollo, Hunter & Prospeo alternatives" },
+  { href: "/google-maps-scraper", label: "Google Maps scraper" },
+  { href: "/blog/best-contractor-lead-generation-companies", label: "Best contractor lead generation companies" },
   { href: "/blog/how-much-do-contractor-leads-cost", label: "Contractor lead costs" },
   { href: "/pricing", label: "Pricing and free leads" },
 ];

@@ -115,3 +115,26 @@ other pages) — to investigate.
 
 **Needs the owner:** request indexing in Search Console for /industries/solar, /google-maps-scraper,
 /faq, /tools, /pricing, /contractor-email-finder, /locations, /email-lists (about 10 a day).
+
+## 2026-11-12
+
+**Data read:** Search Console now runs to 9 Nov. Daily impressions 16 (7 Nov) and 13 (9 Nov) vs ~5/day
+in late October; too early to call a trend. Homepage shows at ~95 for "best contractor lead generation
+companies", "best lead generation companies for contractors" and "hvac lead generation companies"
+(10 impressions); the matching guide /blog/best-contractor-lead-generation-companies is indexed
+(crawled 3 Nov) but was not the page Google chose.
+/pricing CSS check: /pricing loads the same two stylesheets as /features, so yesterday's "660 KB" was
+a measurement artefact (the files fetched twice with and without the deploy query), not a duplicate.
+
+**Done (verified locally: build, crawl of 510 sitemap URLs, JSON-LD, mobile):**
+- /blog/best-contractor-lead-generation-companies 1,028 → 1,515 words: pricing models table (pay per
+  lead, pay per call, LSAs, agency retainer), HVAC / roofing / plumbing lead vendor section, questions
+  to ask before signing, 2 new FAQs (pay-per-call vendors, shared leads), Google LSA source,
+  dateModified 12 Nov, "hvac lead generation companies" and "lead vendors for hvac" as keywords.
+- Homepage "Most searched" links the guide ("Best contractor lead generation companies"), so Google
+  sees the guide as the site's page for that topic; /alternatives (indexed, linked in the footer) left
+  the block to make room.
+
+**Needs the owner:** unchanged (Search Console indexing requests, directory listings, Railway bill).
+
+**Next:** Search Console comparison when data covers 10–11 Nov; homepage LCP (2.6 s); one guide a day.

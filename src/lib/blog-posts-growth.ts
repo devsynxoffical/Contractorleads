@@ -130,13 +130,15 @@ export const GROWTH_POSTS: BlogPost[] = [
       "contractor lead generation services",
       "best lead generation for contractors",
       "contractor lead gen tools",
+      "hvac lead generation companies",
+      "lead vendors for hvac",
     ],
     searchVolume: "1,000/mo",
     growth: "+14%",
     cluster: "tools",
     publishedDate: PUBLISHED,
-    updatedDate: PUBLISHED,
-    readingMinutes: 10,
+    updatedDate: "2026-11-12",
+    readingMinutes: 13,
     author: AUTHOR,
     relatedIndustries: ["roofing", "hvac", "plumbing", "general-contractors"],
     directAnswer:
@@ -159,6 +161,14 @@ export const GROWTH_POSTS: BlogPost[] = [
       {
         q: "What should an agency use to find contractor clients?",
         a: "A tool that finds contractors from live business data and tells you who to call first. Contractor Leads does that for 18 home-service trades with owner names, marketing-gap scores, Meta ad status and outreach drafts.",
+      },
+      {
+        q: "What is a pay-per-call lead vendor?",
+        a: "A company that sends live inbound phone calls instead of form leads and charges for each call that lasts longer than a set time. It suits urgent trades such as HVAC repair, plumbing and water damage, where the homeowner wants someone on the phone now. Agree in writing what counts as a billable call and how disputes are handled.",
+      },
+      {
+        q: "Are shared contractor leads worth buying?",
+        a: "They can be for a new business that needs volume and can call back within minutes, because the first contractor to respond usually wins. Established contractors usually do better with exclusive channels such as Local Services Ads, their own ads and a strong Google Business Profile, where they are not competing with three other companies for the same homeowner.",
       },
     ],
     sections: [
@@ -210,6 +220,44 @@ export const GROWTH_POSTS: BlogPost[] = [
         },
       },
       {
+        heading: "Pricing models compared",
+        level: 2,
+        body: "Contractor lead generation companies charge in four main ways. The model matters as much as the company: it decides who carries the risk of a bad lead.",
+        table: {
+          headers: ["Model", "You pay for", "Exclusive?", "Best for", "Watch for"],
+          rows: [
+            ["Pay per lead (marketplaces)", "Each homeowner request", "Usually shared", "New contractors needing volume", "Paying for leads that never answer"],
+            ["Pay per call", "Each qualifying inbound call", "Often exclusive", "Urgent trades: HVAC, plumbing, restoration", "What counts as a billable call"],
+            ["Local Services Ads", "Each valid lead from Google", "Exclusive to you", "Licensed, insured contractors", "Verification time; disputes for bad leads"],
+            ["Agency retainer", "Management plus ad spend", "Exclusive, owned channels", "Contractors ready to scale", "Paying for reports instead of booked jobs"],
+          ],
+        },
+      },
+      {
+        heading: "HVAC, roofing and plumbing lead generation companies",
+        level: 2,
+        body: "The best option changes with the trade, because urgency and job size change what a lead is worth.",
+        bullets: [
+          "HVAC: repair calls are urgent, so pay-per-call vendors and Local Services Ads beat form leads; installs and maintenance plans suit search ads and email to past customers.",
+          "Roofing: replacement jobs are high-ticket and storm-driven, so exclusive channels (LSAs, search ads, storm landing pages) usually beat shared leads; be wary of vendors reselling the same storm leads to many roofers.",
+          "Plumbing: emergency intent dominates, so answer speed matters more than the vendor; any channel fails if calls go to voicemail.",
+          "Electrical, solar and remodeling: longer decisions and bigger tickets favour owned channels and an agency with call tracking over marketplaces.",
+        ],
+      },
+      {
+        heading: "Questions to ask before you sign with a lead company",
+        level: 2,
+        body: "Ask these before paying any contractor lead generation company, and get the answers in writing.",
+        bullets: [
+          "Is each lead exclusive to me, or sold to other contractors too? How many?",
+          "What exactly do I pay for: a form fill, a call, a call longer than a set time, or a booked job?",
+          "How do I dispute a bad lead, and how quickly are credits issued?",
+          "Can I pause, cap my spend, or set service areas and job types?",
+          "What is the contract length and notice period?",
+          "Can you show cost per booked job for a contractor in my trade and area?",
+        ],
+      },
+      {
         heading: "How Contractor Leads fits, and where it does not",
         level: 2,
         body: "Contractor Leads is built for one buyer: agencies, media buyers and sales teams selling to home-service contractors across 18 trades in five countries. It does not sell homeowner leads, it does not cover restaurants or dentists, and it is not a replacement for a B2B database if your customers are corporations. For its intended buyer it compresses the research morning into a scored list with the owner's name and the first email drafted. Ten leads are free to test.",
@@ -228,6 +276,9 @@ export const GROWTH_POSTS: BlogPost[] = [
           ],
         },
       },
+    ],
+    sources: [
+      { label: "Google: Local Services Ads", url: "https://ads.google.com/local-services-ads/" },
     ],
   },
 
