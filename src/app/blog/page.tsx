@@ -24,6 +24,7 @@ const START_HERE: Array<{ title: string; links: Array<{ href: string; label: str
       { href: "/locations", label: "Contractor leads by state" },
       { href: "/blog/how-to-find-businesses-without-websites", label: "Find businesses without websites" },
       { href: "/blog/google-maps-lead-generation", label: "Google Maps lead generation" },
+      { href: "/blog/local-lead-generation-business", label: "Start a local lead generation business" },
     ],
   },
   {

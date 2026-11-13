@@ -167,3 +167,28 @@ one contextual link each (those sites are not in this repository).
 starting a local lead generation business for home-service trades); "how to find b2b leads" 260 / KD 20;
 "landscaping lead generation services" 110 / KD 26. Contractor-buying-leads terms ("buy hvac leads",
 "plumbing leads for sale") stay out of scope: wrong audience for the product.
+- Owner uploaded contractorleads_disavow.txt in Google's Disavow Tool on 12 Nov 2026, 13:55 UTC+5
+  (property https://www.contractorleads.us/): "893 domains and 0 URLs are disavowed" (screenshot).
+  Future backlink exports: compare against this list; add new spam domains to the same file and
+  re-upload with "Replace".
+
+## 2026-11-13
+
+**Data read:** Search Console runs to 10 Nov (10 impressions that day; 7–10 Nov: 16, 5, 13, 10). Same
+queries as yesterday, all on the homepage at ~85–99 ("best contractor lead generation companies",
+"hvac lead generation companies"); the expanded guide was only crawled before its update.
+
+**Done (verified locally: build, crawl of 511 sitemap URLs, JSON-LD, mobile):**
+- New guide /blog/local-lead-generation-business ("local lead generation" 1,600/mo KD 28 and "local
+  lead generation business" 210/mo KD 26 in the owner's Semrush export; no existing page covered it):
+  business models table, choosing a trade and city, building a lead source (with Google Business Profile
+  guideline warning), finding contractor buyers, pricing and terms, TCPA/CAN-SPAM consent (one-to-one
+  consent rule vacated Jan 2025), 90-day plan, 4 FAQs, 3 sources. 1,389 words.
+- Linked from the /blog "Start here" map; auto-link for "local lead generation", "lead generator(s)"
+  and "rank and rent" in other guides.
+
+**Needs the owner:** unchanged (Search Console indexing requests, directory listings, own-site links,
+Railway bill).
+
+**Next:** "how to find b2b leads" (260/mo, KD 20) as a section or guide aimed at home-service trades;
+check whether Google picks the best-companies guide over the homepage once it is recrawled.

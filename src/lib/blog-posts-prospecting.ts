@@ -622,4 +622,134 @@ export const PROSPECTING_POSTS: BlogPost[] = [
       },
     ],
   },
+  // Local lead generation business (Semrush US, owner's export 12 Nov 2026:
+  // "local lead generation" 1,600/mo, KD 28; "local lead generation business" 210/mo, KD 26)
+  {
+    slug: "local-lead-generation-business",
+    type: "cluster",
+    title: "How to Start a Local Lead Generation Business for Home-Service Trades",
+    titleTag: "How to Start a Local Lead Generation Business (2026 Guide)",
+    metaDescription:
+      "How to start a local lead generation business: choose a model, pick a trade and city, build lead sources and sign contractors who buy, step by step.",
+    primaryKeyword: "local lead generation business",
+    secondaryKeywords: [
+      "local lead generation",
+      "start a lead generation business",
+      "lead generation for local businesses",
+      "rank and rent",
+      "selling leads to contractors",
+    ],
+    searchVolume: "1,600/mo (local lead generation, Semrush US, Nov 2026)",
+    growth: "steady",
+    cluster: "agency-growth",
+    publishedDate: "2026-11-13",
+    updatedDate: "2026-11-13",
+    readingMinutes: 12,
+    author: AUTHOR,
+    relatedIndustries: ["roofing", "hvac", "plumbing", "remodeling", "landscaping"],
+    directAnswer:
+      "A local lead generation business attracts homeowners who need a service, such as roof repair or AC repair, and sells those enquiries to local contractors. To start one: choose a model (pay per lead, pay per call or rank and rent), pick one trade and one city where jobs are valuable and demand is urgent, build a lead source you control (a service website, ads and call tracking), then sign two or three contractors who will buy the leads before you scale. Finding and signing those contractors is usually the hard part, not generating the leads.",
+    summary:
+      "Business models, how to pick a trade and city, how to build lead sources without breaking Google's rules, how to find contractors who buy, pricing, consent rules and a first 90-day plan.",
+    faqs: [
+      {
+        q: "Is a local lead generation business still worth starting?",
+        a: "It can be, in trades where one job is worth a lot and homeowners search when they need help now, such as roofing, HVAC and plumbing. It depends on finding contractors who will pay reliably and on keeping your cost per lead below what they pay. Test one trade in one city before you build more sites.",
+      },
+      {
+        q: "What is rank and rent?",
+        a: "Rank and rent means building a website for a service in one city (for example tree removal in a mid-sized town), getting it to rank, and renting the whole site and its calls to one local contractor for a monthly fee. It gives steady income per site, but each site takes months to rank and you carry the risk until it does.",
+      },
+      {
+        q: "Pay per lead or rank and rent: which is better to start with?",
+        a: "Pay per lead (or pay per call) is easier to start because you can buy traffic with ads and sell leads within weeks. Rank and rent pays more steadily once a site ranks, but nothing comes in until it does. Many operators start with paid traffic and pay per call to find buyers, then build rank-and-rent sites for the buyers who stay.",
+      },
+      {
+        q: "How do lead generators find contractors to buy their leads?",
+        a: "The same way agencies find clients: search Google Maps for the trade and city, keep the companies that advertise or clearly want more work, find the owner's name and contact them directly. Contractor Leads does this from live Google data, scores each company and adds the owner's name and a verified email.",
+      },
+    ],
+    sections: [
+      {
+        heading: "Choose a business model",
+        level: 2,
+        body: "Local lead generators earn money in four main ways. The model decides your cash flow and who carries the risk of a bad lead.",
+        table: {
+          headers: ["Model", "How you earn", "Who carries the risk", "Best for"],
+          rows: [
+            ["Pay per lead", "A fee for each form enquiry you send", "You, until the contractor accepts the lead", "Fast start with paid ads"],
+            ["Pay per call", "A fee for each inbound call over an agreed length", "Shared: define a billable call in writing", "Urgent trades such as HVAC repair and plumbing"],
+            ["Rank and rent", "A monthly fee for a ranking site and all its calls", "You, until the site ranks", "Steady income once sites rank"],
+            ["Hybrid (leads plus services)", "Leads plus a monthly fee for ads or a website", "Shared", "Operators who also run an agency"],
+          ],
+        },
+      },
+      {
+        heading: "Pick one trade and one city",
+        level: 2,
+        body: "Start narrow. One trade in one city is enough to prove the model and learn what a lead is worth.",
+        bullets: [
+          "High job value, so a contractor can afford to pay well for a lead: roofing, HVAC, plumbing, remodeling and solar are common choices.",
+          "Urgent demand, so homeowners call quickly: repairs and emergencies convert better than planned projects.",
+          "Enough contractors to sell to: at least five to ten active companies in the area, so losing one buyer does not end the business.",
+          "Room to compete: if the map results and ads are dominated by large brands, pick a smaller city nearby.",
+        ],
+      },
+      {
+        heading: "Build a lead source you control",
+        level: 2,
+        body: "Your asset is the lead source, not any one contractor. Build it so you can move leads to another buyer if one leaves.",
+        bullets: [
+          "A fast, simple website per service and city, with a phone number at the top and a short form.",
+          "A call tracking number per buyer, so you can show every call and its length.",
+          "Paid search or Local Services Ads to get leads while the site is new; SEO for the long term.",
+          "A consent line on every form that names who may contact the homeowner (see compliance below).",
+        ],
+        callout: {
+          title: "Do not create fake Google Business Profiles",
+          text: "Google's guidelines require a Business Profile to represent a real business at a real location where it serves customers. Lead generators who create profiles for businesses that do not exist risk suspension of the profile and the account. Use websites and ads instead, or help a real contractor improve their own profile.",
+        },
+      },
+      {
+        heading: "Find contractors who will buy the leads",
+        level: 2,
+        body: "Most new lead generators can produce leads; fewer can sell them. Line up buyers before you spend much on traffic. Search Google Maps for the trade in your city, keep companies that run ads or clearly want more work (Local Services Ads, Google Ads, recent reviews, a basic website), then contact the owner directly. [Contractor Leads](/contractor-lead-generation-software) builds that list from live Google data with owner names, [verified emails](/contractor-email-finder) and scores for each company, and the [cold email guide](/blog/cold-email-for-agencies) and [cold-calling script](/blog/cold-calling-contractors-script) cover the first contact. Offer a short trial, such as the first few leads free, so the contractor can judge quality.",
+      },
+      {
+        heading: "Price the leads and agree the terms",
+        level: 2,
+        body: "Price per lead or per call from what a job is worth to the contractor and how often a lead turns into a job, not from your costs alone. Our [pay-per-lead pricing guide](/blog/pay-per-lead-for-contractors) shows how to set a price and what counts as a valid lead, and the [lead cost calculator](/tools/contractor-lead-cost-calculator) shows the contractor's cost per job won. Put these in writing:",
+        bullets: [
+          "Whether each lead is exclusive or shared, and with how many buyers",
+          "What counts as a valid lead or billable call, and how disputes are handled",
+          "Service area, job types and a weekly or monthly cap",
+          "Payment terms (prepaid credit is safer than invoicing after the fact)",
+        ],
+      },
+      {
+        heading: "Consent and compliance",
+        level: 2,
+        body: "Two sets of rules matter. When contractors call or text the homeowners you send them, US telemarketing rules (the TCPA) apply, so collect clear written consent on your forms and name who may contact the homeowner. The FCC adopted a stricter one-to-one consent rule for lead generators in 2023, but a federal appeals court vacated it in January 2025; consent rules keep changing, so check the current rules with a lawyer before you scale. When you email contractors to sell them leads, CAN-SPAM applies: see our [CAN-SPAM checklist](/blog/can-spam-cold-email-contractors).",
+      },
+      {
+        heading: "Your first 90 days",
+        level: 2,
+        body: "A simple sequence that tests demand and buyers before you invest in more sites.",
+        table: {
+          headers: ["Weeks", "Goal", "What to do"],
+          rows: [
+            ["1-2", "Choose the market", "Pick one trade and city, check the map results and ads, list 20 to 30 contractors"],
+            ["3-4", "Line up buyers", "Contact the list, offer trial leads, sign two or three contractors"],
+            ["5-8", "Produce leads", "Launch the site, tracking numbers and a small ads budget; send every lead the same day"],
+            ["9-12", "Decide", "Compare cost per lead with what buyers pay and how many leads they accept; scale, change trade or stop"],
+          ],
+        },
+      },
+    ],
+    sources: [
+      { label: "Google: Guidelines for representing your business on Google", url: "https://support.google.com/business/answer/3038177" },
+      { label: "Morrison Foerster: Eleventh Circuit vacates FCC's TCPA one-to-one consent rule (Jan 2025)", url: "https://www.mofo.com/resources/insights/250130-eleventh-circuit-vacates-fcc-s-tcpa-one-to-one-consent-rule" },
+      { label: "FTC: CAN-SPAM Act, a compliance guide for business", url: "https://www.ftc.gov/business-guidance/resources/can-spam-act-compliance-guide-business" },
+    ],
+  },
 ];

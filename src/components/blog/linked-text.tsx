@@ -54,6 +54,7 @@ const AUTO_LINKS: AutoLink[] = [
   { pattern: /\b10 free leads\b/i, href: "/pricing" },
   { pattern: /\bcost per job( won)?\b|\bbreak-even close rate\b|\breturn on (ad|marketing) spend\b/i, href: "/tools/contractor-lead-cost-calculator" },
   { pattern: /\bstate by state\b|\bby state\b/i, href: "/locations" },
+  { pattern: /\blocal lead generation\b|\blead generators?\b|\brank and rent\b/i, href: "/blog/local-lead-generation-business" },
 ];
 
 const MAX_AUTO_LINKS = 8;
