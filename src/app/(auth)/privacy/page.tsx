@@ -8,7 +8,7 @@ import { JsonLd, breadcrumbJsonLd, webPageJsonLd } from "@/components/seo/json-l
 export const metadata: Metadata = buildMetadata({
   title: "Privacy Policy | Contractor Leads",
   description:
-    "Privacy Policy for Contractor Leads — how we collect, use, and protect agency account and usage data.",
+    "Privacy Policy for Contractor Leads: what account and usage data we collect, how we use and protect it, the choices you have, and how to contact us.",
   path: "/privacy",
 });
 

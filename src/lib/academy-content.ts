@@ -337,7 +337,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
     category: "leads",
     title: "Lead Map and exports (CSV / Excel)",
     summary:
-      "Plan territories with map pins, export dialer files, and know which plan features unlock map and export limits.",
+      "How to plan sales territories with Lead Map pins, export CSV and dialer files from Contractor Leads, and which plans unlock map and export limits.",
     readingMinutes: 7,
     updatedAt: "2026-07-23",
     tags: ["map", "export", "csv", "excel", "territory"],
@@ -375,7 +375,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
     category: "pipeline",
     title: "Hot leads, Saved leads, and Pipeline CRM",
     summary:
-      "How the three lists differ, when to use each, and how to move a contractor from New to Closed without losing context.",
+      "Hot Leads, Saved Leads and Pipeline explained: how the lists differ, when to use each, and how to move a contractor from New to Closed with full context.",
     readingMinutes: 10,
     updatedAt: "2026-07-23",
     tags: ["crm", "status", "saved", "hot", "pipeline"],
@@ -429,7 +429,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
     category: "pipeline",
     title: "Pipeline playbook: closing contractor deals",
     summary:
-      "A practical sales rhythm for agencies — what to say, when to move stages, and how to keep Pipeline honest.",
+      "A practical sales rhythm for agencies closing contractor clients: what to say at each stage, when to move a deal forward, and how to keep Pipeline honest.",
     readingMinutes: 8,
     updatedAt: "2026-07-23",
     tags: ["playbook", "sales", "crm", "workflow"],
@@ -906,7 +906,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
     category: "getting-started",
     title: "Troubleshooting: common errors and fixes",
     summary:
-      "No leads, credits 402, SMTP failures, empty inbox, locked map/API, blank fields — what each means and what to do.",
+      "Fix common Contractor Leads errors: no leads, credits 402, SMTP failures, an empty inbox, a locked map or API, blank fields. What each means and what to do.",
     readingMinutes: 9,
     updatedAt: "2026-07-23",
     tags: ["errors", "troubleshooting", "402", "smtp"],

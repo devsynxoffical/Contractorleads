@@ -9,6 +9,8 @@ Important facts:
 - Integrations: GoHighLevel, Zapier, Make, HubSpot, Slack, custom webhooks, CSV and Excel export. Email sends from the user's own Gmail, Outlook or SMTP mailbox.
 - Company: Vaishali Media Productions LLC, Sheridan, Wyoming, USA. Contact: hello@contractorleads.us
 
+- Full text of the guides, trade pages, tools and FAQ: https://www.contractorleads.us/llms-full.txt
+
 ## Product
 - [Features](https://www.contractorleads.us/features): Lead Finder, AI lead scoring, owner enrichment, Meta Ads Intel, Outreach Studio, Pipeline CRM, Lead Map
 - [Contractor lead generation software: buyer's guide](https://www.contractorleads.us/contractor-lead-generation-software)

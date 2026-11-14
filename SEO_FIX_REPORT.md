@@ -82,3 +82,14 @@ Near-duplicate score (5-word shingles, Jaccard) per sitemap section, indexable p
 
 - sameAs social profiles (LinkedIn company, YouTube, Facebook): existence not verified from here.
 - Founding year: not stated anywhere; nothing published.
+
+## 14 Nov 2026: Phase 9 (llms-full.txt) and Phase 4 (descriptions)
+
+- **llms-full.txt** (`src/app/llms-full.txt/route.ts`, static, rebuilt each deploy): brand facts from
+  /llms.txt (single source), the home FAQ, the 7 priority trade hubs (quick answer, what owners buy,
+  timing, searches, pitch mistakes, FAQs), the 3 free tools, and all 43 guides (direct answer, sections,
+  tables, FAQs, sources). 268 KB, 54 sections, all links absolute. /llms.txt now points to it.
+- **Meta descriptions**: the 6 under 120 chars (/privacy, /terms, 4 help articles) rewritten to 147-156
+  chars, describing what each page actually covers. Audit on a local production build: 0 descriptions
+  outside 120-158 (baseline: 6).
+- Not live yet: Railway has not deployed since 12 Nov (account past due).
