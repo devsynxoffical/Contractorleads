@@ -8,7 +8,7 @@ import { JsonLd, breadcrumbJsonLd, webPageJsonLd } from "@/components/seo/json-l
 export const metadata: Metadata = buildMetadata({
   title: "Terms of Service | Contractor Leads",
   description:
-    "Terms of Service for Contractor Leads — the agency platform for verified contractor lead generation.",
+    "Terms of Service for Contractor Leads: account rules, plans and billing, acceptable use of lead data and outreach tools, data handling and contact.",
   path: "/terms",
 });
 

@@ -192,3 +192,16 @@ Railway bill).
 
 **Next:** "how to find b2b leads" (260/mo, KD 20) as a section or guide aimed at home-service trades;
 check whether Google picks the best-companies guide over the homepage once it is recrawled.
+
+## 2026-11-14
+
+**Data read:** Search Console to 11 Nov (5 impressions that day); no new queries. Live site still on the
+12 Nov release (dpl bab47c3): the 13 Nov guide is merged but not deployed (Railway past due).
+
+**Done (verified on a local production build):** /llms-full.txt built from site content (268 KB, 54
+sections) and linked from /llms.txt; 6 short meta descriptions rewritten (prompt audit: 0 out of range).
+Details in SEO_FIX_REPORT.md.
+
+**Needs the owner:** Railway payment and redeploy; CONFIG facts listed in SEO_FIX_REPORT.md.
+
+**Next:** upgrade the 11 near-duplicate trade hubs (avg similarity 0.445) with trade-specific content.
