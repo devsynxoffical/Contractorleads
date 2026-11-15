@@ -205,3 +205,16 @@ Details in SEO_FIX_REPORT.md.
 **Needs the owner:** Railway payment and redeploy; CONFIG facts listed in SEO_FIX_REPORT.md.
 
 **Next:** upgrade the 11 near-duplicate trade hubs (avg similarity 0.445) with trade-specific content.
+
+## 2026-11-15
+
+**Data read:** Search Console to 12 Nov. The 11 non-priority trades' state pages (noindexed since
+7 Nov) still show a few impressions at positions 90-210; their hubs are indexable.
+
+**Done (verified on a local production build with scripts/seo-audit.mjs):** trade-specific content for
+the 11 non-priority hubs (quick answer, buys, timing, searches, pitch mistakes, FAQs). Industries
+near-duplicate average 0.445 → 0.331; sitemap lastmod 15 Nov for those hubs.
+
+**Needs the owner:** CONFIG facts in SEO_FIX_REPORT.md; Search Console indexing requests.
+
+**Next:** location pages (near-duplicate 0.388): add state-specific content to bring them under 0.35.

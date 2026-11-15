@@ -309,6 +309,380 @@ export const TRADE_HUB_CONTENT: Record<string, TradeHubContent> = {
       },
     ],
   },
+  "home-improvement": {
+    quickAnswer: {
+      q: "How do agencies find home improvement company leads?",
+      a: "Search live Google data for home improvement and handyman companies by city, then keep the ones that offer several services but show only one generic page, few recent reviews or no booking option. Contractor Leads adds owner names, verified emails and scores so you call the companies with the clearest gap first.",
+    },
+    buys: [
+      "A website with a separate page for each service they offer (decks, bathrooms, repairs, painting)",
+      "Google Business Profile management with service lists and project photos",
+      "Review requests after every finished job",
+      "Simple online booking or estimate requests for small jobs",
+    ],
+    season: "Home improvement companies get busier in spring and early summer, and many plan marketing in late winter. Repair and handyman work runs all year, so a booking or estimate offer can be pitched any month.",
+    searchTerms: ["home improvement contractor", "handyman services", "home repair", "deck builder", "bathroom renovation", "home improvement company near me"],
+    mistakes: [
+      "Pitching one generic website. These companies sell many services; show which ones they could rank for with a page each.",
+      "Ignoring small jobs. Repair and handyman requests keep crews busy between projects; a booking flow is often the easiest first sale.",
+      "Treating them like a remodeler. Many are owner-operators with a small crew, so price and scope the offer for that.",
+      "Skipping the reviews check. A company with few recent reviews loses to competitors with many; fix reviews before ads.",
+    ],
+    faqs: [
+      {
+        q: "What do home improvement companies spend marketing money on?",
+        a: "Usually a website that lists every service, their Google Business Profile, reviews and, once those work, local search ads. Owner-operators want simple tools that bring in booked estimates without extra admin.",
+      },
+      {
+        q: "How is a home improvement company different from a remodeler?",
+        a: "Home improvement companies tend to take many smaller jobs across several services, while remodelers focus on larger kitchen, bath and whole-home projects. That changes the pitch: volume and booking for the first, portfolio and qualified consultations for the second.",
+      },
+      {
+        q: "Which home improvement companies are the best prospects?",
+        a: "Active companies with steady recent reviews and several services, but a thin website or no booking option. They already win work and can show quick results from better pages and reviews.",
+      },
+    ],
+  },
+  flooring: {
+    quickAnswer: {
+      q: "How do agencies find flooring company leads?",
+      a: "Search live Google data for flooring installers and flooring stores by city, then separate install-only contractors from showrooms, because they buy different marketing. Keep companies with few photos, no product pages or weak reviews. Contractor Leads adds owner names, verified emails and an opportunity score to each.",
+    },
+    buys: [
+      "Project photo galleries by floor type (hardwood, LVP, tile, carpet)",
+      "Pages for each flooring type and service area",
+      "Search ads for installation and refinishing searches",
+      "Review generation after each installation",
+    ],
+    season: "Flooring demand follows home sales and renovation season, with many homeowners planning projects in late winter and spring and again before the holidays. Pitch a few weeks before those windows.",
+    searchTerms: ["flooring installation", "hardwood floor refinishing", "LVP flooring installers", "tile installation", "carpet installation", "flooring stores near me"],
+    mistakes: [
+      "Treating installers and showrooms the same. A showroom wants store visits and product searches; an installer wants installation leads.",
+      "No photos in the pitch. Flooring is sold visually; show how thin their gallery is next to a competitor's.",
+      "Ignoring refinishing. Hardwood refinishing is a separate search with its own customers and often better margins.",
+      "Pitching national keywords. Flooring buyers search locally; focus on city and service-area pages.",
+    ],
+    faqs: [
+      {
+        q: "What marketing do flooring companies buy?",
+        a: "Mostly a website with galleries and pages per floor type, Google Business Profile work, reviews and local search ads. Showrooms also invest in product pages and promotions that drive store visits.",
+      },
+      {
+        q: "Should agencies target flooring stores or flooring installers?",
+        a: "Both can work, but the offer differs. Stores need foot traffic and product searches; install-only contractors need installation and refinishing leads in their service area. Decide which you serve before building the list.",
+      },
+      {
+        q: "How can you tell a flooring company needs marketing help?",
+        a: "Few or old project photos, no page for the floor types they install, a low review count compared with nearby competitors, or no click-to-call on mobile.",
+      },
+    ],
+  },
+  landscaping: {
+    quickAnswer: {
+      q: "How do agencies find landscaping company leads?",
+      a: "Search live Google data for landscapers and lawn care companies by city, then split design-build landscapers from maintenance crews, because they sell different services. Many have no website or a thin one, which makes them easy to qualify. Contractor Leads adds owner names, verified emails and a website score.",
+    },
+    buys: [
+      "A first website or a rebuild with a project gallery",
+      "Pages for each service: design, hardscaping, lawn care, irrigation",
+      "Recurring maintenance sign-ups and seasonal promotions",
+      "Google Business Profile photos and review requests",
+    ],
+    season: "Landscapers plan and buy marketing in late winter, before the spring rush; once the season starts, owners are in the field. Maintenance companies also sell autumn clean-ups and winter services such as snow removal in colder areas.",
+    searchTerms: ["landscaping company", "lawn care service", "landscape design", "hardscaping contractor", "sod installation", "landscapers near me"],
+    mistakes: [
+      "Pitching in May. Most landscapers are booked solid in spring; pitch in late winter or after the summer peak.",
+      "One offer for every landscaper. Design-build firms want high-value projects; maintenance crews want recurring contracts.",
+      "Skipping the website check. Many landscapers have no site at all, which is the simplest first sale.",
+      "Ignoring seasonality in reporting. Leads drop in winter for most landscapers; agree what success looks like by season.",
+    ],
+    faqs: [
+      {
+        q: "Why are landscapers good clients for agencies?",
+        a: "Many are owner-run with little online presence, so the gaps are obvious and fixable: a website, photos, reviews and service pages. Design-build projects are valuable enough to justify ongoing marketing.",
+      },
+      {
+        q: "What is the best time to pitch a landscaping company?",
+        a: "Late winter, before the spring rush, and late summer or autumn, when owners plan next year. In the middle of spring most owners are too busy to take a call.",
+      },
+      {
+        q: "Should agencies target lawn care or design-build landscapers?",
+        a: "Lawn care suits recurring-revenue offers and volume; design-build suits portfolio-led marketing and fewer, larger projects. Pick one first so the pitch and case studies match.",
+      },
+    ],
+  },
+  painting: {
+    quickAnswer: {
+      q: "How do agencies find painting company leads?",
+      a: "Search live Google data for painting contractors by city, then separate residential repaint companies from commercial painters. Keep companies with few photos, few recent reviews or no estimate form. Contractor Leads adds owner names, verified emails and an opportunity score so you start with the clearest gaps.",
+    },
+    buys: [
+      "Before-and-after galleries for interior and exterior work",
+      "Separate pages for interior, exterior, cabinet and commercial painting",
+      "Online estimate requests with photo upload",
+      "Review requests and Local Services Ads where available",
+    ],
+    season: "Exterior painting is seasonal in most of the US, so painters plan marketing in late winter and early spring. Interior and cabinet work fills the colder months, which is a good time to pitch interior-focused campaigns.",
+    searchTerms: ["house painters", "interior painting", "exterior painting", "cabinet painting", "commercial painting contractor", "painters near me"],
+    mistakes: [
+      "Leading with design. Painters buy estimates, not looks; show how many estimate requests a better page would bring.",
+      "Missing cabinet painting. It is searched on its own and often has better margins than whole-house work.",
+      "Same pitch for commercial painters. They win through bids and property managers, not homeowner searches.",
+      "No before-and-after proof. Painting is sold on visible results; a thin gallery is the first thing to fix.",
+    ],
+    faqs: [
+      {
+        q: "What marketing do painting contractors buy?",
+        a: "A website with galleries, pages for each painting service, Google Business Profile work, reviews and often Local Services Ads. Estimate request forms with photo upload help them quote faster.",
+      },
+      {
+        q: "When do painting companies buy marketing?",
+        a: "Before exterior season, usually late winter or early spring, and in autumn to fill interior work over winter.",
+      },
+      {
+        q: "How do you pitch a painting company that already has a website?",
+        a: "Show the gap: missing pages for interior, exterior or cabinet work, few photos, no estimate form or fewer reviews than the companies ranking above them in their city.",
+      },
+    ],
+  },
+  concrete: {
+    quickAnswer: {
+      q: "How do agencies find concrete contractor leads?",
+      a: "Search live Google data for concrete contractors by city and separate residential flatwork (driveways, patios) from commercial and decorative concrete. Keep companies with no project photos, no service pages or few reviews. Contractor Leads adds owner names, verified emails and a website score.",
+    },
+    buys: [
+      "A website with pages for driveways, patios, foundations and decorative concrete",
+      "Project photo galleries and before-and-after images",
+      "Search ads for driveway and patio searches in season",
+      "Review requests after each pour",
+    ],
+    season: "Concrete work depends on weather, so most companies plan marketing in late winter and push hardest in spring and summer. In colder states work slows sharply in winter.",
+    searchTerms: ["concrete contractor", "concrete driveway", "stamped concrete patio", "concrete repair", "foundation contractor", "concrete companies near me"],
+    mistakes: [
+      "Ignoring the weather. Pitch before the pouring season starts, not in the middle of it or in deep winter.",
+      "One page for everything. Driveways, patios, foundations and decorative work are separate searches and buyers.",
+      "Pitching commercial concrete like residential. Commercial work comes through bids and general contractors.",
+      "No photos. Homeowners choose concrete contractors from finished work; a gallery is the first fix.",
+    ],
+    faqs: [
+      {
+        q: "What marketing do concrete contractors buy?",
+        a: "Usually a website with a page per service, photo galleries, Google Business Profile work, reviews and seasonal search ads for driveways and patios.",
+      },
+      {
+        q: "Are concrete contractors good clients for agencies?",
+        a: "Residential concrete companies often have little online presence, so improvements are visible quickly. Jobs such as driveways and stamped patios are valuable enough to support ongoing marketing in season.",
+      },
+      {
+        q: "When should you pitch a concrete company?",
+        a: "Late winter or early spring, before the season, when owners are planning. In mid-summer most crews are booked and owners are hard to reach.",
+      },
+    ],
+  },
+  "windows-and-doors": {
+    quickAnswer: {
+      q: "How do agencies find window and door company leads?",
+      a: "Search live Google data for window and door installers and replacement companies by city, then separate dealers of a single brand from independent installers. Keep companies with weak product pages, few reviews or no financing information. Contractor Leads adds owner names, verified emails and an opportunity score.",
+    },
+    buys: [
+      "Pages for window replacement, door installation and each product line",
+      "Financing and energy-efficiency information pages",
+      "Search ads for replacement windows and doors",
+      "Consultation booking and follow-up for long decisions",
+    ],
+    season: "Window and door replacement is often planned before winter and in spring. Homeowners take time to decide, so follow-up and consultation booking matter as much as the first lead.",
+    searchTerms: ["window replacement", "replacement windows", "door installation", "entry doors", "sliding patio doors", "window installers near me"],
+    mistakes: [
+      "Ignoring the decision time. Replacement buyers compare quotes for weeks; pitch follow-up, not only more leads.",
+      "Missing financing. Many buyers search for payment options; a financing page can lift enquiries.",
+      "Treating brand dealers like independents. Dealers may have co-op marketing rules and brand assets to follow.",
+      "One page for windows and doors. They are separate searches with separate buyers.",
+    ],
+    faqs: [
+      {
+        q: "What marketing do window and door companies buy?",
+        a: "Pages per product and service, financing pages, search ads for replacement searches, consultation booking and follow-up for quotes that take weeks to close.",
+      },
+      {
+        q: "Why do window replacement companies need follow-up?",
+        a: "Replacement is a large, considered purchase, so homeowners collect several quotes. Fast follow-up and reminders win more of the quotes already given.",
+      },
+      {
+        q: "How do you find window and door companies that need help?",
+        a: "Look for thin product pages, no financing information, few reviews or no online consultation booking, compared with competitors in the same city.",
+      },
+    ],
+  },
+  fencing: {
+    quickAnswer: {
+      q: "How do agencies find fencing contractor leads?",
+      a: "Search live Google data for fence companies by city and note which materials they install (wood, vinyl, chain link, aluminum) and whether they do residential or commercial work. Keep companies with one generic page, few photos or few reviews. Contractor Leads adds owner names, verified emails and a website score.",
+    },
+    buys: [
+      "Pages for each fence type and service area",
+      "Photo galleries by material and style",
+      "Search ads for fence installation in season",
+      "Online quote requests and review requests",
+    ],
+    season: "Fence installation peaks in spring and summer in most areas, so fence companies plan marketing in late winter. Storm damage and new home purchases create repair and new-fence demand at other times.",
+    searchTerms: ["fence installation", "fence company", "vinyl fence installers", "wood fence contractors", "chain link fence", "fence repair"],
+    mistakes: [
+      "One page for every material. Vinyl, wood, chain link and aluminum fences are searched separately.",
+      "Pitching mid-season. Crews are booked in late spring and summer; pitch in late winter.",
+      "Ignoring repair work. Fence repair after storms is a separate, urgent search.",
+      "Same pitch for commercial fencing. Commercial jobs come through bids and property managers.",
+    ],
+    faqs: [
+      {
+        q: "What marketing do fence companies buy?",
+        a: "A website with pages for each fence type and area, photo galleries, quote request forms, reviews and seasonal search ads.",
+      },
+      {
+        q: "When is the best time to pitch a fence company?",
+        a: "Late winter, before installation season. After a major storm, repair-focused campaigns can also land.",
+      },
+      {
+        q: "How do you qualify a fencing company as a prospect?",
+        a: "Check whether they show the materials they install, have recent reviews, answer the phone and appear for fence searches in their own city. Gaps in any of these are your opening.",
+      },
+    ],
+  },
+  "garage-doors": {
+    quickAnswer: {
+      q: "How do agencies find garage door company leads?",
+      a: "Search live Google data for garage door repair and installation companies by city. Repair calls are urgent, so check answer speed, click-to-call and reviews first, then whether they have pages for repair, springs, openers and new doors. Contractor Leads adds owner names, verified emails and an opportunity score.",
+    },
+    buys: [
+      "Pages for repair, broken springs, openers and new door installation",
+      "Local Services Ads and search ads for urgent repair searches",
+      "Call tracking and answering for missed calls",
+      "Review generation after every service call",
+    ],
+    season: "Garage door repair is year-round and urgent, with extra demand when temperatures change and springs fail. New door installation is more seasonal and often tied to home sales.",
+    searchTerms: ["garage door repair", "garage door spring replacement", "garage door opener repair", "new garage door installation", "emergency garage door repair", "garage door company near me"],
+    mistakes: [
+      "Ignoring missed calls. Repair buyers call the next company if nobody answers; check answer speed before pitching ads.",
+      "One page for all services. Springs, openers and new doors are separate searches.",
+      "Underestimating competition. Repair searches often have many advertisers; show where the company can win, such as its own suburbs.",
+      "Skipping reviews. Urgent buyers pick the company with the most recent good reviews.",
+    ],
+    faqs: [
+      {
+        q: "Why are garage door companies good clients for agencies?",
+        a: "Repair demand is urgent and constant, so better visibility and call handling show results quickly. Many companies still have thin websites and miss calls.",
+      },
+      {
+        q: "What do garage door companies buy from agencies?",
+        a: "Local Services Ads and search ads for repair, pages per service, call tracking or answering, and review generation.",
+      },
+      {
+        q: "How do you pitch a garage door repair company?",
+        a: "Lead with the calls they lose: call them after hours, check whether they appear for spring and opener repair in their city, and show competitors with more reviews.",
+      },
+    ],
+  },
+  "pest-control": {
+    quickAnswer: {
+      q: "How do agencies find pest control company leads?",
+      a: "Search live Google data for pest control companies and exterminators by city, then check which pests and services they cover and whether they sell recurring service plans. Keep independent operators with thin pages or few reviews. Contractor Leads adds owner names, verified emails and an opportunity score.",
+    },
+    buys: [
+      "Pages for each pest (termites, rodents, bed bugs, mosquitoes) and service area",
+      "Recurring service plan sign-ups",
+      "Local Services Ads and search ads for urgent infestations",
+      "Review generation after treatments",
+    ],
+    season: "Pest pressure rises in spring and summer for many pests, so pest control companies plan marketing in late winter. Recurring plans keep revenue steady all year, which makes plan sign-ups a strong year-round offer.",
+    searchTerms: ["pest control service", "exterminator", "termite treatment", "rodent control", "bed bug treatment", "pest control near me"],
+    mistakes: [
+      "One page for every pest. Termites, rodents and bed bugs are separate searches with different buyers.",
+      "Selling one-off jobs only. Recurring service plans are where pest control companies earn steady revenue.",
+      "Pitching national chains. Independent operators are the realistic clients; chains run marketing centrally.",
+      "Ignoring urgency. Infestation searches are urgent, so call answering and Local Services Ads matter.",
+    ],
+    faqs: [
+      {
+        q: "What marketing do pest control companies buy?",
+        a: "Pages per pest and area, Local Services Ads and search ads for urgent problems, review generation and campaigns that turn one-off treatments into recurring service plans.",
+      },
+      {
+        q: "Are pest control companies good clients for agencies?",
+        a: "Independent operators often are: demand is steady, many searches are urgent, and recurring plans mean each new customer is worth more than one visit.",
+      },
+      {
+        q: "When is the best time to pitch pest control?",
+        a: "Late winter, before the spring rise in pest activity, and any time for recurring-plan campaigns.",
+      },
+    ],
+  },
+  "cleaning-services": {
+    quickAnswer: {
+      q: "How do agencies find cleaning company leads?",
+      a: "Search live Google data for house cleaning, maid services and commercial cleaning companies by city, then split residential from commercial cleaners, because they buy different marketing. Keep companies with no booking option, few reviews or a thin site. Contractor Leads adds owner names, verified emails and a website score.",
+    },
+    buys: [
+      "Online booking and instant quotes",
+      "Pages for each service: regular cleaning, deep cleaning, move-out, commercial",
+      "Recurring client sign-ups and referral offers",
+      "Review requests after cleans",
+    ],
+    season: "Cleaning demand is steady all year, with peaks around spring cleaning, move-in and move-out periods and the holidays. Recurring clients are the core of the business, so retention offers work in any month.",
+    searchTerms: ["house cleaning service", "maid service", "deep cleaning", "move out cleaning", "commercial cleaning company", "cleaning services near me"],
+    mistakes: [
+      "Same pitch for residential and commercial. Commercial cleaners win contracts through outreach and bids, not homeowner searches.",
+      "No online booking. Residential cleaning buyers expect to book or get a price online.",
+      "Focusing on one-off cleans. Recurring clients are where cleaning companies make money; pitch retention too.",
+      "Ignoring move-out cleaning. It is a separate, urgent search tied to moving dates.",
+    ],
+    faqs: [
+      {
+        q: "What do cleaning companies buy from agencies?",
+        a: "Online booking and quoting, pages for each cleaning service, review generation and campaigns that turn one-time cleans into recurring clients.",
+      },
+      {
+        q: "Should agencies target residential or commercial cleaners?",
+        a: "Residential cleaners suit booking, reviews and local search; commercial cleaners suit outbound and bid support. Pick one first so the offer fits.",
+      },
+      {
+        q: "How do you find cleaning companies that need marketing?",
+        a: "Look for no online booking, few recent reviews, no page per service, or no presence for cleaning searches in their own area.",
+      },
+    ],
+  },
+  "pool-services": {
+    quickAnswer: {
+      q: "How do agencies find pool service company leads?",
+      a: "Search live Google data for pool cleaning, repair and pool builders by city, then separate weekly service companies from builders, because one sells recurring maintenance and the other sells large projects. Keep companies with thin pages or few reviews. Contractor Leads adds owner names, verified emails and an opportunity score.",
+    },
+    buys: [
+      "Recurring weekly service sign-ups",
+      "Pages for cleaning, repair, equipment and opening or closing",
+      "Project galleries and consultation booking for pool builders",
+      "Review requests after service",
+    ],
+    season: "In seasonal climates pool companies plan marketing before spring openings; in warmer states service runs most of the year. Builders sell projects months ahead, so their marketing starts well before summer.",
+    searchTerms: ["pool cleaning service", "pool repair", "pool builders", "pool opening and closing", "pool equipment repair", "pool service near me"],
+    mistakes: [
+      "Same pitch for builders and service companies. Builders need portfolio and consultations; service companies need recurring sign-ups.",
+      "Ignoring climate. Pool season length changes by state, and so does the right time to pitch.",
+      "One page for all services. Cleaning, repair and opening or closing are separate searches.",
+      "No proof. Builders are chosen from finished pools; a weak gallery is the first fix.",
+    ],
+    faqs: [
+      {
+        q: "What marketing do pool service companies buy?",
+        a: "Recurring service sign-ups, pages per service, reviews and seasonal campaigns. Pool builders also buy galleries, consultation booking and ads for new pool searches.",
+      },
+      {
+        q: "When should you pitch a pool company?",
+        a: "Before the season: late winter in colder states, and any time in warmer states where service runs most of the year. Builders should be pitched months before summer.",
+      },
+      {
+        q: "Are pool builders and pool service companies the same prospect?",
+        a: "No. Builders sell large, infrequent projects and need portfolio-led marketing; service companies sell recurring maintenance and need sign-ups and retention.",
+      },
+    ],
+  },
 };
 
 export function getTradeHubContent(slug: string): TradeHubContent | undefined {
