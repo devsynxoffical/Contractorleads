@@ -93,3 +93,13 @@ Near-duplicate score (5-word shingles, Jaccard) per sitemap section, indexable p
   chars, describing what each page actually covers. Audit on a local production build: 0 descriptions
   outside 120-158 (baseline: 6).
 - Not live yet: Railway has not deployed since 12 Nov (account past due).
+
+## 15 Nov 2026: Phase 5 (templated trade hubs)
+
+- The 11 non-priority trade hubs (home improvement, flooring, landscaping, painting, concrete, windows
+  and doors, fencing, garage doors, pest control, cleaning, pool services) now have their own content in
+  `trade-hub-content.ts`: quick answer, what owners buy, when they buy, searches they want to rank for,
+  pitch mistakes and 3 FAQs each (FAQPage schema). No statistics claimed.
+- Industries section near-duplicate score on a local production build: **0.445 → 0.331** (target
+  < 0.35); worst pair 0.70 → 0.41; pairs above 0.35: 62 → 56. No new audit errors.
+- Remaining section above target: locations (0.388).

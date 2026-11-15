@@ -53,6 +53,18 @@ export const TRADE_HUB_UPDATED: Record<string, string> = {
   solar: "2026-11-09",
   "general-contractors": "2026-11-09",
   remodeling: "2026-11-07",
+  // Trade-specific hub content added 15 Nov 2026.
+  "home-improvement": "2026-11-15",
+  "flooring": "2026-11-15",
+  "landscaping": "2026-11-15",
+  "painting": "2026-11-15",
+  "concrete": "2026-11-15",
+  "windows-and-doors": "2026-11-15",
+  "fencing": "2026-11-15",
+  "garage-doors": "2026-11-15",
+  "pest-control": "2026-11-15",
+  "cleaning-services": "2026-11-15",
+  "pool-services": "2026-11-15",
 };
 /** Other trade hubs last changed when their titles were updated. */
 export const TRADE_HUB_DEFAULT_UPDATED = "2026-11-07";
