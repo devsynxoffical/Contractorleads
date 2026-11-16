@@ -238,3 +238,6 @@ Locations near-duplicate average 0.388 → 0.285. LOCATIONS_UPDATED set to 16 No
 - 16 Nov (evening): deep performance diagnosis, `docs/seo/DIAGNOSIS-2026-11-16.md`. Shipped a temporary
   `sitemap-legacy.xml` (37 old /trades URLs still held by Google since 28 Jul). Baseline recorded for
   15 Dec / 15 Jan comparison.
+- 16 Nov (night): GEO. New comparison guide /blog/best-email-finder-for-local-businesses (the page type
+  AI answers cite for "best tool to find contractor owner emails"; the site had none). Blog tables now
+  render [label](/path) links. Audit script skips sitemap-legacy.xml. All sitemap URLs resubmitted to IndexNow.
