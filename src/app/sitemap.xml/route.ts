@@ -41,6 +41,10 @@ export async function GET() {
     <loc>${base}/sitemap-compare.xml</loc>
     <lastmod>${now}</lastmod>
   </sitemap>
+  <sitemap>
+    <loc>${base}/sitemap-legacy.xml</loc>
+    <lastmod>2026-11-16</lastmod>
+  </sitemap>
 </sitemapindex>`;
 
   return new Response(xml, {

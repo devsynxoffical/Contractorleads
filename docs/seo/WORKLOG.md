@@ -235,3 +235,6 @@ Locations near-duplicate average 0.388 → 0.285. LOCATIONS_UPDATED set to 16 No
 - 16 Nov (afternoon): metadata pass on all 511 pages and Speakable/short-answer AEO work; details in
   SEO_FIX_REPORT.md. Search Console 28 days: home page still the page shown for "contractor leads"
   (56 impressions, pos ~89), "exclusive contractor leads" (23), "hvac lead generation companies" (14).
+- 16 Nov (evening): deep performance diagnosis, `docs/seo/DIAGNOSIS-2026-11-16.md`. Shipped a temporary
+  `sitemap-legacy.xml` (37 old /trades URLs still held by Google since 28 Jul). Baseline recorded for
+  15 Dec / 15 Jan comparison.

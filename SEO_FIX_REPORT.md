@@ -134,3 +134,15 @@ canonicals or OG tags; 235 descriptions under 140 chars and 22 titles under 40 c
 /email-lists, /contractor-lead-generation-software, /industries/solar. Unknown to Google:
 /contractor-email-finder, /google-maps-scraper, /faq, /blog/local-lead-generation-business.
 No technical block on any of them (200, index, self-canonical, in sitemap, robots allowed).
+
+## 16 Nov 2026 (evening): performance diagnosis
+
+Full report: `docs/seo/DIAGNOSIS-2026-11-16.md` (verified vs assumed findings, root causes, plan, KPIs, baseline).
+- The "previous 3 months" is a 20-day launch spike: 38% of it was the duplicate `/trades/*` tree (0 clicks).
+  Clicks rose 4 → 26; no traffic was lost.
+- Root causes in order: authority (DR 7, 9 real referring domains), head-term intent mismatch ("contractor
+  leads" is searched by contractors), launch quality debt on programmatic pages that Google has not
+  recrawled since early August, and crawl demand too low for the money pages.
+- Implemented: temporary `sitemap-legacy.xml` with the 37 old `/trades/*` URLs Google still holds, so it
+  processes the 308s and recrawls the current pages. Remove after 31 Jan 2027.
+- Owner P0: request indexing for the 20 URLs listed in the report; resubmit sitemap.xml; directory listings.
