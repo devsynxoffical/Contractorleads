@@ -36,6 +36,8 @@ import {
   lowerTradeLabel,
   tradeCompaniesLabel,
   tradeFindLabel,
+  pickMetaText,
+  joinList,
 } from "@/lib/seo";
 import { buildStateInsight, getStateProfile, topCitiesForState } from "@/lib/state-profiles";
 import { StateInsights } from "@/components/marketing/state-insights";
@@ -81,14 +83,17 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     ...(isGc
       ? [`Find Construction & General Contractor Leads in ${region.name}`, `Construction Leads in ${region.name}: General Contractors`]
       : []),
+    `Find ${find} in ${region.name}: Company List & Owner Emails`,
     `Find ${find} in ${region.name}: Company List`,
     `Find ${find} in ${region.name}`,
     `${companies} in ${region.name}`,
   ];
-  const title = titleOptions.find((t) => t.length < 60) ?? titleOptions[titleOptions.length - 1];
+  const title = pickMetaText(titleOptions, 30, 60);
 
-  // Under 155 chars; only true statements (no modeled numbers in search results).
+  // 140-158 chars when possible; only true statements (no modeled numbers in search results).
+  // Naming the state's largest cities makes each description specific to its page.
   const lower = lowerTradeLabel(companies);
+  const metaCities = topCitiesForState(region.code);
   const descOptions = [
     ...(isGc
       ? [
@@ -96,11 +101,15 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
           `Find construction and general contractor leads in ${region.name}: GCs with owner names, verified emails and AI scores. 10 free leads.`,
         ]
       : []),
+    `Find ${lowerTradeLabel(find)} in ${region.name}: ${lower} in ${joinList(metaCities.slice(0, 3))} with owner names, verified emails and AI marketing scores. 10 free leads.`,
+    `Find ${lowerTradeLabel(find)} in ${region.name}: ${lower} in ${joinList(metaCities.slice(0, 3))} with owner names, verified emails and AI scores. 10 free leads.`,
+    `Find ${lowerTradeLabel(find)} in ${region.name}: ${lower} in ${joinList(metaCities.slice(0, 2))} with owner names, verified emails and AI scores. 10 free leads.`,
+    `Find ${lowerTradeLabel(find)} in ${region.name}: ${lower} in ${metaCities[0] ?? region.name} and statewide, with owner names, verified emails and AI scores.`,
     `Find ${lowerTradeLabel(find)} in ${region.name}: ${lower} with owner names, verified emails and AI scores, from live Google data. 10 free leads.`,
     `Find ${lowerTradeLabel(find)} in ${region.name}: ${lower} with owner names, verified emails and AI scores. 10 free leads.`,
     `${companies} in ${region.name} with owner names, verified emails and AI scores. 10 free leads.`,
   ];
-  const description = descOptions.find((d) => d.length < 155) ?? descOptions[descOptions.length - 1];
+  const description = pickMetaText(descOptions, 140, 158);
 
   return buildMetadata({
     title,

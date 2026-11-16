@@ -18,7 +18,7 @@ import { SEO_REGIONS, TRADE_PAGES, buildMetadata } from "@/lib/seo";
 export const metadata: Metadata = buildMetadata({
   title: "Find Contractor Leads by Trade: Roofing, HVAC, Plumbing",
   description:
-    "Find contractor leads in 18 trades: roofing, HVAC, plumbing, electrical, solar, remodeling and more, with owner names and verified emails.",
+    "Find contractor leads in 18 trades: roofing, HVAC, plumbing, electrical, solar, remodeling and more, with owner names and verified emails, in all 50 states.",
   path: "/industries",
   keywords: [
     "contractor leads by industry",

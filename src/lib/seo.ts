@@ -351,6 +351,24 @@ export type BuildMetadataInput = {
   authors?: string[];
 };
 
+/**
+ * Pick the first option whose length is in [min, max] (the length search results show in full
+ * and that uses the space well); otherwise the first that fits under max; otherwise the last.
+ */
+export function pickMetaText(options: string[], min: number, max: number): string {
+  return (
+    options.find((o) => o.length >= min && o.length <= max) ??
+    options.find((o) => o.length <= max) ??
+    options[options.length - 1]
+  );
+}
+
+/** "A", "A and B", "A, B and C" */
+export function joinList(items: string[]): string {
+  if (items.length <= 1) return items[0] ?? "";
+  return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
+}
+
 export function buildMetadata(input: BuildMetadataInput): Metadata {
   const base = seoBaseUrl();
   const path = input.path || "/";

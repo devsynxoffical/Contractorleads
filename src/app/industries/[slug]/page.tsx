@@ -40,6 +40,7 @@ import {
   lowerTradeLabel,
   tradeCompaniesLabel,
   tradeFindLabel,
+  pickMetaText,
 } from "@/lib/seo";
 import { BLOG_POSTS } from "@/lib/blog-content";
 import { getTradeHubContent } from "@/lib/trade-hub-content";
@@ -68,17 +69,20 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     `Find ${find} for Agencies`,
     `Find ${find}`,
   ];
-  const title = titleOptions.find((t) => t.length < 60) ?? `Find ${find}`;
+  const title = pickMetaText(titleOptions, 30, 60);
   const descOptions = [
     ...(isGc
       ? ["Find construction and general contractor leads for your agency: residential and commercial GCs with owner names, verified emails and AI scores."]
       : []),
+    `Find ${lowerTradeLabel(find)} for your agency: ${lowerTradeLabel(companies)} with owner names, verified emails and AI marketing scores in any US city or state. 10 free leads.`,
+    `Find ${lowerTradeLabel(find)} for your agency: ${lowerTradeLabel(companies)} with owner names, verified emails and AI scores in any US city or state. 10 free leads.`,
+    `Find ${lowerTradeLabel(find)} for your agency: ${lowerTradeLabel(companies)} with owner names, verified emails and AI scores by city or state. 10 free leads included.`,
     `Find ${lowerTradeLabel(find)} for your agency: ${lowerTradeLabel(companies)} with owner names, verified emails and AI scores by city or state. 10 free leads.`,
     `Find ${lowerTradeLabel(find)}: ${lowerTradeLabel(companies)} with owner names, verified emails and AI scores. 10 free leads.`,
   ];
   return buildMetadata({
     title,
-    description: descOptions.find((d) => d.length < 155) ?? descOptions[descOptions.length - 1],
+    description: pickMetaText(descOptions, 140, 158),
     path: `/industries/${trade.slug}`,
     keywords: [
       ...(isGc ? ["construction leads", "find construction leads", "commercial construction leads"] : []),

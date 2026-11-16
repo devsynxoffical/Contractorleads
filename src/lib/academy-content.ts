@@ -96,7 +96,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
     category: "getting-started",
     title: "Welcome to Contractor Leads",
     summary:
-      "What this product is for, who it serves, and the complete path from signup to your first Hot lead — with every screen explained.",
+      "Start here: what Contractor Leads does, who it is for, and the full path from sign-up to your first Hot contractor lead, with every screen explained.",
     readingMinutes: 10,
     updatedAt: "2026-07-23",
     tags: ["onboarding", "overview", "first login"],
@@ -172,7 +172,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
     category: "getting-started",
     title: "Setup hub: complete walkthrough",
     summary:
-      "Email, API, CRM webhooks, and business profile — what each card means, when it is “Ready,” and the recommended order for agencies.",
+      "The Setup Hub explained: email, API, CRM webhooks and business profile, what each card means, when it shows Ready, and the order agencies should follow.",
     readingMinutes: 9,
     updatedAt: "2026-07-23",
     tags: ["setup", "onboarding", "smtp", "profile"],
@@ -225,7 +225,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
     category: "leads",
     title: "How to use Lead Finder (step by step)",
     summary:
-      "Every field on the search form explained: industry, Tier-1 country, location scope, result size, credits, and how to read the results grid.",
+      "How to use Lead Finder: every search field explained (trade, country, location, result size, credits) and how to read the results grid for contractor leads.",
     readingMinutes: 12,
     updatedAt: "2026-07-23",
     tags: ["search", "credits", "geography", "lead finder"],
@@ -291,7 +291,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
     category: "leads",
     title: "Reading lead scores and enrichment fields",
     summary:
-      "What Hot / Warm / Nurture mean, which fields are verified vs blank, and how to use score + website + rating without guessing.",
+      "Lead scores explained: what Hot, Warm and Nurture mean, which fields are verified or left blank, and how to combine score, website and rating to pick leads.",
     readingMinutes: 9,
     updatedAt: "2026-07-23",
     tags: ["score", "hot", "warm", "enrichment", "yelp"],
@@ -464,7 +464,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
     category: "email",
     title: "Email: SMTP, inbox, and Day 1–3 sequences",
     summary:
-      "Connect mailboxes, send from lead detail, read replies in Email inbox, enroll nurture sequences, and understand why sequences pause.",
+      "Connect a mailbox, send email from a lead, read replies in the inbox, enroll contractors in nurture sequences, and see why a sequence pauses and what to do.",
     readingMinutes: 12,
     updatedAt: "2026-07-23",
     tags: ["smtp", "inbox", "nurture", "gmail", "outlook"],
@@ -592,7 +592,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
     category: "billing",
     title: "Plans, credits, and billing (full breakdown)",
     summary:
-      "Credit burn rates, plan ladder (Starter → Growth → Agency → Enterprise), feature unlocks, and what to do when you hit 402.",
+      "Plans, credits and billing: what each action costs in credits, the Starter, Growth, Agency and Enterprise plans, what each unlocks, and how to fix error 402.",
     readingMinutes: 10,
     updatedAt: "2026-07-23",
     tags: ["credits", "plans", "upgrade", "billing"],

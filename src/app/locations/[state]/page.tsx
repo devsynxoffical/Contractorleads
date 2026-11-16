@@ -7,7 +7,7 @@ import { SubpageCtaBand, SubpageLinkGrid, SubpageSection } from "@/components/ma
 import { JsonLd, breadcrumbJsonLd, faqPageJsonLd, serviceJsonLd } from "@/components/seo/json-ld";
 import { LOCATION_STATES, getLocation } from "@/lib/locations";
 import { buildStatePitch } from "@/lib/state-pitch";
-import { buildMetadata } from "@/lib/seo";
+import { buildMetadata, joinList, lowerTradeLabel, pickMetaText } from "@/lib/seo";
 
 type Params = { params: Promise<{ state: string }> };
 
@@ -22,13 +22,19 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const loc = getLocation(state);
   if (!loc) return {};
   const titles = [`Find Contractor Leads in ${loc.name}: Owners & Emails`, `Find Contractor Leads in ${loc.name}`];
+  // Name the state's strongest trades and biggest cities so each description is specific.
+  const topTrades = loc.trades.slice(0, 2).map((t) => lowerTradeLabel(t.name));
   const descs = [
+    `Find contractor leads in ${loc.name}: ${topTrades.join(", ")} and 16 more trades in ${joinList(loc.cities.slice(0, 2))}, with owner names and verified emails. 10 free leads.`,
+    `Find contractor leads in ${loc.name}: ${topTrades.join(", ")} and 16 more trades in ${joinList(loc.cities.slice(0, 3))}, with owner names and verified emails.`,
+    `Find contractor leads in ${loc.name}: ${topTrades.join(", ")} and 16 more trades in ${joinList(loc.cities.slice(0, 2))}, with owner names and verified emails.`,
+    `Find contractor leads in ${loc.name}: ${topTrades.join(", ")} and 16 more trades in ${loc.cities[0] ?? loc.name}, with owner names and verified emails.`,
     `Find contractor leads in ${loc.name}: roofers, HVAC, plumbers and 15 more trades with owner names and verified emails, from live Google data. 10 free leads.`,
     `Find contractor leads in ${loc.name}: 18 trades with owner names and verified emails, from live Google data. 10 free leads.`,
   ];
   return buildMetadata({
-    title: titles.find((t) => t.length < 60) ?? titles[1],
-    description: descs.find((d) => d.length < 155) ?? descs[1],
+    title: pickMetaText(titles, 30, 60),
+    description: pickMetaText(descs, 140, 158),
     path: `/locations/${loc.slug}`,
     keywords: [
       `find contractor leads in ${loc.name}`,

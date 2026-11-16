@@ -12,7 +12,7 @@ import { buildMetadata } from "@/lib/seo";
 export const metadata: Metadata = buildMetadata({
   title: "Book an Enterprise Demo | Contractor Leads",
   description:
-    "Schedule a strategy call with Contractor Leads to discuss Enterprise volume, white-label, API access, and dedicated support.",
+    "Book a call with Contractor Leads about Enterprise: high-volume contractor lead searches, white-label exports, API access, CRM integration and dedicated help.",
   path: "/enterprise/book",
 });
 
