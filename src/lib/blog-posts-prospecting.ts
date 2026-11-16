@@ -374,7 +374,7 @@ export const PROSPECTING_POSTS: BlogPost[] = [
     title: "How to Sell Websites to Contractors: Pricing, Pitch and Proof",
     titleTag: "How to Sell Websites to Contractors: Pricing & Pitch (2026)",
     metaDescription:
-      "How to sell websites to contractors: who to target, what to build, how to price it and a pitch script that ties the site to booked jobs.",
+      "How to sell websites to contractors: which trades to target, what to build, how to price it, and a pitch script that ties the new site to booked jobs.",
     primaryKeyword: "how to sell websites to contractors",
     secondaryKeywords: [
       "web design for contractors",

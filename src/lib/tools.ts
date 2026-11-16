@@ -71,7 +71,7 @@ export const FREE_TOOLS: FreeTool[] = [
     slug: "cold-email-subject-line-tester",
     name: "Cold Email Subject Line Tester",
     h1: "Free cold email subject line tester",
-    titleTag: "Free Cold Email Subject Line Tester",
+    titleTag: "Free Cold Email Subject Line Tester: Spam Words & Length",
     metaDescription: "Test a cold email subject line for length, spam-trigger words, caps, punctuation and fake Re: in one click. Free, no sign-up, nothing stored.",
     primaryKeyword: "cold email subject line tester",
     secondaryKeywords: ["subject line tester", "email subject line checker", "spam word checker"],

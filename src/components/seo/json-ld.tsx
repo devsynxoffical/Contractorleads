@@ -386,12 +386,38 @@ export function serviceJsonLd(opts: {
 }
 
 /** A web page of a specific kind (about, legal, contact) tied to the site and company. */
+/** CSS class on the page's short answer paragraph; Speakable markup points voice assistants to it. */
+export const SPEAKABLE_CLASS = "speakable-answer";
+
+function speakable() {
+  return { "@type": "SpeakableSpecification", cssSelector: [`.${SPEAKABLE_CLASS}`] };
+}
+
+/**
+ * Speakable for a page whose main schema is not a WebPage (Service, SoftwareApplication):
+ * a minimal WebPage node that marks the visible short answer as the part to read aloud.
+ */
+export function speakablePageJsonLd(opts: { name: string; path: string }) {
+  const url = absoluteUrl(opts.path);
+  return {
+    "@context": CONTEXT,
+    "@type": "WebPage",
+    "@id": url,
+    url,
+    name: opts.name,
+    isPartOf: { "@id": SCHEMA_IDS.website() },
+    speakable: speakable(),
+  };
+}
+
 export function webPageJsonLd(opts: {
   type?: "WebPage" | "AboutPage" | "ContactPage" | "CollectionPage";
   name: string;
   description: string;
   path: string;
   dateModified?: string;
+  /** Mark the page's visible short answer (class SPEAKABLE_CLASS) as speakable. */
+  speakable?: boolean;
 }) {
   const url = absoluteUrl(opts.path);
   return {
@@ -405,6 +431,7 @@ export function webPageJsonLd(opts: {
     isPartOf: { "@id": SCHEMA_IDS.website() },
     publisher: orgRef(),
     ...(opts.dateModified ? { dateModified: opts.dateModified } : {}),
+    ...(opts.speakable ? { speakable: speakable() } : {}),
   };
 }
 

@@ -11,6 +11,8 @@ import {
   faqPageJsonLd,
   serviceJsonLd,
   webPageJsonLd,
+  SPEAKABLE_CLASS,
+  speakablePageJsonLd,
 } from "@/components/seo/json-ld";
 import { buildMetadata } from "@/lib/seo";
 import { NOINDEX_LANDING_SLUGS, getLandingPage, type LandingPage } from "@/lib/landing-pages";
@@ -64,7 +66,9 @@ export function LandingPageView({ slug }: { slug: string }) {
                 description: page.metaDescription,
                 path,
                 dateModified: pageUpdated(path),
+                speakable: true,
               }),
+          ...(page.kind === "product" ? [speakablePageJsonLd({ name: page.h1, path })] : []),
           faqPageJsonLd(page.faqs, path),
         ]}
       />
@@ -93,7 +97,7 @@ export function LandingPageView({ slug }: { slug: string }) {
           <h2 className="font-[family-name:var(--font-display)] text-[20px] font-bold text-slate-900 sm:text-[22px]">
             {page.quickAnswer.q}
           </h2>
-          <p className="mt-3 text-[15.5px] leading-relaxed text-slate-700">{page.quickAnswer.a}</p>
+          <p className={`${SPEAKABLE_CLASS} mt-3 text-[15.5px] leading-relaxed text-slate-700`}>{page.quickAnswer.a}</p>
         </section>
 
         <p className="mt-8 text-[16px] leading-relaxed text-slate-700">

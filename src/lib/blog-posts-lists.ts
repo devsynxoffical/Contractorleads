@@ -23,7 +23,7 @@ export const LIST_POSTS: BlogPost[] = [
     title: "Contractor License Lookup: How to Find the Owner of a Contracting Business",
     titleTag: "Contractor License Lookup: Find the Business Owner",
     metaDescription:
-      "Use state contractor license lookups, business filings and websites to find who owns a contracting business. A state-by-state guide.",
+      "How to find who owns a contracting business: use state contractor license lookups, business filings and company websites. A state-by-state guide with links.",
     primaryKeyword: "contractor license lookup",
     secondaryKeywords: [
       "find owner of contracting business",
@@ -239,7 +239,7 @@ export const LIST_POSTS: BlogPost[] = [
     title: "CAN-SPAM and Cold Email to Contractors: A 2026 Compliance Checklist",
     titleTag: "CAN-SPAM Cold Email Checklist for Contractor Outreach",
     metaDescription:
-      "What CAN-SPAM requires when you cold email contractors: sender details, subject lines, postal address, opt-outs, penalties and a checklist.",
+      "What CAN-SPAM requires when you cold email contractors: honest sender and subject lines, a postal address, opt-outs, penalties, plus a checklist to copy.",
     primaryKeyword: "can-spam cold email",
     secondaryKeywords: [
       "is cold email legal",
