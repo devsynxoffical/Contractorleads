@@ -103,3 +103,13 @@ Near-duplicate score (5-word shingles, Jaccard) per sitemap section, indexable p
 - Industries section near-duplicate score on a local production build: **0.445 → 0.331** (target
   < 0.35); worst pair 0.70 → 0.41; pairs above 0.35: 62 → 56. No new audit errors.
 - Remaining section above target: locations (0.388).
+
+## 16 Nov 2026: Phase 5 (location pages)
+
+- /locations/[state]: removed text that was identical on all 51 pages (generic "how to find" steps, the
+  ranking explanation, the pricing FAQ) and added "How to pitch contractors in [State]": for the state's
+  top 3 trades, the angle that follows from its climate, housing and growth, plus example searches for
+  its own cities (reuses state-pitch.ts, which only uses the documented state facts).
+- Locations near-duplicate average on a local production build: **0.388 → 0.285** (target < 0.35);
+  pairs above 0.35: 1,111 → 165. Average page length ~900 words. No new audit errors.
+- All sitemap sections are now under 0.35 on average (industries 0.331, states 0.300, locations 0.285).

@@ -218,3 +218,17 @@ near-duplicate average 0.445 → 0.331; sitemap lastmod 15 Nov for those hubs.
 **Needs the owner:** CONFIG facts in SEO_FIX_REPORT.md; Search Console indexing requests.
 
 **Next:** location pages (near-duplicate 0.388): add state-specific content to bring them under 0.35.
+
+## 2026-11-16
+
+**Data read:** Search Console to 13 Nov: 17 impressions on 13 Nov (highest day since early October;
+one day, not yet a trend), all at positions 60-90.
+
+**Done (verified on a local production build with scripts/seo-audit.mjs):** state location pages get
+state-specific pitch angles and city searches for their top 3 trades; identical boilerplate removed.
+Locations near-duplicate average 0.388 → 0.285. LOCATIONS_UPDATED set to 16 Nov.
+
+**Needs the owner:** CONFIG facts in SEO_FIX_REPORT.md; Search Console indexing requests.
+
+**Next:** Phase 8 (AEO): short answer blocks and question-led headings on the money pages
+(/features, /pricing, /contractor-email-finder, /contractor-lead-generation-software).

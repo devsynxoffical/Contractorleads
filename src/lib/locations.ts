@@ -168,10 +168,6 @@ export function getLocation(slug: string): LocationPage | null {
         q: `How do I find the owner of a contracting business in ${n}?`,
         a: `Contractor Leads adds owner names from company websites and public sources where they can be confirmed. To double-check, use the ${n} contractor license lookup where the trade is licensed, the secretary of state business filing, or owner replies to Google reviews.`,
       },
-      {
-        q: `How much does it cost to find contractor leads in ${n}?`,
-        a: `The first 10 leads are free with no credit card. Paid plans start at $19.99 a month for 500 credits, where one credit is one lead with owner name, verified email and AI scores, and larger plans lower the cost per lead.`,
-      },
     ],
   };
 }
