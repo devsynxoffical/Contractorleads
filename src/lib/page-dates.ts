@@ -73,7 +73,7 @@ export const TRADE_HUB_DEFAULT_UPDATED = "2026-11-07";
 export const STATE_PAGES_UPDATED = "2026-11-09";
 
 /** /locations hub and state location pages (first published). */
-export const LOCATIONS_UPDATED = "2026-11-09";
+export const LOCATIONS_UPDATED = "2026-11-16";
 
 /** /tools hub and free tool pages (first published). */
 export const TOOLS_UPDATED = "2026-11-09";

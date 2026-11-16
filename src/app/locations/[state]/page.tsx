@@ -6,6 +6,7 @@ import { MarketingSiteShell, MarketingSubpageHero } from "@/components/marketing
 import { SubpageCtaBand, SubpageLinkGrid, SubpageSection } from "@/components/marketing/marketing-subpage";
 import { JsonLd, breadcrumbJsonLd, faqPageJsonLd, serviceJsonLd } from "@/components/seo/json-ld";
 import { LOCATION_STATES, getLocation } from "@/lib/locations";
+import { buildStatePitch } from "@/lib/state-pitch";
 import { buildMetadata } from "@/lib/seo";
 
 type Params = { params: Promise<{ state: string }> };
@@ -52,6 +53,12 @@ export default async function LocationPage({ params }: Params) {
   const { state } = await params;
   const loc = getLocation(state);
   if (!loc) notFound();
+  // State-specific pitch angles for the top 3 trades (climate, housing and growth decide the
+  // angle; searches use this state's own cities), so state pages are not one template.
+  const pitches = loc.trades
+    .slice(0, 3)
+    .map((t) => ({ trade: t, pitch: buildStatePitch(t.slug, loc.name, loc.profile, loc.cities.slice(1, 3)) }))
+    .filter((x) => x.pitch);
   const path = `/locations/${loc.slug}`;
   const near = [...loc.neighbours, ...loc.sameDivision].slice(0, 6);
 
@@ -124,8 +131,7 @@ export default async function LocationPage({ params }: Params) {
             Best trades to prospect in {loc.name}
           </h2>
           <p className="mt-3 text-[15.5px] leading-relaxed text-slate-700">
-            Ranked by how strongly {loc.name}&apos;s weather, growth and housing create demand for each trade. Contractors with
-            more demand feel missed calls and slow seasons more, so marketing offers are easier to explain.
+            Ranked by how strongly {loc.name}&apos;s weather, growth and housing create demand for each trade.
           </p>
           <ol className="mt-5 space-y-3">
             {loc.trades.map((t, i) => (
@@ -174,24 +180,37 @@ export default async function LocationPage({ params }: Params) {
           </ul>
         </section>
 
-        <section className="mt-10">
-          <h2 className="font-[family-name:var(--font-display)] text-[22px] font-bold tracking-tight text-slate-900 sm:text-[24px]">
-            How to find contractor leads in {loc.name}
-          </h2>
-          <ol className="mt-4 list-decimal space-y-2 pl-5 text-[15px] leading-relaxed text-slate-700">
-            <li>Choose a trade and set the market to {loc.name}, a city such as {loc.cities[0]}, a county or a radius.</li>
-            <li>Filter by rating, reviews and AI scores to keep the businesses with clear marketing gaps.</li>
-            <li>Add owner names and verified emails, then export to CSV or Excel or send from the built-in outreach tools.</li>
-            <li>Send from a warmed-up mailbox in small daily batches, with a postal address and an opt-out in every email.</li>
-          </ol>
-          <p className="mt-4 text-[15px] leading-relaxed text-slate-700">
-            Pricing is the same in every state: the first 10 leads are free, then plans start at $19.99 a month for 500 leads. See{" "}
-            <Link href="/pricing" className="font-semibold text-fuchsia-700 underline decoration-fuchsia-200 underline-offset-2">
-              pricing
-            </Link>
-            .
-          </p>
-        </section>
+        {pitches.length ? (
+          <section className="mt-10">
+            <h2 className="font-[family-name:var(--font-display)] text-[22px] font-bold tracking-tight text-slate-900 sm:text-[24px]">
+              How to pitch contractors in {loc.name}
+            </h2>
+            <div className="mt-4 space-y-4">
+              {pitches.map(({ trade, pitch }) => (
+                <div key={trade.slug} className="rounded-xl border border-slate-200 bg-white p-4">
+                  <h3 className="text-[15.5px] font-semibold text-slate-900">
+                    <Link href={`/industries/${trade.slug}/${loc.slug}`} className="text-fuchsia-700 underline decoration-fuchsia-200 underline-offset-2 hover:decoration-fuchsia-500">
+                      {trade.name} in {loc.name}
+                    </Link>
+                  </h3>
+                  <p className="mt-1.5 text-[14.5px] leading-relaxed text-slate-700">{pitch!.angle}</p>
+                  {pitch!.grid.length ? (
+                    <p className="mt-2 text-[14px] leading-relaxed text-slate-600">
+                      Searches to check: {pitch!.grid.flatMap((g) => g.searches.slice(0, 2)).join(", ")}.
+                    </p>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+            <p className="mt-4 text-[14.5px] leading-relaxed text-slate-700">
+              Search a trade and city above in Contractor Leads to get the companies with owner names and verified emails;{" "}
+              <Link href="/pricing" className="font-semibold text-fuchsia-700 underline decoration-fuchsia-200 underline-offset-2">
+                the first 10 leads are free
+              </Link>
+              .
+            </p>
+          </section>
+        ) : null}
 
         <section className="mt-12">
           <h2 className="font-[family-name:var(--font-display)] text-[22px] font-bold tracking-tight text-slate-900 sm:text-[24px]">
