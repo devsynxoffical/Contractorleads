@@ -175,9 +175,12 @@ async function main() {
     const name = c.replace(/.*\/sitemap-?/, "").replace(/\.xml$/, "") || "index";
     const body = (await get(c.replace(/^https?:\/\/[^/]+/, BASE))).body || "";
     const urls = [...body.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1].replace(/^https?:\/\/[^/]+/, BASE));
+    site[`sitemap:${name}`] = { urls: urls.length };
+    // sitemap-legacy.xml lists old URLs that redirect on purpose; auditing them would count each
+    // target page twice.
+    if (name === "legacy") continue;
     sections[name] = urls;
     sitemapUrls.push(...urls);
-    site[`sitemap:${name}`] = { urls: urls.length };
   }
   // Nav / footer links from the home page
   const home = (await get(BASE + "/")).body || "";

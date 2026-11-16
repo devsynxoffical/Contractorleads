@@ -236,7 +236,12 @@ export default async function BlogPostPage({ params }: Params) {
                             key={ci}
                             className={`py-3 px-3 text-slate-700 ${ci === 0 ? "font-semibold text-slate-900" : ""}`}
                           >
-                            {cell}
+                            {/* Explicit [label](/path) links only; no auto-links inside tables. */}
+                            <LinkedText
+                              text={cell}
+                              budget={{ used: new Set(), auto: Number.POSITIVE_INFINITY, selfHref: `/blog/${post.slug}` }}
+                              id={`s${idx}t${ri}c${ci}`}
+                            />
                           </td>
                         ))}
                       </tr>

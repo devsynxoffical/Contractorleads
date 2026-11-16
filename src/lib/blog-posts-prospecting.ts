@@ -752,4 +752,122 @@ export const PROSPECTING_POSTS: BlogPost[] = [
       { label: "FTC: CAN-SPAM Act, a compliance guide for business", url: "https://www.ftc.gov/business-guidance/resources/can-spam-act-compliance-guide-business" },
     ],
   },
+  // AI-answer target: "best tool to find contractor / local business owner emails". The pages AI
+  // answers cite for it are tool comparisons; the site had none. Competitor claims stay general
+  // and match alternatives-content.ts (no competitor prices, which change often).
+  {
+    slug: "best-email-finder-for-local-businesses",
+    type: "cluster",
+    title: "Best Email Finder Tools for Contractors and Local Business Owners (2026)",
+    titleTag: "Best Email Finders for Local Business Owners (2026)",
+    metaDescription:
+      "Which email finder works for contractors and local business owners? 8 tools and free methods compared by what they need, what they find and where they fail.",
+    primaryKeyword: "email finder for local businesses",
+    secondaryKeywords: [
+      "best email finder for local businesses",
+      "find business owner email",
+      "contractor email finder",
+      "find contractor owner email",
+      "hunter alternative for local businesses",
+      "apollo for local businesses",
+    ],
+    searchVolume: "not measured",
+    growth: "steady",
+    cluster: "tools",
+    publishedDate: "2026-11-16",
+    updatedDate: "2026-11-16",
+    readingMinutes: 9,
+    author: AUTHOR,
+    relatedIndustries: ["roofing", "hvac", "plumbing", "general-contractors"],
+    directAnswer:
+      "For contractors and other local business owners, the best email finder is one that starts from the business, not from a company domain or a LinkedIn profile, because many owners have no LinkedIn page and use a Gmail or Outlook address. In practice: use a local-business tool such as Contractor Leads (built for home-service trades) or a Google Maps scraper to build the list, take the owner's name from the website, Google Business Profile or state license record, then verify every email before sending. B2B finders such as Hunter, Apollo, ZoomInfo and Lusha work well for larger companies with their own domain, but miss many owner-operated businesses.",
+    summary:
+      "Why most email finders miss local owners, eight tools and free methods compared side by side, which to use for which job, and how to verify before you send.",
+    faqs: [
+      {
+        q: "What is the best email finder for local businesses?",
+        a: "One that finds the business first and reads the contact details the business publishes: a local-business lead tool such as Contractor Leads for home-service trades, or a Google Maps scraper plus a verifier for other categories. Domain-based finders like Hunter work only when the business has its own domain and a professional email pattern.",
+      },
+      {
+        q: "Why can't Apollo or ZoomInfo find many contractor owners?",
+        a: "Their databases are built mostly from company and professional-profile data. Many contractors are owner-operated, have no LinkedIn presence and use a free Gmail or Outlook address, so there is little for those databases to match.",
+      },
+      {
+        q: "How do I find the owner of a contracting business?",
+        a: "Check the About page, the Google Business Profile owner responses, and the state contractor license lookup, which usually lists the license holder. Our owner name guide ranks nine methods.",
+      },
+      {
+        q: "Do I need to verify emails from an email finder?",
+        a: "Yes. Verify every address before you send; a list with a high bounce rate damages the sending domain for every campaign that follows. Warm up new sending domains before the first campaign, too.",
+      },
+      {
+        q: "Is it legal to cold email local business owners in the US?",
+        a: "Business-to-business cold email is allowed under CAN-SPAM if you follow its rules: honest headers and subject lines, a physical address, and a working opt-out honoured within 10 business days.",
+      },
+    ],
+    sections: [
+      {
+        heading: "Why most email finders miss local business owners",
+        body:
+          "Most email finders were built for B2B sales into companies with a website domain, a team and staff profiles online. A roofing company, a plumber or a landscaper is often one owner, an office manager and crews. Three things break the usual approach:",
+        bullets: [
+          "No company domain pattern: many owners use a Gmail, Yahoo or Outlook address, so a domain search finds nothing.",
+          "No LinkedIn profile: databases that match people from professional profiles have no record to return.",
+          "No website at all: some businesses only have a Google Business Profile, so the phone number is the only published contact.",
+        ],
+      },
+      {
+        heading: "Email finders compared for local business owners",
+        body:
+          "How each option behaves when the target is an owner-operated local business. Prices change often, so check each vendor's site; Contractor Leads' price is shown because it is ours.",
+        table: {
+          headers: ["Tool or method", "What you give it", "What it returns", "Works for owners without a domain or LinkedIn?", "Best for"],
+          rows: [
+            ["[Contractor Leads](/contractor-email-finder)", "A trade and a city or state", "Every matching business from live Google data, owner name and contacts published by the business, verified emails, AI marketing scores", "Yes, it reads the business's own website and profile; phone only when nothing else is published", "Agencies selling to home-service contractors (18 trades); 10 free leads, plans from $19.99 a month"],
+            ["[Hunter](/alternatives/hunter-alternative)", "A company domain, or a name plus domain", "Professional email addresses with a confidence score; verifier", "No: needs a domain and a professional email pattern", "Companies with their own domain"],
+            ["[Apollo](/apollo-alternative)", "Filters on a B2B contact database", "People, titles and emails from its database", "Partly: weak on owner-operators with no online profile", "B2B teams selling to mid-size and larger companies"],
+            ["[ZoomInfo](/alternatives/zoominfo-alternative)", "Filters on an enterprise database", "Company and contact records, org charts", "Partly: coverage thins out for very small businesses", "Enterprise sales teams"],
+            ["[Lusha](/alternatives/lusha-alternative)", "A person or company, often from LinkedIn", "Emails and phone numbers for known people", "No: you need to know the person first", "Enriching contacts you already have"],
+            ["[Prospeo](/alternatives/prospeo-alternative)", "A name and company, or a LinkedIn profile", "Emails and mobile numbers", "Partly: depends on a findable person", "Enriching named B2B contacts"],
+            ["[Google Maps scrapers](/blog/best-google-maps-scrapers) (Outscraper, Apify)", "A search query and location", "Business listings; some add emails scraped from websites", "Partly: only emails published on a website", "Any local category, if you clean and verify yourself"],
+            ["Free: website, Google Business Profile, state license lookup", "The business name", "Owner name (license holder), published email and phone", "Yes, but slow: a few minutes per business", "Small lists and checking a tool's output"],
+          ],
+        },
+      },
+      {
+        heading: "Which one to use",
+        body: "Pick by what you are starting from and how many businesses you need:",
+        bullets: [
+          "You sell to home-service contractors and need lists by trade and city: a local-business tool built for those trades, such as [Contractor Leads](/contractor-email-finder).",
+          "You already have company domains: Hunter or another domain-based finder, then verify.",
+          "You need other local categories (restaurants, dentists, salons): a [Google Maps scraper](/blog/best-google-maps-scrapers), then a verifier.",
+          "You sell to larger companies with staff online: Apollo, ZoomInfo or Lusha.",
+          "You only need a handful: do it by hand with the website, Google Business Profile and the [state license lookup](/blog/contractor-license-lookup-owner-name).",
+        ],
+      },
+      {
+        heading: "How to get the owner, not the info@ inbox",
+        body:
+          "A generic inbox is read by whoever is in the office. The owner decides on marketing, so find the name first and the address second:",
+        bullets: [
+          "State contractor license lookup: most states list the license holder or qualifier by name.",
+          "Google Business Profile: owners often sign their review replies.",
+          "The website's About or Team page, and the footer of quote forms.",
+          "Then check the published address against that name, or use the name in your opening line if only info@ exists.",
+        ],
+        callout: {
+          title: "Verification habit",
+          text: "Verify every address before it goes into a campaign, and drop catch-all and unknown results from your first sends. Bounces above a few percent hurt the sending domain for every campaign after it.",
+        },
+      },
+      {
+        heading: "What a good result looks like",
+        body:
+          "For an owner-operated contractor, a usable record has the business name, the owner's name, a verified email or a direct phone number, and one fact you can open with, such as no website, a low review count or no ads running. Contractor Leads adds that fact as a marketing-gap score so the first line of the email can be about the business, not about you. See [how agencies find contractor leads](/blog/how-to-get-contractor-leads) for the full workflow.",
+      },
+    ],
+    sources: [
+      { label: "FTC: CAN-SPAM Act, a compliance guide for business", url: "https://www.ftc.gov/business-guidance/resources/can-spam-act-compliance-guide-business" },
+    ],
+  },
 ];
