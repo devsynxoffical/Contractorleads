@@ -33,9 +33,12 @@ const COMMON_DKIM_SELECTORS = [
   "hostingermail-a",
   "hostingermail-b",
   "hostingermail-c",
-  // Microsoft 365 (also GoDaddy Microsoft 365 email)
+  // Microsoft 365 (also GoDaddy's Microsoft 365 email)
   "selector1",
   "selector2",
+  // GoDaddy Professional / Workspace Email: CNAMEs to *.onsecureserver.net
+  "secureserver1",
+  "secureserver2",
   // Google Workspace
   "google",
   // Common generic selectors
@@ -134,11 +137,22 @@ export async function checkDkim(
   // Look up every selector in parallel; DKIM keys are often CNAMEs, which resolveTxt follows.
   const lookups = await Promise.all(
     selectorsToTest.map(async (sel) => {
+      const host = `${sel}._domainkey.${domain}`;
       try {
-        const records = await dns.resolveTxt(`${sel}._domainkey.${domain}`);
-        return { sel, joined: records.map((r) => r.join("")).join(""), err: null as unknown };
+        const records = await dns.resolveTxt(host);
+        return { sel, joined: records.map((r) => r.join("")).join(""), err: null as unknown, cname: null as string | null };
       } catch (err: unknown) {
-        return { sel, joined: "", err };
+        // A CNAME whose target publishes no key yet (DKIM added in DNS but not activated at the
+        // provider) is worth reporting on its own: the DNS side is done, the provider side is not.
+        let cname: string | null = null;
+        if (isNoRecord(err)) {
+          try {
+            cname = (await dns.resolveCname(host))[0] ?? null;
+          } catch {
+            cname = null;
+          }
+        }
+        return { sel, joined: "", err, cname };
       }
     }),
   );
@@ -155,6 +169,17 @@ export async function checkDkim(
       reason: isWeak
         ? `DKIM key found on selector "${found.sel}", but it looks shorter than 2048-bit.`
         : `DKIM key found on selector "${found.sel}".`,
+    };
+  }
+
+  const pending = lookups.find((l) => l.cname);
+  if (pending) {
+    return {
+      status: "warn",
+      selector: pending.sel,
+      record: `CNAME → ${pending.cname}`,
+      reason: `DKIM record found on selector "${pending.sel}" (CNAME to ${pending.cname}), but that target does not publish a key yet, so mail is not DKIM-signed with it. Finish turning on DKIM in your email provider; it can take a few hours after activation.`,
+      instructions: "Activate DKIM in your email provider's settings (GoDaddy: Email & Office → your domain → Email authentication).",
     };
   }
 
@@ -371,8 +396,8 @@ export function getDnsFixInstructions(
     },
     godaddy: {
       spf: "v=spf1 include:secureserver.net ~all",
-      dkimHost: "selector1._domainkey",
-      dkimVal: "Turn on DKIM in your GoDaddy email settings; it gives the exact record (Microsoft 365 email uses selector1 / selector2).",
+      dkimHost: "secureserver1._domainkey",
+      dkimVal: "Turn on DKIM in your GoDaddy email settings; it gives two CNAME records (secureserver1 and secureserver2) pointing to onsecureserver.net.",
       dmarc: `v=DMARC1; p=quarantine; rua=mailto:dmarc-reports@${cleanDomain}`,
       mx: [
         { host: "@", priority: 0, target: "smtp.secureserver.net" },
