@@ -29,6 +29,8 @@ import {
   faqPageJsonLd,
   softwareApplicationJsonLd,
   serviceJsonLd,
+  SPEAKABLE_CLASS,
+  speakablePageJsonLd,
 } from "@/components/seo/json-ld";
 import { INDUSTRIES, TIER_ONE_COUNTRIES } from "@/lib/constants";
 import { BLOG_POSTS } from "@/lib/blog-content";
@@ -222,6 +224,7 @@ export default function ContractorLeadGenerationSoftwarePage() {
 
   return (
     <MarketingSiteShell>
+      <JsonLd data={speakablePageJsonLd({ name: "Contractor lead generation software", path: "/contractor-lead-generation-software" })} />
       <JsonLd
         data={[
           breadcrumbJsonLd([
@@ -301,7 +304,7 @@ export default function ContractorLeadGenerationSoftwarePage() {
           <h2 className="font-[family-name:var(--font-display)] text-[20px] font-bold text-slate-900 sm:text-[22px]">
             What is contractor lead generation software?
           </h2>
-          <p className="mt-3 text-[15.5px] leading-relaxed text-slate-700">
+          <p className={`${SPEAKABLE_CLASS} mt-3 text-[15.5px] leading-relaxed text-slate-700`}>
             Contractor lead generation software finds home-service businesses for agencies and sales teams to pitch. Contractor Leads searches live Google data by trade and city, adds owner names and verified emails, scores each business on website, SEO and ad gaps, and writes outreach, so you contact the contractors most likely to buy first.
           </p>
         </div>

@@ -232,3 +232,6 @@ Locations near-duplicate average 0.388 → 0.285. LOCATIONS_UPDATED set to 16 No
 
 **Next:** Phase 8 (AEO): short answer blocks and question-led headings on the money pages
 (/features, /pricing, /contractor-email-finder, /contractor-lead-generation-software).
+- 16 Nov (afternoon): metadata pass on all 511 pages and Speakable/short-answer AEO work; details in
+  SEO_FIX_REPORT.md. Search Console 28 days: home page still the page shown for "contractor leads"
+  (56 impressions, pos ~89), "exclusive contractor leads" (23), "hvac lead generation companies" (14).

@@ -36,6 +36,8 @@ import {
   breadcrumbJsonLd,
   faqPageJsonLd,
   softwareApplicationJsonLd,
+  SPEAKABLE_CLASS,
+  speakablePageJsonLd,
 } from "@/components/seo/json-ld";
 import { INDUSTRIES, TIER_ONE_COUNTRIES } from "@/lib/constants";
 import { TRADE_PAGES, buildMetadata } from "@/lib/seo";
@@ -281,6 +283,7 @@ export default function FeaturesPage() {
           ]),
           softwareApplicationJsonLd(),
           faqPageJsonLd(FEATURE_FAQ),
+          speakablePageJsonLd({ name: "Contractor Leads features", path: "/features" }),
         ]}
       />
       <MarketingSubpageHero
@@ -318,6 +321,21 @@ export default function FeaturesPage() {
           </li>
         </ul>
       </MarketingSubpageHero>
+
+      {/* Short answer (answer-first for search and AI assistants) */}
+      <section className="mx-auto max-w-3xl px-5 pt-14 sm:px-8">
+        <div className="rounded-2xl border border-fuchsia-200 bg-gradient-to-br from-fuchsia-50 to-violet-50 p-6">
+          <h2 className="font-[family-name:var(--font-display)] text-[20px] font-bold text-slate-900 sm:text-[22px]">
+            What does Contractor Leads do?
+          </h2>
+          <p className={`${SPEAKABLE_CLASS} mt-3 text-[15.5px] leading-relaxed text-slate-700`}>
+            Contractor Leads finds home-service contractors for agencies and sales teams to pitch. It searches live
+            Google data for 18 trades in the US, Canada, the UK, Australia and New Zealand, adds owner names and
+            verified emails, scores each business Hot, Warm or Nurture, and drafts the first email. The first 10 leads
+            are free.
+          </p>
+        </div>
+      </section>
 
       <SubpageSection
         id="coverage"

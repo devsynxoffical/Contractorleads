@@ -44,6 +44,7 @@ import { RiOpenaiFill } from "react-icons/ri";
 import { LOGO_GRADIENT } from "@/components/layout/page-header";
 import { cn } from "@/lib/utils";
 import { MARKETING_FAQ } from "@/lib/seo";
+import { SPEAKABLE_CLASS } from "@/components/seo/json-ld";
 import {
   CloudDecor,
   SoftBlob,
@@ -306,7 +307,7 @@ function HomeQuickAnswer() {
             >
               What are contractor leads?
             </h2>
-            <p className="mt-4 text-[16px] leading-relaxed text-slate-700">
+            <p className={`${SPEAKABLE_CLASS} mt-4 text-[16px] leading-relaxed text-slate-700`}>
               Contractor leads are contact records for home-service businesses such as roofers, HVAC
               companies and plumbers, used by agencies and sales teams that sell to them. Contractor
               Leads finds them from live Google data, adds owner names and verified emails, and scores

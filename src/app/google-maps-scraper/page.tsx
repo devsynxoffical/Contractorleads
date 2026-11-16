@@ -24,6 +24,8 @@ import {
   faqPageJsonLd,
   softwareApplicationJsonLd,
   serviceJsonLd,
+  SPEAKABLE_CLASS,
+  speakablePageJsonLd,
 } from "@/components/seo/json-ld";
 import { buildMetadata } from "@/lib/seo";
 import { BLOG_POSTS } from "@/lib/blog-content";
@@ -88,6 +90,7 @@ export default function GoogleMapsScraperPage() {
         ])}
       />
       <JsonLd data={faqPageJsonLd(SCRAPER_FAQS, "/google-maps-scraper")} />
+      <JsonLd data={speakablePageJsonLd({ name: "Google Maps scraper for contractor leads", path: "/google-maps-scraper" })} />
       <JsonLd
         data={serviceJsonLd({
           name: "Google Maps scraper for contractor leads",
@@ -149,7 +152,7 @@ export default function GoogleMapsScraperPage() {
           <h2 className="font-[family-name:var(--font-display)] text-[20px] font-bold text-slate-900 sm:text-[22px]">
             What is a Google Maps scraper for leads?
           </h2>
-          <p className="mt-3 text-[15.5px] leading-relaxed text-slate-700">
+          <p className={`${SPEAKABLE_CLASS} mt-3 text-[15.5px] leading-relaxed text-slate-700`}>
             A Google Maps scraper collects business listings, such as name, phone, website, rating and reviews, from Google Maps for a category and area. Contractor Leads does this for home-service contractors with live Google data, then adds owner names, verified emails, Meta ad status and AI scores, and exports to CSV or Excel.
           </p>
         </div>

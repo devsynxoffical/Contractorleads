@@ -10,6 +10,8 @@ import {
   breadcrumbJsonLd,
   faqPageJsonLd,
   softwareApplicationJsonLd,
+  SPEAKABLE_CLASS,
+  speakablePageJsonLd,
 } from "@/components/seo/json-ld";
 import { buildMetadata } from "@/lib/seo";
 
@@ -79,6 +81,7 @@ export default async function PricingPage() {
         ])}
       />
       <JsonLd data={faqPageJsonLd(PRICING_FAQS, "/pricing")} />
+      <JsonLd data={speakablePageJsonLd({ name: "Contractor Leads pricing", path: "/pricing" })} />
 
       <MarketingSubpageHero
         eyebrow="Transparent Plans"
@@ -107,7 +110,7 @@ export default async function PricingPage() {
           <h2 className="font-[family-name:var(--font-display)] text-[20px] font-bold text-slate-900 sm:text-[22px]">
             How much does Contractor Leads cost?
           </h2>
-          <p className="mt-3 text-[15px] leading-relaxed text-slate-700">
+          <p className={`${SPEAKABLE_CLASS} mt-3 text-[15px] leading-relaxed text-slate-700`}>
             Contractor Leads costs from $19.99 a month for 500 lead credits, and every new account
             gets 10 free leads with no credit card. One credit is one lead, and each lead includes
             live Google data, an owner name where available, AI scores and outreach scripts. Larger

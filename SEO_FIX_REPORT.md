@@ -113,3 +113,24 @@ Near-duplicate score (5-word shingles, Jaccard) per sitemap section, indexable p
 - Locations near-duplicate average on a local production build: **0.388 → 0.285** (target < 0.35);
   pairs above 0.35: 1,111 → 165. Average page length ~900 words. No new audit errors.
 - All sitemap sections are now under 0.35 on average (industries 0.331, states 0.300, locations 0.285).
+
+## 16 Nov 2026 (afternoon): Phase 4 metadata pass and Phase 8 AEO
+
+**Metadata audit (all 511 sitemap pages, live):** no missing or duplicate titles, descriptions,
+canonicals or OG tags; 235 descriptions under 140 chars and 22 titles under 40 chars.
+**Fixed** (local production build: 0 descriptions outside 140-158, 0 titles outside 30-60, 0 duplicates):
+- Trade + state pages (350): descriptions name the state's three largest cities; titles
+  "Find [Trade] Leads in [State]: Company List & Owner Emails" where it fits.
+- Trade hubs (18) and state location pages (51): longer, page-specific descriptions (top trades and cities).
+- /industries, /enterprise/book, 6 help articles, 3 guides, subject line tester title: rewritten.
+- Helpers `pickMetaText()` / `joinList()` in seo.ts.
+
+**AEO:** /features gets a "What does Contractor Leads do?" short answer. Speakable markup
+(`SpeakableSpecification`, `.speakable-answer`) on the short answers of the home page, /features,
+/pricing, /contractor-lead-generation-software, /google-maps-scraper and every landing page
+(e.g. /contractor-email-finder). One WebPage node per page; JSON-LD validation clean.
+
+**Indexing (URL Inspection, 16 Nov):** Discovered, not indexed: /pricing, /tools, /locations,
+/email-lists, /contractor-lead-generation-software, /industries/solar. Unknown to Google:
+/contractor-email-finder, /google-maps-scraper, /faq, /blog/local-lead-generation-business.
+No technical block on any of them (200, index, self-canonical, in sitemap, robots allowed).
