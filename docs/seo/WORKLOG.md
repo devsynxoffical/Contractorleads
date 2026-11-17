@@ -271,3 +271,9 @@ the "best contractor lead generation" query group for the guide to replace the h
   trade-hub-content.ts. Word count: /locations 440 → ~1,300, /industries 466 → ~1,200. Tables stack on
   mobile (0 px horizontal overflow). Checked and left unchanged: best-companies guide intent, author/
   Organization schema, redirects, 404s, parameter canonicals, robots.txt.
+- 17 Nov (GEO, evening): Bing Webmaster API: site verified; Bing crawled /, /pricing, /contractor-email-finder,
+  /locations and /blog/best-email-finder-for-local-businesses (16 Nov). Bing performance: 14 impressions, 0
+  clicks; several long, AI-style grounding queries show our pages at positions 1-10. Submitted 98 priority URLs
+  with SubmitUrlBatch (daily quota 100 → 2) and resubmitted sitemap.xml + 4 child sitemaps (Bing's feed showed
+  84 URLs of 512). Added docs/seo/DIRECTORY-LISTINGS.md: ready-to-paste, fact-checked listing copy for G2,
+  Capterra, AlternativeTo, Product Hunt, Crunchbase (owner must create the accounts).
