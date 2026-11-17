@@ -241,3 +241,25 @@ Locations near-duplicate average 0.388 → 0.285. LOCATIONS_UPDATED set to 16 No
 - 16 Nov (night): GEO. New comparison guide /blog/best-email-finder-for-local-businesses (the page type
   AI answers cite for "best tool to find contractor owner emails"; the site had none). Blog tables now
   render [label](/path) links. Audit script skips sitemap-legacy.xml. All sitemap URLs resubmitted to IndexNow.
+
+## 17 Nov 2026
+
+**Data read (Search Console, to 16 Nov):** impressions up to 17-33/day on 13-16 Nov (5-16/day the week
+before), almost all on the homepage at position ~89; 0 clicks. New in the last 7 days: "best contractor
+lead generation companies" (21 impr., pos 97, homepage), "best lead service for contractors" (6), "leads
+for contractors" (5). No query at positions 5-40 with more than 1 impression.
+**URL Inspection:** /blog/best-contractor-lead-generation-companies indexed (crawled 3 Nov) and already
+linked from the homepage with that exact anchor, so no change made. /pricing, /contractor-email-finder,
+/locations/texas still "Discovered"; /industries/roofing/texas still "Crawled - not indexed" (2 Aug);
+/trades/remodeling/georgia not recrawled yet (28 Jul), so the legacy sitemap has not been read yet;
+/blog/best-email-finder-for-local-businesses unknown to Google (published yesterday).
+**Done and verified:** mobile lab performance (Pixel 7, 4x CPU, ~6 Mbps): homepage LCP 1.6-1.9 s in 4 of
+5 runs (one cold run 2.7 s), LCP element = hero image, painted ~30 ms after first paint; /pricing,
+/industries/roofing/texas and the new guide ~1.1-1.4 s; CLS ≤ 0.043. The "homepage LCP 2.6 s" backlog
+item is closed. No page changes today: the data does not support any, and pages changed 9-16 Nov have
+not been recrawled.
+**Needs the owner:** Search Console "Request indexing" for the 20 URLs in DIAGNOSIS-2026-11-16.md plus
+/blog/best-email-finder-for-local-businesses; resubmit sitemap.xml; Bing Webmaster Tools sitemap;
+directory listings.
+**Next:** check whether Google has fetched sitemap-legacy.xml (/trades URLs recrawled); keep watching
+the "best contractor lead generation" query group for the guide to replace the homepage.
