@@ -263,3 +263,11 @@ not been recrawled.
 directory listings.
 **Next:** check whether Google has fetched sitemap-legacy.xml (/trades URLs recrawled); keep watching
 the "best contractor lead generation" query group for the guide to replace the homepage.
+- 17 Nov (full SEO/AEO/GEO cycle): live audit of 512 URLs clean (0 errors in every check). OpenSEO has 2
+  credits, so no paid keyword or SERP data; keyword work used Search Console and free SERP reads.
+  Implemented: /locations gets a 50-state comparison table (largest cities, demand drivers, trades to pitch
+  first, linked to each state and trade + state page) and a methodology note; /industries gets an 18-trade
+  table (what owners buy first, when they plan marketing). Both built only from state-profiles.ts and
+  trade-hub-content.ts. Word count: /locations 440 → ~1,300, /industries 466 → ~1,200. Tables stack on
+  mobile (0 px horizontal overflow). Checked and left unchanged: best-companies guide intent, author/
+  Organization schema, redirects, 404s, parameter canonicals, robots.txt.
