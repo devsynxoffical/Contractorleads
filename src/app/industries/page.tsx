@@ -14,6 +14,7 @@ import { Reveal } from "@/components/marketing/marketing-ui";
 import { JsonLd, breadcrumbJsonLd, collectionPageJsonLd } from "@/components/seo/json-ld";
 import { TIER_ONE_COUNTRIES } from "@/lib/constants";
 import { SEO_REGIONS, TRADE_PAGES, buildMetadata } from "@/lib/seo";
+import { getTradeHubContent } from "@/lib/trade-hub-content";
 
 export const metadata: Metadata = buildMetadata({
   title: "Find Contractor Leads by Trade: Roofing, HVAC, Plumbing",
@@ -27,6 +28,22 @@ export const metadata: Metadata = buildMetadata({
     "plumbing contractor leads",
     "home service lead generation",
   ],
+});
+
+/** Strip the site's [label](/path) link syntax for plain table text. */
+const plain = (t: string) => t.replace(/\[([^\]]+)\]\([^)]*\)/g, "$1");
+
+const compareRows = TRADE_PAGES.flatMap((t) => {
+  const hub = getTradeHubContent(t.slug);
+  if (!hub) return [];
+  return [
+    {
+      slug: t.slug,
+      name: t.name,
+      buys: hub.buys.slice(0, 2).map(plain),
+      season: plain(hub.season.split(/(?<=\.)\s/)[0]),
+    },
+  ];
 });
 
 export default function TradesIndexPage() {
@@ -107,6 +124,47 @@ export default function TradesIndexPage() {
               </Link>
             </Reveal>
           ))}
+        </div>
+      </SubpageSection>
+
+      <SubpageSection
+        tone="soft"
+        eyebrow="Compare trades"
+        title="What each trade buys from agencies, and when"
+        description="The services owners in each trade most often pay an agency for, and when they plan their marketing, so you pitch the right offer at the right time."
+      >
+        <div className="rounded-2xl border border-slate-200 bg-white sm:overflow-x-auto">
+          <table className="block w-full text-left text-[14px] sm:table sm:min-w-[720px]">
+            <caption className="sr-only">Marketing services each home-service trade buys and when they plan marketing</caption>
+            <thead className="hidden bg-slate-50 sm:table-header-group text-[12.5px] font-bold uppercase tracking-wider text-slate-500">
+              <tr>
+                <th scope="col" className="px-4 py-3">Trade</th>
+                <th scope="col" className="px-4 py-3">What owners buy first</th>
+                <th scope="col" className="px-4 py-3">When they plan marketing</th>
+              </tr>
+            </thead>
+            <tbody className="block divide-y divide-slate-100 sm:table-row-group">
+              {compareRows.map((r) => (
+                <tr key={r.slug} className="block px-1 py-2 align-top sm:table-row sm:p-0">
+                  <th scope="row" className="block px-4 pt-2 font-semibold sm:table-cell sm:py-3">
+                    <Link href={`/industries/${r.slug}`} className="text-fuchsia-700 hover:underline">
+                      {r.name}
+                    </Link>
+                  </th>
+                  <td className="block px-4 py-1 text-slate-700 sm:table-cell sm:py-3">
+                    <span className="text-[12px] font-bold uppercase tracking-wider text-slate-400 sm:hidden">What owners buy first: </span>
+                    <ul className="list-disc space-y-1 pl-4">
+                      {r.buys.map((b) => (
+                        <li key={b}>{b}</li>
+                      ))}
+                    </ul>
+                  </td>
+                  <td className="block px-4 py-1 text-slate-700 sm:table-cell sm:py-3">
+                    <span className="text-[12px] font-bold uppercase tracking-wider text-slate-400 sm:hidden">When they plan marketing: </span>{r.season}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </SubpageSection>
 
