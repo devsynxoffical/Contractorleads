@@ -315,3 +315,5 @@ the site never sends). Search Console Request indexing for the priority URLs; di
   for every group (tested with Google matching rules: _rsc URLs blocked; pages, UTM URLs, sitemaps,
   llms.txt allowed). Also: no manual action; host status "robots.txt fetch: high fail rate in the past"
   (likely the late-September drop; owner to expand the row for dates).
+- 18 Nov 17:24 UTC (first 12-hour run): baseline recorded in docs/seo/TRACKING.md. No page changes: all
+  18 Nov fixes are waiting for Google to recrawl.
