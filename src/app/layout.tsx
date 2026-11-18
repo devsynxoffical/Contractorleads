@@ -7,6 +7,7 @@ import { SEO, seoBaseUrl } from "@/lib/seo";
 import "./globals.css";
 import { MetaPixelTracker } from "@/components/pixel/meta-pixel-tracker";
 import { GA_MEASUREMENT_ID } from "@/lib/analytics";
+import { ANALYTICS_EXCLUDED_SECTIONS } from "@/lib/private-sections";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -136,6 +137,22 @@ export default function RootLayout({
           // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{
             __html: `
+              (function(){
+                // Do not measure the logged-in app or admin (see private-sections.ts).
+                var excluded = ${JSON.stringify(ANALYTICS_EXCLUDED_SECTIONS)};
+                var key = 'ga-disable-${GA_MEASUREMENT_ID}';
+                function update(url){
+                  var path = location.pathname;
+                  try { if (url != null) path = new URL(String(url), location.href).pathname; } catch (e) {}
+                  window[key] = excluded.indexOf(path.split('/')[1] || '') !== -1;
+                }
+                update();
+                ['pushState','replaceState'].forEach(function(m){
+                  var orig = history[m];
+                  history[m] = function(state, title, url){ update(url); return orig.apply(this, arguments); };
+                });
+                window.addEventListener('popstate', function(){ update(); });
+              })();
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
               window.gtag = gtag;

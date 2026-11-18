@@ -176,9 +176,9 @@ async function main() {
     const body = (await get(c.replace(/^https?:\/\/[^/]+/, BASE))).body || "";
     const urls = [...body.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1].replace(/^https?:\/\/[^/]+/, BASE));
     site[`sitemap:${name}`] = { urls: urls.length };
-    // sitemap-legacy.xml lists old URLs that redirect on purpose; auditing them would count each
-    // target page twice.
-    if (name === "legacy") continue;
+    // sitemap-legacy.xml (redirects) and sitemap-removed.xml (noindexed pages) list URLs that are
+    // meant to leave the index; auditing them would skew every check.
+    if (name === "legacy" || name === "removed") continue;
     sections[name] = urls;
     sitemapUrls.push(...urls);
   }
