@@ -277,3 +277,22 @@ the "best contractor lead generation" query group for the guide to replace the h
   with SubmitUrlBatch (daily quota 100 → 2) and resubmitted sitemap.xml + 4 child sitemaps (Bing's feed showed
   84 URLs of 512). Added docs/seo/DIRECTORY-LISTINGS.md: ready-to-paste, fact-checked listing copy for G2,
   Capterra, AlternativeTo, Product Hunt, Crunchbase (owner must create the accounts).
+
+## 18 Nov 2026
+
+**Data read:** Search Console 11-17 Nov: 1 click (17 Nov, first since 5 Nov), impressions 11-33/day. The
+"best lead generation companies / services / websites for contractors" group (~60 impr. this week) is shown
+on the homepage at positions 87-100; the one time Google showed the guide for it, it ranked 7. GA4 (connected
+17 Nov, data to 16 Nov): 74 direct sessions, 1 chatgpt.com session (AI assistant), 0 key events.
+URL Inspection: /blog/best-email-finder-for-local-businesses unknown → Discovered; /trades/remodeling/georgia
+now lists the sitemap as its source but is not recrawled yet (28 Jul); /pricing, /locations still Discovered;
+/industries/roofing/texas still Crawled - not indexed (2 Aug).
+**Done and verified (local production build, audit 0 errors):** to steer that query group to the guide:
+two contextual links from indexed guides (/blog/how-to-get-contractor-leads, /blog/how-much-do-contractor-
+leads-cost) with the searched anchors; new FAQ "What are the best lead generation websites for contractors?"
+on the guide (FAQPage now 7 questions; facts match the guide's own marketplace section); guide dateModified
+18 Nov.
+**Needs the owner:** GA4: mark sign_up and generate_lead as key events (current key events are GA4 defaults
+the site never sends). Search Console Request indexing for the priority URLs; directory listings
+(docs/seo/DIRECTORY-LISTINGS.md).
+**Next:** watch whether the guide replaces the homepage for that query group; re-check /trades recrawl.

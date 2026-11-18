@@ -122,7 +122,7 @@ export const PLAYBOOK_POSTS: BlogPost[] = [
       {
         heading: "7. Lead marketplaces: fast, shared and price-driven",
         level: 2,
-        body: "Angi, Thumbtack, HomeAdvisor and similar marketplaces sell homeowner requests to several contractors at once. They are useful for a brand-new business and painful for everyone else: low close rates, fee disputes and homeowners trained to pick the lowest bid. Agencies rarely sell marketplace management. Instead, the pitch is to replace marketplace spend with owned channels over six months.",
+        body: "Angi, Thumbtack, HomeAdvisor and similar marketplaces sell homeowner requests to several contractors at once (see [the best lead generation companies for contractors, compared](/blog/best-contractor-lead-generation-companies)). They are useful for a brand-new business and painful for everyone else: low close rates, fee disputes and homeowners trained to pick the lowest bid. Agencies rarely sell marketplace management. Instead, the pitch is to replace marketplace spend with owned channels over six months.",
       },
       {
         heading: "8. Door knocking, yard signs and canvassing",
