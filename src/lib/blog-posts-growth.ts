@@ -95,7 +95,7 @@ export const GROWTH_POSTS: BlogPost[] = [
       {
         heading: "Shared vs exclusive leads",
         level: 2,
-        body: "Shared leads from marketplaces look cheap per lead and expensive per job. A $60 lead sold to four roofers with a 10 percent close rate costs $600 per job and trains homeowners to shop on price. An exclusive LSA call at $180 with a 35 percent close rate costs about $515 per job and arrives with the contractor's name already chosen. For established contractors the exclusive route almost always wins. For a brand-new business, a marketplace can be the only option for the first few months.",
+        body: "Shared leads from marketplaces look cheap per lead and expensive per job ([lead generation companies for contractors compared by pricing model](/blog/best-contractor-lead-generation-companies)). A $60 lead sold to four roofers with a 10 percent close rate costs $600 per job and trains homeowners to shop on price. An exclusive LSA call at $180 with a 35 percent close rate costs about $515 per job and arrives with the contractor's name already chosen. For established contractors the exclusive route almost always wins. For a brand-new business, a marketplace can be the only option for the first few months.",
       },
       {
         heading: "What agencies should charge",
@@ -132,12 +132,14 @@ export const GROWTH_POSTS: BlogPost[] = [
       "contractor lead gen tools",
       "hvac lead generation companies",
       "lead vendors for hvac",
+      "lead generation websites for contractors",
+      "best lead service for contractors",
     ],
     searchVolume: "1,000/mo",
     growth: "+14%",
     cluster: "tools",
     publishedDate: PUBLISHED,
-    updatedDate: "2026-11-12",
+    updatedDate: "2026-11-18",
     readingMinutes: 13,
     author: AUTHOR,
     relatedIndustries: ["roofing", "hvac", "plumbing", "general-contractors"],
@@ -149,6 +151,10 @@ export const GROWTH_POSTS: BlogPost[] = [
       {
         q: "What is the best lead generation company for contractors?",
         a: "For most established contractors, the best results come from exclusive channels: Google Local Services Ads, search ads and a strong Google Business Profile, usually managed by a specialist agency. Marketplaces suit new contractors who need volume immediately and accept shared leads.",
+      },
+      {
+        q: "What are the best lead generation websites for contractors?",
+        a: "The main lead websites are homeowner marketplaces: Angi (which includes HomeAdvisor), Thumbtack, and Networx and Porch, which sell project requests per lead or per contact, often to several contractors at once. Alongside them, Google Local Services Ads and a contractor's own Google Business Profile and website bring exclusive enquiries. New contractors usually start on a marketplace for volume; established ones move budget to exclusive channels once they can track cost per booked job.",
       },
       {
         q: "Is Contractor Leads a lead generation company for contractors?",
