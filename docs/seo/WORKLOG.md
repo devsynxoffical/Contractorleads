@@ -296,3 +296,14 @@ on the guide (FAQPage now 7 questions; facts match the guide's own marketplace s
 the site never sends). Search Console Request indexing for the priority URLs; directory listings
 (docs/seo/DIRECTORY-LISTINGS.md).
 **Next:** watch whether the guide replaces the homepage for that query group; re-check /trades recrawl.
+- 18 Nov (full cycle, afternoon): 90-day Search Console has only 6 query+page rows in positions 1-20
+  (all 1-8 impressions); nothing new to optimise there. Two new findings, both fixed:
+  1. The 550 trade + state pages of the 11 non-priority trades (noindex since 22 Oct) are still
+     "Submitted and indexed": Google last crawled them 15-21 Oct (URL Inspection on 4 samples) and they
+     keep appearing at positions 90-210. Added temporary sitemap-removed.xml (550 URLs, lastmod 22 Oct) so
+     they are recrawled and dropped. Remove after 31 Jan 2027.
+  2. GA4 measured the logged-in app and admin (/email-accounts, /inbox, /campaigns, /admin/customers/<id>
+     were the top pages), so marketing reports were mostly product usage and admin customer IDs went to
+     Google. GA4 is now disabled on the private sections from robots.txt (shared list in
+     lib/private-sections.ts); /register, /login and /ref stay measured. Verified in Chromium: public and
+     funnel pages send page_view, app/admin paths send nothing, including client-side navigations.

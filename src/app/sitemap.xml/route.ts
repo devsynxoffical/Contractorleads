@@ -45,6 +45,10 @@ export async function GET() {
     <loc>${base}/sitemap-legacy.xml</loc>
     <lastmod>2026-11-16</lastmod>
   </sitemap>
+  <sitemap>
+    <loc>${base}/sitemap-removed.xml</loc>
+    <lastmod>2026-11-18</lastmod>
+  </sitemap>
 </sitemapindex>`;
 
   return new Response(xml, {
