@@ -6,14 +6,14 @@
  * whenever its visible content changes (not for code-only changes).
  */
 export const PAGE_UPDATED: Record<string, string> = {
-  "/": "2026-11-07",
-  "/features": "2026-11-03",
-  "/pricing": "2026-11-05",
+  "/": "2026-11-16",
+  "/features": "2026-11-16",
+  "/pricing": "2026-11-16",
   "/contractor-lead-generation-software": "2026-11-05",
   "/google-maps-scraper": "2026-11-05",
   "/apollo-alternative": "2026-11-03",
   "/alternatives": "2026-11-03",
-  "/industries": "2026-11-03",
+  "/industries": "2026-11-17",
   "/blog": "2026-11-07",
   "/help": "2026-11-03",
   "/faq": "2026-11-05",
@@ -28,7 +28,7 @@ export const PAGE_UPDATED: Record<string, string> = {
   "/contractor-lead-management": "2026-11-05",
   "/contractor-crm": "2026-11-05",
   "/sms-marketing-for-contractors": "2026-11-05",
-  "/contractor-email-finder": "2026-11-05",
+  "/contractor-email-finder": "2026-11-16",
   "/homeowner-leads": "2026-11-05",
   "/commercial-contractor-leads": "2026-11-05",
   "/storm-damage-leads": "2026-11-05",
@@ -46,31 +46,31 @@ export const PAGE_UPDATED: Record<string, string> = {
 
 /** Trade hubs that received trade-specific content on this date. */
 export const TRADE_HUB_UPDATED: Record<string, string> = {
-  roofing: "2026-11-09",
-  hvac: "2026-11-09",
-  plumbing: "2026-11-09",
-  electrical: "2026-11-09",
-  solar: "2026-11-09",
-  "general-contractors": "2026-11-09",
-  remodeling: "2026-11-07",
-  // Trade-specific hub content added 15 Nov 2026.
-  "home-improvement": "2026-11-15",
-  "flooring": "2026-11-15",
-  "landscaping": "2026-11-15",
-  "painting": "2026-11-15",
-  "concrete": "2026-11-15",
-  "windows-and-doors": "2026-11-15",
-  "fencing": "2026-11-15",
-  "garage-doors": "2026-11-15",
-  "pest-control": "2026-11-15",
-  "cleaning-services": "2026-11-15",
-  "pool-services": "2026-11-15",
+  roofing: "2026-11-16",
+  hvac: "2026-11-16",
+  plumbing: "2026-11-16",
+  electrical: "2026-11-16",
+  solar: "2026-11-16",
+  "general-contractors": "2026-11-16",
+  remodeling: "2026-11-16",
+  // Trade-specific content 9-15 Nov; page-specific titles and descriptions 16 Nov 2026.
+  "home-improvement": "2026-11-16",
+  "flooring": "2026-11-16",
+  "landscaping": "2026-11-16",
+  "painting": "2026-11-16",
+  "concrete": "2026-11-16",
+  "windows-and-doors": "2026-11-16",
+  "fencing": "2026-11-16",
+  "garage-doors": "2026-11-16",
+  "pest-control": "2026-11-16",
+  "cleaning-services": "2026-11-16",
+  "pool-services": "2026-11-16",
 };
 /** Other trade hubs last changed when their titles were updated. */
 export const TRADE_HUB_DEFAULT_UPDATED = "2026-11-07";
 
 /** State pages were rebuilt on real state facts on this date. */
-export const STATE_PAGES_UPDATED = "2026-11-09";
+export const STATE_PAGES_UPDATED = "2026-11-16";
 
 /** /locations hub and state location pages (first published). */
 export const LOCATIONS_UPDATED = "2026-11-16";
