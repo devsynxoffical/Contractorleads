@@ -307,3 +307,11 @@ the site never sends). Search Console Request indexing for the priority URLs; di
      Google. GA4 is now disabled on the private sections from robots.txt (shared list in
      lib/private-sections.ts); /register, /login and /ref stay measured. Verified in Chromium: public and
      funnel pages send page_view, app/admin paths send nothing, including client-side navigations.
+- 18 Nov (evening), ROOT CAUSE FOUND (owner's Search Console crawl stats, Aug-Nov): "Other file type" =
+  9,580 of 12,600 Google crawl requests (76%), HTML only 12%; the examples are Next.js RSC payloads
+  (e.g. /locations/california?_rsc=..., /industries/hvac/california?_rsc=...). Google spent three of
+  every four crawls on these instead of pages, which is why money pages stayed "Discovered, not crawled"
+  and state pages were not recrawled since August. Fix: robots.txt now disallows /*?_rsc= and /*&_rsc=
+  for every group (tested with Google matching rules: _rsc URLs blocked; pages, UTM URLs, sitemaps,
+  llms.txt allowed). Also: no manual action; host status "robots.txt fetch: high fail rate in the past"
+  (likely the late-September drop; owner to expand the row for dates).
