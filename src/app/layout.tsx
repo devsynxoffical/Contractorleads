@@ -158,6 +158,11 @@ export default function RootLayout({
               window.gtag = gtag;
               gtag('js', new Date());
               gtag('config', '${GA_MEASUREMENT_ID}');
+              // Funnel step between page view and sign_up: clicks on any sign-up link.
+              document.addEventListener('click', function(e){
+                var a = e.target && e.target.closest ? e.target.closest('a[href^="/register"]') : null;
+                if (a) gtag('event', 'cta_click', { cta_text: (a.innerText || a.textContent || '').trim().replace(/\\s+/g, ' ').slice(0, 40), page_path: location.pathname });
+              }, true);
             `,
           }}
         />
