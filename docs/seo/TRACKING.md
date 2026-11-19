@@ -10,6 +10,7 @@ marketing pages only from 18 Nov), URL Inspection, Bing Webmaster Tools.
 |---|---|---|---|---|---|---|---|
 | 18 Nov 17:24 (baseline) | 1 / 129 (12-18 Nov) | 7 / 275 (21 Oct-18 Nov) | 1 / 1 | 0 of 5 | 1 / 1 (chatgpt.com) / 0 | 14 / 128 | none (see notes) |
 | 19 Nov 05:24 | 1 / 137 (13-19 Nov) | 7 / ~281 (22 Oct-18 Nov) | 1 / 1 | 0 of 5 | 1 / 1 (chatgpt.com) / 0 | 14 / 128 | none; 100 URLs to Bing |
+| 19 Nov 17:24 | 1 / 148 (13-19 Nov) | 7 / ~285 | 1 / 1 | 1 of 6 (/contractor-list indexed) | 1 / 1 (chatgpt.com) / 0 | 14 / 135 | none (Bing quota used this morning) |
 
 *Tracked money pages: /pricing, /contractor-email-finder, /locations, /email-lists, /industries/roofing/texas.
 
@@ -50,3 +51,18 @@ marketing pages only from 18 Nov), URL Inspection, Bing Webmaster Tools.
 - **Work:** none on pages. The "construction lead services" queries reach ~48-60, but they come from
   contractors buying project leads, not from agencies; the matching page is deliberately noindexed.
 - **Needs the owner:** sitemap resubmit and Request indexing; GA4 key events.
+
+### 19 Nov 2026, 17:24 UTC
+- **First win:** /contractor-list (published 19 Nov) is "Submitted and indexed", crawled 19 Nov 10:03 UTC,
+  hours after launch. First new page indexed this fast; consistent with the 18 Nov crawl fix.
+- **GSC:** 7-day impressions 137 → 148 (18 Nov: 24). Homepage positions improved for the "lead
+  services" group: contractor lead services 54, contractor leads services 51, contractor lead
+  generation service 57, contractors leads service 57, contractor lead generation company 60 (most were
+  85-95 last week); "construction lead services" 48. Still homepage only, still 0 clicks this week.
+- **Not indexed yet:** /pricing and /contractor-email-finder "unknown"; /email-lists and the email-finder
+  guide "Discovered"; /industries/roofing/texas "Crawled - not indexed" (2 Aug).
+- **Removal/legacy checks:** /industries/concrete/alabama still indexed (crawled 15 Oct);
+  /industries/landscaping/maryland "Crawled - not indexed"; /trades/remodeling/connecticut not recrawled.
+- **Bing:** 135 pages indexed (128 → 135); 14 query impressions. Daily URL quota already used this morning.
+- **Work:** none on pages; the new page and 18 Nov fixes are being picked up. Indexing API best-100 run is
+  scheduled for 20 Nov 08:01 UTC.
