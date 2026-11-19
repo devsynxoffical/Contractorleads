@@ -18,6 +18,8 @@ type RegisterFormProps = {
 function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
   const searchParams = useSearchParams();
   const referralCode = (searchParams.get("ref") || "").trim();
+  // Carried from the /contractor-list builder: confirm the list the visitor chose (plain text only).
+  const listName = (searchParams.get("list") || "").replace(/[^A-Za-z0-9 ,.&'-]/g, "").slice(0, 80);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState<string | null>(null);
   const [registeredEmail, setRegisteredEmail] = useState("");
@@ -133,6 +135,11 @@ function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
             </Link>
           )}
         </p>
+        {listName ? (
+          <p className="mt-3 rounded-xl bg-fuchsia-50 px-3 py-2 text-[13px] font-semibold text-fuchsia-800 ring-1 ring-fuchsia-200">
+            Your free list of {listName} is ready after sign-up.
+          </p>
+        ) : null}
         {referralCode ? (
           <p className="mt-3 inline-flex rounded-lg bg-emerald-50 px-2.5 py-1 text-[12px] font-semibold text-emerald-800 ring-1 ring-emerald-200">
             Referred by code {referralCode}

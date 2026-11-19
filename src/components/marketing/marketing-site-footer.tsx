@@ -22,6 +22,7 @@ const NAV_PRIMARY: Array<[string, string]> = [
 const NAV_SECONDARY: Array<[string, string]> = [
   ["Lead Gen Software", "/contractor-lead-generation-software"],
   ["Google Maps Scraper", "/google-maps-scraper"],
+  ["Free Contractor List", "/contractor-list"],
   ["Contractor Email Finder", "/contractor-email-finder"],
   ["Contractor Email Lists", "/email-lists"],
   ["Leads by State", "/locations"],

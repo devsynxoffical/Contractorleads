@@ -116,6 +116,7 @@ businesses). Our guides are well structured but say what others already say, wit
 |---|---|---|---|---|---|---|
 | C1 | GA4 `sign_up_error` event with reason (free_email / other) | /register | Rejected sign-ups were invisible | Local browser test: event sent with reason=free_email | Not measurable | Measured from deploy |
 | C2 | GA4 `cta_click` event on every link to /register (button text + page) | All public pages | No funnel step between page view and sign-up | Local browser test: "Get started" click on /pricing sent | Not measurable | Measured from deploy |
+| C3 | New interactive lead page: free contractor list builder (trade, state, city → live preview → sign-up with the chosen list shown on /register) | /contractor-list (+ /register banner) | Owner asked for new pages built for leads; one page aimed at "contractor list" searches with a direct path to sign-up, instead of many thin pages | Local browser test: preview and CTA update per choice, banner on /register, mobile 0 px overflow, audit 0 errors; live: GA4 cta_click from /contractor-list, URL Inspection | New URL | Track impressions, cta_click, sign_up from 19 Nov |
 
 Re-measure on 2 Dec: crawl stats HTML share (was 12%), money pages indexed (was 0 of 5 tracked), GSC
 28-day clicks and impressions (7 / 285), GA4 cta_click, sign_up_error and sign_up counts.
