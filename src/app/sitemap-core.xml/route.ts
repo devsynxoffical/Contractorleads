@@ -31,6 +31,7 @@ export async function GET() {
     { path: "/contractor-crm", priority: "0.8", changefreq: "monthly" },
     { path: "/sms-marketing-for-contractors", priority: "0.8", changefreq: "monthly" },
     { path: "/contractor-email-finder", priority: "0.85", changefreq: "monthly" },
+    { path: "/contractor-list", priority: "0.85", changefreq: "monthly" },
     { path: "/homeowner-leads", priority: "0.8", changefreq: "monthly" },
     { path: "/commercial-contractor-leads", priority: "0.8", changefreq: "monthly" },
     { path: "/storm-damage-leads", priority: "0.8", changefreq: "monthly" },

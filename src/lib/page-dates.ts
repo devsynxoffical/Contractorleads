@@ -29,6 +29,7 @@ export const PAGE_UPDATED: Record<string, string> = {
   "/contractor-crm": "2026-11-05",
   "/sms-marketing-for-contractors": "2026-11-05",
   "/contractor-email-finder": "2026-11-16",
+  "/contractor-list": "2026-11-19",
   "/homeowner-leads": "2026-11-05",
   "/commercial-contractor-leads": "2026-11-05",
   "/storm-damage-leads": "2026-11-05",
