@@ -318,3 +318,4 @@ the site never sends). Search Console Request indexing for the priority URLs; di
 - 18 Nov 17:24 UTC (first 12-hour run): baseline recorded in docs/seo/TRACKING.md. No page changes: all
   18 Nov fixes are waiting for Google to recrawl.
 - 19 Nov 05:24 UTC run: tracking row added; 100 more URLs to Bing; noindex removal confirmed on 2 samples.
+- 19 Nov: honest investigation (docs/seo/INVESTIGATION-2026-11-19.md). Shipped funnel measurement: GA4 cta_click (all /register links) and sign_up_error with reason (free_email/other).

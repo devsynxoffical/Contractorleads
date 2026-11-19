@@ -62,6 +62,10 @@ function RegisterFormInner({ onSwitchToLogin }: RegisterFormProps) {
 
     const data = await res.json();
     if (!res.ok) {
+      // Measure why sign-ups fail (e.g. free inboxes are rejected) so the funnel can be judged on data.
+      trackEvent("sign_up_error", {
+        reason: /business email/i.test(String(data.error || "")) ? "free_email" : "other",
+      });
       setError(data.error || "Registration failed");
       setLoading(false);
       return;
