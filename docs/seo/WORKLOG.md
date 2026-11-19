@@ -317,3 +317,4 @@ the site never sends). Search Console Request indexing for the priority URLs; di
   (likely the late-September drop; owner to expand the row for dates).
 - 18 Nov 17:24 UTC (first 12-hour run): baseline recorded in docs/seo/TRACKING.md. No page changes: all
   18 Nov fixes are waiting for Google to recrawl.
+- 19 Nov 05:24 UTC run: tracking row added; 100 more URLs to Bing; noindex removal confirmed on 2 samples.
