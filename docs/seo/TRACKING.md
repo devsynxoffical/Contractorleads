@@ -86,3 +86,18 @@ marketing pages only from 18 Nov), URL Inspection, Bing Webmaster Tools.
   pages, email lists, tools, alternatives, trade hubs, big-state pages, guides); then 98/98 accepted from day1.txt
   (40 /locations, 27 /industries, 15 /blog, 12 /help, 4 utility). 200 of 200 daily quota used, 0 failures.
   Accepted = notice received, not indexed. Validate with URL Inspection on 22-23 Nov.
+
+### 20 Nov 17:24 UTC
+
+- **GSC 7d (14-20 Nov, 20 Nov partial):** 1 click, 196 impressions, avg position ~85 (prev run 169). Best day
+  19 Nov: 65 impressions, all homepage, old "contractor lead generation" queries at ~88.
+- **GSC 28d (24 Oct-20 Nov):** 4 clicks, 327 impressions (baseline 22 Oct-18 Nov: 7 / 285). Queries in top 10: 1,
+  top 20: 1 ("best lead generation companies for contractors" -> guide, pos 7, 1 impression).
+- **Indexing (URL Inspection):** /contractor-email-list, /businesses-without-websites, /local-business-email-list
+  **Submitted and indexed**, crawled 20 Nov 16:12 UTC (same day as launch). Homepage recrawled 16:12 (new title
+  now seen by Google). /locations and /apollo-alternative still "unknown to Google"; /industries/roofing/texas
+  "Crawled - not indexed" (last crawl 2 Aug). /pricing check timed out.
+- **GA4 (14-19 Nov):** chatgpt.com 4 sessions (prev 2), google organic 2, direct 23; key events 0.
+- **Bing:** 135 indexed (unchanged), 14 impressions / 0 clicks on 14 queries; daily URL submission quota 0 left.
+- **Movers:** up: 3 new pages indexed, ChatGPT sessions 2 -> 4, 7d impressions 169 -> 196. Down: none.
+- **Work:** none. Pages indexed today need 1-2 weeks before they can be judged; no other actionable data.
