@@ -277,7 +277,7 @@ const MOST_SEARCHED: Array<{ href: string; label: string }> = [
   { href: "/industries/hvac/georgia", label: "HVAC companies in Georgia" },
   { href: "/industries/electrical/louisiana", label: "Electrical contractors in Louisiana" },
   { href: "/locations", label: "Contractor leads by state" },
-  { href: "/email-lists", label: "Contractor email lists" },
+  { href: "/contractor-email-list", label: "Contractor email lists" },
   { href: "/contractor-email-finder", label: "Contractor email finder" },
   { href: "/tools", label: "Free cold email tools" },
   { href: "/contractor-lead-generation-software", label: "Lead generation software" },
@@ -297,30 +297,34 @@ const PROOF_FACTS: Array<{ value: string; label: string }> = [
 
 function HomeQuickAnswer() {
   return (
-    <section aria-labelledby="what-are-contractor-leads" className="relative bg-[#ffffff] py-16 sm:py-20">
+    <section aria-labelledby="agency-lead-generation" className="relative bg-[#ffffff] py-16 sm:py-20">
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
         <div className="grid gap-10 lg:grid-cols-12">
           <div className="lg:col-span-7">
             <h2
-              id="what-are-contractor-leads"
+              id="agency-lead-generation"
               className="font-[family-name:var(--font-display)] text-[28px] font-semibold tracking-tight text-slate-900 sm:text-[34px]"
             >
-              What are contractor leads?
+              How do marketing agencies find local business leads?
             </h2>
             <p className={`${SPEAKABLE_CLASS} mt-4 text-[16px] leading-relaxed text-slate-700`}>
-              Contractor leads are contact records for home-service businesses such as roofers, HVAC
-              companies and plumbers, used by agencies and sales teams that sell to them. Contractor
-              Leads finds them from live Google data, adds owner names and verified emails, and scores
+              Lead generation for marketing agencies starts with a list of local businesses that need
+              what you sell. Contractor Leads builds that list from live Google data for roofers, HVAC
+              companies, plumbers and 15 more trades, adds owner names and verified emails, and scores
               each business on website, SEO and ad gaps, so you pitch the ones most likely to buy.
             </p>
             <p className="mt-4 text-[14px] leading-relaxed text-slate-500">
-              Are you a contractor looking for homeowner jobs instead? Read our honest guide to{" "}
-              <Link href="/homeowner-leads" className="font-semibold text-fuchsia-700 hover:underline">
-                where contractors get homeowner leads
+              Start with a{" "}
+              <Link href="/contractor-list" className="font-semibold text-fuchsia-700 hover:underline">
+                free contractor list
+              </Link>
+              , a{" "}
+              <Link href="/contractor-email-list" className="font-semibold text-fuchsia-700 hover:underline">
+                contractor email list
               </Link>{" "}
-              and{" "}
-              <Link href="/exclusive-contractor-leads" className="font-semibold text-fuchsia-700 hover:underline">
-                exclusive vs shared leads
+              or a list of{" "}
+              <Link href="/businesses-without-websites" className="font-semibold text-fuchsia-700 hover:underline">
+                businesses without websites
               </Link>
               .
             </p>

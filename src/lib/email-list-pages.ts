@@ -37,7 +37,7 @@ type TradeListInput = {
   faqs: Array<{ q: string; a: string }>;
 };
 
-const PARENT = { name: "Contractor email lists", path: "/email-lists" };
+const PARENT = { name: "Contractor email list", path: "/contractor-email-list" };
 
 function buyVsBuild(t: TradeListInput) {
   return {
@@ -161,7 +161,7 @@ function tradePage(t: TradeListInput): LandingPage {
       },
     ],
     related: [
-      { href: "/email-lists", label: "All contractor email lists" },
+      { href: "/contractor-email-list", label: "All contractor email lists" },
       { href: `/industries/${t.slug}`, label: `${cap(t.noun)} leads` },
       { href: "/contractor-email-finder", label: "Contractor email finder" },
       { href: "/blog/buy-vs-build-contractor-email-list", label: "Buy vs build an email list" },
@@ -452,105 +452,6 @@ const TRADES: TradeListInput[] = [
   },
 ];
 
-const HUB: LandingPage = {
-  slug: "email-lists",
-  kind: "product",
-  serviceType: "Contractor email list builder",
-  primaryKeyword: "contractor email list",
-  secondaryKeywords: ["contractors email list", "construction contractor email list", "home service contractor email list", "contractor mailing list"],
-  titleTag: "Contractor Email Lists: Find Verified B2B Contacts",
-  metaDescription: "Find contractor email lists by trade and area: B2B contacts from live Google data, owner names and verified emails before export. 10 free leads.",
-  breadcrumb: "Contractor email lists",
-  eyebrow: "Contractor email lists",
-  h1: "Contractor email lists, built fresh for any trade and area",
-  heroDescription: "Roofing, HVAC, plumbing, electrical, solar, general contractors, remodeling and 11 more trades, with owner names and verified emails.",
-  quickAnswer: {
-    q: "Where can I get a contractor email list?",
-    a: "You can buy a pre-made list or build one from live data. Contractor Leads builds it: choose a trade and an area, and it pulls the contractors listed on Google there, finds owner names and emails, and labels every address safe, catch-all, role-based or invalid before you export to CSV or Excel.",
-  },
-  intro: "A contractor email list goes stale fast: businesses change owners, close or switch email providers. Contractor Leads builds your list on the day you need it, for the trade and area you choose, with owner names where they can be confirmed and every email checked before it reaches your campaign. It is the same data behind our [contractor email finder](/contractor-email-finder).",
-  sections: [
-    {
-      heading: "Choose a trade",
-      body: "Each trade page covers that market's segments, who sells to it, licensing and timing, plus state-by-state links.",
-      bullets: [
-        "[Roofing contractor email list](/email-lists/roofing): residential, storm restoration and commercial roofers",
-        "[HVAC contractor email list](/email-lists/hvac): heating, cooling and refrigeration companies",
-        "[Plumbing contractor email list](/email-lists/plumbing): service, drain and new-construction plumbers",
-        "[Electrical contractor email list](/email-lists/electrical): residential and commercial electricians",
-        "[Solar installer email list](/email-lists/solar): residential, commercial and storage installers",
-        "[General contractor email list](/email-lists/general-contractors): builders, design-build and commercial GCs",
-        "[Remodeling contractor email list](/email-lists/remodeling): kitchen, bath and whole-home remodelers",
-      ],
-    },
-    {
-      heading: "Why build instead of buy",
-      body: "A bought list is a snapshot; a built list reflects the market the day you send. That matters most for bounce rates, which decide whether your next emails reach the inbox.",
-      table: {
-        headers: ["", "Bought list", "Built in Contractor Leads"],
-        rows: [
-          ["Freshness", "Compiled before you bought it", "Pulled from live Google data when you search"],
-          ["Area", "Seller's regions", "Any city, county, state or radius"],
-          ["Owner names", "Often missing", "Added where they can be verified"],
-          ["Email checks", "Rarely re-checked", "Safe, catch-all, role or invalid on every email"],
-          ["Price", "Per list, up front", "1 credit per lead; 10 free to start"],
-        ],
-      },
-    },
-    {
-      heading: "What every contractor list includes",
-      body: "Business name, address, phone and website from Google; the owner or decision-maker where it can be matched; the email with its verification status; rating and review count; AI scores for website, SEO, PPC and marketing; and whether the company runs Meta ads. Fields that cannot be confirmed stay blank.",
-    },
-    {
-      heading: "Other trades",
-      body: "Beyond the seven trades above, you can build lists for landscaping, painting, concrete, flooring, fencing, garage doors, windows and doors, pest control, cleaning services, pool services and home improvement companies. Browse them all on the [industries page](/industries).",
-    },
-    {
-      heading: "Send it safely",
-      body: "Export only safe emails for your first campaign, send from a warmed-up mailbox in small daily batches, and include a postal address and an opt-out in every email. Read the [CAN-SPAM guide for contractor outreach](/blog/can-spam-cold-email-contractors) and the [email warmup guide](/blog/email-warmup-for-cold-email) before your first send.",
-      callout: {
-        title: "Start small",
-        text: "Build a list for one city first, check the quality, then widen the area. You only pay for the leads you keep.",
-      },
-    },
-  ],
-  faqs: [
-    {
-      q: "Do you sell contractor email lists?",
-      a: "No pre-made lists. You build your own list from live Google data for the trade and area you choose, which keeps it current. Your first 10 leads are free, then each lead costs 1 credit, with paid plans from $19.99 a month for 500 credits.",
-    },
-    {
-      q: "Which trades can I build email lists for?",
-      a: "Eighteen home-service trades, including roofing, HVAC, plumbing, electrical, solar, general contractors, remodeling, landscaping, painting, concrete, flooring, fencing, garage doors, windows and doors, pest control, cleaning and pool services, across the US, Canada, the UK, Australia and New Zealand. Seven of them have their own email list page with segments and state links.",
-    },
-    {
-      q: "How are the emails verified?",
-      a: "Each email is checked and labelled safe, catch-all, role-based or invalid. Safe addresses are the ones to send to first; catch-all domains accept any address, so they cannot be fully confirmed; role-based addresses such as info@ reach a shared inbox rather than the owner.",
-    },
-    {
-      q: "Can I upload my own contractor list to add emails?",
-      a: "Yes. The bulk email finder accepts a CSV or Excel file of businesses and adds owner names and verified emails where they can be found, so you can enrich a list you already have instead of starting from a search.",
-    },
-    {
-      q: "Is it legal to send cold email to contractors?",
-      a: "In the US, CAN-SPAM allows business cold email when you use honest sender details and subject lines, include a postal address and honour opt-outs within 10 business days. Canada, the UK and the EU have stricter rules. Take legal advice for large campaigns.",
-    },
-  ],
-  related: [
-    { href: "/contractor-email-finder", label: "Contractor email finder" },
-    { href: "/google-maps-scraper", label: "Google Maps scraper" },
-    { href: "/industries", label: "All contractor industries" },
-    { href: "/blog/buy-vs-build-contractor-email-list", label: "Buy vs build an email list" },
-    { href: "/blog/contractor-license-lookup-owner-name", label: "Find owners with license lookups" },
-    { href: "/pricing", label: "Pricing and free leads" },
-  ],
-  cta: { href: "/register", label: "Build a contractor list free" },
-  ctaBand: {
-    title: "Build a contractor email list for any trade",
-    description: "Pick a trade and an area, add owners and verified emails, and export. Your first 10 leads are free.",
-  },
-};
-
 export const EMAIL_LIST_TRADES = TRADES.map((t) => ({ slug: t.slug, name: t.name }));
 
-export const EMAIL_LIST_PAGES: LandingPage[] = [HUB, ...TRADES.map(tradePage)];
+export const EMAIL_LIST_PAGES: LandingPage[] = TRADES.map(tradePage);

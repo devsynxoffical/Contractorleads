@@ -25,14 +25,16 @@ import { pageUpdated } from "@/lib/page-dates";
 const PATH = "/contractor-list";
 
 export const metadata: Metadata = buildMetadata({
-  title: "Free Contractor List Builder: Roofers, HVAC, Plumbers",
+  title: "Contractor Directory & List: Free List of Contractors",
   description:
-    "Build a free list of roofers, HVAC companies, plumbers and 15 more trades in any US city, with owner names, verified emails and AI lead scores. 10 leads free.",
+    "A contractor directory and database you can export: build a list of contractors, roofers, HVAC and 15 more trades in any US city, with owner emails. 10 free.",
   path: PATH,
   keywords: [
     "contractor list",
-    "free contractor list",
+    "contractor directory",
     "list of contractors",
+    "contractor database",
+    "free contractor list",
     "list of roofing companies",
     "hvac contractors list",
     "contractor list by city",
@@ -75,6 +77,14 @@ const FAQS = [
     a: "Pick the trade and the city or state in the list builder above, then create a free account. Contractor Leads pulls every matching business from live Google data and adds the owner's name, verified contact details and AI scores. Your first 10 leads are free.",
   },
   {
+    q: "Is this a contractor directory or a contractor database?",
+    a: "Both, in the way agencies need them. Like a contractor directory, it lists every matching business in a trade and area. Like a contractor database, each record has fields you can filter, score and export: owner name, verified email, phone, website, Google rating and AI scores. Unlike a fixed directory, the list is pulled from live Google data when you search.",
+  },
+  {
+    q: "How do I get a list of roofing companies?",
+    a: "Choose Roofing and a state or city in the builder above, then sign up free. You get every roofing company Google lists there, with owner names, verified emails and a score for each company's website, SEO and ads. The same works for HVAC, plumbing and 15 more trades.",
+  },
+  {
     q: "Is the contractor list really free?",
     a: "Yes. New accounts get 10 leads free with no credit card. After that, plans start at $19.99 a month for 500 leads; one credit equals one lead.",
   },
@@ -114,10 +124,10 @@ export default function ContractorListPage() {
         data={[
           breadcrumbJsonLd([
             { name: "Home", path: "/" },
-            { name: "Contractor list builder", path: PATH },
+            { name: "Contractor list and directory", path: PATH },
           ]),
           webPageJsonLd({
-            name: "Free contractor list builder",
+            name: "Contractor directory and list builder",
             description: "Build a list of contractors by trade and city with owner names, verified emails and AI lead scores.",
             path: PATH,
             dateModified: pageUpdated(PATH),
@@ -128,9 +138,9 @@ export default function ContractorListPage() {
       />
 
       <MarketingSubpageHero
-        eyebrow="Free contractor list builder"
-        title="Build a list of contractors in any US city"
-        description="Roofers, HVAC companies, plumbers and 15 more trades, with owner names, verified emails and a score for every marketing gap. Pick your market below; your first 10 leads are free."
+        eyebrow="Contractor directory and database"
+        title="Contractor list and directory for any US city"
+        description="Build a list of contractors: roofers, HVAC companies, plumbers and 15 more trades, with owner names, verified emails and a score for every marketing gap. Pick your market below; your first 10 leads are free."
       >
         <div className="mt-7 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[13.5px] font-medium text-white/80">
           {["18 trades", "All 50 states", "Live Google data", "No credit card"].map((t) => (
@@ -232,7 +242,7 @@ export default function ContractorListPage() {
         <p className="mt-5 text-center text-[13.5px] text-slate-600">
           Or browse <Link href="/industries" className="font-semibold text-fuchsia-700 hover:underline">all 18 trades</Link>,{" "}
           <Link href="/locations" className="font-semibold text-fuchsia-700 hover:underline">all 50 states</Link> and{" "}
-          <Link href="/email-lists" className="font-semibold text-fuchsia-700 hover:underline">contractor email lists by trade</Link>.
+          <Link href="/contractor-email-list" className="font-semibold text-fuchsia-700 hover:underline">contractor email lists by trade</Link>.
         </p>
       </SubpageSection>
 

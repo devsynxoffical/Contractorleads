@@ -42,11 +42,22 @@ export function ContractorListBuilder({
   states,
   defaultTrade = "roofing",
   defaultState = "texas",
+  heading = "Which contractors do you sell to?",
+  tradeLabel = "Trade",
+  listTemplate = "{trade} companies in {place}",
+  example = "default",
 }: {
   trades: BuilderTrade[];
   states: BuilderState[];
   defaultTrade?: string;
   defaultState?: string;
+  /** Card heading above the controls. */
+  heading?: string;
+  tradeLabel?: string;
+  /** List name shown in the preview and on /register; {trade} and {place} are replaced. */
+  listTemplate?: string;
+  /** "no-website" shows the example lead as a business with no website found. */
+  example?: "default" | "no-website";
 }) {
   const [tradeSlug, setTradeSlug] = useState(defaultTrade);
   const [stateSlug, setStateSlug] = useState(defaultState);
@@ -54,12 +65,14 @@ export function ContractorListBuilder({
   const [city, setCity] = useState(state.cities[0] ?? "");
   const trade = trades.find((t) => t.slug === tradeSlug) ?? trades[0];
   const place = city ? `${city}, ${state.code}` : state.name;
+  const listName = listTemplate.replace("{trade}", trade.name).replace("{place}", place);
+  const noSite = example === "no-website";
 
   const href = useMemo(() => {
-    const q = new URLSearchParams({ trade: trade.slug, state: state.slug, list: `${trade.name} companies in ${place}` });
+    const q = new URLSearchParams({ trade: trade.slug, state: state.slug, list: listName });
     if (city) q.set("city", city);
     return `/register?${q.toString()}`;
-  }, [trade.slug, trade.name, state.slug, city, place]);
+  }, [trade.slug, state.slug, city, listName]);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start">
@@ -67,11 +80,11 @@ export function ContractorListBuilder({
       <div className="rounded-3xl border border-violet-100 bg-white p-6 shadow-[0_20px_60px_-30px_rgba(124,58,237,0.45)]">
         <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-fuchsia-600">Build your list</p>
         <h2 className="mt-2 font-[family-name:var(--font-display)] text-[22px] font-bold tracking-tight text-slate-900">
-          Which contractors do you sell to?
+          {heading}
         </h2>
         <div className="mt-5 space-y-4">
           <label className="block">
-            <span className="mb-1.5 block text-[13px] font-semibold text-slate-700">Trade</span>
+            <span className="mb-1.5 block text-[13px] font-semibold text-slate-700">{tradeLabel}</span>
             <select className={selectClass} value={trade.slug} onChange={(e) => setTradeSlug(e.target.value)}>
               {trades.map((t) => (
                 <option key={t.slug} value={t.slug}>
@@ -149,7 +162,7 @@ export function ContractorListBuilder({
           <div className="min-w-0">
             <p className="text-[12px] font-semibold uppercase tracking-wider text-violet-600">Your list</p>
             <p className="truncate font-[family-name:var(--font-display)] text-[18px] font-bold text-slate-900">
-              {trade.name} companies in {place}
+              {listName}
             </p>
           </div>
           <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-[12px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
@@ -188,13 +201,25 @@ export function ContractorListBuilder({
                 <p className="mt-2 flex items-center gap-1.5 text-[13px] text-slate-700">
                   <HiOutlineCheckBadge className="h-4 w-4 text-emerald-600" aria-hidden /> Owner name and verified email
                 </p>
+                {noSite ? (
+                  <span className="mt-2 inline-flex rounded-full bg-amber-50 px-2.5 py-0.5 text-[11.5px] font-bold text-amber-700 ring-1 ring-amber-200">
+                    No website
+                  </span>
+                ) : null}
               </div>
               <div className="space-y-2">
-                {[
-                  { k: "Website", v: 32 },
-                  { k: "SEO", v: 18 },
-                  { k: "Ads", v: 0 },
-                ].map((s) => (
+                {(noSite
+                  ? [
+                      { k: "Website", v: 0 },
+                      { k: "SEO", v: 0 },
+                      { k: "Ads", v: 0 },
+                    ]
+                  : [
+                      { k: "Website", v: 32 },
+                      { k: "SEO", v: 18 },
+                      { k: "Ads", v: 0 },
+                    ]
+                ).map((s) => (
                   <div key={s.k}>
                     <div className="flex justify-between text-[12px] font-semibold text-slate-600">
                       <span>{s.k} score</span>
@@ -208,8 +233,9 @@ export function ContractorListBuilder({
               </div>
             </div>
             <p className="mt-3 text-[12.5px] leading-relaxed text-slate-600">
-              Low scores mean a gap you can sell: this example has a weak website and no ads running, so your first
-              email can open with that.
+              {noSite
+                ? "No website found means the business is a prospect for a first site: your first email can open with what customers see when they search for it."
+                : "Low scores mean a gap you can sell: this example has a weak website and no ads running, so your first email can open with that."}
             </p>
           </div>
         </div>

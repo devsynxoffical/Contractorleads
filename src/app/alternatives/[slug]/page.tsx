@@ -284,10 +284,10 @@ export default async function AlternativePage({ params }: Params) {
             pricing page
           </Link>
           , how{" "}
-          <Link href="/exclusive-contractor-leads" className="font-semibold text-fuchsia-700 hover:underline">
-            exclusive and shared contractor leads
+          <Link href="/contractor-list" className="font-semibold text-fuchsia-700 hover:underline">
+            a free contractor list
           </Link>{" "}
-          differ, or how the{" "}
+          is built, or how the{" "}
           <Link href="/contractor-email-finder" className="font-semibold text-fuchsia-700 hover:underline">
             contractor email finder
           </Link>{" "}
