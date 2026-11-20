@@ -11,6 +11,7 @@ marketing pages only from 18 Nov), URL Inspection, Bing Webmaster Tools.
 | 18 Nov 17:24 (baseline) | 1 / 129 (12-18 Nov) | 7 / 275 (21 Oct-18 Nov) | 1 / 1 | 0 of 5 | 1 / 1 (chatgpt.com) / 0 | 14 / 128 | none (see notes) |
 | 19 Nov 05:24 | 1 / 137 (13-19 Nov) | 7 / ~281 (22 Oct-18 Nov) | 1 / 1 | 0 of 5 | 1 / 1 (chatgpt.com) / 0 | 14 / 128 | none; 100 URLs to Bing |
 | 19 Nov 17:24 | 1 / 148 (13-19 Nov) | 7 / ~285 | 1 / 1 | 1 of 6 (/contractor-list indexed) | 1 / 1 (chatgpt.com) / 0 | 14 / 135 | none (Bing quota used this morning) |
+| 20 Nov 05:24 | 1 / 169 (13-19 Nov) | 7 / ~290 | 0 / 0 (pos 7 guide not seen this week) | 1 of 6 | 1 / 2 (chatgpt.com) / 0 | 14 / 135 | /contractor-list + 99 URLs to Bing |
 
 *Tracked money pages: /pricing, /contractor-email-finder, /locations, /email-lists, /industries/roofing/texas.
 
@@ -66,3 +67,12 @@ marketing pages only from 18 Nov), URL Inspection, Bing Webmaster Tools.
 - **Bing:** 135 pages indexed (128 → 135); 14 query impressions. Daily URL quota already used this morning.
 - **Work:** none on pages; the new page and 18 Nov fixes are being picked up. Indexing API best-100 run is
   scheduled for 20 Nov 08:01 UTC.
+
+### 20 Nov 2026, 05:24 UTC
+- **GSC:** 7-day impressions 148 → 169 (19 Nov: 24). Homepage only. "construction lead services" 48,
+  "contractor leads services" 51, "contractor lead services" 54, "contractor lead generation companies" 56.
+- **GA4 (13-18 Nov):** chatgpt.com 2 sessions (was 1), google organic 1, direct 23, key events 0.
+- **Indexing:** /contractor-list still indexed; /contractor-email-finder now "Discovered" (was "unknown");
+  /pricing "Discovered"; /industries/garage-doors/virginia (noindex) still indexed, last crawl 15 Oct.
+- **Bing:** 135 pages indexed; submitted /contractor-list and 99 more trade + state pages (total ~398).
+- **Work:** keyword map PDF for all 513 pages (owner request). No page changes.
