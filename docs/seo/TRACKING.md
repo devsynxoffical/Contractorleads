@@ -76,3 +76,13 @@ marketing pages only from 18 Nov), URL Inspection, Bing Webmaster Tools.
   /pricing "Discovered"; /industries/garage-doors/virginia (noindex) still indexed, last crawl 15 Oct.
 - **Bing:** 135 pages indexed; submitted /contractor-list and 99 more trade + state pages (total ~398).
 - **Work:** keyword map PDF for all 513 pages (owner request). No page changes.
+
+### 20 Nov 08:02 UTC: Google Indexing API run + keyword map shipped
+
+- **Shipped (PR #62):** homepage repositioned to "lead generation for marketing agencies"; /contractor-list
+  retargeted (directory, database, list of contractors); new /contractor-email-list, /businesses-without-websites,
+  /local-business-email-list; /email-lists and 5 homeowner-intent pages 308 redirected. IndexNow: 12 URLs.
+- **Google Indexing API (URL_UPDATED), quota reset 00:01 PT:** best100.txt 102/102 accepted (money pages, 3 new
+  pages, email lists, tools, alternatives, trade hubs, big-state pages, guides); then 98/98 accepted from day1.txt
+  (40 /locations, 27 /industries, 15 /blog, 12 /help, 4 utility). 200 of 200 daily quota used, 0 failures.
+  Accepted = notice received, not indexed. Validate with URL Inspection on 22-23 Nov.
