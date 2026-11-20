@@ -321,3 +321,14 @@ the site never sends). Search Console Request indexing for the priority URLs; di
 - 19 Nov: honest investigation (docs/seo/INVESTIGATION-2026-11-19.md). Shipped funnel measurement: GA4 cta_click (all /register links) and sign_up_error with reason (free_email/other).
 - 19 Nov: new lead page /contractor-list (interactive list builder → /register with the chosen list); footer link, sitemap-core, llms.txt.
 - 19 Nov 17:24 UTC run: /contractor-list indexed within hours; homepage positions for 'lead services' queries improved to 51-60.
+
+## 20 Nov 2026: keyword map implementation (contractorleads.us)
+
+Source: owner's keyword map CSV and recovery plan PDF (20 Nov). Shipped in PR #62, live and checked.
+- Homepage repositioned to "lead generation for marketing agencies" (title, meta, H1, quick answer).
+- /contractor-list retargeted to contractor directory / database / list of contractors.
+- New: /contractor-email-list, /businesses-without-websites, /local-business-email-list. /email-lists 308 to /contractor-email-list.
+- Homeowner-intent guides 308 to /contractor-list.
+- IndexNow: 12 URLs submitted. New URLs added to the Google Indexing API lists.
+- Not in this repo: qualifiedleadsx.com, brandscalinghacks.com, funnelsthatprint.com rows of the map.
+- Owner tasks from the plan: disavow update (Semrush), G2 / Capterra / Product Hunt / SaaSHub / AlternativeTo listings, Request indexing for the 3 new URLs in Search Console.
