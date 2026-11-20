@@ -116,7 +116,7 @@ export const LIST_POSTS: BlogPost[] = [
       },
       {
         heading: "Doing it at scale",
-        body: "Checking license records by hand works for a short list of high-value prospects. For hundreds of contractors, start from live business data instead: Contractor Leads pulls the contractors listed on Google in your area, finds owner names from their websites and public sources where they can be confirmed, and verifies each email. You can then spot-check the most valuable prospects against the license record. See the [contractor email finder](/contractor-email-finder) or build a list by trade on the [contractor email lists](/email-lists) page.",
+        body: "Checking license records by hand works for a short list of high-value prospects. For hundreds of contractors, start from live business data instead: Contractor Leads pulls the contractors listed on Google in your area, finds owner names from their websites and public sources where they can be confirmed, and verifies each email. You can then spot-check the most valuable prospects against the license record. See the [contractor email finder](/contractor-email-finder) or build a list by trade on the [contractor email lists](/contractor-email-list) page.",
       },
       {
         heading: "Use what you find responsibly",
@@ -227,7 +227,7 @@ export const LIST_POSTS: BlogPost[] = [
       },
       {
         heading: "How to build one in Contractor Leads",
-        body: "Pick a trade and an area, filter by rating and AI scores, run owner enrichment and export only safe emails. Each trade has its own page with segments and state links: start with the [contractor email lists](/email-lists) hub, or go straight to the [roofing](/email-lists/roofing), [HVAC](/email-lists/hvac) or [plumbing](/email-lists/plumbing) lists.",
+        body: "Pick a trade and an area, filter by rating and AI scores, run owner enrichment and export only safe emails. Each trade has its own page with segments and state links: start with the [contractor email lists](/contractor-email-list) hub, or go straight to the [roofing](/email-lists/roofing), [HVAC](/email-lists/hvac) or [plumbing](/email-lists/plumbing) lists.",
       },
     ],
   },
@@ -340,7 +340,7 @@ export const LIST_POSTS: BlogPost[] = [
           "Postal address in the footer",
           "Clear opt-out link or instruction, working for at least 30 days",
           "Opt-out list synced across every mailbox and tool",
-          "Only verified emails in the list (see [contractor email lists](/email-lists))",
+          "Only verified emails in the list (see [contractor email lists](/contractor-email-list))",
           "SPF, DKIM and DMARC records in place for the sending domain",
           "Recipients outside the US checked against CASL, PECR or GDPR",
         ],

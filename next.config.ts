@@ -66,6 +66,14 @@ const nextConfig: NextConfig = {
       { source: "/tightening-up-your-electrician-marketing-efforts-strategy", destination: "/blog/electrical-contractor-leads", permanent: true },
       { source: "/ways-to-improve-your-plumbing-marketing-strategy", destination: "/blog/plumbing-contractor-leads", permanent: true },
       { source: "/service-packages", destination: "/pricing", permanent: true },
+      // 20 Nov 2026 keyword plan: hub moved to the page that targets "contractor email list".
+      { source: "/email-lists", destination: "/contractor-email-list", permanent: true },
+      // Homeowner-lead (wrong intent) guides retired; send any links to the list builder.
+      { source: "/exclusive-contractor-leads", destination: "/contractor-list", permanent: true },
+      { source: "/homeowner-leads", destination: "/contractor-list", permanent: true },
+      { source: "/storm-damage-leads", destination: "/contractor-list", permanent: true },
+      { source: "/new-construction-leads", destination: "/contractor-list", permanent: true },
+      { source: "/commercial-contractor-leads", destination: "/contractor-list", permanent: true },
       { source: "/trades", destination: "/industries", permanent: true },
       { source: "/trades/:slug", destination: "/industries/:slug", permanent: true },
       {

@@ -627,7 +627,7 @@ export const LANDING_PAGES: LandingPage[] = [
       },
     ],
     related: [
-      { href: "/email-lists", label: "Contractor email lists by trade" },
+      { href: "/contractor-email-list", label: "Contractor email lists by trade" },
       { href: "/contractor-lead-generation-software", label: "Contractor lead generation software" },
       { href: "/alternatives/hunter-alternative", label: "Hunter.io alternative" },
       { href: "/blog/how-to-find-business-owner-name", label: "How to find a business owner's name" },

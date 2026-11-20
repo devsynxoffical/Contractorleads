@@ -13,7 +13,7 @@ Important facts:
 
 ## Product
 - [Features](https://www.contractorleads.us/features): Lead Finder, AI lead scoring, owner enrichment, Meta Ads Intel, Outreach Studio, Pipeline CRM, Lead Map
-- [Free contractor list builder](https://www.contractorleads.us/contractor-list): build a list of contractors by trade and city with owner names, verified emails and AI scores
+- [Contractor list and directory](https://www.contractorleads.us/contractor-list): build a list of contractors by trade and city with owner names, verified emails and AI scores
 - [Contractor lead generation software: buyer's guide](https://www.contractorleads.us/contractor-lead-generation-software)
 - [Pricing](https://www.contractorleads.us/pricing): plans, credits and cost per lead
 - [Google Maps scraper alternative](https://www.contractorleads.us/google-maps-scraper)
@@ -66,7 +66,9 @@ Important facts:
 
 ## Find contractor leads: email finder and email lists
 - [Contractor email finder: owner names and verified emails](https://www.contractorleads.us/contractor-email-finder)
-- [Contractor email lists by trade](https://www.contractorleads.us/email-lists)
+- [Contractor email list](https://www.contractorleads.us/contractor-email-list): build a contractors or construction company email list by trade and city, with verified emails
+- [Businesses without websites](https://www.contractorleads.us/businesses-without-websites): find local businesses with no website, marked on every lead, with owner contacts
+- [Local business email list](https://www.contractorleads.us/local-business-email-list): verified B2B emails for home-service trades, marketing agencies and e-commerce brands by city
 - [Roofing contractor email list](https://www.contractorleads.us/email-lists/roofing)
 - [HVAC contractor email list](https://www.contractorleads.us/email-lists/hvac)
 - [Plumbing contractor email list](https://www.contractorleads.us/email-lists/plumbing)

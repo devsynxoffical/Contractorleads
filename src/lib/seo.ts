@@ -11,39 +11,33 @@ export function seoBaseUrl() {
 }
 
 /** Last date the core marketing pages changed. Bump when you edit copy; sitemaps use it for lastmod. */
-export const CONTENT_LAST_UPDATED = "2026-11-18";
+export const CONTENT_LAST_UPDATED = "2026-11-20";
 
 export const SEO = {
   siteName: "Contractor Leads",
-  defaultTitle: "Find Contractor Leads for Your Agency | Contractor Leads",
+  defaultTitle: "Lead Generation for Marketing Agencies | Contractor Leads",
   titleTemplate: "%s | Contractor Leads",
   defaultDescription:
-    "Find contractor leads with owner names and verified emails. Search roofers, HVAC, plumbers and 15 more trades by city or state. 10 free leads.",
+    "Local business leads for marketing agencies: contractor lists with owner names, verified emails and AI scores for 18 trades in any US city. 10 leads free.",
   keywords: [
-    "find contractor leads",
-    "find roofing leads",
-    "find HVAC leads",
-    "find plumbing leads",
-    "contractor leads for agencies",
+    "lead generation for marketing agencies",
+    "local business leads",
+    "contractor list",
     "list of contractors",
+    "contractor directory",
+    "contractor database",
     "contractor email list",
+    "local business email list",
+    "businesses without websites",
+    "find businesses without websites",
+    "leads for marketing agencies",
+    "agency lead generation",
     "contractorleads.us",
     "Contractor Leads",
-    "contractor leads",
-    "verified contractor leads",
     "AI lead scoring",
-    "home service lead generation",
-    "agency lead finder",
     "contractor prospecting software",
-    "cold outreach for contractors",
-    "contractor CRM for agencies",
-    "roofing contractor leads",
-    "HVAC contractor leads",
-    "plumbing contractor leads",
     "google maps scraper",
     "apollo alternative",
-    "local service ads",
-    "agency lead generation",
   ],
   twitterHandle: "@contractorleads",
   locale: "en_US",

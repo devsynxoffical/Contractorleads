@@ -25,7 +25,6 @@ export const PROSPECTING_POSTS: BlogPost[] = [
       "Find local businesses without a website step by step: Google Maps checks, directories and lead tools, then qualify them and pitch a site that closes.",
     primaryKeyword: "how to find businesses without websites",
     secondaryKeywords: [
-      "businesses without websites",
       "find local businesses without a website",
       "leads for web design",
       "web design clients",
@@ -140,7 +139,7 @@ export const PROSPECTING_POSTS: BlogPost[] = [
       {
         heading: "Get the owner's contact details",
         level: 2,
-        body: "Google Maps gives you a phone number, not an email or the owner's name. For a few leads, check the business's Facebook Page and the state license lookup. For a list, the [contractor email finder](/contractor-email-finder) adds owner names and verified emails, and [contractor email lists](/email-lists) builds a ready-to-send file for one trade and area. Before you send, [check your sending domain](/tools/email-deliverability-checker) and [test your subject line](/tools/cold-email-subject-line-tester).",
+        body: "Google Maps gives you a phone number, not an email or the owner's name. For a few leads, check the business's Facebook Page and the state license lookup. For a list, the [contractor email finder](/contractor-email-finder) adds owner names and verified emails, and [contractor email lists](/contractor-email-list) builds a ready-to-send file for one trade and area. Before you send, [check your sending domain](/tools/email-deliverability-checker) and [test your subject line](/tools/cold-email-subject-line-tester).",
       },
       {
         heading: "Qualify before you pitch",

@@ -6,7 +6,7 @@
  * whenever its visible content changes (not for code-only changes).
  */
 export const PAGE_UPDATED: Record<string, string> = {
-  "/": "2026-11-16",
+  "/": "2026-11-20",
   "/features": "2026-11-16",
   "/pricing": "2026-11-16",
   "/contractor-lead-generation-software": "2026-11-05",
@@ -23,19 +23,16 @@ export const PAGE_UPDATED: Record<string, string> = {
   "/privacy": "2026-11-03",
   "/terms": "2026-11-03",
   // Commercial landing pages (week 2 of the SEO page plan)
-  "/exclusive-contractor-leads": "2026-11-05",
   "/contractor-lead-tracking": "2026-11-05",
   "/contractor-lead-management": "2026-11-05",
   "/contractor-crm": "2026-11-05",
   "/sms-marketing-for-contractors": "2026-11-05",
   "/contractor-email-finder": "2026-11-16",
-  "/contractor-list": "2026-11-19",
-  "/homeowner-leads": "2026-11-05",
-  "/commercial-contractor-leads": "2026-11-05",
-  "/storm-damage-leads": "2026-11-05",
-  "/new-construction-leads": "2026-11-05",
+  "/contractor-list": "2026-11-20",
+  "/contractor-email-list": "2026-11-20",
+  "/businesses-without-websites": "2026-11-20",
+  "/local-business-email-list": "2026-11-20",
   // Contractor email list pages (6 November)
-  "/email-lists": "2026-11-06",
   "/email-lists/roofing": "2026-11-06",
   "/email-lists/hvac": "2026-11-06",
   "/email-lists/plumbing": "2026-11-06",

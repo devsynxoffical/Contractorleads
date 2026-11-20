@@ -285,7 +285,7 @@ function ActivityCard({ reduced, delay }: { reduced: boolean; delay: number }) {
   );
 }
 
-const HEADLINE_WORDS = ["Contractor", "leads", "for", "agencies,"];
+const HEADLINE_WORDS = ["Lead", "generation", "for", "marketing", "agencies,"];
 const HEADLINE_ACCENT = ["scored", "and", "ready", "to", "dial."];
 
 export function MarketingHeroSyntra() {
@@ -337,7 +337,7 @@ export function MarketingHeroSyntra() {
               transition={{ duration: 0.6 }}
               className="text-[11px] font-semibold uppercase tracking-[0.26em] text-fuchsia-300/90"
             >
-              Contractor lead intelligence
+              Contractor and local business lead lists
             </motion.p>
             <h1 className="mt-3 max-w-[15ch] font-[family-name:var(--font-display)] text-[clamp(2.25rem,3.9vw,3.4rem)] font-semibold leading-[1.06] tracking-[-0.03em] text-white">
               {HEADLINE_WORDS.map((w, i) => (
@@ -369,8 +369,8 @@ export function MarketingHeroSyntra() {
               transition={{ duration: 0.7, delay: 0.55 }}
               className="mt-4 max-w-md text-[15.5px] leading-relaxed text-white/65"
             >
-              Live Google data, AI lead scores, owner names and outreach scripts for agencies that
-              sell to roofers, HVAC, plumbers and {INDUSTRIES.length - 3} more trades.
+              Contractor and local business lead lists for agencies: live Google data, owner names,
+              verified emails and AI scores for roofers, HVAC, plumbers and {INDUSTRIES.length - 3} more trades.
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 14 }}

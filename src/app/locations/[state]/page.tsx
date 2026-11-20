@@ -47,7 +47,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
 const CORE = [
   { href: "/contractor-email-finder", label: "Contractor email finder" },
-  { href: "/email-lists", label: "Contractor email lists" },
+  { href: "/contractor-email-list", label: "Contractor email lists" },
   { href: "/google-maps-scraper", label: "Google Maps scraper" },
 ];
 const GUIDES = [
