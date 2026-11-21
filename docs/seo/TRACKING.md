@@ -115,3 +115,18 @@ marketing pages only from 18 Nov), URL Inspection, Bing Webmaster Tools.
 - **Bing:** 142 indexed (prev 135), 18 impressions / 0 clicks; submitted 100 priority URLs (best100.txt).
 - **Movers:** up: Bing index 135 -> 142, 7d impressions 196 -> 216. Down: none.
 - **Work:** no page changes (new pages need time; no striking-distance queries). Bing batch submitted.
+
+### 21 Nov 17:23 UTC
+
+- **GSC 7d (14-20 Nov):** 1 click, 250 impressions, avg position ~85 (prev run 216; 20 Nov final 57).
+  Previous 7d (7-13 Nov): 73. **GSC 28d (25 Oct-21 Nov):** 4 clicks, 375 impressions (prev 347).
+  Queries in top 10 / top 20: 0 / 0 in the last 3 days. All impressions still on the homepage (old
+  "contractor lead generation" terms, pos 77-100). No data yet for the 3 new pages (GSC lag).
+- **Indexing:** /contractor-list recrawled 20 Nov 16:14 (new directory/database title now seen);
+  /trades/hvac/texas "Page with redirect" (legacy OK); /industries/pest-control/oregon (removed sitemap) still
+  indexed, last crawl 28 Sep (not recrawled yet).
+- **GA4 (14-20 Nov):** chatgpt.com 5 (prev 4), google organic 2, direct 23; key events 0.
+- **Bing:** 142 indexed, 18 impressions / 0 clicks; daily quota 0 (used this morning), monthly 900 left.
+- **Movers:** up: 7d impressions 216 -> 250, ChatGPT 4 -> 5. Down: none.
+- **Work:** none; no striking-distance queries and new pages not measurable yet. Google Indexing API on hold
+  until 27 Nov (owner request).
