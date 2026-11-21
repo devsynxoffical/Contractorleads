@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { GooglePreferredSourceButton } from "@/components/marketing/google-preferred-source";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -332,6 +333,12 @@ export default async function BlogPostPage({ params }: Params) {
             </div>
           </section>
         )}
+
+        {/* Google preferred source */}
+        <section className="mb-6 flex flex-col items-start gap-3 rounded-2xl border border-blue-100 bg-blue-50/60 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-[14px] text-slate-700">If this guide was useful, add us as a preferred source on Google.</p>
+          <GooglePreferredSourceButton label="Add as preferred source" />
+        </section>
 
         {/* Author Bio Box */}
         <section className="rounded-2xl border border-slate-200 bg-slate-50/80 p-6 flex flex-col sm:flex-row items-center gap-4">
