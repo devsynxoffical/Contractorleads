@@ -101,3 +101,17 @@ marketing pages only from 18 Nov), URL Inspection, Bing Webmaster Tools.
 - **Bing:** 135 indexed (unchanged), 14 impressions / 0 clicks on 14 queries; daily URL submission quota 0 left.
 - **Movers:** up: 3 new pages indexed, ChatGPT sessions 2 -> 4, 7d impressions 169 -> 196. Down: none.
 - **Work:** none. Pages indexed today need 1-2 weeks before they can be judged; no other actionable data.
+
+### 21 Nov 05:24 UTC
+
+- **GSC 7d (14-20 Nov):** 1 click, 216 impressions, avg position ~85 (prev run 196). 20 Nov final: 23 impressions.
+- **GSC 28d (24 Oct-20 Nov):** 4 clicks, 347 impressions (prev run 327). Queries in top 10 / top 20: 1 / 1.
+  All recent impressions still go to the homepage for "contractor lead generation" terms (pos 47-97); best:
+  "construction lead services" 47.5, "construction lead service" 50. No impressions yet for the 3 new pages
+  (indexed 20 Nov; GSC lags ~2-3 days).
+- **Indexing:** /pricing and /contractor-email-finder still "Discovered - currently not indexed" (both linked from
+  every indexed money page, 1-4 links each; crawl priority, not linking). New pages indexed (20 Nov run).
+- **GA4 (14-19 Nov):** chatgpt.com 4, google organic 2, direct 23; key events 0.
+- **Bing:** 142 indexed (prev 135), 18 impressions / 0 clicks; submitted 100 priority URLs (best100.txt).
+- **Movers:** up: Bing index 135 -> 142, 7d impressions 196 -> 216. Down: none.
+- **Work:** no page changes (new pages need time; no striking-distance queries). Bing batch submitted.
