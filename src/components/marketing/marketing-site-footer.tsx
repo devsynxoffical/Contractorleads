@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { GooglePreferredSourceButton } from "@/components/marketing/google-preferred-source";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { HiOutlineArrowRight, HiOutlineChevronRight } from "react-icons/hi2";
@@ -229,6 +230,16 @@ export function MarketingSiteFooter() {
               );
             })}
           </ul>
+        </div>
+      </div>
+
+      {/* Google preferred source */}
+      <div className="border-t border-slate-200">
+        <div className="mx-auto flex max-w-7xl flex-col items-start gap-3 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+          <p className="text-[13px] text-slate-600">
+            Read our guides in Google Top Stories: add us as a preferred source.
+          </p>
+          <GooglePreferredSourceButton />
         </div>
       </div>
 
