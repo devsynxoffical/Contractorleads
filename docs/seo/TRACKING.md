@@ -145,3 +145,16 @@ marketing pages only from 18 Nov), URL Inspection, Bing Webmaster Tools.
   Daily URL submission not sent this run (blocked by the session's permission check); 100/day, 900/month left.
 - **Movers:** up: Bing index 142 -> 150, Bing crawl 40 -> 131 pages/day, first new-page impression. Down: none.
 - **Work:** none; nothing in positions 4-40 to improve.
+
+### 22 Nov 17:23 UTC
+
+- **GSC 7d (15-21 Nov):** 0 clicks, 275 impressions, avg position ~86 (prev run 256). 21 Nov final: 58.
+  **GSC 28d (26 Oct-22 Nov):** 4 clicks, ~425 impressions (prev 402). Top 10 / top 20 queries: 0 / 0.
+  Only non-homepage query: "companies without websites" -> /businesses-without-websites (pos 97).
+- **Indexing:** /apollo-alternative and /locations "Discovered - currently not indexed" (were "unknown");
+  /industries/painting/ohio "Excluded by noindex" (removal sitemap working).
+- **GA4 (15-21 Nov):** chatgpt.com 5, google organic 2, direct 23; key events 0.
+- **Bing:** 150 indexed, 18 impressions / 0 clicks (unchanged). No URL batch sent (permission check).
+- **Movers:** up: 7d impressions 256 -> 275; /apollo-alternative and /locations now discovered. Down: none.
+- **Work:** none. Planned homepage "popular lists" links checked and dropped: the homepage already links
+  the 3 new pages, /pricing (4x) and /contractor-email-finder (2x); indexing is a crawl-priority issue.
