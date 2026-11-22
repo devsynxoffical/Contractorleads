@@ -130,3 +130,18 @@ marketing pages only from 18 Nov), URL Inspection, Bing Webmaster Tools.
 - **Movers:** up: 7d impressions 216 -> 250, ChatGPT 4 -> 5. Down: none.
 - **Work:** none; no striking-distance queries and new pages not measurable yet. Google Indexing API on hold
   until 27 Nov (owner request).
+
+### 22 Nov 05:23 UTC
+
+- **GSC 7d (15-21 Nov):** 0 clicks, 256 impressions, avg position ~85 (prev run 250). 21 Nov: 39.
+  **GSC 28d (26 Oct-22 Nov):** 4 clicks, 402 impressions (prev 375). Top 10 / top 20 queries: 0 / 0.
+- **First impression for a new page:** "companies without websites" -> /businesses-without-websites (pos 97).
+  Everything else still homepage, old "contractor lead generation" terms (pos 45-101; best "construction
+  leads services" 45).
+- **Indexing:** /pricing and /contractor-email-finder now report "URL is unknown to Google" (were "Discovered");
+  /google-maps-scraper still "Discovered - currently not indexed".
+- **GA4 (15-20 Nov):** chatgpt.com 4, google organic 2, direct 22; key events 0.
+- **Bing:** 150 indexed (prev 142), 131 pages crawled on the last day (prev 40), 18 impressions / 0 clicks.
+  Daily URL submission not sent this run (blocked by the session's permission check); 100/day, 900/month left.
+- **Movers:** up: Bing index 142 -> 150, Bing crawl 40 -> 131 pages/day, first new-page impression. Down: none.
+- **Work:** none; nothing in positions 4-40 to improve.
