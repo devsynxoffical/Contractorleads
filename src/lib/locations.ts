@@ -142,7 +142,7 @@ export function getLocation(slug: string): LocationPage | null {
       q: `How do I find contractor leads in ${n}?`,
       a: `Search live Google data for contractors in ${n}, starting with ${cityText}. In ${n} the strongest trades to prospect are ${listText(lowerTop)}. Contractor Leads adds owner names, verified emails and AI marketing scores to every business, and your first 10 leads are free.`,
     },
-    intro: `Contractor Leads helps marketing agencies, suppliers and sales teams find contractor leads in ${n}: roofers, HVAC companies, plumbers, electricians and 14 more trades, pulled from live Google data with owner names and verified emails. Search any ${n} city, county or radius. Plans start at $19.99 a month for 500 leads, and the first 10 are free.`,
+    intro: `Contractor Leads helps marketing agencies, suppliers and sales teams find contractor leads in ${n}: roofers, HVAC companies, plumbers, electricians and 14 more trades, pulled from live Google data with owner names and verified emails. Search any ${n} city, county or radius. Plans start at $19.99 a month for 750 leads, and the first 10 are free.`,
     marketFacts: [
       { label: "Census division", value: profile.division },
       { label: "Weather that drives contractor work", value: exposures.length ? listText(exposures) : "no single dominant weather risk" },

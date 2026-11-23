@@ -5,7 +5,7 @@ Important facts:
 - Audience: agencies and sales teams that sell to contractors. Not a service for homeowners hiring a contractor.
 - Coverage: 18 home-service trades (roofing, HVAC, plumbing, electrical, solar, general contractors, remodeling, home improvement, flooring, landscaping, painting, concrete, windows and doors, fencing, garage doors, pest control, cleaning services, pool services) in the United States, Canada, the United Kingdom, Australia and New Zealand.
 - Data: live Google Places data at search time, cross-checked with Yelp and the business website. Unverified fields are left blank.
-- Pricing: Free 10 leads with no card. Starter $19.99/month (500 credits), Growth $49/month (2,000 credits), Agency $99/month (5,000 credits), Enterprise custom. Annual billing lowers the monthly price.
+- Pricing: Free 10 leads with no card. Starter $19.99/month (750 credits), Growth $49/month (2,500 credits), Agency $99/month (6,000 credits), Enterprise custom. Annual billing lowers the monthly price.
 - Integrations: GoHighLevel, Zapier, Make, HubSpot, Slack, custom webhooks, CSV and Excel export. Email sends from the user's own Gmail, Outlook or SMTP mailbox.
 - Company: Vaishali Media Productions LLC, Sheridan, Wyoming, USA. Contact: hello@contractorleads.us
 

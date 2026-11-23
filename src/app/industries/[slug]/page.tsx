@@ -71,6 +71,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   ];
   const title = pickMetaText(titleOptions, 30, 60);
   const descOptions = [
+    ...(trade.slug === "hvac"
+      ? ["Find HVAC companies to pitch in any US state. Phone, website status, reviews and verified emails where available. Built for agencies. First list free."]
+      : []),
     ...(isGc
       ? ["Find construction and general contractor leads for your agency: residential and commercial GCs with owner names, verified emails and AI scores."]
       : []),

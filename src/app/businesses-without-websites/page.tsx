@@ -27,7 +27,7 @@ const PATH = "/businesses-without-websites";
 export const metadata: Metadata = buildMetadata({
   title: "Find Businesses Without Websites: Local Leads for Web Design",
   description:
-    "Find local businesses without websites in any US city. Every lead is marked No website or Website found, with owner name and verified email. 10 leads free.",
+    "Find businesses without websites in any US city. Search by trade, see contact details and pitch web design in minutes. Your first list is free.",
   path: PATH,
   keywords: [
     "businesses without websites",
@@ -118,24 +118,24 @@ const COMPARE = {
 
 const FAQS = [
   {
-    q: "Can Contractor Leads find businesses without websites?",
-    a: "Yes. Every business in your search is marked No website or Website found, and businesses with a website get a website and SEO score from 0 to 100. There is no separate no-website-only search, so you search a trade and area and look for the No website label.",
+    q: "How do I find businesses without websites near me?",
+    a: "Search your city and a trade in Contractor Leads, then look for the No website label on each result. You get a ready list of local prospects with phone numbers and addresses.",
   },
   {
-    q: "Which types of business can I search?",
-    a: "18 home-service trades, such as landscaping, painting, cleaning, concrete, fencing, roofing, HVAC and plumbing, plus marketing agencies and e-commerce brands, across all 50 US states, Canada, the UK, Australia and New Zealand.",
+    q: "Is there a businesses without websites finder?",
+    a: "Yes. Contractor Leads works as one: it shows website status on every listing, so you can pick out the businesses without a site.",
   },
   {
-    q: "How much does it cost?",
-    a: "Your first 10 leads are free with no credit card. Paid plans start at $19.99 a month for 500 credits; one credit equals one lead.",
+    q: "How many US businesses do not have a website?",
+    a: "Many small local service businesses still rely on Google Maps or Facebook only. Search any city in the tool to see the real count for your trade.",
   },
   {
-    q: "How do I know the business is still open?",
-    a: "Check the Google rating, review count and how recent the reviews are, which are on every lead. Recent reviews and a working phone number are the best signs a business is active.",
+    q: "How do I pitch a business that has no website?",
+    a: "Keep it short, mention their reviews, and show a simple mockup of what their site could look like. A clear monthly price works better than a long proposal.",
   },
   {
-    q: "Is it allowed to cold email these businesses?",
-    a: "In the US, business cold email is allowed under CAN-SPAM with honest sender details and subject lines, a postal address and a working opt-out. Calling is often the better first touch for owners with no website.",
+    q: "Is the first list really free?",
+    a: "Yes. Your first list (10 leads) is free and no credit card is required.",
   },
 ];
 
@@ -165,6 +165,12 @@ export default function BusinessesWithoutWebsitesPage() {
             speakable: true,
           }),
           faqPageJsonLd(FAQS, PATH),
+          {
+            "@context": "https://schema.org",
+            "@type": "HowTo",
+            name: "How to find businesses without websites",
+            step: STEPS.map((st, i) => ({ "@type": "HowToStep", position: i + 1, name: st.title, text: st.text })),
+          },
         ]}
       />
 

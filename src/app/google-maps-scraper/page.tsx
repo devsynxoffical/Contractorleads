@@ -75,7 +75,7 @@ const SCRAPER_FAQS = [
   },
   {
     q: "Is there a free Google Maps scraper?",
-    a: "Contractor Leads gives every new account 10 free scored leads with no credit card, so you can test the data in your own market. Paid plans start at $19.99 a month for 500 credits, where one credit equals one lead, and you can cancel at any time.",
+    a: "Contractor Leads gives every new account 10 free scored leads with no credit card, so you can test the data in your own market. Paid plans start at $19.99 a month for 750 credits, where one credit equals one lead, and you can cancel at any time.",
   },
 ];
 
@@ -465,7 +465,7 @@ export default function GoogleMapsScraperPage() {
             <p className="mt-2 font-[family-name:var(--font-display)] text-[28px] font-extrabold text-slate-900">
               $19.99<span className="text-[14px] font-normal text-slate-500">/mo</span>
             </p>
-            <p className="mt-2 text-[13px] text-slate-600">500 credits/mo ($0.04/lead)</p>
+            <p className="mt-2 text-[13px] text-slate-600">750 credits/mo ($0.027/lead)</p>
             <p className="mt-4 text-[13px] text-slate-600">Ideal for solo agency operators starting outreach.</p>
             <Link
               href="/pricing"
@@ -483,7 +483,7 @@ export default function GoogleMapsScraperPage() {
             <p className="mt-2 font-[family-name:var(--font-display)] text-[28px] font-extrabold text-slate-900">
               $49<span className="text-[14px] font-normal text-slate-500">/mo</span>
             </p>
-            <p className="mt-2 text-[13px] text-slate-600">2,000 credits/mo ($0.025/lead)</p>
+            <p className="mt-2 text-[13px] text-slate-600">2,500 credits/mo ($0.02/lead)</p>
             <p className="mt-4 text-[13px] text-slate-600">Full CRM webhook push, GoHighLevel & Outreach Studio.</p>
             <Link
               href="/pricing"
@@ -498,7 +498,7 @@ export default function GoogleMapsScraperPage() {
             <p className="mt-2 font-[family-name:var(--font-display)] text-[28px] font-extrabold text-slate-900">
               $99<span className="text-[14px] font-normal text-slate-500">/mo</span>
             </p>
-            <p className="mt-2 text-[13px] text-slate-600">5,000 credits/mo ($0.02/lead)</p>
+            <p className="mt-2 text-[13px] text-slate-600">6,000 credits/mo ($0.017/lead)</p>
             <p className="mt-4 text-[13px] text-slate-600">High-volume prospecting desks and cold calling teams.</p>
             <Link
               href="/pricing"

@@ -18,7 +18,7 @@ export const SEO = {
   defaultTitle: "Lead Generation for Marketing Agencies | Contractor Leads",
   titleTemplate: "%s | Contractor Leads",
   defaultDescription:
-    "Contractor lead generation for marketing agencies: contractor lists with owner names, verified emails and AI scores for 18 trades in any US city. 10 free.",
+    "Find, score and email local contractors and businesses in any US city. Built for agencies selling to contractors. First list free, no credit card.",
   keywords: [
     "lead generation for marketing agencies",
     "local business leads",
@@ -66,44 +66,24 @@ export function seoSameAs(): string[] {
 
 export const MARKETING_FAQ: Array<{ q: string; a: string }> = [
   {
-    q: "Is Contractor Leads free to try?",
-    a: "Yes. Every new account gets 10 free leads on Starter with no credit card. You pay only when you subscribe, from $19.99 a month for 500 credits.",
+    q: "How do marketing agencies find clients?",
+    a: "The fastest way is targeted prospecting: pick one trade and city, find businesses with a clear gap such as no website or few reviews, and send a short, specific pitch.",
   },
   {
-    q: "Is Contractor Leads for agencies or for contractors?",
-    a: "It is built for marketing agencies, media buyers and sales teams that sell services to home-service contractors. It is not a site for homeowners looking to hire a roofer or plumber.",
+    q: "What is the best lead generation tool for agencies that sell to contractors?",
+    a: "Look for fresh data, verified emails, website and review signals, and a fair price per lead. Contractor Leads combines all of these, and your first list (10 leads) is free.",
   },
   {
-    q: "Are the leads real?",
-    a: "Yes. Every business comes from live Google Places data at the moment you search, cross-checked with Yelp and the business's own website. If a field cannot be verified it is left blank.",
+    q: "Is Contractor Leads a contractor lead generation company?",
+    a: "No. We do not sell homeowner leads to contractors. We help agencies and B2B sellers find contractors and local businesses to sell to.",
   },
   {
-    q: "How do credits work?",
-    a: "One credit equals one lead. Starter includes 500 credits a month, Growth 2,000 and Agency 5,000, and the AI assistant and outreach generation use credits as listed on the pricing page.",
+    q: "How much does Contractor Leads cost?",
+    a: "Plans start from $19.99 a month and every lead costs one credit. Your first list (10 leads) is free with no credit card.",
   },
   {
-    q: "Can I send leads to GoHighLevel or HubSpot?",
-    a: "Yes. Saved leads and status changes push to GoHighLevel, Zapier, Make, HubSpot, Slack or any webhook on the Growth plan and above, and you can export to CSV or Excel on every plan.",
-  },
-  {
-    q: "What are contractor lead generation services?",
-    a: "The phrase covers two different services. Some companies sell homeowner job requests to contractors, the way Angi and Thumbtack do. Others, like Contractor Leads, give marketing agencies lists of contractor businesses to sell to, with owner names, verified emails and scores for each company's website, SEO and ads. Contractor Leads does not sell homeowner jobs.",
-  },
-  {
-    q: "Can HVAC lead generation companies use Contractor Leads?",
-    a: "Yes. If your agency generates leads for HVAC contractors, Contractor Leads finds the HVAC companies to sell to: every heating and cooling business Google lists in a city or state, with the owner's name, a verified email and scores for its website, SEO and ads. It does not supply homeowner HVAC jobs.",
-  },
-  {
-    q: "How is Contractor Leads different from construction lead generation companies?",
-    a: "Construction lead generation companies usually sell project or bid leads to builders. Contractor Leads works one step earlier, for agencies: it lists the construction, remodeling and general contracting companies themselves, so you can pitch them your marketing, website or lead generation service.",
-  },
-  {
-    q: "What are the best contractor lead generation companies?",
-    a: "It depends on who is buying. Contractors who want homeowner jobs compare marketplaces and pay-per-lead networks. Agencies that want contractors as clients need a prospecting tool with contractor lists and contact data instead. Our guide to the best contractor lead generation companies compares both groups.",
-  },
-  {
-    q: "Do you sell exclusive contractor leads?",
-    a: "No. Exclusive contractor leads are homeowner job requests sold to one contractor. Contractor Leads is a prospecting tool for agencies: you pull lists of contractor businesses with owner contacts, and your first 10 leads are free.",
+    q: "Which trades can I search?",
+    a: "HVAC, roofing, plumbing, electrical, landscaping, remodeling, cleaning and many more home-service and local trades.",
   },
 ];
 

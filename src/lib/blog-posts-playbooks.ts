@@ -427,7 +427,7 @@ export const PLAYBOOK_POSTS: BlogPost[] = [
       },
       {
         q: "Which is cheapest?",
-        a: "A Chrome scraper extension is cheapest for a one-off list at roughly $15 to $50 a month. Apollo starts around $49 per user per month on annual billing for paid plans. Contractor Leads starts at $19.99 a month for 500 credits after 10 free leads, and each credit includes scoring, enrichment and outreach generation that the other two do not provide.",
+        a: "A Chrome scraper extension is cheapest for a one-off list at roughly $15 to $50 a month. Apollo starts around $49 per user per month on annual billing for paid plans. Contractor Leads starts at $19.99 a month for 750 credits after 10 free leads, and each credit includes scoring, enrichment and outreach generation that the other two do not provide.",
       },
       {
         q: "Can I use Apollo and Contractor Leads together?",
@@ -455,7 +455,7 @@ export const PLAYBOOK_POSTS: BlogPost[] = [
             ["Outreach generation", "Generic sequences", "No", "Per-lead email, SMS and call scripts"],
             ["CRM hand-off", "Native integrations", "CSV", "Webhooks to GoHighLevel, HubSpot, Zapier, Make, Slack; CSV and Excel"],
             ["Terms-of-service risk", "Low", "Can breach Google ToS", "Low; runs on Places data within the platform"],
-            ["Entry price", "Free tier; paid from about $49 per user per month annual", "$15 to $50 per month for extensions", "10 free leads; $19.99 per month for 500 credits"],
+            ["Entry price", "Free tier; paid from about $49 per user per month annual", "$15 to $50 per month for extensions", "10 free leads; $19.99 per month for 750 credits"],
           ],
         },
       },

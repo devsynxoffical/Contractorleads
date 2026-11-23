@@ -25,7 +25,7 @@ const FAQS = [
   },
   {
     q: "Is the price different by state?",
-    a: "No. The first 10 leads are free, then plans start at $19.99 a month for 500 leads in any state, with owner names, verified emails and AI scores included.",
+    a: "No. The first 10 leads are free, then plans start at $19.99 a month for 750 leads in any state, with owner names, verified emails and AI scores included.",
   },
 ];
 

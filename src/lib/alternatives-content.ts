@@ -59,7 +59,7 @@ const SHARED_ROWS_TAIL: AlternativeRow[] = [
   {
     point: "Free start",
     them: "Varies; see vendor",
-    us: "10 scored leads free, no credit card; Starter from $19.99 a month for 500 credits",
+    us: "10 scored leads free, no credit card; Starter from $19.99 a month for 750 credits",
   },
 ];
 
@@ -485,7 +485,7 @@ export const ALTERNATIVES: Alternative[] = [
       },
       {
         q: "Is there a daily search limit?",
-        a: "Limits are credit-based rather than daily. One credit equals one lead returned, with 500, 2,000 or 5,000 credits a month depending on plan.",
+        a: "Limits are credit-based rather than daily. One credit equals one lead returned, with 750, 2,500 or 6,000 credits a month depending on plan.",
       },
     ],
     relatedIndustries: ["roofing", "hvac", "plumbing", "landscaping"],
