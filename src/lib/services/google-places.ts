@@ -688,7 +688,15 @@ async function runScraper(params: {
   } catch (error) {
     if (error instanceof GooglePlacesError) throw error;
     const msg = error instanceof Error ? error.message : String(error);
-    logGooglePlacesError("scraper", msg);
+    // execFile errors carry why the process stopped; without this the log only shows the
+    // progress lines, so a timeout, an out-of-memory kill and a Python crash look the same.
+    const e = error as { killed?: boolean; signal?: string | null; code?: number | string | null };
+    const why = e.killed
+      ? `killed (signal ${e.signal ?? "?"}; 180 s timeout or out of memory)`
+      : e.signal
+        ? `stopped by signal ${e.signal} (likely out of memory)`
+        : `exit code ${e.code ?? "?"}`;
+    logGooglePlacesError("scraper", `[${why}] ${msg.slice(-1500)}`);
     throw new GooglePlacesError(sanitizePlacesErrorForClient(msg));
   }
 }
