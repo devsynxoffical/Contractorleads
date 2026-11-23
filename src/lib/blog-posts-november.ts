@@ -36,7 +36,7 @@ export const NOVEMBER_POSTS: BlogPost[] = [
     growth: "growing",
     cluster: "tools",
     publishedDate: PUBLISHED,
-    updatedDate: PUBLISHED,
+    updatedDate: "2026-11-23",
     readingMinutes: 10,
     author: AUTHOR,
     relatedIndustries: [],
@@ -91,7 +91,7 @@ export const NOVEMBER_POSTS: BlogPost[] = [
       {
         heading: "1. Contractor Leads: best for prospecting home-service contractors",
         level: 3,
-        body: "Contractor Leads searches live Google data by trade and city, then adds owner names, verified emails, Meta ad status and an AI score for website, SEO and ad gaps, and writes outreach for each business. It is built for agencies, media buyers and sales teams selling to contractors, not for general data extraction. Start with 10 free leads from the [Google Maps scraper](/google-maps-scraper) page.",
+        body: "Contractor Leads searches live Google data by trade and city, then adds owner names, verified emails, Meta ad status and an AI score for website, SEO and ad gaps, and writes outreach for each business. It is built for agencies, media buyers and sales teams selling to contractors, not for general data extraction. Start with 10 free leads from the [Google Maps scraper](/google-maps-scraper) page. You can preview a list for any trade and city on the [contractor list builder](/contractor-list) page.",
         bullets: [
           "Best for: agencies that want ready-to-pitch contractor leads, not raw rows",
           "Limits: focused on 18 home-service trades rather than every business category",

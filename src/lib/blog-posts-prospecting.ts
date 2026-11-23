@@ -34,7 +34,7 @@ export const PROSPECTING_POSTS: BlogPost[] = [
     growth: "rising",
     cluster: "agency-growth",
     publishedDate: PUBLISHED,
-    updatedDate: "2026-11-11",
+    updatedDate: "2026-11-23",
     readingMinutes: 12,
     author: AUTHOR,
     relatedIndustries: ["landscaping", "painting", "cleaning-services", "concrete", "fencing"],
@@ -134,7 +134,7 @@ export const PROSPECTING_POSTS: BlogPost[] = [
       {
         heading: "Which trades to start with",
         level: 2,
-        body: "Owner-operated trades that win work by referral are the most likely to have no site or a weak one. Landscaping, painting, cleaning, concrete and fencing are good first niches for website offers. Roofing, HVAC, plumbing and electrical companies more often have a site but a weak one, which suits SEO and ads offers: see the [roofing](/industries/roofing), [HVAC](/industries/hvac) and [plumbing](/industries/plumbing) guides for what those owners buy, and [leads by state](/locations) to pick a market.",
+        body: "Owner-operated trades that win work by referral are the most likely to have no site or a weak one. Landscaping, painting, cleaning, concrete and fencing are good first niches for website offers. Roofing, HVAC, plumbing and electrical companies more often have a site but a weak one, which suits SEO and ads offers: see the [roofing](/industries/roofing), [HVAC](/industries/hvac) and [plumbing](/industries/plumbing) guides for what those owners buy, and [leads by state](/locations) to pick a market. You can check any of these trades in your city with the [businesses without websites](/businesses-without-websites) search, which marks every lead No website or Website found.",
       },
       {
         heading: "Get the owner's contact details",
@@ -192,7 +192,7 @@ export const PROSPECTING_POSTS: BlogPost[] = [
     growth: "rising",
     cluster: "tools",
     publishedDate: PUBLISHED,
-    updatedDate: PUBLISHED,
+    updatedDate: "2026-11-23",
     readingMinutes: 10,
     author: AUTHOR,
     relatedIndustries: ["roofing", "hvac", "plumbing", "landscaping", "painting"],
@@ -227,7 +227,7 @@ export const PROSPECTING_POSTS: BlogPost[] = [
       {
         heading: "Three ways to collect listings",
         level: 2,
-        body: "Manual copying is accurate but limited to a few dozen listings an hour. Raw scrapers and API exports scale to thousands but give you unscored rows you still have to clean. Purpose-built lead tools such as [Contractor Leads](/contractor-lead-generation-software) pull live listings, remove duplicates and score each business so the list arrives sorted by opportunity. If you are comparing options, see [Outscraper alternatives](/alternatives/outscraper-alternative) and our [Google Maps scraper page](/google-maps-scraper).",
+        body: "Manual copying is accurate but limited to a few dozen listings an hour. Raw scrapers and API exports scale to thousands but give you unscored rows you still have to clean. Purpose-built lead tools such as [Contractor Leads](/contractor-lead-generation-software) pull live listings, remove duplicates and score each business so the list arrives sorted by opportunity. If you are comparing options, see [Outscraper alternatives](/alternatives/outscraper-alternative) and our [Google Maps scraper page](/google-maps-scraper). For contractors, the [contractor list and directory](/contractor-list) page shows what a list for any trade and city includes before you sign up.",
         table: {
           headers: ["Approach", "Scale", "Clean data", "Scoring", "Owner contact"],
           rows: [
@@ -287,7 +287,7 @@ export const PROSPECTING_POSTS: BlogPost[] = [
     growth: "steady",
     cluster: "agency-growth",
     publishedDate: PUBLISHED,
-    updatedDate: PUBLISHED,
+    updatedDate: "2026-11-23",
     readingMinutes: 11,
     author: AUTHOR,
     relatedIndustries: ["roofing", "hvac", "plumbing", "remodeling"],
@@ -341,7 +341,7 @@ export const PROSPECTING_POSTS: BlogPost[] = [
       {
         heading: "Outbound: the channel to start with",
         level: 2,
-        body: "Outbound is the only channel you fully control from day one. Build a list of businesses in your niche, score them by the gap you sell, and write two or three lines that name that gap. [Contractor Leads](/contractor-lead-generation-software) does the list and scoring step for contractors; our [cold email guide](/blog/cold-email-for-agencies) and [subject line examples](/blog/cold-email-subject-lines-for-contractors) cover the writing.",
+        body: "Outbound is the only channel you fully control from day one. Build a list of businesses in your niche, score them by the gap you sell, and write two or three lines that name that gap. [Contractor Leads](/contractor-lead-generation-software) does the list and scoring step for contractors; our [cold email guide](/blog/cold-email-for-agencies) and [subject line examples](/blog/cold-email-subject-lines-for-contractors) cover the writing. A [contractor directory you can export](/contractor-list) is a quick way to build that first list if your niche is home services.",
       },
       {
         heading: "Referrals and partnerships",
@@ -386,7 +386,7 @@ export const PROSPECTING_POSTS: BlogPost[] = [
     growth: "rising",
     cluster: "agency-growth",
     publishedDate: PUBLISHED,
-    updatedDate: PUBLISHED,
+    updatedDate: "2026-11-23",
     readingMinutes: 8,
     author: AUTHOR,
     relatedIndustries: ["roofing", "plumbing", "hvac", "remodeling", "general-contractors"],
@@ -412,7 +412,7 @@ export const PROSPECTING_POSTS: BlogPost[] = [
       {
         heading: "Who to target",
         level: 2,
-        body: "The best prospects are busy enough to afford a site and losing enough to feel the gap: 20+ reviews, an active Google Business Profile, and either no website or one that is slow and not mobile-friendly. Our guide on [finding businesses without websites](/blog/how-to-find-businesses-without-websites) covers the list-building step, and the [Lead Finder](/contractor-lead-generation-software) scores every contractor on website quality.",
+        body: "The best prospects are busy enough to afford a site and losing enough to feel the gap: 20+ reviews, an active Google Business Profile, and either no website or one that is slow and not mobile-friendly. Our guide on [finding businesses without websites](/blog/how-to-find-businesses-without-websites) covers the list-building step, and the [Lead Finder](/contractor-lead-generation-software) scores every contractor on website quality. To build that prospect list, search a trade and city on the [find businesses without websites](/businesses-without-websites) page; every result is marked No website or Website found.",
       },
       {
         heading: "What to build",
@@ -477,7 +477,7 @@ export const PROSPECTING_POSTS: BlogPost[] = [
     growth: "seasonal",
     cluster: "trade-playbooks",
     publishedDate: PUBLISHED,
-    updatedDate: PUBLISHED,
+    updatedDate: "2026-11-23",
     readingMinutes: 7,
     author: AUTHOR,
     relatedIndustries: ["landscaping", "fencing", "pool-services", "concrete"],
@@ -508,7 +508,7 @@ export const PROSPECTING_POSTS: BlogPost[] = [
       {
         heading: "Gaps that signal a sale",
         level: 2,
-        body: "Landscaping is visual, so gaps are easy to spot.",
+        body: "Landscaping is visual, so gaps are easy to spot. Many landscapers have no website at all, and the [businesses without websites](/businesses-without-websites) search flags them for you.",
         bullets: [
           "No website, or a site without project photos",
           "Google Business Profile with few photos or no recent posts",
