@@ -332,3 +332,15 @@ Source: owner's keyword map CSV and recovery plan PDF (20 Nov). Shipped in PR #6
 - IndexNow: 12 URLs submitted. New URLs added to the Google Indexing API lists.
 - Not in this repo: qualifiedleadsx.com, brandscalinghacks.com, funnelsthatprint.com rows of the map.
 - Owner tasks from the plan: disavow update (Semrush), G2 / Capterra / Product Hunt / SaaSHub / AlternativeTo listings, Request indexing for the 3 new URLs in Search Console.
+
+## 23 Nov 2026: keyword plan (23 Nov) for contractorleads.us
+
+Rules followed: content/SEO only, no em dashes in new copy, pages changed in the last 7 days only got title/meta/FAQ,
+no Google Indexing API.
+- / : meta + 5 FAQs (C8). /industries/hvac: 1 FAQ (C9). 6 guide links to the new pages (C10).
+- P1 pages (/businesses-without-websites, /contractor-list, /contractor-email-list): already target their keywords
+  in title, H1 and FAQ since 20 Nov; left unchanged (7-day rule).
+- Not done: homepage comparison/HVAC/exclusive sections (homepage changed 20 Nov; FAQs used instead).
+  Footer sister-site links: owner asked not to touch the sitewide footer. Disavow: copied the 12 Nov file
+  (893 domains, Google format) to docs/disavow.txt; not uploaded.
+- Pre-existing em dashes remain in older card copy (industries, nav, some descriptions): follow-up.

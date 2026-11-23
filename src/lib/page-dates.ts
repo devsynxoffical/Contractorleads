@@ -6,7 +6,7 @@
  * whenever its visible content changes (not for code-only changes).
  */
 export const PAGE_UPDATED: Record<string, string> = {
-  "/": "2026-11-20",
+  "/": "2026-11-23",
   "/features": "2026-11-16",
   "/pricing": "2026-11-16",
   "/contractor-lead-generation-software": "2026-11-05",
@@ -45,7 +45,7 @@ export const PAGE_UPDATED: Record<string, string> = {
 /** Trade hubs that received trade-specific content on this date. */
 export const TRADE_HUB_UPDATED: Record<string, string> = {
   roofing: "2026-11-16",
-  hvac: "2026-11-16",
+  hvac: "2026-11-23",
   plumbing: "2026-11-16",
   electrical: "2026-11-16",
   solar: "2026-11-16",

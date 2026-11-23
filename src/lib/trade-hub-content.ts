@@ -94,6 +94,10 @@ export const TRADE_HUB_CONTENT: Record<string, TradeHubContent> = {
         a: "Independent companies with a few trucks and good reviews but no ads or a dated website. They decide quickly and feel each extra booked call, while large franchises and private-equity-backed groups usually have central marketing teams.",
       },
       {
+        q: "I run an HVAC lead generation company. How do I find HVAC contractors to sell to?",
+        a: "Search a city or state for HVAC companies in Contractor Leads. You get every heating and air-conditioning business Google lists there, with the owner's name, a verified email, review count and scores for website, SEO and ads, so you can start with the companies that have good reviews but no ads or a weak site.",
+      },
+      {
         q: "Does Contractor Leads show which HVAC companies run ads?",
         a: "Yes. Each lead shows whether the business is running Meta ads, along with website, SEO and PPC scores from 0 to 100, so you can spot companies with no paid presence and lead with that gap.",
       },
