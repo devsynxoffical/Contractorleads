@@ -118,7 +118,7 @@ const COMPARE = {
 const FAQS = [
   {
     q: "Do you sell a local business email list?",
-    a: "No pre-made lists. You build your own from live Google data for the business type and area you choose. Your first 10 leads are free, then plans start at $19.99 a month for 500 credits; one credit equals one lead.",
+    a: "No pre-made lists. You build your own from live Google data for the business type and area you choose. Your first 10 leads are free, then plans start at $19.99 a month for 750 credits; one credit equals one lead.",
   },
   {
     q: "Which countries are covered?",

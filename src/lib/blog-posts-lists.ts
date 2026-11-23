@@ -169,7 +169,7 @@ export const LIST_POSTS: BlogPost[] = [
       },
       {
         q: "How much does it cost to build a contractor email list?",
-        a: "With Contractor Leads your first 10 leads are free, and paid plans start at $19.99 a month for 500 credits, where one credit is one lead. Larger plans bring the cost down to about 2 cents per lead, and email verification is included.",
+        a: "With Contractor Leads your first 10 leads are free, and paid plans start at $19.99 a month for 750 credits, where one credit is one lead. Larger plans bring the cost down to about 2 cents per lead, and email verification is included.",
       },
       {
         q: "When does buying a list make sense?",

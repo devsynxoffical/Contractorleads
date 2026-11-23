@@ -344,3 +344,16 @@ no Google Indexing API.
   Footer sister-site links: owner asked not to touch the sitewide footer. Disavow: copied the 12 Nov file
   (893 domains, Google format) to docs/disavow.txt; not uploaded.
 - Pre-existing em dashes remain in older card copy (industries, nav, some descriptions): follow-up.
+
+## 23 Nov 2026 (2): page content plan for contractorleads.us
+
+- Pricing fixed everywhere to the checkout config: $19.99 / 750 credits, $49 / 2,500, $99 / 6,000 (C11).
+  The plan's "$19" was a placeholder; the confirmed starting price is $19.99.
+- All 5 plan pages were changed in the last 7 days, so per the plan only meta and FAQs were updated now (C12).
+  Section copy, H1 changes and in-copy internal links are queued in docs/seo/CONTENT-PLAN-2026-11-23.md:
+  apply on/after 27 Nov (/, /industries/hvac: 30 Nov).
+- Wording adjusted to stay true to the product: there is no "no website" filter (each lead is labelled
+  No website / Website found), so "filter by no website" became "look for the No website label";
+  "in seconds" became "in one search"; "first list free" clarified as 10 leads; "verified emails on every lead"
+  became "where available"; /trades link to be /industries (redirect).
+- HVAC hub title kept: the plan's title is 62 characters (limit 60).

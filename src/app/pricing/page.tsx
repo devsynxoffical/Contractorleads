@@ -31,7 +31,7 @@ export const metadata: Metadata = buildMetadata({
 const PRICING_FAQS = [
   {
     q: "How much does Contractor Leads cost?",
-    a: "Plans start at $19.99 a month for 500 credits (Starter), then $49 for 2,000 credits (Growth) and $99 for 5,000 credits (Agency). One credit equals one lead, so the cost per lead falls from about 4 cents to 2 cents as you move up. Every new account starts with 10 free leads.",
+    a: "Plans start at $19.99 a month for 750 credits (Starter), then $49 for 2,500 credits (Growth) and $99 for 6,000 credits (Agency). One credit equals one lead, so the cost per lead falls from about 2.7 cents to 1.7 cents as you move up. Every new account starts with 10 free leads.",
   },
   {
     q: "Which plan should I choose?",
@@ -43,7 +43,7 @@ const PRICING_FAQS = [
   },
   {
     q: "How do credits work?",
-    a: "One credit equals one lead. Starter includes 500 credits a month ($19.99/mo), Growth includes 2,000 credits ($49/mo), and Agency includes 5,000 credits ($99/mo). The AI assistant and outreach generation use credits as listed on the pricing breakdown.",
+    a: "One credit equals one lead. Starter includes 750 credits a month ($19.99/mo), Growth includes 2,500 credits ($49/mo), and Agency includes 6,000 credits ($99/mo). The AI assistant and outreach generation use credits as listed on the pricing breakdown.",
   },
   {
     q: "Do you offer an annual billing discount?",
@@ -111,10 +111,10 @@ export default async function PricingPage() {
             How much does Contractor Leads cost?
           </h2>
           <p className={`${SPEAKABLE_CLASS} mt-3 text-[15px] leading-relaxed text-slate-700`}>
-            Contractor Leads costs from $19.99 a month for 500 lead credits, and every new account
+            Contractor Leads costs from $19.99 a month for 750 lead credits, and every new account
             gets 10 free leads with no credit card. One credit is one lead, and each lead includes
             live Google data, an owner name where available, AI scores and outreach scripts. Larger
-            plans lower the cost per lead to about 2 cents.
+            plans lower the cost per lead to under 2 cents.
           </p>
         </div>
       </section>

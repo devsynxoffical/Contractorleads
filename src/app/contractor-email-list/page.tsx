@@ -29,7 +29,7 @@ const PATH = "/contractor-email-list";
 export const metadata: Metadata = buildMetadata({
   title: "Contractors Email List: Verified Construction Company Emails",
   description:
-    "Build a contractors email list for any trade and city: construction company owners with verified emails from live Google data. Export to CSV. 10 leads free.",
+    "Build a contractors email list for any trade and city, verified before export. General contractor, roofing and HVAC lists. First list free.",
   path: PATH,
   keywords: [
     "contractors email list",
@@ -115,28 +115,24 @@ const COMPARE = {
 
 const FAQS = [
   {
-    q: "Do you sell contractor email lists?",
-    a: "No pre-made lists. You build your own contractors email list from live Google data for the trade and area you choose, which keeps it current. Your first 10 leads are free, then each lead costs 1 credit, with plans from $19.99 a month for 500 credits.",
-  },
-  {
-    q: "Can I get a construction company email list?",
-    a: "Yes. Choose General contractors, Remodeling or any construction trade, then a city or state. You get the construction companies Google lists there, with owner names and verified emails where they can be found.",
-  },
-  {
-    q: "Which trades can I build an email list for?",
-    a: "Eighteen trades: roofing, HVAC, plumbing, electrical, solar, general contractors, remodeling, home improvement, landscaping, painting, concrete, flooring, fencing, garage doors, windows and doors, pest control, cleaning and pool services.",
-  },
-  {
-    q: "How are the emails verified?",
-    a: "Every email is checked and labelled safe, catch-all, role-based or invalid. Send to safe addresses first; catch-all domains accept any address so they cannot be fully confirmed; role-based addresses such as info@ reach a shared inbox.",
+    q: "Where can I get a general contractor email list?",
+    a: "Build one in Contractor Leads by searching general contractors in your target city or state. Emails are verified before export.",
   },
   {
     q: "Is it legal to email contractors?",
-    a: "In the US, CAN-SPAM allows business cold email when you use honest sender details and subject lines, include a postal address and honour opt-outs within 10 business days. Canada, the UK and the EU have stricter rules; take legal advice for large campaigns.",
+    a: "In the US, B2B cold email is allowed under CAN-SPAM if you use a real sender, an honest subject line, your address and a working unsubscribe link.",
   },
   {
-    q: "Can I add emails to a contractor list I already have?",
-    a: "Yes. The bulk email finder accepts a CSV or Excel file of businesses and adds owner names and verified emails where they can be found.",
+    q: "Do you have a roofing contractor email list?",
+    a: "Yes. Search roofing contractors in any city to build a fresh roofing list.",
+  },
+  {
+    q: "How much does a contractor email list cost?",
+    a: "Each lead costs one credit. Plans start from $19.99 a month, and your first list (10 leads) is free.",
+  },
+  {
+    q: "How is this different from a contractor contact list template?",
+    a: "A template is an empty sheet. Contractor Leads fills it with real, verified contractor contacts.",
   },
 ];
 

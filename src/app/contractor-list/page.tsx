@@ -25,9 +25,9 @@ import { pageUpdated } from "@/lib/page-dates";
 const PATH = "/contractor-list";
 
 export const metadata: Metadata = buildMetadata({
-  title: "Contractor Directory & List: Free List of Contractors",
+  title: "Contractor Directory and List: Free List of Contractors",
   description:
-    "A contractor directory and database you can export: build a list of contractors, roofers, HVAC and 15 more trades in any US city, with owner emails. 10 free.",
+    "Contractor directory for any US city. Search by trade, get phone, address, website status and verified emails. Your first contractor list is free.",
   path: PATH,
   keywords: [
     "contractor list",
@@ -73,32 +73,20 @@ const COMPARE = {
 
 const FAQS = [
   {
-    q: "How do I get a list of contractors in my area?",
-    a: "Pick the trade and the city or state in the list builder above, then create a free account. Contractor Leads pulls every matching business from live Google data and adds the owner's name, verified contact details and AI scores. Your first 10 leads are free.",
+    q: "Where can I find a list of contractors?",
+    a: "You can use state license databases, Google Maps or a contractor directory tool. Contractor Leads builds a fresh list for any trade and city in one search.",
   },
   {
-    q: "Is this a contractor directory or a contractor database?",
-    a: "Both, in the way agencies need them. Like a contractor directory, it lists every matching business in a trade and area. Like a contractor database, each record has fields you can filter, score and export: owner name, verified email, phone, website, Google rating and AI scores. Unlike a fixed directory, the list is pulled from live Google data when you search.",
+    q: "Is there a free contractor list?",
+    a: "Yes. Your first list in Contractor Leads (10 leads) is free, with no credit card needed.",
   },
   {
-    q: "How do I get a list of roofing companies?",
-    a: "Choose Roofing and a state or city in the builder above, then sign up free. You get every roofing company Google lists there, with owner names, verified emails and a score for each company's website, SEO and ads. The same works for HVAC, plumbing and 15 more trades.",
+    q: "How accurate is a contractor directory?",
+    a: "It depends on how fresh the data is. Lists built at the time of your search are more accurate than lists bought months ago.",
   },
   {
-    q: "Is the contractor list really free?",
-    a: "Yes. New accounts get 10 leads free with no credit card. After that, plans start at $19.99 a month for 500 leads; one credit equals one lead.",
-  },
-  {
-    q: "Which trades can I build a list for?",
-    a: "18 home-service trades: roofing, HVAC, plumbing, electrical, solar, general contractors, remodeling, home improvement, flooring, landscaping, painting, concrete, windows and doors, fencing, garage doors, pest control, cleaning and pool services.",
-  },
-  {
-    q: "Where does the data come from?",
-    a: "From live Google business listings at the moment you search, cross-checked with Yelp and each company's website. Fields that cannot be verified are left blank rather than guessed.",
-  },
-  {
-    q: "Can I use the list for cold email?",
-    a: "Yes, for business-to-business outreach that follows CAN-SPAM: an honest subject line, your physical address and a working opt-out. Verify addresses before sending; Contractor Leads verifies emails before export.",
+    q: "Can I export my contractor list?",
+    a: "Yes. You can export to CSV or keep leads in the built-in pipeline.",
   },
 ];
 

@@ -195,7 +195,7 @@ const FAQS = [
   },
   {
     q: "How much does contractor lead generation software cost?",
-    a: "Contractor Leads gives every new account 10 free scored leads with no credit card. Paid plans start at $19.99 a month for 500 credits on Starter, $49 for 2,000 on Growth and $99 for 5,000 on Agency. One credit equals one lead, and annual billing lowers the monthly price.",
+    a: "Contractor Leads gives every new account 10 free scored leads with no credit card. Paid plans start at $19.99 a month for 750 credits on Starter, $49 for 2,000 on Growth and $99 for 5,000 on Agency. One credit equals one lead, and annual billing lowers the monthly price.",
   },
   {
     q: "Does it replace my CRM?",

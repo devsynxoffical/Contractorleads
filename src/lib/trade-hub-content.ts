@@ -78,28 +78,20 @@ export const TRADE_HUB_CONTENT: Record<string, TradeHubContent> = {
     ],
     faqs: [
       {
-        q: "Why do agencies target HVAC companies?",
-        a: "HVAC has urgent, search-driven demand, high replacement values and recurring maintenance plans, so marketing results are easy to measure. Many owner-run HVAC companies have strong reviews but weak websites and little paid search, leaving room for clear wins.",
+        q: "Where can agencies find HVAC leads?",
+        a: "Use a prospecting tool that lists HVAC companies by city or state with contact details. Contractor Leads does this and your first list (10 leads) is free.",
       },
       {
-        q: "When is the best time to pitch HVAC contractors?",
-        a: "Pitch in the shoulder seasons, before summer cooling demand and before winter heating demand. During peak weeks owners are busy and respond best to very short, specific offers rather than long sales calls.",
+        q: "Are these HVAC leads for sale homeowner leads?",
+        a: "No. These are HVAC businesses for agencies and B2B sellers to pitch, not homeowners looking for HVAC service.",
       },
       {
-        q: "What should an HVAC marketing offer include?",
-        a: "Search ads and Local Services Ads for repair and replacement, a website with financing and service-area pages, review generation, and maintenance-plan campaigns that keep technicians busy in slower months. Report on booked calls and replacement quotes.",
+        q: "What should I pitch an HVAC company?",
+        a: "After-hours call answering, online booking, Google reviews and seasonal ads are the most common wins.",
       },
       {
-        q: "Which HVAC companies are the best prospects?",
-        a: "Independent companies with a few trucks and good reviews but no ads or a dated website. They decide quickly and feel each extra booked call, while large franchises and private-equity-backed groups usually have central marketing teams.",
-      },
-      {
-        q: "I run an HVAC lead generation company. How do I find HVAC contractors to sell to?",
-        a: "Search a city or state for HVAC companies in Contractor Leads. You get every heating and air-conditioning business Google lists there, with the owner's name, a verified email, review count and scores for website, SEO and ads, so you can start with the companies that have good reviews but no ads or a weak site.",
-      },
-      {
-        q: "Does Contractor Leads show which HVAC companies run ads?",
-        a: "Yes. Each lead shows whether the business is running Meta ads, along with website, SEO and PPC scores from 0 to 100, so you can spot companies with no paid presence and lead with that gap.",
+        q: "Can I get an HVAC contractor email list?",
+        a: "Yes. See the HVAC email list page to build a verified list by state.",
       },
     ],
   },

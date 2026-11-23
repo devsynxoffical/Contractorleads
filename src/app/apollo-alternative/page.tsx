@@ -47,7 +47,7 @@ const APOLLO_FAQS = [
   },
   {
     q: "Is there a free Apollo.io alternative?",
-    a: "Contractor Leads gives 10 free scored leads with no credit card, then starts at $19.99 a month for 500 credits.",
+    a: "Contractor Leads gives 10 free scored leads with no credit card, then starts at $19.99 a month for 750 credits.",
   },
   {
     q: "Is Apollo.io free?",
@@ -115,7 +115,7 @@ export default function ApolloAlternativePage() {
             </Link>
           </div>
           <p className="mt-4 text-[12px] text-white/50">
-            No credit card required · Starter starts at $19.99/mo (500 leads)
+            No credit card required · Starter starts at $19.99/mo (750 leads)
           </p>
         </div>
       </header>
@@ -250,7 +250,7 @@ export default function ApolloAlternativePage() {
               </tr>
               <tr>
                 <td className="py-3.5 px-4 font-semibold text-slate-900">Entry Paid Price</td>
-                <td className="py-3.5 px-4 font-semibold text-slate-900">$19.99/mo (500 credits)</td>
+                <td className="py-3.5 px-4 font-semibold text-slate-900">$19.99/mo (750 credits)</td>
                 <td className="py-3.5 px-4 text-slate-600">$49/user/mo (billed annually)</td>
               </tr>
             </tbody>

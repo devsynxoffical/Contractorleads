@@ -619,7 +619,7 @@ export const LANDING_PAGES: LandingPage[] = [
       },
       {
         q: "How much does it cost?",
-        a: "Every new account gets 10 free leads with no credit card. Paid plans start at $19.99 a month for 500 credits, where one credit equals one lead. Email verification before export is included. Larger plans lower the cost per lead to about 2 cents, and you can upgrade, downgrade or cancel at any time.",
+        a: "Every new account gets 10 free leads with no credit card. Paid plans start at $19.99 a month for 750 credits, where one credit equals one lead. Email verification before export is included. Larger plans lower the cost per lead to under 2 cents, and you can upgrade, downgrade or cancel at any time.",
       },
       {
         q: "Is it legal to email contractors I find this way?",
