@@ -193,18 +193,43 @@ export async function syncMailboxImap(
     logger: false,
     tls: { rejectUnauthorized: false },
     clientInfo: { name: "LeadFlow-InboundSync", version: "2.0" },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
   });
+  // Without a listener, a socket error is thrown from the EventEmitter instead of reaching our catch.
+  client.on("error", () => {});
+  // Only send LOGOUT on a working session; after a failed connect or login just drop the socket.
+  // (Production logged unhandledRejection "Connection not available" from logout() during AUTHENTICATE.)
+  const closeClient = async () => {
+    try {
+      if (client.usable) await client.logout();
+      else void connectSettled.then(() => client.close()).catch(() => {});
+    } catch {
+      /* ignore close errors */
+    }
+  };
 
   let synced = 0;
   let totalInBox = 0;
+  // Settles when the connect/login attempt finishes (either way). Closing the socket while
+  // AUTHENTICATE is still pending makes imapflow reject that request with nobody listening,
+  // which production logged as unhandledRejection "Connection not available".
+  let connectSettled: Promise<unknown> = Promise.resolve();
 
   try {
-    // 10-second connect timeout
+    // 10-second limit on connect + login, enforced here because imapflow's own timeouts do not
+    // cover a slow AUTHENTICATE response.
     const connectPromise = client.connect();
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error(`IMAP timeout (${imapConfig.host}:993)`)), 10000),
-    );
-    await Promise.race([connectPromise, timeoutPromise]);
+    connectSettled = connectPromise.catch(() => {});
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`IMAP timeout (${imapConfig.host}:993)`)), 10000);
+    });
+    try {
+      await Promise.race([connectPromise, timeoutPromise]);
+    } finally {
+      clearTimeout(timer);
+    }
 
     const lock = await client.getMailboxLock("INBOX");
 
@@ -312,19 +337,11 @@ export async function syncMailboxImap(
       lock.release();
     }
 
-    try {
-      await client.logout();
-    } catch {
-      /* ignore close errors */
-    }
+    await closeClient();
 
     return { mailbox: email, provider: opts.provider, synced, totalInBox };
   } catch (err) {
-    try {
-      await client.logout();
-    } catch {
-      /* ignore */
-    }
+    await closeClient();
     const directError = err instanceof Error ? err.message : String(err);
 
     // The server refused the login: retrying the same password through the relay is a

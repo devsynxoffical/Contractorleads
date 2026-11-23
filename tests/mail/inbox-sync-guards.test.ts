@@ -1,10 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const connect = vi.fn();
+const logout = vi.fn().mockResolvedValue(undefined);
+const close = vi.fn();
 vi.mock("imapflow", () => ({
   ImapFlow: vi.fn().mockImplementation(() => ({
     connect,
-    logout: vi.fn().mockResolvedValue(undefined),
+    logout,
+    close,
+    usable: false, // never logged in: every test here fails at connect
+    on: vi.fn(),
     getMailboxLock: vi.fn(),
   })),
 }));
@@ -20,6 +25,8 @@ describe("inbox sync login guards", () => {
   beforeEach(() => {
     connect.mockReset();
     relayFetch.mockReset();
+    logout.mockClear();
+    close.mockClear();
   });
 
   it("does not retry a refused login through the relay, and pauses the mailbox", async () => {
@@ -31,6 +38,14 @@ describe("inbox sync login guards", () => {
     const second = await syncMailboxImap({ userId: "u", email: "a@frankmillerconnect.com", pass: "p", provider: "godaddy" });
     expect(second.skipped).toMatch(/paused/);
     expect(connect).toHaveBeenCalledTimes(1);
+  });
+
+  it("closes a refused login without sending LOGOUT (avoids imapflow's unhandled 'Connection not available')", async () => {
+    connect.mockRejectedValue(Object.assign(new Error("Command failed"), { authenticationFailed: true }));
+    await syncMailboxImap({ userId: "u", email: "d@frankmillerhub.com", pass: "p", provider: "godaddy" });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(logout).not.toHaveBeenCalled();
+    expect(close).toHaveBeenCalledTimes(1);
   });
 
   it("contacts a GoDaddy mailbox at most once per interval in background runs", async () => {
