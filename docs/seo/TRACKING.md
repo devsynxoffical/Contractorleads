@@ -170,3 +170,16 @@ marketing pages only from 18 Nov), URL Inspection, Bing Webmaster Tools.
 - **Bing:** 155 indexed (prev 150), 135 pages crawled last day, 18 impressions / 0 clicks.
 - **Movers:** up: 7d impressions 275 -> 339, best day 97, Bing index 150 -> 155. Down: none.
 - **Work:** none (no query within reach of page 1-4; new pages still collecting data).
+
+### 23 Nov 17:23 UTC
+
+- **GSC 7d (16-22 Nov):** 1 click, 397 impressions, avg position ~87 (prev run 339). **22 Nov: 110 impressions
+  and 1 click (new best day)**; 21 Nov: 97. **GSC 28d (27 Oct-23 Nov):** 5 clicks, ~565 impressions (prev 512).
+  Queries at position <= 60: 0. The 22 Nov click came from an anonymized query (not listed by GSC).
+  22 Nov queries: all homepage, contractor/construction lead generation terms at pos 74-100; best
+  "hvac lead generation companies" 74. New pages: still only "companies without websites" (pos 97).
+- **GA4 (16-22 Nov):** chatgpt.com 5, google organic 2, direct 23; key events 0.
+- **Bing:** 155 indexed, 18 impressions / 0 clicks (unchanged). No URL batch sent (session permission check).
+- **Movers:** up: 7d impressions 339 -> 397, best day 110, first click since 17 Nov. Down: none.
+- **Work:** none this run. Today's changes (C8-C12: homepage meta/FAQs, HVAC FAQ, guide links, pricing fix,
+  content-plan FAQs) went live 23 Nov and need recrawl before they can be measured.
