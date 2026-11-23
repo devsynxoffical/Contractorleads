@@ -158,3 +158,15 @@ marketing pages only from 18 Nov), URL Inspection, Bing Webmaster Tools.
 - **Movers:** up: 7d impressions 256 -> 275; /apollo-alternative and /locations now discovered. Down: none.
 - **Work:** none. Planned homepage "popular lists" links checked and dropped: the homepage already links
   the 3 new pages, /pricing (4x) and /contractor-email-finder (2x); indexing is a crawl-priority issue.
+
+### 23 Nov 05:23 UTC
+
+- **GSC 7d (16-22 Nov):** 0 clicks, 339 impressions, avg position ~88 (prev run 275). **21 Nov: 97 impressions
+  (best day on record)**, 22 Nov: 52. **GSC 28d (26 Oct-22 Nov):** 4 clicks, 512 impressions (prev ~425).
+  Queries at position <= 60: 0. Only non-homepage query still "companies without websites" (pos 97).
+- **Indexing:** /contractor-email-finder back to "Discovered"; /pricing "unknown to Google";
+  /industries/roofing/texas "Crawled - not indexed" (last crawl 2 Aug).
+- **GA4 (16-21 Nov):** chatgpt.com 5, google organic 2, direct 19; key events 0.
+- **Bing:** 155 indexed (prev 150), 135 pages crawled last day, 18 impressions / 0 clicks.
+- **Movers:** up: 7d impressions 275 -> 339, best day 97, Bing index 150 -> 155. Down: none.
+- **Work:** none (no query within reach of page 1-4; new pages still collecting data).
