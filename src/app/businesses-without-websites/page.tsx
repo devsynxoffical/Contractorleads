@@ -137,6 +137,10 @@ const FAQS = [
     q: "Is the first list really free?",
     a: "Yes. Your first list (10 leads) is free and no credit card is required.",
   },
+  {
+    q: "How do I find clients for web design?",
+    a: "Look for local businesses that have customers but a missing or weak website. Search a trade and city, keep the ones with recent reviews and no website or a low website score, then call or email the owner about what customers see today and offer a simple site at a clear monthly price.",
+  },
 ];
 
 export default function BusinessesWithoutWebsitesPage() {

@@ -134,6 +134,10 @@ const FAQS = [
     q: "How is this different from a contractor contact list template?",
     a: "A template is an empty sheet. Contractor Leads fills it with real, verified contractor contacts.",
   },
+  {
+    q: "What fields are in a contractor email list?",
+    a: "Each record has the business name, trade, address, phone and website from Google; the owner or decision-maker where it can be matched; the email with its status (safe, catch-all, role-based or invalid); the Google rating and review count; and scores for website, SEO and ads.",
+  },
 ];
 
 export default function ContractorEmailListPage() {
