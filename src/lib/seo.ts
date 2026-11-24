@@ -85,6 +85,14 @@ export const MARKETING_FAQ: Array<{ q: string; a: string }> = [
     q: "Which trades can I search?",
     a: "HVAC, roofing, plumbing, electrical, landscaping, remodeling, cleaning and many more home-service and local trades.",
   },
+  {
+    q: "What do you get with each contractor lead?",
+    a: "Each contractor lead includes the business name, trade, address and phone from Google, its website or a No website flag, the Google rating and review count, the owner's name and a verified email where they can be found, Meta ad status, and scores from 0 to 100 for website, SEO and ads, ranked Hot, Warm or Nurture.",
+  },
+  {
+    q: "How does lead generation for marketing agencies work?",
+    a: "It works in four steps: pick a niche and a city, build a list of the businesses there, rank them by a visible gap such as no website or no ads, and send each owner a short message about that gap. Contractor Leads does the first three steps and drafts the first message for each lead.",
+  },
 ];
 
 export type TradeSeo = {
