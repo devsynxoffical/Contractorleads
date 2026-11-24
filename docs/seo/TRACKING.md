@@ -195,3 +195,15 @@ marketing pages only from 18 Nov), URL Inspection, Bing Webmaster Tools.
 - **Bing:** 164 indexed (prev 155), 147 pages crawled last day, 18 impressions / 0 clicks.
 - **Movers:** up: 7d impressions 397 -> 423, 28d 565 -> 614, Bing index 155 -> 164. Down: none.
 - **Work:** none; 23 Nov changes not recrawled yet, no query in reach of page 1-4.
+
+### 24 Nov 17:24 UTC
+
+- **GSC 7d (17-23 Nov):** 1 click, 480 impressions, avg position ~88 (prev run 423). **23 Nov final: 112
+  impressions (new best day)**. **GSC 28d (28 Oct-24 Nov):** 5 clicks, ~677 impressions (prev 614).
+  Queries at position <= 60: 0. Non-homepage: only "companies without websites" (pos 97).
+- **Indexing:** homepage still last crawled 20 Nov (23-24 Nov changes not seen yet); /contractor-email-finder and
+  /google-maps-scraper "unknown to Google" (were "Discovered"). New referring URL seen: devsynx.com client page.
+- **GA4 (17-23 Nov):** chatgpt.com 7 (prev 5), google organic 4 (prev 2), direct 24; key events 0.
+- **Bing:** 164 indexed, 18 impressions / 0 clicks (unchanged).
+- **Movers:** up: 7d impressions 423 -> 480, best day 112, ChatGPT 5 -> 7, Google organic 2 -> 4. Down: none.
+- **Work:** none; recent changes not recrawled yet and no query in reach of page 1-4.
