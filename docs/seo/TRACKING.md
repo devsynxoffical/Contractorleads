@@ -183,3 +183,15 @@ marketing pages only from 18 Nov), URL Inspection, Bing Webmaster Tools.
 - **Movers:** up: 7d impressions 339 -> 397, best day 110, first click since 17 Nov. Down: none.
 - **Work:** none this run. Today's changes (C8-C12: homepage meta/FAQs, HVAC FAQ, guide links, pricing fix,
   content-plan FAQs) went live 23 Nov and need recrawl before they can be measured.
+
+### 24 Nov 05:24 UTC
+
+- **GSC 7d (17-23 Nov):** 1 click, 423 impressions, avg position ~88 (prev run 397). 23 Nov: 55 (partial).
+  **GSC 28d (28 Oct-24 Nov):** 5 clicks, 614 impressions (prev ~565). Queries at position <= 60: 0.
+  Non-homepage queries: still only "companies without websites" -> /businesses-without-websites (pos 97).
+- **Indexing:** homepage last crawled 20 Nov (23 Nov meta/FAQ changes not seen yet); /industries/hvac indexed,
+  last crawl 2 Aug (not recrawled since); /pricing still "unknown to Google".
+- **GA4 (17-22 Nov):** chatgpt.com 5, google organic 2, direct 22; key events 0.
+- **Bing:** 164 indexed (prev 155), 147 pages crawled last day, 18 impressions / 0 clicks.
+- **Movers:** up: 7d impressions 397 -> 423, 28d 565 -> 614, Bing index 155 -> 164. Down: none.
+- **Work:** none; 23 Nov changes not recrawled yet, no query in reach of page 1-4.
