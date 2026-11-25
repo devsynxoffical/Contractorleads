@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { leadOwnershipWhere } from "@/lib/lead-ownership";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/auth";
 import { requireMessagingAddon } from "@/lib/messaging-addon-server";
@@ -223,7 +224,7 @@ export async function POST(req: Request) {
             const parsedIds = JSON.parse(segment.leadIdsJson);
             if (Array.isArray(parsedIds) && parsedIds.length > 0) {
               const leadsFromDb = await prisma.lead.findMany({
-                where: { id: { in: parsedIds } },
+                where: { id: { in: parsedIds }, ...leadOwnershipWhere(user.id) },
               });
               rawLeads = await overlayWorkspaceContacts(user.id, leadsFromDb);
             }
@@ -242,8 +243,9 @@ export async function POST(req: Request) {
           if (segment.state) whereClause.state = segment.state;
           if (segment.city) whereClause.city = { contains: segment.city, mode: "insensitive" };
 
+          // Only this user's leads: the pool is shared between customers.
           const matching = await prisma.lead.findMany({
-            where: whereClause,
+            where: { ...whereClause, ...leadOwnershipWhere(user.id) },
             take: 2500,
             orderBy: { createdAt: "desc" },
           });
@@ -252,7 +254,7 @@ export async function POST(req: Request) {
       }
     } else if (Array.isArray(leadIds) && leadIds.length > 0) {
       const leadsFromDb = await prisma.lead.findMany({
-        where: { id: { in: leadIds } },
+        where: { id: { in: leadIds }, ...leadOwnershipWhere(user.id) },
       });
       rawLeads = await overlayWorkspaceContacts(user.id, leadsFromDb);
     } else if (body.leads && Array.isArray(body.leads)) {

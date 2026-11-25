@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { leadOwnershipWhere } from "@/lib/lead-ownership";
 import { getSessionUser } from "@/lib/auth";
 import { requireMessagingAddon } from "@/lib/messaging-addon-server";
 import { prisma } from "@/lib/prisma";
@@ -31,7 +32,9 @@ export async function POST(request: Request) {
   }
 
   // 1. Resolve or create associated Lead record
-  let targetLead = leadId ? await prisma.lead.findUnique({ where: { id: leadId } }) : null;
+  let targetLead = leadId
+    ? await prisma.lead.findFirst({ where: { id: leadId, ...leadOwnershipWhere(user.id) } })
+    : null;
 
   if (!targetLead) {
     targetLead = await prisma.lead.findFirst({

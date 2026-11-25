@@ -572,6 +572,7 @@ export function LeadDetailView({
   );
   const [activityRefresh, setActivityRefresh] = useState(0);
   const [popup, setPopup] = useState<PopupState | null>(null);
+  const [unlocking, setUnlocking] = useState(false);
 
   const [crmBusy, setCrmBusy] = useState(false);
   const [noteBusy, setNoteBusy] = useState(false);
@@ -1320,6 +1321,39 @@ export function LeadDetailView({
           </div>
         </div>
       </div>
+
+      {lead.unlocked === false && !isAdmin ? (
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[14px] text-amber-900">
+          <span>Contact details are hidden until you unlock this lead (1 credit).</span>
+          <Button
+            size="sm"
+            disabled={unlocking}
+            onClick={async () => {
+              setUnlocking(true);
+              try {
+                const res = await fetch(`/api/leads/${leadId}/unlock`, { method: "POST" });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                  setPopup({
+                    kind: "error",
+                    title: "Could not unlock",
+                    message: data.error ?? "Not enough credits. Upgrade on the Billing page.",
+                    actionUrl: "/billing",
+                    actionLabel: "Go to Billing",
+                  });
+                  return;
+                }
+                await load();
+                router.refresh();
+              } finally {
+                setUnlocking(false);
+              }
+            }}
+          >
+            {unlocking ? "Unlocking..." : "Unlock for 1 credit"}
+          </Button>
+        </div>
+      ) : null}
 
       <div className="mt-6 grid gap-5 lg:grid-cols-3">
         <div className="space-y-5 lg:col-span-2">

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { leadOwnershipWhere } from "@/lib/lead-ownership";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
@@ -172,6 +173,7 @@ export async function POST(request: Request) {
   const leads = await prisma.lead.findMany({
     where: {
       id: { in: leadIds.slice(0, 2500) },
+      ...leadOwnershipWhere(user.id),
     },
     select: {
       id: true,

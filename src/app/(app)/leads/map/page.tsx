@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { redactUnpaidLeads } from "@/lib/lead-access";
 import { getSessionUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import {
@@ -13,7 +14,7 @@ export default async function LeadMapPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
-  const leads = await prisma.lead.findMany({
+  const rawLeads = await prisma.lead.findMany({
     where: {
       search: { userId: user.id },
     },
@@ -34,6 +35,9 @@ export default async function LeadMapPage() {
       leadScore: true,
     },
   });
+
+  // Trial accounts only see paid leads on the map (pins reveal the street address).
+  const leads = (await redactUnpaidLeads(user, rawLeads)).filter((l) => l.unlocked);
 
   const geoLeads = [];
   const backfill: Array<{ id: string; latitude: number; longitude: number }> =

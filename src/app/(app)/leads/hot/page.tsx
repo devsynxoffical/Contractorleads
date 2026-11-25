@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { redactUnpaidLeads } from "@/lib/lead-access";
 import { getSessionUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -15,14 +16,17 @@ export default async function HotLeadsPage() {
   const user = await getSessionUser();
   if (!user) redirect("/login");
 
-  const leads = await prisma.lead.findMany({
-    where: {
-      qualityTier: "hot",
-      search: { userId: user.id },
-    },
-    orderBy: { leadScore: "desc" },
-    take: 50,
-  });
+  const leads = await redactUnpaidLeads(
+    user,
+    await prisma.lead.findMany({
+      where: {
+        qualityTier: "hot",
+        search: { userId: user.id },
+      },
+      orderBy: { leadScore: "desc" },
+      take: 50,
+    }),
+  );
 
   return (
     <div className="page-pad">

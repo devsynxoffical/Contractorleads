@@ -16,6 +16,7 @@ import { LeadSegmentBar } from "@/components/leads/lead-segment-bar";
 import { HiOutlineFire, HiOutlineMagnifyingGlass } from "react-icons/hi2";
 import { startOfDaysAgo, startOfToday } from "@/lib/lead-date-filters";
 import { ensureEmailVerificationColumns } from "@/lib/email-verifier-db";
+import { redactUnpaidLeads } from "@/lib/lead-access";
 
 export default async function AllLeadsPage({
   searchParams,
@@ -236,6 +237,8 @@ export default async function AllLeadsPage({
   ]);
 
   const pipelineLeadIds = savedRows.map((s) => s.leadId);
+  // Trial accounts only see contacts on leads they paid credits for.
+  const visibleLeads = await redactUnpaidLeads(user, leads);
 
   const categories = categoryRows
     .map((r) => r.industry)
@@ -302,7 +305,7 @@ export default async function AllLeadsPage({
       <div className="overflow-x-auto rounded-xl border border-border bg-[var(--surface)] shadow-[var(--shadow-card)]">
         <AllLeadsTableBody
           pipelineLeadIds={pipelineLeadIds}
-          leads={leads.map((lead) => ({
+          leads={visibleLeads.map((lead) => ({
             id: lead.id,
             businessName: lead.businessName,
             industry: lead.industry,
