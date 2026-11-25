@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { leadOwnershipWhere } from "@/lib/lead-ownership";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { verifyEmailBatch, type EmailVerificationResult } from "@/lib/email-verifier";
@@ -42,7 +43,7 @@ export async function POST(request: Request) {
     let leadsToVerify: Array<{ id: string; email: string | null; businessName: string }> = [];
     if (targetLeadIds.length > 0) {
       leadsToVerify = await prisma.lead.findMany({
-        where: { id: { in: targetLeadIds } },
+        where: { id: { in: targetLeadIds }, ...leadOwnershipWhere(user.id) },
         select: { id: true, email: true, businessName: true },
       });
     } else {
@@ -224,7 +225,7 @@ export async function POST(request: Request) {
   // Mode B: Directly verify a list of lead IDs (from live scraped leads in Lead Finder)
   if (leadIds && leadIds.length > 0) {
     const leads = await prisma.lead.findMany({
-      where: { id: { in: leadIds } },
+      where: { id: { in: leadIds }, ...leadOwnershipWhere(user.id) },
       select: { id: true, email: true, businessName: true },
     });
 

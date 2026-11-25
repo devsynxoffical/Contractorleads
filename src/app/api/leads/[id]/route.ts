@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { hidesUnpaidContacts, isLeadUnlocked, redactLead } from "@/lib/lead-access";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { CREDIT_COSTS } from "@/lib/constants";
@@ -103,6 +104,9 @@ export async function GET(
     },
   });
 
+  // Found through the user's own searches or saves (not their imports, emails or campaigns).
+  const fromSearchOrSave = Boolean(lead);
+
   if (!lead) {
     const accessible = await findAccessibleLead(user, id);
     if (accessible) {
@@ -181,13 +185,21 @@ export async function GET(
   // This workspace's private enrichment results (paid owner / email / mobile) for the lead.
   const [withContact] = await overlayWorkspaceContacts(user.id, [lead]);
 
+  // Trial accounts only see contacts on search leads they paid credits for.
+  const unlocked =
+    !fromSearchOrSave ||
+    !hidesUnpaidContacts(user.subscriptionStatus) ||
+    (await isLeadUnlocked(user.id, id));
+
   return NextResponse.json({
-    lead: { ...withContact, unlocked: true },
+    lead: redactLead(withContact as unknown as Record<string, unknown>, unlocked),
     unlock: {
-      unlocked: true,
+      unlocked,
       cost: CREDIT_COSTS.lead,
       creditsRemaining: user.creditsRemaining,
-      note: "Viewing is free. Credits are charged only when exporting.",
+      note: unlocked
+        ? "Viewing is free. Credits are charged only when exporting."
+        : `Unlock this lead for ${CREDIT_COSTS.lead} credit to see its contact details.`,
     },
     navigation,
   });

@@ -40,6 +40,32 @@ export async function isLeadUnlocked(userId: string, leadId: string) {
   return Boolean(row);
 }
 
+/**
+ * Trial accounts (never paid) only see contact details for leads they spent credits on.
+ * Paying customers keep full access to everything already in their account.
+ */
+export function hidesUnpaidContacts(subscriptionStatus: string | null | undefined): boolean {
+  return (subscriptionStatus ?? "trialing") === "trialing";
+}
+
+/**
+ * Redact the leads this user has not unlocked, when their account hides unpaid contacts.
+ * Leads keep their id, name, score and location so lists still render.
+ */
+export async function redactUnpaidLeads<T extends { id: string } & Record<string, unknown>>(
+  user: { id: string; subscriptionStatus?: string | null },
+  leads: T[],
+): Promise<Array<T & { unlocked: boolean }>> {
+  if (!hidesUnpaidContacts(user.subscriptionStatus)) {
+    return leads.map((l) => ({ ...l, unlocked: true }));
+  }
+  const unlocked = await getUnlockedLeadIds(
+    user.id,
+    leads.map((l) => l.id),
+  );
+  return leads.map((l) => redactLead(l, unlocked.has(l.id)));
+}
+
 /** Strip contact / enrichment PII until the user pays to unlock. */
 export function redactLead<T extends Record<string, unknown>>(
   lead: T,
@@ -79,6 +105,13 @@ export function redactLead<T extends Record<string, unknown>>(
     linkedinOwnerUrl: null,
     youtube: null,
     facebookAdsData: null,
+    decisionMakerName: null,
+    decisionMakerFirstName: null,
+    decisionMakerLastName: null,
+    decisionMakerLinkedIn: null,
+    decisionMakerProfessionalProfile: null,
+    decisionMakerEmail: null,
+    decisionMakerDirectPhone: null,
   } as T & { unlocked: boolean };
 }
 

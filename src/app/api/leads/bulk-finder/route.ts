@@ -1,4 +1,12 @@
 import { NextResponse } from "next/server";
+import { leadOwnershipWhere } from "@/lib/lead-ownership";
+import {
+  getLeadGenerationCapacity,
+  leadLimitPayload,
+  redactLead,
+  redactUnpaidLeads,
+  unlockLeads,
+} from "@/lib/lead-access";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/credits";
@@ -64,12 +72,15 @@ export async function GET(request: Request) {
     Math.max(1, Number(searchParams.get("take") ?? 100) || 100),
   );
   const skip = Math.max(0, Number(searchParams.get("skip") ?? 0) || 0);
+  // Only this user's own leads. Leads are a shared pool, so an unscoped query here
+  // exposed every customer's contacts to any signed-in user.
+  const mine = leadOwnershipWhere(user.id);
 
   if (!industry) {
     // Return all niches with counts
     const grouped = await prisma.lead.groupBy({
       by: ["industry"],
-      where: { industry: { not: null } },
+      where: { AND: [mine, { industry: { not: null } }] },
       _count: { _all: true },
       orderBy: { _count: { industry: "desc" } },
       take: 200,
@@ -85,10 +96,10 @@ export async function GET(request: Request) {
 
     // Global contact stats across all leads
     const [totalLeads, totalEmails, totalPhones, totalOwners] = await Promise.all([
-      prisma.lead.count(),
-      prisma.lead.count({ where: { email: { not: null } } }),
-      prisma.lead.count({ where: { phone: { not: null } } }),
-      prisma.lead.count({ where: { ownerName: { not: null } } }),
+      prisma.lead.count({ where: mine }),
+      prisma.lead.count({ where: { AND: [mine, { email: { not: null } }] } }),
+      prisma.lead.count({ where: { AND: [mine, { phone: { not: null } }] } }),
+      prisma.lead.count({ where: { AND: [mine, { ownerName: { not: null } }] } }),
     ]);
 
     return NextResponse.json({
@@ -105,6 +116,7 @@ export async function GET(request: Request) {
   // Build where clause for industry & optional contact filters
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: any = {
+    AND: [mine],
     industry: { equals: industry, mode: "insensitive" },
   };
 
@@ -169,22 +181,25 @@ export async function GET(request: Request) {
     leads,
   ] = await Promise.all([
     prisma.lead.count({
-      where: { industry: { equals: industry, mode: "insensitive" } },
+      where: { AND: [mine], industry: { equals: industry, mode: "insensitive" } },
     }),
     prisma.lead.count({
       where: {
+        AND: [mine],
         industry: { equals: industry, mode: "insensitive" },
         email: { not: null },
       },
     }),
     prisma.lead.count({
       where: {
+        AND: [mine],
         industry: { equals: industry, mode: "insensitive" },
         phone: { not: null },
       },
     }),
     prisma.lead.count({
       where: {
+        AND: [mine],
         industry: { equals: industry, mode: "insensitive" },
         ownerName: { not: null },
       },
@@ -208,7 +223,7 @@ export async function GET(request: Request) {
       withOwner: totalNicheOwners,
       filteredTotal,
     },
-    leads,
+    leads: await redactUnpaidLeads(user, leads),
   });
 }
 
@@ -234,9 +249,38 @@ export async function POST(request: Request) {
       zip,
       customLocation,
       radius,
-      targetLeadCount,
+      targetLeadCount: requestedCount,
       companySize,
     } = resolved.criteria;
+
+    // Same credit rules as Lead Finder: never generate more leads than the balance pays for.
+    const capacity = await getLeadGenerationCapacity(user.id);
+    if (capacity.available < 1) {
+      return NextResponse.json(leadLimitPayload(capacity), { status: 402 });
+    }
+    const targetLeadCount = Math.min(requestedCount, capacity.available);
+
+    /** Charge 1 lead credit per returned lead; hide contacts on any lead the balance did not cover. */
+    const billAndRedact = async <T extends { id: string } & Record<string, unknown>>(found: T[]) => {
+      let unlockedIds = new Set<string>();
+      let charged = 0;
+      if (found.length) {
+        try {
+          const billed = await unlockLeads({
+            userId: user.id,
+            leadIds: found.map((l) => l.id),
+            action: "lead_generate",
+            allowPartial: true,
+          });
+          unlockedIds = new Set(billed.unlockedIds);
+          charged = billed.charged;
+        } catch {
+          unlockedIds = new Set();
+        }
+      }
+      const leads = found.map((l) => redactLead(l, unlockedIds.has(l.id)));
+      return { leads, charged, billedCount: unlockedIds.size };
+    };
 
     const wantsStream =
       body.stream === true ||
@@ -285,7 +329,8 @@ export async function POST(request: Request) {
             requireEmail: true,
             onLeadDiscovered: async (lead, progress) => {
               await sendEvent("lead", {
-                lead,
+                // Contacts are sent in the final "done" event, after billing.
+                lead: redactLead(lead as unknown as Record<string, unknown>, false),
                 current: progress.current,
                 target: progress.target,
                 placeName: progress.placeName,
@@ -294,12 +339,13 @@ export async function POST(request: Request) {
             },
           });
 
-          // Fetch fresh detailed records for the discovered batch
-          const finalLeads = await prisma.lead.findMany({
+          // Fetch fresh detailed records for the discovered batch, then bill them
+          const fetched = await prisma.lead.findMany({
             where: { id: { in: result.leads.map((l) => l.id) } },
             orderBy: [{ createdAt: "desc" }, { leadScore: "desc" }],
             select: contactSelect,
           });
+          const { leads: finalLeads } = await billAndRedact(fetched);
 
           await logActivity(
             user.id,
@@ -367,11 +413,12 @@ export async function POST(request: Request) {
       requireEmail: true,
     });
 
-    const leads = await prisma.lead.findMany({
+    const fetched = await prisma.lead.findMany({
       where: { id: { in: result.leads.map((l) => l.id) } },
       orderBy: [{ createdAt: "desc" }, { leadScore: "desc" }],
       select: contactSelect,
     });
+    const { leads } = await billAndRedact(fetched);
 
     const withEmail = leads.filter((l) => Boolean(l.email)).length;
     const withPhone = leads.filter((l) => Boolean(l.phone)).length;

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { leadOwnershipWhere } from "@/lib/lead-ownership";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
@@ -45,10 +46,10 @@ export async function GET(request: Request) {
         if (Array.isArray(leadIds) && leadIds.length > 0) {
           const [totalCount, directLeads] = await Promise.all([
             prisma.lead.count({
-              where: { id: { in: leadIds } },
+              where: { id: { in: leadIds }, ...leadOwnershipWhere(user.id) },
             }),
             prisma.lead.findMany({
-              where: { id: { in: leadIds } },
+              where: { id: { in: leadIds }, ...leadOwnershipWhere(user.id) },
               select: {
                 id: true,
                 businessName: true,
