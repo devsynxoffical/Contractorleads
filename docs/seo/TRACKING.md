@@ -219,3 +219,15 @@ marketing pages only from 18 Nov), URL Inspection, Bing Webmaster Tools.
 - **Bing:** 170 indexed (prev 164), 145 pages crawled last day, 18 impressions / 0 clicks.
 - **Movers:** up: 7d impressions 480 -> 512, 28d 677 -> 717, Bing index 164 -> 170. Down: none.
 - **Work:** none; nothing within reach of page 1-4 and recent changes not recrawled.
+
+### 25 Nov 17:23 UTC
+
+- **GSC 7d (18-24 Nov):** 1 click, 553 impressions, avg position ~89 (prev run 512). 24 Nov final: 88.
+  **GSC 28d (29 Oct-25 Nov):** 5 clicks, ~762 impressions (prev 717). Queries at position <= 60: 0;
+  no non-homepage queries in the last 4 days.
+- **Indexing:** homepage and /businesses-without-websites indexed, both last crawled 20 Nov;
+  /industries/roofing/texas still "Crawled - not indexed" (noindex since 25 Nov, not recrawled yet).
+- **GA4 (18-24 Nov):** chatgpt.com 10 (prev 7), google organic 4, direct 22, l.facebook.com 1; key events 0.
+- **Bing:** 170 indexed, 18 impressions / 0 clicks (unchanged).
+- **Movers:** up: 7d impressions 512 -> 553, ChatGPT sessions 7 -> 10. Down: none.
+- **Work:** none this run (week 1 city-plan noindex and the lead-access security fix shipped earlier today).
