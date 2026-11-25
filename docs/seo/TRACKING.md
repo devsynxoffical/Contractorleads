@@ -207,3 +207,15 @@ marketing pages only from 18 Nov), URL Inspection, Bing Webmaster Tools.
 - **Bing:** 164 indexed, 18 impressions / 0 clicks (unchanged).
 - **Movers:** up: 7d impressions 423 -> 480, best day 112, ChatGPT 5 -> 7, Google organic 2 -> 4. Down: none.
 - **Work:** none; recent changes not recrawled yet and no query in reach of page 1-4.
+
+### 25 Nov 05:23 UTC
+
+- **GSC 7d (18-24 Nov):** 1 click, 512 impressions, avg position ~89 (prev run 480). 24 Nov: 47 (partial).
+  **GSC 28d (29 Oct-25 Nov):** 5 clicks, 717 impressions (prev ~677). Queries at position <= 60: 0.
+  Non-homepage: only "companies without websites" (pos 97).
+- **Indexing:** homepage still last crawled 20 Nov; /pricing back to "Discovered - currently not indexed";
+  /industries/pest-control/oregon (removed sitemap) still indexed, last crawl 28 Sep.
+- **GA4 (18-23 Nov):** chatgpt.com 7, google organic 3, direct 17; key events 0.
+- **Bing:** 170 indexed (prev 164), 145 pages crawled last day, 18 impressions / 0 clicks.
+- **Movers:** up: 7d impressions 480 -> 512, 28d 677 -> 717, Bing index 164 -> 170. Down: none.
+- **Work:** none; nothing within reach of page 1-4 and recent changes not recrawled.
