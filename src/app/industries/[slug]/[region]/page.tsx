@@ -67,7 +67,6 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const region = getRegionBySlug(regionSlug);
   if (!trade || !region) return {};
 
-  const priority = isPriorityTrade(trade.slug);
 
   // List intent ("roofing companies in Texas"), which matches what the page offers. The old
   // "[Trade] Contractor Leads in [State]" phrasing is mostly searched by contractors who
@@ -132,7 +131,10 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       `${trade.name.toLowerCase()} leads for agencies`,
       "verified contractor leads",
     ],
-    noIndex: !priority, // Non-priority trades (11 trades) get noindex, follow
+    // City page plan 25 Nov 2026, week 1: all trade + state pages are noindex,follow
+    // (20 impressions, 0 clicks in 28 days). The 18 /industries/{trade} hubs stay indexable.
+    // Week 11 (about 10 Feb 2027): 301 each to its /industries/{trade} parent.
+    noIndex: true,
   });
 }
 

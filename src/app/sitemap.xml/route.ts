@@ -18,10 +18,6 @@ export async function GET() {
     <lastmod>${now}</lastmod>
   </sitemap>
   <sitemap>
-    <loc>${base}/sitemap-states.xml</loc>
-    <lastmod>${now}</lastmod>
-  </sitemap>
-  <sitemap>
     <loc>${base}/sitemap-locations.xml</loc>
     <lastmod>${LOCATIONS_UPDATED}</lastmod>
   </sitemap>
@@ -44,10 +40,6 @@ export async function GET() {
   <sitemap>
     <loc>${base}/sitemap-legacy.xml</loc>
     <lastmod>2026-11-16</lastmod>
-  </sitemap>
-  <sitemap>
-    <loc>${base}/sitemap-removed.xml</loc>
-    <lastmod>2026-11-18</lastmod>
   </sitemap>
 </sitemapindex>`;
 

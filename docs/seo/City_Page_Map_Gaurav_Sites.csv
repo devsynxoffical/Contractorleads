@@ -1,0 +1,94 @@
+Site,URL,Target keywords,US volume/mo (Semrush 25 Nov),Lowest KD,Action,Week
+FTP,/ai-answering-service,ai answering service; ai phone answering service,5200,23,Build pillar + Cities we serve,2
+FTP,/ai-answering-service/houston-tx,answering service houston; virtual receptionist houston; ai receptionist houston; ai agency houston,340,6,Build city,3
+FTP,/ai-answering-service/new-york-ny,answering service new york; virtual receptionist new york; ai agency new york,310,6,Build city,3
+FTP,/ai-answering-service/miami-fl,answering service miami; virtual receptionist miami,210,9,Build city,4
+FTP,/ai-answering-service/dallas-tx,answering service dallas; virtual receptionist dallas,190,13,Build city,4
+FTP,/ai-answering-service/atlanta-ga,virtual receptionist atlanta,70,7,Tier 2 only if tier 1 gets impressions,12
+FTP,/ai-answering-service/boston-ma,virtual receptionist boston,50,7,Tier 2,12
+FTP,/ai-answering-service/los-angeles-ca,ai automation agency los angeles; virtual receptionist los angeles,60,,Tier 2,12
+FTP,/locations/texas,"(Lead Generation Agency in Texas, QLX conflict)",0,,301 to /ai-answering-service/houston-tx,1
+FTP,/locations/new-york,(QLX conflict),0,,301 to /ai-answering-service/new-york-ny,1
+FTP,/locations/florida,(QLX conflict),0,,301 to /ai-answering-service/miami-fl,1
+FTP,/locations/california,(QLX conflict),0,,301 to /ai-answering-service,1
+FTP,/locations,hub,0,,301 to /ai-answering-service,1
+FTP,/gohighlevel-agency,gohighlevel agency; gohighlevel expert; gohighlevel consultant; gohighlevel setup service,590,26,Build,5
+FTP,/ai-receptionist/law-firms,ai receptionist for law firms; ai answering service for law firms,180,17,Build,6
+FTP,/ai-receptionist/medical-office,ai receptionist for medical office,140,21,Build,6
+FTP,/ai-receptionist/dentists,ai receptionist for dentists,110,16,"Build, link with /ai-voice-agents/dental-clinics",6
+FTP,/ai-receptionist/hvac,ai receptionist for hvac,70,11,Expand existing,6
+FTP,/ai-receptionist/plumbers,ai receptionist for plumbers,70,15,Expand existing,6
+FTP,/ai-receptionist/real-estate,ai receptionist for real estate,70,11,Expand existing,6
+FTP,/ai-receptionist/restaurants,ai receptionist for restaurants,70,15,Build,7
+FTP,/ai-receptionist/chiropractors,ai receptionist for chiropractors,50,10,Build,7
+FTP,/ai-receptionist/med-spa,ai receptionist for med spa,50,8,Build,7
+FTP,/ai-receptionist/small-business,ai receptionist for small business; ai answering service for small business,2160,53,Build,8
+FTP,/ai-voice-agents/real-estate,ai voice agent for real estate,390,22,Build,9
+FTP,/ai-automation-agency,ai automation agency; ai automation agency near me,3690,47,Build,10
+QLX,/appointment-setting-services,appointment setting services; appointment setting companies; appointment setting agency,2070,5,Build pillar,1
+QLX,/lead-generation-agency,lead generation companies near me; lead generation agency near me; lead generation company usa,290,15,Build US hub,2
+QLX,/lead-generation-agency/new-york-ny,lead generation agency new york; lead generation nyc; lead generation companies in new york; b2b lead generation new york,170,11,Build city,3
+QLX,/lead-generation-agency/miami-fl,lead generation agency miami; lead generation miami,150,2,Build city,3
+QLX,/lead-generation-agency/chicago-il,lead generation chicago; lead generation company chicago,120,4,Build city,4
+QLX,/lead-generation-agency/atlanta-ga,lead generation atlanta; lead generation company atlanta; lead generation agency atlanta,120,3,Build city,4
+QLX,/lead-generation-agency/denver-co,lead generation denver,120,7,Build city,5
+QLX,/lead-generation-agency/tampa-fl,lead generation tampa,120,17,Build city,5
+QLX,/lead-generation-agency/houston-tx,lead generation houston,80,4,Build city,6
+QLX,/lead-generation-agency/dallas-tx,lead generation dallas,50,8,Build city,6
+QLX,/lead-generation-agency/florida,lead generation agency florida; lead generation companies in florida,90,4,Build state hub,7
+QLX,/lead-generation-agency/texas,lead generation agency texas,30,,Build state hub,7
+QLX,/for/real-estate-investors,real estate investor leads; lead generation for real estate investors,1670,10,Build,8
+QLX,/for/insurance-agencies,life insurance leads; insurance leads; lead generation for insurance agents,3890,20,Expand existing,8
+QLX,/for/final-expense,final expense leads,1300,17,Build,9
+QLX,/for/health-insurance,health insurance leads; medicare leads,1310,13,Build,9
+QLX,/for/mortgage,mortgage leads; lead generation for mortgage brokers,1170,20,Build,10
+QLX,/for/financial-advisors,lead generation for financial advisors; financial advisor leads,580,14,Build,10
+QLX,/for/coaches,lead generation for coaches; coaching leads,350,10,Build later,12
+QLX,/for/saas,lead generation for saas,320,23,Build later,12
+QLX,/b2b-lead-generation,b2b lead generation companies; b2b leads,4300,40,Build long-term,12
+BSH,/locations/los-angeles,shopify developer los angeles; ecommerce agency los angeles; shopify agency los angeles; facebook ads agency los angeles,600,3,Retitle + rewrite,1
+BSH,/locations/new-york,shopify agency new york; ecommerce agency new york; ecommerce marketing agency nyc; facebook ads agency new york,540,4,Retitle + rewrite,1
+BSH,/shopify-agency,shopify agency; shopify experts near me,2540,6,Build pillar,2
+BSH,/locations/miami,facebook ads agency miami; ecommerce agency miami,200,2,Rewrite,3
+BSH,/locations/san-francisco,0 demand,0,,301 to /locations,3
+BSH,/locations/austin,shopify agency austin; facebook ads agency austin; ecommerce agency austin,160,0,Build city,4
+BSH,/locations/dallas,shopify agency dallas; facebook ads agency dallas,80,1,Build city,4
+BSH,/shopify-plus-agency,shopify plus agency,1600,21,Build,5
+BSH,/locations/london | /toronto | /sydney,"non-US, 30/20/40",0,,"Keep only with real clients, else 301 to /locations",6
+BSH,/for/cpg,cpg marketing agency,1600,16,Build or expand,7
+BSH,/for/food-and-beverage,food and beverage marketing agency,590,11,Build or expand,7
+BSH,/email-marketing-for-ecommerce,email marketing agency for ecommerce,480,3,Build,8
+BSH,/tiktok-shop-agency,tiktok shop agency,480,21,Build,8
+BSH,/for/fashion,fashion marketing agency,590,18,Build or expand,9
+BSH,/for/jewelry,jewelry marketing agency,320,20,Build or expand,9
+BSH,/dtc-marketing-agency,dtc marketing agency,210,10,Build,10
+BSH,/for/supplements,supplement marketing agency,110,3,Build or expand,10
+BSH,/locations/boston | /san-diego,shopify agency boston; shopify agency san diego,100,0,Tier 2,12
+SFS,/ugc-agency,ugc agency; ugc creator agency; ugc marketing agency; ugc ads agency; ugc ad agency,1260,30,Build pillar,1
+SFS,/ugc-ads-by-industry,merge target for low-demand ugc-ads-for pages,0,,"Build, 301 merged pages",2
+SFS,/ugc-ads-for-restaurants,ugc for restaurants,70,12,"Keep, expand",5
+SFS,/ugc-video-production,ugc video production,40,,Build,4
+SFS,(city pages),ugc agency [city] = 10 each,0,,Do not build,0
+CL,/industries/{trade}/{state} (900),20 impressions total in 28 days,0,,"Noindex,follow + remove from sitemap; 301 to /industries/{trade} in week 11",1
+CL,/locations/{state} (50),0 impressions,0,,"Noindex,follow; 301 to /contractor-license-lookup or home in week 11",1
+CL,/businesses-without-websites,businesses without websites; find businesses without websites,950,5,Build,2
+CL,/contractor-license-lookup,hub,0,,Build hub,3
+CL,/contractor-license-lookup/california,cslb license lookup; contractor license lookup california,14000,2,Build,3
+CL,/contractor-license-lookup/florida,dbpr license lookup; contractor license lookup florida,4900,41,Build,4
+CL,/contractor-license-lookup/arizona,contractor license lookup arizona; roc license lookup,500,14,Build,4
+CL,/contractor-license-lookup/utah,contractor license lookup utah,480,30,Build,5
+CL,/contractor-license-lookup/washington,contractor license lookup washington,210,16,Build,5
+CL,/contractor-license-lookup/texas,contractor license lookup texas,140,10,Build,5
+CL,/contractor-license-lookup/louisiana,contractor license lookup louisiana,260,30,Build,6
+CL,/contractor-license-lookup/alabama,contractor license lookup alabama,170,14,Build,6
+CL,/contractor-license-lookup/nevada,contractor license lookup nevada,110,20,Build,6
+CL,/contractor-license-lookup/colorado,contractor license lookup colorado,110,43,Build,7
+CL,/contractor-license-lookup/oregon,contractor license lookup oregon,70,26,Build,7
+CL,/contractor-license-lookup/virginia,contractor license lookup virginia,70,22,Build,7
+CL,/contractor-license-lookup/north-carolina,contractor license lookup nc,110,56,Build,7
+CL,/lead-finder,lead finder; b2b lead finder,930,29,Build,8
+CL,/leads-for-marketing-agencies,lead generation for marketing agencies; leads for marketing agencies; how to find clients for marketing agency,510,11,Build,8
+CL,/contractor-list,contractor list; list of contractors; contractor database,410,20,Build,9
+CL,/contractor-email-list,contractor email list; electrician email list; construction company email list,300,0,Build,9
+CL,/apollo-alternative,apollo alternative,320,21,Build,10
+CL,/google-maps-lead-extractor,google maps scraper; google maps lead extractor,1630,49,"Build later, compliant wording",12
