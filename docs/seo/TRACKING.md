@@ -231,3 +231,14 @@ marketing pages only from 18 Nov), URL Inspection, Bing Webmaster Tools.
 - **Bing:** 170 indexed, 18 impressions / 0 clicks (unchanged).
 - **Movers:** up: 7d impressions 512 -> 553, ChatGPT sessions 7 -> 10. Down: none.
 - **Work:** none this run (week 1 city-plan noindex and the lead-access security fix shipped earlier today).
+
+### 26 Nov 05:23 UTC
+
+- **GSC 7d (19-25 Nov):** 0 clicks, 586 impressions, avg position ~89 (prev run 553). 25 Nov: 57 (partial).
+  **GSC 28d (30 Oct-26 Nov):** 5 clicks, ~814 impressions (prev ~762). Queries at position <= 60: 0.
+- **Indexing:** /contractor-email-list indexed (last crawl 20 Nov); /pricing "Discovered - currently not indexed";
+  /industries/hvac/florida "Crawled - not indexed" (last crawl 15 Oct; noindex not yet seen).
+- **GA4 (19-24 Nov):** chatgpt.com 9, google organic 4, direct 21, l.facebook.com 1; key events 0.
+- **Bing:** 176 indexed (prev 170), 125 pages crawled last day, 18 impressions / 0 clicks.
+- **Movers:** up: 7d impressions 553 -> 586, 28d 762 -> 814, Bing index 170 -> 176. Down: none.
+- **Work:** none; /locations/{state} noindex (city plan week 1) becomes allowed 27 Nov under the 7-day rule.
