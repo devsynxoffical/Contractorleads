@@ -123,7 +123,7 @@ export function MarketingTrialModals() {
     return (
       <ModalShell title="Start finding contractor leads in the next 2 minutes" onClose={dismissWelcome}>
         <p className="mt-3 text-[14px] leading-relaxed text-slate-600">
-          Get trial credits the moment you sign up — enough to run real searches and see actual scored
+          Get trial credits the moment you sign up, enough to run real searches and see actual scored
           results, not a locked demo.
         </p>
         <ul className="mt-4 space-y-2 text-[13px] text-slate-600">
@@ -156,7 +156,7 @@ export function MarketingTrialModals() {
           <p className="mt-2 text-left text-[12px] text-red-600">{error}</p>
         ) : saved ? (
           <p className="mt-2 text-left text-[12px] text-emerald-600">
-            Saved — we&apos;ll keep you posted. Your browser session is stored for follow-up.
+            Saved, we&apos;ll keep you posted. Your browser session is stored for follow-up.
           </p>
         ) : null}
 
@@ -185,7 +185,7 @@ export function MarketingTrialModals() {
   }
 
   return (
-    <ModalShell title="Before you go — see what a real search looks like" onClose={dismissExit}>
+    <ModalShell title="Before you go: see what a real search looks like" onClose={dismissExit}>
       <p className="mt-3 text-[14px] leading-relaxed text-slate-600">
         Takes less than a minute. No card, no sales call required to start.
       </p>
@@ -206,7 +206,7 @@ export function MarketingTrialModals() {
       {error ? (
         <p className="mt-2 text-left text-[12px] text-red-600">{error}</p>
       ) : saved ? (
-        <p className="mt-2 text-left text-[12px] text-emerald-600">Thanks — you&apos;re on the list.</p>
+        <p className="mt-2 text-left text-[12px] text-emerald-600">Thanks, you&apos;re on the list.</p>
       ) : null}
 
       {email.trim() && !saved ? (

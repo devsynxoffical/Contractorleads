@@ -42,7 +42,7 @@ function MotionBackdrop({
   );
 }
 
-/** moon-walk.webp — dark cinematic feature grid (once) */
+/** moon-walk.webp, dark cinematic feature grid (once) */
 export function MoonWalkFeatureGrid() {
   const tiles = [
     {
@@ -58,7 +58,7 @@ export function MoonWalkFeatureGrid() {
     },
     {
       title: "Hot alerts",
-      copy: "Get flagged the moment a business crosses into the Hot tier — new listing, rising review velocity, or a site overhaul that signals they're investing in growth.",
+      copy: "Get flagged the moment a business crosses into the Hot tier: a new listing, rising review velocity, or a site overhaul that signals they're investing in growth.",
       badge: "Live queue",
       brand: {
         name: "OpenAI",
@@ -80,7 +80,7 @@ export function MoonWalkFeatureGrid() {
     },
     {
       title: "Verified owners",
-      copy: "We surface the actual decision-maker — owner, founder, or GM — scraped from the business's own site and cross-checked, not guessed from a name pattern.",
+      copy: "We surface the actual decision-maker (owner, founder or GM), scraped from the business's own site and cross-checked, not guessed from a name pattern.",
       badge: "Verified",
       brand: {
         name: "LinkedIn",
@@ -153,12 +153,12 @@ export function MoonWalkFeatureGrid() {
   );
 }
 
-/** purple-desert.webp — full-bleed CTA band (removed from homepage) */
+/** purple-desert.webp, full-bleed CTA band (removed from homepage) */
 export function MaterialHillsCta() {
   return null;
 }
 
-/** flower-field.webp — soft light card gallery (once) */
+/** flower-field.webp, soft light card gallery (once) */
 export function FlowerFieldProofCards() {
   const cards = [
     {
@@ -256,7 +256,7 @@ export function FlowerFieldProofCards() {
   );
 }
 
-/** Hyros-style bento — no film background (unique layout) */
+/** Hyros-style bento, no film background (unique layout) */
 export function SocialProofBento() {
   const proof = [
     {
@@ -301,13 +301,13 @@ export function SocialProofBento() {
     {
       type: "brand" as const,
       title: "Transparent pipeline",
-      body: "Every lead's source and verification status is visible — no black-box scraping",
+      body: "Every lead's source and verification status is visible, no black-box scraping",
       span: "sm:col-span-2",
     },
     {
       type: "stat" as const,
       value: "20",
-      label: "10 free leads on Starter to run your first real search — subscribe after you use them",
+      label: "10 free leads on Starter to run your first real search; subscribe after you use them",
       span: "sm:col-span-1",
       brand: {
         name: "OpenAI",

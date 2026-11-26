@@ -331,47 +331,40 @@ export function MarketingHeroSyntra() {
         {/* Row 1: copy | object | side cards */}
         <div className="grid items-center gap-10 lg:grid-cols-12 lg:gap-6">
           <div className="lg:col-span-5">
-            <motion.p
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="text-[11px] font-semibold uppercase tracking-[0.26em] text-fuchsia-300/90"
+            {/* Hero text animates with CSS, not JS: it paints with the HTML instead of waiting for
+                hydration (mobile LCP was ~5 s while it sat at opacity 0). */}
+            <p
+              className="hero-rise text-[11px] font-semibold uppercase tracking-[0.26em] text-fuchsia-300/90"
             >
               Contractor and local business lead lists
-            </motion.p>
+            </p>
             <h1 className="mt-3 max-w-[15ch] font-[family-name:var(--font-display)] text-[clamp(2.25rem,3.9vw,3.4rem)] font-semibold leading-[1.06] tracking-[-0.03em] text-white">
               {HEADLINE_WORDS.map((w, i) => (
-                <motion.span
+                <span
                   key={w}
-                  className="inline-block"
-                  initial={{ opacity: 0, y: 18, filter: "blur(6px)" }}
-                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                  transition={{ duration: 0.7, delay: 0.1 + i * 0.07, ease: EASE }}
+                  className="hero-rise inline-block"
+                  style={{ animationDelay: `${0.05 + i * 0.05}s` }}
                 >
                   {w}&nbsp;
-                </motion.span>
+                </span>
               ))}
               {HEADLINE_ACCENT.map((w, i) => (
-                <motion.span
+                <span
                   key={w}
-                  className="inline-block bg-gradient-to-r from-pink-300 via-fuchsia-300 to-violet-300 bg-clip-text text-transparent"
-                  initial={{ opacity: 0, y: 18, filter: "blur(6px)" }}
-                  animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                  transition={{ duration: 0.7, delay: 0.1 + (HEADLINE_WORDS.length + i) * 0.07, ease: EASE }}
+                  className="hero-rise inline-block bg-gradient-to-r from-pink-300 via-fuchsia-300 to-violet-300 bg-clip-text text-transparent"
+                  style={{ animationDelay: `${0.05 + (HEADLINE_WORDS.length + i) * 0.05}s` }}
                 >
                   {w}&nbsp;
-                </motion.span>
+                </span>
               ))}
             </h1>
-            <motion.p
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.55 }}
-              className="mt-4 max-w-md text-[15.5px] leading-relaxed text-white/65"
+            <p
+              className="hero-rise mt-4 max-w-md text-[15.5px] leading-relaxed text-white/65"
+              style={{ animationDelay: "0.3s" }}
             >
               Contractor and local business lead lists for agencies: live Google data, owner names,
               verified emails and AI scores for roofers, HVAC, plumbers and {INDUSTRIES.length - 3} more trades.
-            </motion.p>
+            </p>
             <motion.div
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}

@@ -31,12 +31,28 @@ export function generateStaticParams() {
   return ACADEMY_ARTICLES.map((a) => ({ slug: a.slug }));
 }
 
+/** Search titles for the public help pages (keyword first, brand last, under 60 characters).
+ *  The in-app Academy keeps the original article titles. */
+const HELP_SEO_TITLES: Record<string, string> = {
+  "welcome-to-contractor-leads": "Getting Started with Contractor Leads: Quick Start Guide",
+  "setup-hub-complete-walkthrough": "Setup Hub Walkthrough: Email, API and CRM | Contractor Leads",
+  "how-to-use-lead-finder": "How to Use Lead Finder: Step by Step | Contractor Leads",
+  "reading-lead-scores-and-enrichment": "Lead Scores Explained: Hot, Warm, Nurture | Contractor Leads",
+  "lead-map-and-exports": "Lead Map and CSV or Excel Exports | Contractor Leads Help",
+  "hot-leads-saved-leads-pipeline": "Hot Leads, Saved Leads and Pipeline CRM | Contractor Leads",
+  "pipeline-playbook-closing-contractors": "Closing Contractor Deals: Pipeline Playbook for Agencies",
+  "email-smtp-inbox-sequences": "Email Setup: SMTP, Inbox and Sequences | Contractor Leads",
+  "gmail-app-password-setup": "Gmail App Password Setup for SMTP (Step by Step)",
+  "plans-credits-billing": "Plans, Credits and Billing Explained | Contractor Leads",
+  "troubleshooting-common-errors": "Troubleshooting Common Errors and Fixes | Contractor Leads",
+};
+
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const article = getAcademyArticle(slug);
   if (!article) return {};
   return buildMetadata({
-    title: `${article.title} | Help Center`,
+    title: HELP_SEO_TITLES[article.slug] ?? `${article.title} | Help Center`,
     description: article.summary,
     path: `/help/${article.slug}`,
     keywords: [

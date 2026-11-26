@@ -977,6 +977,27 @@ html[data-theme="dark"] .auth-page .bg-white {
 }
 
 /* ——— Motion & surfaces ——— */
+/* Homepage hero: starts on first paint (no JS). Opacity never drops to 0, so the text still
+   counts as painted for Largest Contentful Paint. */
+@keyframes hero-rise {
+  from {
+    opacity: 0.35;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.hero-rise {
+  animation: hero-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-rise {
+    animation: none;
+  }
+}
+
 @keyframes fade-up {
   from {
     opacity: 0;

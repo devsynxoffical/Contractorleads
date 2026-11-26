@@ -55,7 +55,7 @@ type GateCopy = {
 const GATE: Record<string, GateCopy> = {
   home: {
     title: "Home workspace",
-    body: "Your AI assistant, quick search, and daily briefing live on Home — available after you sign in.",
+    body: "Your AI assistant, quick search, and daily briefing live on Home, available after you sign in.",
     bullets: ["Multi-turn AI chat", "One-click lead search", "Saved context from onboarding"],
   },
   "all-leads": {
@@ -75,7 +75,7 @@ const GATE: Record<string, GateCopy> = {
   },
   map: {
     title: "Lead map",
-    body: "See pipeline density by metro on an interactive map — spot underserved ZIPs at a glance.",
+    body: "See pipeline density by metro on an interactive map to spot underserved ZIPs at a glance.",
     bullets: ["World + US HUD", "Geo filters", "Territory planning"],
   },
   scripts: {
@@ -85,7 +85,7 @@ const GATE: Record<string, GateCopy> = {
   },
   meta: {
     title: "Meta ads intel",
-    body: "Check the Facebook Ads Library before you pitch — know if they’re already spending.",
+    body: "Check the Facebook Ads Library before you pitch to know if they’re already spending.",
     bullets: ["Ad creative snapshots", "Spend signals", "Competitive angles"],
   },
   outreach: {
@@ -220,7 +220,7 @@ const TOUR: TourStep[] = [
     id: "welcome",
     tab: "dashboard",
     title: "Your contractor command center",
-    body: "Credits, hot leads, searches, and closed deals — the same live dashboard you get after sign-up. Try sidebar items; locked areas prompt you to log in.",
+    body: "Credits, hot leads, searches, and closed deals, the same live dashboard you get after sign-up. Try sidebar items; locked areas prompt you to log in.",
     anchor: "header",
   },
   {
@@ -234,7 +234,7 @@ const TOUR: TourStep[] = [
     id: "drag",
     tab: "pipeline",
     title: "Try dragging a lead",
-    body: "Move Summit Roofing Co to Contacted — same motion as your real Kanban board.",
+    body: "Move Summit Roofing Co to Contacted: same motion as your real Kanban board.",
     anchor: "card-summit",
     advanceOn: "drag-summit-contacted",
   },
@@ -264,7 +264,7 @@ const TOUR: TourStep[] = [
     id: "finish",
     tab: "dashboard",
     title: "Ready for real leads?",
-    body: "Create a free account — 20 credits, no card required.",
+    body: "Create a free account: 20 credits, no card required.",
     anchor: "header",
   },
 ];
@@ -278,7 +278,7 @@ const SEARCH_RESULTS = [
 const ACTIVITY = [
   { t: "2m ago", msg: "Lead Finder returned 24 roofing businesses in Tampa" },
   { t: "18m ago", msg: "Summit Roofing Co scored Hot (92)" },
-  { t: "1h ago", msg: "Export ready — 48 leads CSV" },
+  { t: "1h ago", msg: "Export ready: 48 leads CSV" },
 ];
 
 function tierClass(tier: "Hot" | "Warm") {
@@ -519,7 +519,7 @@ export function MarketingInteractiveDemo() {
               Live product preview
             </p>
             <h2 className="mt-3 font-[family-name:var(--font-display)] text-[clamp(1.2rem,2.6vw,1.65rem)] font-semibold tracking-tight text-white">
-              Try the platform — locked features invite you to sign in
+              Try the platform, locked features invite you to sign in
             </h2>
             <p className="mx-auto mt-2 max-w-lg text-[14px] leading-relaxed text-white/75 sm:text-[15px]">
               Drag pipeline cards, run a sample search, and explore the sidebar. Anything that needs
@@ -538,7 +538,7 @@ export function MarketingInteractiveDemo() {
             <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
             <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
             <span className="mx-auto truncate text-[11px] font-medium text-slate-400">
-              app.contractorleads.us — interactive demo
+              app.contractorleads.us, interactive demo
             </span>
           </div>
 
@@ -981,7 +981,7 @@ export function MarketingInteractiveDemo() {
                               className="rounded-2xl border border-violet-100 px-3 py-2.5 text-[13px] leading-relaxed text-slate-700"
                               style={{ background: "linear-gradient(135deg, #fdf4ff 0%, #faf5ff 100%)" }}
                             >
-                              Hi [Owner] — noticed [Business] crushes reviews in Tampa but isn&apos;t running
+                              Hi [Owner], noticed [Business] crushes reviews in Tampa but isn&apos;t running
                               paid search. We help roofers book 8–12 extra jobs/month without Angi fees. Worth a
                               12-min look this week?
                             </div>

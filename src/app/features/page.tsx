@@ -43,7 +43,7 @@ import { INDUSTRIES, TIER_ONE_COUNTRIES } from "@/lib/constants";
 import { TRADE_PAGES, buildMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = buildMetadata({
-  title: "Find Contractor Leads: B2B Lead Finder Features",
+  title: "Contractor Leads Features: Lead Finder, AI Scores, Outreach",
   description:
     "Find contractor leads by trade and city with a B2B lead finder: owner names, verified emails, AI scores, outreach and CRM in one tool. 10 free leads.",
   path: "/features",
@@ -82,7 +82,7 @@ const FEATURE_GROUPS: Array<{
   features: Feature[];
 }> = [
   {
-    eyebrow: "Step 1 — Find",
+    eyebrow: "Step 1: Find",
     heading: "Build the list from live data, not a stale spreadsheet",
     intro:
       "Every search hits live business data at the moment you run it, so the contractor you call today still exists, still trades, and still answers the phone.",
@@ -105,10 +105,10 @@ const FEATURE_GROUPS: Array<{
     ],
   },
   {
-    eyebrow: "Step 2 — Qualify",
+    eyebrow: "Step 2: Qualify",
     heading: "Know who is worth a pitch before you open your mouth",
     intro:
-      "Scoring runs on the contractor's real digital footprint — their site, their rankings, their ad activity — so your first line already names a problem they recognise.",
+      "Scoring runs on the contractor's real digital footprint (their site, rankings and ad activity), so your first line already names a problem they recognise.",
     features: [
       {
         title: "AI lead scoring",
@@ -117,7 +117,7 @@ const FEATURE_GROUPS: Array<{
       },
       {
         title: "Owner enrichment",
-        body: "Decision-maker names pulled from the business site and cross-checked — never guessed from a first.last@ pattern that bounces.",
+        body: "Decision-maker names pulled from the business site and cross-checked, never guessed from a first.last@ pattern that bounces.",
         icon: HiOutlineUserCircle,
       },
       {
@@ -132,7 +132,7 @@ const FEATURE_GROUPS: Array<{
       },
       {
         title: "Verified sources",
-        body: "Google, Yelp, and live website data only. When a field cannot be verified we leave it blank — a gap beats an invented phone number.",
+        body: "Google, Yelp, and live website data only. When a field cannot be verified we leave it blank: a gap beats an invented phone number.",
         icon: HiOutlineShieldCheck,
       },
       {
@@ -143,7 +143,7 @@ const FEATURE_GROUPS: Array<{
     ],
   },
   {
-    eyebrow: "Step 3 — Reach out",
+    eyebrow: "Step 3: Reach out",
     heading: "Turn a scored lead into a booked call the same morning",
     intro:
       "Outreach is generated per lead from that lead's own audit, so the copy references their actual site and their actual market instead of a generic template.",
@@ -166,7 +166,7 @@ const FEATURE_GROUPS: Array<{
     ],
   },
   {
-    eyebrow: "Step 4 — Manage",
+    eyebrow: "Step 4: Manage",
     heading: "Keep the pipeline in one place and feed the tools you already pay for",
     intro:
       "Contractor Leads does not ask you to abandon your CRM or your reporting stack. It fills them, and it answers questions about your own pipeline.",
@@ -178,7 +178,7 @@ const FEATURE_GROUPS: Array<{
       },
       {
         title: "Integrations",
-        body: "Push new leads and status changes to GoHighLevel, Zapier, Make, HubSpot, Slack, or any custom webhook — and export to CSV when someone wants a spreadsheet.",
+        body: "Push new leads and status changes to GoHighLevel, Zapier, Make, HubSpot, Slack, or any custom webhook, and export to CSV when someone wants a spreadsheet.",
         icon: HiOutlineArrowRight,
       },
       {
@@ -244,7 +244,7 @@ const COMPARISON: Array<{ point: string; us: string; them: string }> = [
 const FEATURE_FAQ = [
   {
     q: "Which countries does Contractor Leads cover?",
-    a: "Contractor Leads supports five Tier-1 markets: the United States, Canada, the United Kingdom, Australia, and New Zealand. Each market uses its own address, region, and postal formats — states and ZIP codes in the US, provinces and postal codes in Canada, counties and postcodes in the UK, states and postcodes in Australia, and regions and postcodes in New Zealand. Distances are shown in miles or kilometres to match the market you are searching.",
+    a: "Contractor Leads supports five Tier-1 markets: the United States, Canada, the United Kingdom, Australia, and New Zealand. Each market uses its own address, region, and postal formats: states and ZIP codes in the US, provinces and postal codes in Canada, counties and postcodes in the UK, states and postcodes in Australia, and regions and postcodes in New Zealand. Distances are shown in miles or kilometres to match the market you are searching.",
   },
   {
     q: "Is this for marketing agencies or for contractors?",
@@ -288,8 +288,8 @@ export default function FeaturesPage() {
       />
       <MarketingSubpageHero
         eyebrow="Features"
-        title="Contractor prospecting without the five-tab circus"
-        description="Live business search, AI scoring, owner contacts, ad intel, and outreach in one workspace — for agencies selling into home-service trades across five Tier-1 markets."
+        title="Contractor Leads features: find, score and pitch contractors"
+        description="Live business search, AI scoring, owner contacts, ad intel, and outreach in one workspace, for agencies selling into home-service trades across five Tier-1 markets."
       >
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Link
@@ -343,7 +343,7 @@ export default function FeaturesPage() {
         align="center"
         eyebrow="Coverage"
         title="Not a US-only tool"
-        description="Contractor Leads searches live business data across five English-speaking Tier-1 markets. Pick your country and the whole app adapts — region labels, postal formats, distance units, and phone formatting all follow the market you sell into."
+        description="Contractor Leads searches live business data across five English-speaking Tier-1 markets. Pick your country and the whole app adapts: region labels, postal formats, distance units, and phone formatting all follow the market you sell into."
       >
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           {TIER_ONE_COUNTRIES.map((country, i) => (

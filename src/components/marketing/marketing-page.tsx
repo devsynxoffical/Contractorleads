@@ -112,7 +112,7 @@ const FEATURES = [
   {
     icon: SiAnthropic,
     title: "AI Assistant",
-    copy: "Ask Contractor Leads for hooks, offers, funnels, and cold outreach — multi-turn, with saved chat history.",
+    copy: "Ask Contractor Leads for hooks, offers, funnels, and cold outreach in multi-turn chats with saved chat history.",
     color: "#D4A27F",
     bg: "#faf4ef",
   },
@@ -154,21 +154,21 @@ const FEATURES = [
   {
     icon: SiHubspot,
     title: "Business Context",
-    copy: "The AI already knows your company, ICP, and goal from onboarding — you're never re-explaining your business.",
+    copy: "The AI already knows your company, ICP, and goal from onboarding, so you're never re-explaining your business.",
     color: "#FF7A59",
     bg: "#fff0eb",
   },
   {
     icon: SiInstagram,
     title: "LinkedIn-first ranking",
-    copy: "Businesses with a verified LinkedIn profile and active social presence rank first, with the rest of the list filled out below — full volume, strongest contacts on top.",
+    copy: "Businesses with a verified LinkedIn profile and active social presence rank first, with the rest of the list filled out below: full volume, strongest contacts on top.",
     color: "#E4405F",
     bg: "#fce8ee",
   },
   {
     icon: SiYelp,
     title: "Verified Sources",
-    copy: "Google, Yelp, and live site data — never a phone number invented to fill a field.",
+    copy: "Google, Yelp, and live site data, never a phone number invented to fill a field.",
     color: "#FF1A1A",
     bg: "#ffe8e8",
   },
@@ -178,7 +178,7 @@ const PAINS = [
   {
     icon: HiOutlineDocumentMagnifyingGlass,
     title: "Buying fake leads",
-    body: "Purchased lists go stale before the first dial — disconnected numbers, closed businesses, and duplicate entries that waste a rep's whole morning.",
+    body: "Purchased lists go stale before the first dial: disconnected numbers, closed businesses, and duplicate entries that waste a rep's whole morning.",
   },
   {
     icon: HiOutlineChartBar,
@@ -198,7 +198,7 @@ const PAINS = [
   {
     icon: HiOutlinePuzzlePiece,
     title: "Disconnected tools",
-    body: "Spreadsheet for the list, separate tool for scoring, separate inbox for outreach, separate doc for notes — nothing talks to anything else.",
+    body: "Spreadsheet for the list, separate tool for scoring, separate inbox for outreach, separate doc for notes. Nothing talks to anything else.",
   },
   {
     icon: HiOutlineEyeSlash,
@@ -660,7 +660,7 @@ function Integrations() {
           Plugged into the stack you already trust
         </h2>
         <p className="mx-auto mt-3 max-w-2xl text-[14px] leading-relaxed text-slate-500">
-          Contractor Leads doesn&apos;t ask you to abandon your CRM, your inbox, or your ad accounts — it feeds them.
+          Contractor Leads doesn&apos;t ask you to abandon your CRM, your inbox, or your ad accounts. It feeds them.
         </p>
         <p className="mx-auto mt-3 max-w-2xl text-[14px] leading-relaxed text-slate-500">
           Push saved leads and status changes straight into GoHighLevel, Zapier, Make, HubSpot, or a custom endpoint the moment they happen. Send nurture sequences from your own Gmail, Outlook, or SMTP mailbox so replies land in an inbox you already check. Connect your Meta ad account context to see contractor ad activity without leaving the lead profile.
@@ -679,7 +679,7 @@ function Integrations() {
         </InfiniteMarquee>
       </motion.div>
       <p className="mx-auto mt-6 max-w-xl px-5 text-center text-[11px] leading-relaxed text-slate-400 sm:px-8">
-        Integrations represent our technology stack and supported connections — availability varies by plan.
+        Integrations represent our technology stack and supported connections; availability varies by plan.
       </p>
     </section>
   );
@@ -693,7 +693,7 @@ function AiSection() {
   ];
   const replies = [
     "Lead with the ZIPs they’re sleeping on, promise booked estimates in 14 days, and CTA with a 15‑min fit call.",
-    "Hook: “Your competitors are already in Ads Library — here’s the angle they’re missing.” Keep creative local and proof-heavy.",
+    "Hook: “Your competitors are already in Ads Library. Here’s the angle they’re missing.” Keep creative local and proof-heavy.",
     "Call Hot first (score 85+ with owner + LinkedIn). Warm gets a nurture sequence; skip Nurture until next refresh.",
   ];
   const [active, setActive] = useState(0);
@@ -821,7 +821,7 @@ function AiSection() {
               Ask Contractor Leads isn&apos;t a generic chatbot bolted onto the sidebar. It&apos;s a senior-level growth marketer that already knows your business.
             </p>
             <p className="mt-3 text-[14px] leading-relaxed text-slate-500">
-              The moment you finish onboarding, the assistant knows your company, your ideal customer, your service areas, and your goal — so you never waste a message re-explaining your business. Ask for a cold email, a funnel structure, a stronger CTA, or a straight answer on why your last campaign underperformed. Every answer streams in, gets a one-click copy button, and can be saved straight to your Scripts library for reuse.
+              The moment you finish onboarding, the assistant knows your company, your ideal customer, your service areas, and your goal, so you never waste a message re-explaining your business. Ask for a cold email, a funnel structure, a stronger CTA, or a straight answer on why your last campaign underperformed. Every answer streams in, gets a one-click copy button, and can be saved straight to your Scripts library for reuse.
             </p>
             <Link
               href="/register"
@@ -870,7 +870,7 @@ function Pricing({ plans }: { plans: MarketingPlanCard[] }) {
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-slate-500">
             Start free with 10 leads on Starter. Upgrade when your team is booking
-            calls and signing retainers — not before.
+            calls and signing retainers, not before.
           </p>
         </Reveal>
         <MarketingPricingSection plans={plans} />

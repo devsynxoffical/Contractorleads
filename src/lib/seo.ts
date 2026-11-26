@@ -4,7 +4,7 @@ import { INDUSTRIES, US_STATES } from "@/lib/constants";
 
 /**
  * Canonical marketing origin for metadata, sitemap, robots, and JSON-LD.
- * Always www — never Railway preview or apex — so Google indexes one host.
+ * Always www, never Railway preview or apex, so Google indexes one host.
  */
 export function seoBaseUrl() {
   return SITE_URL.replace(/\/$/, "");
@@ -121,7 +121,7 @@ const TRADE_COPY: Record<
   roofing: {
     headline: "Roofing contractor leads for agencies",
     description:
-      "Find verified roofing contractors ready for marketing outreach — owners, phones, ratings, and AI-scored opportunity angles.",
+      "Find verified roofing contractors ready for marketing outreach, owners, phones, ratings, and AI-scored opportunity angles.",
     angle:
       "Storm markets, aging roofs, and competitive local SEOs make roofing one of the highest-intent trades for agencies.",
   },
@@ -135,7 +135,7 @@ const TRADE_COPY: Record<
   plumbing: {
     headline: "Plumbing contractor leads for agencies",
     description:
-      "Build lists of verified plumbers — emergency and remodel — with decision-maker contacts and reputation signals.",
+      "Build lists of verified plumbers: emergency and remodel, with decision-maker contacts and reputation signals.",
     angle:
       "Emergency search volume and remodel upsells make plumbing a strong outbound + PPC hybrid vertical.",
   },
@@ -246,7 +246,7 @@ const TRADE_COPY: Record<
     description:
       "Find general contractors with verified owners, phones, and multi-channel opportunity scores.",
     angle:
-      "GCs often buy multiple services — SEO, ads, CRM — once trust is established.",
+      "GCs often buy multiple services: SEO, ads, CRM, once trust is established.",
   },
 };
 
@@ -467,7 +467,7 @@ export function getRegionBySlug(slug: string) {
   return SEO_REGIONS.find((r) => r.slug === slug) ?? null;
 }
 
-/** Public blog helpers — Academy articles published on the marketing site. */
+/** Public blog helpers, Academy articles published on the marketing site. */
 export {
   ACADEMY_ARTICLES as BLOG_ARTICLES,
   ACADEMY_CATEGORIES as BLOG_CATEGORIES,

@@ -101,7 +101,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 const LEAD_DATA = [
   {
     title: "Live business data",
-    body: "Google and Yelp records pulled at search time — never a brokered dump that decayed months ago.",
+    body: "Google and Yelp records pulled at search time, never a brokered dump that decayed months ago.",
     icon: HiOutlineMagnifyingGlass,
   },
   {
@@ -328,7 +328,7 @@ export default async function TradePage({ params }: Params) {
               <p>
                 Most {lower} businesses in this space are still winning work on
                 referrals and a website nobody has touched in three years. That gap
-                is your pitch — and Contractor Leads shows you exactly how wide it
+                is your pitch, and Contractor Leads shows you exactly how wide it
                 is before you pick up the phone.
               </p>
               <p>
@@ -392,7 +392,7 @@ export default async function TradePage({ params }: Params) {
         id="markets"
         eyebrow="By location"
         title={`Find ${trade.name} leads by country`}
-        description={`Prospect verified ${lower} contractors across the United States, Canada, the UK, Australia, and New Zealand — same live data and AI scores everywhere.`}
+        description={`Prospect verified ${lower} contractors across the United States, Canada, the UK, Australia, and New Zealand, with the same live data and AI scores everywhere.`}
         align="center"
       >
         <IndustryLocationSection industryName={trade.name} />
@@ -461,7 +461,7 @@ export default async function TradePage({ params }: Params) {
 
       <SubpageCtaBand
         title={`Start prospecting ${lower} contractors`}
-        description={`Pull a live, AI-scored ${lower} list with owner contacts and outreach scripts — in any market you sell into.`}
+        description={`Pull a live, AI-scored ${lower} list with owner contacts and outreach scripts, in any market you sell into.`}
         primaryLabel="Start free trial"
         secondaryHref="/pricing"
         secondaryLabel="View plans"
