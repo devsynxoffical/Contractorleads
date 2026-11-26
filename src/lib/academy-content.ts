@@ -1,5 +1,5 @@
 /**
- * In-app Academy content — how-to guides, FAQs, and blog-style explainers.
+ * In-app Academy content, how-to guides, FAQs, and blog-style explainers.
  * Users self-serve here instead of pinging admin for routine product questions.
  */
 
@@ -103,7 +103,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
     sections: [
       {
         heading: "Who this is for",
-        body: "Contractor Leads is built for marketing agencies, media buyers, appointment setters, and sales teams who sell services to home-service contractors — roofing, HVAC, plumbing, electrical, landscaping, and related trades. You use it to find real businesses, score them, outreach, and track deals.",
+        body: "Contractor Leads is built for marketing agencies, media buyers, appointment setters, and sales teams who sell services to home-service contractors: roofing, HVAC, plumbing, electrical, landscaping, and related trades. You use it to find real businesses, score them, outreach, and track deals.",
         bullets: [
           "Agencies selling SEO, ads, websites, or CRM to contractors",
           "In-house growth teams building local contractor pipelines",
@@ -113,29 +113,29 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
       },
       {
         heading: "What you get in one workspace",
-        body: "Live, verified contractor businesses with AI lead scores (Hot / Warm / Nurture), contact signals, outreach angles, and optional enrichment from Google Places, Yelp, and social sources. You search, save, email, map, and move deals through a simple pipeline — without leaving the app for research.",
+        body: "Live, verified contractor businesses with AI lead scores (Hot / Warm / Nurture), contact signals, outreach angles, and optional enrichment from Google Places, Yelp, and social sources. You search, save, email, map, and move deals through a simple pipeline, without leaving the app for research.",
         bullets: [
-          "Lead Finder — industry + geography search that spends credits per lead returned",
-          "Hot Leads — highest-score opportunities as your daily dialer list",
-          "Saved Leads — your keepers for follow-up",
-          "Pipeline CRM — New → Contacted → Qualified → Closed",
-          "Lead Map — territory pins (Growth+ plans)",
-          "Email inbox — send, receive, and reply via your SMTP",
-          "Ask Expert — marketing strategy AI (uses credits)",
-          "Academy — this self-serve learning hub",
+          "Lead Finder: industry + geography search that spends credits per lead returned",
+          "Hot Leads: highest-score opportunities as your daily dialer list",
+          "Saved Leads: your keepers for follow-up",
+          "Pipeline CRM: New → Contacted → Qualified → Closed",
+          "Lead Map: territory pins (Growth+ plans)",
+          "Email inbox: send, receive, and reply via your SMTP",
+          "Ask Expert: marketing strategy AI (uses credits)",
+          "Academy: this self-serve learning hub",
         ],
       },
       {
         heading: "Main sidebar map",
         body: "After login you land in the app shell. Learn these destinations once:",
         bullets: [
-          "Home — credits snapshot, quick links, AI chat history",
-          "Lead Finder — run searches",
-          "Hot / Saved / Pipeline / Map — work the list",
-          "Email inbox — replies and threads",
-          "Setup hub — Email, API, CRM webhooks, business profile",
-          "Ask Expert + My Scripts + Academy — AI and learning",
-          "Workspace settings — teams, billing, security, integrations",
+          "Home: credits snapshot, quick links, AI chat history",
+          "Lead Finder: run searches",
+          "Hot / Saved / Pipeline / Map: work the list",
+          "Email inbox: replies and threads",
+          "Setup hub: Email, API, CRM webhooks, business profile",
+          "Ask Expert + My Scripts + Academy: AI and learning",
+          "Workspace settings: teams, billing, security, integrations",
         ],
       },
       {
@@ -145,7 +145,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
           "1. Open Setup hub and mark Email → Business profile as ready",
           "2. Fill company name, services, ICP, and goal on Business profile (AI uses this)",
           "3. Open Lead Finder and run one small search in your best market",
-          "4. Open a Hot lead detail page — read score, phone, website, outreach angle",
+          "4. Open a Hot lead detail page, read score, phone, website, outreach angle",
           "5. Save 3–5 keepers",
           "6. Connect SMTP if you want to email from the app",
           "7. Send one test email to yourself or a known inbox",
@@ -155,8 +155,8 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
       },
       {
         heading: "Data integrity rule",
-        body: "If a field is empty, enrichment could not confirm it. The product never invents owner names, emails, or social URLs. Blank is honest — treat it as “not verified,” not as a bug.",
-        tip: "Prefer phone, website, Google Maps / rating signals that are present. Use Ask Expert only for copy and strategy — not to invent missing contact data.",
+        body: "If a field is empty, enrichment could not confirm it. The product never invents owner names, emails, or social URLs. Blank is honest: treat it as “not verified,” not as a bug.",
+        tip: "Prefer phone, website, Google Maps / rating signals that are present. Use Ask Expert only for copy and strategy, not to invent missing contact data.",
       },
       {
         heading: "When to ask admin vs use Academy",
@@ -179,7 +179,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
     sections: [
       {
         heading: "Open Setup hub",
-        body: "Setup hub is the checklist for making the product usable. Each card shows Ready (green) or Needs setup (amber). You can open any card later — nothing is permanent until you save.",
+        body: "Setup hub is the checklist for making the product usable. Each card shows Ready (green) or Needs setup (amber). You can open any card later, nothing is permanent until you save.",
         href: "/setup",
         hrefLabel: "Open Setup hub →",
       },
@@ -188,8 +188,8 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
         body: "Without SMTP you can still search and save leads, but you cannot send outreach or Day 1–3 sequences from the app. Add at least one mailbox (Gmail app password, Outlook, or custom SMTP), then Test connection before live sends.",
         bullets: [
           "Label mailboxes clearly (e.g. “Sales Gmail”, “Setter Outlook”)",
-          "Use an app password for Gmail — regular passwords often fail",
-          "Keep From name professional — contractors see it",
+          "Use an app password for Gmail: regular passwords often fail",
+          "Keep From name professional: contractors see it",
         ],
         href: "/setup/email",
         hrefLabel: "Open Email & SMTP →",
@@ -208,14 +208,14 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
       },
       {
         heading: "4. CRM webhooks (Growth+)",
-        body: "Push lead.saved and pipeline stage events to Slack, GoHighLevel, Zapier, Make, or HubSpot. Finish email and profile first — most desks need outreach before automation.",
+        body: "Push lead.saved and pipeline stage events to Slack, GoHighLevel, Zapier, Make, or HubSpot. Finish email and profile first, most desks need outreach before automation.",
         href: "/setup/crm",
         hrefLabel: "Open CRM webhooks →",
       },
       {
         heading: "Recommended order for most agencies",
         body: "Email → Business profile → (optional) CRM → (optional) API. Skip developer cards until someone on the team owns automation.",
-        tip: "If a card stays “Needs setup,” open it and complete the form — the hub status refreshes after a successful save.",
+        tip: "If a card stays “Needs setup,” open it and complete the form, the hub status refreshes after a successful save.",
       },
     ],
   },
@@ -237,45 +237,45 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
         hrefLabel: "Open Lead Finder →",
       },
       {
-        heading: "Step 1 — Pick an industry / service",
+        heading: "Step 1: Pick an industry / service",
         body: "Choose the contractor trade you sell into (Roofing, HVAC, Plumbing, Electrical, etc.). Match the industry to the offer you actually sell. Searching “General Contractor” when you only sell roofing SEO usually wastes credits on weak ICP fits.",
         tip: "If your niche is thin in a small city, try a related trade or widen geography before switching offers.",
       },
       {
-        heading: "Step 2 — Choose a Tier-1 country",
+        heading: "Step 2: Choose a Tier-1 country",
         body: "Supported countries: United States, Canada, United Kingdom, Australia, and New Zealand. Country must match the market you can legally and operationally sell into. Mixing US cities under UK country returns poor or empty results.",
       },
       {
-        heading: "Step 3 — Set location scope",
+        heading: "Step 3: Set location scope",
         body: "Two modes:",
         bullets: [
-          "Entire country — maximum breadth; good for national offers or first market scans",
-          "Specific area — region/state, city, or postal code + radius when you sell locally",
+          "Entire country: maximum breadth; good for national offers or first market scans",
+          "Specific area: region/state, city, or postal code + radius when you sell locally",
         ],
         tip: "Start local if your case studies are city-based. Use Entire country when you need volume and can dial nationwide.",
       },
       {
-        heading: "Step 4 — Result size and credits",
+        heading: "Step 4: Result size and credits",
         body: "You can only generate as many leads as your credit balance allows (1 credit ≈ 1 lead). Unexported leads also count against that limit. Viewing is free; export spends credits. Example: 100 credits ≈ 100 leads.",
         bullets: [
           "Credits are spent on returned leads, not on empty curiosity clicks",
-          "Re-running the same search again spends credits again — save keepers instead",
+          "Re-running the same search again spends credits again, save keepers instead",
           "Out of credits (402) means stop searching until Billing / admin restores balance",
         ],
       },
       {
-        heading: "Step 5 — Read the results grid",
+        heading: "Step 5: Read the results grid",
         body: "Each row is a business with score tier (Hot / Warm / Nurture), rating signals, and key contacts when available. Open a row for the full detail page before you decide to save or skip.",
         bullets: [
-          "Hot — call / email today",
-          "Warm — solid follow-up this week",
-          "Nurture — keep for later or skip if capacity is low",
+          "Hot: call / email today",
+          "Warm: solid follow-up this week",
+          "Nurture: keep for later or skip if capacity is low",
         ],
       },
       {
         heading: "When search returns nothing",
         body: "Widen geography, check city spelling, try Entire country, switch to a related industry, or confirm Tier-1 country. Do not burn credits by rapidly retrying the identical empty query.",
-        tip: "Platform-side Google Places errors need a site admin to fix GOOGLE_PLACES_API_KEY / billing — Academy cannot unlock that for you.",
+        tip: "Platform-side Google Places errors need a site admin to fix GOOGLE_PLACES_API_KEY / billing, Academy cannot unlock that for you.",
       },
       {
         heading: "After a good search",
@@ -298,11 +298,11 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
     sections: [
       {
         heading: "Score tiers in plain English",
-        body: "Every lead gets an AI opportunity score rolled into Hot, Warm, or Nurture. The score is a prioritization tool — not a guarantee the contractor will buy.",
+        body: "Every lead gets an AI opportunity score rolled into Hot, Warm, or Nurture. The score is a prioritization tool, not a guarantee the contractor will buy.",
         bullets: [
-          "Hot — strongest fit signals; put these first on the dialer",
-          "Warm — worth outreach; do not ignore if Hot is thin today",
-          "Nurture — lower urgency; park them unless you need volume",
+          "Hot: strongest fit signals; put these first on the dialer",
+          "Warm: worth outreach; do not ignore if Hot is thin today",
+          "Nurture: lower urgency; park them unless you need volume",
         ],
       },
       {
@@ -327,7 +327,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
       },
       {
         heading: "Favorites and notes",
-        body: "Use favorites for must-call accounts and notes for call outcomes (“left VM”, “booked Tuesday”, “not a fit — commercial only”). Notes keep the next teammate from repeating bad outreach.",
+        body: "Use favorites for must-call accounts and notes for call outcomes (“left VM”, “booked Tuesday”, “not a fit, commercial only”). Notes keep the next teammate from repeating bad outreach.",
       },
     ],
   },
@@ -356,10 +356,10 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
       },
       {
         heading: "Exports",
-        body: "Export CSV or Excel from list views when you need a dialer file, client deliverable, or offline review. Exports may be limited by plan — if the action is blocked, check Billing.",
+        body: "Export CSV or Excel from list views when you need a dialer file, client deliverable, or offline review. Exports may be limited by plan, if the action is blocked, check Billing.",
         bullets: [
-          "Export after you filter/save — cleaner files, fewer junk rows",
-          "Do not treat exports as a substitute for Pipeline — status still lives in-app",
+          "Export after you filter/save: cleaner files, fewer junk rows",
+          "Do not treat exports as a substitute for Pipeline, status still lives in-app",
           "Respect client NDAs when sharing contractor contact files",
         ],
       },
@@ -384,9 +384,9 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
         heading: "Three lists, three jobs",
         body: "Confusion here is the #1 reason teams ask admin “where did my lead go?” Memorize the jobs:",
         bullets: [
-          "Hot Leads — quality filter: top scores, daily call list",
-          "Saved Leads — everything you explicitly kept for follow-up",
-          "Pipeline CRM — saved leads organized by deal stage",
+          "Hot Leads: quality filter, top scores, daily call list",
+          "Saved Leads: everything you explicitly kept for follow-up",
+          "Pipeline CRM: saved leads organized by deal stage",
         ],
       },
       {
@@ -403,12 +403,12 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
       },
       {
         heading: "Pipeline stages (exact meanings)",
-        body: "Pipeline CRM uses four stages. Move a lead when reality changes — not when you hope it will.",
+        body: "Pipeline CRM uses four stages. Move a lead when reality changes, not when you hope it will.",
         bullets: [
-          "New — saved, not contacted yet",
-          "Contacted — you emailed or called (sending email can auto-move New → Contacted)",
-          "Qualified — real opportunity: meeting booked, budget interest, or clear next step",
-          "Closed — won, lost, or finished; keep notes so the outcome is clear",
+          "New: saved, not contacted yet",
+          "Contacted: you emailed or called (sending email can auto-move New → Contacted)",
+          "Qualified: a real opportunity (meeting booked, budget interest or a clear next step)",
+          "Closed: won, lost, or finished; keep notes so the outcome is clear",
         ],
         href: "/leads/pipeline",
         hrefLabel: "Open Pipeline →",
@@ -419,7 +419,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
       },
       {
         heading: "Suggested weekly cadence",
-        body: "Monday: clear New Hot leads. Mid-week: push Contacted → Qualified with follow-ups. Friday: close or recycle stale Qualified cards. Re-search only when the list is genuinely thin — not every day by habit.",
+        body: "Monday: clear New Hot leads. Mid-week: push Contacted → Qualified with follow-ups. Friday: close or recycle stale Qualified cards. Re-search only when the list is genuinely thin, not every day by habit.",
       },
     ],
   },
@@ -435,19 +435,19 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
     tags: ["playbook", "sales", "crm", "workflow"],
     sections: [
       {
-        heading: "Stage New — research before you dial",
-        body: "Open the lead, skim website + reviews, note one specific hook (bad mobile site, strong reviews but no ads, missing booking CTA). Save the hook in notes. Then call or email with that hook — never a generic “we do marketing” blast.",
+        heading: "Stage New: research before you dial",
+        body: "Open the lead, skim website + reviews, note one specific hook (bad mobile site, strong reviews but no ads, missing booking CTA). Save the hook in notes. Then call or email with that hook, never a generic “we do marketing” blast.",
       },
       {
-        heading: "Stage Contacted — earn the next step",
-        body: "After the first touch, the job is a reply or a booked call — not a 2,000-word pitch. Use Day 2/3 sequence only if you set templates and the lead has not replied. When they reply, stop the sequence and answer in Email inbox.",
+        heading: "Stage Contacted: earn the next step",
+        body: "After the first touch, the job is a reply or a booked call, not a 2,000-word pitch. Use Day 2/3 sequence only if you set templates and the lead has not replied. When they reply, stop the sequence and answer in Email inbox.",
       },
       {
-        heading: "Stage Qualified — protect the meeting",
+        heading: "Stage Qualified: protect the meeting",
         body: "Move here only when there is a clear next step (demo booked, proposal requested, decision-maker confirmed). Put date/time and offer in notes. If the meeting dies, either re-contact with a new angle or Close with a reason.",
       },
       {
-        heading: "Stage Closed — win and loss both count",
+        heading: "Stage Closed: win and loss both count",
         body: "Closed is not only “won.” Log losses (“budget”, “in-house”, “not ICP”). That history stops teammates from re-pitching the same dead end next month.",
       },
       {
@@ -482,7 +482,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
       },
       {
         heading: "Test before live outreach",
-        body: "Always Test connection after saving a mailbox. A failed test means outbound will fail too — fix credentials before blasting Hot leads.",
+        body: "Always Test connection after saving a mailbox. A failed test means outbound will fail too, fix credentials before blasting Hot leads.",
       },
       {
         heading: "Send from a lead",
@@ -498,20 +498,20 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
       {
         heading: "Why inbox can look empty",
         body: "Inbox only shows inbound replies matched to your leads. You need: SMTP connected, outreach actually sent, and inbound email webhook configured by the platform/admin (INBOUND_EMAIL_SECRET pointing at /api/email/inbound).",
-        tip: "If outbound works but replies never appear, it is almost always inbound webhook / provider routing — not a missing “refresh” button.",
+        tip: "If outbound works but replies never appear, it is almost always inbound webhook / provider routing, not a missing “refresh” button.",
       },
       {
         heading: "Day 1–3 sequences",
         body: "On Email & SMTP, edit Day 1 / Day 2 / Day 3 subject + body templates, enable the sequence, then enroll a saved lead. Active sequences pause automatically when a lead replies so you do not send Day 2 after a human conversation starts.",
         bullets: [
-          "Day 1 — short intro + specific hook",
-          "Day 2 — proof / case snippet + soft CTA",
-          "Day 3 — breakup / last nudge",
+          "Day 1: short intro + specific hook",
+          "Day 2: proof / case snippet + soft CTA",
+          "Day 3: breakup / last nudge",
         ],
       },
       {
         heading: "Email metrics",
-        body: "Where available, email dashboards show delivered / received / failed style metrics so you can spot SMTP problems early. Treat spikes in failed sends as a credentials or provider issue — pause enrollment until fixed.",
+        body: "Where available, email dashboards show delivered / received / failed style metrics so you can spot SMTP problems early. Treat spikes in failed sends as a credentials or provider issue, pause enrollment until fixed.",
       },
     ],
   },
@@ -604,16 +604,16 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
           "Lead Finder: capped by credit lead limit; 1 credit per lead returned",
           "Ask Expert / AI assistant: 2 credits per use",
         ],
-        tip: "Product how-tos in Academy and the support bot do not replace Ask Expert for strategy — and they do not burn Ask Expert credits the same way.",
+        tip: "Product how-tos in Academy and the support bot do not replace Ask Expert for strategy, and they do not burn Ask Expert credits the same way.",
       },
       {
         heading: "Plan ladder and list prices (defaults)",
         body: "Exact prices can be edited by admin, but the product ladder is:",
         bullets: [
-          "Starter — 10 free leads on signup, then subscribe (~$19.99/mo) for 1,000 leads/mo; core search & CRM",
-          "Growth (~$49/mo) — API, MCP, map, CRM webhooks",
-          "Agency (~$99/mo) — teams, SSO, reports, workspaces + Growth features",
-          "Enterprise — highest limits; custom pricing",
+          "Starter: 10 free leads on signup, then subscribe (~$19.99/mo) for 1,000 leads/mo; core search & CRM",
+          "Growth (~$49/mo), API, MCP, map, CRM webhooks",
+          "Agency (~$99/mo), teams, SSO, reports, workspaces + Growth features",
+          "Enterprise: highest limits; custom pricing",
         ],
         href: "/billing",
         hrefLabel: "Open Billing →",
@@ -640,7 +640,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
       },
       {
         heading: "Out of credits (402)",
-        body: "Upgrade on Billing or ask your admin to top up. Do not keep retrying the same search — it will keep failing and waste time until balance is restored.",
+        body: "Upgrade on Billing or ask your admin to top up. Do not keep retrying the same search, it will keep failing and waste time until balance is restored.",
       },
     ],
   },
@@ -650,7 +650,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
     category: "billing",
     title: "Five mistakes that waste credits",
     summary:
-      "Common search and AI habits that burn balance without producing callable leads — and how to fix each one.",
+      "Common search and AI habits that burn balance without producing callable leads, and how to fix each one.",
     readingMinutes: 6,
     updatedAt: "2026-07-23",
     tags: ["credits", "tips", "cost control"],
@@ -669,7 +669,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
       },
       {
         heading: "4. Re-searching instead of saving",
-        body: "Save keepers. Re-running the same search does not improve data quality — it only spends credits.",
+        body: "Save keepers. Re-running the same search does not improve data quality, it only spends credits.",
       },
       {
         heading: "5. Using Ask Expert for product how-tos",
@@ -696,7 +696,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
       },
       {
         heading: "API · MCP · SSO",
-        body: "On Growth+ plans (subject to admin flags), generate keys and wire REST, MCP, or SSO search into your stack from Setup → API. Store keys like passwords — rotate if leaked.",
+        body: "On Growth+ plans (subject to admin flags), generate keys and wire REST, MCP, or SSO search into your stack from Setup → API. Store keys like passwords, rotate if leaked.",
         href: "/setup/api",
         hrefLabel: "Open API setup →",
       },
@@ -709,7 +709,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
       {
         heading: "Recommended order",
         body: "Email → Business profile → CRM → API. Finish outreach basics before automation so you are not piping empty processes into Slack.",
-        tip: "If a webhook “works in Zapier” but Pipeline looks wrong, fix stages in-app first — webhooks mirror state; they do not replace it.",
+        tip: "If a webhook “works in Zapier” but Pipeline looks wrong, fix stages in-app first, webhooks mirror state; they do not replace it.",
         href: "/setup",
         hrefLabel: "Open Setup hub →",
       },
@@ -734,7 +734,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
     sections: [
       {
         heading: "How attribution works",
-        body: "Share your personal referral link from the Referrals page. When an agency signs up with that link, they are attributed to you. Signup alone does not pay cash — it only creates the referral relationship (pending).",
+        body: "Share your personal referral link from the Referrals page. When an agency signs up with that link, they are attributed to you. Signup alone does not pay cash, it only creates the referral relationship (pending).",
         href: "/referrals",
         hrefLabel: "Open Referrals →",
       },
@@ -749,7 +749,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
       {
         heading: "Milestones",
         body: "Hitting paid-referral milestones can unlock cash bonuses. Progress bars on Referrals show how close you are.",
-        tip: "Promote the product to agencies who will actually buy — unpaid signups do not move commission balance.",
+        tip: "Promote the product to agencies who will actually buy, unpaid signups do not move commission balance.",
       },
     ],
   },
@@ -782,7 +782,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
       },
       {
         heading: "My Scripts",
-        body: "Library of saved Ask Expert outputs — ad scripts, email angles, funnel outlines. Reuse instead of regenerating (and re-spending credits).",
+        body: "Library of saved Ask Expert outputs: ad scripts, email angles, funnel outlines. Reuse instead of regenerating (and re-spending credits).",
         href: "/scripts",
         hrefLabel: "Open My Scripts →",
       },
@@ -794,14 +794,14 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
     category: "ai",
     title: "Ask Expert: prompts that save credits",
     summary:
-      "How to brief Ask Expert so one request produces usable ads, emails, and offers — without burning credits on vague chats.",
+      "How to brief Ask Expert so one request produces usable ads, emails, and offers, without burning credits on vague chats.",
     readingMinutes: 7,
     updatedAt: "2026-07-23",
     tags: ["prompts", "copy", "credits", "scripts"],
     sections: [
       {
         heading: "Fill Business profile first",
-        body: "Company, services, ICP, and goal make answers specific. Empty profiles produce generic copy you will throw away — after paying credits.",
+        body: "Company, services, ICP, and goal make answers specific. Empty profiles produce generic copy you will throw away, after paying credits.",
         href: "/settings",
         hrefLabel: "Open Business profile →",
       },
@@ -821,7 +821,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
       },
       {
         heading: "Do not use Ask Expert for",
-        body: "“How do I connect SMTP?”, “Why is map locked?”, “What do credits cost?” — those are Academy / support questions and should not spend strategy credits.",
+        body: "“How do I connect SMTP?”, “Why is map locked?”, “What do credits cost?”, those are Academy / support questions and should not spend strategy credits.",
       },
     ],
   },
@@ -831,7 +831,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
     category: "getting-started",
     title: "Workspace settings, security, and teams",
     summary:
-      "Where profile, security, billing, and Agency-only team seats live — and how to invite people without breaking seat limits.",
+      "Where profile, security, billing, and Agency-only team seats live, and how to invite people without breaking seat limits.",
     readingMinutes: 7,
     updatedAt: "2026-07-23",
     tags: ["settings", "teams", "security", "workspace"],
@@ -876,24 +876,24 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
     tags: ["workflow", "playbook", "agency", "routine"],
     sections: [
       {
-        heading: "Morning (30–45 min) — build the dialer",
+        heading: "Morning (30–45 min), build the dialer",
         body: "Open Hot Leads. If thin, run one focused Lead Finder search (small batch). Save keepers. Skim map if you sell by territory.",
         bullets: [
-          "Hot list first — do not start in Ask Expert",
+          "Hot list first: do not start in Ask Expert",
           "Save before emailing so Pipeline can track",
           "Note one hook per lead before calling",
         ],
       },
       {
-        heading: "Midday — outreach block",
+        heading: "Midday: outreach block",
         body: "Call / email from lead detail. Use SMTP mailbox. Enroll Day 1–3 only for no-reply leads. Watch Email inbox for replies and answer same day.",
       },
       {
-        heading: "Afternoon — Pipeline hygiene",
+        heading: "Afternoon: Pipeline hygiene",
         body: "Move Contacted → Qualified when meetings book. Close dead deals with reasons. Check webhook destinations only if your ops person owns CRM sync.",
       },
       {
-        heading: "End of day — credits check",
+        heading: "End of day: credits check",
         body: "Glance at remaining credits on Home / Billing. Plan tomorrow’s search size so you do not wake up to a 402 mid-campaign.",
         href: "/home",
         hrefLabel: "Open Home →",
@@ -949,7 +949,7 @@ export const ACADEMY_ARTICLES: AcademyArticle[] = [
       },
       {
         heading: "Login / suspended account",
-        body: "Check email/password; register at /register if needed. Suspended accounts must contact support / admin — Academy cannot unsuspend.",
+        body: "Check email/password; register at /register if needed. Suspended accounts must contact support / admin, Academy cannot unsuspend.",
       },
     ],
   },
@@ -961,7 +961,7 @@ export const ACADEMY_FAQS: AcademyFaq[] = [
     category: "getting-started",
     question: "What is Contractor Leads used for?",
     answer:
-      "It helps agencies find and work verified home-service contractor prospects — search, score, save, email, and track them in a pipeline. It is not a homeowner hiring marketplace.",
+      "It helps agencies find and work verified home-service contractor prospects, search, score, save, email, and track them in a pipeline. It is not a homeowner hiring marketplace.",
     relatedSlugs: ["welcome-to-contractor-leads"],
   },
   {
@@ -1033,7 +1033,7 @@ export const ACADEMY_FAQS: AcademyFaq[] = [
     category: "pipeline",
     question: "When should I move a lead to Qualified or Closed?",
     answer:
-      "Qualified = real next step (meeting booked, proposal requested). Closed = won or finished/lost — always leave a note with the reason so teammates do not re-pitch dead deals.",
+      "Qualified = real next step (meeting booked, proposal requested). Closed = won or finished/lost, always leave a note with the reason so teammates do not re-pitch dead deals.",
     relatedSlugs: [
       "hot-leads-saved-leads-pipeline",
       "pipeline-playbook-closing-contractors",
@@ -1052,7 +1052,7 @@ export const ACADEMY_FAQS: AcademyFaq[] = [
     category: "email",
     question: "Gmail keeps rejecting my password. What do I use?",
     answer:
-      "Use a Google App Password after enabling 2-Step Verification — not your normal Gmail password. Paste the 16-character code into SMTP settings and Test connection.",
+      "Use a Google App Password after enabling 2-Step Verification, not your normal Gmail password. Paste the 16-character code into SMTP settings and Test connection.",
     relatedSlugs: ["gmail-app-password-setup", "email-smtp-inbox-sequences"],
   },
   {
@@ -1090,7 +1090,7 @@ export const ACADEMY_FAQS: AcademyFaq[] = [
     category: "leads",
     question: "What do Hot, Warm, and Nurture mean?",
     answer:
-      "They are opportunity tiers. Hot = call/email today. Warm = solid follow-up this week. Nurture = lower urgency. Scores prioritize work — they do not guarantee a sale.",
+      "They are opportunity tiers. Hot = call/email today. Warm = solid follow-up this week. Nurture = lower urgency. Scores prioritize work, they do not guarantee a sale.",
     relatedSlugs: ["reading-lead-scores-and-enrichment", "how-to-use-lead-finder"],
   },
   {
@@ -1106,7 +1106,7 @@ export const ACADEMY_FAQS: AcademyFaq[] = [
     category: "leads",
     question: "Can I export leads to CSV or Excel?",
     answer:
-      "Yes from list views when your plan allows it. Filter/save first for cleaner files. Exports complement Pipeline — they do not replace in-app status tracking.",
+      "Yes from list views when your plan allows it. Filter/save first for cleaner files. Exports complement Pipeline, they do not replace in-app status tracking.",
     relatedSlugs: ["lead-map-and-exports"],
   },
   {
@@ -1114,7 +1114,7 @@ export const ACADEMY_FAQS: AcademyFaq[] = [
     category: "referrals",
     question: "Do referrals pay credits or money?",
     answer:
-      "Cash commission when a referred agency buys a paid plan — not signup credits. Signup only attributes the referral (pending). Withdraw from the Referrals page after you have balance.",
+      "Cash commission when a referred agency buys a paid plan, not signup credits. Signup only attributes the referral (pending). Withdraw from the Referrals page after you have balance.",
     relatedSlugs: ["referral-cash-commission"],
   },
   {
@@ -1138,7 +1138,7 @@ export const ACADEMY_FAQS: AcademyFaq[] = [
     category: "integrations",
     question: "How do CRM / Slack webhooks work?",
     answer:
-      "From Setup → CRM webhooks, send lead.saved and pipeline stage events to Slack, GHL, Zapier, Make, or HubSpot. Keep Pipeline updated in-app — webhooks mirror state.",
+      "From Setup → CRM webhooks, send lead.saved and pipeline stage events to Slack, GHL, Zapier, Make, or HubSpot. Keep Pipeline updated in-app, webhooks mirror state.",
     relatedSlugs: ["api-mcp-sso-crm-webhooks"],
   },
   {
@@ -1162,7 +1162,7 @@ export const ACADEMY_FAQS: AcademyFaq[] = [
     category: "ai",
     question: "What are My Scripts?",
     answer:
-      "Saved Ask Expert answers — ad scripts, emails, funnel outlines — so you can reuse them without regenerating and re-spending credits.",
+      "Saved Ask Expert answers: ad scripts, emails, funnel outlines, so you can reuse them without regenerating and re-spending credits.",
     relatedSlugs: ["ask-expert-vs-support", "ask-expert-playbook"],
   },
   {

@@ -357,3 +357,18 @@ no Google Indexing API.
   "in seconds" became "in one search"; "first list free" clarified as 10 leads; "verified emails on every lead"
   became "where available"; /trades link to be /industries (redirect).
 - HVAC hub title kept: the plan's title is 62 characters (limit 60).
+
+## 26 Nov 2026: two-day SEO/AEO/GEO pass, day 1
+
+- Metadata audit of all 165 indexable pages (titles, descriptions, H1s, slugs): no duplicates, all titles <= 60,
+  descriptions 139-158, slugs lowercase and hyphenated. Fixed the weak ones:
+  - 11 Help Center pages: keyword-first SEO titles (in-app Academy titles unchanged).
+  - /features: title "Contractor Leads Features: Lead Finder, AI Scores, Outreach"; H1 now says what the page is
+    (was "Contractor prospecting without the five-tab circus").
+- Technical: homepage hero text rendered with CSS animation instead of JS (it sat at opacity 0 until hydration).
+  Mobile LCP (Moto G4, CPU x4, local): ~0.4-0.6 s warm vs ~4.5-5 s measured live before.
+- Copy quality: 196 em dashes removed from public marketing copy and Help articles (owner rule).
+- Checked: http -> https www 301, trailing slash / uppercase 308, BreadcrumbList valid, llms-full has no noindexed URLs.
+- Found, not changed (owner decision): footer "X in City subscribed to Growth" toast uses a hardcoded fake list
+  (footer-live-purchases.tsx, type FakePurchase). Fabricated social proof.
+- Day 2 (27 Nov, 7-day rule): /locations/{state} noindex + drop from sitemap + llms.txt.

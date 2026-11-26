@@ -26,18 +26,18 @@ export const PLAN_COLUMNS: {
   { id: "enterprise", label: "Enterprise" },
 ];
 
-/** Grouped comparison — balanced length (not tiny, not mega) */
+/** Grouped comparison, balanced length (not tiny, not mega) */
 export const PLAN_MATRIX_GROUPS: PlanMatrixGroup[] = [
   {
     id: "access",
     label: "Getting started",
     rows: [
       {
-        feature: "10 free leads on signup — pay after you scrape them",
+        feature: "10 free leads on signup; pay after you use them",
         starter: "✓",
-        growth: "—",
-        agency: "—",
-        enterprise: "—",
+        growth: "-",
+        agency: "-",
+        enterprise: "-",
       },
     ],
   },
@@ -101,14 +101,14 @@ export const PLAN_MATRIX_GROUPS: PlanMatrixGroup[] = [
       },
       {
         feature: "Lead Map, social filters & Meta intel",
-        starter: "—",
+        starter: "-",
         growth: "✓",
         agency: "✓",
         enterprise: "✓",
       },
       {
         feature: "CRM webhooks (Zapier, HubSpot, etc.)",
-        starter: "—",
+        starter: "-",
         growth: "✓",
         agency: "✓",
         enterprise: "✓",
@@ -121,36 +121,36 @@ export const PLAN_MATRIX_GROUPS: PlanMatrixGroup[] = [
     rows: [
       {
         feature: "Client reports & workspaces",
-        starter: "—",
-        growth: "—",
+        starter: "-",
+        growth: "-",
         agency: "✓",
         enterprise: "White-label",
       },
       {
         feature: "Team seats & priority support",
-        starter: "—",
-        growth: "—",
+        starter: "-",
+        growth: "-",
         agency: "✓",
         enterprise: "Dedicated CSM",
       },
       {
         feature: "API + MCP access",
-        starter: "—",
+        starter: "-",
         growth: "✓",
         agency: "✓",
         enterprise: "✓",
       },
       {
         feature: "SSO",
-        starter: "—",
-        growth: "—",
+        starter: "-",
+        growth: "-",
         agency: "✓",
         enterprise: "✓",
       },
       {
         feature: "Users & teams seats",
-        starter: "—",
-        growth: "—",
+        starter: "-",
+        growth: "-",
         agency: "✓",
         enterprise: "✓",
       },
@@ -220,7 +220,7 @@ export const MARKETING_PLANS: MarketingPlanCard[] = [
     priceAnnualMonthly: 15,
     leadsIncluded: PLAN_MONTHLY_CREDITS.starter,
     creditsLabel: `${PLAN_MONTHLY_CREDITS.starter.toLocaleString()} credits / mo (${PLAN_MONTHLY_CREDITS.starter.toLocaleString()} leads)`,
-    creditsDetail: `${CREDIT_COSTS.lead} credit per lead · ${STARTER_FREE_CREDITS} free leads included to start — pay after you use them`,
+    creditsDetail: `${CREDIT_COSTS.lead} credit per lead · ${STARTER_FREE_CREDITS} free leads included to start, pay after you use them`,
     ctaLabel: "Get started free",
     ctaHref: "/register",
     trialOffer: true,
@@ -336,7 +336,7 @@ export function withLivePlanPrices(
   });
 }
 
-/** Server helper — same prices Super Admin edits under Plans & Entitlements. */
+/** Server helper, same prices Super Admin edits under Plans & Entitlements. */
 export async function getMarketingPlansLive(): Promise<MarketingPlanCard[]> {
   const { getPlanPriceMap } = await import("@/lib/plans");
   const prices = await getPlanPriceMap();

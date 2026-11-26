@@ -6,8 +6,8 @@ import { HiOutlineCursorArrowRays, HiOutlineSparkles } from "react-icons/hi2";
 import { Reveal } from "./marketing-ui";
 
 const TYPE_LINES = [
-  "Hey Mike — saw your 4.9★ roofing reviews in Austin…",
-  "Noticed you're not running Meta ads yet — quick idea?",
+  "Hey Mike, saw your 4.9★ roofing reviews in Austin…",
+  "Noticed you're not running Meta ads yet. Quick idea?",
   "Your site loads well; PPC could fill the winter gap.",
 ];
 
@@ -111,7 +111,7 @@ function TypingOutreachCard() {
         Copy writes itself
       </h3>
       <p className="mt-1.5 text-[13px] text-slate-500">
-        AI drafts the first line from score, reviews, and ad gaps — ready to send.
+        AI drafts the first line from score, reviews, and ad gaps, ready to send.
       </p>
 
       <div className="relative mt-5 h-[188px] overflow-hidden rounded-2xl border border-slate-200 bg-white p-4">
@@ -199,7 +199,7 @@ function ScoringCard() {
   );
 }
 
-/** Three looping automation vignettes — replaces the heavy interactive shell. */
+/** Three looping automation vignettes, replaces the heavy interactive shell. */
 export function MarketingAutomationShowcase() {
   return (
     <section
@@ -222,7 +222,7 @@ export function MarketingAutomationShowcase() {
               Watch the desk work itself
             </h2>
             <p className="mx-auto mt-2 max-w-xl text-[14px] leading-relaxed text-slate-500">
-              Search, score, and outreach draft — looping previews of what the platform does before
+              Search, score, and outreach draft: looping previews of what the platform does before
               you ever open a spreadsheet.
             </p>
           </div>

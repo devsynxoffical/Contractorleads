@@ -6,8 +6,8 @@
  * whenever its visible content changes (not for code-only changes).
  */
 export const PAGE_UPDATED: Record<string, string> = {
-  "/": "2026-11-23",
-  "/features": "2026-11-16",
+  "/": "2026-11-26",
+  "/features": "2026-11-26",
   "/pricing": "2026-11-16",
   "/contractor-lead-generation-software": "2026-11-05",
   "/google-maps-scraper": "2026-11-05",
