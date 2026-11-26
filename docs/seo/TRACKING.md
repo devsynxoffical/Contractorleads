@@ -242,3 +242,14 @@ marketing pages only from 18 Nov), URL Inspection, Bing Webmaster Tools.
 - **Bing:** 176 indexed (prev 170), 125 pages crawled last day, 18 impressions / 0 clicks.
 - **Movers:** up: 7d impressions 553 -> 586, 28d 762 -> 814, Bing index 170 -> 176. Down: none.
 - **Work:** none; /locations/{state} noindex (city plan week 1) becomes allowed 27 Nov under the 7-day rule.
+
+### 26 Nov 17:23 UTC
+
+- **GSC 7d (20-26 Nov):** 0 clicks, 659 impressions, avg position ~90 (prev run 586). Last 3 days: 88, 98, 97.
+  **GSC 28d (30 Oct-26 Nov):** 5 clicks, ~952 impressions (prev ~814). Queries at position <= 60: 0.
+- **Indexing:** /features recrawled 24 Nov (indexed); homepage last crawl 20 Nov; /industries/general-contractors/ohio
+  still indexed (last crawl 3 Nov, noindex not yet seen).
+- **GA4 (19-25 Nov):** chatgpt.com 11 (prev 9), google organic 7 (prev 4), direct 23, l.facebook.com 1; key events 0.
+- **Bing:** 176 indexed, 18 impressions / 0 clicks (unchanged).
+- **Movers:** up: 7d impressions 586 -> 659, 28d 814 -> 952, ChatGPT 9 -> 11, Google organic 4 -> 7. Down: none.
+- **Work:** none this run (day 1 SEO pass shipped today; day 2 scheduled 27 Nov).
