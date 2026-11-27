@@ -80,17 +80,6 @@ Important facts:
 
 ## Find contractor leads by state
 - [All 50 states](https://www.contractorleads.us/locations): which trades have the strongest demand in each state, the largest markets and when to reach out
-- [Find contractor leads in Texas](https://www.contractorleads.us/locations/texas)
-- [Find contractor leads in Florida](https://www.contractorleads.us/locations/florida)
-- [Find contractor leads in California](https://www.contractorleads.us/locations/california)
-- [Find contractor leads in Georgia](https://www.contractorleads.us/locations/georgia)
-- [Find contractor leads in North Carolina](https://www.contractorleads.us/locations/north-carolina)
-- [Find contractor leads in Arizona](https://www.contractorleads.us/locations/arizona)
-- [Find contractor leads in Ohio](https://www.contractorleads.us/locations/ohio)
-- [Find contractor leads in Pennsylvania](https://www.contractorleads.us/locations/pennsylvania)
-- [Find contractor leads in New York](https://www.contractorleads.us/locations/new-york)
-- [Find contractor leads in Illinois](https://www.contractorleads.us/locations/illinois)
-- Trade pages per state follow the pattern https://www.contractorleads.us/industries/[trade]/[state], for example https://www.contractorleads.us/industries/roofing/texas
 
 ## Free tools (no sign-up)
 - [SPF, DKIM and DMARC checker](https://www.contractorleads.us/tools/email-deliverability-checker): check a sending domain before cold email

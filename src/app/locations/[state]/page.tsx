@@ -36,6 +36,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     title: pickMetaText(titles, 30, 60),
     description: pickMetaText(descs, 140, 158),
     path: `/locations/${loc.slug}`,
+    // City page plan: state location pages stay crawlable for links but leave the index; /locations hub stays indexable.
+    noIndex: true,
     keywords: [
       `find contractor leads in ${loc.name}`,
       `contractor leads ${loc.name}`,

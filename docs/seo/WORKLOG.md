@@ -372,3 +372,17 @@ no Google Indexing API.
 - Found, not changed (owner decision): footer "X in City subscribed to Growth" toast uses a hardcoded fake list
   (footer-live-purchases.tsx, type FakePurchase). Fabricated social proof.
 - Day 2 (27 Nov, 7-day rule): /locations/{state} noindex + drop from sitemap + llms.txt.
+
+## 27 Nov 2026 - Two-day pass, day 2 (technical)
+
+- /locations/{state} (50 pages): now `noindex, follow` (7-day rule cleared: template last changed 20 Nov).
+  Evidence: 0 Google impressions on any /locations URL in 28 days (31 Oct-27 Nov). Canonicals unchanged.
+- /locations hub stays `index, follow`; it still links to all 50 state pages so link equity keeps flowing.
+- sitemap-locations.xml now lists only /locations (was 51 URLs).
+- public/llms.txt: removed the 10 /locations/{state} links and the /industries/[trade]/[state] pattern line
+  (those pages are noindex since the week 1 city plan step), so AI crawlers are not pointed at noindexed URLs.
+- Metadata audit re-run on all 115 sitemap pages: 0 issues (title 30-62 chars, description 110-160, one H1,
+  no duplicate titles/descriptions/H1s, no em dashes, no noindex URL in the sitemap).
+- Sitemap check: 153 URLs across 8 sitemaps; all 200 + indexable except the 38 intentional /trades 308s in the
+  temporary legacy sitemap.
+- Build, tests (113 passed, 21 skipped) green.
