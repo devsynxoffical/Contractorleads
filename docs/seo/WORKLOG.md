@@ -386,3 +386,8 @@ no Google Indexing API.
 - Sitemap check: 153 URLs across 8 sitemaps; all 200 + indexable except the 38 intentional /trades 308s in the
   temporary legacy sitemap.
 - Build, tests (113 passed, 21 skipped) green.
+- Content-plan section copy (CONTENT-PLAN-2026-11-23.md) not applied today: those pages changed after 23 Nov.
+  Earliest dates by the 7-day rule: /contractor-list and /local-business-email-list 30 Nov;
+  /contractor-email-list and /businesses-without-websites 1 Dec; / and /industries/hvac 30 Nov+.
+- Live check: /locations/texas serves noindex,follow; sitemap-locations.xml = 1 URL; llms.txt has 0 state links.
+  IndexNow: 10 state URLs + sitemap-locations.xml + llms.txt submitted (12).
