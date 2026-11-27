@@ -263,3 +263,19 @@ marketing pages only from 18 Nov), URL Inspection, Bing Webmaster Tools.
 - **Bing:** 184 indexed (prev 176), 121 pages crawled last day, 3 crawl errors; 18 impressions / 0 clicks.
 - **Movers:** up: 7d impressions 659 -> 722, Bing indexed 176 -> 184. Down: none meaningful (GA4 window shifted by one day).
 - **Work:** none this run; day 2 of the SEO pass follows at 06:30.
+
+### 27 Nov 17:23 UTC
+
+- **GSC 7d (20-26 Nov):** 1 click, 778 impressions, avg position ~89 (prev run 722; 26 Nov revised 160 -> 216, best day so far).
+  **GSC 28d (31 Oct-26 Nov):** 4 clicks, ~1,067 impressions (prev ~1,011). Queries in top 10 / top 20: 0 / 0.
+  Top queries (28d): contractor lead generation 136 impr (pos 90), contractor lead generation services 69 (91), contractor leads 61 (85).
+- **Pages (20-27 Nov):** homepage 780 impr (pos 89); /businesses-without-websites 1 click (pos 57), /blog 1 click (pos 7);
+  /contractor-email-list 4 impr at pos 4.3, /contractor-list 3 at pos 2.7, /features 5 at pos 5.2 (small, long-tail).
+- **Indexing:** /pricing "URL is unknown to Google" again (live: 200, index,follow, self-canonical, in sitemap, linked from homepage);
+  /industries/roofing/texas still "Crawled - not indexed" (last crawl 2 Aug, noindex not yet seen);
+  /trades/electrical/alaska still "Crawled - not indexed" (last crawl 28 Jul, redirect not yet seen).
+- **GA4 (20-26 Nov):** direct 19, chatgpt.com 11, google organic 7, bing organic 1 (first), l.facebook.com 1; key events 0.
+- **Bing:** 184 indexed (no new crawl day since last run), 18 impressions / 0 clicks.
+- **Movers:** up: 7d impressions 722 -> 778, ChatGPT 9 -> 11, first click on /businesses-without-websites, first Bing organic visit. Down: none.
+- **Work:** none on pages (homepage and plan pages locked by the 7-day rule until 30 Nov / 1 Dec; nothing else actionable).
+  /pricing needs a manual "Request indexing" in Search Console.
