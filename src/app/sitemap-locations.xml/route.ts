@@ -1,19 +1,19 @@
-import { SEO_REGIONS, seoBaseUrl } from "@/lib/seo";
+import { seoBaseUrl } from "@/lib/seo";
 import { LOCATIONS_UPDATED } from "@/lib/page-dates";
 
 export const dynamic = "force-static";
 
-/** Location pages: /locations hub and one page per US state. */
+/** Location pages: the /locations hub only (state pages are noindex, see city page plan). */
 export async function GET() {
   const base = seoBaseUrl();
-  const paths = ["/locations", ...SEO_REGIONS.map((r) => `/locations/${r.slug}`)];
+  const paths = ["/locations"];
   const urls = paths
     .map(
-      (p, i) => `  <url>
+      (p) => `  <url>
     <loc>${base}${p}</loc>
     <lastmod>${LOCATIONS_UPDATED}</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>${i === 0 ? "0.85" : "0.7"}</priority>
+    <priority>0.85</priority>
   </url>`,
     )
     .join("\n");

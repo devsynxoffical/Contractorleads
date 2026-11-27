@@ -6,7 +6,7 @@ Source: City_Page_Map_Gaurav_Sites.csv (CL rows) and the 25 Nov PDF. Week 1 = we
 | URL | Status | Note |
 |---|---|---|
 | /industries/{trade}/{state} (900) | exists | 350 were indexable, 550 already noindex. 28 days: 20 impressions, 0 clicks |
-| /locations/{state} (50) | exists | template changed 20 Nov (7-day rule) |
+| /locations/{state} (50) | noindex,follow since 27 Nov | removed from sitemap-locations.xml and llms.txt; /locations hub stays indexable |
 | /businesses-without-websites | exists | changed 24 Nov (7-day rule) |
 | /contractor-license-lookup (+13 states) | missing | week 3 to 7 |
 | /lead-finder | missing | week 8 |
