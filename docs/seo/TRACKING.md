@@ -253,3 +253,13 @@ marketing pages only from 18 Nov), URL Inspection, Bing Webmaster Tools.
 - **Bing:** 176 indexed, 18 impressions / 0 clicks (unchanged).
 - **Movers:** up: 7d impressions 586 -> 659, 28d 814 -> 952, ChatGPT 9 -> 11, Google organic 4 -> 7. Down: none.
 - **Work:** none this run (day 1 SEO pass shipped today; day 2 scheduled 27 Nov).
+
+### 27 Nov 05:23 UTC
+
+- **GSC 7d (20-26 Nov):** 1 click, 722 impressions, avg position ~89 (prev run 659). 26 Nov = 160 impressions, the best day so far.
+  **GSC 28d (31 Oct-26 Nov):** 4 clicks, ~1,011 impressions (prev ~952). Queries at position <= 60: 0 (query rows for 23-27 Nov not yet released).
+- **Indexing:** /contractor-email-list, /businesses-without-websites and /local-business-email-list all "Submitted and indexed", Google canonical = declared, last crawl 20 Nov (26 Nov changes not yet recrawled).
+- **GA4 (20-25 Nov):** direct 14, chatgpt.com 9, google organic 6, l.facebook.com 1; key events 0.
+- **Bing:** 184 indexed (prev 176), 121 pages crawled last day, 3 crawl errors; 18 impressions / 0 clicks.
+- **Movers:** up: 7d impressions 659 -> 722, Bing indexed 176 -> 184. Down: none meaningful (GA4 window shifted by one day).
+- **Work:** none this run; day 2 of the SEO pass follows at 06:30.
