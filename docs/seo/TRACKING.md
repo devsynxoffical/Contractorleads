@@ -279,3 +279,16 @@ marketing pages only from 18 Nov), URL Inspection, Bing Webmaster Tools.
 - **Movers:** up: 7d impressions 722 -> 778, ChatGPT 9 -> 11, first click on /businesses-without-websites, first Bing organic visit. Down: none.
 - **Work:** none on pages (homepage and plan pages locked by the 7-day rule until 30 Nov / 1 Dec; nothing else actionable).
   /pricing needs a manual "Request indexing" in Search Console.
+
+### 28 Nov 05:23 UTC
+
+- **GSC 7d (21-27 Nov):** 1 click, 816 impressions, avg position ~89 (prev run 778 for 20-26 Nov). 27 Nov: 95 impressions.
+  **GSC 28d (31 Oct-27 Nov):** 4 clicks, ~1,162 impressions (prev ~1,067). Queries in top 10 / top 20: 0 / 0 (query rows for 21-28 Nov not yet released).
+- **Pages (21-28 Nov):** homepage 810 impr (pos 89); new: /blog/how-much-do-contractor-leads-cost 2 impr at pos 9.
+  Unchanged small long-tail: /contractor-list pos 2.7, /contractor-email-list 4.3, /features 5.2, /blog 7 (1 click), /businesses-without-websites 57 (1 click).
+- **Indexing:** /pricing "Discovered - currently not indexed" (prev "unknown"; found via /industries/solar and others);
+  /contractor-email-finder "Discovered - currently not indexed"; /locations "URL is unknown to Google" (live: 200, index,follow, in sitemap).
+- **GA4 (21-26 Nov):** direct 19, chatgpt.com 10, google organic 7, bing organic 1, l.facebook.com 1; key events 0.
+- **Bing:** 195 indexed (prev 184), 108 pages crawled last day, 2 crawl errors; 38 impressions over 35 queries / 0 clicks (prev 18 over 16).
+- **Movers:** up: 7d impressions 778 -> 816, 28d ~1,067 -> ~1,162, Bing impressions 18 -> 38, Bing indexed 184 -> 195. Down: none.
+- **Work:** none on pages (7-day rule locks homepage and plan pages until 30 Nov / 1 Dec; no other actionable signal).
